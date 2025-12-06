@@ -1,0 +1,201 @@
+/* --- CONFIGURACIÓN DEL NAVBAR --- */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 15px 0;
+    z-index: 90; 
+    transition: all 0.4s ease;
+    background: transparent;
+}
+
+.navbar.scrolled {
+    background: rgba(18, 18, 18, 0.95); /* Fondo oscuro al bajar */
+    backdrop-filter: blur(10px);
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.navbar-container {
+    max-width: 95%; /* Ocupa más ancho de pantalla */
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between; /* Logo a la esq, Acciones a la der */
+    align-items: center;
+}
+
+/* --- LOGO --- */
+.navbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+
+.navbar-logo i {
+    font-size: 32px;
+    color: #695CFE;
+    animation: pulse 2s infinite; /* Pequeña animación al logo */
+}
+
+@keyframes pulse {
+    0% { text-shadow: 0 0 0 rgba(105, 92, 254, 0.4); }
+    50% { text-shadow: 0 0 20px rgba(105, 92, 254, 0.7); }
+    100% { text-shadow: 0 0 0 rgba(105, 92, 254, 0.4); }
+}
+
+.navbar-logo .highlight {
+    color: #695CFE;
+}
+
+/* --- ZONA DERECHA (ACCIONES) --- */
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 25px; /* Espacio entre buscador, campana y botón */
+}
+
+/* 1. BUSCADOR */
+.search-box {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.search-box:focus-within {
+    border-color: #695CFE;
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 10px rgba(105, 92, 254, 0.2);
+}
+
+.search-box i {
+    color: #aaa;
+    font-size: 18px;
+}
+
+.search-box input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    margin-left: 10px;
+    width: 200px; /* Un poco más ancho */
+    font-size: 14px;
+}
+
+.search-box input::placeholder {
+    color: #777;
+}
+
+/* 2. NOTIFICACIONES */
+.notify-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 24px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s;
+    display: flex;
+}
+
+.notify-btn:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.notify-btn .dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    height: 8px;
+    width: 8px;
+    background-color: #FF5733;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #FF5733;
+}
+
+/* 3. SECCIÓN LOGIN / PERFIL */
+.auth-section {
+    padding-left: 20px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+/* Botón Iniciar Sesión (Estilo Enlace) */
+.login-btn {
+    text-decoration: none; /* Quita el subrayado del link */
+    background: #695CFE;
+    color: #fff;
+    padding: 8px 24px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(105, 92, 254, 0.3);
+    white-space: nowrap;
+}
+
+.login-btn:hover {
+    background: #584cf4;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(105, 92, 254, 0.5);
+}
+
+/* Perfil Usuario Logueado */
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.user-info {
+    text-align: right;
+    line-height: 1.2;
+}
+
+.user-info .welcome {
+    display: block;
+    font-size: 11px;
+    color: #aaa;
+}
+
+.user-info .username {
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #695CFE;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+    .search-box input {
+        width: 100px; /* Más pequeño en tablet */
+    }
+    .user-info {
+        display: none; /* Solo muestra avatar en móvil */
+    }
+}

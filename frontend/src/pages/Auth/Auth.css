@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* --- CONTENEDOR PRINCIPAL (Pantalla Completa) --- */
+.auth-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+}
+
+/* --- VIDEO DE FONDO --- */
+.auth-bg-video {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -1;
+    filter: brightness(0.4) blur(3px); /* Oscuro y un poco borroso para leer bien */
+}
+
+/* --- LA CAJA DE CRISTAL (Card) --- */
+.auth-box {
+    width: 400px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.05); /* Muy transparente */
+    backdrop-filter: blur(20px); /* Efecto vidrio fuerte */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+/* TÍTULO Y LOGO */
+.auth-header { margin-bottom: 30px; }
+.auth-header i { font-size: 50px; color: #695CFE; margin-bottom: 10px; }
+.auth-header h2 { font-size: 28px; font-weight: 600; letter-spacing: 1px; }
+.auth-header p { font-size: 14px; color: #aaa; margin-top: 5px; }
+
+/* --- INPUTS (Campos de texto) --- */
+.input-group {
+    position: relative;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #ccc;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px 15px 12px 45px; /* Espacio a la izq para el icono */
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* Icono dentro del input */
+.input-group i {
+    position: absolute;
+    left: 15px;
+    top: 38px; /* Ajustar según posición del label */
+    color: #695CFE;
+    font-size: 20px;
+}
+
+/* Efecto al escribir (Focus) */
+.input-field:focus {
+    border-color: #695CFE;
+    box-shadow: 0 0 10px rgba(105, 92, 254, 0.3);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* --- BOTÓN PRINCIPAL --- */
+.auth-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(45deg, #695CFE, #9d4eff);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 10px;
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(105, 92, 254, 0.4);
+}
+
+/* --- LINKS INFERIORES --- */
+.auth-footer {
+    margin-top: 25px;
+    font-size: 14px;
+    color: #aaa;
+}
+
+.auth-footer a {
+    color: #695CFE;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
+    transition: 0.3s;
+}
+
+.auth-footer a:hover {
+    color: #fff;
+    text-shadow: 0 0 5px #695CFE;
+}
+
+/* Botón cerrar (X) */
+.close-btn {
+    position: absolute;
+    top: 20px; right: 20px;
+    color: #aaa; font-size: 24px;
+    cursor: pointer; transition: 0.3s;
+}
+.close-btn:hover { color: #fff; transform: rotate(90deg); }
+
+/* --- NUEVOS ESTILOS: OPCIONES DE LOGIN --- */
+
+/* Contenedor de la fila (Checkbox izq - Link der) */
+.options-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    font-size: 13px;
+    color: #ccc;
+}
+
+/* Estilo del grupo Checkbox + Texto */
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espacio entre cuadrito y texto */
+    cursor: pointer;
+}
+
+.remember-me label {
+    cursor: pointer;
+    user-select: none; /* Evita que se seleccione el texto al dar clic rápido */
+    font-size: 13px;
+}
+
+/* Personalizar el color del Checkbox */
+.remember-me input[type="checkbox"] {
+    accent-color: #695CFE; /* ¡El color morado de ESPORTEFY! */
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Estilo para el link de "¿Olvidaste...?" */
+.forgot-link {
+    color: #aaa;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.forgot-link:hover {
+    color: #695CFE; /* Se ilumina al pasar el mouse */
+    text-decoration: underline;
+}
