@@ -1,0 +1,523 @@
+// --- VARIABLES PRO GAMING ---
+$primary: #695CFE;
+$secondary: #00ff88; // Verde neón para premios/éxito
+$danger: #ff0055;    // Rojo para "En Vivo"
+$dark-bg: #121212;
+$glass-bg: rgba(30, 30, 35, 0.7);
+$glass-border: rgba(255, 255, 255, 0.1);
+$text-main: #ffffff;
+$text-muted: #a0a0a0;
+
+// --- MIXINS (Atajos de código) ---
+@mixin glass-panel {
+  background: $glass-bg;
+  backdrop-filter: blur(12px);
+  border: 1px solid $glass-border;
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+@mixin neon-glow($color) {
+  box-shadow: 0 0 10px rgba($color, 0.5), 0 0 20px rgba($color, 0.3);
+  border-color: $color;
+}
+
+// --- ANIMACIONES ---
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba($danger, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba($danger, 0); }
+  100% { box-shadow: 0 0 0 0 rgba($danger, 0); }
+}
+
+// --- ESTILOS PRINCIPALES ---
+.tournaments-page {
+  padding: 100px 40px 40px 40px;
+  color: $text-main;
+  min-height: 100vh;
+  font-family: 'Poppins', sans-serif;
+
+  // 1. HERO SECTION (BANNER)
+  .hero-banner {
+    position: relative;
+    height: 350px;
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-end;
+    
+    // Imagen de fondo con gradiente
+    &::before {
+      content: '';
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(0deg, #121212 0%, transparent 100%), 
+                  url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      z-index: -1;
+      transition: transform 10s ease;
+    }
+
+    &:hover::before { transform: scale(1.05); } // Zoom suave al fondo
+
+    .hero-content {
+      padding: 40px;
+      z-index: 1;
+      width: 100%;
+
+      .badge-live {
+        display: inline-block;
+        background: $danger;
+        padding: 5px 12px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        animation: pulse-red 2s infinite;
+      }
+
+      h1 { font-size: 3rem; font-weight: 800; margin-bottom: 10px; line-height: 1; text-transform: uppercase; }
+      p { font-size: 1.1rem; color: #ccc; max-width: 600px; margin-bottom: 20px; }
+
+      .hero-btn {
+        padding: 12px 30px;
+        background: $primary;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: 0.3s;
+
+        &:hover {
+          background: lighten($primary, 10%);
+          @include neon-glow($primary);
+        }
+      }
+    }
+  }
+
+  // 2. FILTROS
+  .filters-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+
+    .filter-btn {
+      @include glass-panel;
+      padding: 10px 25px;
+      color: $text-muted;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.3s;
+      font-weight: 500;
+
+      &:hover { color: white; background: rgba(255,255,255,0.1); }
+
+      &.active {
+        background: $primary;
+        color: white;
+        border-color: $primary;
+        box-shadow: 0 5px 15px rgba(105, 92, 254, 0.4);
+      }
+    }
+  }
+
+  // 3. GRID DE TORNEOS
+  .tournaments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 30px;
+
+    .tournament-card {
+      @include glass-panel;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); // Efecto rebote suave
+      display: flex;
+      flex-direction: column;
+
+      &:hover {
+        transform: translateY(-10px);
+        border-color: $primary;
+        
+        .card-img img { transform: scale(1.1); }
+      }
+
+      .card-img {
+        height: 160px;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+
+        img {
+          width: 100%; height: 100%; object-fit: cover;
+          transition: transform 0.5s ease;
+        }
+
+        .game-tag {
+          position: absolute; bottom: 10px; left: 10px;
+          background: rgba(0,0,0,0.8);
+          padding: 4px 10px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: bold;
+          text-transform: uppercase;
+          border-left: 3px solid $primary;
+        }
+      }
+
+      .card-body {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex; flex-direction: column;
+
+        h3 { font-size: 1.3rem; margin-bottom: 5px; color: white; }
+        .date { font-size: 0.85rem; color: $text-muted; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; }
+
+        .meta-info {
+          display: flex; justify-content: space-between;
+          margin-bottom: 20px;
+          background: rgba(0,0,0,0.2);
+          padding: 10px;
+          border-radius: 8px;
+
+          div {
+            display: flex; flex-direction: column;
+            span:first-child { font-size: 0.75rem; color: $text-muted; }
+            span:last-child { font-weight: 700; color: $secondary; font-size: 1rem; }
+          }
+        }
+
+        .card-footer {
+          margin-top: auto;
+          display: flex; justify-content: space-between; align-items: center;
+
+          .slots { font-size: 0.9rem; color: $text-muted; i { color: $primary; } }
+          
+          .join-btn {
+            padding: 8px 20px;
+            border: 1px solid $primary;
+            background: transparent;
+            color: $primary;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+
+            &:hover {
+              background: $primary;
+              color: white;
+              box-shadow: 0 0 15px rgba(105, 92, 254, 0.6);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+/* ========================================= */
+/* BOTÓN DE CREAR TORNEO (ORGANIZADOR)       */
+/* ========================================= */
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    h1 { margin: 0; }
+
+    .create-btn {
+        background: linear-gradient(45deg, #695CFE, #9d4eff);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 50px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 0 15px rgba(105, 92, 254, 0.4);
+        transition: 0.3s;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+
+        i { font-size: 1.2rem; }
+
+        &:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(105, 92, 254, 0.7);
+        }
+    }
+}
+
+/* ========================================= */
+/* VENTANA MODAL (FORMULARIO)                */
+/* ========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8); /* Fondo oscuro */
+    backdrop-filter: blur(5px);
+    z-index: 2000; /* Por encima de todo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+}
+
+.modal-content {
+    background: #1a1a1a;
+    width: 500px;
+    padding: 30px;
+    border-radius: 20px;
+    border: 1px solid rgba(105, 92, 254, 0.3);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    position: relative;
+    transform: translateY(50px);
+    animation: slideUp 0.3s forwards;
+
+    h2 { margin-bottom: 20px; color: white; display: flex; align-items: center; gap: 10px; }
+    
+    .close-modal {
+        position: absolute; top: 20px; right: 20px;
+        background: none; border: none; color: #777;
+        font-size: 1.5rem; cursor: pointer; transition: 0.3s;
+        &:hover { color: #fff; }
+    }
+}
+
+/* Inputs del Formulario */
+.form-group {
+    margin-bottom: 15px;
+    
+    label { display: block; color: #ccc; margin-bottom: 8px; font-size: 0.9rem; }
+    
+    input, select {
+        width: 100%;
+        padding: 12px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: white;
+        outline: none;
+        transition: 0.3s;
+
+        &:focus {
+            border-color: #695CFE;
+            background: rgba(105, 92, 254, 0.1);
+        }
+    }
+}
+
+.row {
+    display: flex; gap: 15px;
+    .form-group { flex: 1; }
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    margin-top: 10px;
+    background: #695CFE;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+
+    &:hover { background: #584cf4; }
+}
+
+/* Animaciones */
+@keyframes fadeIn { to { opacity: 1; } }
+@keyframes slideUp { to { transform: translateY(0); } }
+
+/* --- HASHTAGS ESTILIZADOS --- */
+
+.card-img {
+    position: relative; /* Necesario para posicionar los tags encima */
+    
+    .hashtags-overlay {
+        position: absolute;
+        bottom: 10px; /* Abajo de la imagen */
+        right: 10px;  /* A la derecha */
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: flex-end;
+        z-index: 2;
+    }
+
+    .hash-badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.6); /* Fondo semitransparente oscuro */
+        backdrop-filter: blur(4px);
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        text-transform: uppercase;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+
+        /* Estilos específicos según el hashtag */
+        
+        &.Nuevo {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none;
+        }
+
+        &.Moonton {
+            background: linear-gradient(45deg, #f1c40f, #d35400); /* Dorado/Naranja */
+            color: black;
+        }
+
+        &.RiotGames {
+            background: #d62e2e; /* Rojo Riot */
+        }
+
+        &.Garena {
+            background: #f39c12; /* Naranja */
+        }
+
+        &.FreeEntry, &.Gratis {
+            background: rgba(46, 204, 113, 0.8); /* Verde Transparente */
+            color: #fff;
+            border-color: #2ecc71;
+        }
+
+        &.Patrocinado {
+            background: linear-gradient(90deg, #8e2de2, #4a00e0); /* Morado eléctrico */
+            border: 1px solid #a0a0ff;
+            animation: glow 2s infinite alternate;
+        }
+    }
+}
+
+/* Animación para patrocinados */
+@keyframes glow {
+    from { box-shadow: 0 0 5px #8e2de2; }
+    to { box-shadow: 0 0 15px #4a00e0; }
+}
+
+/* El Game Tag (Etiqueta del nombre del juego) se mueve arriba */
+.game-tag {
+    position: absolute; 
+    top: 10px; 
+    left: 10px;
+    bottom: auto !important; /* Reseteamos lo anterior */
+    background: rgba(0,0,0,0.8);
+    /* ... resto de estilos ... */
+}
+/* ========================================= */
+/* BARRA DE FILTROS (ESTILO CHIP/BADGE)      */
+/* ========================================= */
+.filters-container {
+    margin-bottom: 35px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.chips-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.game-chip {
+    /* Estilo Base (Apagado) */
+    background: rgba(30, 30, 30, 0.6); /* Fondo oscuro */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 12px; /* Bordes redondeados pero no píldora completa */
+    color: #aaa;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    
+    i { font-size: 1.1rem; }
+
+    /* Efecto Hover: Se ilumina sutilmente el borde y el texto */
+    &:hover {
+        border-color: var(--chip-color);
+        color: var(--chip-color);
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-2px);
+    }
+
+    /* ESTADO ACTIVO (Seleccionado) */
+    &.active {
+        /* Fondo del color del juego pero muy transparente */
+        background: color-mix(in srgb, var(--chip-color) 15%, transparent); 
+        border-color: var(--chip-color);
+        color: var(--chip-color); /* Texto del color del juego */
+        box-shadow: 0 0 15px color-mix(in srgb, var(--chip-color) 20%, transparent);
+        font-weight: 700;
+
+        /* Hacemos que el icono brille un poco más */
+        i { text-shadow: 0 0 5px var(--chip-color); }
+    }
+}
+
+.toggle-filters-btn {
+    background: none; border: none;
+    color: #695CFE; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; align-self: flex-start;
+    display: flex; align-items: center; gap: 5px;
+    margin-left: 5px;
+    &:hover { color: white; }
+}
+
+/* ========================================= */
+/* TARJETAS DE TORNEO (Ajustes Visuales)     */
+/* ========================================= */
+.game-tag {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex; align-items: center; gap: 5px;
+    border-left: 3px solid transparent; /* El color se inyecta por JS */
+}
+
+.meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 15px; color: #ccc; font-size: 0.9rem;
+    
+    .prize { color: #00ff88; font-weight: bold; text-shadow: 0 0 5px rgba(0, 255, 136, 0.3); }
+}
+
+/* Barra de progreso de cupos */
+.slots-bar {
+    width: 100%; height: 4px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; margin-bottom: 10px; overflow: hidden;
+    
+    .fill { height: 100%; border-radius: 2px; }
+}
+
+.footer-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%;
+}

@@ -1,0 +1,165 @@
+/* --- ESTRUCTURA PRINCIPAL --- */
+.reg-page-wrapper {
+    background-color: #0d0d0d; /* Negro profundo */
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.main-content-area {
+    transition: margin-left 0.5s ease, width 0.5s ease;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* El escenario central */
+.center-stage {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;     /* Centrado Vertical */
+    justify-content: center; /* Centrado Horizontal */
+    padding: 40px;
+    background: radial-gradient(circle at center, #1a1a1a 0%, #0d0d0d 100%);
+}
+
+/* --- TARJETA DE CRISTAL (EL CONTENEDOR DEL FORM) --- */
+.glass-card {
+    display: flex;
+    width: 100%;
+    max-width: 1100px;
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    overflow: hidden; /* Para que la imagen no se salga de las curvas */
+    min-height: 600px;
+}
+
+/* --- LADO IZQUIERDO: FORMULARIO --- */
+.form-section {
+    flex: 1.2; /* Un poco más ancho que la imagen */
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.header-box { margin-bottom: 40px; }
+.step-tag {
+    font-size: 0.7rem; color: #695CFE; border: 1px solid #695CFE;
+    padding: 4px 10px; border-radius: 20px; font-weight: bold; letter-spacing: 1px;
+}
+.header-box h1 { font-size: 2.2rem; margin: 15px 0 5px 0; color: white; }
+.header-box p { color: #888; font-size: 0.95rem; }
+.highlight { color: #695CFE; }
+
+/* --- INPUTS DE LÍNEA ANIMADOS (EFECTO GAMER) --- */
+.neon-input-group {
+    position: relative;
+    margin-bottom: 35px;
+}
+
+.neon-input-group input {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 1rem;
+    color: #fff;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #333;
+    outline: none;
+}
+
+/* La etiqueta flotante */
+.neon-input-group label {
+    position: absolute;
+    top: 10px; left: 0;
+    color: #666;
+    pointer-events: none;
+    transition: 0.3s ease all;
+}
+
+/* Cuando escribes o haces click */
+.neon-input-group input:focus ~ label,
+.neon-input-group input:not(:placeholder-shown) ~ label {
+    top: -20px;
+    font-size: 0.8rem;
+    color: #695CFE;
+    font-weight: bold;
+}
+
+/* La barra animada de abajo */
+.bar { position: relative; display: block; width: 100%; }
+.bar:before, .bar:after {
+    content: ''; height: 2px; width: 0; bottom: 0; position: absolute;
+    background: #695CFE; transition: 0.3s ease all;
+}
+.bar:before { left: 50%; }
+.bar:after { right: 50%; }
+
+.neon-input-group input:focus ~ .bar:before,
+.neon-input-group input:focus ~ .bar:after { width: 50%; }
+
+/* Grid de jugadores */
+.roster-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+.roster-title { font-size: 0.9rem; color: #aaa; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1px;}
+
+.fixed-label { top: -20px !important; font-size: 0.8rem !important; color: #444 !important; }
+
+/* Botones */
+.actions { display: flex; gap: 20px; align-items: center; }
+.btn-cancel { background: transparent; color: #777; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; }
+.btn-cancel:hover { color: white; }
+
+.btn-confirm {
+    padding: 14px 40px;
+    background: linear-gradient(90deg, #695CFE, #8e2de2);
+    color: white; border: none; border-radius: 50px;
+    font-weight: bold; cursor: pointer;
+    box-shadow: 0 10px 20px rgba(105, 92, 254, 0.3);
+    transition: 0.3s; flex: 1;
+}
+.btn-confirm:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(105, 92, 254, 0.5); }
+
+
+/* --- LADO DERECHO: IMAGEN --- */
+.image-section {
+    flex: 1; /* Ocupa el resto */
+    position: relative;
+    overflow: hidden;
+}
+
+.cinematic-bg {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    animation: zoomEffect 20s infinite alternate;
+}
+
+@keyframes zoomEffect {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+}
+
+.overlay-gradient {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to right, #141414 0%, transparent 50%, rgba(105, 92, 254, 0.3) 100%);
+    z-index: 2;
+}
+
+.image-text {
+    position: absolute; bottom: 40px; right: 40px; z-index: 3; text-align: right;
+}
+.image-text h2 { font-size: 2.5rem; line-height: 1; text-transform: uppercase; color: white; }
+.image-text p { color: rgba(255,255,255,0.8); }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .glass-card { flex-direction: column; }
+    .image-section { height: 200px; order: -1; } /* Imagen arriba en celular */
+    .form-section { padding: 30px; }
+}

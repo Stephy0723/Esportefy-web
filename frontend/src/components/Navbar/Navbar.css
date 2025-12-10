@@ -1,201 +1,166 @@
-/* --- CONFIGURACIÓN DEL NAVBAR --- */
+/* ========================================= */
+/* VARIABLES DE COLOR (DINÁMICAS)            */
+/* ========================================= */
+:root {
+    --brand-green: #8EDB15;
+    
+    /* MODO CLARO (Por defecto) */
+    /* Cuando bajas: Fondo Blanco semitransparente */
+    --nav-scroll-bg: rgba(255, 255, 255, 0.95); 
+    --nav-border: rgba(0, 0, 0, 0.05);
+    --nav-text: #333;       /* Texto oscuro */
+    --nav-icon: #555;
+    
+    /* Elementos internos */
+    --search-bg: rgba(0, 0, 0, 0.05);
+}
+
+body.dark {
+    /* MODO OSCURO (Activado) */
+    /* Cuando bajas: Fondo Negro semitransparente */
+    --nav-scroll-bg: rgba(18, 18, 18, 0.95);
+    --nav-border: rgba(255, 255, 255, 0.05);
+    --nav-text: #fff;       /* Texto blanco */
+    --nav-icon: #ccc;
+    
+    /* Elementos internos */
+    --search-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================= */
+/* NAVBAR BASE (ESTADO INICIAL: ARRIBA)      */
+/* ========================================= */
 .navbar {
-    position: fixed;
+    /* POSICIÓN: Sticky para que el menú lo empuje */
+    position: sticky; 
     top: 0;
-    left: 0;
     width: 100%;
+    z-index: 90;
     padding: 15px 0;
-    z-index: 90; 
+    
+    /* --- TRANSPARENCIA TOTAL AL INICIO --- */
+    /* Usamos !important para asegurar que nada lo sobrescriba */
+    background: transparent !important; 
+    border-bottom: 1px solid transparent;
+    box-shadow: none;
+    
     transition: all 0.4s ease;
-    background: transparent;
+    display: block;
 }
 
+/* ========================================= */
+/* NAVBAR SCROLLED (ESTADO AL BAJAR)         */
+/* ========================================= */
 .navbar.scrolled {
-    background: rgba(18, 18, 18, 0.95); /* Fondo oscuro al bajar */
-    backdrop-filter: blur(10px);
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    /* AQUI SÍ APLICAMOS EL COLOR DE FONDO */
+    background: var(--nav-scroll-bg) !important;
+    
+    /* Efectos extra */
+    backdrop-filter: blur(12px); /* Efecto vidrio */
+    padding: 10px 0; /* Se hace un poco más pequeño */
+    border-bottom: 1px solid var(--nav-border);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* Contenedor interno */
 .navbar-container {
-    max-width: 95%; /* Ocupa más ancho de pantalla */
+    max-width: 95%;
     margin: 0 auto;
     padding: 0 20px;
-    display: flex;
-    justify-content: space-between; /* Logo a la esq, Acciones a la der */
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
 }
 
-/* --- LOGO --- */
+/* ========================================= */
+/* LOGO                                      */
+/* ========================================= */
 .navbar-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 24px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: 2px;
-    cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 24px; font-weight: 800; letter-spacing: 1px;
+    cursor: pointer; text-decoration: none;
+    color: var(--nav-text); /* Se adapta claro/oscuro */
 }
 
 .navbar-logo i {
-    font-size: 32px;
-    color: #695CFE;
-    animation: pulse 2s infinite; /* Pequeña animación al logo */
+    font-size: 28px;
+    color: var(--brand-green);
+    filter: drop-shadow(0 0 5px rgba(142, 219, 21, 0.5));
 }
+.navbar-logo .highlight { color: var(--brand-green); }
 
-@keyframes pulse {
-    0% { text-shadow: 0 0 0 rgba(105, 92, 254, 0.4); }
-    50% { text-shadow: 0 0 20px rgba(105, 92, 254, 0.7); }
-    100% { text-shadow: 0 0 0 rgba(105, 92, 254, 0.4); }
-}
-
-.navbar-logo .highlight {
-    color: #695CFE;
-}
-
-/* --- ZONA DERECHA (ACCIONES) --- */
-.navbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 25px; /* Espacio entre buscador, campana y botón */
-}
-
-/* 1. BUSCADOR */
+/* ========================================= */
+/* BUSCADOR (Estilo Cápsula)                 */
+/* ========================================= */
 .search-box {
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 8px 15px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    display: flex; align-items: center;
+    background: var(--search-bg);
+    border: 1px solid transparent;
+    border-radius: 50px;
+    padding: 0 15px; height: 40px; width: 240px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .search-box:focus-within {
-    border-color: #695CFE;
-    background: rgba(0, 0, 0, 0.4);
-    box-shadow: 0 0 10px rgba(105, 92, 254, 0.2);
+    width: 300px;
+    background: var(--nav-scroll-bg); /* Se adapta al fondo actual */
+    border-color: var(--brand-green);
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.2);
 }
 
-.search-box i {
-    color: #aaa;
-    font-size: 18px;
-}
+.search-box i { color: var(--nav-icon); font-size: 18px; }
+.search-box:focus-within i { color: var(--brand-green); }
 
 .search-box input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: #fff;
-    margin-left: 10px;
-    width: 200px; /* Un poco más ancho */
-    font-size: 14px;
+    background: transparent; border: none; outline: none;
+    color: var(--nav-text); margin-left: 10px; width: 100%;
+    font-size: 14px; font-weight: 500; font-family: inherit;
 }
 
-.search-box input::placeholder {
-    color: #777;
-}
+/* ========================================= */
+/* BOTONES Y PERFIL                          */
+/* ========================================= */
+.navbar-actions { display: flex; align-items: center; gap: 20px; }
 
-/* 2. NOTIFICACIONES */
 .notify-btn {
-    background: none;
-    border: none;
-    color: #ccc;
-    font-size: 24px;
-    cursor: pointer;
-    position: relative;
-    transition: color 0.3s;
-    display: flex;
+    background: transparent; border: none;
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--nav-icon); font-size: 22px; cursor: pointer;
+    transition: 0.3s;
 }
-
-.notify-btn:hover {
-    color: #fff;
-    transform: scale(1.1);
-}
-
+.notify-btn:hover { background: var(--search-bg); }
 .notify-btn .dot {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    height: 8px;
-    width: 8px;
-    background-color: #FF5733;
-    border-radius: 50%;
-    box-shadow: 0 0 5px #FF5733;
+    position: absolute; top: 10px; right: 10px; height: 8px; width: 8px;
+    background: #ff0055; border-radius: 50%; border: 2px solid var(--nav-scroll-bg);
 }
 
-/* 3. SECCIÓN LOGIN / PERFIL */
 .auth-section {
-    padding-left: 20px;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    height: 30px;
-    display: flex;
-    align-items: center;
+    padding-left: 15px; margin-left: 5px;
+    border-left: 1px solid var(--nav-border);
+    height: 30px; display: flex; align-items: center;
 }
 
-/* Botón Iniciar Sesión (Estilo Enlace) */
+/* BOTÓN INGRESAR (VERDE) */
 .login-btn {
-    text-decoration: none; /* Quita el subrayado del link */
-    background: #695CFE;
-    color: #fff;
-    padding: 8px 24px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(105, 92, 254, 0.3);
-    white-space: nowrap;
+    text-decoration: none;
+    background-color: var(--brand-green);
+    color: #000; /* Texto negro para contraste */
+    padding: 10px 24px; border-radius: 50px;
+    font-size: 14px; font-weight: 800; text-transform: uppercase;
+    transition: 0.3s; box-shadow: 0 4px 15px rgba(142, 219, 21, 0.2);
 }
-
 .login-btn:hover {
-    background: #584cf4;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(105, 92, 254, 0.5);
+    background-color: #fff; transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
 }
 
-/* Perfil Usuario Logueado */
-.user-profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-}
+.user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.user-info .username { color: var(--nav-text); font-weight: 700; font-size: 14px; }
+.user-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand-green); }
 
-.user-info {
-    text-align: right;
-    line-height: 1.2;
-}
-
-.user-info .welcome {
-    display: block;
-    font-size: 11px;
-    color: #aaa;
-}
-
-.user-info .username {
-    color: #fff;
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #695CFE;
-}
-
-/* --- RESPONSIVE --- */
+/* Móvil */
 @media (max-width: 768px) {
-    .search-box input {
-        width: 100px; /* Más pequeño en tablet */
-    }
-    .user-info {
-        display: none; /* Solo muestra avatar en móvil */
-    }
+    .search-box { width: 40px; padding: 0; justify-content: center; background: transparent; }
+    .search-box input { display: none; }
+    .search-box i { font-size: 24px; color: var(--nav-text); }
+    .user-info { display: none; }
 }

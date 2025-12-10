@@ -1,0 +1,43 @@
+.community-container {
+    padding: 100px 40px 40px 40px;
+    color: white;
+}
+
+.feed-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+.post-card {
+    background: rgba(30, 30, 30, 0.6);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.user-avatar-small {
+    width: 40px; height: 40px; border-radius: 50%;
+}
+
+.post-actions {
+    display: flex; gap: 20px; margin-top: 15px; color: #aaa;
+}
+.post-actions span { cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.post-actions span:hover { color: #695CFE; }
+
+.trends-box {
+    background: rgba(30, 30, 30, 0.6);
+    padding: 20px;
+    border-radius: 15px;
+    height: fit-content;
+}
+.trend-item { margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }

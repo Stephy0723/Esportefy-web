@@ -1,75 +1,109 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
-import videoBg from '../../assets/video/inicio.mp4'; 
+
+// Imagen lateral (Asegúrate de que la ruta sea correcta)
+import sideImage from '../../assets/images/login-bg.jpg'; 
 
 const Login = () => {
-  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+  
+  // ESTADOS PARA LA LÓGICA DE UI
+  const [showPassword, setShowPassword] = useState(false); // Ver/Ocultar pass
+  const [rememberMe, setRememberMe] = useState(false);     // Checkbox
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Simulación de login
+    const fakeUser = { id: 1, name: "GamerPro", avatar: "..." };
     
-    // --- SIMULACIÓN DE LOGIN EXITOSO ---
-    console.log("Iniciando sesión...");
-
-    // 1. Creamos un usuario falso (esto vendría de tu base de datos real)
-    const fakeUser = {
-      id: 1,
-      name: "GamerPro_99",
-      avatar: "https://i.pravatar.cc/150?img=52" // Una foto de robot/gamer aleatoria
-    };
-
-    // 2. Guardamos este usuario en la memoria del navegador (localStorage)
-    // Esto funciona como una "cookie" para recordar que está logueado.
-    localStorage.setItem('esportefyUser', JSON.stringify(fakeUser));
-
-    // 3. Redirigimos al Home
+    if(rememberMe) {
+        localStorage.setItem('esportefyUser', JSON.stringify(fakeUser));
+    } else {
+        sessionStorage.setItem('esportefyUser', JSON.stringify(fakeUser));
+    }
+    
     navigate('/');
-    // Opcional: Recargar la página para que el Navbar detecte el cambio inmediatamente si es necesario
-    // window.location.reload(); 
   };
 
   return (
-    <div className="auth-container">
-      <video src={videoBg} autoPlay muted loop className="auth-bg-video" />
-      <div className="auth-box">
-        <Link to="/" className="close-btn"><i className='bx bx-x'></i></Link>
-        <div className="auth-header">
-          <i className='bx bx-joystick bx-tada'></i>
-          <h2>Bienvenido</h2>
-          <p>Inicia sesión para continuar tu legado.</p>
+    <div className="auth-container-split">
+      
+      {/* SECCIÓN IZQUIERDA: FORMULARIO */}
+      <div className="auth-left">
+        <div className="auth-nav">
+            <span className="brand">ESPORTEFY<span className="dot">.</span></span>
+            <div className="nav-links">
+                <Link to="/">Inicio</Link>
+                <Link to="/register" className="active">Unirse</Link>
+            </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label>Correo Electrónico</label>
-            <i className='bx bx-envelope'></i>
-            <input type="email" placeholder="usuario@ejemplo.com" className="input-field" required />
-          </div>
-          <div className="input-group">
-            <label>Contraseña</label>
-            <i className='bx bx-lock-alt'></i>
-            <input type="password" placeholder="••••••••" className="input-field" required />
-          </div>
-          <div className="options-row">
-            <div className="remember-me">
-              <input 
-                type="checkbox" 
-                id="remember" 
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              <label htmlFor="remember">Recordar contraseña</label>
+        <div className="auth-content">
+            {/* TEXTOS PROFESIONALES GAMING */}
+            <div className="header-text">
+                <span className="badge-pro">PRO ACCESS</span>
+                <h1>Bienvenido<br/>de nuevo<span className="dot">.</span></h1>
+                <p className="subtitle">Gestiona tus torneos. Domina la arena.</p>
             </div>
-            <a href="#" className="forgot-link">¿Olvidaste tu contraseña?</a>
-          </div>
-          <button type="submit" className="auth-btn">Entrar</button>
-        </form>
-        <div className="auth-footer">
-          ¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link>
+
+            <form onSubmit={handleSubmit}>
+                <div className="input-row">
+                    <div className="input-wrapper">
+                        <label>Email Profesional</label>
+                        <input type="email" placeholder="usuario@team.com" required />
+                        <i className='bx bx-envelope'></i>
+                    </div>
+                </div>
+
+                <div className="input-row">
+                    <div className="input-wrapper">
+                        <label>Contraseña</label>
+                        <input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="••••••••" 
+                            required 
+                        />
+                        {/* ICONO DEL OJO FUNCIONAL */}
+                        <i 
+                            className={`bx ${showPassword ? 'bx-show' : 'bx-hide'} toggle-pass`}
+                            onClick={() => setShowPassword(!showPassword)}
+                            title={showPassword ? "Ocultar" : "Mostrar"}
+                        ></i>
+                    </div>
+                </div>
+
+                {/* FILA DE OPCIONES (CHECKBOX Y OLVIDÉ CONTRASEÑA) */}
+                <div className="options-row">
+                    <label className="remember-me">
+                        <input 
+                            type="checkbox" 
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                        />
+                        <span>Mantener sesión iniciada</span>
+                    </label>
+                    <Link to="/forgot" className="forgot-link">¿Recuperar cuenta?</Link>
+                </div>
+
+                <div className="form-actions">
+                    {/* BOTÓN ÚNICO Y POTENTE */}
+                    <button type="submit" className="btn-primary">ACCEDER A LA PLATAFORMA</button>
+                </div>
+                
+                <p className="footer-text">
+                    ¿Aún no tienes equipo? <Link to="/register">Crea tu cuenta de jugador</Link>
+                </p>
+            </form>
         </div>
       </div>
+
+      {/* SECCIÓN DERECHA */}
+      <div className="auth-right">
+        <div className="image-overlay"></div>
+        <img src={sideImage} alt="Esports Arena" />
+      </div>
+
     </div>
   );
 };

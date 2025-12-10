@@ -1,68 +1,85 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-// IMPORTA TUS COMPONENTES
+// COMPONENTES
 import Navbar from '../../components/Navbar/Navbar';
 import Sidebar from '../../components/Sidebar/Sidebar';
 import ImmersiveSection from '../../components/ImmersiveSection/ImmersiveSection';
 
-// IMPORTA TUS VIDEOS
+// VIDEOS (Asegúrate de que tus rutas estén bien)
 import videoInicio from '../../assets/video/inicio.mp4';
 import videoQuienes from '../../assets/video/quienes.mp4';
-import videoVision from '../../assets/video/vision.mp4';
+import videoVision from '../../assets/video/vision.mp4'; 
 import videoMision from '../../assets/video/.vision.mp4';
 
 const Home = () => {
+  const [isSidebarClosed, setIsSidebarClosed] = useState(true);
+  
+  // Cálculo para empujar el contenido cuando el menú se abre
+  const sidebarWidth = isSidebarClosed ? '88px' : '250px';
+
   return (
     <div className="home-container bg-[#121212]">
       
-      <Navbar />
-      <Sidebar /> 
+      {/* 1. SIDEBAR (Controlado) */}
+      <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
 
-      {/* --- 1. INICIO --- */}
-      {/* Botón bajará a "quienes" */}
-      <ImmersiveSection 
-        id="inicio"
-        videoSrc={videoInicio}
-        title="ESPORTEFY"
-        subtitle="Tu potencial, nuestra pasión"
-        text="Bienvenido a la revolución del entrenamiento deportivo. Aquí comienza tu viaje hacia la excelencia."
-        nextSection="quienes" 
-      />
+      {/* 2. CONTENIDO PRINCIPAL (Se mueve al abrir el menú) */}
+      <div 
+        className="main-content"
+        style={{ 
+          marginLeft: sidebarWidth, 
+          transition: 'all 0.5s ease', 
+          width: `calc(100% - ${sidebarWidth})` 
+        }}
+      >
+        {/* NAVBAR SUPERIOR */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 90 }}>
+           <Navbar />
+        </div>
 
-      {/* --- 2. QUIÉNES SOMOS --- */}
-      {/* Botón bajará a "vision" */}
-      <ImmersiveSection 
-        id="quienes"
-        videoSrc={videoQuienes}
-        title="Quiénes Somos"
-        subtitle="Nuestra Identidad"
-        text="Somos una organización dedicada al deporte y al desarrollo integral. Nacimos con la idea de transformar el entrenamiento en una experiencia de vida única."
-        nextSection="vision"
-        align="right" // Alineamos a la derecha para variar
-      />
+        {/* --- SECCIÓN 1: BIENVENIDA (CON BOTONES) --- */}
+        <ImmersiveSection 
+          id="inicio"
+          videoSrc={videoInicio}
+          title="ESPORTEFY"
+          subtitle="Bienvenido a la Revolución"
+          text="La plataforma definitiva para gestionar tu carrera eSports. Únete a torneos, encuentra equipos y demuestra tu nivel."
+          showAuthButtons={true} // <--- ¡ESTO ES LO QUE HACE QUE SALGAN LOS BOTONES!
+          nextSection="quienes"
+        />
 
-      {/* --- 3. VISIÓN --- */}
-      {/* Botón bajará a "mision" */}
-      <ImmersiveSection 
-        id="vision"
-        videoSrc={videoVision}
-        title="Nuestra Visión"
-        subtitle="El Futuro"
-        text="Ser reconocidos globalmente como la plataforma líder en innovación deportiva, inspirando a millones a superar sus propios límites cada día."
-        nextSection="mision"
-      />
+        {/* --- SECCIÓN 2: QUIÉNES SOMOS --- */}
+        <ImmersiveSection 
+          id="quienes"
+          videoSrc={videoQuienes}
+          title="Quiénes Somos"
+          subtitle="Nuestra Identidad"
+          text="Somos una organización nacida de la pasión por el gaming competitivo. Transformamos jugadores casuales en leyendas profesionales."
+          align="right" // Texto a la derecha para variar
+          nextSection="valores"
+        />
 
-      {/* --- 4. MISIÓN --- */}
-      {/* Sin botón nextSection porque es el final */}
-      <ImmersiveSection 
-        id="mision"
-        videoSrc={videoMision}
-        title="Nuestra Misión"
-        subtitle="El Propósito"
-        text="Proveer herramientas y conocimientos de vanguardia para atletas y entusiastas, fomentando una comunidad basada en la disciplina y el respeto."
-        align="right"
-      />
+        {/* --- SECCIÓN 3: VALORES (Nueva sección que pediste) --- */}
+        <ImmersiveSection 
+          id="valores"
+          videoSrc={videoVision} 
+          title="Nuestros Valores"
+          subtitle="Lo que nos define"
+          text="Disciplina, Respeto y Competitividad. Creemos en el juego limpio y en construir una comunidad sana donde el talento brille."
+          nextSection="mision"
+        />
 
+        {/* --- SECCIÓN 4: MISIÓN --- */}
+        <ImmersiveSection 
+          id="mision"
+          videoSrc={videoMision}
+          title="Nuestra Misión"
+          subtitle="El Objetivo"
+          text="Proveer la infraestructura tecnológica necesaria para que cualquier gamer, en cualquier lugar, pueda alcanzar el profesionalismo."
+          align="right"
+        />
+
+      </div>
     </div>
   );
 };

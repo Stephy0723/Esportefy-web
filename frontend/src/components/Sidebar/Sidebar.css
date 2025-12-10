@@ -1,169 +1,258 @@
 /* ========================================= */
-/* CONFIGURACIÓN BASE & VARIABLES            */
+/* 1. VARIABLES GLOBALES                     */
 /* ========================================= */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
 :root {
-    --primary-color: #695CFE;
-    --text-color: #E0E0E0;
+    /* MODO CLARO (Default) */
+    --sidebar-bg: #ffffff;
+    --sidebar-border: rgba(0,0,0,0.1);
     
-    /* AQUÍ ESTÁ EL TRUCO: 0.2 es muy transparente, 0.9 es sólido */
-    --bg-glass: rgba(0, 0, 0, 0.2); 
-    --bg-hover: rgba(255, 255, 255, 0.1);
+    --text-color: #707070;        
+    --text-hover: #000000;        
+    
+    --toggle-bg: #F0F0F0;         
+    --toggle-icon: #333333;       
+
+    /* MARCAS NEÓN */
+    --brand-green: #8EDB15;
+    --neon-blue: #00f2ff;
+    --neon-gold: #ffcc00;
+    --neon-purple: #bd00ff;
+    --neon-red: #ff0055;
+    --neon-orange: #ff5e00;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+/* MODO OSCURO (Automático con body.dark) */
+body.dark {
+    --sidebar-bg: rgba(20, 20, 20, 0.95); 
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    
+    --text-color: #cccccc;        
+    --text-hover: #ffffff;        
+    
+    --toggle-bg: rgba(255, 255, 255, 0.1);
+    --toggle-icon: #cccccc;
+}
 
 /* ========================================= */
-/* SIDEBAR (VIDRIO REAL)                     */
+/* 2. ESTRUCTURA PRINCIPAL                   */
 /* ========================================= */
 .sidebar {
     position: fixed;
     top: 0; left: 0;
-    height: 100%;
+    height: 100vh;
     width: 250px;
     padding: 10px 14px;
-    
-    /* FONDO TRANSPARENTE + BORROSO */
-    background: var(--bg-glass);
-    backdrop-filter: blur(8px); /* Esto hace que lo de atrás se vea borroso pero visible */
-    -webkit-backdrop-filter: blur(8px); /* Para Safari */
-    
-    border-right: 1px solid rgba(255, 255, 255, 0.1); /* Borde sutil */
-    display: flex; flex-direction: column;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
     transition: all 0.5s ease;
-    z-index: 100;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .sidebar.close { width: 88px; }
 
-/* --- TEXTOS --- */
-.sidebar .text {
-    font-size: 16px; font-weight: 500; color: var(--text-color);
-    transition: all 0.3s ease; white-space: nowrap; opacity: 1;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8); /* Sombra para leer mejor sobre video */
+/* ========================================= */
+/* 3. HEADER (Lógica de Logos Dobles)        */
+/* ========================================= */
+.sidebar header { 
+    position: relative; margin-bottom: 20px; flex-shrink: 0; 
+    display: flex; align-items: center; 
 }
-.sidebar.close .text { opacity: 0; display: none; }
 
-/* --- HEADER --- */
-.sidebar header { position: relative; }
-.sidebar .image-text { display: flex; align-items: center; }
-.sidebar .image { min-width: 60px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
-
-.sidebar .logo-text { display: flex; flex-direction: column; }
-.name { font-size: 18px; font-weight: 600; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-.profession { font-size: 13px; color: #ccc; }
-
-.sidebar .toggle {
-    position: absolute; top: 50%; right: -25px; transform: translateY(-50%) rotate(180deg);
-    height: 25px; width: 25px; background-color: var(--primary-color); color: #fff;
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 22px; cursor: pointer; transition: all 0.5s ease;
+.sidebar .image-text { 
+    display: flex; align-items: center; gap: 10px; 
 }
-.sidebar.close .toggle { transform: translateY(-50%) rotate(0deg); }
 
-/* --- MENÚ --- */
-.sidebar .menu { margin-top: 30px; }
+.sidebar .image {
+    min-width: 60px; height: 60px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    position: relative; /* Importante para superponer si quisieras transición */
+}
+
+/* --- ESTILOS BASE DE LOS LOGOS --- */
+.sidebar-logo {
+    width: 40px; height: 40px; 
+    object-fit: contain; 
+    display: none; /* OCULTAS POR DEFECTO */
+}
+
+/* --- LÓGICA DE VISIBILIDAD (EL TRUCO) --- */
+
+/* 1. MODO CLARO (body NO tiene .dark) */
+/* Buscamos el logo-light dentro de un sidebar que NO está en body.dark */
+body:not(.dark) .sidebar .logo-light {
+    display: block; 
+}
+
+/* 2. MODO OSCURO (body TIENE .dark) */
+body.dark .sidebar .logo-dark {
+    display: block;
+}
+
+/* ------------------------------------- */
+
+.sidebar .header-info { display: flex; flex-direction: column; opacity: 1; transition: 0.3s; }
+.sidebar .name { font-size: 18px; font-weight: 700; color: var(--text-hover); white-space: nowrap; }
+.sidebar .profession { font-size: 12px; color: var(--brand-green); white-space: nowrap; }
+
+.sidebar.close .header-info { opacity: 0; pointer-events: none; display: none; }
+
+/* ========================================= */
+/* 4. MENÚ DE NAVEGACIÓN                     */
+/* ========================================= */
+.sidebar .menu-bar {
+    height: 100%;
+    display: flex; flex-direction: column;
+    overflow-y: auto; overflow-x: hidden;
+}
+.menu-bar::-webkit-scrollbar { display: none; }
+
 .sidebar li { height: 50px; list-style: none; display: flex; align-items: center; margin-top: 10px; }
 
 .sidebar li a {
-    list-style: none; height: 100%; width: 100%; background-color: transparent;
+    list-style: none; height: 100%; width: 100%;
     display: flex; align-items: center; text-decoration: none; border-radius: 6px;
-    transition: all 0.3s ease;
+    transition: 0.3s ease;
 }
 
-/* Iconos blancos y con sombra para resaltar sobre video */
 .sidebar li .icon {
-    min-width: 60px; font-size: 20px; display: flex; align-items: center; justify-content: center;
-    color: var(--text-color); transition: all 0.3s ease;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); 
-}
-
-/* Hover Effects */
-.sidebar li a:hover { background-color: var(--bg-hover); }
-.sidebar li a:hover .icon, .sidebar li a:hover .text { color: #fff; }
-/* Colores específicos de tus botones */
-.sidebar li:nth-child(1) a:hover .icon { color: #FF5733; }
-.sidebar li:nth-child(2) a:hover .icon { color: #2ecc71; }
-.sidebar li:nth-child(3) a:hover .icon { color: #2ecc71; }
-.sidebar li:nth-child(4) a:hover .icon { color: #2ecc71; }
-.sidebar li:nth-child(5) a:hover .icon { color: #2ecc71; }
-.sidebar li:nth-child(6) a:hover .icon { color: #2ecc71; }
-.sidebar li:nth-child(7) a:hover .icon { color: #2ecc71; }
-/* ... etc ... */
-
-/* --- BOTTOM CONTENT --- */
-.sidebar .menu-bar { height: 100%; display: flex; flex-direction: column; justify-content: space-between; overflow-y: scroll; }
-.menu-bar::-webkit-scrollbar { display: none; }
-
-.bottom-content .social-media {
-    border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px; padding-top: 10px;
-}
-.sidebar.close .social-media { display: none; }
-.social-trigger {display: none;}
-
-.social-icons { display: flex; justify-content: center; gap: 5px; flex-wrap: wrap; }
-.social-icons a {
+    min-width: 60px; font-size: 20px;
     display: flex; align-items: center; justify-content: center;
-    height: 35px; width: 35px; border-radius: 50%; background: rgba(0,0,0,0.3); color: #ccc;
-    font-size: 18px; transition: 0.3s;
+    color: var(--text-color); transition: 0.3s ease;
 }
-.social-icons a:hover { background: var(--primary-color); color: white; }
 
-/* --- ESTADO 2: MENÚ CERRADO (.close) --- */
-/* Cuando se cierra, MOSTRAMOS el icono de compartir centrado */
-.sidebar.close .social-trigger {
+.sidebar li .text {
+    font-size: 16px; font-weight: 500; color: var(--text-color);
+    white-space: nowrap; opacity: 1; transition: 0.3s;
+}
+.sidebar.close .text { opacity: 0; }
+
+/* HOVERS */
+.sidebar li:hover .icon, .sidebar li:hover .text { color: var(--text-hover); }
+
+/* Colores específicos */
+.sidebar li:nth-child(1) a:hover { background: rgba(0, 242, 255, 0.1); }
+.sidebar li:nth-child(1) a:hover * { color: var(--neon-blue) !important; }
+
+.sidebar li:nth-child(2) a:hover { background: rgba(255, 204, 0, 0.1); }
+.sidebar li:nth-child(2) a:hover * { color: var(--neon-gold) !important; }
+
+.sidebar li:nth-child(3) a:hover { background: rgba(189, 0, 255, 0.1); }
+.sidebar li:nth-child(3) a:hover * { color: var(--neon-purple) !important; }
+
+.sidebar li:nth-child(4) a:hover { background: rgba(0, 242, 255, 0.1); }
+.sidebar li:nth-child(4) a:hover * { color: var(--neon-blue) !important; }
+
+.sidebar li:nth-child(5) a:hover { background: rgba(255, 0, 85, 0.1); }
+.sidebar li:nth-child(5) a:hover * { color: var(--neon-red) !important; }
+
+.sidebar li:nth-child(6) a:hover { background: rgba(255, 94, 0, 0.1); }
+.sidebar li:nth-child(6) a:hover * { color: var(--neon-orange) !important; }
+
+.sidebar li:nth-child(7) a:hover { background: rgba(142, 219, 21, 0.1); }
+.sidebar li:nth-child(7) a:hover * { color: var(--brand-green) !important; }
+
+
+/* ========================================= */
+/* 5. FOOTER (Redes Sociales + Cerrar Sesión + Toggle) */
+/* ========================================= */
+.bottom-content {
+    margin-top: auto; border-top: 1px solid var(--sidebar-border); padding-top: 10px;
+}
+
+/* --- REDES SOCIALES (NUEVO ARREGLADO) --- */
+.social-media {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    width: 100%;
-    cursor: pointer;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    transition: 0.3s ease;
 }
 
-/* Estilo del icono de compartir */
-.sidebar.close .social-trigger i {
-    font-size: 24px;
-    color: var(--text-color);
+/* Icono de "Compartir" (Trigger) */
+.social-trigger {
+    display: none; /* Oculto por defecto si el menú está abierto */
+    font-size: 20px; color: var(--text-color);
+    cursor: pointer; margin-bottom: 5px;
+}
+
+/* Lista de Iconos */
+.social-icons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 1;
     transition: 0.3s;
 }
-.sidebar.close .social-trigger:hover i {
-    color: var(--primary-color);
-    transform: scale(1.1);
+
+.social-icons a {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--toggle-bg); color: var(--text-color);
+    font-size: 18px; transition: 0.3s;
+    text-decoration: none;
 }
 
-/* --- MODO OSCURO --- */
+.social-icons a:hover {
+    background: var(--brand-green);
+    color: #000;
+    transform: translateY(-2px);
+}
+
+/* Comportamiento cuando se cierra el sidebar */
+.sidebar.close .social-icons {
+    display: none; /* Ocultamos los iconos individuales */
+}
+
+.sidebar.close .social-trigger {
+    display: flex; /* Mostramos solo el icono de compartir */
+    justify-content: center; width: 100%;
+}
+.sidebar.close .social-trigger:hover { color: var(--brand-green); }
+
+
+/* --- BOTÓN DE MODO OSCURO --- */
 .sidebar .mode {
-    border-radius: 6px; background-color: rgba(0,0,0,0.3); /* Fondo semitransparente */
-    position: relative; transition: all 0.5s ease; margin-top: 10px;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0; height: 50px; cursor: pointer; overflow: hidden;
+    border-radius: 6px; background-color: var(--toggle-bg);
+    position: relative; transition: 0.3s ease; margin-top: 10px;
+    display: flex; align-items: center; padding: 0; cursor: pointer;
 }
+
 .sidebar .mode .sun-moon {
-    height: 100%; width: 60px; min-width: 60px;
-    display: flex; align-items: center; justify-content: center; position: relative;
+    height: 50px; width: 60px; min-width: 60px;
+    display: flex; align-items: center; justify-content: center;
 }
-.sidebar .mode .sun-moon i { position: absolute; transition: all 0.3s ease; font-size: 20px; }
-.sidebar .mode .sun-moon i.sun { opacity: 0; transform: rotate(90deg); }
-.sidebar .mode .sun-moon i.moon { opacity: 1; transform: rotate(0deg); }
-body.dark .sidebar .mode .sun-moon i.sun { opacity: 1; transform: rotate(0deg); color: #fff; }
-body.dark .sidebar .mode .sun-moon i.moon { opacity: 0; transform: rotate(90deg); }
+.sidebar .mode .sun-moon i { position: absolute; transition: 0.3s; font-size: 20px; }
 
-.sidebar .mode .mode-text { font-size: 14px; font-weight: 500; color: var(--text-color); flex-grow: 1; }
+.sidebar .mode .sun-moon i.sun { opacity: 1; transform: rotate(0deg); color: var(--toggle-icon); }
+.sidebar .mode .sun-moon i.moon { opacity: 0; transform: rotate(90deg); color: var(--toggle-icon); }
 
-.sidebar .toggle-switch {
-    height: 100%; width: 60px; min-width: 60px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
+body.dark .sidebar .mode .sun-moon i.sun { opacity: 0; transform: rotate(90deg); }
+body.dark .sidebar .mode .sun-moon i.moon { opacity: 1; transform: rotate(0deg); color: var(--brand-green); }
+
+.sidebar .mode .mode-text {
+    font-size: 14px; font-weight: 500; color: var(--text-color);
 }
-.sidebar .toggle-switch .switch {
+
+.sidebar .mode .toggle-switch {
+    position: absolute; right: 0; height: 100%; min-width: 60px;
+    display: flex; align-items: center; justify-content: center;
+}
+.sidebar .mode .switch {
     position: relative; height: 22px; width: 40px; border-radius: 25px;
-    background-color: #aaa; transition: all 0.5s ease;
+    background-color: #ccc; transition: 0.3s;
 }
-.sidebar .switch::before {
+.sidebar .mode .switch::before {
     content: ''; position: absolute; height: 15px; width: 15px; border-radius: 50%;
-    top: 50%; left: 5px; transform: translateY(-50%);
-    background-color: #fff; transition: all 0.4s ease;
+    top: 50%; left: 4px; transform: translateY(-50%);
+    background-color: #fff; transition: 0.3s;
 }
-body.dark .sidebar .switch { background-color: var(--primary-color); }
-body.dark .sidebar .switch::before { left: 20px; }
-.sidebar.close .toggle-switch { display: none; }
+
+body.dark .sidebar .mode .switch { background-color: var(--brand-green); }
+body.dark .sidebar .mode .switch::before { left: 20px; background-color: #000; }
+
+.sidebar.close .mode-text, .sidebar.close .toggle-switch { display: none; }

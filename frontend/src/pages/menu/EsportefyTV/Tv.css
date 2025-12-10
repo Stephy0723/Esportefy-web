@@ -1,0 +1,24 @@
+.tv-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.tv-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+  min-height: 320px;
+}
+
+.tv-placeholder {
+  color: rgba(230,238,248,0.7);
+}
+
+.tv-schedule {
+  margin-top: 12px;
+  color: rgba(230,238,248,0.75);
+}
