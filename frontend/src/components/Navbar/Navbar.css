@@ -1,166 +1,162 @@
 /* ========================================= */
-/* VARIABLES DE COLOR (DINÁMICAS)            */
+/* 1. SISTEMA DE TEMAS (VARIABLES DINÁMICAS) */
 /* ========================================= */
 :root {
-    --brand-green: #8EDB15;
-    
-    /* MODO CLARO (Por defecto) */
-    /* Cuando bajas: Fondo Blanco semitransparente */
-    --nav-scroll-bg: rgba(255, 255, 255, 0.95); 
-    --nav-border: rgba(0, 0, 0, 0.05);
-    --nav-text: #333;       /* Texto oscuro */
-    --nav-icon: #555;
-    
-    /* Elementos internos */
-    --search-bg: rgba(0, 0, 0, 0.05);
+  --brand-green: #8EDB15;
+  
+  /* MODO CLARO (Por defecto) */
+  --text-color: #18181b;          
+  --text-muted: #71717a;          
+  --bg-scrolled: rgba(255, 255, 255, 0.95); 
+  --border-color: rgba(0, 0, 0, 0.1);
+  --search-bg: rgba(0, 0, 0, 0.05); 
+  --search-focus: rgba(255, 255, 255, 1);
+  --shadow-scroll: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
+/* MODO OSCURO */
 body.dark {
-    /* MODO OSCURO (Activado) */
-    /* Cuando bajas: Fondo Negro semitransparente */
-    --nav-scroll-bg: rgba(18, 18, 18, 0.95);
-    --nav-border: rgba(255, 255, 255, 0.05);
-    --nav-text: #fff;       /* Texto blanco */
-    --nav-icon: #ccc;
-    
-    /* Elementos internos */
-    --search-bg: rgba(255, 255, 255, 0.05);
+  --text-color: #ffffff;
+  --text-muted: #a1a1aa;
+  --bg-scrolled: rgba(24, 24, 27, 0.95); 
+  --border-color: rgba(255, 255, 255, 0.1);
+  --search-bg: rgba(255, 255, 255, 0.1);
+  --search-focus: rgba(0, 0, 0, 0.5);
+  --shadow-scroll: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Transición suave para todo el sitio */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ========================================= */
-/* NAVBAR BASE (ESTADO INICIAL: ARRIBA)      */
+/* 2. NAVBAR CONFIGURACIÓN MAESTRA           */
 /* ========================================= */
 .navbar {
-    /* POSICIÓN: Sticky para que el menú lo empuje */
-    position: sticky; 
-    top: 0;
-    width: 100%;
-    z-index: 90;
-    padding: 15px 0;
-    
-    /* --- TRANSPARENCIA TOTAL AL INICIO --- */
-    /* Usamos !important para asegurar que nada lo sobrescriba */
-    background: transparent !important; 
-    border-bottom: 1px solid transparent;
-    box-shadow: none;
-    
-    transition: all 0.4s ease;
-    display: block;
+  /* 1. STICKY: Para que se mueva junto con el layout al abrir el menú */
+  position: sticky; 
+  top: 0;
+  width: 100%;
+  padding: 20px 0;
+  
+  /* 2. Z-INDEX: Menor que el Sidebar (1000) pero mayor que el contenido */
+  z-index: 900; 
+  
+  /* 3. TRANSPARENCIA REAL: */
+  /* Esto "tira" el contenido hacia arriba para que quede DEBAJO de la barra */
+  margin-bottom: -103px; 
+  
+  /* Estado inicial transparente */
+  background-color: transparent; 
+  border-bottom: 1px solid transparent;
+  
+  transition: all 0.3s ease-in-out;
 }
 
 /* ========================================= */
-/* NAVBAR SCROLLED (ESTADO AL BAJAR)         */
+/* ESTADO SCROLL (Se activa con JS)          */
 /* ========================================= */
 .navbar.scrolled {
-    /* AQUI SÍ APLICAMOS EL COLOR DE FONDO */
-    background: var(--nav-scroll-bg) !important;
-    
-    /* Efectos extra */
-    backdrop-filter: blur(12px); /* Efecto vidrio */
-    padding: 10px 0; /* Se hace un poco más pequeño */
-    border-bottom: 1px solid var(--nav-border);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  background-color: var(--bg-scrolled);
+  backdrop-filter: blur(10px);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-scroll);
+  
+  /* Al hacer scroll, mantenemos el margen negativo o lo ajustamos si es necesario */
+  /* Normalmente se deja igual para evitar saltos */
 }
 
-/* Contenedor interno */
+/* Contenedor */
 .navbar-container {
-    max-width: 95%;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex; justify-content: space-between; align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex; justify-content: space-between; align-items: center;
 }
 
-/* ========================================= */
-/* LOGO                                      */
-/* ========================================= */
+/* LOGO */
 .navbar-logo {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 24px; font-weight: 800; letter-spacing: 1px;
-    cursor: pointer; text-decoration: none;
-    color: var(--nav-text); /* Se adapta claro/oscuro */
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none;
+  font-size: 1.5rem; font-weight: 800;
+  color: var(--text-color); 
+}
+.navbar-logo i { font-size: 1.8rem; color: var(--brand-green); }
+.highlight { color: var(--brand-green); }
+
+/* SECCIÓN DERECHA */
+.navbar-actions {
+  display: flex; align-items: center; gap: 20px;
 }
 
-.navbar-logo i {
-    font-size: 28px;
-    color: var(--brand-green);
-    filter: drop-shadow(0 0 5px rgba(142, 219, 21, 0.5));
-}
-.navbar-logo .highlight { color: var(--brand-green); }
-
-/* ========================================= */
-/* BUSCADOR (Estilo Cápsula)                 */
-/* ========================================= */
+/* BUSCADOR */
 .search-box {
-    display: flex; align-items: center;
-    background: var(--search-bg);
-    border: 1px solid transparent;
-    border-radius: 50px;
-    padding: 0 15px; height: 40px; width: 240px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--search-bg); 
+  padding: 8px 15px;
+  border-radius: 50px;
+  display: flex; align-items: center;
+  transition: 0.3s;
 }
-
 .search-box:focus-within {
-    width: 300px;
-    background: var(--nav-scroll-bg); /* Se adapta al fondo actual */
-    border-color: var(--brand-green);
-    box-shadow: 0 0 15px rgba(142, 219, 21, 0.2);
+  background: var(--search-focus);
+  box-shadow: 0 0 0 2px var(--brand-green);
 }
-
-.search-box i { color: var(--nav-icon); font-size: 18px; }
-.search-box:focus-within i { color: var(--brand-green); }
-
 .search-box input {
-    background: transparent; border: none; outline: none;
-    color: var(--nav-text); margin-left: 10px; width: 100%;
-    font-size: 14px; font-weight: 500; font-family: inherit;
+  background: transparent; border: none; outline: none;
+  color: var(--text-color); 
+  margin-left: 10px;
+}
+.search-box i { color: var(--text-muted); }
+
+/* BOTONES (Notificaciones) */
+.icon-btn, .notify-btn {
+  background: none; border: none;
+  color: var(--text-color); 
+  font-size: 1.5rem;
+  cursor: pointer;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s;
+}
+.icon-btn:hover, .notify-btn:hover { transform: scale(1.1); }
+
+.dot {
+  position: absolute; top: 0; right: 2px;
+  width: 8px; height: 8px;
+  background: red; border-radius: 50%;
+  border: 1px solid var(--bg-scrolled);
 }
 
-/* ========================================= */
-/* BOTONES Y PERFIL                          */
-/* ========================================= */
-.navbar-actions { display: flex; align-items: center; gap: 20px; }
-
-.notify-btn {
-    background: transparent; border: none;
-    width: 40px; height: 40px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--nav-icon); font-size: 22px; cursor: pointer;
-    transition: 0.3s;
-}
-.notify-btn:hover { background: var(--search-bg); }
-.notify-btn .dot {
-    position: absolute; top: 10px; right: 10px; height: 8px; width: 8px;
-    background: #ff0055; border-radius: 50%; border: 2px solid var(--nav-scroll-bg);
-}
-
-.auth-section {
-    padding-left: 15px; margin-left: 5px;
-    border-left: 1px solid var(--nav-border);
-    height: 30px; display: flex; align-items: center;
-}
-
-/* BOTÓN INGRESAR (VERDE) */
+/* BOTÓN INGRESAR */
 .login-btn {
-    text-decoration: none;
-    background-color: var(--brand-green);
-    color: #000; /* Texto negro para contraste */
-    padding: 10px 24px; border-radius: 50px;
-    font-size: 14px; font-weight: 800; text-transform: uppercase;
-    transition: 0.3s; box-shadow: 0 4px 15px rgba(142, 219, 21, 0.2);
+  background-color: var(--brand-green);
+  color: #000; 
+  padding: 8px 20px; border-radius: 20px;
+  text-decoration: none; font-weight: bold;
+  font-size: 0.9rem;
+  transition: transform 0.2s;
 }
-.login-btn:hover {
-    background-color: #fff; transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+.login-btn:hover { transform: scale(1.05); }
+
+/* PERFIL */
+.user-profile {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+}
+.user-info { text-align: right; }
+.username { 
+  display: block; font-weight: bold; font-size: 0.9rem; 
+  color: var(--text-color); 
+}
+.user-avatar {
+  width: 35px; height: 35px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--brand-green);
 }
 
-.user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-.user-info .username { color: var(--nav-text); font-weight: 700; font-size: 14px; }
-.user-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand-green); }
-
-/* Móvil */
+/* RESPONSIVE */
 @media (max-width: 768px) {
-    .search-box { width: 40px; padding: 0; justify-content: center; background: transparent; }
-    .search-box input { display: none; }
-    .search-box i { font-size: 24px; color: var(--nav-text); }
-    .user-info { display: none; }
+  .search-box input, .user-info { display: none; }
+  .search-box { background: transparent; padding: 0; }
+  .search-box i { font-size: 1.5rem; color: var(--text-color); }
 }

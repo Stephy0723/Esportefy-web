@@ -2,11 +2,10 @@
 /* 1. VARIABLES GLOBALES                     */
 /* ========================================= */
 :root {
-    /* MODO CLARO (Default) */
     --sidebar-bg: #ffffff;
     --sidebar-border: rgba(0,0,0,0.1);
     
-    --text-color: #707070;        
+    --text-color-sidebar: #707070;        
     --text-hover: #000000;        
     
     --toggle-bg: #F0F0F0;         
@@ -21,14 +20,11 @@
     --neon-orange: #ff5e00;
 }
 
-/* MODO OSCURO (Automático con body.dark) */
 body.dark {
     --sidebar-bg: rgba(20, 20, 20, 0.95); 
     --sidebar-border: rgba(255, 255, 255, 0.08);
-    
-    --text-color: #cccccc;        
+    --text-color-sidebar: #cccccc;        
     --text-hover: #ffffff;        
-    
     --toggle-bg: rgba(255, 255, 255, 0.1);
     --toggle-icon: #cccccc;
 }
@@ -45,7 +41,10 @@ body.dark {
     background: var(--sidebar-bg);
     border-right: 1px solid var(--sidebar-border);
     transition: all 0.5s ease;
-    z-index: 1000;
+    
+    /* Z-INDEX: Siempre por encima de todo */
+    z-index: 1000; 
+    
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -54,205 +53,159 @@ body.dark {
 .sidebar.close { width: 88px; }
 
 /* ========================================= */
-/* 3. HEADER (Lógica de Logos Dobles)        */
+/* 3. HEADER (ESTILO FOTO)                   */
 /* ========================================= */
-.sidebar header { 
-    position: relative; margin-bottom: 20px; flex-shrink: 0; 
-    display: flex; align-items: center; 
+.sidebar header {
+    position: relative;
+    margin: 10px 0 20px 0;
+    display: flex;
+    align-items: center;
+    /* Ajuste para que se vea centrado cuando está cerrado */
+    padding-left: 0; 
 }
 
-.sidebar .image-text { 
-    display: flex; align-items: center; gap: 10px; 
+.sidebar .image-text {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Separación entre logo y texto */
 }
 
+/* Contenedor del Icono/Imagen */
 .sidebar .image {
-    min-width: 60px; height: 60px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 6px;
-    position: relative; /* Importante para superponer si quisieras transición */
+    min-width: 60px; /* Ancho fijo para alineación al cerrar */
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
 }
 
-/* --- ESTILOS BASE DE LOS LOGOS --- */
+/* Opción A: Imagen PNG */
 .sidebar-logo {
-    width: 40px; height: 40px; 
-    object-fit: contain; 
-    display: none; /* OCULTAS POR DEFECTO */
+    width: 45px; 
+    height: 45px;
+    object-fit: contain;
 }
 
-/* --- LÓGICA DE VISIBILIDAD (EL TRUCO) --- */
-
-/* 1. MODO CLARO (body NO tiene .dark) */
-/* Buscamos el logo-light dentro de un sidebar que NO está en body.dark */
-body:not(.dark) .sidebar .logo-light {
-    display: block; 
+/* Opción B: Icono (Fallback) */
+.logo-icon {
+    font-size: 36px;
+    color: var(--brand-green); 
+    filter: drop-shadow(0 0 5px rgba(142, 219, 21, 0.4));
 }
 
-/* 2. MODO OSCURO (body TIENE .dark) */
-body.dark .sidebar .logo-dark {
-    display: block;
+/* TEXTOS: ESPORTEFY + Pro Gaming */
+.sidebar .header-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    opacity: 1;
+    transition: 0.3s;
+    white-space: nowrap; /* Evita que el texto se rompa */
 }
 
-/* ------------------------------------- */
+.sidebar .name {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text-hover);
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
 
-.sidebar .header-info { display: flex; flex-direction: column; opacity: 1; transition: 0.3s; }
-.sidebar .name { font-size: 18px; font-weight: 700; color: var(--text-hover); white-space: nowrap; }
-.sidebar .profession { font-size: 12px; color: var(--brand-green); white-space: nowrap; }
+.sidebar .profession {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-color-sidebar);
+    margin-top: -2px;
+}
 
-.sidebar.close .header-info { opacity: 0; pointer-events: none; display: none; }
+/* Ocultar textos al cerrar */
+.sidebar.close .header-info {
+    opacity: 0;
+    pointer-events: none;
+    display: none;
+}
+
+/* TOGGLE (Flecha) */
+.sidebar .toggle {
+    position: absolute;
+    top: 50%;
+    right: -25px;
+    transform: translateY(-50%) rotate(180deg);
+    height: 25px; width: 25px;
+    background-color: var(--brand-green);
+    color: #000;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer;
+    transition: 0.3s ease;
+    display: none; /* Opcional: Ocultar flecha si usas clic en barra */
+}
+.sidebar.close .toggle { transform: translateY(-50%) rotate(0deg); }
+
 
 /* ========================================= */
-/* 4. MENÚ DE NAVEGACIÓN                     */
+/* 4. MENÚ Y LISTAS                          */
 /* ========================================= */
-.sidebar .menu-bar {
-    height: 100%;
-    display: flex; flex-direction: column;
-    overflow-y: auto; overflow-x: hidden;
-}
+.sidebar .menu-bar { height: 100%; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
 .menu-bar::-webkit-scrollbar { display: none; }
 
 .sidebar li { height: 50px; list-style: none; display: flex; align-items: center; margin-top: 10px; }
+.sidebar li a { list-style: none; height: 100%; width: 100%; display: flex; align-items: center; text-decoration: none; border-radius: 6px; transition: 0.3s ease; }
 
-.sidebar li a {
-    list-style: none; height: 100%; width: 100%;
-    display: flex; align-items: center; text-decoration: none; border-radius: 6px;
-    transition: 0.3s ease;
+.sidebar li .icon { 
+    min-width: 60px; 
+    font-size: 20px; 
+    display: flex; align-items: center; justify-content: center; 
+    color: var(--text-color-sidebar); 
+    transition: 0.3s ease; 
 }
-
-.sidebar li .icon {
-    min-width: 60px; font-size: 20px;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-color); transition: 0.3s ease;
-}
-
-.sidebar li .text {
-    font-size: 16px; font-weight: 500; color: var(--text-color);
-    white-space: nowrap; opacity: 1; transition: 0.3s;
+.sidebar li .text { 
+    font-size: 16px; font-weight: 500; 
+    color: var(--text-color-sidebar); 
+    white-space: nowrap; 
+    opacity: 1; transition: 0.3s; 
 }
 .sidebar.close .text { opacity: 0; }
 
-/* HOVERS */
 .sidebar li:hover .icon, .sidebar li:hover .text { color: var(--text-hover); }
 
-/* Colores específicos */
-.sidebar li:nth-child(1) a:hover { background: rgba(0, 242, 255, 0.1); }
-.sidebar li:nth-child(1) a:hover * { color: var(--neon-blue) !important; }
-
-.sidebar li:nth-child(2) a:hover { background: rgba(255, 204, 0, 0.1); }
-.sidebar li:nth-child(2) a:hover * { color: var(--neon-gold) !important; }
-
-.sidebar li:nth-child(3) a:hover { background: rgba(189, 0, 255, 0.1); }
-.sidebar li:nth-child(3) a:hover * { color: var(--neon-purple) !important; }
-
-.sidebar li:nth-child(4) a:hover { background: rgba(0, 242, 255, 0.1); }
-.sidebar li:nth-child(4) a:hover * { color: var(--neon-blue) !important; }
-
-.sidebar li:nth-child(5) a:hover { background: rgba(255, 0, 85, 0.1); }
-.sidebar li:nth-child(5) a:hover * { color: var(--neon-red) !important; }
-
-.sidebar li:nth-child(6) a:hover { background: rgba(255, 94, 0, 0.1); }
-.sidebar li:nth-child(6) a:hover * { color: var(--neon-orange) !important; }
-
-.sidebar li:nth-child(7) a:hover { background: rgba(142, 219, 21, 0.1); }
-.sidebar li:nth-child(7) a:hover * { color: var(--brand-green) !important; }
-
+/* Colores Hover */
+.sidebar li:nth-child(1) a:hover { background: rgba(0, 242, 255, 0.1); } .sidebar li:nth-child(1) a:hover * { color: var(--neon-blue) !important; }
+.sidebar li:nth-child(2) a:hover { background: rgba(255, 204, 0, 0.1); } .sidebar li:nth-child(2) a:hover * { color: var(--neon-gold) !important; }
+.sidebar li:nth-child(3) a:hover { background: rgba(189, 0, 255, 0.1); } .sidebar li:nth-child(3) a:hover * { color: var(--neon-purple) !important; }
+.sidebar li:nth-child(4) a:hover { background: rgba(0, 242, 255, 0.1); } .sidebar li:nth-child(4) a:hover * { color: var(--neon-blue) !important; }
+.sidebar li:nth-child(5) a:hover { background: rgba(255, 0, 85, 0.1); } .sidebar li:nth-child(5) a:hover * { color: var(--neon-red) !important; }
+.sidebar li:nth-child(6) a:hover { background: rgba(255, 94, 0, 0.1); } .sidebar li:nth-child(6) a:hover * { color: var(--neon-orange) !important; }
+.sidebar li:nth-child(7) a:hover { background: rgba(142, 219, 21, 0.1); } .sidebar li:nth-child(7) a:hover * { color: var(--brand-green) !important; }
 
 /* ========================================= */
-/* 5. FOOTER (Redes Sociales + Cerrar Sesión + Toggle) */
+/* 5. FOOTER (Redes, Salir, Modo)            */
 /* ========================================= */
-.bottom-content {
-    margin-top: auto; border-top: 1px solid var(--sidebar-border); padding-top: 10px;
-}
+.bottom-content { margin-top: auto; border-top: 1px solid var(--sidebar-border); padding-top: 10px; }
 
-/* --- REDES SOCIALES (NUEVO ARREGLADO) --- */
-.social-media {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 10px;
-    transition: 0.3s ease;
-}
+.social-media { display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; transition: 0.3s ease; }
+.social-trigger { display: none; font-size: 20px; color: var(--text-color-sidebar); cursor: pointer; margin-bottom: 5px; }
+.social-icons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; opacity: 1; transition: 0.3s; }
+.social-icons a { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--toggle-bg); color: var(--text-color-sidebar); font-size: 18px; transition: 0.3s; text-decoration: none; }
+.social-icons a:hover { background: var(--brand-green); color: #000; transform: translateY(-2px); }
 
-/* Icono de "Compartir" (Trigger) */
-.social-trigger {
-    display: none; /* Oculto por defecto si el menú está abierto */
-    font-size: 20px; color: var(--text-color);
-    cursor: pointer; margin-bottom: 5px;
-}
-
-/* Lista de Iconos */
-.social-icons {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-    opacity: 1;
-    transition: 0.3s;
-}
-
-.social-icons a {
-    display: flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; border-radius: 50%;
-    background: var(--toggle-bg); color: var(--text-color);
-    font-size: 18px; transition: 0.3s;
-    text-decoration: none;
-}
-
-.social-icons a:hover {
-    background: var(--brand-green);
-    color: #000;
-    transform: translateY(-2px);
-}
-
-/* Comportamiento cuando se cierra el sidebar */
-.sidebar.close .social-icons {
-    display: none; /* Ocultamos los iconos individuales */
-}
-
-.sidebar.close .social-trigger {
-    display: flex; /* Mostramos solo el icono de compartir */
-    justify-content: center; width: 100%;
-}
+.sidebar.close .social-icons { display: none; }
+.sidebar.close .social-trigger { display: flex; justify-content: center; width: 100%; }
 .sidebar.close .social-trigger:hover { color: var(--brand-green); }
 
-
-/* --- BOTÓN DE MODO OSCURO --- */
-.sidebar .mode {
-    border-radius: 6px; background-color: var(--toggle-bg);
-    position: relative; transition: 0.3s ease; margin-top: 10px;
-    display: flex; align-items: center; padding: 0; cursor: pointer;
-}
-
-.sidebar .mode .sun-moon {
-    height: 50px; width: 60px; min-width: 60px;
-    display: flex; align-items: center; justify-content: center;
-}
+.sidebar .mode { border-radius: 6px; background-color: var(--toggle-bg); position: relative; transition: 0.3s ease; margin-top: 10px; display: flex; align-items: center; padding: 0; cursor: pointer; }
+.sidebar .mode .sun-moon { height: 50px; width: 60px; min-width: 60px; display: flex; align-items: center; justify-content: center; }
 .sidebar .mode .sun-moon i { position: absolute; transition: 0.3s; font-size: 20px; }
-
 .sidebar .mode .sun-moon i.sun { opacity: 1; transform: rotate(0deg); color: var(--toggle-icon); }
 .sidebar .mode .sun-moon i.moon { opacity: 0; transform: rotate(90deg); color: var(--toggle-icon); }
-
 body.dark .sidebar .mode .sun-moon i.sun { opacity: 0; transform: rotate(90deg); }
 body.dark .sidebar .mode .sun-moon i.moon { opacity: 1; transform: rotate(0deg); color: var(--brand-green); }
 
-.sidebar .mode .mode-text {
-    font-size: 14px; font-weight: 500; color: var(--text-color);
-}
-
-.sidebar .mode .toggle-switch {
-    position: absolute; right: 0; height: 100%; min-width: 60px;
-    display: flex; align-items: center; justify-content: center;
-}
-.sidebar .mode .switch {
-    position: relative; height: 22px; width: 40px; border-radius: 25px;
-    background-color: #ccc; transition: 0.3s;
-}
-.sidebar .mode .switch::before {
-    content: ''; position: absolute; height: 15px; width: 15px; border-radius: 50%;
-    top: 50%; left: 4px; transform: translateY(-50%);
-    background-color: #fff; transition: 0.3s;
-}
-
+.sidebar .mode .mode-text { font-size: 14px; font-weight: 500; color: var(--text-color-sidebar); }
+.sidebar .mode .toggle-switch { position: absolute; right: 0; height: 100%; min-width: 60px; display: flex; align-items: center; justify-content: center; }
+.sidebar .mode .switch { position: relative; height: 22px; width: 40px; border-radius: 25px; background-color: #ccc; transition: 0.3s; }
+.sidebar .mode .switch::before { content: ''; position: absolute; height: 15px; width: 15px; border-radius: 50%; top: 50%; left: 4px; transform: translateY(-50%); background-color: #fff; transition: 0.3s; }
 body.dark .sidebar .mode .switch { background-color: var(--brand-green); }
 body.dark .sidebar .mode .switch::before { left: 20px; background-color: #000; }
-
 .sidebar.close .mode-text, .sidebar.close .toggle-switch { display: none; }
