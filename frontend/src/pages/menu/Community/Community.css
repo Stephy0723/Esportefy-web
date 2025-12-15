@@ -1,6 +1,18 @@
+/* src/pages/menu/Community/Community.css */
+
 .community-container {
-    padding: 100px 40px 40px 40px;
-    color: white;
+    /* Ajustamos el padding para librar el Navbar */
+    padding: 130px 40px 40px 40px;
+    
+    /* Variable para texto dinámico (Negro/Blanco) */
+    color: var(--text-color); 
+}
+
+/* Títulos dentro del contenedor */
+.community-container h2, 
+.community-container h3, 
+.community-container h4 {
+    color: var(--text-color);
 }
 
 .feed-grid {
@@ -9,12 +21,34 @@
     gap: 30px;
 }
 
+/* Responsive para el grid */
+@media (max-width: 900px) {
+    .feed-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- TARJETAS DE POSTS --- */
 .post-card {
-    background: rgba(30, 30, 30, 0.6);
+    /* Fondo dinámico */
+    background: var(--card-bg); 
+    
     border-radius: 15px;
     padding: 20px;
     margin-bottom: 20px;
-    border: 1px solid rgba(255,255,255,0.05);
+    
+    /* Borde sutil adaptable */
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    
+    /* Sombra suave */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    
+    color: var(--text-color);
+    transition: 0.3s;
+}
+
+.post-card:hover {
+    border-color: #8EDB15; /* Verde sutil al pasar mouse */
 }
 
 .post-header {
@@ -24,20 +58,102 @@
     margin-bottom: 15px;
 }
 
+.post-header h4 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.post-header span {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
 .user-avatar-small {
     width: 40px; height: 40px; border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(128,128,128,0.2);
+}
+
+/* Contenido del post */
+.post-content {
+    color: var(--text-color);
+    line-height: 1.5;
+    margin-bottom: 15px;
 }
 
 .post-actions {
-    display: flex; gap: 20px; margin-top: 15px; color: #aaa;
+    display: flex; gap: 20px; margin-top: 15px; 
+    color: var(--text-color); 
+    opacity: 0.7;
+    border-top: 1px solid rgba(128, 128, 128, 0.1);
+    padding-top: 15px;
 }
-.post-actions span { cursor: pointer; display: flex; align-items: center; gap: 5px; }
-.post-actions span:hover { color: #695CFE; }
 
+.post-actions span { 
+    cursor: pointer; 
+    display: flex; align-items: center; gap: 5px; 
+    transition: 0.3s;
+}
+
+.post-actions span:hover { 
+    color: #8EDB15; /* Verde Neón */
+    opacity: 1;
+}
+
+/* --- BARRA LATERAL (TENDENCIAS) --- */
 .trends-box {
-    background: rgba(30, 30, 30, 0.6);
+    /* Fondo dinámico */
+    background: var(--card-bg); 
+    
     padding: 20px;
     border-radius: 15px;
     height: fit-content;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
-.trend-item { margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
+
+.trends-box h3 {
+    margin-bottom: 20px;
+    color: var(--text-color);
+    border-bottom: 2px solid #8EDB15; /* Subrayado verde */
+    display: inline-block;
+    padding-bottom: 5px;
+}
+
+.trend-item { 
+    margin-bottom: 15px; 
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1); 
+    padding-bottom: 10px; 
+}
+
+.trend-item:last-child {
+    border-bottom: none;
+}
+
+.trend-category {
+    font-size: 0.75rem;
+    color: var(--text-color);
+    opacity: 0.6;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.trend-title {
+    font-weight: 600;
+    color: var(--text-color);
+    display: block;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.trend-title:hover {
+    color: #8EDB15;
+}
+
+.trend-posts-count {
+    font-size: 0.75rem;
+    color: var(--text-color);
+    opacity: 0.5;
+}

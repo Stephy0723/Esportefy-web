@@ -7,72 +7,10 @@
   html {
     font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
-    background-color: #000000; /* Fondo negro absoluto */
-    color: #ffffff;
+    /* BORRA EL BACKGROUND-COLOR Y COLOR DE AQUÍ */
   }
   
-  /* Hacemos que los títulos usen la fuente elegante por defecto */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
   }
-}
-/* ========================================= */
-/* LAYOUT MAESTRO (ARREGLO DE TAMAÑOS)       */
-/* ========================================= */
-:root {
-  --sidebar-width-open: 250px;
-  --sidebar-width-closed: 88px;
-  --bg-body: #0E0F12; /* Tu fondo oscuro principal */
-}
-
-body {
-  background-color:red;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden; /* Evita scroll horizontal */
-}
-
-/* El contenedor que mueve todo */
-.main-content {
-  position: relative;
-  min-height: 100vh;
-  transition: all 0.4s ease; /* Suavidad al abrir/cerrar */
-  background-color: var(--bg-body);
-  z-index: 1;
-}
-
-/* ESTADO 1: Sidebar ABIERTO -> Empuja 250px */
-.main-content.open {
-  left: var(--sidebar-width-open);
-  width: calc(100% - var(--sidebar-width-open));
-}
-
-/* ESTADO 2: Sidebar CERRADO -> Empuja 88px */
-.main-content.closed {
-  left: var(--sidebar-width-closed);
-  width: calc(100% - var(--sidebar-width-closed));
-}
-
-/* Ajuste para el contenido de las páginas */
-.page-content {
-  margin-top: 20px; /* Espacio entre Navbar y contenido */
-  width: 100%;
-  max-width: 1600px; /* Evita que se estire demasiado en pantallas gigantes */
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* ========================================= */
-/* RESPONSIVE (MÓVIL)                        */
-/* ========================================= */
-@media (max-width: 768px) {
-  .main-content.open,
-  .main-content.closed {
-    left: 0;
-    width: 100%;
-    padding: 10px;
-  }
-  
-  /* En móvil, el sidebar suele flotar sobre el contenido, 
-     así que quitamos el empuje */
 }

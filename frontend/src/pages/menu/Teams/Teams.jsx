@@ -1,67 +1,74 @@
-import React, { useState } from 'react';
-import Navbar from '../../../components/Navbar/Navbar';
-import Sidebar from '../../../components/Sidebar/Sidebar';
+import React from 'react';
 import './Teams.css';
 
 const Teams = () => {
-  const [isSidebarClosed, setIsSidebarClosed] = useState(true);
-  const sidebarWidth = isSidebarClosed ? '88px' : '250px';
-
   return (
-    <div style={{ background: '#121212', minHeight: '100vh' }}>
-      <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
-      
-      <div style={{ marginLeft: sidebarWidth, transition: '0.5s', width: `calc(100% - ${sidebarWidth})` }}>
-        <Navbar />
+    // Usamos una clase para el contenedor principal en lugar de style inline
+    <div className="teams-page-wrapper">
         
         <div className="teams-container">
-            <h1 style={{marginBottom: 10}}>👥 Teams & Clans</h1>
-            <p style={{marginBottom: 30, color: '#aaa'}}>Find a team or create your own.</p>
+            <h1>👥 Teams & Clans</h1>
+            <p>Find a team or create your own.</p>
 
             <input type="text" className="search-team-bar" placeholder="Search team by name or game..." />
 
             <div className="team-list">
-                {/* Team 1 */}
+                
+                {/* Team 1 (Red Dragons) */}
                 <div className="team-row">
                     <div className="team-profile">
-                        <div className="team-logo" style={{background: '#e74c3c'}}><i className='bx bxs-skull'></i></div>
+                        {/* Clase 'logo-red' maneja el color */}
+                        <div className="team-logo logo-red">
+                            <i className='bx bxs-skull'></i>
+                        </div>
                         <div>
                             <h3>Red Dragons</h3>
-                            <span style={{fontSize: 12, color: '#e74c3c'}}>Elite Division</span>
+                            {/* Clase 'text-red' maneja el color */}
+                            <span className="team-division text-red">Elite Division</span>
                         </div>
                     </div>
-                    <div className="members-count"><i className='bx bx-user'></i> 5/6 Members</div>
+                    <div className="members-count">
+                        <i className='bx bx-user'></i> 5/6 Members
+                    </div>
                     <button className="view-team-btn">View Profile</button>
                 </div>
 
-                {/* Team 2 */}
+                {/* Team 2 (Blue Ice) */}
                 <div className="team-row">
                     <div className="team-profile">
-                        <div className="team-logo" style={{background: '#3498db'}}><i className='bx bxs-invader'></i></div>
+                        <div className="team-logo logo-blue">
+                            <i className='bx bxs-invader'></i>
+                        </div>
                         <div>
                             <h3>Blue Ice Gaming</h3>
-                            <span style={{fontSize: 12, color: '#3498db'}}>Amateur League</span>
+                            <span className="team-division text-blue">Amateur League</span>
                         </div>
                     </div>
-                    <div className="members-count"><i className='bx bx-user'></i> 4/5 Members</div>
+                    <div className="members-count">
+                        <i className='bx bx-user'></i> 4/5 Members
+                    </div>
                     <button className="view-team-btn">View Profile</button>
                 </div>
 
-                {/* Team 3 */}
+                {/* Team 3 (Golden Kings) */}
                 <div className="team-row">
                     <div className="team-profile">
-                        <div className="team-logo" style={{background: '#f1c40f', color: '#000'}}><i className='bx bxs-crown'></i></div>
+                        <div className="team-logo logo-gold">
+                            <i className='bx bxs-crown'></i>
+                        </div>
                         <div>
                             <h3>Golden Kings</h3>
-                            <span style={{fontSize: 12, color: '#f1c40f'}}>Pro League</span>
+                            <span className="team-division text-gold">Pro League</span>
                         </div>
                     </div>
-                    <div className="members-count"><i className='bx bx-user'></i> 6/6 Members (Full)</div>
+                    <div className="members-count">
+                        <i className='bx bx-user'></i> 6/6 Members (Full)
+                    </div>
                     <button className="view-team-btn">View Profile</button>
                 </div>
+
             </div>
         </div>
-      </div>
     </div>
   );
 };

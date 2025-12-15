@@ -1,24 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './Sidebar.css';
 
-// --- IMPORTA TUS LOGOS ---
-// Si no tienes las imágenes aún, no pasa nada, se usará el icono
+// 1. IMPORTANTE: Importamos el hook del contexto
+import { useTheme } from '../../context/ThemeContext'; 
+
 import logoWhite from '../../assets/Logo/logo-black.png';
 import logoBlack from '../../assets/Logo/logo-white.png';
 
 const Sidebar = ({ isClosed, setIsClosed }) => {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  // 2. USAMOS EL CONTEXTO GLOBAL
+  // En lugar de crear un estado local que se resetea, usamos el global
+  const { isDarkMode, toggleTheme } = useTheme();
+  
   const sidebarRef = useRef(null);
 
-  // Efecto: Aplicar clase dark al body
-  useEffect(() => {
-    const body = document.querySelector('body');
-    if (isDarkMode) body.classList.add('dark');
-    else body.classList.remove('dark');
-  }, [isDarkMode]);
-
-  // Efecto: Cerrar al hacer clic fuera (opcional para móviles)
+  // Efecto: Cerrar al hacer clic fuera (Solo para móviles)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!isClosed && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
@@ -29,7 +26,6 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isClosed, setIsClosed]);
 
-  // Handler para abrir menú al hacer clic dentro
   const handleSidebarClick = () => {
      if(isClosed) setIsClosed(false);
   }
@@ -43,15 +39,14 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
       <header>
         <div className="image-text">
           <span className="image">
-            {/* LÓGICA LOGO: Si hay imagen úsala, sino usa el Icono */}
             {logoWhite && logoBlack ? (
                 <img 
+                    // El logo cambia según el estado GLOBAL
                     src={isDarkMode ? logoWhite : logoBlack} 
                     alt="Logo" 
                     className="sidebar-logo" 
                 />
             ) : (
-                // Icono tipo "Control" similar a la foto que enviaste
                 <i className='bx bx-game logo-icon'></i>
             )}
           </span>
@@ -62,7 +57,6 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
           </div>
         </div>
 
-        {/* Botón de flecha (opcional si usas clic en barra para abrir) */}
         <i 
           className='bx bx-chevron-right toggle' 
           onClick={(e) => {
@@ -97,10 +91,15 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
           </div>
 
           <li className="">
-            <a href="/login"><i className='bx bx-log-out icon'></i><span className="text nav-text">Cerrar Sesión</span></a>
+            {/* Nota: Es mejor usar Link para evitar recarga completa, pero href funciona */}
+            <Link to="/login"><i className='bx bx-log-out icon'></i><span className="text nav-text">Cerrar Sesión</span></Link>
           </li>
 
-          <li className="mode" onClick={(e) => {e.stopPropagation(); setIsDarkMode(!isDarkMode);}}>
+          {/* 3. CLICK EN EL SWITCH: Llamamos a toggleTheme del contexto */}
+          <li className="mode" onClick={(e) => {
+              e.stopPropagation(); 
+              toggleTheme(); // <--- ESTO GUARDA Y CAMBIA EL TEMA GLOBALMENTE
+          }}>
             <div className="sun-moon">
               <i className='bx bx-moon icon moon'></i>
               <i className='bx bx-sun icon sun'></i>

@@ -1,19 +1,46 @@
-.teams-container {
-    padding: 100px 40px 40px 40px;
-    color: white;
+/* --- LAYOUT Y TEMA --- */
+
+/* Contenedor principal (Reemplaza al style inline del div padre) */
+.teams-page-wrapper {
+    min-height: 100vh;
+    width: 100%;
 }
 
+.teams-container {
+    padding: 130px 40px 40px 40px;
+    color: var(--text-color);
+}
+
+/* Títulos y Subtítulos */
+.teams-container h1 {
+    color: var(--text-color) !important;
+    margin-bottom: 10px;
+}
+
+.teams-container p {
+    color: var(--text-color) !important;
+    opacity: 0.7;
+    margin-bottom: 30px;
+}
+
+/* --- BARRA DE BÚSQUEDA --- */
 .search-team-bar {
     width: 100%;
     padding: 15px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--card-bg); 
+    border: 1px solid rgba(128, 128, 128, 0.2);
     border-radius: 10px;
-    color: white;
+    color: var(--text-color);
     margin-bottom: 30px;
     font-size: 1rem;
+    outline: none;
 }
 
+.search-team-bar:focus {
+    border-color: #8EDB15; /* Verde Neón */
+}
+
+/* --- LISTA Y TARJETAS --- */
 .team-list {
     display: flex;
     flex-direction: column;
@@ -24,40 +51,95 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(30, 30, 30, 0.6);
+    background: var(--card-bg); /* Fondo dinámico */
     padding: 15px 25px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(128, 128, 128, 0.1);
     transition: 0.3s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
 .team-row:hover {
-    background: rgba(105, 92, 254, 0.1);
-    border-color: #695CFE;
+    background: rgba(142, 219, 21, 0.1); 
+    border-color: #8EDB15;
+    transform: translateY(-2px);
 }
 
+/* --- PERFIL DEL EQUIPO --- */
 .team-profile {
     display: flex; align-items: center; gap: 15px;
 }
 
+.team-profile h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.team-division {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* --- COLORES DE LOS EQUIPOS (CLASES MODIFICADORAS) --- */
+/* Rojo */
+.logo-red { background-color: #e74c3c; }
+.text-red { color: #e74c3c; }
+
+/* Azul */
+.logo-blue { background-color: #3498db; }
+.text-blue { color: #3498db; }
+
+/* Dorado */
+.logo-gold { 
+    background-color: #f1c40f; 
+    color: #000 !important; /* Icono negro en fondo dorado */
+}
+.text-gold { color: #f1c40f; }
+
+
+/* --- LOGO BASE --- */
 .team-logo {
     width: 50px; height: 50px;
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px; color: #fff;
+    font-size: 24px; 
+    color: #fff; /* Por defecto blanco */
 }
 
+/* --- MIEMBROS Y BOTONES --- */
 .members-count {
-    color: #aaa; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;
+    color: var(--text-color);
+    opacity: 0.6;
+    font-size: 0.9rem; 
+    display: flex; align-items: center; gap: 5px;
 }
 
 .view-team-btn {
     padding: 8px 20px;
-    background: #333;
-    border: none;
-    color: white;
+    background: transparent;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    color: var(--text-color);
     border-radius: 20px;
     cursor: pointer;
     transition: 0.3s;
+    font-weight: 500;
 }
-.view-team-btn:hover { background: #695CFE; }
+
+.view-team-btn:hover { 
+    background: #8EDB15; 
+    color: #000;
+    border-color: #8EDB15;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .team-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .view-team-btn {
+        width: 100%;
+    }
+}

@@ -11,7 +11,7 @@ const ImmersiveSection = ({
   videoSrc, 
   nextSection, 
   align = 'left',
-  showAuthButtons = false // Propiedad para activar los botones en el inicio
+  showAuthButtons = false 
 }) => {
   
   const scrollToNext = () => {
@@ -58,7 +58,8 @@ const ImmersiveSection = ({
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-[#695CFE] uppercase tracking-[0.3em] text-sm md:text-base font-bold mb-4"
+            // CAMBIO: Color del subtítulo actualizado a #8EDB15
+            className="text-[#8EDB15] uppercase tracking-[0.3em] text-sm md:text-base font-bold mb-4"
           >
             {subtitle}
           </motion.h3>
@@ -84,13 +85,13 @@ const ImmersiveSection = ({
           </motion.p>
         )}
 
-        {/* --- 3. BOTONES DE LOGIN / REGISTRO (Solo si showAuthButtons es true) --- */}
+        {/* --- 3. BOTONES DE LOGIN / REGISTRO --- */}
         {showAuthButtons && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9 }}
-            className="flex flex-wrap gap-5 mb-12" // Flex para alinear botones
+            className="flex flex-wrap gap-5 mb-12"
           >
             {/* Botón Iniciar Sesión (Borde Blanco) */}
             <Link 
@@ -100,17 +101,22 @@ const ImmersiveSection = ({
               Iniciar Sesión
             </Link>
             
-            {/* Botón Registrarse (Morado Neón) */}
+            {/* Botón Registrarse (CAMBIO: Morado a Verde Neón #8EDB15) */}
             <Link 
               to="/register" 
-              className="px-8 py-3 bg-[#695CFE] border-2 border-[#695CFE] text-white font-bold rounded-full uppercase tracking-widest text-xs hover:bg-[#584cf4] hover:border-[#584cf4] transition-all duration-300 hover:-translate-y-1 shadow-[0_0_15px_rgba(105,92,254,0.5)] hover:shadow-[0_0_25px_rgba(105,92,254,0.8)]"
+              // CAMBIOS REALIZADOS:
+              // bg-[#695CFE] -> bg-[#8EDB15]
+              // border-[#695CFE] -> border-[#8EDB15]
+              // hover:bg... -> hover:bg-[#7ac212] (Un tono un poco más oscuro para el hover)
+              // shadow rgba -> rgba(142, 219, 21, ...) (Equivalente RGB de #8EDB15)
+              className="px-8 py-3 bg-[#8EDB15] border-2 border-[#8EDB15] text-black font-bold rounded-full uppercase tracking-widest text-xs hover:bg-[#7ac212] hover:border-[#7ac212] transition-all duration-300 hover:-translate-y-1 shadow-[0_0_15px_rgba(142,219,21,0.5)] hover:shadow-[0_0_25px_rgba(142,219,21,0.8)]"
             >
               Registrarse
             </Link>
           </motion.div>
         )}
 
-        {/* 4. BOTÓN "VER MÁS" (Flecha hacia abajo) */}
+        {/* 4. BOTÓN "VER MÁS" */}
         {nextSection && (
           <motion.button 
             initial={{ opacity: 0 }}

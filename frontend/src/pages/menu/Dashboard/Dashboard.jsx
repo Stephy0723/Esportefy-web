@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
-
-// 1. IMPORTACIONES CORREGIDAS (3 niveles hacia atrás por la carpeta 'menu')
-import Navbar from '../../../components/Navbar/Navbar';
-import Sidebar from '../../../components/Sidebar/Sidebar';
-
-// 2. SOLO IMPORTAMOS EL CSS DE ESTA PÁGINA (No el del Sidebar)
 import './Dashboard.css'; 
 
 const Dashboard = () => {
-  // Estado para controlar si el menú está abierto o cerrado
-  const [isSidebarClosed, setIsSidebarClosed] = useState(true);
-  
   // Estado para el usuario
   const [user, setUser] = useState({ name: "Gamer", avatar: "" });
 
@@ -24,28 +15,10 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Cálculo para empujar el contenido cuando el menú se abre
-  const sidebarWidth = isSidebarClosed ? '88px' : '250px';
-
   return (
-    <div style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
-      
-      {/* SIDEBAR (Controlado) */}
-      <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
-      
-      {/* CONTENEDOR PRINCIPAL */}
-      <div 
-        style={{ 
-          marginLeft: sidebarWidth, 
-          transition: 'all 0.5s ease', 
-          width: `calc(100% - ${sidebarWidth})` 
-        }}
-      >
-        {/* Navbar */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 90 }}>
-           <Navbar />
-        </div>
-
+    // Eliminamos el wrapper con margin-left manual porque el MainLayout ya lo hace
+    <div style={{ minHeight: '100vh', width: '100%' }}>
+        
         {/* CONTENIDO DEL DASHBOARD */}
         <div className="dashboard-container">
             
@@ -148,7 +121,6 @@ const Dashboard = () => {
 
             </div>
         </div>
-      </div>
     </div>
   );
 };
