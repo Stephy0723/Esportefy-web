@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Notifications from '../../pages/Notifications/Notifications';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -52,10 +53,11 @@ const Navbar = () => {
             <input type="text" placeholder="Buscar..." />
           </div>
 
-          <button className="notify-btn">
+          <button className="notify-btn" onClick={() => navigate('/notifications')}>
             <i className='bx bx-bell'></i>
+            {/* El punto rojo sigue apareciendo si hay usuario activo */}
             {activeUser && <span className="dot"></span>}
-          </button>
+        </button>
 
           {activeUser ? (
             <div className="user-profile" onClick={handleLogout} title="Cerrar Sesión">

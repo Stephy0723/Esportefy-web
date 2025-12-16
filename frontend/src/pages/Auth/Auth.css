@@ -234,6 +234,113 @@ h1 {
 .game-card-pro.selected span { 
     color: var(--text-color); opacity: 1; font-weight: 700;
 }
+/* --- Plataforma Principal SCSS (Para Integración con AuthSplit.scss) --- */
+/* --- Plataforma Principal SCSS (Para Integración con AuthSplit.scss) --- */
+
+.platforms-row {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 10px; 
+    margin-bottom: 30px;
+    margin-top: 15px; 
+}
+
+.platform-chip {
+    /* Estilo Base del Chip */
+    background: var(--card-bg); 
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 20px; /* Bordes más redondeados para un look de "chip" */
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espacio entre el ícono y el texto */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+    opacity: 0.9;
+    
+    /* Icono */
+    i {
+        font-size: 16px;
+        color: var(--text-color);
+        opacity: 0.7;
+    }
+
+    /* Estado Hover */
+    &:hover {
+        opacity: 1;
+        transform: translateY(-1px);
+        border-color: var(--accent-green);
+    }
+
+    /* Estado Seleccionado (Estilo Neón Activo) */
+    &.selected {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+        color: #000; /* Texto oscuro para alto contraste sobre el verde neón */
+        opacity: 1;
+        font-weight: 700;
+        
+        /* Sombra Neón */
+        box-shadow: 0 0 10px rgba(142, 219, 21, 0.5); 
+        
+        i {
+            color: #000; /* Icono oscuro cuando está seleccionado */
+            opacity: 1;
+        }
+    }
+}
+.platform-chip {
+    /* Estilo Base del Chip */
+    background: var(--card-bg); 
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 20px; /* Bordes más redondeados para un look de "chip" */
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espacio entre el ícono y el texto */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+    opacity: 0.9;
+    
+    /* Icono */
+    i {
+        font-size: 16px;
+        color: var(--text-color);
+        opacity: 0.7;
+    }
+
+    /* Estado Hover */
+    &:hover {
+        opacity: 1;
+        transform: translateY(-1px);
+        border-color: var(--accent-green);
+    }
+
+    /* Estado Seleccionado (Estilo Neón Activo) */
+    &.selected {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+        color: #000; /* Texto oscuro para alto contraste sobre el verde neón */
+        opacity: 1;
+        font-weight: 700;
+        
+        /* Sombra Neón */
+        box-shadow: 0 0 10px rgba(142, 219, 21, 0.5); 
+        
+        i {
+            color: #000; /* Icono oscuro cuando está seleccionado */
+            opacity: 1;
+        }
+    }
+}
 
 /* ========================================= */
 /* BOTONES                                   */
