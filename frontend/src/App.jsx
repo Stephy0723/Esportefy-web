@@ -14,6 +14,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ResetPassword from './pages/Auth/ForgotPasswordFlow;';
 import Dashboard from './pages/menu/Dashboard/Dashboard';
 import Chats from './pages/menu/Chats/Chats';
 import Tv from './pages/menu/EsportefyTV/Tv';
@@ -80,6 +81,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* PRIVADAS (Con Sidebar + Navbar) */}
           <Route element={<MainLayout />}>

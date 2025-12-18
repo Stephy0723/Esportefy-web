@@ -115,7 +115,7 @@ const Login = () => {
                         />
                         <span>Mantener sesión iniciada</span>
                     </label>
-                    <Link to="/forgot" className="forgot-link">¿Recuperar cuenta?</Link>
+                    <Link to="/reset-password" className="forgot-link">¿Recuperar cuenta?</Link>
                 </div>
 
                 <div className="form-actions">
