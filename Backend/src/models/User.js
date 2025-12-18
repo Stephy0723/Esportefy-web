@@ -20,6 +20,10 @@ const UserSchema = new mongoose.Schema({
     password: {type: String, required: true},
     checkTerms: {type: Boolean, required: true},
 
+//olvide mi contraseña
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },    
+
 }, {timestamps: true});
 
 export default mongoose.model('User', UserSchema);
