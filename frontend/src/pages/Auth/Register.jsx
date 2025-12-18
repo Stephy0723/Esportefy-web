@@ -82,7 +82,7 @@ const Register = () => {
     <div className="auth-container-split">
       <div className="auth-left">
         <div className="auth-nav">
-          <span className="brand">ESPORTEFY<span className="dot">.</span></span>
+          <span className="brand">ESPORTEFY</span>
           <div className="nav-links">
             <Link to="/login">Ya tengo cuenta</Link>
           </div>
@@ -91,7 +91,7 @@ const Register = () => {
         <div className="auth-content register-content">
           <div className="header-text">
             <span className="badge-pro">NUEVO JUGADOR</span>
-            <h1>Crea tu Perfil<span className="dot">.</span></h1>
+            <h1>Crea tu Perfil</h1>
           </div>
 
           <div className="step-indicator">

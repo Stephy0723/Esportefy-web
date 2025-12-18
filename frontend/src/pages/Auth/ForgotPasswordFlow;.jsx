@@ -60,7 +60,7 @@ const ForgotPasswordFlow = () => {
         <div className="auth-container-split">
             <div className="auth-left">
                 <div className="auth-nav">
-                    <span className="brand">ESPORTEFY<span className="dot">.</span></span>
+                    <span className="brand">ESPORTEFY</span>
                 </div>
 
                 <div className="auth-content">
@@ -70,7 +70,6 @@ const ForgotPasswordFlow = () => {
                         <span className="badge-pro">SEGURIDAD</span>
                         <h1>
                             {step === 1 ? 'Recuperar Cuenta' : 'Verifica tu Identidad'}
-                            <span className="dot">.</span>
                         </h1>
                         <p className="subtitle">
                             {step === 1 
