@@ -4,20 +4,43 @@ import { useNotification } from '../../../context/NotificationContext';
 import './Tournaments.scss'; 
 import { GAME_IMAGES } from '../../../data/gameImages';
 
+// Configuración de colores e iconos para TODOS los juegos nuevos
 const GAME_CONFIG = {
-  "All":               { color: "#ffffff", icon: "bx-grid-alt" },
-  "Valorant":          { color: "#ff4655", icon: "bx-crosshair" },
-  "League of Legends": { color: "#c1a05e", icon: "bx-world" },
-  "Mobile Legends":    { color: "#ffbf00", icon: "bx-mobile-landscape" },
-  "CS:GO 2":           { color: "#de9b35", icon: "bx-target-lock" },
-  "FIFA 24":           { color: "#2ecc71", icon: "bx-football" },
-  "Fortnite":          { color: "#a349a4", icon: "bx-building" },
-  "Call of Duty":      { color: "#54b946", icon: "bx-run" },
-  "Free Fire":         { color: "#f39c12", icon: "bx-flame" },
-  "Honor of Kings":    { color: "#e6b333", icon: "bx-crown" },
-  "Dota 2":            { color: "#e74c3c", icon: "bx-shield" },
-  "Rocket League":     { color: "#0088ff", icon: "bx-car" },
-  "Street Fighter 6":  { color: "#f1c40f", icon: "bx-walk" }
+  "All":                  { color: "#ffffff", icon: "bx-grid-alt" },
+  
+  // Shooters & Battle Royale
+  "Valorant":             { color: "#ff4655", icon: "bx-crosshair" },
+  "CS:GO 2":              { color: "#de9b35", icon: "bx-target-lock" },
+  "Call of Duty":         { color: "#54b946", icon: "bx-run" },
+  "Warzone":              { color: "#54b946", icon: "bx-radar" },
+  "Fortnite":             { color: "#a349a4", icon: "bx-building" },
+  "Free Fire":            { color: "#f39c12", icon: "bx-flame" },
+  "PUBG":                 { color: "#f1c40f", icon: "bx-target-lock" },
+  "Apex Legends":         { color: "#e74c3c", icon: "bx-shield-quarter" },
+  "Overwatch 2":          { color: "#f39c12", icon: "bx-shield" },
+  "Rainbow Six Siege":    { color: "#3498db", icon: "bx-window" },
+
+  // MOBA
+  "League of Legends":    { color: "#c1a05e", icon: "bx-world" },
+  "Dota 2":               { color: "#e74c3c", icon: "bx-map-alt" },
+  "Mobile Legends":       { color: "#ffbf00", icon: "bx-mobile-landscape" },
+  "Honor of Kings":       { color: "#e6b333", icon: "bx-crown" },
+  "Smite":                { color: "#f1c40f", icon: "bx-bolt-circle" },
+  "Wild Rift":            { color: "#00a8ff", icon: "bx-mobile" },
+
+  // Deportes / Pelea / Coches
+  "FIFA 24":              { color: "#2ecc71", icon: "bx-football" },
+  "NBA 2K24":             { color: "#e67e22", icon: "bx-basketball" },
+  "Rocket League":        { color: "#0088ff", icon: "bx-car" },
+  "Street Fighter 6":     { color: "#f39c12", icon: "bx-walk" },
+  "Tekken 8":             { color: "#c0392b", icon: "bx-angry" },
+
+  // Estrategia
+  "Clash Royale":         { color: "#3498db", icon: "bx-crown" },
+  "Teamfight Tactics":    { color: "#f1c40f", icon: "bx-grid" },
+  "Hearthstone":          { color: "#f39c12", icon: "bx-book" },
+  "Legends of Runeterra": { color: "#3498db", icon: "bx-book-open" },
+  "StarCraft II":         { color: "#00a8ff", icon: "bx-planet" }
 };
 
 const Tournaments = () => {
@@ -34,7 +57,7 @@ const Tournaments = () => {
     return GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
   };
 
-  // DATOS AMPLIADOS (Mock Data)
+  // DATOS AMPLIADOS CON LAS IMÁGENES NUEVAS
   const [tournaments, setTournaments] = useState([
     { id: 1, game: 'Valorant', title: 'Valorant Masters: Tokyo', date: '2024-10-24', time: '18:00', prize: '$50,000', entry: 'Gratis', slots: '12/16' },
     { id: 2, game: 'League of Legends', title: "Summoner's Cup", date: '2024-10-25', time: '20:00', prize: '$10,000', entry: '$50', slots: '8/32' },
@@ -44,7 +67,10 @@ const Tournaments = () => {
     { id: 6, game: 'FIFA 24', title: 'eLibertadores', date: '2024-11-12', time: '19:00', prize: '$5,000', entry: '$20', slots: '4/32' },
     { id: 7, game: 'Rocket League', title: 'RLCS Major', date: '2024-11-15', time: '15:00', prize: '$40,000', entry: 'Gratis', slots: '10/16' },
     { id: 8, game: 'Free Fire', title: 'World Series', date: '2024-11-20', time: '20:00', prize: '$15,000', entry: 'Gratis', slots: '45/48' },
-    { id: 9, game: 'Call of Duty', title: 'CDL Championship', date: '2024-11-22', time: '21:00', prize: '$200,000', entry: '$150', slots: '7/8' }
+    { id: 9, game: 'Call of Duty', title: 'CDL Championship', date: '2024-11-22', time: '21:00', prize: '$200,000', entry: '$150', slots: '7/8' },
+    { id: 10, game: 'Tekken 8', title: 'Iron Fist Tournament', date: '2024-11-25', time: '18:00', prize: '$10,000', entry: '$10', slots: '60/64' },
+    { id: 11, game: 'Clash Royale', title: 'Crown Championship', date: '2024-11-28', time: '15:00', prize: '$5,000', entry: 'Gratis', slots: '100/128' },
+    { id: 12, game: 'Overwatch 2', title: 'OW World Cup', date: '2024-12-01', time: '17:00', prize: '$30,000', entry: '$25', slots: '12/16' }
   ]);
 
   const filteredTournaments = activeFilter === 'All' 
@@ -69,7 +95,7 @@ const Tournaments = () => {
   return (
     <div className="tournaments-page-wrapper">
         
-        {/* --- MODAL DE INFORMACIÓN (TÚ CÓDIGO EXACTO) --- */}
+        {/* --- NUEVO: MODAL DE INFORMACIÓN (Blanco y Negro) --- */}
         {showInfoModal && (
             <div className="modal-backdrop" onClick={() => setShowInfoModal(false)}>
                 <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -133,7 +159,7 @@ const Tournaments = () => {
             {/* FILTROS */}
             <div className="filters-bar">
                 <div className="chips-wrapper">
-                    {(showAllFilters ? Object.keys(GAME_CONFIG) : Object.keys(GAME_CONFIG).slice(0, 8)).map(cat => {
+                    {(showAllFilters ? Object.keys(GAME_CONFIG) : Object.keys(GAME_CONFIG).slice(0, 10)).map(cat => {
                          const style = GAME_CONFIG[cat] || { color: '#fff' };
                          return (
                             <button key={cat} 

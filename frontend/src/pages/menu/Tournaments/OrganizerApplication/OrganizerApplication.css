@@ -1,30 +1,170 @@
-.org-app-container {
-  padding: 24px;
-  background: rgba(255,255,255,0.02);
-  border-radius: 12px;
-  max-width: 720px;
+/* Heredamos estructura base de Login/Register pero con ajustes pro */
+
+.highlight-green {
+    color: #00ff88;
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
 }
 
-.org-app-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.step-badge.verify {
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 15px;
 }
 
-.org-app-form input,
-.org-app-form textarea {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.06);
-  background: rgba(255,255,255,0.01);
-  color: #e6eef8;
+.section-title {
+    color: #fff;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 25px 0 15px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 5px;
+    opacity: 0.8;
 }
 
-.btn-submit {
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: linear-gradient(90deg,#695CFE,#00d4ff);
-  color: #04203b;
-  border: none;
-  cursor: pointer;
+/* INPUTS CON ICONOS */
+.input-group { position: relative; margin-bottom: 20px; }
+.input-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 1.2rem;
+    transition: 0.3s;
+}
+.input-group input:focus ~ .input-icon { color: #00ff88; }
+
+/* FILE UPLOAD PERSONALIZADO */
+.file-upload-group {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    transition: 0.3s;
+}
+.file-upload-group:hover { border-color: #00ff88; background: rgba(0, 255, 136, 0.02); }
+
+.static-label {
+    display: block;
+    color: #aaa;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+}
+
+.file-box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.hidden-input { display: none; }
+
+.upload-btn {
+    background: #222;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border: 1px solid #444;
+    transition: 0.3s;
+    display: flex; align-items: center; gap: 8px;
+}
+.upload-btn:hover { background: #333; border-color: #fff; }
+
+.file-name {
+    color: #888;
+    font-size: 0.8rem;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+small { display: block; margin-top: 8px; color: #555; font-size: 0.7rem; }
+
+/* SELECT PERSONALIZADO */
+select {
+    width: 100%;
+    padding: 12px 15px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    outline: none;
+    font-family: inherit;
+    appearance: none; /* Quita la flecha por defecto */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300ff88%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px top 50%;
+    background-size: 12px auto;
+}
+select option { background: #111; color: #fff; }
+
+/* BOTÓN NEÓN VERDE */
+.btn-neon.green {
+    background: #00ff88;
+    color: #000;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+    font-weight: 700;
+}
+.btn-neon.green:hover {
+    background: #00cc6a;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+}
+
+/* LEGAL TEXT */
+.legal-text {
+    margin-top: 20px;
+    font-size: 0.7rem;
+    color: #666;
+    text-align: center;
+    line-height: 1.4;
+}
+.legal-text a { color: #00ff88; text-decoration: none; }
+.legal-text a:hover { text-decoration: underline; }
+
+/* VISUAL SIDE EXTRA */
+.organizer-visual {
+    clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%); /* Corte diagonal invertido */
+}
+
+.green-overlay {
+    background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0, 255, 136, 0.15) 100%);
+}
+
+.icon-large {
+    font-size: 4rem;
+    color: #00ff88;
+    margin-bottom: 20px;
+    animation: float 3s ease-in-out infinite;
+}
+
+.features-list {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.features-list span {
+    display: flex; align-items: center; gap: 10px;
+    color: #ccc; font-size: 0.9rem;
+}
+.features-list i { color: #00ff88; }
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
 }
