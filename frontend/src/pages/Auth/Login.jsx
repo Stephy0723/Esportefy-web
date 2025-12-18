@@ -53,7 +53,7 @@ const Login = () => {
       {/* SECCIÓN IZQUIERDA: FORMULARIO */}
       <div className="auth-left">
         <div className="auth-nav">
-            <span className="brand">ESPORTEFY<span className="dot">.</span></span>
+            <span className="brand">ESPORTEFY</span>
             <div className="nav-links">
                 <Link to="/">Inicio</Link>
                 <Link to="/register" className="active">Unirse</Link>
@@ -64,7 +64,7 @@ const Login = () => {
             {/* TEXTOS PROFESIONALES GAMING */}
             <div className="header-text">
                 <span className="badge-pro">PRO ACCESS</span>
-                <h1>Bienvenido<br/>de nuevo<span className="dot">.</span></h1>
+                <h1>Bienvenido<br/>de nuevo</h1>
                 <p className="subtitle">Gestiona tus torneos. Domina la arena.</p>
             </div>
 
