@@ -3,6 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import './Auth.css';
 
+// Imagen lateral (Asegúrate de que la ruta sea correcta)
+import sideImage from '../../assets/images/login-bg.jpg';
+
 const ForgotPasswordFlow = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1); // Paso 1: Email, Paso 2: Código + Clave
@@ -166,7 +169,7 @@ const ForgotPasswordFlow = () => {
 
             <div className="auth-right">
                 <div className="image-overlay"></div>
-                <img src="/assets/images/security-bg.jpg" alt="Setup Gamer Security" />
+               <img src={sideImage} alt="Setup Gamer" />
             </div>
         </div>
     );
