@@ -1,7 +1,7 @@
 // Backend/src/routes/auth.routers.js
 
 import {Router} from 'express';
-import {register, login,getProfile} from '../controllers/auth.controller.js'
+import {register, login,getProfile,forgotPassword,resetPassword} from '../controllers/auth.controller.js'
 import { verifyToken } from '../middlewares/auth.middleware.js';
 
 const router = Router();

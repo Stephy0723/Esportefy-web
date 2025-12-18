@@ -107,12 +107,12 @@ export const forgotPassword = async (req, res) => {
         }
 
         // Generar un token único de 20 caracteres
-        const token = crypto.randomBytes(20).toString('hex');
+       // Generar un código numérico de 6 dígitos
+        const token = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // El token expira en 1 hora
+        // El resto sigue igual (guardar en resetPasswordToken y resetPasswordExpires)
         user.resetPasswordToken = token;
         user.resetPasswordExpires = Date.now() + 3600000; 
-
         await user.save();
 
         // Configurar el transporte de correo (Ejemplo con Gmail)
@@ -124,19 +124,48 @@ export const forgotPassword = async (req, res) => {
             }
         });
 
-        const resetUrl = `http://localhost:5173/reset-password/${token}`;
-
         const mailOptions = {
-            to: user.email,
-            from: 'Esportefy Team <tu-correo@gmail.com>',
-            subject: 'Recuperación de Contraseña - Esportefy',
-            text: `Estás recibiendo este correo porque solicitaste restablecer tu contraseña.\n\n` +
-                  `Haz clic en el siguiente enlace o pégalo en tu navegador para completar el proceso:\n\n` +
-                  `${resetUrl}\n\n` +
-                  `Si no solicitaste esto, ignora el correo y tu contraseña seguirá igual.\n`
-        };
+    to: user.email,
+    from: 'Esportefy Team <no-reply@esportefy.com>',
+    subject: `${token} es tu código de recuperación`,
+    html: `
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 50px 0;">
+        <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #eeeeee; overflow: hidden;">
+            
+            <div style="padding: 30px; text-align: center;">
+                <h1 style="color: #000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">
+                    ESPORTEFY<span style="color: #00ff00;">.</span>
+                </h1>
+                <p style="color: #666; font-size: 14px; margin-top: 10px;">RECUPERACIÓN DE CUENTA</p>
+            </div>
 
-        await transporter.sendMail(mailOptions);
+            <div style="padding: 0 40px 40px 40px; text-align: center;">
+                <p style="color: #333; font-size: 16px; line-height: 1.5;">
+                    Hola, <strong>${user.fullName}</strong>. Usa el siguiente código para restablecer tu contraseña. Este código expirará en 60 minutos.
+                </p>
+
+                <div style="margin: 30px 0; background-color: #f4f4f4; border-radius: 8px; padding: 20px; border: 1px dashed #cccccc;">
+                    <span style="font-family: monospace; font-size: 36px; font-weight: bold; color: #000; letter-spacing: 5px;">
+                        ${token}
+                    </span>
+                </div>
+
+                <p style="color: #999; font-size: 12px;">
+                    Si no solicitaste este cambio, puedes ignorar este correo de forma segura. Alguien pudo haber escrito tu dirección por error.
+                </p>
+            </div>
+
+            <div style="background-color: #000; padding: 15px; text-align: center;">
+                <p style="color: #fff; font-size: 11px; margin: 0; opacity: 0.7;">
+                    © ${new Date().getFullYear()} Esportefy Platform. Todos los derechos reservados.
+                </p>
+            </div>
+        </div>
+    </div>
+    `
+}
+
+await transporter.sendMail(mailOptions);
         res.status(200).json({ message: "Correo de recuperación enviado." });
 
     } catch (error) {

@@ -8,4 +8,6 @@ app.listen (PORT, ()=>{
     console.log(`http://localhost:${PORT}/api/auth/register`);
     console.log(`http://localhost:${PORT}/api/auth/login`);
     console.log(`http://localhost:${PORT}/api/auth/profile`);
+    console.log(`http://localhost:${PORT}/api/auth/forgot-password`);
+    console.log(`http://localhost:${PORT}/api/auth/reset-password/:token`);
 });
