@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './Auth.css';
 
 // Imagen lateral (Asegúrate de que la ruta sea correcta)
@@ -11,20 +12,40 @@ const Login = () => {
   // ESTADOS PARA LA LÓGICA DE UI
   const [showPassword, setShowPassword] = useState(false); // Ver/Ocultar pass
   const [rememberMe, setRememberMe] = useState(false);     // Checkbox
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulación de login
-    const fakeUser = { id: 1, name: "GamerPro", avatar: "..." };
-    
-    if(rememberMe) {
-        localStorage.setItem('esportefyUser', JSON.stringify(fakeUser));
-    } else {
-        sessionStorage.setItem('esportefyUser', JSON.stringify(fakeUser));
-    }
-    
-    navigate('/');
-  };
+    setError('');
+    try {
+            // 3. Petición POST al endpoint del backend
+            const response = await axios.post('http://localhost:4000/api/auth/login', {
+                email,
+                password
+            });
+
+            // 4. Si el login es exitoso, guardamos el token
+            const { token, user } = response.data;
+            
+            if (rememberMe) {
+                localStorage.setItem('token', token);
+                localStorage.setItem('esportefyUser', JSON.stringify(user));
+            } else {
+                sessionStorage.setItem('token', token);
+                sessionStorage.setItem('esportefyUser', JSON.stringify(user));
+            }
+
+            // 5. Redirigir al inicio o dashboard
+            navigate('/');
+            
+        } catch (err) {
+            // Capturar errores del backend (ej: "Usuario no encontrado")
+            const message = err.response?.data?.message || 'Error al conectar con el servidor';
+            setError(message);
+        }
+    };
 
   return (
     <div className="auth-container-split">
@@ -51,8 +72,16 @@ const Login = () => {
                 <div className="input-row">
                     <div className="input-wrapper">
                         <label>Email Profesional</label>
-                        <input type="email" placeholder="usuario@team.com" required />
+                        <input 
+                            type="email" 
+                            placeholder="usuario@team.com" 
+                            value={email}                       
+                            onChange={(e) => setEmail(e.target.value)}
+                            autocomplete="email"
+                            required 
+                        />
                         <i className='bx bx-envelope'></i>
+
                     </div>
                 </div>
 
@@ -62,6 +91,9 @@ const Login = () => {
                         <input 
                             type={showPassword ? "text" : "password"} 
                             placeholder="••••••••" 
+                            value={password}                  
+                            onChange={(e) => setPassword(e.target.value)} 
+                            autocomplete="current-password"
                             required 
                         />
                         {/* ICONO DEL OJO FUNCIONAL */}
