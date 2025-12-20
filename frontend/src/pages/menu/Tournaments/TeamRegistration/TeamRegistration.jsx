@@ -1,22 +1,24 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Navbar from '../../../../components/Navbar/Navbar';
-import Sidebar from '../../../../components/Sidebar/Sidebar';
 import './TeamRegistration.css';
 
 const TeamRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // ESTADO PARA EL SIDEBAR (Vital para que el botón funcione)
-  const [isSidebarClosed, setIsSidebarClosed] = useState(true);
-  
-  // Cálculo del margen: Si está cerrado 88px, si está abierto 250px
-  const sidebarWidth = isSidebarClosed ? '88px' : '250px';
+  // URL de imagen Genérica de Alta Calidad (Cyberpunk/Esports Arena)
+  const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop";
 
-  const tournament = location.state?.tournament || { 
-    title: "Torneo", 
-    image: "https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt55979c3b06db2369/63d8650e75a31a57c4df974e/VALORANT_Jett_1920x1080.jpg" 
+  // LÓGICA BLINDADA:
+  // 1. Intentamos leer del estado.
+  // 2. Si existe el estado pero NO tiene imagen, usamos la DEFAULT.
+  // 3. Si no existe el estado, usamos todo DEFAULT.
+  const incomingTournament = location.state?.tournament;
+  
+  const tournament = {
+    title: incomingTournament?.title || "Torneo Global",
+    // Aquí está el truco: Si incoming.image es null/undefined/vacío, usa DEFAULT_IMAGE
+    image: incomingTournament?.image ? incomingTournament.image : DEFAULT_IMAGE
   };
 
   const handleRegister = (e) => {
@@ -25,24 +27,16 @@ const TeamRegistration = () => {
     navigate('/tournaments');
   };
 
+  // Función de respaldo por si la URL falla al cargar (404, bloqueo, etc)
+  const handleImageError = (e) => {
+    e.target.src = "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=2070&auto=format&fit=crop"; // Imagen de backup (Gaming Setup)
+  };
+
   return (
-    <div className="reg-page-wrapper">
-      {/* Pasamos los estados al Sidebar para que el botón funcione */}
-      <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
-      
-      <div 
-        className="main-content-area"
-        style={{ 
-            marginLeft: sidebarWidth, 
-            width: `calc(100% - ${sidebarWidth})`
-        }}
-      >
-        <Navbar />
-        
-        {/* CONTENEDOR CENTRALIZADO */}
+    <div className="registration-content">
+       
         <div className="center-stage">
             
-            {/* LA TARJETA FLOTANTE DE CRISTAL */}
             <div className="glass-card">
                 
                 {/* IZQUIERDA: FORMULARIO */}
@@ -54,7 +48,6 @@ const TeamRegistration = () => {
                     </div>
 
                     <form onSubmit={handleRegister}>
-                        {/* Input Estilo Línea Neon */}
                         <div className="neon-input-group">
                             <input type="text" required placeholder=" " />
                             <label>Nombre del Equipo</label>
@@ -108,10 +101,16 @@ const TeamRegistration = () => {
                     </form>
                 </div>
 
-                {/* DERECHA: IMAGEN CINEMÁTICA */}
+                {/* DERECHA: IMAGEN */}
                 <div className="image-section">
                     <div className="overlay-gradient"></div>
-                    <img src={tournament.image} alt="Game Art" className="cinematic-bg" />
+                    {/* AÑADIDO: onError para manejar fallos de carga */}
+                    <img 
+                        src={tournament.image} 
+                        alt="Game Art" 
+                        className="cinematic-bg"
+                        onError={handleImageError} 
+                    />
                     <div className="image-text">
                         <h2>Domina el Juego</h2>
                         <p>La competencia empieza aquí.</p>
@@ -120,7 +119,6 @@ const TeamRegistration = () => {
 
             </div>
         </div>
-      </div>
     </div>
   );
 };

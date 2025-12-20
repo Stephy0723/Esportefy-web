@@ -24,6 +24,16 @@ import Tournaments from './pages/menu/Tournaments/Tournaments';
 import Community from './pages/menu/Community/Community';
 import Teams from './pages/menu/Teams/Teams';
 
+//Formulario de registro de equipos
+import TeamRegistration from './pages/menu/Tournaments/TeamRegistration/TeamRegistration';
+import OrganizerApplication from './pages/menu/Tournaments/OrganizerApplication/OrganizerApplication';
+
+//políticas legales
+import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
+import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
+import TermsConditions from './pages/menu/Legal/TermsConditions';
+import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
+
 // --- COMPONENTE AUXILIAR: DETECTOR DE BIENVENIDA ---
 // Este componente invisible verifica si es la primera vez que entras para lanzar la alerta
 const WelcomeTrigger = () => {
@@ -82,6 +92,10 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />
+          <Route path="/legal/payment-policy" element={<PaymentPolicy />} />
+          <Route path="/legal/terms" element={<TermsConditions />} />
+          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
 
           {/* PRIVADAS (Con Sidebar + Navbar) */}
           <Route element={<MainLayout />}>
@@ -94,6 +108,9 @@ function App() {
             <Route path="/comunidad" element={<Community />} />
             <Route path="/equipos" element={<Teams />} />
             <Route path="/tournaments" element={<Tournaments />} />
+          {/* Standardized URLs */}
+            <Route path="/team-registration" element={<TeamRegistration />} />
+            <Route path="/organizer-application" element={<OrganizerApplication />} />
           </Route>
         </Routes>
       </BrowserRouter>
