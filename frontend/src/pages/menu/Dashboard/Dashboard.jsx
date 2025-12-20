@@ -1,125 +1,239 @@
 import React, { useState, useEffect } from 'react';
-import './Dashboard.css'; 
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; 
+import './Dashboard.css';
+import { GAME_IMAGES } from '../../../data/gameImages'; 
 
 const Dashboard = () => {
-  // Estado para el usuario
-  const [user, setUser] = useState({ name: "Gamer", avatar: "" });
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [similarPlayers, setSimilarPlayers] = useState([]);
 
-  // Simulamos cargar datos del usuario desde la memoria
+  const today = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+
   useEffect(() => {
-    const storedUser = localStorage.getItem('esportefyUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      setUser({ name: "Invitado", avatar: "https://i.pravatar.cc/150?img=11" });
-    }
-  }, []);
+    const fetchProfile = async () => {
+        // 1. Obtenemos el token guardado al hacer Login
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        // Si no hay token, lo mandamos al login
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            // 2. PETICIÓN REAL AL BACKEND
+            // Enviamos el token en el header 'Authorization'
+            const response = await axios.get('http://localhost:4000/api/auth/profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}` // O 'x-access-token' según tu middleware
+                }
+            });
+
+            const realUserData = response.data;
+            setUser(realUserData);
+
+            // 3. Generar "Jugadores Similares" basado en los datos reales recién traídos
+            // (Aquí podrías hacer otra petición al backend si tuvieras el endpoint)
+            const mockSimilar = [
+                { username: 'Kratos_99', game: realUserData.selectedGames?.[0] || 'General' },
+                { username: 'SlayerX', game: realUserData.selectedGames?.[1] || 'FPS' },
+                { username: 'NinaV', game: 'Competitivo' }
+            ];
+            setSimilarPlayers(mockSimilar);
+
+        } catch (error) {
+            console.error("Error cargando perfil:", error);
+            // Si el token expiró o es inválido (Error 401/403), cerramos sesión
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('esportefyUser');
+                navigate('/login');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchProfile();
+  }, [navigate]);
+
+  if (loading) return <div className="loading-screen">Conectando con el servidor...</div>;
+
+  // 4. MAPEO DE DATOS (MongoDB -> Frontend)
+  // Usamos el operador ?. para evitar errores si algún campo viene vacío de la DB
+  const userData = {
+      username: user?.username || 'Jugador',
+      experience: user?.experience?.[0] || 'Rookie', // Tu DB guarda array ["Rookie"]
+      platforms: user?.platforms || [],
+      mainGoal: user?.goals?.[0] || 'Explorar',
+      games: user?.selectedGames || []
+  };
+
+  const getPlatformIcon = (platString) => {
+    const p = platString.toLowerCase();
+    if (p.includes('pc')) return 'bx-laptop';
+    if (p.includes('console') || p.includes('consola')) return 'bx-joystick';
+    if (p.includes('mobile') || p.includes('celular')) return 'bx-mobile';
+    return 'bx-game';
+  };
 
   return (
-    // Eliminamos el wrapper con margin-left manual porque el MainLayout ya lo hace
-    <div style={{ minHeight: '100vh', width: '100%' }}>
+    <div className="dashboard-content-only">
         
-        {/* CONTENIDO DEL DASHBOARD */}
-        <div className="dashboard-container">
+        {/* HEADER DE BIENVENIDA */}
+        <div className="dash-header">
+            <div className="header-content">
+                <h1>Bienvenido, <span className="highlight-text">{userData.username}</span></h1>
+                <p>Resumen de tu actividad en Esportefy.</p>
+            </div>
+            <div className="date-badge">
+                <i className='bx bx-calendar'></i> {today}
+            </div>
+        </div>
+
+        {/* STATS GRID */}
+        <div className="stats-grid">
             
-            {/* BIENVENIDA */}
-            <div className="welcome-banner">
-                <div>
-                    <h1>Bienvenido, <span>{user.name}</span></h1>
-                    <p style={{color: '#aaa', marginTop: '5px'}}>Resumen de tu actividad en Esportefy.</p>
+            {/* NIVEL */}
+            <div className="stat-card">
+                <div className="stat-icon-wrapper">
+                    <i className='bx bx-medal'></i>
                 </div>
-                <div className="date-badge">
-                    <i className='bx bx-calendar'></i>
-                    {new Date().toLocaleDateString()}
-                </div>
-            </div>
-
-            {/* ESTADÍSTICAS RÁPIDAS */}
-            <div className="stats-grid">
-                <div className="stat-box">
-                    <h2 style={{color: '#695CFE'}}>12</h2>
-                    <p>Torneos</p>
-                </div>
-                <div className="stat-box">
-                    <h2 style={{color: '#2ecc71'}}>85%</h2>
-                    <p>Win Rate</p>
-                </div>
-                <div className="stat-box">
-                    <h2 style={{color: '#f1c40f'}}>5</h2>
-                    <p>MVP</p>
-                </div>
-                <div className="stat-box">
-                    <h2>3</h2>
-                    <p>Equipos</p>
+                <div className="stat-info">
+                    <span className="stat-label">Nivel</span>
+                    <h3>{userData.experience}</h3>
                 </div>
             </div>
 
-            {/* GRID DE CONTENIDO */}
-            <div className="dashboard-grid">
-
-                {/* TARJETA 1: TORNEOS */}
-                <div className="dash-card">
-                    <div className="card-header">
-                        <h3><i className='bx bx-trophy'></i> Torneos Activos</h3>
-                        <a href="#" className="view-all">Ver todos</a>
-                    </div>
-                    
-                    <div className="list-item">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Valorant_logo_-_pink_color_version.svg" className="item-img" alt="game"/>
-                        <div className="item-info">
-                            <h4>Valorant Regional</h4>
-                            <p>Fase de Grupos</p>
-                        </div>
-                        <span className="status active">En curso</span>
-                    </div>
-
-                    <div className="list-item">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d8/League_of_Legends_2019_vector.svg" className="item-img" alt="game"/>
-                        <div className="item-info">
-                            <h4>LoL Winter Cup</h4>
-                            <p>Inicia pronto</p>
-                        </div>
-                        <span className="status pending">Pendiente</span>
-                    </div>
+            {/* PLATAFORMAS */}
+            <div className="stat-card">
+                <div className="stat-icon-wrapper platform-wrapper">
+                    {userData.platforms.length > 0 ? (
+                        userData.platforms.map((plat, index) => (
+                            <i key={index} className={`bx ${getPlatformIcon(plat)}`} title={plat}></i>
+                        ))
+                    ) : (
+                        <i className='bx bx-question-mark'></i>
+                    )}
                 </div>
-
-                {/* TARJETA 2: EQUIPOS */}
-                <div className="dash-card">
-                    <div className="card-header">
-                        <h3><i className='bx bx-group'></i> Mis Equipos</h3>
-                        <a href="#" className="view-all">Gestionar</a>
-                    </div>
-
-                    <div className="list-item">
-                        <div className="item-img" style={{backgroundColor: '#FF5733', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                            <i className='bx bxs-skull' style={{fontSize:'24px'}}></i>
-                        </div>
-                        <div className="item-info">
-                            <h4>Red Dragons</h4>
-                            <p>Capitán</p>
-                        </div>
-                    </div>
+                <div className="stat-info">
+                    <span className="stat-label">Plataformas</span>
+                    <h3 className="sub-text">Activo</h3>
                 </div>
-
-                {/* TARJETA 3: COMUNIDADES */}
-                <div className="dash-card">
-                    <div className="card-header">
-                        <h3><i className='bx bx-world'></i> Comunidades</h3>
-                        <a href="#" className="view-all">Explorar</a>
-                    </div>
-
-                    <div className="list-item">
-                        <div className="item-img" style={{backgroundColor: '#9b59b6', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                            <i className='bx bx-joystick' style={{fontSize:'24px'}}></i>
-                        </div>
-                        <div className="item-info">
-                            <h4>FPS Latam</h4>
-                            <p>12k Miembros</p>
-                        </div>
-                    </div>
-                </div>
-
             </div>
+
+            {/* OBJETIVO */}
+            <div className="stat-card">
+                <div className="stat-icon-wrapper">
+                    <i className='bx bx-target-lock'></i>
+                </div>
+                <div className="stat-info">
+                    <span className="stat-label">Objetivo Actual</span>
+                    <h3>{userData.mainGoal}</h3>
+                </div>
+            </div>
+
+            {/* TORNEOS (Placeholder) */}
+            <div className="stat-card">
+                <div className="stat-icon-wrapper">
+                    <i className='bx bx-trophy'></i>
+                </div>
+                <div className="stat-info">
+                    <span className="stat-label">Torneos</span>
+                    <h3>0</h3>
+                </div>
+            </div>
+        </div>
+
+        <div className="content-grid">
+            
+            {/* JUEGOS FAVORITOS */}
+            <div className="content-panel">
+                <div className="panel-header">
+                    <h3><i className='bx bx-game'></i> Tus Juegos</h3>
+                    <button className="btn-link">Editar</button>
+                </div>
+                <div className="my-games-list">
+                    {userData.games.length > 0 ? (
+                        userData.games.map((gameId, index) => {
+                            // Mapeo de imagen
+                            const imageSrc = Object.entries(GAME_IMAGES).find(([key]) => 
+                                key.toLowerCase().includes(gameId.toLowerCase()) || 
+                                key.toLowerCase() === gameId.toLowerCase()
+                            )?.[1] || GAME_IMAGES.Default;
+
+                            return (
+                                <div key={index} className="mini-game-card">
+                                    <div className="game-thumb">
+                                        <img src={imageSrc} alt={gameId} />
+                                    </div>
+                                    <span>{gameId.toUpperCase()}</span>
+                                </div>
+                            )
+                        })
+                    ) : (
+                        <p className="empty-text">Sin juegos seleccionados.</p>
+                    )}
+                </div>
+            </div>
+
+            {/* COMUNIDAD / JUGADORES SIMILARES */}
+            <div className="content-panel">
+                <div className="panel-header">
+                    <h3><i className='bx bx-group'></i> Tu Red</h3>
+                    <span className="badge-notification">Sugerencias</span>
+                </div>
+                
+                <div className="community-box">
+                    {/* Renderizado condicional basado en datos REALES de 'goals' */}
+                    {userData.mainGoal.includes('Fun') || userData.mainGoal.includes('Diversión') ? (
+                        <div className="suggestion-box">
+                            <i className='bx bx-party'></i>
+                            <p>Buscas <strong>Diversión</strong>. Únete a salas casuales.</p>
+                            <button className="btn-small">Ver Salas</button>
+                        </div>
+                    ) : (
+                        <div className="suggestion-box">
+                            <i className='bx bx-trophy'></i>
+                            <p>Modo <strong>Competitivo</strong> detectado. Busca equipo aquí.</p>
+                            <button className="btn-small">Reclutamiento</button>
+                        </div>
+                    )}
+
+                    <div className="friend-list">
+                       <p className="list-title">Jugadores Similares:</p>
+                       {similarPlayers.map((player, idx) => (
+                           <div key={idx} className="friend-item">
+                                <div className="avatar" style={{background: idx % 2 === 0 ? '#4facfe' : '#ff0055'}}></div>
+                                <div>
+                                    <span>{player.username}</span>
+                                    <small>Interés: {player.game}</small>
+                                </div>
+                                <i className='bx bx-user-plus action-icon'></i>
+                           </div>
+                       ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* TORNEOS SUGERIDOS */}
+            <div className="content-panel full-width">
+                 <div className="panel-header">
+                    <h3><i className='bx bx-trophy'></i> Torneos Recomendados</h3>
+                    <button className="btn-link" onClick={() => navigate('/tournaments')}>Explorar</button>
+                </div>
+                <div className="rec-tournament">
+                    <div className="rec-info">
+                        <h4>Torneo Semanal de {userData.games[0] ? userData.games[0].toUpperCase() : 'Apertura'}</h4>
+                        <p>Categoría {userData.experience} - Inscripción Abierta</p>
+                    </div>
+                    <button className="btn-neon-small">Ver Detalles</button>
+                </div>
+            </div>
+
         </div>
     </div>
   );

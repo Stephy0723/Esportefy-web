@@ -1,149 +1,418 @@
 /* --- LAYOUT GENERAL --- */
-.dashboard-container {
+.dashboard-layout {
+    display: flex;
     min-height: 100vh;
-    background-color: transparent; 
-    color: var(--text-color);
-    padding: 20px 40px;
-    
-    /* CAMBIO AQUÍ: Aumentamos de 20px a 130px */
-    /* Esto baja todo el contenido para que no choque con el Navbar */
-    padding-top: 130px; 
-    
+    background-color: #0E0F12;
+    color: #fff;
     font-family: 'Poppins', sans-serif;
 }
 
-/* --- BIENVENIDA --- */
-.welcome-banner {
-    /* Gradiente suave usando el Verde Neón (#8EDB15) */
-    background: linear-gradient(90deg, rgba(142, 219, 21, 0.15) 0%, rgba(0, 0, 0, 0) 100%);
+.dashboard-main {
+    flex-grow: 1;
+    padding: 20px 40px;
+    margin-left: 250px;
+    transition: margin-left 0.3s ease;
+}
+
+.dashboard-content-only {
+    width: 100%;
+    padding: 20px 40px;
+    background-color: #0E0F12;
+    min-height: 100vh;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* --- HEADER DE BIENVENIDA --- */
+.dash-header {
+    background: linear-gradient(90deg, rgba(14,15,18,1) 0%, rgba(20,35,25,1) 100%);
+    border: 1px solid #2B2F38;
+    border-left: 4px solid #8EDB15;
     padding: 30px;
-    border-radius: 20px;
-    border-left: 5px solid #8EDB15; /* Verde Neón */
-    margin-bottom: 40px;
+    border-radius: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 100px;
+    margin-bottom: 35px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
-.welcome-banner h1 {
-    font-size: 2.5rem;
+.header-content h1 {
+    margin: 0;
+    font-size: 2rem;
     font-weight: 700;
-    color: var(--text-color);
+    letter-spacing: -0.5px;
 }
 
-.welcome-banner span {
-    color: #8EDB15; /* Verde Neón */
+.highlight-text {
+    color: #8EDB15;
+    text-transform: capitalize;
+}
+
+.header-content p {
+    margin: 8px 0 0 0;
+    color: #888;
+    font-size: 0.95rem;
 }
 
 .date-badge {
-    background: rgba(128, 128, 128, 0.1); /* Gris neutro para ambos modos */
-    padding: 8px 16px;
-    border-radius: 20px;
+    background: #181A20;
+    border: 1px solid #333;
+    padding: 10px 20px;
+    border-radius: 50px;
     font-size: 0.9rem;
-    color: var(--text-color);
-    opacity: 0.8;
-    display: flex; align-items: center; gap: 8px;
-    border: 1px solid rgba(128, 128, 128, 0.2);
+    color: #ccc;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
 }
 
-/* --- GRID PRINCIPAL --- */
-.dashboard-grid {
+.date-badge i { color: #8EDB15; }
+
+/* --- GRID DE ESTADÍSTICAS --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    margin-bottom: 35px;
+}
+
+.stat-card {
+    background: #181A20;
+    border: 1px solid #2B2F38;
+    padding: 25px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    border-color: #8EDB15;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.stat-icon-wrapper {
+    width: 55px;
+    height: 55px;
+    background: rgba(142, 219, 21, 0.1);
+    color: #8EDB15;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.platform-wrapper {
+    gap: 4px;
+    font-size: 1.1rem; 
+    flex-wrap: wrap;
+    padding: 5px;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.stat-info h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #fff;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.sub-text { font-size: 1.1rem !important; color: #ccc !important; }
+
+/* --- GRID DE CONTENIDO PRINCIPAL --- */
+.content-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 25px;
-    margin-bottom: 40px;
 }
 
-/* --- TARJETAS (CARDS) --- */
-.dash-card {
-    /* Aquí usamos la variable mágica que cambia blanco/negro */
-    background-color: var(--card-bg); 
-    
-    /* Sombra suave para modo claro, invisible en oscuro si se configura bien */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    border-radius: 20px;
+.content-panel {
+    background: #181A20;
+    border: 1px solid #2B2F38;
+    border-radius: 16px;
     padding: 25px;
-    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
 }
 
-.dash-card:hover {
-    transform: translateY(-5px);
-    border-color: #8EDB15; /* Borde verde al pasar mouse */
+.full-width {
+    grid-column: 1 / -1;
+    min-height: auto;
 }
 
-.card-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 20px; 
-    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
-    padding-bottom: 10px;
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.card-header h3 {
-    font-size: 1.2rem; display: flex; align-items: center; gap: 10px;
-    color: var(--text-color);
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #eee;
 }
 
-.card-header i { color: #8EDB15; font-size: 1.4rem; }
+.panel-header h3 i { color: #8EDB15; }
 
-.view-all {
-    font-size: 0.8rem; color: var(--text-color); opacity: 0.6; 
-    text-decoration: none; transition: 0.3s;
+.badge-notification {
+    background: #ff0055;
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: bold;
 }
-.view-all:hover { opacity: 1; color: #8EDB15; }
 
-/* --- ITEMS DE LAS LISTAS --- */
-.list-item {
-    display: flex; align-items: center; gap: 15px;
-    padding: 12px;
-    /* Fondo muy sutil que sirve en ambos modos */
-    background: rgba(128, 128, 128, 0.05);
-    border-radius: 12px;
-    margin-bottom: 10px;
+.btn-link {
+    background: transparent;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.btn-link:hover { color: #8EDB15; text-decoration: underline; }
+
+/* --- LISTA DE JUEGOS --- */
+.my-games-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.mini-game-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
     transition: 0.3s;
 }
 
-.list-item:hover { background: rgba(142, 219, 21, 0.1); } /* Fondo verde suave hover */
+.mini-game-card:hover { transform: translateY(-3px); }
 
-.item-img {
-    width: 45px; height: 45px;
-    border-radius: 10px; object-fit: cover;
-    background: #333; 
+.game-thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: 0.3s;
 }
 
-.item-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 2px; color: var(--text-color); }
-.item-info p { font-size: 0.8rem; color: var(--text-color); opacity: 0.6; }
+.game-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-/* Status Badge */
-.status {
-    margin-left: auto;
-    font-size: 0.75rem; padding: 4px 10px; border-radius: 20px;
+.mini-game-card:hover .game-thumb {
+    border-color: #8EDB15;
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.3);
+}
+
+.mini-game-card span {
+    font-size: 0.75rem;
+    color: #aaa;
     font-weight: 600;
-}
-.status.active { background: rgba(46, 204, 113, 0.2); color: #2ecc71; } 
-.status.pending { background: rgba(241, 196, 15, 0.2); color: #f39c12; } 
-
-/* --- ESTADÍSTICAS RÁPIDAS --- */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    margin-bottom: 30px;
+    text-align: center;
 }
 
-.stat-box {
-    background-color: var(--card-bg); /* Variable dinámica */
-    padding: 20px; border-radius: 15px; text-align: center;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+.empty-text {
+    color: #555;
+    font-style: italic;
+    width: 100%;
+    text-align: center;
+    margin-top: 40px;
 }
-.stat-box h2 { font-size: 2rem; color: var(--text-color); font-weight: 700; }
-.stat-box p { color: var(--text-color); opacity: 0.7; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
 
-/* Responsive */
-@media (max-width: 900px) {
-    .dashboard-container { padding: 20px; }
-    .stats-grid { grid-template-columns: 1fr 1fr; }
+/* --- SECCIÓN COMUNIDAD --- */
+.suggestion-box {
+    background: rgba(142, 219, 21, 0.03);
+    border: 1px dashed rgba(142, 219, 21, 0.3);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.suggestion-box i { font-size: 1.8rem; color: #8EDB15; margin-bottom: 10px; display: block; }
+.suggestion-box p { font-size: 0.9rem; color: #ccc; margin: 0 0 15px 0; line-height: 1.5; }
+
+.btn-small {
+    background: #8EDB15;
+    color: #000;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-small:hover { background: #fff; }
+
+.list-title {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.friend-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #131519;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid transparent;
+    transition: 0.2s;
+}
+
+.friend-item:hover {
+    border-color: #333;
+    background: #1a1d24;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, #4facfe, #00f2fe);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.friend-item div {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.friend-item span {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.friend-item small {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.action-icon {
+    color: #8EDB15;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    background: rgba(142, 219, 21, 0.1);
+    transition: 0.2s;
+}
+
+.action-icon:hover {
+    background: #8EDB15;
+    color: #000;
+}
+
+/* --- TORNEO RECOMENDADO (BANNER) --- */
+.rec-tournament {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, #131519 0%, #1c1f26 100%);
+    border: 1px solid #2B2F38;
+    padding: 25px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.rec-tournament::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 4px; height: 100%;
+    background: #8EDB15;
+}
+
+.rec-info h4 {
+    margin: 0 0 8px 0;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.rec-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.btn-neon-small {
+    background: transparent;
+    border: 1px solid #8EDB15;
+    color: #8EDB15;
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-neon-small:hover {
+    background: #8EDB15;
+    color: #000;
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.4);
+}
+
+/* --- LOADING SCREEN --- */
+.loading-screen {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #0E0F12;
+    color: #8EDB15;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 1px;
 }

@@ -1,170 +1,370 @@
-/* Heredamos estructura base de Login/Register pero con ajustes pro */
+/* =========================================
+   DISEÑO "NEOVERV" RESPONSIVE & INTEGRADO
+   ========================================= */
+
+/* 1. VARIABLES LOCALES */
+:root {
+    --brand-primary: #8EDB15;
+    
+    /* Variables locales que cambian con la clase .dark en el body */
+    --input-bg-local: #F9FAFB;      
+    --input-border-local: #E0E0E0;
+    --text-muted-local: #666666;
+    --shadow-card-local: 0 10px 40px rgba(0,0,0,0.05);
+}
+
+/* MODO OSCURO (Automático si body tiene class="dark") */
+body.dark {
+    --input-bg-local: #2c2c2c;
+    --input-border-local: #444444;
+    --text-muted-local: #aaaaaa;
+    --shadow-card-local: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+/* =========================================
+   ESTILOS GENERALES
+   ========================================= */
+
+/* --- CONTENEDOR DE PÁGINA --- */
+.reg-page {
+    width: 100%;
+    min-height: 100vh; /* Ocupa toda la altura disponible */
+    
+    /* Variables globales de tu App.css */
+    background-color: var(--body-bg); 
+    color: var(--text-color);
+    
+    /* Espaciado para respetar el Navbar fijo */
+    padding-top: 100px; 
+    padding-bottom: 40px;
+    padding-left: 40px;
+    padding-right: 40px;
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Alineado arriba para permitir scroll */
+    
+    font-family: 'Poppins', sans-serif;
+    transition: background-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.main-content-wrapper {
+    width: 100%;
+    max-width: 1200px; /* Ancho máximo para pantallas grandes */
+    position: relative;
+}
+
+/* --- TARJETA PRINCIPAL (SPLIT) --- */
+.split-layout {
+    display: flex;
+    flex-direction: row; /* Lado a lado en escritorio */
+    width: 100%;
+    
+    background-color: var(--card-bg); /* Fondo tarjeta global */
+    
+    border-radius: 16px;
+    box-shadow: var(--shadow-card-local);
+    overflow: hidden; /* Recorta la imagen en las esquinas */
+    min-height: 650px;
+    
+    /* Sin bordes, solo sombra */
+    border: none;
+}
+
+/* --- COLUMNA IZQUIERDA (FORMULARIO) --- */
+.form-side {
+    width: 45%;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    
+    /* Línea divisoria sutil a la derecha */
+    border-right: 1px solid var(--input-border-local); 
+    overflow-y: auto;
+}
+
+.form-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 15px;
+    line-height: 1.1;
+}
 
 .highlight-green {
-    color: #00ff88;
-    text-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+    color: var(--brand-primary);
+}
+
+.form-header p {
+    font-size: 0.95rem;
+    color: var(--text-muted-local);
+    line-height: 1.5;
+    margin-bottom: 30px;
 }
 
 .step-badge.verify {
-    background: rgba(0, 255, 136, 0.1);
-    color: #00ff88;
-    border: 1px solid rgba(0, 255, 136, 0.3);
-    padding: 6px 12px;
-    border-radius: 4px;
+    color: var(--brand-primary);
     font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 1px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 15px;
-}
-
-.section-title {
-    color: #fff;
-    font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin: 25px 0 15px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 5px;
-    opacity: 0.8;
-}
-
-/* INPUTS CON ICONOS */
-.input-group { position: relative; margin-bottom: 20px; }
-.input-icon {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
-    font-size: 1.2rem;
-    transition: 0.3s;
-}
-.input-group input:focus ~ .input-icon { color: #00ff88; }
-
-/* FILE UPLOAD PERSONALIZADO */
-.file-upload-group {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px dashed rgba(255, 255, 255, 0.2);
-    transition: 0.3s;
-}
-.file-upload-group:hover { border-color: #00ff88; background: rgba(0, 255, 136, 0.02); }
-
-.static-label {
-    display: block;
-    color: #aaa;
-    font-size: 0.85rem;
     margin-bottom: 10px;
+    display: block;
 }
 
-.file-box {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.hidden-input { display: none; }
-
-.upload-btn {
-    background: #222;
-    color: #fff;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    border: 1px solid #444;
-    transition: 0.3s;
-    display: flex; align-items: center; gap: 8px;
-}
-.upload-btn:hover { background: #333; border-color: #fff; }
-
-.file-name {
-    color: #888;
-    font-size: 0.8rem;
-    font-style: italic;
-    white-space: nowrap;
+/* --- COLUMNA DERECHA (VISUAL) --- */
+.visual-side {
+    width: 55%;
+    position: relative;
     overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
+    background-color: #000; /* Fondo de respaldo */
 }
 
-small { display: block; margin-top: 8px; color: #555; font-size: 0.7rem; }
-
-/* SELECT PERSONALIZADO */
-select {
+.moving-bg {
     width: 100%;
-    padding: 12px 15px;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: #fff;
-    outline: none;
-    font-family: inherit;
-    appearance: none; /* Quita la flecha por defecto */
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300ff88%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 15px top 50%;
-    background-size: 12px auto;
-}
-select option { background: #111; color: #fff; }
-
-/* BOTÓN NEÓN VERDE */
-.btn-neon.green {
-    background: #00ff88;
-    color: #000;
-    box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
-    font-weight: 700;
-}
-.btn-neon.green:hover {
-    background: #00cc6a;
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%); /* Blanco y negro siempre */
+    transition: transform 10s ease;
 }
 
-/* LEGAL TEXT */
-.legal-text {
-    margin-top: 20px;
-    font-size: 0.7rem;
-    color: #666;
-    text-align: center;
-    line-height: 1.4;
-}
-.legal-text a { color: #00ff88; text-decoration: none; }
-.legal-text a:hover { text-decoration: underline; }
-
-/* VISUAL SIDE EXTRA */
-.organizer-visual {
-    clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%); /* Corte diagonal invertido */
+.visual-side:hover .moving-bg {
+    transform: scale(1.05);
 }
 
 .green-overlay {
-    background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0, 255, 136, 0.15) 100%);
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4); /* Oscurece la imagen para leer texto */
+    z-index: 1;
+}
+
+.visual-content {
+    position: absolute;
+    
+    /* AJUSTE: Texto más arriba como pediste */
+    top: 25%; 
+    left: 60px;
+    right: 40px;
+    
+    z-index: 2;
+    color: #fff; /* Texto blanco sobre imagen */
 }
 
 .icon-large {
-    font-size: 4rem;
-    color: #00ff88;
+    font-size: 3.5rem;
+    color: var(--brand-primary);
     margin-bottom: 20px;
     animation: float 3s ease-in-out infinite;
 }
 
-.features-list {
-    margin-top: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+.visual-content h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 15px;
+    line-height: 1.1;
 }
-.features-list span {
-    display: flex; align-items: center; gap: 10px;
-    color: #ccc; font-size: 0.9rem;
-}
-.features-list i { color: #00ff88; }
 
+.visual-content p {
+    font-size: 1rem;
+    opacity: 0.9;
+    max-width: 90%;
+    margin-bottom: 30px;
+}
+
+.features-list span {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.features-list i {
+    color: var(--brand-primary);
+    font-size: 1.2rem;
+}
+
+/* --- INPUTS & ELEMENTOS FORMULARIO --- */
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+    width: 100%;
+    background-color: var(--input-bg-local);
+    border: 1px solid var(--input-border-local);
+    color: var(--text-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+    border-color: var(--brand-primary);
+    background-color: var(--card-bg);
+}
+
+.grid-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Iconos ocultos para diseño limpio */
+.input-icon { display: none; }
+
+/* Selector Flecha Verde */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238EDB15'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 20px;
+}
+
+/* File Upload */
+.file-upload-group {
+    background-color: var(--input-bg-local);
+    border: 1px dashed var(--input-border-local);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.upload-btn {
+    background-color: var(--card-bg);
+    border: 1px solid var(--input-border-local);
+    color: var(--text-color);
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+}
+
+.upload-btn:hover {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+}
+
+.file-name {
+    display: block; margin-top: 10px; font-size: 0.85rem; color: var(--brand-primary);
+}
+
+small { display: block; margin-top: 5px; font-size: 0.75rem; color: var(--text-muted-local); }
+
+/* Botones */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--input-border-local);
+}
+
+.btn-ghost {
+    background: none; border: none; color: var(--text-muted-local); font-weight: 600; cursor: pointer;
+}
+.btn-ghost:hover { color: var(--text-color); }
+
+button.btn-neon.green {
+    background-color: var(--brand-primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 12px 30px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: none !important; /* Estilo sólido limpio */
+}
+
+button.btn-neon.green:hover {
+    background-color: #76b312 !important;
+}
+
+.legal-text {
+    margin-top: 20px; font-size: 0.75rem; color: var(--text-muted-local); text-align: center;
+}
+.legal-text a { color: var(--brand-primary); text-decoration: none; border-bottom: 1px solid; }
+
+/* Animación Flotar */
 @keyframes float {
     0% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
     100% { transform: translateY(0px); }
+}
+
+/* =========================================
+   RESPONSIVE (MÓVIL Y TABLET)
+   ========================================= */
+
+@media (max-width: 968px) {
+    .reg-page {
+        /* Reducimos padding en móvil para aprovechar espacio */
+        padding: 20px;
+        padding-top: 80px; /* Aún respetamos Navbar */
+        height: auto;
+    }
+
+    .split-layout {
+        flex-direction: column-reverse; /* Formulario arriba, imagen abajo (o al revés) */
+        /* Recomendación: column-reverse pone la imagen abajo o column pone imagen arriba */
+        flex-direction: column; 
+        height: auto;
+    }
+
+    .visual-side {
+        width: 100%;
+        height: 250px; /* Altura fija para la imagen en móvil */
+        min-height: 250px;
+    }
+
+    .visual-content {
+        top: 50%; /* Centrado en el espacio pequeño */
+        left: 30px;
+        transform: translateY(-50%);
+    }
+    
+    .icon-large { font-size: 2.5rem; margin-bottom: 10px; }
+    .visual-content h2 { font-size: 1.8rem; }
+    .visual-content p { display: none; } /* Ocultar texto largo en móvil */
+    .features-list { display: none; }
+
+    .form-side {
+        width: 100%;
+        padding: 30px;
+        border-right: none;
+    }
+
+    .form-header h1 { font-size: 2rem; }
+    
+    /* En móvil, los inputs en grid pasan a una sola columna */
+    .grid-inputs {
+        grid-template-columns: 1fr;
+    }
 }

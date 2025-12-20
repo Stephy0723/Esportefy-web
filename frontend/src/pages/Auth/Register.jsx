@@ -219,8 +219,14 @@ const Register = () => {
                 </div>
                 <label className="remember-me mt-2">
                   <input type="checkbox" name="checkTerms" checked={formData.checkTerms} onChange={handleChange} />
-                  <span>Acepto Términos y Condiciones</span>
-                </label>
+<span className="terms-text">
+    He leído y acepto los 
+    {/* Enlace corregido */}
+    <a href="/legal/terms" target="_blank" rel="noreferrer"> Términos de Servicio </a>
+    y la 
+    {/* Enlace corregido */}
+    <a href="/legal/privacy" target="_blank" rel="noreferrer"> Política de Privacidad</a>.
+</span>                </label>
 
                 {error && <div className="error-alert" style={{color: '#ff4d4d', marginTop: '10px'}}>{error}</div>}
 
