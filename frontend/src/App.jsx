@@ -26,7 +26,7 @@ import Teams from './pages/menu/Teams/Teams';
 
 //Formulario de registro de equipos
 import TeamRegistration from './pages/menu/Tournaments/TeamRegistration/TeamRegistration';
-import CreateTeamPage from './pages/menu/Teams/CreateTeamPage/CreateTeamPage';
+import CreateTeamPage from './pages/menu/Tournaments/CreateTournament/CreateTournament';
 import OrganizerApplication from './pages/menu/Tournaments/OrganizerApplication/OrganizerApplication';
 
 //políticas legales
