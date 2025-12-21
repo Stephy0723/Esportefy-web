@@ -131,6 +131,292 @@
     color: #000;
     border-color: #8EDB15;
 }
+/* Contenedor para alinear h1 y botón en la misma fila */
+.header-inline {
+    display: flex;
+    align-items: center; 
+    gap: 20px;           /* Espacio entre el título y el botón */
+    margin-bottom: 5px;
+}
+
+.header-inline h1 {
+    margin: 0;
+    font-size: 2.2rem;   /* Ajusta según el tamaño de tu h1 */
+}
+
+/* Botón con tamaño "un poco más grande" */
+.btn-create-team-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    
+    /* Aumentamos el padding para darle más cuerpo */
+    padding: 8px 16px; 
+    height: fit-content;
+    
+    background-color: #8EDB15; /* Tu verde neón */
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    
+    /* Aumentamos la fuente para que sea más legible */
+    font-size: 13px;    
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-create-team-inline:hover {
+    background-color: #9efd1a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(142, 219, 21, 0.3);
+}
+
+.btn-create-team-inline i {
+    font-size: 16px; /* Icono un poco más grande */
+}
+
+/* Contenedor de fondo oscuro y desenfoque */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(6px);
+}
+
+/* Caja del modal */
+.modal-content-dark {
+    background: #111111;
+    padding: 35px;
+    border-radius: 12px;
+    border: 1px solid rgba(142, 219, 21, 0.3);
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+}
+
+.modal-header-text h2 {
+    color: #fff;
+    margin: 0 0 5px 0;
+}
+
+.modal-header-text p {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+}
+
+/* Campos de entrada */
+.input-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-group label {
+    color: #bbb;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.input-group input, .input-group select, .input-group textarea {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 12px;
+    color: #fff;
+    border-radius: 6px;
+    outline: none;
+}
+
+.input-group input:focus {
+    border-color: #8EDB15;
+}
+
+/* Botones del modal */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.btn-cancel {
+    background: transparent;
+    color: #888;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-submit-team {
+    background: #8EDB15;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-submit-team:hover {
+    background: #9efd1a;
+    transform: scale(1.03);
+}
+.team-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-leave-team {
+    background: transparent;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: #e74c3c; /* Rojo suave */
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-leave-team:hover {
+    background: #e74c3c;
+    color: #fff;
+    border-color: #e74c3c;
+}
+.team-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Botón de Salir (Rojo) */
+.btn-leave-team {
+    background: transparent;
+    border: 1px solid rgba(255, 71, 87, 0.4);
+    color: #ff4757;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: 0.3s;
+    text-transform: uppercase;
+}
+
+.btn-leave-team:hover {
+    background: #ff4757;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}
+
+/* Botón de Unirse (Verde) */
+.view-team-btn.join {
+    background: #8EDB15;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    font-weight: 800;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Estilos específicos para ViewTeamModal */
+.team-game-tag {
+    color: #8EDB15;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: -10px;
+}
+
+.info-section {
+    margin-top: 20px;
+}
+
+.info-section label {
+    color: #888;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.members-scroll-list {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.member-row-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.member-avatar i {
+    font-size: 1.8rem;
+    color: #555;
+    margin-right: 12px;
+}
+
+.member-info {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.member-name {
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.captain-badge {
+    margin-left: auto;
+    background: #f1c40f;
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.btn-close-x {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.btn-close-x:hover { color: #fff; }
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    .teams-header-flex {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .btn-create-team {
+        width: 100%;
+        justify-content: center;
+    }
+}
 
 /* Responsive */
 @media (max-width: 768px) {

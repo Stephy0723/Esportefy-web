@@ -32,9 +32,11 @@ const Login = () => {
             if (rememberMe) {
                 localStorage.setItem('token', token);
                 localStorage.setItem('esportefyUser', JSON.stringify(user));
+                localStorage.setItem('user', JSON.stringify(user));
             } else {
                 sessionStorage.setItem('token', token);
                 sessionStorage.setItem('esportefyUser', JSON.stringify(user));
+                sessionStorage.setItem('user', JSON.stringify(user));
             }
 
             // 5. Redirigir al inicio o dashboard

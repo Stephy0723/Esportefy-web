@@ -26,6 +26,7 @@ import Teams from './pages/menu/Teams/Teams';
 
 //Formulario de registro de equipos
 import TeamRegistration from './pages/menu/Tournaments/TeamRegistration/TeamRegistration';
+import CreateTeamPage from './pages/menu/Teams/CreateTeamPage/CreateTeamPage';
 import OrganizerApplication from './pages/menu/Tournaments/OrganizerApplication/OrganizerApplication';
 
 //políticas legales
@@ -96,7 +97,8 @@ function App() {
           <Route path="/legal/payment-policy" element={<PaymentPolicy />} />
           <Route path="/legal/terms" element={<TermsConditions />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-
+          <Route path="/create-team" element={<CreateTeamPage />} />
+          
           {/* PRIVADAS (Con Sidebar + Navbar) */}
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -111,6 +113,7 @@ function App() {
           {/* Standardized URLs */}
             <Route path="/team-registration" element={<TeamRegistration />} />
             <Route path="/organizer-application" element={<OrganizerApplication />} />
+            
           </Route>
         </Routes>
       </BrowserRouter>
