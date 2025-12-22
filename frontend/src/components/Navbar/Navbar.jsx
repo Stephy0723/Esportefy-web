@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Notifications from '../../pages/Notifications/Notifications';
+import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -55,20 +56,29 @@ const Navbar = () => {
 
           <button className="notify-btn" onClick={() => navigate('/notifications')}>
             <i className='bx bx-bell'></i>
-            {/* El punto rojo sigue apareciendo si hay usuario activo */}
             {activeUser && <span className="dot"></span>}
-        </button>
+          </button>
 
+          {/* --- AQUÍ ESTÁ EL ÚNICO CAMBIO --- */}
           {activeUser ? (
-            <div className="user-profile" onClick={handleLogout} title="Cerrar Sesión">
-              <div className="user-info">
-                <span className="username">{activeUser.name}</span>
-              </div>
-              <img 
-                src={activeUser.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
-                alt="Avatar" 
-                className="user-avatar" 
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                
+                {/* 1. Al dar clic en la tarjeta, te lleva a PERFIL */}
+                <Link to="/profile" className="user-profile" title="Ir al Perfil">
+                  <div className="user-info">
+                    <span className="username">{activeUser.name}</span>
+                  </div>
+                  <img 
+                    src={activeUser.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
+                    alt="Avatar" 
+                    className="user-avatar" 
+                  />
+                </Link>
+
+                {/* 2. Botón separado para Cerrar Sesión (para no perder la función) */}
+                <button onClick={handleLogout} style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
+                    <i className='bx bx-log-out' style={{fontSize: '1.2rem'}}></i>
+                </button>
             </div>
           ) : (
             <Link to="/login" className="login-btn">
