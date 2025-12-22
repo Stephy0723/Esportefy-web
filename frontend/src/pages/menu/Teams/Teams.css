@@ -1,431 +1,202 @@
-/* --- LAYOUT Y TEMA --- */
-
-/* Contenedor principal (Reemplaza al style inline del div padre) */
-.teams-page-wrapper {
+/* =========================================
+   LAYOUT PRINCIPAL
+   ========================================= */
+.teams-dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px; /* Contenido | Sidebar Derecha */
     min-height: 100vh;
-    width: 100%;
+    background-color: #09090b;
+    color: white;
+    font-family: 'Rajdhani', sans-serif;
+    
+    /* IMPORTANTE: Baja el contenido para no chocar con Navbar */
+    padding-top: 80px; 
 }
 
-.teams-container {
-    padding: 130px 40px 40px 40px;
-    color: var(--text-color);
+/* --- CONTENIDO PRINCIPAL (IZQUIERDA) --- */
+.dashboard-content {
+    padding: 2rem 3rem;
+    overflow-y: auto;
 }
 
-/* Títulos y Subtítulos */
-.teams-container h1 {
-    color: var(--text-color) !important;
-    margin-bottom: 10px;
-}
-
-.teams-container p {
-    color: var(--text-color) !important;
-    opacity: 0.7;
-    margin-bottom: 30px;
-}
-
-/* --- BARRA DE BÚSQUEDA --- */
-.search-team-bar {
-    width: 100%;
-    padding: 15px;
-    background: var(--card-bg); 
-    border: 1px solid rgba(128, 128, 128, 0.2);
-    border-radius: 10px;
-    color: var(--text-color);
-    margin-bottom: 30px;
-    font-size: 1rem;
-    outline: none;
-}
-
-.search-team-bar:focus {
-    border-color: #8EDB15; /* Verde Neón */
-}
-
-/* --- LISTA Y TARJETAS --- */
-.team-list {
+.content-header {
     display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.team-row {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    background: var(--card-bg); /* Fondo dinámico */
-    padding: 15px 25px;
-    border-radius: 12px;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    transition: 0.3s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    align-items: flex-end;
+    margin-bottom: 2rem;
 }
 
-.team-row:hover {
-    background: rgba(142, 219, 21, 0.1); 
-    border-color: #8EDB15;
-    transform: translateY(-2px);
-}
-
-/* --- PERFIL DEL EQUIPO --- */
-.team-profile {
-    display: flex; align-items: center; gap: 15px;
-}
-
-.team-profile h3 {
+.content-header h1 {
+    font-size: 2.5rem;
     margin: 0;
-    color: var(--text-color);
-    font-size: 1.1rem;
+    font-family: 'Playfair Display', serif; /* Tipo de letra elegante como la imagen */
+    letter-spacing: 1px;
 }
 
-.team-division {
-    font-size: 12px;
-    font-weight: 500;
+.content-header p { color: #71717a; margin: 0; }
+
+/* Buscador Estilo Cápsula */
+.search-container {
+    position: relative;
+    width: 400px;
+}
+.search-container input {
+    width: 100%;
+    background: #18181b;
+    border: 1px solid #333;
+    padding: 12px 15px 12px 45px;
+    border-radius: 50px;
+    color: white;
+}
+.search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #aaa; }
+
+/* Pills de Categoría */
+.category-pills { display: flex; gap: 1rem; margin-bottom: 2rem; }
+.category-pills button {
+    background: transparent; border: 1px solid #333; color: #aaa;
+    padding: 8px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s;
+}
+.category-pills button:hover, .category-pills button.active {
+    border-color: #00e676; color: white; background: rgba(0, 230, 118, 0.1);
 }
 
-/* --- COLORES DE LOS EQUIPOS (CLASES MODIFICADORAS) --- */
-/* Rojo */
-.logo-red { background-color: #e74c3c; }
-.text-red { color: #e74c3c; }
-
-/* Azul */
-.logo-blue { background-color: #3498db; }
-.text-blue { color: #3498db; }
-
-/* Dorado */
-.logo-gold { 
-    background-color: #f1c40f; 
-    color: #000 !important; /* Icono negro en fondo dorado */
-}
-.text-gold { color: #f1c40f; }
-
-
-/* --- LOGO BASE --- */
-.team-logo {
-    width: 50px; height: 50px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 24px; 
-    color: #fff; /* Por defecto blanco */
-}
-
-/* --- MIEMBROS Y BOTONES --- */
-.members-count {
-    color: var(--text-color);
-    opacity: 0.6;
-    font-size: 0.9rem; 
-    display: flex; align-items: center; gap: 5px;
-}
-
-.view-team-btn {
-    padding: 8px 20px;
-    background: transparent;
-    border: 1px solid rgba(128, 128, 128, 0.3);
-    color: var(--text-color);
-    border-radius: 20px;
-    cursor: pointer;
-    transition: 0.3s;
-    font-weight: 500;
-}
-
-.view-team-btn:hover { 
-    background: #8EDB15; 
-    color: #000;
-    border-color: #8EDB15;
-}
-/* Contenedor para alinear h1 y botón en la misma fila */
-.header-inline {
-    display: flex;
-    align-items: center; 
-    gap: 20px;           /* Espacio entre el título y el botón */
-    margin-bottom: 5px;
-}
-
-.header-inline h1 {
-    margin: 0;
-    font-size: 2.2rem;   /* Ajusta según el tamaño de tu h1 */
-}
-
-/* Botón con tamaño "un poco más grande" */
-.btn-create-team-inline {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    
-    /* Aumentamos el padding para darle más cuerpo */
-    padding: 8px 16px; 
-    height: fit-content;
-    
-    background-color: #8EDB15; /* Tu verde neón */
-    color: #000;
-    border: none;
-    border-radius: 6px;
-    
-    /* Aumentamos la fuente para que sea más legible */
-    font-size: 13px;    
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.btn-create-team-inline:hover {
-    background-color: #9efd1a;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(142, 219, 21, 0.3);
-}
-
-.btn-create-team-inline i {
-    font-size: 16px; /* Icono un poco más grande */
-}
-
-/* Contenedor de fondo oscuro y desenfoque */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.85);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 2000;
-    backdrop-filter: blur(6px);
-}
-
-/* Caja del modal */
-.modal-content-dark {
-    background: #111111;
-    padding: 35px;
-    border-radius: 12px;
-    border: 1px solid rgba(142, 219, 21, 0.3);
-    width: 90%;
-    max-width: 450px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-}
-
-.modal-header-text h2 {
-    color: #fff;
-    margin: 0 0 5px 0;
-}
-
-.modal-header-text p {
-    color: #888;
-    font-size: 0.9rem;
-    margin-bottom: 25px;
-}
-
-/* Campos de entrada */
-.input-group {
-    margin-bottom: 20px;
+/* --- SIDEBAR (DERECHA) --- */
+.dashboard-sidebar-right {
+    background: #121214;
+    border-left: 1px solid #27272a;
+    padding: 2rem;
+    position: fixed; /* Fijo a la derecha */
+    right: 0;
+    top: 80px; /* Debajo del navbar */
+    bottom: 0;
+    width: 320px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 2rem;
 }
 
-.input-group label {
-    color: #bbb;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.input-group input, .input-group select, .input-group textarea {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    padding: 12px;
-    color: #fff;
-    border-radius: 6px;
-    outline: none;
-}
-
-.input-group input:focus {
-    border-color: #8EDB15;
-}
-
-/* Botones del modal */
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    margin-top: 10px;
-}
-
-.btn-cancel {
-    background: transparent;
-    color: #888;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.btn-submit-team {
-    background: #8EDB15;
+.btn-create-mega {
+    background: #00e676;
     color: #000;
     border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
+    padding: 15px;
+    border-radius: 12px;
     font-weight: 800;
+    font-size: 1rem;
     cursor: pointer;
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+    box-shadow: 0 4px 20px rgba(0, 230, 118, 0.3);
     transition: 0.2s;
 }
+.btn-create-mega:hover { transform: scale(1.02); }
 
-.btn-submit-team:hover {
-    background: #9efd1a;
-    transform: scale(1.03);
-}
-.team-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+.sidebar-widget h3 { font-size: 1rem; color: #71717a; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
 
-.btn-leave-team {
-    background: transparent;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-    color: #e74c3c; /* Rojo suave */
-    padding: 8px 10px;
+/* Mini Calendario */
+.mini-event {
+    background: #18181b;
+    border-left: 3px solid #00e676;
+    padding: 10px;
     border-radius: 6px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-leave-team:hover {
-    background: #e74c3c;
-    color: #fff;
-    border-color: #e74c3c;
-}
-.team-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Botón de Salir (Rojo) */
-.btn-leave-team {
-    background: transparent;
-    border: 1px solid rgba(255, 71, 87, 0.4);
-    color: #ff4757;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: 0.3s;
-    text-transform: uppercase;
-}
-
-.btn-leave-team:hover {
-    background: #ff4757;
-    color: #fff;
-    box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
-}
-
-/* Botón de Unirse (Verde) */
-.view-team-btn.join {
-    background: #8EDB15;
-    color: #000;
-    border: none;
-    padding: 8px 16px;
-    font-weight: 800;
-    font-size: 12px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-/* Estilos específicos para ViewTeamModal */
-.team-game-tag {
-    color: #8EDB15;
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-top: -10px;
-}
-
-.info-section {
-    margin-top: 20px;
-}
-
-.info-section label {
-    color: #888;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    display: block;
     margin-bottom: 10px;
+    display: flex; gap: 10px;
+}
+.mini-event .time { font-weight: bold; color: white; }
+.mini-event .details strong { display: block; font-size: 0.9rem; }
+.mini-event .details small { color: #71717a; font-size: 0.8rem; }
+
+/* =========================================
+   TARJETAS DE EQUIPO (LOOK & FEEL IMAGEN)
+   ========================================= */
+.teams-grid-pro {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
 }
 
-.members-scroll-list {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    max-height: 250px;
-    overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.member-row-item {
+.team-card-banner {
+    position: relative;
+    border-radius: 20px;
+    padding: 1.5rem;
+    height: 200px;
     display: flex;
-    align-items: center;
-    padding: 12px 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.member-avatar i {
-    font-size: 1.8rem;
-    color: #555;
-    margin-right: 12px;
-}
-
-.member-info {
-    display: flex;
-    align-items: center;
-    width: 100%;
-}
-
-.member-name {
-    color: #fff;
-    font-size: 0.95rem;
-}
-
-.captain-badge {
-    margin-left: auto;
-    background: #f1c40f;
-    color: #000;
-    font-size: 0.65rem;
-    font-weight: 900;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.btn-close-x {
-    background: none;
-    border: none;
-    color: #555;
-    font-size: 1.5rem;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
     cursor: pointer;
+    transition: transform 0.3s;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
-.btn-close-x:hover { color: #fff; }
-/* Responsive para móviles */
-@media (max-width: 768px) {
-    .teams-header-flex {
-        flex-direction: column;
-        gap: 20px;
-    }
-    
-    .btn-create-team {
-        width: 100%;
-        justify-content: center;
-    }
+.team-card-banner:hover { transform: translateY(-5px); }
+
+/* --- COLORES DE TARJETAS (GRADIENTES) --- */
+.card-female {
+    background: linear-gradient(135deg, #000 40%, #ff007f 100%);
+    box-shadow: 0 10px 30px rgba(255, 0, 127, 0.1);
 }
+.card-female .rank-badge { color: #ff007f; }
+
+.card-university {
+    background: linear-gradient(135deg, #000 40%, #3b82f6 100%);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+}
+.card-university .rank-badge { color: #3b82f6; }
+
+.card-expert {
+    background: linear-gradient(135deg, #000 40%, #ef4444 100%);
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.1);
+}
+.card-expert .rank-badge { color: #ef4444; }
+
+.card-legend {
+    background: linear-gradient(135deg, #000 40%, #ffd700 100%);
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.1);
+}
+.card-legend .rank-badge { color: #ffd700; font-size: 1.8rem; }
+
+.card-standard {
+    background: linear-gradient(135deg, #000 40%, #00e676 100%);
+    box-shadow: 0 10px 30px rgba(0, 230, 118, 0.1);
+}
+.card-standard .rank-badge { color: #00e676; }
+
+/* Elementos Tarjeta */
+.card-top-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.team-identity { display: flex; align-items: center; gap: 15px; }
+.team-logo-circle {
+    width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.1);
+    display: flex; justify-content: center; align-items: center; font-weight: bold;
+    border: 2px solid rgba(255,255,255,0.2); overflow: hidden;
+}
+.team-logo-circle img { width: 100%; height: 100%; object-fit: cover; }
+.team-texts h3 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
+.game-label { font-size: 0.75rem; text-transform: uppercase; color: rgba(255,255,255,0.7); letter-spacing: 2px; }
+.rank-badge { font-size: 1.5rem; filter: drop-shadow(0 0 5px currentColor); }
+
+/* Roster Superpuesto */
+.roster-preview { display: flex; padding-left: 10px; }
+.member-avatar-stack {
+    width: 35px; height: 35px; border-radius: 50%; overflow: hidden;
+    border: 2px solid #000; margin-left: -12px; transition: 0.2s;
+}
+.member-avatar-stack img { width: 100%; height: 100%; }
+.member-avatar-stack:hover { transform: translateY(-5px); z-index: 10; }
+
+/* Footer Tarjeta */
+.card-footer-row {
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px;
+}
+.coach-label { font-size: 0.7rem; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.btn-view-mini {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: white; padding: 5px 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;
+}
+.btn-view-mini:hover { background: white; color: black; }
 
 /* Responsive */
-@media (max-width: 768px) {
-    .team-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    .view-team-btn {
-        width: 100%;
-    }
+@media (max-width: 1000px) {
+    .teams-dashboard-layout { grid-template-columns: 1fr; }
+    .dashboard-sidebar-right { display: none; } /* Ocultar sidebar en móvil o mover abajo */
 }

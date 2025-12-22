@@ -1,0 +1,195 @@
+.edit-profile-page {
+    padding: 2rem;
+    color: white;
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.btn-back {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+.btn-back:hover { color: #8EDB15; }
+
+/* LAYOUT PRINCIPAL */
+.settings-container {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 2rem;
+    background: #121214;
+    border: 1px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 500px;
+}
+
+/* SIDEBAR */
+.settings-sidebar {
+    background: #18181b;
+    padding: 1.5rem;
+    border-right: 1px solid #333;
+}
+
+.settings-sidebar h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: #777;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+}
+
+.settings-sidebar nav button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #ccc;
+    padding: 12px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: 0.2s;
+    margin-bottom: 5px;
+}
+
+.settings-sidebar nav button:hover {
+    background: rgba(255,255,255,0.05);
+    color: white;
+}
+
+.settings-sidebar nav button.active {
+    background: rgba(142, 219, 21, 0.1);
+    color: #8EDB15;
+    font-weight: bold;
+    border-left: 3px solid #8EDB15;
+}
+
+/* CONTENIDO */
+.settings-content {
+    padding: 2rem;
+}
+
+.tab-content h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+/* AVATAR EDIT */
+.avatar-edit-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    background: rgba(255,255,255,0.03);
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.avatar-edit-section img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #8EDB15;
+}
+
+.avatar-inputs { flex-grow: 1; }
+.input-icon-wrapper { position: relative; display: flex; align-items: center; }
+.icon-input { position: absolute; left: 10px; color: #777; }
+.input-icon-wrapper input { padding-left: 35px !important; }
+
+/* FORM GROUPS */
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; color: #aaa; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; }
+.form-group input, .form-group textarea {
+    width: 100%;
+    background: #09090b;
+    border: 1px solid #333;
+    padding: 12px;
+    border-radius: 8px;
+    color: white;
+    font-family: inherit;
+    font-size: 1rem;
+}
+.form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #8EDB15;
+}
+
+/* PRIVACIDAD / SWITCH */
+.privacy-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #18181b;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+}
+.privacy-text h4 { margin: 0 0 5px 0; color: white; }
+.privacy-text p { margin: 0; color: #777; font-size: 0.9rem; }
+
+/* Switch CSS */
+.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #8EDB15; }
+input:checked + .slider:before { transform: translateX(24px); }
+
+.privacy-alert {
+    border: 1px solid #ef4444;
+    padding: 15px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+}
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* BOTÓN GUARDAR */
+.form-actions { margin-top: 2rem; border-top: 1px solid #333; padding-top: 1rem; text-align: right; }
+.btn-save-primary {
+    background: #8EDB15;
+    color: black;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s;
+}
+.btn-save-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.3);
+}
+
+@media (max-width: 768px) {
+    .settings-container { grid-template-columns: 1fr; }
+    .settings-sidebar nav { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+    .settings-sidebar nav button { width: auto; white-space: nowrap; margin-bottom: 0; }
+}

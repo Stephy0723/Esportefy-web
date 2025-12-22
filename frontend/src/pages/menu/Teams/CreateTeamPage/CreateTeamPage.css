@@ -1,0 +1,451 @@
+/* =========================================
+   1. FUENTES Y VARIABLES GLOBALES
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap');
+
+:root {
+    /* Colores Base (Dark Mode) */
+    --bg-main: #09090b;       
+    --bg-card: #121214;       
+    --bg-input: #18181b;      
+    --text-primary: #ffffff;  
+    --text-muted: #71717a; 
+    --border-color: #27272a;
+    
+    /* Variables que cambiarán dinámicamente */
+    --theme-color: #00e676; /* Verde por defecto */
+    --theme-gradient: linear-gradient(135deg, #00e676 0%, #00b894 100%);
+    --theme-glow: rgba(0, 230, 118, 0.4);
+}
+
+/* =========================================
+   2. TEMAS DINÁMICOS (POR MODALIDAD)
+   ========================================= */
+/* FPS (Valorant, CS:GO, COD) -> ROJO/CRIMSON */
+.theme-fps { 
+    --theme-color: #ff4757; 
+    --theme-gradient: linear-gradient(135deg, #ff4757, #ff6b81); 
+    --theme-glow: rgba(255, 71, 87, 0.5); 
+}
+
+/* MOBA (LoL, Dota 2) -> AZUL CIELO */
+.theme-moba { 
+    --theme-color: #00a8ff; 
+    --theme-gradient: linear-gradient(135deg, #00a8ff, #0097e6); 
+    --theme-glow: rgba(0, 168, 255, 0.5); 
+}
+
+/* FIGHTING (Street Fighter, Tekken) -> DORADO/AMARILLO */
+.theme-fighting { 
+    --theme-color: #e1b12c; 
+    --theme-gradient: linear-gradient(135deg, #fbc531, #e1b12c); 
+    --theme-glow: rgba(225, 177, 44, 0.5); 
+}
+
+/* BATTLE ROYALE (Fortnite, Warzone) -> MORADO */
+.theme-br {
+    --theme-color: #a55eea;
+    --theme-gradient: linear-gradient(135deg, #a55eea, #8854d0);
+    --theme-glow: rgba(165, 94, 234, 0.5);
+}
+
+/* DEFAULT (Verde Marca) */
+.theme-default {
+    --theme-color: #00e676;
+    --theme-gradient: linear-gradient(135deg, #00e676 0%, #00b894 100%);
+    --theme-glow: rgba(0, 230, 118, 0.4);
+}
+
+/* =========================================
+   3. LAYOUT GENERAL
+   ========================================= */
+.create-team-layout {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    transition: background 0.5s ease, color 0.3s ease;
+    padding-bottom: 120px; /* Espacio para el footer sticky */
+}
+
+.form-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Header */
+.form-header-modern { text-align: center; margin-bottom: 2.5rem; }
+.form-header-modern h1 {
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    /* Texto con gradiente dinámico */
+    background: var(--theme-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+    text-shadow: 0 0 20px var(--theme-glow); /* Brillo suave */
+}
+
+/* Tarjetas (Cards) */
+.section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    transition: border-color 0.3s;
+}
+
+.section-card:hover {
+    border-color: rgba(255,255,255,0.1);
+}
+
+.section-title {
+    color: var(--theme-color);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* =========================================
+   4. INPUTS Y FORMULARIOS
+   ========================================= */
+.split-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem; }
+.section-label { display: block; color: var(--text-muted); margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600; text-transform: uppercase;}
+
+input, select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    transition: 0.3s;
+    margin-bottom: 1rem;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--theme-color);
+    box-shadow: 0 0 15px var(--theme-glow);
+    background: #000;
+}
+
+/* Branding Inputs (Hero) */
+.branding-inputs .input-hero {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    border: 2px solid var(--border-color);
+}
+.branding-inputs .input-hero:focus { border-color: var(--theme-color); }
+
+/* Logo Upload */
+.logo-upload-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+.logo-placeholder {
+    width: 110px; height: 110px; border-radius: 50%;
+    background: var(--bg-input); 
+    border: 2px dashed var(--border-color);
+    display: flex; justify-content: center; align-items: center;
+    cursor: pointer; color: var(--text-muted); font-size: 1.8rem;
+    transition: 0.3s;
+    overflow: hidden;
+}
+.logo-placeholder:hover {
+    border-color: var(--theme-color);
+    color: var(--theme-color);
+    box-shadow: 0 0 15px var(--theme-glow);
+}
+.logo-preview-img { width: 100%; height: 100%; object-fit: cover; }
+
+/* =========================================
+   5. ROSTER Y CÍRCULOS (VERSION GIGANTE)
+   ========================================= */
+.roster-header-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;
+}
+.game-badge {
+    background: var(--theme-color); color: #000; padding: 6px 16px; 
+    border-radius: 6px; font-weight: 800; font-size: 1rem; text-transform: uppercase;
+    box-shadow: 0 0 15px var(--theme-glow);
+}
+
+/* Grid Centrado y Espaciado */
+.circles-grid { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 2.5rem; /* Más espacio entre jugadores */
+    justify-content: center; /* Centrado para llenar la pantalla */
+    margin-top: 1rem;
+}
+
+.role-item {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    width: 110px; /* Ancho del contenedor aumentado */
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.role-item:hover { transform: translateY(-5px); }
+
+/* Círculo Base (AUMENTADO DE TAMAÑO) */
+.role-circle {
+    width: 100px; height: 100px; /* Antes 65px -> Ahora 100px */
+    border-radius: 50%;
+    background-color: var(--bg-input);
+    border: 3px solid transparent; /* Borde más grueso */
+    display: flex; justify-content: center; align-items: center;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5); /* Sombra interna para profundidad */
+}
+
+/* Icono dentro del círculo */
+.user-icon { 
+    color: var(--text-muted); 
+    font-size: 2.5rem; /* Icono mucho más grande */
+    transition: 0.3s; 
+}
+
+/* Hover */
+.role-item:hover .role-circle:not(.filled) {
+    border-color: var(--theme-color);
+    background-color: #000;
+    box-shadow: 0 0 20px var(--theme-glow);
+}
+.role-item:hover .user-icon { color: var(--theme-color); transform: scale(1.1); }
+
+/* Círculo LLENO (Con datos) */
+.role-circle.filled {
+    border: 3px solid var(--theme-color);
+    box-shadow: 0 0 25px var(--theme-glow); /* Resplandor más fuerte */
+    background: #000;
+}
+.initials { 
+    font-weight: 800; 
+    font-size: 2rem; /* Texto de iniciales gigante */
+    color: var(--theme-color); 
+    text-shadow: 0 0 10px var(--theme-glow);
+}
+
+/* FOTO dentro del círculo */
+.player-circle-img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.3s;
+}
+.role-item:hover .player-circle-img { transform: scale(1.1); }
+
+/* Etiquetas de Texto */
+.role-label-text {
+    font-size: 1rem; /* Texto más legible */
+    color: var(--text-muted); text-align: center;
+    font-weight: 700; width: 100%; 
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.role-item:hover .role-label-text { color: white; }
+
+/* Suplentes (Un poco más pequeños pero visibles) */
+.role-circle.small { width: 70px; height: 70px; }
+.role-circle.small .user-icon { font-size: 1.8rem; }
+/* =========================================
+   6. PANTALLA FINAL (DASHBOARD LOOK)
+   ========================================= */
+.share-screen { text-align: center; }
+
+.success-header-hero {
+    margin-bottom: 3rem;
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+}
+.success-icon-glow {
+    font-size: 4rem; color: var(--theme-color);
+    filter: drop-shadow(0 0 20px var(--theme-glow));
+    animation: pulse 2s infinite;
+}
+.subtitle-glow { color: var(--text-muted); font-size: 1.1rem; }
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Grid Final */
+.recruit-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    text-align: left;
+}
+
+/* Paneles de Cristal (Glassmorphism) */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+.glass-panel:hover { border-color: rgba(255,255,255,0.1); }
+
+.column-header-label {
+    font-size: 0.9rem; font-weight: bold; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 1.5rem; display: block;
+    border-bottom: 1px solid var(--border-color); padding-bottom: 10px;
+}
+
+/* QR Code */
+.qr-glow-container {
+    background: white; padding: 10px; border-radius: 12px;
+    border: 3px solid var(--theme-color);
+    box-shadow: 0 0 20px var(--theme-glow);
+    display: inline-block; margin-bottom: 1rem;
+}
+.qr-section-styled { text-align: center; margin-bottom: 2rem; }
+.qr-label { display: block; color: var(--theme-color); font-weight: bold; text-transform: uppercase; font-size: 0.9rem; }
+
+/* Link Box */
+.link-action-box-pro {
+    display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;
+}
+.link-text-mask {
+    background: #000; color: var(--text-muted); padding: 12px;
+    flex: 1; font-family: monospace; overflow: hidden; white-space: nowrap;
+}
+.link-action-box-pro button {
+    background: var(--theme-color); border: none; padding: 0 20px;
+    color: #000; cursor: pointer; transition: 0.3s;
+}
+.link-action-box-pro button:hover { filter: brightness(1.2); }
+
+/* Social Buttons */
+.social-grid-pro { display: flex; gap: 10px; }
+.social-btn-pro {
+    flex: 1; height: 50px; border-radius: 8px;
+    background: var(--bg-input); border: 1px solid var(--border-color);
+    color: var(--text-muted); font-size: 1.4rem; cursor: pointer;
+    display: flex; justify-content: center; align-items: center; transition: 0.3s;
+}
+.social-btn-pro:hover {
+    border-color: var(--theme-color); color: white; transform: translateY(-3px);
+}
+
+/* Lista Jugadores */
+.search-box-pro input { background: #000; padding-left: 45px; }
+.search-icon-pro { position: absolute; left: 15px; top: 15px; color: #666; }
+
+.players-list-pro {
+    background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;
+    max-height: 200px; overflow-y: auto;
+}
+.player-row-pro {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.avatar-mini-pro {
+    width: 35px; height: 35px; border-radius: 50%; background: #333;
+    display: flex; justify-content: center; align-items: center;
+    position: relative; border: 1px solid #555;
+}
+.status-indicator {
+    width: 8px; height: 8px; border-radius: 50%;
+    position: absolute; bottom: 0; right: 0;
+}
+.online .status-indicator { background: #00e676; box-shadow: 0 0 5px #00e676; }
+.busy .status-indicator { background: #ff4757; }
+
+.btn-invite-pro {
+    background: transparent; border: 1px solid var(--theme-color);
+    color: var(--theme-color); padding: 4px 12px; border-radius: 4px;
+    font-size: 0.8rem; cursor: pointer; transition: 0.3s;
+}
+.btn-invite-pro:hover { background: var(--theme-color); color: #000; }
+
+/* =========================================
+   7. FOOTER STICKY Y BOTONES
+   ========================================= */
+.form-footer-sticky {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(18, 18, 20, 0.95);
+    border-top: 1px solid var(--border-color);
+    padding: 1.2rem 3rem;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.btn-ghost {
+    background: transparent; color: var(--text-muted); border: 1px solid transparent;
+    padding: 10px 20px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    font-weight: 600;
+}
+.btn-ghost:hover { color: white; border-color: white; }
+
+.btn-primary-glow {
+    background: var(--theme-gradient);
+    color: #000; border: none;
+    padding: 14px 40px; border-radius: 30px;
+    font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    cursor: pointer; box-shadow: 0 0 20px var(--theme-glow);
+    transition: 0.3s;
+}
+.btn-primary-glow:hover { transform: scale(1.05); }
+.btn-primary-glow:disabled { background: #333; color: #666; box-shadow: none; cursor: not-allowed; transform: none; }
+
+/* Botón Final Gigante (Step 3) */
+.finish-btn-mega {
+    width: 100%; max-width: 400px;
+    font-size: 1.2rem; display: flex; justify-content: center; align-items: center; gap: 10px;
+}
+.footer-actions-pro { display: flex; justify-content: center; margin-top: 2rem; }
+
+/* =========================================
+   8. MODAL (POPUP)
+   ========================================= */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center; z-index: 200;
+}
+
+.mini-form {
+    background: var(--bg-card);
+    border: 1px solid var(--theme-color);
+    box-shadow: 0 0 30px var(--theme-glow);
+    padding: 2rem; border-radius: 16px; width: 400px;
+}
+
+.modal-header-styled {
+    display: flex; justify-content: space-between; align-items: center; margin-top: 0; margin-bottom: 1.5rem;
+}
+.highlight { color: var(--theme-color); font-weight: bold; }
+
+/* Photo Uploader en Modal */
+.photo-uploader { cursor: pointer; }
+.photo-preview { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--theme-color); }
+.photo-placeholder {
+    width: 50px; height: 50px; border-radius: 50%; background: #333;
+    display: flex; justify-content: center; align-items: center; color: #aaa;
+    border: 1px dashed #666; transition: 0.3s;
+}
+.photo-placeholder:hover { border-color: var(--theme-color); color: var(--theme-color); }
+
+.modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .recruit-grid { grid-template-columns: 1fr; }
+    .form-footer-sticky { padding: 1rem; }
+    .btn-primary-glow { padding: 12px 20px; font-size: 0.9rem; }
+}
