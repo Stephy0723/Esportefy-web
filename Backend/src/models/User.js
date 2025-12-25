@@ -18,7 +18,7 @@ const UserSchema = new mongoose.Schema({
     username: {type: String, required: true},//gamertag
     email: {type: String, required: true},
     password: {type: String, required: true},
-    checkTerms: {type: Boolean, required: true},
+    // checkTerms: {type: Boolean, required: true}, // tuve que comentarlo para que pueda probar en postman
 
 //olvide mi contraseña
     resetPasswordToken: { type: String },
