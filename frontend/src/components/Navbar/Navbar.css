@@ -1,162 +1,211 @@
 /* ========================================= */
-/* 1. SISTEMA DE TEMAS (VARIABLES DINÁMICAS) */
+/* 1. SISTEMA DE TEMAS Y VARIABLES (SÓLIDOS) */
 /* ========================================= */
 :root {
   --brand-green: #8EDB15;
+  --brand-green-glow: rgba(142, 219, 21, 0.4);
   
-  /* MODO CLARO (Por defecto) */
+  /* MODO CLARO (Sólido - Blanco Puro) */
   --text-color: #18181b;          
   --text-muted: #71717a;          
-  --bg-scrolled: rgba(255, 255, 255, 0.95); 
-  --border-color: rgba(0, 0, 0, 0.1);
-  --search-bg: rgba(0, 0, 0, 0.05); 
-  --search-focus: rgba(255, 255, 255, 1);
-  --shadow-scroll: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --bg-scrolled: #ffffff;         /* BLANCO SÓLIDO */
+  --glass-border: #e4e4e7;        /* Gris claro sólido */
+  --element-bg: #f4f4f5;          /* Gris muy suave sólido para inputs */
+  --element-hover: #e4e4e7;
+  --shadow-scroll: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-/* MODO OSCURO */
+/* MODO OSCURO (Sólido - Negro) */
 body.dark {
   --text-color: #ffffff;
   --text-muted: #a1a1aa;
-  --bg-scrolled: rgba(24, 24, 27, 0.95); 
-  --border-color: rgba(255, 255, 255, 0.1);
-  --search-bg: rgba(255, 255, 255, 0.1);
-  --search-focus: rgba(0, 0, 0, 0.5);
-  --shadow-scroll: 0 4px 30px rgba(0, 0, 0, 0.3);
+  --bg-scrolled: #18181b;         /* NEGRO SÓLIDO (Zinc-900) */
+  --glass-border: #27272a;        /* Borde gris oscuro sólido */
+  --element-bg: #27272a;          /* Fondo input oscuro sólido */
+  --element-hover: #3f3f46;
+  --shadow-scroll: 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 
-/* Transición suave para todo el sitio */
 body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ========================================= */
-/* 2. NAVBAR CONFIGURACIÓN MAESTRA           */
+/* 2. NAVBAR MAESTRO (GRID LAYOUT)           */
 /* ========================================= */
 .navbar {
-  /* 1. STICKY: Para que se mueva junto con el layout al abrir el menú */
   position: sticky; 
   top: 0;
   width: 100%;
-  padding: 20px 0;
-  
-  /* 2. Z-INDEX: Menor que el Sidebar (1000) pero mayor que el contenido */
   z-index: 900; 
-  
-  /* 3. TRANSPARENCIA REAL: */
-  /* Esto "tira" el contenido hacia arriba para que quede DEBAJO de la barra */
-  margin-bottom: -103px; 
-  
-  /* Estado inicial transparente */
+  margin-bottom: -90px; 
   background-color: transparent; 
-  border-bottom: 1px solid transparent;
-  
-  transition: all 0.3s ease-in-out;
-}
-
-/* ========================================= */
-/* ESTADO SCROLL (Se activa con JS)          */
-/* ========================================= */
-.navbar.scrolled {
-  background-color: var(--bg-scrolled);
-  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border-color);
+}
+
+/* ESTADO SCROLL (Fondo Sólido) */
+.navbar.scrolled {
+  background-color: var(--bg-scrolled); /* Usa el color sólido definido arriba */
+  border-bottom: 1px solid var(--glass-border);
   box-shadow: var(--shadow-scroll);
-  
-  /* Al hacer scroll, mantenemos el margen negativo o lo ajustamos si es necesario */
-  /* Normalmente se deja igual para evitar saltos */
+  padding: 8px 0;
 }
 
-/* Contenedor */
 .navbar-container {
-  max-width: 1200px;
+  max-width: 1380px;
   margin: 0 auto;
-  padding: 0 20px;
-  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 25px;
+  
+  /* GRID DE 3 COLUMNAS PARA CENTRAR EL BUSCADOR */
+  /* Izquierda (Logo) | Centro (Buscador) | Derecha (Acciones) */
+  display: grid; 
+  grid-template-columns: 1fr auto 1fr; 
+  align-items: center;
+  height: 60px;
 }
 
-/* LOGO */
+/* LOGO (Alineado a la izquierda) */
 .navbar-logo {
   display: flex; align-items: center; gap: 8px;
-  text-decoration: none;
-  font-size: 1.5rem; font-weight: 800;
+  text-decoration: none; font-size: 1.5rem; font-weight: 800;
   color: var(--text-color); 
+  justify-self: start; /* Fuerza a la izquierda */
 }
 .navbar-logo i { font-size: 1.8rem; color: var(--brand-green); }
 .highlight { color: var(--brand-green); }
 
-/* SECCIÓN DERECHA */
-.navbar-actions {
-  display: flex; align-items: center; gap: 20px;
-}
 
-/* BUSCADOR */
+/* ========================================= */
+/* 3. BUSCADOR (SOLUCIÓN FINAL)              */
+/* ========================================= */
 .search-box {
-  background: var(--search-bg); 
-  padding: 8px 15px;
+  display: flex; 
+  align-items: center; /* Alineación vertical perfecta */
+  justify-content: center;
+  
+  /* TAMAÑO Y FORMA */
+  width: 380px;  /* Ancho para que luzca bien al centro */
+  height: 42px;  /* Altura fija para evitar desalineación */
+  
+  background-color: var(--element-bg); /* Color sólido */
+  border: 1px solid var(--glass-border);
   border-radius: 50px;
-  display: flex; align-items: center;
-  transition: 0.3s;
+  padding: 0 15px;
+  transition: all 0.3s ease;
 }
-.search-box:focus-within {
-  background: var(--search-focus);
-  box-shadow: 0 0 0 2px var(--brand-green);
-}
-.search-box input {
-  background: transparent; border: none; outline: none;
-  color: var(--text-color); 
-  margin-left: 10px;
-}
-.search-box i { color: var(--text-muted); }
 
-/* BOTONES (Notificaciones) */
-.icon-btn, .notify-btn {
-  background: none; border: none;
+.search-box:focus-within {
+  border-color: var(--brand-green);
+  box-shadow: 0 0 0 2px var(--brand-green-glow);
+  background-color: var(--bg-scrolled); /* Mantiene fondo sólido al escribir */
+}
+
+/* Icono Lupa */
+.search-box i { 
+  color: var(--text-muted); 
+  font-size: 1.1rem;
+  margin-right: 12px;
+  display: flex; /* Evita saltos de línea */
+}
+
+/* Input Texto (Limpio) */
+.search-box input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  
+  color: var(--text-color);
+  font-size: 0.95rem;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.search-box input::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+
+/* ========================================= */
+/* 4. DERECHA (ACCIONES)                     */
+/* ========================================= */
+.navbar-actions {
+  display: flex; 
+  align-items: center; 
+  gap: 15px;
+  justify-self: end; /* Fuerza a la derecha */
+}
+
+/* Notificaciones */
+.notify-btn {
+  background: var(--element-bg);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: none;
   color: var(--text-color); 
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   cursor: pointer;
   position: relative;
   display: flex; align-items: center; justify-content: center;
-  transition: transform 0.2s;
+  transition: all 0.2s ease;
 }
-.icon-btn:hover, .notify-btn:hover { transform: scale(1.1); }
+.notify-btn:hover { color: var(--brand-green); background: var(--element-hover); }
 
 .dot {
-  position: absolute; top: 0; right: 2px;
-  width: 8px; height: 8px;
-  background: red; border-radius: 50%;
-  border: 1px solid var(--bg-scrolled);
+  position: absolute; top: 10px; right: 10px;
+  width: 8px; height: 8px; background: #ef4444; 
+  border-radius: 50%; border: 2px solid var(--bg-scrolled);
 }
 
-/* BOTÓN INGRESAR */
+/* Perfil */
+.user-profile.container-unified {
+  display: flex; align-items: center;
+  background: var(--element-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 50px;
+  padding: 4px 8px 4px 4px;
+  gap: 5px;
+}
+.user-profile.container-unified:hover { border-color: var(--brand-green); }
+
+.profile-link-part {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--text-color);
+  padding-right: 8px;
+}
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%; 
+  object-fit: cover; border: 2px solid var(--brand-green);
+}
+.username { font-weight: 600; font-size: 0.9rem; }
+
+.separator-vertical {
+  height: 20px; width: 1px; background-color: var(--glass-border); margin: 0 5px;
+}
+
+.logout-btn-integrated {
+  background: transparent; border: none; color: var(--text-muted);
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; cursor: pointer;
+}
+.logout-btn-integrated:hover { color: #ef4444; }
+
+/* Botón Ingresar */
 .login-btn {
   background-color: var(--brand-green);
-  color: #000; 
-  padding: 8px 20px; border-radius: 20px;
-  text-decoration: none; font-weight: bold;
-  font-size: 0.9rem;
-  transition: transform 0.2s;
+  color: #000 !important; 
+  padding: 0 24px; 
+  height: 42px; /* Misma altura que el buscador */
+  border-radius: 50px;
+  text-decoration: none; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s ease;
 }
 .login-btn:hover { transform: scale(1.05); }
 
-/* PERFIL */
-.user-profile {
-  display: flex; align-items: center; gap: 10px; cursor: pointer;
-}
-.user-info { text-align: right; }
-.username { 
-  display: block; font-weight: bold; font-size: 0.9rem; 
-  color: var(--text-color); 
-}
-.user-avatar {
-  width: 35px; height: 35px; border-radius: 50%; object-fit: cover;
-  border: 2px solid var(--brand-green);
-}
-
 /* RESPONSIVE */
-@media (max-width: 768px) {
-  .search-box input, .user-info { display: none; }
-  .search-box { background: transparent; padding: 0; }
-  .search-box i { font-size: 1.5rem; color: var(--text-color); }
+@media (max-width: 900px) {
+  .search-box { display: none; }
+  .navbar-container { display: flex; justify-content: space-between; }
 }

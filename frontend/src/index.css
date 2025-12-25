@@ -1,16 +1,77 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ========================================= */
+/* ADN DEL PROYECTO (VARIABLES GLOBALES)     */
+/* ========================================= */
+:root {
+    /* --- PALETA DE COLORES --- */
+    --primary: #8EDB15;          /* Verde Neón */
+    --primary-hover: #7ac40f;    /* Hover */
+    --primary-dim: rgba(142, 219, 21, 0.15); /* Brillo sutil */
 
-/* Estilos Globales Base */
-@layer base {
-  html {
-    font-family: 'Inter', sans-serif;
-    scroll-behavior: smooth;
-    /* BORRA EL BACKGROUND-COLOR Y COLOR DE AQUÍ */
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-  }
+    /* --- FONDOS --- */
+    --bg-page: #000000;          /* Negro OLED */
+    --bg-card: #121212;          /* Gris Tarjeta */
+    --bg-input: #1E1E1E;         /* Gris Input */
+    --border-color: #333333;     /* Bordes sutiles */
+
+    /* --- TEXTOS --- */
+    --text-main: #FFFFFF;
+    --text-muted: #888888;
+
+    /* --- TIPOGRAFÍA --- */
+    --font-stack: 'Poppins', sans-serif;
+}
+
+/* ========================================= */
+/* CLASES DE UTILIDAD (ESTILOS REUTILIZABLES)*/
+/* ========================================= */
+
+/* 1. Efecto Vidrio (Úsalo en tarjetas flotantes) */
+.glass-panel {
+    background: rgba(18, 18, 18, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+/* 2. Input Cyberpunk (Línea inferior) */
+.input-line {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px 0;
+    transition: all 0.3s ease;
+    outline: none;
+    font-family: var(--font-stack);
+    width: 100%;
+}
+
+.input-line:focus {
+    border-bottom-color: var(--primary);
+    box-shadow: 0 10px 10px -10px var(--primary-dim);
+}
+
+.input-line::placeholder {
+    color: var(--text-muted);
+}
+
+/* 3. Botón Neón (Para botones principales) */
+.btn-neon {
+    background-color: var(--primary);
+    color: #000000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(142, 219, 21, 0.2);
+}
+
+.btn-neon:hover {
+    background-color: #a3ff2e; /* Un poco más claro */
+    box-shadow: 0 0 20px rgba(142, 219, 21, 0.6);
+    transform: translateY(-2px);
 }
