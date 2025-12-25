@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../../context/NotificationContext'; 
+import axios from 'axios';
 import './OrganizerApplication.css';
 
 const OrganizerApplication = () => {
@@ -8,31 +9,67 @@ const OrganizerApplication = () => {
   const { notify } = useNotification();
   const [loading, setLoading] = useState(false);
 
-  // Estados para simular carga de archivo
+  // Estados para datos y archivo
   const [fileName, setFileName] = useState("Ningún archivo seleccionado");
+  const [file, setFile] = useState(null);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    idNumber: '',
+    orgName: '',
+    eventType: '',
+    website: '',
+    experienceYears: '',
+    maxSize: '',
+    tools: '',
+    description: ''
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {
-      setFileName(e.target.files[0].name);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!file) {
+        return notify('error', 'Archivo faltante', 'Por favor sube una foto de tu documento de identidad.');
+    }
+
     setLoading(true);
 
-    // Simulamos una petición al servidor
-    setTimeout(() => {
-        setLoading(false);
-        notify('success', 'Tu solicitud ha sido recibida.', 'Tu perfil está bajo revisión. Te notificaremos en 24-48 horas. Te hemos enviado los detalles a tu cuenta.');
-        navigate('/tournaments');
-    }, 2000);
+    const data = new FormData();
+    data.append('document', file);
+    Object.keys(formData).forEach(key => data.append(key, formData[key]));
+
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      await axios.post('http://localhost:4000/api/auth/apply-organizer', data, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      notify('success', 'Tu solicitud ha sido recibida.', 'Tu perfil está bajo revisión. Te notificaremos en 24-48 horas.');
+      navigate('/tournaments');
+    } catch (err) {
+      notify('error', 'Error en el envío', err.response?.data?.message || 'No se pudo procesar tu solicitud.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="reg-page">
       <div className="main-content-wrapper">
-        
         <div className="split-layout">
             
             {/* COLUMNA IZQUIERDA: FORMULARIO */}
@@ -51,12 +88,12 @@ const OrganizerApplication = () => {
                     <h4 className="section-title">Datos del Representante</h4>
                     <div className="grid-inputs">
                         <div className="input-group">
-                            <input type="text" required placeholder=" " />
+                            <input type="text" name="fullName" required placeholder=" " value={formData.fullName} onChange={handleInputChange} />
                             <label>Nombre Legal Completo</label>
                             <i className='bx bx-user input-icon'></i>
                         </div>
                         <div className="input-group">
-                            <input type="text" required placeholder=" " />
+                            <input type="text" name="idNumber" required placeholder=" " value={formData.idNumber} onChange={handleInputChange} />
                             <label>DNI / Pasaporte / ID</label>
                             <i className='bx bx-id-card input-icon'></i>
                         </div>
@@ -65,7 +102,7 @@ const OrganizerApplication = () => {
                     <div className="input-group file-upload-group">
                         <label className="static-label">Documento de Identidad (Foto/Scan)</label>
                         <div className="file-box">
-                            <input type="file" id="doc-upload" className="hidden-input" onChange={handleFileChange} />
+                            <input type="file" id="doc-upload" className="hidden-input" accept="image/*,.pdf" onChange={handleFileChange} />
                             <label htmlFor="doc-upload" className="upload-btn">
                                 <i className='bx bx-cloud-upload'></i> Subir Archivo
                             </label>
@@ -79,12 +116,12 @@ const OrganizerApplication = () => {
                     
                     <div className="grid-inputs">
                          <div className="input-group">
-                            <input type="text" required placeholder=" " />
+                            <input type="text" name="orgName" required placeholder=" " value={formData.orgName} onChange={handleInputChange} />
                             <label>Nombre de la Organización / Marca</label>
                             <i className='bx bx-building input-icon'></i>
                         </div>
                         <div className="input-group">
-                            <select required defaultValue="">
+                            <select name="eventType" required value={formData.eventType} onChange={handleInputChange}>
                                 <option value="" disabled>Tipo de Eventos</option>
                                 <option value="amateur">Torneos Amateur / Comunitarios</option>
                                 <option value="pro">Ligas Profesionales</option>
@@ -95,7 +132,7 @@ const OrganizerApplication = () => {
                     </div>
 
                     <div className="input-group">
-                        <input type="url" placeholder=" " />
+                        <input type="url" name="website" placeholder=" " value={formData.website} onChange={handleInputChange} />
                         <label>Sitio Web o Portafolio (Opcional)</label>
                         <i className='bx bx-link input-icon'></i>
                     </div>
@@ -105,7 +142,7 @@ const OrganizerApplication = () => {
 
                     <div className="grid-inputs">
                         <div className="input-group">
-                            <select required defaultValue="">
+                            <select name="experienceYears" required value={formData.experienceYears} onChange={handleInputChange}>
                                 <option value="" disabled>Años de Experiencia</option>
                                 <option value="0-1">Menos de 1 año (Novato)</option>
                                 <option value="1-3">1 - 3 años (Intermedio)</option>
@@ -114,7 +151,7 @@ const OrganizerApplication = () => {
                             </select>
                         </div>
                         <div className="input-group">
-                            <select required defaultValue="">
+                            <select name="maxSize" required value={formData.maxSize} onChange={handleInputChange}>
                                 <option value="" disabled>Tamaño Máximo Gestionado</option>
                                 <option value="small">Pequeño (Hasta 16 equipos)</option>
                                 <option value="medium">Mediano (Hasta 64 equipos)</option>
@@ -125,13 +162,13 @@ const OrganizerApplication = () => {
                     </div>
 
                     <div className="input-group">
-                        <input type="text" placeholder=" " />
+                        <input type="text" name="tools" placeholder=" " value={formData.tools} onChange={handleInputChange} />
                         <label>Herramientas de Brackets que has usado (Ej: Challonge, Toornament)</label>
                         <i className='bx bx-laptop input-icon'></i>
                     </div>
 
                     <div className="input-group">
-                        <textarea required placeholder=" " rows="3"></textarea>
+                        <textarea name="description" required placeholder=" " rows="3" value={formData.description} onChange={handleInputChange}></textarea>
                         <label>Cuéntanos sobre el torneo más complejo que has organizado...</label>
                     </div>
 
@@ -145,10 +182,8 @@ const OrganizerApplication = () => {
 
                    <p className="legal-text">
     Al enviar esta solicitud, aceptas nuestros 
-    {/* Enlace a Términos */}
     <a href="/legal/organizer-terms" target="_blank" rel="noopener noreferrer"> Términos de Servicio para Organizadores </a> 
     y la 
-    {/* Enlace a Política */}
     <a href="/legal/payment-policy" target="_blank" rel="noopener noreferrer"> Política de Pagos</a>.</p>
                 </form>
             </div>

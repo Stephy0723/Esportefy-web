@@ -306,3 +306,90 @@ export const updateProfile = async (req, res) => {
         res.status(500).json({ message: "Error al actualizar el perfil" });
     }
 };
+
+// 5. Solicitar ser Organizador
+export const applyOrganizer = async (req, res) => {
+    const { fullName, idNumber, orgName,eventType, 
+        website, experienceYears,maxSize, tools, description } = req.body;
+    const file = req.file;
+    const userId = req.userId; // Obtenido del middleware verifyToken
+
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+
+        // Generamos las URLs para los botones (Ajusta el dominio según tu producción)
+        const approveUrl = `http://localhost:4000/api/auth/verify-organizer/${userId}/approve`;
+        const rejectUrl = `http://localhost:4000/api/auth/verify-organizer/${userId}/reject`;
+
+        const mailOptions = {
+            from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
+            to: 'steliantsoft@gmail.com',
+            subject: `🚨 Solicitud de Organizador: ${orgName}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; background-color: #000; color: #fff; padding: 30px; border: 1px solid #8EDB15; border-radius: 10px;">
+                    <h2 style="color: #8EDB15; text-align: center;">Nueva Solicitud de Verificación</h2>
+                    <hr style="border: 0.5px solid #333;" />
+                    <p><strong>Candidato:</strong> ${fullName}</p>
+                    <p><strong>Identificación:</strong> ${idNumber}</p>
+                    <p><strong>Organización:</strong> ${orgName}</p>
+                    <p><strong>Tipo de Eventos:</strong> ${eventType}</p>
+                    <p><strong>Sitio Web:</strong> ${website || 'N/A'}</p>
+                    <p><strong>Experiencia:</strong> ${experienceYears}</p>
+                    <p><strong>Tamaño de Torneos:</strong> ${maxSize}</p>
+                    <p><strong>Herramientas:</strong> ${tools}</p>
+                    <p style="background: #111; padding: 15px; border-radius: 5px;">${description}</p>
+                    
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a href="${approveUrl}" style="background-color: #8EDB15; color: #000; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">APROBAR ORGANIZADOR</a>
+                        
+                        <a href="${rejectUrl}" style="background-color: #ff4444; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">RECHAZAR</a>
+                    </div>
+                    <p style="font-size: 12px; color: #666; margin-top: 20px; text-align: center;">Al aprobar, el usuario recibirá permisos de edición de torneos inmediatamente.</p>
+                </div>
+            `,
+            attachments: file ? [{ filename: file.originalname, path: file.path }] : []
+        };
+
+        await transporter.sendMail(mailOptions);
+        if (file) fs.unlink(file.path, () => {});
+
+        res.status(200).json({ message: "Solicitud enviada." });
+    } catch (error) {
+        if (file) fs.unlink(file.path, () => {});
+        res.status(500).json({ message: "Error en el servidor." });
+    }
+};
+
+// 6. Verificar solicitud de Organizador
+export const verifyOrganizerAction = async (req, res) => {
+    const { userId, action } = req.params;
+
+    try {
+        if (action === 'approve') {
+            await User.findByIdAndUpdate(userId, { isOrganizer: true });
+            return res.send(`
+                <body style="background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center;">
+                    <div>
+                        <h1 style="color: #8EDB15;">✔️ ¡Usuario Aprobado!</h1>
+                        <p>El usuario ahora tiene rango de <b>Organizador</b> en Esportefy.</p>
+                        <small>Ya puedes cerrar esta pestaña.</small>
+                    </div>
+                </body>
+            `);
+        } else {
+            return res.send(`
+                <body style="background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center;">
+                    <div>
+                        <h1 style="color: #ff4444;">❌ Solicitud Rechazada</h1>
+                        <p>No se han realizado cambios en la cuenta del usuario.</p>
+                    </div>
+                </body>
+            `);
+        }
+    } catch (error) {
+        res.status(500).send("Error procesando la acción.");
+    }
+};
