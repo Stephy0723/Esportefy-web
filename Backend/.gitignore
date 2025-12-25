@@ -68,3 +68,6 @@ pnpm-lock.yaml
 out/
 .env
 node_modules
+
+//no guardar carpetas de uploads
+uploads/avatars/*

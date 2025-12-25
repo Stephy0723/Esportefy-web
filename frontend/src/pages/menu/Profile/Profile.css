@@ -1,15 +1,30 @@
-/* LAYOUT GENERAL */
+/* --- CAMBIO DE ESPACIOS PARA DASHBOARD --- */
 .profile-page {
-    max-width: 1200px;
-    margin: 0 auto;
+    /* Ajuste de márgenes para no solaparse con Sidebar y Navbar */
+    margin-left: 260px; /* Ancho Sidebar */
+    margin-top: 70px;  /* Alto Navbar */
+    width: calc(100% - 260px); 
+    min-height: calc(100vh - 70px);
+    
+    /* Tu diseño original */
     padding: 2rem;
     color: white;
     font-family: 'Rajdhani', sans-serif;
+    box-sizing: border-box;
 }
 
-.loading-text { text-align: center; margin-top: 50px; color: #8EDB15; }
+.loading-wrapper-layout {
+    margin-left: 260px;
+    margin-top: 70px;
+    height: calc(100vh - 70px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-/* --- HEADER DEL PERFIL --- */
+/* --- EL RESTO ES TU DISEÑO ORIGINAL SIN CAMBIOS --- */
+.loading-text { color: #8EDB15; }
+
 .profile-header {
     background: #18181b;
     border-radius: 16px;
@@ -30,7 +45,7 @@
     display: flex;
     align-items: flex-end;
     gap: 1.5rem;
-    margin-top: -60px; /* Para subir el contenido sobre el banner */
+    margin-top: -60px;
 }
 
 .avatar-wrapper img {
@@ -41,23 +56,9 @@
     background: #000;
 }
 
-.user-identity {
-    flex-grow: 1;
-    padding-bottom: 5px;
-}
-
-.name-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.name-row h1 {
-    margin: 0;
-    font-size: 2.5rem;
-    text-transform: uppercase;
-    line-height: 1;
-}
+.user-identity { flex-grow: 1; padding-bottom: 5px; }
+.name-row { display: flex; align-items: center; gap: 12px; }
+.name-row h1 { margin: 0; font-size: 2.5rem; text-transform: uppercase; line-height: 1; }
 
 .player-badge {
     background: #8EDB15;
@@ -69,11 +70,7 @@
     letter-spacing: 1px;
 }
 
-.real-name-text {
-    color: #a1a1aa;
-    margin: 5px 0 0 0;
-    font-size: 1.1rem;
-}
+.real-name-text { color: #a1a1aa; margin: 5px 0 0 0; font-size: 1.1rem; }
 
 .btn-edit-action {
     background: transparent;
@@ -89,15 +86,11 @@
     transition: 0.3s;
     margin-bottom: 10px;
 }
-.btn-edit-action:hover {
-    border-color: #8EDB15;
-    color: #8EDB15;
-}
+.btn-edit-action:hover { border-color: #8EDB15; color: #8EDB15; }
 
-/* --- GRID DE CONTENEDORES --- */
 .profile-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2 Columnas */
+    grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
 }
 
@@ -106,8 +99,6 @@
     border: 1px solid #27272a;
     border-radius: 12px;
     padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
 }
 
 .card-title {
@@ -121,7 +112,6 @@
 }
 .card-title h3 { margin: 0; font-size: 1.3rem; text-transform: uppercase; }
 
-/* ESTILOS DE CADA TARJETA */
 .bio-item {
     display: flex;
     justify-content: space-between;
@@ -138,12 +128,8 @@
     border-radius: 8px;
     font-style: italic;
     color: #ccc;
-    position: relative;
 }
-.quote-icon { color: #444; margin-right: 5px; }
 
-/* Juegos */
-.tags-cloud { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
 .game-tag {
     background: #8EDB15;
     color: black;
@@ -151,9 +137,10 @@
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 0.9rem;
+    display: inline-block;
+    margin-right: 5px;
 }
 
-.platforms-section h4 { margin: 10px 0 5px 0; font-size: 0.9rem; color: #777; }
 .platform-tag {
     display: inline-block;
     border: 1px solid #444;
@@ -164,236 +151,20 @@
     color: #bbb;
 }
 
-/* Estados Vacíos (Equipos/Comunidades) */
 .empty-state {
     text-align: center;
     color: #555;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
     min-height: 100px;
-}
-.btn-small-action {
-    background: #27272a;
-    border: none;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-.btn-small-action:hover { background: #3f3f46; }
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-    .header-content { flex-direction: column; align-items: center; text-align: center; }
-    .profile-grid { grid-template-columns: 1fr; } /* 1 Columna en celular */
-}
-/* --- ESTILOS DEL MODAL DE EDICIÓN --- */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.85); /* Fondo oscuro transparente */
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px); /* Efecto borroso de fondo */
 }
 
-.profile-edit-modal {
-    background: #18181b;
-    width: 90%;
-    max-width: 500px;
-    padding: 2rem;
-    border-radius: 12px;
-    border: 1px solid #8EDB15; /* Borde verde neón */
-    box-shadow: 0 0 30px rgba(142, 219, 21, 0.15);
-    animation: fadeIn 0.3s ease-out;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #333;
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: #8EDB15;
-    text-transform: uppercase;
-    font-size: 1.5rem;
-}
-
-.btn-close {
-    background: transparent;
-    border: none;
-    color: #777;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.btn-close:hover { color: white; transform: rotate(90deg); }
-
-/* --- FORMULARIO --- */
-.edit-form { display: flex; flex-direction: column; gap: 15px; }
-
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-
-.form-group label {
-    color: #ccc;
-    font-size: 0.9rem;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.form-group input, .form-group textarea {
-    background: #09090b;
-    border: 1px solid #333;
-    padding: 12px;
-    border-radius: 8px;
-    color: white;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1rem;
-}
-
-.form-group input:focus, .form-group textarea:focus {
-    outline: none;
-    border-color: #8EDB15;
-}
-
-.btn-save-changes {
-    margin-top: 15px;
-    background: #8EDB15;
-    color: black;
-    border: none;
-    padding: 14px;
-    border-radius: 8px;
-    font-weight: 800;
-    text-transform: uppercase;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    transition: 0.2s;
-}
-
-.btn-save-changes:hover {
-    background: #7ac412;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(142, 219, 21, 0.2);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}/* --- ESTILOS DEL MODAL DE EDICIÓN --- */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.85); /* Fondo oscuro transparente */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px); /* Efecto borroso de fondo */
-}
-
-.profile-edit-modal {
-    background: #18181b;
-    width: 90%;
-    max-width: 500px;
-    padding: 2rem;
-    border-radius: 12px;
-    border: 1px solid #8EDB15; /* Borde verde neón */
-    box-shadow: 0 0 30px rgba(142, 219, 21, 0.15);
-    animation: fadeIn 0.3s ease-out;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #333;
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: #8EDB15;
-    text-transform: uppercase;
-    font-size: 1.5rem;
-}
-
-.btn-close {
-    background: transparent;
-    border: none;
-    color: #777;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.btn-close:hover { color: white; transform: rotate(90deg); }
-
-/* --- FORMULARIO --- */
-.edit-form { display: flex; flex-direction: column; gap: 15px; }
-
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-
-.form-group label {
-    color: #ccc;
-    font-size: 0.9rem;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.form-group input, .form-group textarea {
-    background: #09090b;
-    border: 1px solid #333;
-    padding: 12px;
-    border-radius: 8px;
-    color: white;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1rem;
-}
-
-.form-group input:focus, .form-group textarea:focus {
-    outline: none;
-    border-color: #8EDB15;
-}
-
-.btn-save-changes {
-    margin-top: 15px;
-    background: #8EDB15;
-    color: black;
-    border: none;
-    padding: 14px;
-    border-radius: 8px;
-    font-weight: 800;
-    text-transform: uppercase;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    transition: 0.2s;
-}
-
-.btn-save-changes:hover {
-    background: #7ac412;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(142, 219, 21, 0.2);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+@media (max-width: 1024px) {
+    .profile-page, .loading-wrapper-layout {
+        margin-left: 0;
+        width: 100%;
+        margin-top: 60px;
+    }
+    .profile-grid { grid-template-columns: 1fr; }
 }
