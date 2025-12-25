@@ -41,6 +41,10 @@ import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
 import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
 import TermsConditions from './pages/menu/Legal/TermsConditions';
 import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
+//Comunidad
+import GamesPage from './pages/menu/Community/games/GamesPage';
+import GroupPage from './pages/menu/Community/groups/GroupPage';
+import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
 
 // --- COMPONENTE AUXILIAR: DETECTOR DE BIENVENIDA ---
 const WelcomeTrigger = () => {
@@ -128,6 +132,10 @@ function App() {
             <Route path="/team-registration" element={<TeamRegistration />} />
             <Route path="/organizer-application" element={<OrganizerApplication />} />
             <Route path="/create-tournament" element={<CreateTournament />} />
+            {/* Rutas de Comunidad */}
+            <Route path="/game/:id" element={<GamesPage />} />
+            <Route path="/group/:id" element={<GroupPage />} />
+            <Route path="/organizer/:id" element={<OrganizerPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

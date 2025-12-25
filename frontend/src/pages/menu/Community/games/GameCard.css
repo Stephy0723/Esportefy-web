@@ -1,0 +1,149 @@
+/* =========================================
+   GameCard.css - Diseño Premium / Clean UI
+   ========================================= */
+
+/* Fondo general de la pantalla (Overlay) */
+.card-page-background {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75); /* Fondo más oscuro para resaltar la tarjeta */
+    backdrop-filter: blur(12px); /* Blur intenso estilo iOS */
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Botón "Volver" flotante */
+.btn-close-floating {
+    position: absolute; top: 40px; left: 40px;
+    background: rgba(255, 255, 255, 0.2); /* Semitransparente */
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 10px 20px; border-radius: 100px;
+    color: white; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s ease;
+}
+.btn-close-floating:hover { background: rgba(255, 255, 255, 0.4); transform: translateY(-2px); }
+
+/* --- TARJETA PRINCIPAL --- */
+.floating-card {
+    width: 90%; max-width: 400px; /* Ancho controlado */
+    background: #ffffff;
+    border-radius: 32px; /* Bordes muy redondeados estilo moderno */
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+    position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    animation: cardEntrance 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Animación de entrada suave */
+@keyframes cardEntrance {
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Imagen Superior */
+.card-image-header {
+    height: 220px; width: 100%;
+    background-size: cover; background-position: center;
+    position: relative;
+}
+
+/* Botón de 3 puntos (...) */
+.card-options-btn {
+    position: absolute; bottom: 16px; right: 16px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: white; border: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    cursor: pointer; color: #111; transition: transform 0.2s;
+}
+.card-options-btn:hover { transform: scale(1.1); }
+
+/* Cuerpo de la Tarjeta */
+.card-body { padding: 24px 28px 32px; }
+
+/* Fila Superior (Estado) */
+.card-meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; font-weight: 600; margin-bottom: 12px;
+}
+.status-active { color: #00b894; display: flex; align-items: center; gap: 6px; }
+.meta-date { color: #b2bec3; }
+
+/* Título */
+.card-title {
+    font-size: 2rem; font-weight: 800; color: #0f172a;
+    margin: 0 0 16px 0; line-height: 1.1; letter-spacing: -1px;
+}
+
+/* Divisor sutil */
+.card-line { width: 100%; height: 1px; background: #e2e8f0; margin-bottom: 16px; }
+
+/* Descripción */
+.card-description {
+    font-size: 0.95rem; line-height: 1.6; color: #64748b; /* Gris legible */
+    margin-bottom: 24px; font-weight: 400;
+}
+
+/* Etiquetas (Tags) */
+.card-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
+
+.tag-pill {
+    padding: 8px 16px; border-radius: 100px;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+/* Estilo Tag Principal (Azul suave) */
+.tag-company { background: #eff6ff; color: #2563eb; }
+/* Estilo Tags Secundarios (Gris suave) */
+.tag-genre { background: #f1f5f9; color: #475569; }
+
+/* --- FOOTER: ACCIONES --- */
+.card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 10px; border-top: 1px solid #f1f5f9;
+}
+
+/* Grupo de Avatares */
+.user-avatars-group { display: flex; align-items: center; padding-left: 8px; }
+.user-avatars-group img {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid white; margin-left: -12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.avatar-count {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #f8fafc; border: 2px solid white;
+    color: #64748b; font-size: 0.7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-left: -12px; z-index: 2;
+}
+
+/* Botonera Derecha */
+.card-actions { display: flex; gap: 12px; align-items: center; }
+
+/* Botones Circulares (Like/Follow) */
+.action-btn.icon-only {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid #e2e8f0; background: white;
+    color: #64748b; font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+}
+.action-btn.icon-only:hover { border-color: #cbd5e1; color: #0f172a; transform: translateY(-2px); }
+
+/* Botón Principal (Entrar) - Estilo Pastilla Oscura */
+.action-btn.primary {
+    background: #0f172a; /* Azul noche casi negro */
+    color: white; border: none;
+    height: 44px; padding: 0 24px;
+    border-radius: 100px;
+    font-weight: 600; font-size: 0.9rem;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    transition: transform 0.2s;
+}
+.action-btn.primary:hover { background: #1e293b; transform: translateY(-2px); }

@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Notifications from '../../pages/Notifications/Notifications';
-import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -10,13 +8,10 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. DETECCIÓN DE SCROLL
     const handleScroll = () => {
-      const isScrolled = window.scrollY > 10; 
-      setScrolled(isScrolled);
+      setScrolled(window.scrollY > 10);
     };
 
-    // 2. RECUPERAR USUARIO
     const storedUser = localStorage.getItem('esportefyUser');
     if (storedUser) {
       try {
@@ -40,53 +35,45 @@ const Navbar = () => {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-container">
         
-        {/* LOGO ORIGINAL RESTAURADO */}
+        {/* 1. LOGO A LA IZQUIERDA */}
         <Link to="/" className="navbar-logo">
           <i className='bx bx-joystick'></i>
           <span>ESPORTE<span className="highlight">FY</span></span>
         </Link>
 
-        {/* ACCIONES */}
+        {/* 2. BUSCADOR EN EL CENTRO (Movido aquí para poder centrarlo) */}
+        <div className="search-box">
+           <i className='bx bx-search'></i>
+           <input type="text" placeholder="Buscar..." />
+        </div>
+        
+        {/* 3. ACCIONES A LA DERECHA */}
         <div className="navbar-actions">
-          
-          <div className="search-box">
-            <i className='bx bx-search'></i>
-            <input type="text" placeholder="Buscar..." />
-          </div>
-
           <button className="notify-btn" onClick={() => navigate('/notifications')}>
             <i className='bx bx-bell'></i>
             {activeUser && <span className="dot"></span>}
           </button>
 
-          {/* --- AQUÍ ESTÁ EL ÚNICO CAMBIO --- */}
           {activeUser ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                
-                {/* 1. Al dar clic en la tarjeta, te lleva a PERFIL */}
-                <Link to="/profile" className="user-profile" title="Ir al Perfil">
-                  <div className="user-info">
-                    <span className="username">{activeUser.name}</span>
-                  </div>
-                  <img 
-                    src={activeUser.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
-                    alt="Avatar" 
-                    className="user-avatar" 
-                  />
-                </Link>
-
-                {/* 2. Botón separado para Cerrar Sesión (para no perder la función) */}
-                <button onClick={handleLogout} style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
-                    <i className='bx bx-log-out' style={{fontSize: '1.2rem'}}></i>
-                </button>
+            <div className="user-profile container-unified">
+              <Link to="/profile" className="profile-link-part">
+                <img 
+                  src={activeUser.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
+                  alt="Avatar" 
+                  className="user-avatar" 
+                />
+                <span className="username">{activeUser.username || activeUser.name}</span>
+              </Link>
+              <div className="separator-vertical"></div>
+              <button onClick={handleLogout} className="logout-btn-integrated">
+                <i className='bx bx-log-out'></i>
+              </button>
             </div>
           ) : (
-            <Link to="/login" className="login-btn">
-              INGRESAR
-            </Link>
+            <Link to="/login" className="login-btn">INGRESAR</Link>
           )}
-
         </div>
+
       </div>
     </nav>
   );

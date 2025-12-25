@@ -4,7 +4,8 @@ import {
     FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret, 
     FaPaintBrush, FaHeadset, FaSave, FaTrash, FaDiscord, 
     FaSteam, FaCheckCircle, FaLock, FaEyeSlash, FaBug, FaExternalLinkAlt,
-    FaExclamationTriangle, FaFlag 
+    FaExclamationTriangle, FaFlag, FaEnvelope, FaKey, FaMobileAlt, 
+    FaApple, FaAndroid, FaWindows, FaLinux 
 } from 'react-icons/fa';
 import './Settings.css';
 
@@ -12,67 +13,117 @@ import './Settings.css';
 export default function Settings() {
     const [activeTab, setActiveTab] = useState('security');
     const navigate = useNavigate();
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const renderContent = () => {
         switch(activeTab) {
-            case 'security':
-                return (
-                    <div className="settings-panel fade-in">
-                        <div className="panel-header">
-                            <h2>Seguridad de la Cuenta</h2>
-                            <p>Protege tu acceso y gestiona tus credenciales.</p>
-                        </div>
+           case 'security':
+    return (
+        <div className="settings-panel fade-in">
+            <div className="panel-header">
+                <h2>Seguridad de la Cuenta</h2>
+                <p>Protege tu acceso y gestiona tus credenciales de jugador profesional.</p>
+            </div>
 
-                        <form className="settings-form">
-                            <div className="form-group">
-                                <label>Correo Electrónico (ID Principal)</label>
-                                <div className="input-with-icon">
-                                    <input type="email" defaultValue="usuario@esportefy.com" disabled className="input-disabled"/>
-                                    <FaLock className="input-icon-lock" />
-                                </div>
-                                <small>Para cambiar tu correo contacta a soporte.</small>
-                            </div>
-
-                            <div className="divider"></div>
-
-                            <h3>Cambiar Contraseña</h3>
-                            <div className="form-grid">
-                                <div className="form-group">
-                                    <label>Contraseña Actual</label>
-                                    <input type="password" placeholder="••••••••" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Nueva Contraseña</label>
-                                    <input type="password" />
-                                </div>
-                            </div>
-
-                            <div className="divider"></div>
-
-                            <h3>Autenticación en Dos Pasos (2FA)</h3>
-                            <div className="info-box">
-                                <FaShieldAlt className="info-icon" />
-                                <div>
-                                    <strong>Protección Extra Desactivada</strong>
-                                    <p>Recomendamos activar 2FA para evitar robos de cuentas.</p>
-                                </div>
-                                <button type="button" className="btn-outline">Activar</button>
-                            </div>
-
-                            <div className="form-actions">
-                                <button type="button" className="btn-save"><FaSave /> Guardar Cambios</button>
-                            </div>
-
-                            <div className="danger-zone">
-                                <div className="danger-text">
-                                    <h4>Eliminar Cuenta</h4>
-                                    <p>Esta acción borrará tus equipos permanentemente.</p>
-                                </div>
-                                <button type="button" className="btn-danger"><FaTrash /> Eliminar Cuenta</button>
-                            </div>
-                        </form>
+            <div className="settings-form">
+                {/* --- CAMBIO DE CORREO --- */}
+                <div className="security-section">
+                    <div className="section-title-box">
+                        <FaEnvelope className="section-icon" />
+                        <h3>ID Principal y Contacto</h3>
                     </div>
-                );
+                    <div className="form-group">
+                        <label>Correo Electrónico Actual</label>
+                        <div className="input-with-action">
+                            <input type="email" defaultValue="usuario@esportefy.com" disabled className="input-disabled"/>
+                            <button type="button" className="btn-small-neon" onClick={() => alert("Iniciando proceso de cambio de correo...")}>
+                                Cambiar Correo
+                            </button>
+                        </div>
+                        <p className="input-helper">Usa esta opción en caso de pérdida de acceso o para actualizar tu identidad principal.</p>
+                    </div>
+                </div>
 
+                <div className="divider"></div>
+
+                {/* --- CONTRASEÑA ESTILO FORGOT PASSWORD --- */}
+                <div className="security-section">
+                    <div className="section-title-box">
+                        <FaKey className="section-icon" />
+                        <h3>Credenciales de Acceso</h3>
+                    </div>
+                    <div className="info-box-status">
+                        <div className="info-text">
+                            <strong>Cambiar Contraseña</strong>
+                            <p>Te enviaremos un código de seguridad al correo para validar que eres tú antes de permitir el cambio.</p>
+                        </div>
+                        <button type="button" className="btn-save" onClick={() => alert("Código enviado al correo vinculado.")}>
+                            Enviar Código
+                        </button>
+                    </div>
+                </div>
+
+                <div className="divider"></div>
+
+                {/* --- 2FA MULTIPLATAFORMA --- */}
+                <div className="security-section">
+                    <div className="section-title-box">
+                        <FaShieldAlt className="section-icon" />
+                        <h3>Autenticación en Dos Pasos (2FA)</h3>
+                    </div>
+                    <p className="section-desc">Vincula tus dispositivos para una protección total:</p>
+                    
+                    <div className="platform-auth-grid">
+                        <div className="platform-card">
+                            <div className="plat-info">
+                                <FaAndroid /> <FaApple />
+                                <span>Móvil (Android / iOS)</span>
+                            </div>
+                            <button type="button" className="btn-status-toggle">Vincular</button>
+                        </div>
+                        <div className="platform-card">
+                            <div className="plat-info">
+                                <FaWindows /> <FaLinux />
+                                <span>Desktop (PC)</span>
+                            </div>
+                            <button type="button" className="btn-status-toggle">Vincular</button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- ELIMINAR CUENTA CON DESPEDIDA --- */}
+                <div className="danger-zone-v2">
+                    {!showDeleteConfirm ? (
+                        <div className="danger-flex">
+                            <div className="danger-content">
+                                <h4>Zona de Peligro</h4>
+                                <p>Esta acción es definitiva. Tu cuenta y estadísticas desaparecerán.</p>
+                            </div>
+                            <button type="button" className="btn-danger-minimal" onClick={() => setShowDeleteConfirm(true)}>
+                                <FaTrash /> Eliminar Cuenta
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="delete-confirmation-box fade-in">
+                            <FaExclamationTriangle className="warning-icon-big" />
+                            <h3>¿Es este el final de la partida?</h3>
+                            <p className="farewell-text">
+                                Nos duele verte partir. Tu legado en Esportefy, tus victorias acumuladas y tus equipos 
+                                se desvanecerán en el vacío digital para siempre. Ha sido un honor tenerte en nuestra comunidad. <br/>
+                                <strong>¿Confirmas que deseas eliminar tu cuenta permanentemente?</strong>
+                            </p>
+                            <div className="confirm-actions">
+                                <button type="button" className="btn-cancel" onClick={() => setShowDeleteConfirm(false)}>Me quedo a jugar</button>
+                                <button type="button" className="btn-delete-final" onClick={() => {
+                                    localStorage.removeItem('esportefyUser');
+                                    navigate('/');
+                                }}>Adiós, Esportefy</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
             case 'connections':
                 return (
                     <div className="settings-panel fade-in">

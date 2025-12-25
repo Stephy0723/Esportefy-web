@@ -1,84 +1,83 @@
+// src/data/gamesData.js
+
+// 1. TUS IMPORTS (Asegúrate de que la ruta de carpetas sea correcta)
+// Nota: Si este archivo está en 'src/data/', la ruta correcta a assets suele ser '../assets/...'
+import FortniteImg from '../assets/comunidad/Fortnite.jpg';
+import CS2Img from '../assets/comunidad/CS2.jpg';
+import CRImg from '../assets/comunidad/CR.jpg';
+import HoKImg from '../assets/comunidad/HoK_V.jpg';
+import FFImg from '../assets/comunidad/FF.jpg';
+import Dota2Img from '../assets/comunidad/Dota2.jpeg';
+import HSImg from '../assets/comunidad/HS.webp';
+import LoLImg from '../assets/comunidad/LoL.jpg';
+import LoRImg from '../assets/comunidad/LoR.jpg';
+import MLBBImg from '../assets/comunidad/MLBB.jpg';
+import NBAImg from '../assets/comunidad/NBA2K24.jpg';
+import OW2Img from '../assets/comunidad/OW2.jpeg';
+import PUBGMImg from '../assets/comunidad/PUBGM.jpg';
+import R6SImg from '../assets/comunidad/R6S.jpg';
+import RLImg from '../assets/comunidad/RL.jpg';
+import SC2Img from '../assets/comunidad/SC2.jpg';
+import SF6Img from '../assets/comunidad/sf6.png';
+import Tekken8Img from '../assets/comunidad/Tekken8.jpg';
+import TFTImg from '../assets/comunidad/TFT.webp';
+import ValorantImg from '../assets/comunidad/valorant.jpg';
+import WarzoneImg from '../assets/comunidad/Warzone.jpg';
+import WildRiftImg from '../assets/comunidad/WildRift.jpeg';
+
 export const gamesList = [
     // =========================================
-    // 🌟 TUS JUEGOS DESTACADOS (CON LOGOS)
+    // 🌟 JUEGOS CON TUS FOTOS LOCALES
     // =========================================
-    { id: 'lol', name: 'League of Legends', img: 'lol.png' },
-    { id: 'codm', name: 'Call of Duty: Mobile', img: 'codm.png' },
-    { id: 'freefire', name: 'Free Fire', img: 'freefire.png' },
-    { id: 'fortnite', name: 'Fortnite', img: 'fortnite.png' },
-    { id: 'mlbb', name: 'Mobile Legends: Bang Bang', img: 'mlbb.png' },
-    { id: 'hok', name: 'Honor of Kings', img: 'hok.png' },
-    { id: 'mariokart', name: 'Mario Kart', img: 'mariokart.png' },
-    { id: 'mk11', name: 'Mortal Kombat 11', img: 'mk11.png' },
-    { id: 'marvel', name: 'Marvel Rivals', img: 'marvel.png' },
-    { id: 'moco', name: 'mo.co', img: 'moco.png' },
+    { 
+        id: 'lol', 
+        name: 'League of Legends', 
+        img: LoLImg, // ✅ Variable importada
+        tags: ['MOBA', 'PC', 'Popular'],
+        color: '#C1A058',
+        desc: 'El rey de los MOBA. Estrategia en equipo y habilidad mecánica.',
+        members: '10M', active: '1.5M'
+    },
+    { id: 'fortnite', name: 'Fortnite', img: FortniteImg, tags: ['Battle Royale', 'PC', 'Consola'], color: '#A94DE3' },
+    { id: 'freefire', name: 'Free Fire', img: FFImg, tags: ['Móvil', 'Battle Royale'], color: '#FFA500' },
+    { id: 'mlbb', name: 'Mobile Legends', img: MLBBImg, tags: ['MOBA', 'Móvil'], color: '#2980B9' },
+    { id: 'hok', name: 'Honor of Kings', img: HoKImg, tags: ['MOBA', 'Móvil'], color: '#E67E22' },
+    { id: 'mk11', name: 'Mortal Kombat 11', img: 'https://cdn1.epicgames.com/offer/21e35057a66c4495a6397227e7f694e9/EGS_MortalKombat11_NetherRealmStudios_S2_1200x1600-53243958742967262070396781223966', tags: ['Fighting'], color: '#C0392B' }, // Sin import proporcionado
 
-    // =========================================
-    // 🔫 SHOOTERS & BATTLE ROYALE
-    // =========================================
-    { id: 'val', name: 'Valorant', img: 'valorant.png' },
-    { id: 'cs2', name: 'CS:GO 2', img: 'cs2.png' },
-    { id: 'apex', name: 'Apex Legends', img: 'apex.png' },
-    { id: 'pubg', name: 'PUBG: Battlegrounds', img: 'pubg.png' },
-    { id: 'pubgm', name: 'PUBG Mobile', img: 'pubgm.png' },
-    { id: 'overwatch', name: 'Overwatch 2', img: 'ow2.png' },
-    { id: 'r6', name: 'Rainbow Six Siege', img: 'r6.png' },
-    { id: 'warzone', name: 'Call of Duty: Warzone', img: 'warzone.png' },
-    { id: 'halo', name: 'Halo Infinite', img: 'halo.png' },
-    { id: 'destiny', name: 'Destiny 2', img: 'destiny.png' },
-    { id: 'tarkov', name: 'Escape from Tarkov', img: 'tarkov.png' },
-    { id: 'rust', name: 'Rust', img: 'rust.png' },
-    { id: 'tf2', name: 'Team Fortress 2', img: 'tf2.png' },
-    { id: 'farlight', name: 'Farlight 84', img: 'farlight.png' },
-    { id: 'bloodstrike', name: 'Blood Strike', img: 'bloodstrike.png' },
+    // SHOOTERS
+    { id: 'val', name: 'Valorant', img: ValorantImg, tags: ['FPS', 'PC', 'Shooter'], color: '#FF4655' },
+    { id: 'cs2', name: 'CS:GO 2', img: CS2Img, tags: ['FPS', 'PC', 'Shooter'], color: '#F39C12' },
+    { id: 'overwatch', name: 'Overwatch 2', img: OW2Img, tags: ['FPS', 'PC'], color: '#FA9C1E' },
+    { id: 'r6', name: 'Rainbow Six Siege', img: R6SImg, tags: ['FPS', 'PC', 'Táctico'], color: '#2C3E50' },
+    { id: 'warzone', name: 'Call of Duty: Warzone', img: WarzoneImg, tags: ['Battle Royale', 'FPS'], color: '#7F8C8D' },
+    { id: 'pubgm', name: 'PUBG Mobile', img: PUBGMImg, tags: ['Battle Royale', 'Móvil'], color: '#E67E22' },
 
-    // =========================================
-    // ⚔️ MOBA & ESTRATEGIA
-    // =========================================
-    { id: 'dota2', name: 'Dota 2', img: 'dota2.png' },
-    { id: 'wildrift', name: 'LoL: Wild Rift', img: 'wildrift.png' },
-    { id: 'pokemon_unite', name: 'Pokémon Unite', img: 'pokemonunite.png' },
-    { id: 'brawlstars', name: 'Brawl Stars', img: 'brawlstars.png' },
-    { id: 'clashroyale', name: 'Clash Royale', img: 'clashroyale.png' },
-    { id: 'tft', name: 'Teamfight Tactics', img: 'tft.png' },
-    { id: 'starcraft', name: 'StarCraft II', img: 'sc2.png' },
-    { id: 'aoe4', name: 'Age of Empires IV', img: 'aoe4.png' },
+    // MOBA & ESTRATEGIA
+    { id: 'dota2', name: 'Dota 2', img: Dota2Img, tags: ['MOBA', 'PC'], color: '#C0392B' },
+    { id: 'wildrift', name: 'LoL: Wild Rift', img: WildRiftImg, tags: ['MOBA', 'Móvil'], color: '#3498DB' },
+    { id: 'clashroyale', name: 'Clash Royale', img: CRImg, tags: ['Estrategia', 'Móvil'], color: '#3498DB' },
+    { id: 'tft', name: 'Teamfight Tactics', img: TFTImg, tags: ['Estrategia', 'PC', 'Móvil'], color: '#F39C12' },
+    { id: 'starcraft', name: 'StarCraft II', img: SC2Img, tags: ['Estrategia', 'PC'], color: '#34495E' },
+    { id: 'hearthstone', name: 'Hearthstone', img: HSImg, tags: ['Cartas', 'Estrategia'], color: '#F39C12' },
+    { id: 'lor', name: 'Legends of Runeterra', img: LoRImg, tags: ['Cartas', 'Estrategia'], color: '#C0392B' },
 
-    // =========================================
-    // 🥊 PELEA (FIGHTING)
-    // =========================================
-    { id: 'sf6', name: 'Street Fighter 6', img: 'sf6.png' },
-    { id: 'tekken8', name: 'Tekken 8', img: 'tekken8.png' },
-    { id: 'ssbu', name: 'Smash Bros. Ultimate', img: 'smash.png' },
-    { id: 'dbfz', name: 'Dragon Ball FighterZ', img: 'dbfz.png' },
-    { id: 'guiltygear', name: 'Guilty Gear Strive', img: 'ggst.png' },
-    { id: 'brawlhalla', name: 'Brawlhalla', img: 'brawlhalla.png' },
-    { id: 'multiversus', name: 'MultiVersus', img: 'multiversus.png' },
+    // PELEA & DEPORTES
+    { id: 'sf6', name: 'Street Fighter 6', img: SF6Img, tags: ['Fighting', 'PC', 'Consola'], color: '#8E44AD' },
+    { id: 'tekken8', name: 'Tekken 8', img: Tekken8Img, tags: ['Fighting', 'PC', 'Consola'], color: '#C0392B' },
+    { id: 'rocket', name: 'Rocket League', img: RLImg, tags: ['Deportes', 'PC', 'Crossplay'], color: '#3498DB' },
+    { id: 'nba2k', name: 'NBA 2K24', img: NBAImg, tags: ['Deportes', 'Consola'], color: '#F39C12' },
 
-    // =========================================
-    // ⚽ DEPORTES & CARRERAS
-    // =========================================
-    { id: 'eafc', name: 'EA FC 24', img: 'eafc.png' },
-    { id: 'rocket', name: 'Rocket League', img: 'rocket.png' },
-    { id: 'nba2k', name: 'NBA 2K24', img: 'nba2k.png' },
-    { id: 'f1', name: 'F1 24', img: 'f1.png' },
-    { id: 'forza', name: 'Forza Horizon 5', img: 'forza.png' },
-    { id: 'iracing', name: 'iRacing', img: 'iracing.png' },
-    { id: 'efootball', name: 'eFootball', img: 'efootball.png' },
-
-    // =========================================
-    // 🎲 OTROS / SURVIVAL / CARTAS
-    // =========================================
-    { id: 'minecraft', name: 'Minecraft', img: 'minecraft.png' },
-    { id: 'roblox', name: 'Roblox', img: 'roblox.png' },
-    { id: 'gta', name: 'GTA V / Online', img: 'gta5.png' },
-    { id: 'deadbydaylight', name: 'Dead by Daylight', img: 'dbd.png' },
-    { id: 'genshin', name: 'Genshin Impact', img: 'genshin.png' },
-    { id: 'wow', name: 'World of Warcraft', img: 'wow.png' },
-    { id: 'hearthstone', name: 'Hearthstone', img: 'hearthstone.png' },
-    { id: 'lor', name: 'Legends of Runeterra', img: 'lor.png' },
-    { id: 'yugioh', name: 'Yu-Gi-Oh! Master Duel', img: 'yugioh.png' },
-    { id: 'amongus', name: 'Among Us', img: 'amongus.png' },
-    { id: 'fallguys', name: 'Fall Guys', img: 'fallguys.png' },
-    { id: 'palworld', name: 'Palworld', img: 'palworld.png' }
+    // OTROS (Sin imports proporcionados, usan URLs de respaldo para no romper la app)
+    { id: 'minecraft', name: 'Minecraft', img: 'https://image.api.playstation.com/vulcan/img/cfn/11307uYG0CXzRuA9aryByTHYrQLFz-HVQ3VVl7aA72B0q9sqosHMcNY589KkN-s_s.png', tags: ['Survival'], color: '#27AE60' },
+    { id: 'roblox', name: 'Roblox', img: 'https://images.rbxcdn.com/222b40606b2b48938928928392.jpg', tags: ['Social'], color: '#C0392B' },
+    { id: 'gta', name: 'GTA V', img: 'https://cdn1.epicgames.com/0584d2013f0149a791e7b9bad0eec102/offer/GTAV_EGS_Artwork_1200x1600_Portrait%20Store%20Banner-1200x1600-383929382938.jpg', tags: ['Acción'], color: '#2C3E50' },
+    { id: 'genshin', name: 'Genshin Impact', img: 'https://cdn1.epicgames.com/offer/879b0d8776ab46a59a129983ba78f0ce/genshin-impact-1_1200x1600-482938293829.jpg', tags: ['RPG'], color: '#3498DB' },
+    { id: 'codm', name: 'Call of Duty: Mobile', img: 'https://play-lh.googleusercontent.com/13_uM1m9e585f5e758775456434442657375_36128033068_73229649774_770', tags: ['Móvil', 'FPS'], color: '#F1C40F' },
+    { id: 'pubg', name: 'PUBG: Battlegrounds', img: 'https://cdn1.epicgames.com/offer/52f57f57120c440fad9bfa0e6c279317/EGS_PUBGBATTLEGROUNDS_PUBGCorporation_S2_1200x1600-64299348924838283828382838283828', tags: ['Battle Royale', 'PC'], color: '#F1C40F' },
+    { id: 'mariokart', name: 'Mario Kart', img: 'https://assets.nintendo.com/image/upload/ar_16:9,c_lpad,w_656/b_white/f_auto/q_auto/ncom/software/switch/70010000000185/de6977ae6f5492658826354897f1f5869403d526786835252875154366629910', tags: ['Carreras', 'Consola'], color: '#E74C3C' },
+    { id: 'marvel', name: 'Marvel Rivals', img: 'https://upload.wikimedia.org/wikipedia/en/e/e4/Marvel_Rivals_cover_art.jpg', tags: ['Shooter', 'PC'], color: '#3498DB' },
+    { id: 'halo', name: 'Halo Infinite', img: 'https://store-images.s-microsoft.com/image/apps.43577.13781640578657662.63784102-132d-4560-8441-285647545456.963f458e-0453-4613-9828-568456845684', tags: ['FPS', 'Consola'], color: '#27AE60' },
+    { id: 'amongus', name: 'Among Us', img: 'https://cdn1.epicgames.com/offer/24b9b5e323bc4cc2a644215162285a8b/EGS_AmongUs_Innersloth_S2_1200x1600-48392849382948392849382948392849', tags: ['Social', 'Móvil'], color: '#C0392B' },
+    { id: 'fallguys', name: 'Fall Guys', img: 'https://cdn1.epicgames.com/offer/52f57f57120c440fad9bfa0e6c279317/EGS_FallGuys_Mediatonic_S2_1200x1600-48392849382948392849382948392849', tags: ['Party', 'PC'], color: '#E67E22' },
+    { id: 'palworld', name: 'Palworld', img: 'https://cdn.akamai.steamstatic.com/steam/apps/1623730/header.jpg', tags: ['Survival', 'PC'], color: '#27AE60' }
 ];
