@@ -1,198 +1,302 @@
+/* EditProfile.css */
+
+/* --- CONFIGURACIÓN DE PÁGINA COMPLETA --- */
 .edit-profile-page {
-    padding: 2rem;
-    color: white;
-    max-width: 1000px;
-    margin: 0 auto;
-    font-family: 'Rajdhani', sans-serif;
+    width: 100vw;
+    min-height: 100vh;
+    background: #000000;
+    color: #ffffff;
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(20px, 5vh, 40px) 20px;
+    box-sizing: border-box;
+}
+
+/* --- CONTENEDOR DEL BOTÓN VOLVER (FUERA) --- */
+.btn-back-container {
+    max-width: 1100px;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end; /* Alineado a la derecha en 1440px */
+    margin-bottom: 15px;
 }
 
 .btn-back {
-    background: transparent;
-    border: none;
-    color: #aaa;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #333;
+    color: #888;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
-    margin-bottom: 20px;
-    font-size: 1rem;
+    transition: all 0.3s ease;
 }
-.btn-back:hover { color: #8EDB15; }
 
-/* LAYOUT PRINCIPAL */
+.btn-back:hover {
+    border-color: #8EDB15;
+    color: #8EDB15;
+    background: rgba(142, 219, 21, 0.05);
+}
+
+/* --- CONTENEDOR PRINCIPAL --- */
 .settings-container {
     display: grid;
-    grid-template-columns: 250px 1fr;
-    gap: 2rem;
-    background: #121214;
-    border: 1px solid #333;
+    grid-template-columns: 260px 1fr;
+    width: 100%;
+    max-width: 1100px;
+    background: #121212;
+    border: 1px solid #222;
     border-radius: 12px;
     overflow: hidden;
-    min-height: 500px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
 }
 
-/* SIDEBAR */
+/* --- SIDEBAR IZQUIERDA --- */
 .settings-sidebar {
-    background: #18181b;
-    padding: 1.5rem;
-    border-right: 1px solid #333;
+    background: #0a0a0a;
+    padding: 30px 20px;
+    border-right: 1px solid #222;
 }
 
 .settings-sidebar h2 {
-    margin-top: 0;
-    font-size: 1.2rem;
-    color: #777;
-    margin-bottom: 1.5rem;
+    color: #444;
+    font-size: 0.75rem;
     text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 30px;
 }
 
 .settings-sidebar nav button {
-    display: flex;
-    align-items: center;
-    gap: 12px;
     width: 100%;
     background: transparent;
     border: none;
-    color: #ccc;
-    padding: 12px;
+    color: #666;
+    padding: 12px 15px;
     text-align: left;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     border-radius: 8px;
-    font-size: 1rem;
-    transition: 0.2s;
-    margin-bottom: 5px;
-}
-
-.settings-sidebar nav button:hover {
-    background: rgba(255,255,255,0.05);
-    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-bottom: 8px;
+    font-family: inherit;
 }
 
 .settings-sidebar nav button.active {
-    background: rgba(142, 219, 21, 0.1);
-    color: #8EDB15;
-    font-weight: bold;
-    border-left: 3px solid #8EDB15;
+    background: #8EDB15;
+    color: #000;
+    font-weight: 600;
 }
 
-/* CONTENIDO */
+/* --- CONTENIDO DERECHA --- */
 .settings-content {
-    padding: 2rem;
+    padding: clamp(20px, 5%, 40px);
+    background: #000000;
 }
 
 .tab-content h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #333;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    font-weight: 700;
 }
 
-/* AVATAR EDIT */
+/* --- SECCIÓN DE AVATAR ORGANIZADA --- */
 .avatar-edit-section {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 20px;
-    background: rgba(255,255,255,0.03);
-    padding: 15px;
+    flex-wrap: wrap;
+    gap: 25px;
+    margin-bottom: 40px;
+    padding: 20px;
+    background: #0a0a0a;
     border-radius: 12px;
+    border: 1px solid #222;
 }
 
 .avatar-edit-section img {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #8EDB15;
+    background: #1a1a1a;
 }
 
-.avatar-inputs { flex-grow: 1; }
-.input-icon-wrapper { position: relative; display: flex; align-items: center; }
-.icon-input { position: absolute; left: 10px; color: #777; }
-.input-icon-wrapper input { padding-left: 35px !important; }
+.avatar-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 200px;
+}
 
-/* FORM GROUPS */
-.form-group { margin-bottom: 1.5rem; }
-.form-group label { display: block; color: #aaa; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; }
-.form-group input, .form-group textarea {
-    width: 100%;
-    background: #09090b;
+.btn-upload-custom {
+    background: #1a1a1a;
     border: 1px solid #333;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    transition: 0.2s;
+}
+
+.btn-upload-custom:hover {
+    border-color: #8EDB15;
+    background: #222;
+}
+
+.mt-2 { margin-top: 8px; }
+
+/* --- FORMULARIOS --- */
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    color: #444;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.form-group input, 
+.form-group textarea {
+    width: 100%;
+    background: #0a0a0a;
+    border: 1px solid #222;
     padding: 12px;
     border-radius: 8px;
-    color: white;
-    font-family: inherit;
+    color: #fff;
     font-size: 1rem;
+    font-family: inherit;
+    box-sizing: border-box;
 }
-.form-group input:focus, .form-group textarea:focus {
+
+.form-group input:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: #8EDB15;
 }
 
-/* PRIVACIDAD / SWITCH */
+/* --- PRIVACIDAD Y SWITCH --- */
 .privacy-option {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #18181b;
-    padding: 15px;
-    border-radius: 8px;
+    background: #0a0a0a;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #222;
     margin-bottom: 20px;
-    border: 1px solid #333;
 }
 
-.privacy-text h4 { margin: 0 0 5px 0; color: white; }
-.privacy-text p { margin: 0; color: #777; font-size: 0.9rem; }
+.privacy-text h4 { margin: 0 0 5px 0; font-size: 1rem; }
+.privacy-text p { margin: 0; font-size: 0.85rem; color: #666; }
 
 /* Switch CSS */
-.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+.switch { position: relative; display: inline-block; width: 44px; height: 22px; }
 .switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #333; transition: .4s; border-radius: 34px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+    background-color: white; transition: .4s; border-radius: 50%;
+}
 input:checked + .slider { background-color: #8EDB15; }
-input:checked + .slider:before { transform: translateX(24px); }
+input:checked + .slider:before { transform: translateX(22px); }
 
 .privacy-alert {
-    border: 1px solid #ef4444;
-    padding: 15px;
-    border-radius: 8px;
-    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef444433;
+    padding: 20px;
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.05);
 }
+.privacy-alert h4 { color: #ef4444; margin: 0 0 10px 0; }
+.privacy-alert p { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
 
 .btn-danger {
     background: #ef4444;
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: 10px 20px;
     border-radius: 6px;
+    font-weight: 600;
     cursor: not-allowed;
-    opacity: 0.7;
+    opacity: 0.5;
 }
 
-/* BOTÓN GUARDAR */
-.form-actions { margin-top: 2rem; border-top: 1px solid #333; padding-top: 1rem; text-align: right; }
+/* --- BOTONES DE ACCIÓN --- */
+.form-actions {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #222;
+    display: flex;
+    justify-content: flex-end;
+}
+
 .btn-save-primary {
     background: #8EDB15;
-    color: black;
+    color: #000;
     border: none;
-    padding: 12px 24px;
+    padding: 14px 30px;
     border-radius: 8px;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 1rem;
-    display: inline-flex;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     transition: 0.3s;
 }
 
 .btn-save-primary:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 15px rgba(142, 219, 21, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(142, 219, 21, 0.3);
 }
 
-@media (max-width: 768px) {
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
     .settings-container { grid-template-columns: 1fr; }
-    .settings-sidebar nav { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
-    .settings-sidebar nav button { width: auto; white-space: nowrap; margin-bottom: 0; }
+    .settings-sidebar { 
+        border-right: none; 
+        border-bottom: 1px solid #222; 
+        padding: 15px;
+    }
+    .settings-sidebar h2 { display: none; }
+    .settings-sidebar nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+        padding-bottom: 5px;
+    }
+    .settings-sidebar nav button {
+        width: auto;
+        white-space: nowrap;
+        padding: 10px 15px;
+    }
+    .btn-back-container { justify-content: center; }
+}
+
+@media (max-width: 480px) {
+    .avatar-edit-section { flex-direction: column; text-align: center; }
+    .btn-upload-custom { margin: 0 auto; }
+    .btn-save-primary { width: 100%; justify-content: center; }
 }

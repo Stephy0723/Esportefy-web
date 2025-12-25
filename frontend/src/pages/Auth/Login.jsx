@@ -40,7 +40,7 @@ const Login = () => {
             }
 
             // 5. Redirigir al inicio o dashboard
-            navigate('/');
+            navigate('/dashboard');
             
         } catch (err) {
             // Capturar errores del backend (ej: "Usuario no encontrado")

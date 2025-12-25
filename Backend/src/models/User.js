@@ -3,27 +3,35 @@
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
-//Etapa 1
-    fullName : {type: String, required: true},
+    // --- Identidad Visual ---
+    avatar: { type: String, default: "" },
+    bio: { type: String, default: "" },
+    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
+
+    // --- Etapa 1: Datos Personales ---
+    fullName: { type: String, required: true },
     phone: { type: String, required: true },
-    country: {type: String, required: true},
-    birthDate: {type: Date, required: true},
-//Etapa 2    
-    selectedGames: {type: [String], required: true},
-//Etapa 3
-    experience: {type: [String], required: true},
-    platforms: {type: [String], required: true},
-    goals: {type: [String], required: true},
-//Etapa 4 
-    username: {type: String, required: true},//gamertag
-    email: {type: String, required: true},
-    password: {type: String, required: true},
-    checkTerms: {type: Boolean, required: true},
+    country: { type: String, required: true },
+    birthDate: { type: Date, required: true },
 
-//olvide mi contraseña
+    // --- Etapa 2: Gaming Core ---
+    selectedGames: { type: [String], default: [] }, // Cambiado a default [] para evitar errores de .map()
+
+    // --- Etapa 3: Perfil Pro ---
+    experience: { type: [String], default: [] },
+    platforms: { type: [String], default: [] },
+    goals: { type: [String], default: [] },
+
+    // --- Etapa 4: Credenciales ---
+    username: { type: String, required: true, unique: true }, // unique para que no se repitan gamertags
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    checkTerms: { type: Boolean, required: true },
+
+    // --- Seguridad y Recuperación ---
     resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },    
+    resetPasswordExpires: { type: Date },
 
-}, {timestamps: true});
+}, { timestamps: true });
 
 export default mongoose.model('User', UserSchema);
