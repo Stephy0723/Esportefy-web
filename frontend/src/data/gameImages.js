@@ -9,7 +9,7 @@ import cs2 from '../assets/games/cs2.jpg';
 import dota2 from '../assets/games/dota2.jpg';
 import fifa from '../assets/games/fifa.jpg';
 import fortnite from '../assets/games/fornite.jpg';
-import freefire from '../assets/games/frefire.jpg';
+import freefire from '../assets/games/frefire.jpg'; //me quede aqui
 import hearthstone from '../assets/games/hearthstone.jpg';
 import hok from '../assets/games/hok.jpg';
 import lol from '../assets/games/lol.jpg';

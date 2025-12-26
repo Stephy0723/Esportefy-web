@@ -6,6 +6,7 @@
    para que GANEN sobre cualquier estilo global (index.css/App.css)
 */
 
+
 .dashboard-wrapper {
     /* --- MODO CLARO (POR DEFECTO) --- */
     --bg-page: #ffffff;       /* Fondo Blanco Puro */
@@ -99,127 +100,124 @@ body.dark .dashboard-wrapper {
 /* 3. FILTROS Y GRID JUEGOS                  */
 /* ========================================= */
 
-.filter-bar {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+/* Contenedor de la sección */
+.communities-section {
+    padding: 20px 0;
 }
 
-.filter-btn {
-    background-color: var(--bg-card); /* Ahora sí será blanco en modo claro */
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 6px 16px; border-radius: 20px; font-size: 0.85rem;
-    cursor: pointer; transition: all 0.2s;
-}
-
-.filter-btn:hover {
-    color: var(--text-main); border-color: var(--brand-green);
-}
-
-.filter-btn.active {
-    background-color: var(--brand-green);
-    color: #000; /* Texto negro para contraste */
-    border-color: var(--brand-green);
-    font-weight: 800;
-}
-
-/* GRID RESULTADOS */
-.games-grid-display {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-    gap: 15px; margin-bottom: 20px;
-}
-
-/* TARJETA JUEGO */
-.game-poster-card {
-    position: relative; height: 220px;
-    border-radius: 12px; overflow: hidden;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    transition: transform 0.3s;
-    text-decoration: none; display: block;
-}
-
-.game-poster-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--brand-green);
-    z-index: 2;
-    box-shadow: 0 10px 20px var(--shadow);
-}
-
-.game-poster-card img { width: 100%; height: 100%; object-fit: cover; }
-
-.game-badge {
-    position: absolute; top: 8px; right: 8px;
-    background: var(--brand-green); color: #000;
-    font-size: 0.65rem; font-weight: bold; 
-    padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
-}
-
-.game-title-overlay {
-    position: absolute; bottom: 0; width: 100%;
-    background: linear-gradient(transparent, rgba(0,0,0,0.9));
-    padding: 10px; text-align: center;
-}
-.game-title-overlay span {
-    color: white; /* Siempre blanco sobre la imagen */
-    font-weight: bold; font-size: 0.9rem;
-    text-shadow: 0 1px 2px black;
-}
-
-.no-results {
-    grid-column: 1 / -1; text-align: center; padding: 40px;
-    background-color: var(--bg-card); border-radius: 12px;
-    color: var(--text-muted); border: 1px solid var(--border-color);
-}
-
-
-/* ========================================= */
-/* 4. SECCIÓN COMUNIDADES                    */
-/* ========================================= */
+/* Alineación del Título y Botón Crear */
 .section-header-row {
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 15px; margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
 }
 
+/* Botón Crear Comunidad (Más integrado) */
 .btn-create-community {
-    background: transparent;
-    border: 1px solid var(--brand-green);
-    color: var(--brand-green); /* Verde visible en ambos temas */
-    padding: 8px 16px; border-radius: 50px;
-    font-weight: bold; cursor: pointer;
-    display: flex; align-items: center; gap: 8px; transition: all 0.3s;
+    background-color: var(--brand-green);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
-.btn-create-community:hover { background: var(--brand-green); color: #000; }
 
+.btn-create-community:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.4);
+}
+
+/* LISTA DE COMUNIDADES (Formato Grid para tamaño mayor) */
 .communities-list-horizontal {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 15px;
+    /* Ajusta este valor (350px) para controlar qué tan grandes son las tarjetas */
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+    gap: 20px;
 }
 
 .community-pill {
-    background-color: var(--bg-card); /* Fondo dinámico */
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 12px; padding: 15px;
-    display: flex; align-items: center; gap: 15px;
+    border-radius: 20px;
+    padding: 20px; /* Más padding para que se vea amplia */
+    transition: all 0.3s ease;
 }
-.community-pill img {
-    width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
-    border: 2px solid var(--border-color);
-}
-.comm-text h4 { margin: 0; color: var(--text-main); font-size: 0.95rem; }
-.comm-text small { color: var(--text-muted); }
 
-.btn-join-mini {
-    margin-left: auto;
-    background-color: var(--bg-input); 
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    padding: 5px 12px; border-radius: 15px; cursor: pointer;
-    font-size: 0.75rem; transition: 0.2s;
+.community-pill:hover {
+    border-color: var(--brand-green);
+    transform: translateY(-5px);
 }
-.btn-join-mini:hover { background: var(--brand-green); color: #000; border-color: var(--brand-green); }
 
+/* IMAGEN GRANDE Y CIRCULAR (Adiós al efecto ovalado) */
+.pill-avatar {
+    width: 80px;  /* Tamaño aumentado de 40px a 80px */
+    height: 80px;
+    min-width: 80px;
+    margin-right: 20px;
+}
+
+.pill-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Recorta la imagen para que llene el círculo */
+    border-radius: 50%; /* Círculo perfecto */
+    border: 3px solid var(--brand-green);
+}
+
+/* Información del texto */
+.pill-info {
+    flex-grow: 1;
+}
+
+.pill-title {
+    font-size: 1.2rem; /* Texto más grande */
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.pill-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Botones de acción */
+.pill-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.heart-icon-btn {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition: color 0.2s;
+}
+
+.heart-icon-btn:hover {
+    color: #ff4d4d;
+}
+
+.btn-entrar-small {
+    background: var(--brand-green);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+}
 
 /* ========================================= */
 /* 5. FEED GLOBAL                            */
@@ -470,3 +468,95 @@ body.dark .dashboard-wrapper {
 }
 
 /* ... Mantén tus estilos de Sidebar, Modal y Feed aquí ... */
+.community-pill {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.community-pill:hover {
+    background: rgba(163, 230, 53, 0.05);
+    border-color: rgba(163, 230, 53, 0.4);
+    transform: x(4px); /* Desplazamiento sutil a la derecha */
+}
+
+/* Imagen circular con borde neón */
+.pill-img-container {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+}
+
+.community-pill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #a3e635;
+}
+
+.comm-text h4 {
+    color: #fff;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.comm-stats {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+}
+
+.active-now {
+    color: #a3e635;
+    font-weight: 700;
+}
+
+/* Botones de acción */
+.pill-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.heart-mini-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.heart-mini-btn:hover {
+    color: #ff4d4d;
+}
+
+.btn-join-mini {
+    background: #a3e635;
+    color: #000;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-join-mini:hover {
+    box-shadow: 0 0 12px rgba(163, 230, 53, 0.5);
+    transform: scale(1.05);
+}

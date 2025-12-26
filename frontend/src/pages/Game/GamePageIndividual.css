@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;700;800&display=swap');
+
+/* ========================================= */
+/* 1. SISTEMA DE TEMAS (ROOT & DARK)         */
+/* ========================================= */
+:root {
+    /* MODO CLARO (POR DEFECTO) */
+    --bg-page: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --text-main: #18181b;
+    --text-muted: #71717a;
+    --border-color: #e4e4e7;
+    --accent-color: #c89b3c; /* Dorado LoL */
+}
+
+/* Sincronización con el Sidebar (Clase .dark en el body) */
+body.dark .game-page-premium {
+    --bg-page: #000000;
+    --bg-card: rgba(20, 20, 23, 0.85);
+    --text-main: #ffffff;
+    --text-muted: #a1a1aa;
+    --border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Identidad de Colores por Juego */
+.theme-lol { --accent-color: #c89b3c; }
+.theme-valorant { --accent-color: #ff4655; }
+.theme-dota2 {   --accent-color: #00d4ff; }
+.theme-mlbb {    --accent-color: #ffcc00; }
+.theme-wildrift {   --accent-color: #32eac3;}
+.theme-fifa { --accent-color: #00ff00; }        /* Verde Neón / Césped */
+.theme-fortnite { --accent-color: #f43f5e; }    /* Rosa/Violeta Fortnite */
+.theme-hok { --accent-color: #3c89c8; }         /* Oro Imperial */
+.theme-hearthstone { --accent-color: #e224fb; } /* Ámbar Mágico */
+.theme-freefire { --accent-color: #facc15; }    /* Amarillo Neón */
+.theme-overwatch { --accent-color: #f97316; }   /* Naranja Overwatch */
+.theme-pubg { --accent-color: #ca8a04; }        /* Dorado Desierto */
+.theme-rainbowsix { --accent-color: #3b82f6; }  /* Azul Táctico */
+.theme-rocketleague { --accent-color: #0ea5e9; }/* Azul Celeste / Turbo */
+.theme-smash { --accent-color: #ef4444; }       /* Rojo Nintendo */
+.theme-csgo { --accent-color: #de9b35; }        /* Naranja Óxido */
+.theme-apex { --accent-color: #ef4444; }        /* Rojo Apex */
+.theme-cod { --accent-color: #84cc16; }         /* Verde Militar */
+.theme-csgo { --accent-color: #de9b35; /* Naranja clásico de CS:GO */}
+.theme-clashroyale {--accent-color: #358cde;}
+.theme-tekken8 {--accent-color: #5c2525;}
+.theme-starcraft {--accent-color: #0f9290;}
+.theme-runeterra {--accent-color: #9a2424;}
+
+
+
+/* ========================================= */
+/* 2. ESTRUCTURA Y FONDO                     */
+/* ========================================= */
+.game-page-premium {
+    position: relative;
+    min-height: 100vh;
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.background-hero {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 80vh;
+    background-size: cover;
+    background-position: top center;
+    z-index: 0;
+}
+
+.dark-vignette {
+    position: absolute;
+    width: 100%; height: 100%;
+    /* Se funde con el color de fondo dinámico */
+    background: linear-gradient(to bottom, transparent 0%, var(--bg-page) 90%);
+}
+
+.minimal-back-btn {
+    position: fixed;
+    top: 100px; right: 40px;
+    z-index: 9999;
+    background: var(--text-main);
+    color: var(--bg-page);
+    border: none;
+    padding: 10px 24px;
+    border-radius: 4px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+/* ========================================= */
+/* 3. TÍTULO Y TAGS                          */
+/* ========================================= */
+.content-overlay {
+    position: relative;
+    z-index: 1;
+    padding: 250px 8% 100px;
+}
+
+.game-main-title {
+    font-family: 'Cinzel', serif;
+    font-size: 5.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-main); /* Cambia con el tema */
+    text-shadow: 0 0 30px var(--accent-color);
+    margin-bottom: 20px;
+}
+
+.passion-tags {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 40px;
+}
+
+.passion-tags span {
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--accent-color);
+    color: var(--text-main);
+    padding: 6px 16px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+/* ========================================= */
+/* 4. GRID ASIMÉTRICO (COLUMNAS RESTAURADAS) */
+/* ========================================= */
+.game-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px; /* Columna principal + Sidebar derecho */
+    gap: 40px;
+}
+
+.glass-section {
+    background: var(--bg-card);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border-color);
+    padding: 30px;
+    border-radius: 4px;
+    margin-bottom: 25px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+}
+
+.section-header h3, 
+.section-header h4 {
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 0;
+    color: var(--text-main);
+}
+
+.icon-accent { color: var(--accent-color); }
+
+/* ========================================= */
+/* 5. PATROCINADORES (ESTILO TABLA)         */
+/* ========================================= */
+.sponsors-container {
+    margin-top: 30px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+.sponsors-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.sponsors-flex { display: flex; flex-direction: column; }
+
+.sponsor-pill {
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background: rgba(128, 128, 128, 0.05);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ========================================= */
+/* 6. SIDEBAR DERECHO (ORG Y COMUNIDADES)   */
+/* ========================================= */
+.stats-sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.dynamic-item-card {
+    background: rgba(128, 128, 128, 0.05);
+    border-left: 4px solid var(--accent-color);
+    padding: 18px;
+    margin-bottom: 15px;
+}
+
+.dynamic-item-card strong { color: var(--accent-color); display: block; }
+.dynamic-item-card p { color: var(--text-muted); font-size: 0.85rem; margin: 5px 0 0; }
+
+.footer-comm-pill {
+    background: rgba(128, 128, 128, 0.05);
+    border: 1px solid var(--border-color);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.comm-name { color: var(--text-main); font-weight: 700; }
+.comm-count { color: var(--accent-color); font-weight: 800; }
