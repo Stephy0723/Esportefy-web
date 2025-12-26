@@ -47,6 +47,32 @@ const UserSchema = new mongoose.Schema({
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
 
+    // ===== SETTINGS =====
+    connections: {
+        discord: {
+            username: { type: String },
+            id: { type: String },
+            verified: { type: Boolean, default: false }
+        },
+        riot: {
+            gameName: { type: String },
+            tagLine: { type: String },
+            verified: { type: Boolean, default: false }
+        },
+        steam: {
+            steamId: { type: String },
+            verified: { type: Boolean, default: false }
+        }
+    },
+
+    privacy: {
+  allowTeamInvites: { type: Boolean, default: true },
+  showOnlineStatus: { type: Boolean, default: true },
+  allowTournamentInvites: { type: Boolean, default: true }
+},
+
+
+
 }, { timestamps: true });
 
 export default mongoose.model('User', UserSchema);
