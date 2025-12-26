@@ -1,129 +1,176 @@
 import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
-import { 
-    FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret, 
-    FaPaintBrush, FaHeadset, FaSave, FaTrash, FaDiscord, 
+import {
+    FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret,
+    FaPaintBrush, FaHeadset, FaSave, FaTrash, FaDiscord,
     FaSteam, FaCheckCircle, FaLock, FaEyeSlash, FaBug, FaExternalLinkAlt,
-    FaExclamationTriangle, FaFlag, FaEnvelope, FaKey, FaMobileAlt, 
-    FaApple, FaAndroid, FaWindows, FaLinux 
+    FaExclamationTriangle, FaFlag, FaEnvelope, FaKey, FaMobileAlt,
+    FaApple, FaAndroid, FaWindows, FaLinux
 } from 'react-icons/fa';
 import './Settings.css';
+import axios from "axios";
+import { useEffect } from "react";
 
 
 export default function Settings() {
+    const [privacy, setPrivacy] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const token = localStorage.getItem("token");
+
+    const updatePrivacy = async (newPrivacy) => {
+        try {
+            await axios.put(
+                "http://localhost:4000/api/settings/privacy",
+                { privacy: newPrivacy },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            setPrivacy(newPrivacy);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     const [activeTab, setActiveTab] = useState('security');
     const navigate = useNavigate();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    useEffect(() => {
+        const fetchPrivacy = async () => {
+            try {
+                const res = await axios.get(
+                    "http://localhost:4000/api/settings",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+
+                setPrivacy(res.data.privacy);
+                setLoading(false);
+            } catch (error) {
+                console.error("Error cargando privacidad", error);
+            }
+        };
+
+        fetchPrivacy();
+    }, [token]);
+
     const renderContent = () => {
-        switch(activeTab) {
-           case 'security':
-    return (
-        <div className="settings-panel fade-in">
-            <div className="panel-header">
-                <h2>Seguridad de la Cuenta</h2>
-                <p>Protege tu acceso y gestiona tus credenciales de jugador profesional.</p>
-            </div>
+        switch (activeTab) {
+            case 'security':
+                if (loading || !privacy) return null;
 
-            <div className="settings-form">
-                {/* --- CAMBIO DE CORREO --- */}
-                <div className="security-section">
-                    <div className="section-title-box">
-                        <FaEnvelope className="section-icon" />
-                        <h3>ID Principal y Contacto</h3>
-                    </div>
-                    <div className="form-group">
-                        <label>Correo Electrónico Actual</label>
-                        <div className="input-with-action">
-                            <input type="email" defaultValue="usuario@esportefy.com" disabled className="input-disabled"/>
-                            <button type="button" className="btn-small-neon" onClick={() => alert("Iniciando proceso de cambio de correo...")}>
-                                Cambiar Correo
-                            </button>
+                return (
+                    <div className="settings-panel fade-in">
+                        <div className="panel-header">
+                            <h2>Seguridad de la Cuenta</h2>
+                            <p>Protege tu acceso y gestiona tus credenciales de jugador profesional.</p>
                         </div>
-                        <p className="input-helper">Usa esta opción en caso de pérdida de acceso o para actualizar tu identidad principal.</p>
-                    </div>
-                </div>
 
-                <div className="divider"></div>
-
-                {/* --- CONTRASEÑA ESTILO FORGOT PASSWORD --- */}
-                <div className="security-section">
-                    <div className="section-title-box">
-                        <FaKey className="section-icon" />
-                        <h3>Credenciales de Acceso</h3>
-                    </div>
-                    <div className="info-box-status">
-                        <div className="info-text">
-                            <strong>Cambiar Contraseña</strong>
-                            <p>Te enviaremos un código de seguridad al correo para validar que eres tú antes de permitir el cambio.</p>
-                        </div>
-                        <button type="button" className="btn-save" onClick={() => alert("Código enviado al correo vinculado.")}>
-                            Enviar Código
-                        </button>
-                    </div>
-                </div>
-
-                <div className="divider"></div>
-
-                {/* --- 2FA MULTIPLATAFORMA --- */}
-                <div className="security-section">
-                    <div className="section-title-box">
-                        <FaShieldAlt className="section-icon" />
-                        <h3>Autenticación en Dos Pasos (2FA)</h3>
-                    </div>
-                    <p className="section-desc">Vincula tus dispositivos para una protección total:</p>
-                    
-                    <div className="platform-auth-grid">
-                        <div className="platform-card">
-                            <div className="plat-info">
-                                <FaAndroid /> <FaApple />
-                                <span>Móvil (Android / iOS)</span>
+                        <div className="settings-form">
+                            {/* --- CAMBIO DE CORREO --- */}
+                            <div className="security-section">
+                                <div className="section-title-box">
+                                    <FaEnvelope className="section-icon" />
+                                    <h3>ID Principal y Contacto</h3>
+                                </div>
+                                <div className="form-group">
+                                    <label>Correo Electrónico Actual</label>
+                                    <div className="input-with-action">
+                                        <input type="email" defaultValue="usuario@esportefy.com" disabled className="input-disabled" />
+                                        <button type="button" className="btn-small-neon" onClick={() => alert("Iniciando proceso de cambio de correo...")}>
+                                            Cambiar Correo
+                                        </button>
+                                    </div>
+                                    <p className="input-helper">Usa esta opción en caso de pérdida de acceso o para actualizar tu identidad principal.</p>
+                                </div>
                             </div>
-                            <button type="button" className="btn-status-toggle">Vincular</button>
-                        </div>
-                        <div className="platform-card">
-                            <div className="plat-info">
-                                <FaWindows /> <FaLinux />
-                                <span>Desktop (PC)</span>
+
+                            <div className="divider"></div>
+
+                            {/* --- CONTRASEÑA ESTILO FORGOT PASSWORD --- */}
+                            <div className="security-section">
+                                <div className="section-title-box">
+                                    <FaKey className="section-icon" />
+                                    <h3>Credenciales de Acceso</h3>
+                                </div>
+                                <div className="info-box-status">
+                                    <div className="info-text">
+                                        <strong>Cambiar Contraseña</strong>
+                                        <p>Te enviaremos un código de seguridad al correo para validar que eres tú antes de permitir el cambio.</p>
+                                    </div>
+                                    <button type="button" className="btn-save" onClick={() => alert("Código enviado al correo vinculado.")}>
+                                        Enviar Código
+                                    </button>
+                                </div>
                             </div>
-                            <button type="button" className="btn-status-toggle">Vincular</button>
+
+                            <div className="divider"></div>
+
+                            {/* --- 2FA MULTIPLATAFORMA --- */}
+                            <div className="security-section">
+                                <div className="section-title-box">
+                                    <FaShieldAlt className="section-icon" />
+                                    <h3>Autenticación en Dos Pasos (2FA)</h3>
+                                </div>
+                                <p className="section-desc">Vincula tus dispositivos para una protección total:</p>
+
+                                <div className="platform-auth-grid">
+                                    <div className="platform-card">
+                                        <div className="plat-info">
+                                            <FaAndroid /> <FaApple />
+                                            <span>Móvil (Android / iOS)</span>
+                                        </div>
+                                        <button type="button" className="btn-status-toggle">Vincular</button>
+                                    </div>
+                                    <div className="platform-card">
+                                        <div className="plat-info">
+                                            <FaWindows /> <FaLinux />
+                                            <span>Desktop (PC)</span>
+                                        </div>
+                                        <button type="button" className="btn-status-toggle">Vincular</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* --- ELIMINAR CUENTA CON DESPEDIDA --- */}
+                            <div className="danger-zone-v2">
+                                {!showDeleteConfirm ? (
+                                    <div className="danger-flex">
+                                        <div className="danger-content">
+                                            <h4>Zona de Peligro</h4>
+                                            <p>Esta acción es definitiva. Tu cuenta y estadísticas desaparecerán.</p>
+                                        </div>
+                                        <button type="button" className="btn-danger-minimal" onClick={() => setShowDeleteConfirm(true)}>
+                                            <FaTrash /> Eliminar Cuenta
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="delete-confirmation-box fade-in">
+                                        <FaExclamationTriangle className="warning-icon-big" />
+                                        <h3>¿Es este el final de la partida?</h3>
+                                        <p className="farewell-text">
+                                            Nos duele verte partir. Tu legado en Esportefy, tus victorias acumuladas y tus equipos
+                                            se desvanecerán en el vacío digital para siempre. Ha sido un honor tenerte en nuestra comunidad. <br />
+                                            <strong>¿Confirmas que deseas eliminar tu cuenta permanentemente?</strong>
+                                        </p>
+                                        <div className="confirm-actions">
+                                            <button type="button" className="btn-cancel" onClick={() => setShowDeleteConfirm(false)}>Me quedo a jugar</button>
+                                            <button type="button" className="btn-delete-final" onClick={() => {
+                                                localStorage.removeItem('esportefyUser');
+                                                navigate('/');
+                                            }}>Adiós, Esportefy</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                {/* --- ELIMINAR CUENTA CON DESPEDIDA --- */}
-                <div className="danger-zone-v2">
-                    {!showDeleteConfirm ? (
-                        <div className="danger-flex">
-                            <div className="danger-content">
-                                <h4>Zona de Peligro</h4>
-                                <p>Esta acción es definitiva. Tu cuenta y estadísticas desaparecerán.</p>
-                            </div>
-                            <button type="button" className="btn-danger-minimal" onClick={() => setShowDeleteConfirm(true)}>
-                                <FaTrash /> Eliminar Cuenta
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="delete-confirmation-box fade-in">
-                            <FaExclamationTriangle className="warning-icon-big" />
-                            <h3>¿Es este el final de la partida?</h3>
-                            <p className="farewell-text">
-                                Nos duele verte partir. Tu legado en Esportefy, tus victorias acumuladas y tus equipos 
-                                se desvanecerán en el vacío digital para siempre. Ha sido un honor tenerte en nuestra comunidad. <br/>
-                                <strong>¿Confirmas que deseas eliminar tu cuenta permanentemente?</strong>
-                            </p>
-                            <div className="confirm-actions">
-                                <button type="button" className="btn-cancel" onClick={() => setShowDeleteConfirm(false)}>Me quedo a jugar</button>
-                                <button type="button" className="btn-delete-final" onClick={() => {
-                                    localStorage.removeItem('esportefyUser');
-                                    navigate('/');
-                                }}>Adiós, Esportefy</button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
+                );
             case 'connections':
                 return (
                     <div className="settings-panel fade-in">
@@ -179,7 +226,7 @@ export default function Settings() {
                             <div className="toggle-item streamer-mode-box">
                                 <div className="toggle-info">
                                     <div className="icon-title">
-                                        <FaEyeSlash style={{color: '#a55eea'}} /> 
+                                        <FaEyeSlash style={{ color: '#a55eea' }} />
                                         <h4>Modo Streamer</h4>
                                     </div>
                                     <p>Oculta correos electrónicos, IDs de invitación y notificaciones sensibles mientras transmites.</p>
@@ -207,9 +254,9 @@ export default function Settings() {
                                     <span>Alto Contraste</span>
                                 </div>
                             </div>
-                            
+
                             <div className="divider"></div>
-                            
+
                             <div className="toggle-item">
                                 <div className="toggle-info">
                                     <h4>Reducir Movimiento</h4>
@@ -239,18 +286,58 @@ export default function Settings() {
                                     <p>Permitir ofertas de fichaje de cualquier capitán.</p>
                                 </div>
                                 <label className="switch">
-                                    <input type="checkbox" defaultChecked />
+                                    <input
+                                        type="checkbox"
+                                        checked={privacy.allowTeamInvites}
+                                        onChange={(e) =>
+                                            updatePrivacy({
+                                                ...privacy,
+                                                allowTeamInvites: e.target.checked
+                                            })
+                                        }
+                                    />
                                     <span className="slider round"></span>
                                 </label>
+
                             </div>
 
                             <div className="toggle-item">
                                 <div className="toggle-info">
-                                    <h4>Estado "En Línea"</h4>
-                                    <p>Visible para amigos y compañeros.</p>
+                                    <h4>Estado en Línea</h4>
+                                    <p>Mostrar tu estado en línea a otros usuarios.</p>
                                 </div>
                                 <label className="switch">
-                                    <input type="checkbox" defaultChecked />
+                                    <input
+                                        type="checkbox"
+                                        checked={privacy.showOnlineStatus}
+                                        onChange={(e) =>
+                                            updatePrivacy({
+                                                ...privacy,
+                                                showOnlineStatus: e.target.checked
+                                            })
+                                        }
+                                    />
+                                    <span className="slider round"></span>
+                                </label>
+                            </div>
+
+
+                            <div className="toggle-item">
+                                <div className="toggle-info">
+                                    <h4>Invitaciones a Torneos</h4>
+                                    <p>Permitir que organizadores te inscriban en torneos.</p>
+                                </div>
+                                <label className="switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={privacy.allowTournamentInvites}
+                                        onChange={(e) =>
+                                            updatePrivacy({
+                                                ...privacy,
+                                                allowTournamentInvites: e.target.checked
+                                            })
+                                        }
+                                    />
                                     <span className="slider round"></span>
                                 </label>
                             </div>
@@ -258,7 +345,7 @@ export default function Settings() {
                     </div>
                 );
 
-case 'billing':
+            case 'billing':
                 return (
                     <div className="settings-panel fade-in">
                         <div className="panel-header">
@@ -285,7 +372,7 @@ case 'billing':
                             </div>
                         </div>
 
-                        <div className="divider" style={{margin: '3rem 0'}}></div>
+                        <div className="divider" style={{ margin: '3rem 0' }}></div>
 
                         {/* 2. OPCIONES DE PAGO (MENSUAL vs ANUAL) */}
                         <div className="upgrade-title">
@@ -294,7 +381,7 @@ case 'billing':
                         </div>
 
                         <div className="billing-grid-comparison">
-                            
+
                             {/* MENSUAL */}
                             <div className="plan-card monthly">
                                 <div className="plan-header">
@@ -356,7 +443,7 @@ case 'billing':
                                 <div className="banner-text">
                                     <h3>REPORTAR</h3>
                                     <p>Selecciona la categoría y describe la situación. Tu reporte es anónimo.</p>
-                                    
+
                                     <div className="report-actions">
                                         <select className="select-banner">
                                             <option>Error / Bug de la Web</option>
@@ -373,7 +460,7 @@ case 'billing':
                             </div>
                         </div>
 
-                        <div className="info-box" style={{marginTop: '2rem'}}>
+                        <div className="info-box" style={{ marginTop: '2rem' }}>
                             <FaFlag className="info-icon" />
                             <div>
                                 <strong>Historial de Reportes</strong>
@@ -392,22 +479,22 @@ case 'billing':
                         </div>
 
                         <div className="support-grid">
-                           <div className="support-card">
-    <FaHeadset className="support-icon" />
-    <h4>Centro de Ayuda</h4>
-    <p>Preguntas frecuentes y tutoriales.</p>
-    
-    {/* AQUÍ ESTÁ EL CAMBIO: onClick */}
-    <button 
-        className="btn-ghost small" 
-        onClick={() => navigate('/support')}
-    >
-        Ver FAQ <FaExternalLinkAlt style={{fontSize:'0.7rem', marginLeft:'5px'}}/>
-    </button>
-</div>
-                            
                             <div className="support-card">
-                                <FaDiscord className="support-icon" style={{color: '#5865F2'}} />
+                                <FaHeadset className="support-icon" />
+                                <h4>Centro de Ayuda</h4>
+                                <p>Preguntas frecuentes y tutoriales.</p>
+
+                                {/* AQUÍ ESTÁ EL CAMBIO: onClick */}
+                                <button
+                                    className="btn-ghost small"
+                                    onClick={() => navigate('/support')}
+                                >
+                                    Ver FAQ <FaExternalLinkAlt style={{ fontSize: '0.7rem', marginLeft: '5px' }} />
+                                </button>
+                            </div>
+
+                            <div className="support-card">
+                                <FaDiscord className="support-icon" style={{ color: '#5865F2' }} />
                                 <h4>Comunidad Discord</h4>
                                 <p>Ayuda en tiempo real con moderadores.</p>
                                 <button className="btn-ghost small">Unirse al Server</button>
@@ -449,14 +536,14 @@ case 'billing':
                         <button className={`nav-item ${activeTab === 'billing' ? 'active' : ''}`} onClick={() => setActiveTab('billing')}>
                             <FaCreditCard /> Suscripción
                         </button>
-                        
-                        <div className="divider" style={{margin: '0.5rem 0'}}></div>
-                        
+
+                        <div className="divider" style={{ margin: '0.5rem 0' }}></div>
+
                         {/* PESTAÑA REPORTAR */}
                         <button className={`nav-item ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
                             <FaExclamationTriangle /> Reportar
                         </button>
-                        
+
                         {/* PESTAÑA SOPORTE */}
                         <button className={`nav-item ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
                             <FaHeadset /> Soporte
