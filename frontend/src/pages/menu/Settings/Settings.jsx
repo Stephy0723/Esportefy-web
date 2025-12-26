@@ -13,7 +13,19 @@ import { useEffect } from "react";
 
 
 export default function Settings() {
-    const [privacy, setPrivacy] = useState(null);
+    const [privacy, setPrivacy] = useState({
+        allowTeamInvites: false,
+        showOnlineStatus: false,
+        allowTournamentInvites: false
+    });
+
+
+    const [connections, setConnections] = useState({
+        discord: {},
+        riot: {},
+        steam: {}
+    });
+
     const [loading, setLoading] = useState(true);
 
     const token = localStorage.getItem("token");
@@ -50,6 +62,7 @@ export default function Settings() {
                 );
 
                 setPrivacy(res.data.privacy);
+                setConnections(res.data.connections); // ✅ ahora sí existe
                 setLoading(false);
             } catch (error) {
                 console.error("Error cargando privacidad", error);
@@ -58,6 +71,7 @@ export default function Settings() {
 
         fetchPrivacy();
     }, [token]);
+
 
     const renderContent = () => {
         switch (activeTab) {
@@ -180,35 +194,116 @@ export default function Settings() {
                         </div>
 
                         <div className="integrations-grid">
-                            <div className="integration-card connected">
-                                <div className="int-status"><FaCheckCircle /> Conectado</div>
-                                <div className="int-icon discord"><FaDiscord /></div>
+                            <div className={`integration-card ${connections?.discord?.id ? 'connected' : ''}`}>
+
+                                <div className={`int-status ${connections?.discord?.id ? '' : 'pending'}`}>
+                                    {connections?.discord?.id ? 'Conectado' : 'No conectado'}
+                                </div>
+
+                                <div className="int-icon discord">
+                                    <FaDiscord />
+                                </div>
+
                                 <div className="int-details">
                                     <h4>Discord</h4>
-                                    <span>Salyl#1234</span>
+                                    <span>
+                                        {connections?.discord?.username || 'Sin vincular'}
+                                    </span>
                                 </div>
-                                <button className="btn-disconnect">Desvincular</button>
+
+                                {connections?.discord?.id ? (
+                                    <button className="btn-disconnect">Desvincular</button>
+                                ) : (
+                                    <button
+                                        className="btn-connect"
+                                        onClick={() => {
+                                            window.location.href =
+                                                `http://localhost:4000/api/auth/discord?token=${localStorage.getItem('token')}`;
+                                        }}
+                                    >
+                                        Conectar
+                                    </button>
+                                )}
+
                             </div>
 
-                            <div className="integration-card">
-                                <div className="int-status pending">No Conectado</div>
-                                <div className="int-icon riot"><FaGamepad /></div>
+
+                            <div className={`integration-card ${connections?.riot?.gameName ? 'connected' : ''}`}>
+
+                                <div className={`int-status ${connections?.riot?.gameName ? '' : 'pending'}`}>
+                                    {connections?.riot?.gameName ? 'Conectado' : 'No conectado'}
+                                </div>
+
+                                <div className="int-icon riot">
+                                    <img src="/riot-icon.png" alt="Riot" />
+                                </div>
+
                                 <div className="int-details">
                                     <h4>Riot Games</h4>
-                                    <span>LoL / Valorant</span>
+                                    <span>
+                                        {connections?.riot?.gameName
+                                            ? `${connections.riot.gameName}#${connections.riot.tagLine}`
+                                            : 'Sin vincular'}
+                                    </span>
                                 </div>
-                                <button className="btn-connect">Conectar</button>
+
+                                {connections?.riot?.gameName ? (
+                                    <button className="btn-disconnect">
+                                        Desvincular
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="btn-connect"
+                                        onClick={() =>
+                                            connectProvider('riot', {
+                                                gameName: 'Angel',
+                                                tagLine: 'LAN'
+                                            })
+                                        }
+                                    >
+                                        Conectar
+                                    </button>
+                                )}
                             </div>
 
-                            <div className="integration-card">
-                                <div className="int-status pending">No Conectado</div>
-                                <div className="int-icon steam"><FaSteam /></div>
+
+                            <div className={`integration-card ${connections?.steam?.steamId ? 'connected' : ''}`}>
+
+                                <div className={`int-status ${connections?.steam?.steamId ? '' : 'pending'}`}>
+                                    {connections?.steam?.steamId ? 'Conectado' : 'No conectado'}
+                                </div>
+
+                                <div className="int-icon steam">
+                                    <FaSteam />
+                                </div>
+
                                 <div className="int-details">
                                     <h4>Steam</h4>
-                                    <span>CS:GO / Dota 2</span>
+                                    <span>
+                                        {connections?.steam?.steamId
+                                            ? 'Cuenta vinculada'
+                                            : 'Sin vincular'}
+                                    </span>
                                 </div>
-                                <button className="btn-connect">Conectar</button>
+
+                                {connections?.steam?.steamId ? (
+                                    <button className="btn-disconnect">
+                                        Desvincular
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="btn-connect"
+                                        onClick={() =>
+                                            connectProvider('steam', {
+                                                steamId: '76561198000000000'
+                                            })
+                                        }
+                                    >
+                                        Conectar
+                                    </button>
+                                )}
                             </div>
+
                         </div>
                     </div>
                 );

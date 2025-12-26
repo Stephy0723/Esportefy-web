@@ -42,4 +42,28 @@ export const updateConnections = async (req, res) => {
   }
 };
 
+export const updateConnection = async (req, res) => {
+  const { provider, data } = req.body;
+
+  if (!['discord', 'riot', 'steam'].includes(provider)) {
+    return res.status(400).json({ message: 'Proveedor no válido' });
+  }
+
+  const update = {
+    [`connections.${provider}`]: {
+      ...data,
+      verified: false
+    }
+  };
+
+  const user = await User.findByIdAndUpdate(
+    req.userId,
+    update,
+    { new: true }
+  ).select('connections');
+
+  res.json(user.connections);
+};
+
+
 

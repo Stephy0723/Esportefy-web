@@ -37,8 +37,8 @@ const UserSchema = new mongoose.Schema({
     // ===== SETTINGS =====
     connections: {
         discord: {
-            username: { type: String },
             id: { type: String },
+            username: { type: String },
             verified: { type: Boolean, default: false }
         },
         riot: {
@@ -52,11 +52,14 @@ const UserSchema = new mongoose.Schema({
         }
     },
 
+
     privacy: {
-  allowTeamInvites: { type: Boolean, default: true },
-  showOnlineStatus: { type: Boolean, default: true },
-  allowTournamentInvites: { type: Boolean, default: true }
-},
+        allowTeamInvites: { type: Boolean, default: true },
+        showOnlineStatus: { type: Boolean, default: true },
+        allowTournamentInvites: { type: Boolean, default: true }
+
+
+    },
 
 
 
