@@ -5,23 +5,27 @@ import crypto from "crypto";
 
 export const createTeam = async (req, res) => {
     try {
-        const { name, description, game, maxMembers, isPrivate } = req.body;
-        
-        // El capitán es el usuario autenticado (ID viene del middleware de auth)
-        const team = await Team.create({
-            name,
-            description,
-            game,
-            maxMembers,
-            isPrivate,
-            captain: req.userId,
-            members: [req.userId], // El capitán es el primer miembro
-            joinCode: isPrivate ? crypto.randomBytes(3).toString('hex').toUpperCase() : null
+        // Extraemos todo lo que viene del CreateTeamPage.jsx
+        const { formData, roster, logoPreview } = req.body;
+
+        const newTeam = new Team({
+            ...formData,
+            logo: logoPreview,
+            roster: roster,
+            captain: req.userId, // Viene de tu middleware de auth
+            inviteCode: crypto.randomBytes(4).toString('hex').toUpperCase()
         });
 
-        res.status(201).json(team);
+        const savedTeam = await newTeam.save();
+        
+        res.status(201).json({
+            message: "Equipo creado con éxito",
+            team: savedTeam,
+            inviteLink: `http://localhost:3000/join/${savedTeam.inviteCode}`
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error al crear equipo", error: error.message });
+        console.error(error);
+        res.status(500).json({ message: "Error al crear el equipo", error });
     }
 };
 
@@ -46,14 +50,23 @@ export const joinTeam = async (req, res) => {
 
 export const getTeams = async (req, res) => {
     try {
-        // Hacemos populate tanto al capitán como al array de miembros
+        // 1. Buscamos todos los equipos
+        // 2. Traemos la info del capitán (nombre y foto si tiene)
         const teams = await Team.find()
-            .populate('captain', 'fullName') // Trae el nombre del capitán
-            .populate('members', 'fullName'); // Trae los nombres de todos los miembros
+            .populate('captain', 'fullName avatar') 
+            .sort({ createdAt: -1 }); // Los más nuevos primero
+
+        /* NOTA: Si en tu modelo los miembros están dentro de 'roster.starters', 
+           el populate se vería así:
+           .populate('roster.starters')
+        */
             
         res.status(200).json(teams);
     } catch (error) {
-        res.status(500).json({ message: "Error al obtener los equipos", error: error.message });
+        res.status(500).json({ 
+            message: "Error al obtener los equipos", 
+            error: error.message 
+        });
     }
 };
 

@@ -200,3 +200,64 @@
     .teams-dashboard-layout { grid-template-columns: 1fr; }
     .dashboard-sidebar-right { display: none; } /* Ocultar sidebar en móvil o mover abajo */
 }
+
+/* Ghost 404 Animation */
+.empty-state-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 0;
+    text-align: center;
+}
+
+.ghost-icon-wrapper {
+    position: relative;
+    font-size: 80px;
+    color: var(--theme-color);
+    animation: float 3s ease-in-out infinite;
+}
+
+.ghost-shadow {
+    width: 60px;
+    height: 10px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 50%;
+    filter: blur(5px);
+    margin-top: 15px;
+    animation: shadow 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes shadow {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(0.7); opacity: 0.2; }
+}
+
+/* Loading State */
+.loading-container {
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.scanner-line {
+    width: 200px;
+    height: 2px;
+    background: var(--theme-color);
+    box-shadow: 0 0 15px var(--theme-color);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% { transform: scaleX(0); opacity: 0; }
+    50% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(0); opacity: 0; }
+}
