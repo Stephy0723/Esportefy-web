@@ -74,9 +74,11 @@ body.dark .dashboard-wrapper {
 /* --- GRID PRINCIPAL --- */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 40px;
-    align-items: start;
+    grid-template-columns: 1fr 340px; /* Columna principal y sidebar */
+    gap: 30px; /* Esto separa las dos columnas entre sí */
+    max-width: 1400px; /* Evita que se pegue a los bordes en pantallas muy grandes */
+    margin: 0 auto; /* Centra todo el contenido */
+    padding: 0 20px; /* Separa el contenido de los bordes izquierdo y derecho de la pantalla */
 }
 
 .main-column {
@@ -220,65 +222,186 @@ body.dark .dashboard-wrapper {
 }
 
 /* ========================================= */
-/* 5. FEED GLOBAL                            */
+/* 5. FEED GLOBAL - BUSCADOR ARREGLADO       */
 /* ========================================= */
-.create-post {
-    background-color: var(--bg-card);
-    border-radius: 12px; padding: 15px;
-    display: flex; gap: 15px; margin-bottom: 25px;
+
+.search-container-gaming {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 25px;
+}
+
+.search-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
     border: 1px solid var(--border-color);
 }
-.create-post img { width: 45px; height: 45px; border-radius: 50%; }
-.create-post input {
-    flex-grow: 1; background-color: var(--bg-input); 
-    border: 1px solid transparent; border-radius: 50px; padding: 0 20px; 
-    color: var(--text-main); outline: none;
-}
-.create-post input:focus { border-color: var(--brand-green); }
 
-.post-card {
-    background-color: var(--bg-card);
+.search-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    /* FORZAMOS FONDO OSCURO PARA QUE NO SE VEA FEO EN MODO CLARO */
+    background: #121214 !important; 
+    border: 1px solid #27272a !important;
+    border-radius: 50px !important; 
+    padding: 0 20px;
+    height: 48px;
+}
+
+/* RESET TOTAL DEL INPUT PARA MATAR EL ESTILO DEL NAVEGADOR */
+.search-input-wrapper input[type="text"] {
+    all: unset !important; /* Borra bordes y fondos globales */
+    flex: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important; /* Texto siempre blanco en la barra negra */
+    outline: none !important;
+    font-size: 0.95rem !important;
+    height: 100% !important;
+}
+
+.search-input-wrapper input::placeholder {
+    color: #52525b !important;
+}
+
+.search-time-hint {
+    color: #52525b;
+    font-size: 0.8rem;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+
+.search-more-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #52525b !important;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+/* ========================================= */
+/* CARDS DE LOS POSTS (DISEÑO LIMPIO)        */
+/* ========================================= */
+
+.ui-post-card {
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 12px; padding: 20px; margin-bottom: 20px;
-}
-.post-header { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
-.post-header img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
-.post-header h4 { margin: 0; font-size: 1rem; color: var(--text-main); }
-.post-header small { color: var(--text-muted); display: block; font-size: 0.8rem; }
-.more-opt { margin-left: auto; color: var(--text-muted); cursor: pointer; }
-
-.post-text { margin-bottom: 15px; line-height: 1.6; color: var(--text-main); font-size: 0.95rem; }
-.post-stats { display: flex; gap: 20px; border-top: 1px solid var(--border-color); padding-top: 12px; }
-.post-stats button { background: none; border: none; color: var(--text-muted); display: flex; gap: 8px; cursor: pointer; align-items: center; }
-.post-stats button:hover { color: var(--brand-green); }
-
-
-/* ========================================= */
-/* 6. SIDEBAR (ELEMENTOS QUE FALLABAN)       */
-/* ========================================= */
-.sidebar-column {
-    display: flex; flex-direction: column; gap: 30px;
-    position: sticky; top: 120px;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
 }
 
-/* Tarjeta Patrocinio */
+.ui-post-header {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.ui-post-header img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.ui-user-name {
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.game-tag-v2 {
+    background: #14b8a6; /* Turquesa Valorant */
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.ui-post-meta {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.ui-post-body p {
+    color: var(--text-main);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 15px 0;
+}
+
+.ui-post-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.ui-action-pill {
+    background: var(--bg-input) !important;
+    border: none !important;
+    color: var(--text-muted) !important;
+    padding: 8px 18px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.ui-action-pill:hover {
+    background: #3f3f46 !important;
+    color: #fff !important;
+}
+
+.ui-action-pill.share {
+    margin-left: auto;
+}
+
+/* --- MANTENEMOS EL RESTO DE TUS COMUNIDADES IGUAL --- */
+.community-pill {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 12px;
+}
+.community-pill img {
+    width: 55px; height: 55px; border-radius: 50%;
+    border: 2px solid var(--brand-green); margin-right: 15px;
+}
+.btn-entrar-small {
+    background: var(--brand-green); color: #000; border: none;
+    padding: 8px 16px; border-radius: 8px; font-weight: 800; cursor: pointer;
+}
+/* Banner de Patrocinio Largo y Corporativo */
 .sponsor-card {
-    background-color: var(--bg-card) !important; /* !important para forzar el cambio */
+    background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color);
-    border-radius: 12px; overflow: hidden; position: relative;
-}
-.sponsor-label {
-    position: absolute; top: 10px; left: 10px;
-    background: rgba(0,0,0,0.8); padding: 4px 8px;
-    font-size: 0.7rem; border-radius: 4px; color: #fff;
-    display: flex; align-items: center; gap: 5px; z-index: 2;
-}
-.sponsor-card img { width: 100%; height: 180px; object-fit: cover; }
-.sponsor-content { padding: 20px; }
-.sponsor-content h4 { margin: 0 0 8px 0; color: var(--text-main); font-size: 1.1rem; }
-.sponsor-content button {
-    width: 100%; background: var(--brand-green); border: none;
-    padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    /* Aumentamos el alto para que sea un banner vertical largo */
+    min-height: 500px; 
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
 }
 
 /* Tarjeta Creadores */
@@ -359,14 +482,23 @@ body.dark .dashboard-wrapper {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
+.sidebar-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Esto separa verticalmente los bloques entre sí */
+    padding-top: 10px; /* Si quieres que baje un poco respecto al header */
+}
 /* ========================================= */
 /* 8. RESPONSIVE                             */
 /* ========================================= */
 @media (max-width: 1024px) {
     .dashboard-grid { grid-template-columns: 1fr; }
-    .sidebar-column { display: none; }
-}
+.sidebar-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Esto separa verticalmente los bloques entre sí */
+    padding-top: 10px; /* Si quieres que baje un poco respecto al header */
+}}
 @media (max-width: 600px) {
     .game-poster-card { height: 200px; }
     .community-pill { flex-direction: column; text-align: center; }
@@ -440,6 +572,167 @@ body.dark .dashboard-wrapper {
     text-transform: uppercase;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
+/* ========================================= */
+/* 5. FEED GLOBAL - ESTRUCTURA COMPLETA      */
+/* ========================================= */
+
+/* Contenedor principal que agrupa todo (selectores, buscador, botones) */
+.create-post-wrapper-v3 {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 25px;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+.create-post-wrapper-v3 .search-input-wrapper {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* FILA DE SELECTORES (Selectores de Juego y Categoría) */
+.post-selectors-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.post-tags-container {
+    display: flex;
+    gap: 6px;
+    margin-left: 10px;
+}
+
+.tag-pill {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+/* BUSCADOR (Cápsula Central) */
+.search-container-gaming {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.search-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+}
+
+.search-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 50px !important;
+    padding: 0 20px;
+    height: 50px;
+}
+
+.search-input-wrapper input[type="text"] {
+    all: unset !important;
+    flex: 1 !important;
+    background: transparent !important;
+    color: var(--text-main) !important;
+    font-size: 0.95rem !important;
+    height: 100% !important;
+}
+
+.search-time-hint {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-left: 10px;
+}
+
+/* BARRA DE HERRAMIENTAS INFERIOR */
+.post-actions-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+/* Color para la Comunidad (Cian/Azul) */
+.tag-pill.game {
+    background-color: rgba(20, 184, 166, 0.2);
+    color: #14b8a6;
+    border: 1px solid rgba(20, 184, 166, 0.3);
+}
+
+/* Color para el Tipo de mensaje (Verde/Marca) */
+.tag-pill.type {
+    background-color: rgba(142, 219, 21, 0.1);
+    color: var(--brand-green);
+    border: 1px solid rgba(142, 219, 21, 0.2);
+}
+
+.toolbar-left {
+    display: flex;
+    gap: 10px;
+}
+
+.tool-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tool-btn:hover {
+    background-color: var(--bg-input);
+    color: var(--text-main);
+    transform: scale(1.1);
+}
+
+/* BOTÓN DE PUBLICAR (Color de acento) */
+.ui-send-post-btn {
+    background-color: var(--brand-green);
+    color: #000;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.ui-send-post-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(142, 219, 21, 0.4);
+}
+/* ESTILO DE LOS POSTS YA PUBLICADOS */
+.ui-post-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.ui-user-name {
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+
 
 /* NOTA: Hemos eliminado .poster-overlay y .game-title-overlay 
    porque ya no queremos texto sobre la imagen */
@@ -559,4 +852,667 @@ body.dark .dashboard-wrapper {
 .btn-join-mini:hover {
     box-shadow: 0 0 12px rgba(163, 230, 53, 0.5);
     transform: scale(1.05);
+}
+
+/* ========================================= */
+/* 5. FEED GLOBAL (CALCO EXACTO DE IMAGEN)   */
+/* ========================================= */
+
+.feed-section-container {
+    margin-top: 30px;
+}
+
+.feed-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+/* ========================================= */
+/* 5. FEED GLOBAL - BUSCADOR (FIXED)         */
+/* ========================================= */
+
+.search-container-gaming {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 25px;
+    padding: 0 5px;
+}
+
+.search-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    /* Borde sutil que se adapta al tema */
+    border: 1px solid var(--border-color);
+}
+
+.search-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    /* Fondo que cambia según el modo claro/oscuro (blanco o negro) */
+    background: var(--bg-card); 
+    border: 1px solid var(--border-color);
+    border-radius: 50px; /* Cápsula perfecta */
+    padding: 0 20px;
+    height: 48px;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Evita que el buscador resalte con colores raros al hacer clic */
+.search-input-wrapper:focus-within {
+    border-color: var(--text-muted);
+}
+.search-input-wrapper input[type="text"] {
+    all: unset !important; /* Mata el estilo cuadrado/feo del navegador */
+    flex: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    /* El texto cambia automáticamente de Negro a Blanco */
+    color: var(--text-main) !important; 
+    outline: none !important;
+    font-size: 0.95rem !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.search-input-wrapper input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    /* Texto dinámico: negro en modo claro, blanco en modo oscuro */
+    color: var(--text-main); 
+    outline: none;
+    font-size: 0.95rem;
+    padding: 0;
+}
+
+.search-input-wrapper input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.search-time-hint {
+    /* Texto gris sutil a la derecha del input */
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+
+.search-more-btn {
+    background: transparent;
+    border: none;
+    /* Icono gris que cambia según el tema */
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    transition: color 0.2s ease;
+}
+
+.search-more-btn:hover {
+    color: var(--text-main);
+}
+
+/* LAS CARDS DE LOS POSTS */
+.ui-post-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 15px;
+}
+
+.ui-post-header {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.ui-post-header img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.ui-user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.ui-user-name {
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Etiqueta de juego (Valorant, etc) */
+.game-tag-v2 {
+    background: #14b8a6; /* Turquesa de tu imagen */
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.ui-post-meta {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.ui-more-btn {
+    position: absolute;
+    right: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.ui-post-body p {
+    color: var(--text-main);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 10px 0;
+}
+
+/* BOTONES PILL (GRISES OSCUROS) */
+.ui-post-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.ui-action-pill {
+    background: var(--bg-input); /* Gris #27272a en modo oscuro */
+    border: none;
+    color: var(--text-muted);
+    padding: 7px 16px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.ui-action-pill:hover {
+    background: #3f3f46;
+    color: #fff;
+}
+
+.ui-action-pill.share {
+    margin-left: auto; /* Empuja el botón Share a la derecha como en la imagen */
+}
+/* --- TEMAS --- */
+.dashboard-wrapper {
+    --bg-page: #ffffff; --bg-card: #ffffff; --bg-input: #f4f4f5;
+    --text-main: #18181b; --text-muted: #71717a; --border-color: #e4e4e7;
+    --brand-green: #8EDB15; --brand-cyan: #14b8a6;
+    width: 100%; min-height: 100vh; padding-top: 100px;
+    background-color: var(--bg-page); color: var(--text-main);
+}
+
+body.dark .dashboard-wrapper {
+    --bg-page: #09090b; --bg-card: #18181b; --bg-input: #27272a;
+    --text-main: #e4e4e7; --text-muted: #a1a1aa; --border-color: #27272a;
+}
+
+/* --- GRID --- */
+.dashboard-container { max-width: 1300px; margin: 0 auto; padding: 0 20px; }
+.dashboard-grid { display: grid; grid-template-columns: 1fr 340px; gap: 40px; }
+
+/* --- CREATE POST WRAPPER --- */
+.create-post-wrapper-v3 {
+    background-color: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 16px; padding: 20px; margin-bottom: 25px;
+}
+
+.post-selectors-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.selector-with-icon {
+    display: flex; align-items: center; background-color: var(--bg-input);
+    border: 1px solid var(--border-color); border-radius: 10px; padding: 0 12px; height: 40px;
+}
+
+
+/* EL CONTENEDOR (La cápsula gris) */
+.selector-with-icon {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-input); /* Asegúrate que sea el gris oscuro de tu imagen */
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0 15px;
+    height: 48px;
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Efecto de foco en la cápsula completa */
+.selector-with-icon:focus-within {
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 1px var(--brand-green);
+}
+
+/* EL ICONO (Gamepad / Ad) */
+/* 1. EL CONTENEDOR (La cápsula con fondo) */
+.selector-with-icon {
+    display: flex;
+    align-items: center;       /* Centra verticalmente icono y texto */
+    justify-content: center;    /* Centra horizontalmente el contenido */
+    background-color: var(--bg-input); 
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0 15px;
+    height: 48px;
+    flex: 1; 
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Efecto al hacer clic o focus */
+.selector-with-icon:focus-within {
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 1px var(--brand-green);
+}
+
+.tag-pill {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 800;
+}
+
+.tag-pill.game { background: rgba(20, 184, 166, 0.1); color: var(--brand-cyan); }
+.tag-pill.type { background: rgba(142, 219, 21, 0.1); color: var(--brand-green); }
+
+.ui-post-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.ui-action-pill {
+    background: var(--bg-input);
+    border: none;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.ui-action-pill.share { margin-left: auto; }
+
+/* 4. FLECHA PERSONALIZADA (Opcional, para indicar que es un menú) */
+.selector-with-icon::after {
+    content: "▼";
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-left: 8px;
+    pointer-events: none;
+}
+/* --- BUSCADOR CÁPSULA --- */
+.search-container-gaming { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.search-avatar { width: 45px; height: 45px; border-radius: 50%; border: 1px solid var(--border-color); }
+.search-input-wrapper {
+    flex: 1; display: flex; align-items: center; height: 50px;
+    background-color: var(--bg-input) !important; border: 1px solid var(--border-color) !important;
+    border-radius: 50px !important; padding: 0 20px;
+}
+
+.search-input-wrapper input {
+    all: unset !important; flex: 1 !important; background: transparent !important;
+    color: var(--text-main) !important; font-size: 0.95rem !important;
+}
+
+/* --- POST CARDS --- */
+.ui-post-card {
+    background-color: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 16px; padding: 20px; margin-bottom: 20px;
+}
+
+.ui-user-name { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.tag-pill { font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase; }
+.tag-pill.game { background: rgba(20, 184, 166, 0.1); color: var(--brand-cyan); }
+.tag-pill.type { background: rgba(142, 219, 21, 0.1); color: var(--brand-green); }
+
+.ui-post-footer { display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+.ui-action-pill {
+    background: var(--bg-input) !important; border: none !important; color: var(--text-muted) !important;
+    padding: 8px 18px; border-radius: 20px; display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+
+.ui-action-pill.share { margin-left: auto; }
+
+/* --- SIDEBAR & SPONSOR --- */
+.sponsor-card.carousel-mode {
+    min-height: 500px; position: relative; overflow: hidden; border-radius: 16px;
+    display: flex; flex-direction: column; justify-content: flex-end; background: #000;
+}
+
+.sponsor-color-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
+    mix-blend-mode: multiply; transition: background-color 1s ease;
+}
+
+.sponsor-card img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.sponsor-content { position: relative; z-index: 10; padding: 30px 20px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); text-align: center; }
+.sponsor-content h4 { color: #fff; margin-bottom: 15px; }
+
+.btn-sponsor-action { width: 100%; background: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+.fade-in-anim { animation: fadeIn 0.8s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* ========================================= */
+/* MEJORA DE TÍTULOS Y JERARQUÍA VISUAL      */
+/* ========================================= */
+
+/* 1. Título Principal (Header) */
+.header-text h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    margin: 0;
+    /* Efecto de degradado metálico */
+    background: linear-gradient(180deg, var(--text-main) 30%, var(--text-muted) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+}
+
+.header-text p {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--brand-green); /* Color neón para el subtítulo */
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+/* 2. Títulos de Secciones (Feed Global, Videojuegos, etc.) */
+.feed-title, .section-title-block h3 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-main);
+    position: relative;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+}
+
+/* Línea decorativa debajo de los títulos de sección */
+.feed-title::after, .section-title-block h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: var(--brand-green);
+    border-radius: 2px;
+}
+
+/* 3. Títulos de la Sidebar (Cajas de Organizadores y Comunidades) */
+.box-header h3 {
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.box-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Iconos dentro de títulos */
+.feed-title svg, .section-title-block h3 svg, .box-header h3 svg {
+    color: var(--brand-green);
+    filter: drop-shadow(0 0 5px rgba(142, 219, 21, 0.5));
+}
+/* --- ESTÉTICA DE COMUNIDADES --- */
+.communities-sidebar-v3 {
+    padding: 24px !important;
+}
+
+.sidebar-communities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 25px;
+}
+
+.community-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    border-radius: 14px;
+    background: transparent;
+    transition: all 0.25s ease;
+    border: 1px solid transparent;
+}
+
+.community-sidebar-item:hover {
+    background: var(--bg-input);
+    border-color: var(--border-color);
+    transform: translateX(4px);
+}
+
+.comm-avatar-frame {
+    position: relative;
+    width: 48px;
+    height: 48px;
+}
+
+.status-indicator-online {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--brand-green);
+    border: 2px solid var(--bg-card);
+    border-radius: 50%;
+}
+
+/* --- FORMULARIO MODAL --- */
+.modal-title-flex {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-accent {
+    color: var(--brand-green);
+    font-size: 1.4rem;
+}
+
+.form-group-v3 {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.form-group-v3 label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.modal-input-v3 {
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text-main) !important;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.modal-input-v3:focus {
+    border-color: var(--brand-green) !important;
+}
+
+.upload-zone-v3 {
+    width: 100%;
+    height: 110px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    position: relative;
+    background: rgba(255,255,255,0.01);
+}
+
+.upload-zone-v3:hover {
+    border-color: var(--brand-green);
+    color: var(--brand-green);
+}
+
+.hidden-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* BOTONES MODAL */
+.btn-confirm-v3 {
+    background: var(--brand-green);
+    color: #000;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-confirm-v3:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(142, 219, 21, 0.4);
+}
+/* --- BOTÓN ENTRAR (DENTRO DE LA TARJETA) --- */
+.btn-enter-community {
+    background-color: var(--brand-green);
+    color: #000;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.9;
+}
+
+.btn-enter-community:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(142, 219, 21, 0.3);
+}
+
+/* --- AJUSTES EN LA TARJETA DE COMUNIDAD --- */
+.community-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Un poco más compacto */
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.community-sidebar-item:hover {
+    border-color: var(--brand-green);
+    background: var(--bg-input);
+}
+
+.creator-info {
+    flex: 1; /* Esto empuja el botón de entrar hacia la derecha */
+}
+
+.creator-info h5 {
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.creator-info span {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* --- BOTÓN CREAR COMUNIDAD --- */
+.btn-create-community-sidebar {
+    width: 100%;
+    margin-top: 15px;
+    background: transparent;
+    color: var(--text-main);
+    border: 1px dashed var(--border-color);
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-create-community-sidebar:hover {
+    background: var(--brand-green);
+    color: #000;
+    border: 1px solid var(--brand-green);
+    border-style: solid;
 }

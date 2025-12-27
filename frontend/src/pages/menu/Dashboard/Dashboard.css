@@ -1,4 +1,28 @@
 /* --- LAYOUT GENERAL --- */
+:root {
+    /* --- TEMA OSCURO (Default) --- */
+    --bg-page: #0E0F12;
+    --bg-card: #181A20;
+    --bg-input: #1F2229;
+    --text-main: #FFFFFF;
+    --text-muted: #888888;
+    --border-color: #2B2F38;
+    --brand-green: #8EDB15;
+    --brand-green-alpha: rgba(142, 219, 21, 0.1);
+    --shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* Para activar el modo claro, añade la clase .light-theme al body o contenedor */
+.light-theme {
+    --bg-page: #F4F7F6;
+    --bg-card: #FFFFFF;
+    --bg-input: #E9ECEF;
+    --text-main: #1A1D23;
+    --text-muted: #6C757D;
+    --border-color: #DEE2E6;
+    --shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
 .dashboard-layout {
     display: flex;
     min-height: 100vh;

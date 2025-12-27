@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { 
     FaGamepad, FaCrown, FaGlobeAmericas, FaAd, 
-    FaUserFriends, FaFire, FaHeart, FaComments, FaEllipsisH, FaCheckCircle,
-    FaPlusCircle, FaTimes, FaCamera, FaRegHeart 
+    FaUserFriends, FaCheckCircle, FaPlusCircle, FaTimes, 
+    FaRegHeart, FaComments, FaEllipsisH, FaShareAlt, 
+    FaCamera, FaSmile, FaComment 
 } from 'react-icons/fa';
 import './Community.css';
 
@@ -31,11 +32,79 @@ import ValorantImg from '../../../assets/comunidad/valorant.jpg';
 import WarzoneImg from '../../../assets/comunidad/Warzone.jpg';
 import WildRiftImg from '../../../assets/comunidad/WildRift.jpeg';
 
+// --- DATOS ESTATICOS (FUERA DEL COMPONENTE PARA EVITAR ERRORES DE INICIALIZACIÓN) ---
+const sponsorAds = [
+    {
+        id: 1,
+        title: "GLOBAL TECH CORP",
+        img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000",
+        color: "rgba(20, 184, 166, 0.4)" 
+    },
+    {
+        id: 2,
+        title: "NEO ENERGY DRINK",
+        img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1000",
+        color: "rgba(142, 219, 21, 0.4)" 
+    },
+    {
+        id: 3,
+        title: "SKYLINE LOGISTICS",
+        img: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000",
+        color: "rgba(59, 130, 246, 0.4)" 
+    }
+];
+
 const Community = () => {
-    const navigate = useNavigate(); // Hook para navegación
+    const navigate = useNavigate(); 
     const [activeFilter, setActiveFilter] = useState('Todos');
     const [showModal, setShowModal] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [adIndex, setAdIndex] = useState(0); // Estado para el carrusel lateral
+
+    const [selectedGame, setSelectedGame] = useState("");
+    const [selectedType, setSelectedType] = useState("noticias");
+    const [inputText, setInputText] = useState("");
+
+    // --- LOGICA DEL CARRUSEL DE PATROCINIO ---
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setAdIndex((prev) => (prev + 1) % sponsorAds.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const currentAd = sponsorAds[adIndex];
+
+    // --- LOGICA DEL FEED ---
+    const [posts, setPosts] = useState([
+        {
+            id: 1,
+            user: "AlexGamer",
+            avatar: LoLImg,
+            time: "hace 2h",
+            gameTag: "Valorant",
+            typeTag: "noticias",
+            text: "Buscando equipo serio. Rango Ascendente+. 🔥",
+            likes: 12
+        }
+    ]);
+
+    const handlePublish = (e) => {
+        if ((e.key === 'Enter' || e.type === 'click') && inputText.trim() !== "") {
+            const newPost = {
+                id: Date.now(),
+                user: "Salyl Gamer", 
+                avatar: ValorantImg, 
+                time: "ahora",
+                gameTag: selectedGame || "General", 
+                typeTag: selectedType,
+                text: inputText,
+                likes: 0
+            };
+            setPosts([newPost, ...posts]);
+            setInputText("");
+        }
+    };
 
     const filters = ["Todos", "FPS", "MOBA", "Battle Royale", "Fighting", "Estrategia", "Deportes", "Móvil"];
 
@@ -43,25 +112,10 @@ const Community = () => {
         { name: "Valorant", id: "valorant", img: ValorantImg, tags: ["FPS", "PC"], badge: "Top #1" },
         { name: "CS2", id: "cs2", img: CS2Img, tags: ["FPS", "PC"], badge: "Elite" },
         { name: "Overwatch 2", id: "overwatch", img: OW2Img, tags: ["FPS", "PC"], badge: null },
-        { name: "R6 Siege", id: "r6", img: R6SImg, tags: ["FPS", "PC"], badge: null },
         { name: "LoL", id: "lol", img: LoLImg, tags: ["MOBA", "PC"], badge: "Popular" },
-        { name: "Dota 2", id: "dota2", img: Dota2Img, tags: ["MOBA", "PC"], badge: null },
-        { name: "Honor of Kings", id: "hok", img: HoKImg, tags: ["MOBA", "Móvil"], badge: "Nuevo" },
-        { name: "Mobile Legends", id: "mlbb", img: MLBBImg, tags: ["MOBA", "Móvil"], badge: "Hot" },
-        { name: "Wild Rift", id: "wildrift", img: WildRiftImg, tags: ["MOBA", "Móvil"], badge: null },
         { name: "Fortnite", id: "fortnite", img: FortniteImg, tags: ["Battle Royale", "PC"], badge: "Evento" },
-        { name: "Free Fire", id: "freefire", img: FFImg, tags: ["Battle Royale", "Móvil"], badge: null },
-        { name: "Warzone", id: "warzone", img: WarzoneImg, tags: ["Battle Royale", "FPS"], badge: null },
-        { name: "PUBG Mobile", id: "pubgm", img: PUBGMImg, tags: ["Battle Royale", "Móvil"], badge: null },
-        { name: "Street Fighter 6", id: "sf6", img: SF6Img, tags: ["Fighting", "Consola"], badge: "Evo" },
-        { name: "Tekken 8", id: "tekken8", img: Tekken8Img, tags: ["Fighting", "PC"], badge: "Nuevo" },
-        { name: "TFT", id: "tft", img: TFTImg, tags: ["Estrategia", "PC"], badge: null },
-        { name: "Clash Royale", id: "clashroyale", img: CRImg, tags: ["Estrategia", "Móvil"], badge: null },
-        { name: "Hearthstone", id: "hearthstone", img: HSImg, tags: ["Estrategia", "Cartas"], badge: null },
-        { name: "LoR", id: "lor", img: LoRImg, tags: ["Estrategia", "Cartas"], badge: null },
         { name: "StarCraft II", id: "starcraft", img: SC2Img, tags: ["Estrategia", "PC"], badge: "Clásico" },
         { name: "Rocket League", id: "rocket", img: RLImg, tags: ["Deportes", "PC"], badge: null },
-        { name: "NBA 2K24", id: "nba2k", img: NBAImg, tags: ["Deportes", "Consola"], badge: null },
     ];
 
     const communities = gamesList.slice(0, 5).map(game => ({
@@ -79,23 +133,6 @@ const Community = () => {
     const filteredGames = activeFilter === 'Todos' 
         ? gamesList 
         : gamesList.filter(game => game.tags.includes(activeFilter));
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentIndex((prevIndex) => {
-                return prevIndex + 1 >= filteredGames.length ? 0 : prevIndex + 1;
-            });
-        }, 5000);
-        return () => clearInterval(timer);
-    }, [filteredGames.length]);
-
-    useEffect(() => {
-        setCurrentIndex(0);
-    }, [activeFilter]);
-
-    const handleImgError = (e) => {
-        e.target.src = "https://via.placeholder.com/150/000000/FFFFFF?text=Gaming";
-    };
 
     return (
         <div className="dashboard-wrapper">
@@ -126,105 +163,219 @@ const Community = () => {
                             </div>
 
                             <div className="carousel-window-single">
-                                {filteredGames.length > 0 ? (
-                                    <div 
-                                        className="carousel-track-single" 
-                                        style={{ transform: `translateX(-${currentIndex * 25}%)` }} 
-                                    >
-                                        {filteredGames.map((game, idx) => (
-                                            /* CAMBIO: Se cambió <Link> por <div> con onClick hacia /games/:id */
-                                            <div 
-                                                key={idx} 
-                                                className="game-poster-single"
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => navigate(`/games/${game.id}`)}
-                                            >
-                                                <img src={game.img} alt={game.name} onError={handleImgError} />
-                                                {game.badge && <span className="game-badge">{game.badge}</span>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="no-results">No hay juegos en esta categoría.</div>
-                                )}
+                                <div 
+                                    className="carousel-track-single" 
+                                    style={{ transform: `translateX(-${currentIndex * 25}%)` }} 
+                                >
+                                    {filteredGames.map((game, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            className="game-poster-single"
+                                            onClick={() => navigate(`/games/${game.id}`)}>
+                                            <img src={game.img} alt={game.name} />
+                                            {game.badge && <span className="game-badge">{game.badge}</span>}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </section>
 
-                        <section className="communities-section">
-                            <div className="section-header-row">
-                                <h3><FaUserFriends /> Mis Comunidades</h3>
-                                <button className="btn-create-community" onClick={() => setShowModal(true)}>
-                                    <FaPlusCircle /> Crear Comunidad
-                                </button>
+                        <section className="feed-section-container">
+                            <div className="feed-title">
+                                <FaGlobeAmericas /> <span>Feed Global</span>
                             </div>
-                            <div className="communities-list-horizontal">
-                                {communities.map((comm) => (
-                                    <div className="community-pill" key={comm.id}>
-                                        <div className="pill-avatar" onClick={() => navigate(`/games/${comm.id}`)} style={{cursor:'pointer'}}>
-                                            <img src={comm.img} alt={comm.name} />
-                                        </div>
-                                        
-                                        <div className="pill-info" onClick={() => navigate(`/games/${comm.id}`)} style={{cursor:'pointer'}}>
-                                            <h4 className="pill-title">{comm.name}</h4>
-                                            <p className="pill-subtitle">{comm.members} Miembros</p>
-                                        </div>
 
-                                        <div className="pill-actions">
-                                            <button className="heart-icon-btn">
-                                                <FaRegHeart />
-                                            </button>
-                                            {/* CAMBIO: El botón ENTRAR abre la CARTA flotante */}
-                                            <button 
-                                                className="btn-entrar-small"
-                                                onClick={() => navigate(`/games/${comm.id}`)}
-                                            >
-                                                ENTRAR
-                                            </button>
+                            <div className="create-post-wrapper-v3">
+                                <div className="post-selectors-row">
+                                    <div className="selector-with-icon">
+                                        <FaGamepad className="sel-icon" />
+                                        <select className="ui-selector-pill" value={selectedGame} onChange={(e) => setSelectedGame(e.target.value)}>
+                                            <option value="">Seleccionar Juego o Comunidad</option>
+                                            <option value="valorant">Valorant</option>
+                                            <option value="lol">League of Legends</option>
+                                        </select>
+                                    </div>
+                                    <div className="selector-with-icon">
+                                        <FaAd className="sel-icon" />
+                                        <select className="ui-selector-pill" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
+                                            <option value="noticias">📰 Noticias</option>
+                                            <option value="escuadra">🎮 Buscar Escuadra</option>
+                                            <option value="vs">⚔️ Reto VS</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="search-container-gaming">
+                                    <img src={ValorantImg} alt="me" className="search-avatar" />
+                                    <div className="search-input-wrapper">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Comparte algo con la comunidad..." 
+                                            value={inputText}
+                                            onChange={(e) => setInputText(e.target.value)}
+                                            onKeyDown={handlePublish}
+                                        />
+                                        <span className="search-time-hint">ahora</span>
+                                    </div>
+                                </div>
+
+                                <div className="post-actions-toolbar">
+                                    <div className="toolbar-left">
+                                        <button className="tool-btn"><FaSmile /></button>
+                                        <button className="tool-btn"><FaCamera /></button>
+                                        <button className="tool-btn"><FaPlusCircle /></button>
+                                        <button className="tool-btn"><FaEllipsisH /></button>
+                                    </div>
+                                    <button className="ui-send-post-btn" onClick={handlePublish}>Publicar Post</button>
+                                </div>
+                            </div>
+
+                            <div className="posts-feed-wrapper">
+                                {posts.map((post) => (
+                                    <div className="ui-post-card" key={post.id}>
+                                        <div className="ui-post-header">
+                                            <img src={post.avatar} alt="avatar" />
+                                            <div className="ui-user-details">
+                                                <div className="ui-user-name">
+                                                    {post.user}
+                                                    <div className="post-tags-container">
+                                                        <span className="tag-pill game">{post.gameTag}</span>
+                                                        <span className="tag-pill type">{post.typeTag}</span>
+                                                    </div>
+                                                </div>
+                                                <span className="ui-post-meta">{post.time}</span>
+                                            </div>
+                                            <button className="ui-more-btn"><FaEllipsisH /></button>
+                                        </div>
+                                        <div className="ui-post-body"><p>{post.text}</p></div>
+                                        <div className="ui-post-footer">
+                                            <button className="ui-action-pill"><FaRegHeart /> <span>{post.likes}</span></button>
+                                            <button className="ui-action-pill"><FaComment /> <span>Comentar</span></button>
+                                            <button className="ui-action-pill share"><FaShareAlt /> <span>Share</span></button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </section>
-
-                        <section className="feed-section">
-                            <div className="section-title"><h3><FaGlobeAmericas /> Feed Global</h3></div>
-                            <div className="create-post">
-                                <img src={ValorantImg} alt="me" />
-                                <input type="text" placeholder="Comparte una jugada..." />
-                            </div>
-                            <div className="post-card">
-                                <div className="post-header">
-                                    <img src={LoLImg} alt="Avatar" />
-                                    <div><h4>AlexGamer</h4><small>hace 2h • Valorant</small></div>
-                                </div>
-                                <p className="post-text">Buscando equipo serio. Rango Ascendente+. 🔥</p>
-                            </div>
-                        </section>
-                    </div>
+                    </div> {/* CIERRE main-column */}
 
                     <aside className="sidebar-column">
-                        <div className="sponsor-card">
+                        <div className="sponsor-card carousel-mode">
                             <div className="sponsor-label"><FaAd /> Patrocinado</div>
-                            <img src={FortniteImg} alt="Sponsor" />
-                            <div className="sponsor-content"><h4>Red Bull Energy</h4><button>Ver Oferta</button></div>
+                            <div className="sponsor-color-overlay" style={{ backgroundColor: currentAd.color }}></div>
+                            <img key={currentAd.id} src={currentAd.img} alt="Sponsor" className="fade-in-anim" />
+                            <div className="sponsor-content">
+                                <h4 className="fade-in-anim">{currentAd.title}</h4>
+                                <button className="btn-sponsor-action">Saber más</button>
+                                <div className="ad-indicators">
+                                    {sponsorAds.map((_, i) => (
+                                        <span key={i} className={`dot ${i === adIndex ? 'active' : ''}`}></span>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
+
                         <div className="creators-box">
                             <div className="box-header"><h3><FaCrown /> Top Organizadores</h3></div>
                             <div className="creators-list">
-                                {organizersList.map((org, idx) => (
+                                {organizersList?.map((org, idx) => (
                                     <div className="creator-row" key={idx}>
-                                        <img src={org.img} alt={org.name} className="creator-img" onError={handleImgError}/>
+                                        <img src={org.img} alt={org.name} className="creator-img" />
                                         <div className="creator-info">
-                                            <h5>{org.name} {org.verified && <FaCheckCircle className="ver-icon-s"/>}</h5>
+                                            <h5>{org.name} <FaCheckCircle className="ver-icon-s"/></h5>
                                             <span>{org.role}</span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </aside>
+{/* --- SECCIÓN MIS COMUNIDADES --- */}
+<div className="creators-box communities-sidebar-v3">
+    <div className="box-header">
+        <h3><FaUserFriends /> Mis Comunidades</h3>
+    </div>
+    
+    <div className="sidebar-communities-list">
+        {communities?.map((comm) => (
+            <div className="community-sidebar-item" key={comm.id}>
+                <div className="comm-avatar-frame">
+                    <img src={comm.img} alt={comm.name} className="creator-img" />
+                    <span className="status-indicator-online"></span>
+                </div>
+                <div className="creator-info">
+                    <h5>{comm.name}</h5>
+                    <span>{comm.members} Miembros</span>
+                </div>
+                {/* BOTÓN ENTRAR */}
+                <button 
+                    className="btn-enter-community" 
+                    onClick={() => navigate(`/game/${comm.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                >
+                    Entrar
+                </button>
+            </div>
+        ))}
+    </div>
+
+    {/* BOTÓN CREAR (AHORA NAVEGA A OTRA PÁGINA) */}
+    <button className="btn-create-community-sidebar" onClick={() => navigate('/community/create')}>
+        <FaPlusCircle /> <span>Crear Comunidad</span>
+    </button>
+</div>
+
+{/* --- MODAL DE CREACIÓN ARREGLADO --- */}
+{showModal && (
+    <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && setShowModal(false)}>
+        <div className="modal-content fade-in-up">
+            <div className="modal-header">
+                <div className="modal-title-flex">
+                    <FaPlusCircle className="icon-accent" />
+                    <h2>Nueva Comunidad</h2>
+                </div>
+                <button className="close-btn" onClick={() => setShowModal(false)}><FaTimes /></button>
+            </div>
+
+            <div className="modal-body">
+                <div className="form-group-v3">
+                    <label>Banner / Logo</label>
+                    <div className="upload-zone-v3">
+                        <FaCamera />
+                        <p>Subir archivo de imagen</p>
+                        <input type="file" className="hidden-input" accept="image/*" />
+                    </div>
+                </div>
+
+                <div className="form-group-v3">
+                    <label>Nombre de la comunidad</label>
+                    <input type="text" placeholder="Ej: Elite Gamers Pro" className="modal-input-v3" />
+                </div>
+
+                <div className="form-group-v3">
+                    <label>Elegir Juego</label>
+                    <select className="modal-input-v3">
+                        <option value="">Selecciona una opción</option>
+                        <option value="valorant">Valorant</option>
+                        <option value="lol">League of Legends</option>
+                        <option value="cs2">Counter Strike 2</option>
+                    </select>
+                </div>
+
+                <div className="form-group-v3">
+                    <label>Descripción</label>
+                    <textarea placeholder="¿Cuál es el objetivo de tu comunidad?" className="modal-input-v3 textarea-v3" rows="3"></textarea>
                 </div>
             </div>
+
+            <div className="modal-footer">
+                <button className="btn-cancel-v3" onClick={() => setShowModal(false)}>Cerrar</button>
+                <button className="btn-confirm-v3" onClick={() => setShowModal(false)}>Crear ahora</button>
+            </div>
+        </div>
+    </div>
+)}
+                    </aside>
+                </div> {/* CIERRE dashboard-grid */}
+            </div> {/* CIERRE dashboard-container */}
 
             {showModal && (
                 <div className="modal-overlay">
@@ -233,9 +384,7 @@ const Community = () => {
                             <h2>Crear Nueva Comunidad</h2>
                             <button className="close-btn" onClick={() => setShowModal(false)}><FaTimes /></button>
                         </div>
-                        <div className="modal-body">
-                            <p style={{color: '#888'}}>Formulario de creación aquí...</p>
-                        </div>
+                        <div className="modal-body"><p style={{color: '#888'}}>Formulario de creación aquí...</p></div>
                         <div className="modal-footer">
                             <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
                             <button className="btn-confirm">Crear</button>
