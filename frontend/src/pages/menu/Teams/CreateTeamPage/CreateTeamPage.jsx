@@ -163,15 +163,42 @@ const CreateTeamPage = () => {
         setModalOpen(false);
     };
 
-    const finalizeCreation = () => {
-        setSubmitting(true);
-        setTimeout(() => {
-            const uniqueId = Math.random().toString(36).substr(2, 9);
-            setInviteLink(`https://esportefy.com/join/${uniqueId}`);
-            setStep(3);
-            setSubmitting(false);
-        }, 1500);
+    const finalizeCreation = async () => {
+    setSubmitting(true);
+    
+    // Construimos el payload exactamente como lo espera el backend
+    const payload = {
+        formData,
+        roster,
+        logoPreview
     };
+
+    try {
+        const response = await fetch('http://localhost:4000/api/teams/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Si usas autenticación, añade el token aquí:
+                'Authorization': `Bearer ${localStorage.getItem('token')}` 
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setInviteLink(data.inviteLink); // El link real generado por el server
+            setStep(3);
+        } else {
+            alert(data.message || "Error al guardar equipo");
+        }
+    } catch (error) {
+        console.error("Error de red:", error);
+        alert("No se pudo conectar con el servidor.");
+    } finally {
+        setSubmitting(false);
+    }
+};
 
     const copyLink = () => {
         navigator.clipboard.writeText(inviteLink);
