@@ -24,7 +24,7 @@ import TFTImg from '../assets/comunidad/TFT.webp';
 import ValorantImg from '../assets/comunidad/valorant.jpg';
 import WarzoneImg from '../assets/comunidad/Warzone.jpg';
 import WildRiftImg from '../assets/comunidad/WildRift.jpeg';
-
+import valorant from '../assets/comunidad/valorant.jpg';
 export const gamesList = [
     // =========================================
     // 🌟 JUEGOS CON TUS FOTOS LOCALES
@@ -45,7 +45,7 @@ export const gamesList = [
     { id: 'mk11', name: 'Mortal Kombat 11', img: 'https://cdn1.epicgames.com/offer/21e35057a66c4495a6397227e7f694e9/EGS_MortalKombat11_NetherRealmStudios_S2_1200x1600-53243958742967262070396781223966', tags: ['Fighting'], color: '#C0392B' }, // Sin import proporcionado
 
     // SHOOTERS
-    { id: 'val', name: 'Valorant', img: ValorantImg, tags: ['FPS', 'PC', 'Shooter'], color: '#FF4655' },
+    { id: 'valorant', name: 'Valorant', img: ValorantImg, tags: ['FPS', 'PC', 'Shooter'], color: '#FF4655' },
     { id: 'cs2', name: 'CS:GO 2', img: CS2Img, tags: ['FPS', 'PC', 'Shooter'], color: '#F39C12' },
     { id: 'overwatch', name: 'Overwatch 2', img: OW2Img, tags: ['FPS', 'PC'], color: '#FA9C1E' },
     { id: 'r6', name: 'Rainbow Six Siege', img: R6SImg, tags: ['FPS', 'PC', 'Táctico'], color: '#2C3E50' },

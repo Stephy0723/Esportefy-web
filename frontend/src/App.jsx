@@ -45,6 +45,31 @@ import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
 import GamesPage from './pages/menu/Community/games/GamesPage';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
 import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
+//Juegos (comunidad)
+import ValorantPage from './pages/Game/ValorantPage';
+import Dota2Page from './pages/Game/Dota2Page'; 
+import LeagueOfLegendsPage from './pages/Game/LeagueOfLegendsPage';
+import MobileLegendsPage from './pages/Game/MobileLegendsPage';
+import WildRiftPage from './pages/Game/WildRiftPage';
+import FortnitePage from './pages/Game/FortnitePage';
+import FreeFirePage from './pages/Game/FreeFirePage';
+import HearthstonePage from './pages/Game/HearthstonePage'; 
+import OverwatchPage from './pages/Game/OverwatchPage';
+import CsgoPage from './pages/Game/CsgoPage';
+import ApexPage from './pages/Game/ApexPage';
+import CodPage from './pages/Game/CodPage';
+import FifaPage from './pages/Game/FifaPage.jsx';
+import HokPage from './pages/Game/HokPage.jsx'; 
+import PubgPage from './pages/Game/PubgMobilePage.jsx';
+import RainbowSixPage from './pages/Game/RainbowSixPage.jsx';
+import RocketLeaguePage from './pages/Game/RocketLeaguePage.jsx';   
+import TftPage from './pages/Game/TftPage.jsx';
+import ClashRoyalePage from './pages/Game/ClashRoyalePage.jsx';
+import StreetFighter6Page from './pages/Game/StreetFighter6Page.jsx';
+import Tekken8Page from './pages/Game/Tekken8Page.jsx';
+import StarcraftPage from './pages/Game/StarcraftPage.jsx';
+import RuneterraPage from './pages/Game/RuneteraPage.jsx';
+import Nba2k14Page from './pages/Game/Nba2k14Page.jsx';
 
 // --- COMPONENTE AUXILIAR: DETECTOR DE BIENVENIDA ---
 const WelcomeTrigger = () => {
@@ -133,7 +158,38 @@ function App() {
             <Route path="/organizer-application" element={<OrganizerApplication />} />
             <Route path="/create-tournament" element={<CreateTournament />} />
             {/* Rutas de Comunidad */}
-            <Route path="/game/:id" element={<GamesPage />} />
+            <Route path="/games/:id" element={<GamesPage />} />
+
+            {/* Rutas con nombre propio */}
+            <Route path="/game/valorant" element={<ValorantPage />} />
+            <Route path="/game/dota2" element={<Dota2Page />} />
+            <Route path="/game/lol" element={<LeagueOfLegendsPage />} />
+            <Route path="/game/mlbb" element={<MobileLegendsPage />} />
+            <Route path="/game/wildrift" element={<WildRiftPage />} />
+            <Route path="/game/fortnite" element={<FortnitePage />} />
+            <Route path="/game/freefire" element={<FreeFirePage />} />
+            <Route path="/game/apex" element={<ApexPage />} />
+            <Route path="/game/warzone" element={<CodPage />} />
+            <Route path="/game/fifa" element={<FifaPage />} />  
+            <Route path="/game/hok" element={<HokPage />} />
+            <Route path="/game/hearthstone" element={<HearthstonePage />} />  
+            <Route path="/game/overwatch" element={<OverwatchPage />} />
+            <Route path="/game/pubgm" element={<PubgPage />} />
+            <Route path="/game/r6" element={<RainbowSixPage />} />
+            <Route path="/game/rocket" element={<RocketLeaguePage />} />
+            <Route path="/game/freefire" element={<FreeFirePage />} />
+            <Route path="/game/cs2" element={<CsgoPage />} />  
+            <Route path="/game/apex" element={<ApexPage />} />
+            <Route path="/game/tft" element={<TftPage />} />
+            <Route path="/game/clashroyale" element={<ClashRoyalePage />} />
+            <Route path="/game/sf6" element={<StreetFighter6Page />} />
+            <Route path="/game/tekken8" element={<Tekken8Page />} />
+            <Route path="/game/starcraft" element={<StarcraftPage />} />
+            <Route path="/game/lor" element={<RuneterraPage />} />  
+            <Route path="/game/nba2k" element={<Nba2k14Page />} />
+             
+
+            {/* Rutas dinámicas */  }
             <Route path="/group/:id" element={<GroupPage />} />
             <Route path="/organizer/:id" element={<OrganizerPage />} />
           </Route>
