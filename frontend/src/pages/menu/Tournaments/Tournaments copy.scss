@@ -1,0 +1,581 @@
+// --- VARIABLES PRO GAMING ---
+// CAMBIO: Color primario ahora es Verde Neón
+$primary: #8EDB15; 
+$primary-dark: #6dbf10; // Un tono más oscuro para degradados
+$secondary: #00ff88; 
+$danger: #ff0055;    
+$glass-border: rgba(128, 128, 128, 0.1);
+
+// --- MIXINS ---
+@mixin glass-panel {
+  background: var(--card-bg); 
+  backdrop-filter: blur(12px);
+  border: 1px solid $glass-border;
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+@mixin neon-glow($color) {
+  box-shadow: 0 0 10px rgba($color, 0.5), 0 0 20px rgba($color, 0.3);
+  border-color: $color;
+}
+
+// --- ANIMACIONES ---
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba($danger, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba($danger, 0); }
+  100% { box-shadow: 0 0 0 0 rgba($danger, 0); }
+}
+
+@keyframes fadeIn { to { opacity: 1; } }
+@keyframes slideUp { to { transform: translateY(0); } }
+
+// CAMBIO: Animación glow ahora en verdes
+@keyframes glow {
+    from { box-shadow: 0 0 5px #8EDB15; }
+    to { box-shadow: 0 0 15px #6dbf10; }
+}
+
+// --- ESTILOS PRINCIPALES ---
+.tournaments-page {
+  padding: 130px 40px 40px 40px; 
+  color: var(--text-color);
+  min-height: 100vh;
+  font-family: 'Poppins', sans-serif;
+
+  // 1. HERO SECTION
+  .hero-banner {
+    position: relative;
+    height: 350px;
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-end;
+    
+    &::before {
+      content: '';
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%), 
+                  url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      z-index: -1;
+      transition: transform 10s ease;
+    }
+
+    &:hover::before { transform: scale(1.05); }
+
+    .hero-content {
+      padding: 40px;
+      z-index: 1;
+      width: 100%;
+
+      .badge-live {
+        display: inline-block;
+        background: $danger;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        animation: pulse-red 2s infinite;
+      }
+
+      h1 { 
+          font-size: 3rem; 
+          font-weight: 800; 
+          margin-bottom: 10px; 
+          line-height: 1; 
+          text-transform: uppercase; 
+          color: white; 
+      }
+      p { 
+          font-size: 1.1rem; 
+          color: #ddd; 
+          max-width: 600px; 
+          margin-bottom: 20px; 
+      }
+
+      .hero-btn {
+        padding: 12px 30px;
+        background: $primary;
+        color: #000; // Texto negro para contraste con verde neón
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: 0.3s;
+
+        &:hover {
+          background: lighten($primary, 10%);
+          @include neon-glow($primary);
+        }
+      }
+    }
+  }
+
+  // 2. FILTROS
+  .filters-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+
+    .filter-btn {
+      @include glass-panel;
+      padding: 10px 25px;
+      color: var(--text-color);
+      opacity: 0.7;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.3s;
+      font-weight: 500;
+
+      &:hover { 
+          opacity: 1; 
+          background: rgba(128,128,128,0.1); 
+      }
+
+      &.active {
+        background: $primary;
+        color: #000; // Texto negro
+        opacity: 1;
+        border-color: $primary;
+        // CAMBIO: Sombra verde en lugar de morada
+        box-shadow: 0 5px 15px rgba(142, 219, 21, 0.4);
+      }
+    }
+  }
+
+  // 3. GRID DE TORNEOS
+  .tournaments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 30px;
+
+    .tournament-card {
+      @include glass-panel;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      flex-direction: column;
+
+      &:hover {
+        transform: translateY(-10px);
+        border-color: $primary;
+        
+        .card-img img { transform: scale(1.1); }
+      }
+
+      .card-img {
+        height: 160px;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+
+        img {
+          width: 100%; height: 100%; object-fit: cover;
+          transition: transform 0.5s ease;
+        }
+
+        .hashtags-overlay {
+            position: absolute;
+            bottom: 10px; right: 10px;
+            display: flex; flex-wrap: wrap; gap: 5px;
+            justify-content: flex-end; z-index: 2;
+        }
+    
+        .hash-badge {
+            font-size: 0.7rem; padding: 4px 8px; border-radius: 4px;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+            color: #fff; font-weight: 600; letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-transform: uppercase;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    
+            &.Nuevo { background: linear-gradient(45deg, #00c6ff, #0072ff); border: none; }
+            &.Moonton { background: linear-gradient(45deg, #f1c40f, #d35400); color: black; }
+            &.RiotGames { background: #d62e2e; }
+            &.Garena { background: #f39c12; }
+            &.FreeEntry, &.Gratis { background: rgba(46, 204, 113, 0.8); color: #fff; border-color: #2ecc71; }
+            
+            // CAMBIO: Patrocinado ahora usa gradiente verde
+            &.Patrocinado { 
+                background: linear-gradient(90deg, #8EDB15, #6dbf10); 
+                color: black;
+                border: 1px solid #8EDB15; 
+                animation: glow 2s infinite alternate; 
+            }
+        }
+
+        .game-tag {
+          position: absolute; top: 10px; left: 10px;
+          background: rgba(0,0,0,0.8); padding: 4px 10px; border-radius: 4px;
+          font-size: 0.75rem; font-weight: bold; text-transform: uppercase;
+          border-left: 3px solid transparent; color: white; z-index: 2;
+        }
+      }
+
+      .card-body {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex; flex-direction: column;
+
+        h3 { 
+            font-size: 1.3rem; margin-bottom: 5px; 
+            color: var(--text-color);
+        }
+        
+        .meta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; color: var(--text-color); opacity: 0.7;
+            font-size: 0.9rem;
+            
+            .prize { 
+                color: $secondary; font-weight: bold; 
+                text-shadow: 0 0 5px rgba(0, 255, 136, 0.3); 
+            }
+        }
+
+        .meta-info {
+          display: flex; justify-content: space-between;
+          margin-bottom: 20px;
+          background: rgba(128,128,128,0.05);
+          padding: 10px; border-radius: 8px;
+
+          div {
+            display: flex; flex-direction: column;
+            span:first-child { font-size: 0.75rem; opacity: 0.7; color: var(--text-color); }
+            span:last-child { font-weight: 700; color: $secondary; font-size: 1rem; }
+          }
+        }
+
+        .card-footer {
+          margin-top: auto;
+          display: flex; flex-direction: column; gap: 10px;
+
+          .slots-bar {
+            width: 100%; height: 4px; 
+            background: rgba(128,128,128,0.2);
+            border-radius: 2px; overflow: hidden;
+            .fill { height: 100%; border-radius: 2px; }
+          }
+
+          .footer-actions {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%;
+
+            .slots-text { font-size: 0.9rem; opacity: 0.7; color: var(--text-color); }
+            
+            .join-btn {
+                padding: 8px 20px;
+                border: 1px solid $primary;
+                background: transparent;
+                color: var(--text-color); // Texto adaptable
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: 0.3s;
+    
+                &:hover {
+                  background: $primary;
+                  color: #000;
+                  border-color: $primary;
+                  // CAMBIO: Sombra verde
+                  box-shadow: 0 0 15px rgba(142, 219, 21, 0.6);
+                }
+              }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========================================= 
+// BOTÓN DE CREAR TORNEO
+// ========================================= 
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    h1 { margin: 0; color: var(--text-color); }
+    p { color: var(--text-color); opacity: 0.7; }
+
+    .create-btn {
+        // CAMBIO: Gradiente Verde
+        background: linear-gradient(45deg, #8EDB15, #6dbf10);
+        color: #000; // Texto negro para contraste
+        border: none;
+        padding: 12px 25px;
+        border-radius: 50px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        // CAMBIO: Sombra verde
+        box-shadow: 0 0 15px rgba(142, 219, 21, 0.4);
+        transition: 0.3s;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+
+        i { font-size: 1.2rem; }
+
+        &:hover {
+            transform: scale(1.05);
+            // CAMBIO: Sombra verde más intensa
+            box-shadow: 0 0 25px rgba(142, 219, 21, 0.7);
+        }
+    }
+}
+
+// ========================================= 
+// BARRA DE FILTROS (CHIPS) 
+// ========================================= 
+.filters-container {
+    margin-bottom: 35px;
+    display: flex; flex-direction: column; gap: 15px;
+}
+
+.chips-wrapper {
+    display: flex; flex-wrap: wrap; gap: 12px;
+}
+
+.game-chip {
+    background: var(--card-bg);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    padding: 8px 16px; border-radius: 12px;
+    color: var(--text-color); opacity: 0.6;
+    font-size: 0.9rem; font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s;
+    
+    i { font-size: 1.1rem; }
+
+    &:hover {
+        border-color: var(--chip-color);
+        color: var(--chip-color);
+        opacity: 1;
+        background: rgba(128,128,128,0.05);
+        transform: translateY(-2px);
+    }
+
+    &.active {
+        background: color-mix(in srgb, var(--chip-color) 15%, transparent); 
+        border-color: var(--chip-color);
+        color: var(--chip-color);
+        opacity: 1;
+        box-shadow: 0 0 15px color-mix(in srgb, var(--chip-color) 20%, transparent);
+        font-weight: 700;
+        i { text-shadow: 0 0 5px var(--chip-color); }
+    }
+}
+
+.toggle-filters-btn {
+    background: none; border: none;
+    color: $primary; 
+    font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; align-self: flex-start;
+    display: flex; align-items: center; gap: 5px;
+    margin-left: 5px;
+    &:hover { opacity: 0.8; }
+}
+
+// ========================================= 
+// VENTANA MODAL (FORMULARIO)                
+// ========================================= 
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; animation: fadeIn 0.3s forwards;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    width: 500px; padding: 30px; border-radius: 20px;
+    // CAMBIO: Borde verde sutil
+    border: 1px solid rgba(142, 219, 21, 0.3);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    position: relative; transform: translateY(50px);
+    animation: slideUp 0.3s forwards;
+
+    h2 { 
+        margin-bottom: 20px; color: var(--text-color); 
+        display: flex; align-items: center; gap: 10px; 
+    }
+    
+    .close-modal {
+        position: absolute; top: 20px; right: 20px;
+        background: none; border: none; 
+        color: var(--text-color); opacity: 0.5;
+        font-size: 1.5rem; cursor: pointer; transition: 0.3s;
+        &:hover { opacity: 1; color: $danger; }
+    }
+}
+
+.form-group {
+    margin-bottom: 15px;
+    label { display: block; color: var(--text-color); opacity: 0.8; margin-bottom: 8px; font-size: 0.9rem; }
+    
+    input, select {
+        width: 100%; padding: 12px;
+        background: rgba(128,128,128,0.05);
+        border: 1px solid rgba(128,128,128,0.2);
+        border-radius: 8px;
+        color: var(--text-color);
+        outline: none; transition: 0.3s;
+
+        &:focus {
+            border-color: $primary;
+            // CAMBIO: Fondo verde muy sutil al enfocar
+            background: rgba(142, 219, 21, 0.05);
+        }
+    }
+}
+
+.row { display: flex; gap: 15px; .form-group { flex: 1; } }
+
+.submit-btn {
+    width: 100%; padding: 15px; margin-top: 10px;
+    background: $primary; color: #000;
+    border: none; border-radius: 10px;
+    font-weight: bold; cursor: pointer; transition: 0.3s;
+    &:hover { background: lighten($primary, 5%); }
+}
+/* --- BOTÓN DE INFORMACIÓN --- */
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.info-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid #444; /* Borde sutil gris */
+    color: #ccc;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: #fff; /* Inversión a blanco */
+        color: #000;      /* Icono negro */
+        border-color: #fff;
+    }
+}
+
+/* --- MODAL INFORMATIVO (DISEÑO B&W) --- */
+.modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); /* Fondo muy oscuro */
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.2s;
+}
+
+.info-modal-content {
+    background: #000; /* Fondo Negro Puro */
+    border: 1px solid #333; /* Borde gris oscuro */
+    width: 90%; max-width: 500px;
+    padding: 30px;
+    border-radius: 12px;
+    color: #fff;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    position: relative;
+}
+
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #222;
+    padding-bottom: 15px;
+
+    h3 {
+        margin: 0; font-size: 18px; font-weight: 600;
+        display: flex; align-items: center; gap: 10px;
+    }
+    
+    .close-btn {
+        background: transparent; border: none; color: #666; 
+        font-size: 24px; cursor: pointer;
+        &:hover { color: #fff; }
+    }
+}
+
+.modal-body {
+    p {
+        color: #aaa; /* Texto gris claro */
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 15px;
+        
+        strong { color: #fff; }
+    }
+}
+
+.organizer-promo {
+    background: #111; /* Un poco más claro que el fondo negro */
+    border: 1px dashed #444;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+
+    h4 { margin: 0 0 5px 0; color: #fff; font-size: 14px; }
+    p { margin: 0; font-size: 12px; color: #888; }
+}
+
+.modal-footer {
+    display: flex; justify-content: flex-end; gap: 12px;
+    margin-top: 25px;
+    border-top: 1px solid #222;
+    padding-top: 20px;
+
+    button {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-cancel {
+        background: transparent;
+        border: 1px solid #333;
+        color: #888;
+        &:hover { border-color: #fff; color: #fff; }
+    }
+
+    .btn-apply {
+        background: #fff; /* Botón Blanco */
+        color: #000;      /* Texto Negro */
+        border: none;
+        display: flex; align-items: center; gap: 6px;
+        &:hover { 
+            background: #ccc; 
+            transform: translateY(-1px);
+        }
+    }
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
