@@ -178,38 +178,69 @@ const Tournaments = () => {
                 </button>
             </div>
 
-            {/* GRID */}
+           {/* GRID */}
             <div className="tournaments-grid">
                 {filteredTournaments.length > 0 ? (
                     filteredTournaments.map((torneo) => (
                         <div key={torneo.id} className="tournament-card">
+                            
+                            {/* HEADER CON IMAGEN Y BADGES */}
                             <div className="card-img">
                                 <img src={getGameImage(torneo.game)} alt={torneo.game} loading="lazy" />
                                 
+                                {/* Badge del Juego */}
                                 <div className="game-tag" style={{borderColor: GAME_CONFIG[torneo.game]?.color || '#fff'}}>
-                                    <i className={`bx ${GAME_CONFIG[torneo.game]?.icon || 'bx-joystick'}`}></i> {torneo.game}
+                                    <i className={`bx ${GAME_CONFIG[torneo.game]?.icon || 'bx-joystick'}`}></i> 
+                                    <span>{torneo.game}</span>
                                 </div>
+                                
+                                {/* Badge Nuevo */}
                                 <div className="hashtags-overlay">
                                     <span className="hash-badge">Nuevo</span>
                                 </div>
                             </div>
                             
+                            {/* CUERPO LIMPIO */}
                             <div className="card-body">
-                                <h3>{torneo.title}</h3>
-                                <div className="meta-row">
-                                    <span><i className='bx bx-calendar'></i> {torneo.date}</span>
-                                    <span className="prize">{torneo.prize}</span>
+                                {/* Título y Organizador */}
+                                <div className="title-section">
+                                    <h3>{torneo.title}</h3>
+                                    <p className="organizer-text">Organizado por: <span>Esportefy</span></p>
                                 </div>
-                                <div className="card-footer">
-                                    <div className="slots-bar">
-                                        <div className="fill" style={{width: '60%', background: GAME_CONFIG[torneo.game]?.color || '#fff'}}></div>
+
+                                {/* Metadatos: Fecha y Premio */}
+                                <div className="meta-row">
+                                    <div className="meta-item">
+                                        <i className='bx bx-calendar'></i> 
+                                        <span>{torneo.date}</span>
                                     </div>
-                                    <div className="footer-actions">
-                                        <span className="slots-text">{torneo.slots} Equipos</span>
-                                        <button className="join-btn" onClick={() => goToRegistration(torneo)}>Inscribirse</button>
+                                    <div className="meta-item prize">
+                                        <i className='bx bx-trophy'></i> 
+                                        <span>{torneo.prize}</span>
                                     </div>
+                                </div>
+
+                                {/* Cupos (Sin barra de progreso) */}
+                                <div className="slots-info">
+                                    <i className='bx bx-group'></i>
+                                    <span>Cupos: <strong>{torneo.slots}</strong></span>
+                                </div>
+
+                                {/* FOOTER CON DOS BOTONES */}
+                                <div className="card-footer-dual">
+                                    <button className="btn-secondary">
+                                        <i className='bx bx-info-circle'></i> Info
+                                    </button>
+                                    <button 
+                                        className="btn-primary" 
+                                        onClick={() => goToRegistration(torneo)}
+                                        style={{background: GAME_CONFIG[torneo.game]?.color || '#8EDB15'}}
+                                    >
+                                        Inscribirse
+                                    </button>
                                 </div>
                             </div>
+
                         </div>
                     ))
                 ) : (
