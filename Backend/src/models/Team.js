@@ -1,17 +1,31 @@
-// Backend/src/models/Team.js
-
 import mongoose from "mongoose";
 
-const TeamSchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true },
-    description: { type: String },
-    game: { type: String, required: true }, // Ej: 'lol', 'valorant'
-    logo: { type: String, default: 'default-team-logo.png' },
-    captain: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    maxMembers: { type: Number, default: 5 },
-    isPrivate: { type: Boolean, default: false },
-    joinCode: { type: String } // Código para unirse si es privado
+const playerSchema = new mongoose.Schema({
+    nickname: String,
+    gameId: String,
+    region: String,
+    email: String,
+    role: String,
+    photo: String // Base64 o URL de Cloudinary
+});
+
+const teamSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    slogan: String,
+    game: { type: String, required: true },
+    teamGender: String,
+    teamCountry: String,
+    teamLevel: String,
+    teamLanguage: String,
+    logo: String,
+    captain: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    // Estructura de Roster que coincide con tu estado en React
+    roster: {
+        starters: [playerSchema],
+        subs: [playerSchema],
+        coach: playerSchema
+    },
+    inviteCode: { type: String, unique: true }
 }, { timestamps: true });
 
-export default mongoose.model('Team', TeamSchema);
+export default mongoose.model("Team", teamSchema);

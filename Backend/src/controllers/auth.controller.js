@@ -8,6 +8,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = './uploads/avatars/';
@@ -292,7 +293,7 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-// 5. Solicitar ser Organizador
+// 4. Solicitar ser Organizador
 export const applyOrganizer = async (req, res) => {
     const { fullName, idNumber, orgName,eventType, 
         website, experienceYears,maxSize, tools, description } = req.body;
@@ -348,7 +349,7 @@ export const applyOrganizer = async (req, res) => {
     }
 };
 
-// 6. Verificar solicitud de Organizador
+// 5. Verificar solicitud de Organizador
 export const verifyOrganizerAction = async (req, res) => {
     const { userId, action } = req.params;
 
