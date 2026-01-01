@@ -80,16 +80,36 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
         </div>
 
         <div className="bottom-content">
-          <div className="social-media">
-             <div className="social-trigger"><i className='bx bx-share-alt icon'></i></div>
-             <div className="social-icons">
-                <a href="#" className="discord"><i className='bx bxl-discord-alt'></i></a>
-                <a href="#" className="twitch"><i className='bx bxl-twitch'></i></a>
-                <a href="#" className="twitter"><i className='bx bxl-twitter'></i></a>
-                <a href="#" className="youtube"><i className='bx bxl-youtube'></i></a>
-             </div>
-          </div>
+    <div className="social-media">
+        {/* El Trigger puede ser decorativo o un botón para desplegar en móvil */}
+        <div className="social-trigger">
+            <i className='bx bx-share-alt icon'></i>
+            <span className="text">Social</span>
+        </div>
 
+        <div className="social-icons">
+            {/* Twitch (Enlace Real) */}
+            <a href="https://www.twitch.tv/esportefy" target="_blank" rel="noopener noreferrer" className="social-link twitch">
+                <i className='bx bxl-twitch'></i>
+            </a>
+
+            {/* YouTube (Enlace Real) */}
+            <a href="https://www.youtube.com/channel/UCAwKJv2zibYYEKJOgWW6F9w" target="_blank" rel="noopener noreferrer" className="social-link youtube">
+                <i className='bx bxl-youtube'></i>
+            </a>
+
+            {/* Facebook (Enlace Real - Añadido) */}
+            <a href="https://www.facebook.com/profile.php?id=61585628084470" target="_blank" rel="noopener noreferrer" className="social-link facebook">
+                <i className='bx bxl-facebook'></i>
+            </a>
+
+            {/* Discord (Placeholder) */}
+            <a href="#" className="social-link discord">
+                <i className='bx bxl-discord-alt'></i>
+            </a>
+         
+        </div>
+    </div>
           <li className="">
             {/* Nota: Es mejor usar Link para evitar recarga completa, pero href funciona */}
             <Link to="/login"><i className='bx bx-log-out icon'></i><span className="text nav-text">Cerrar Sesión</span></Link>

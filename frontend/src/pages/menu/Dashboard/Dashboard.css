@@ -440,3 +440,76 @@
     font-weight: bold;
     letter-spacing: 1px;
 }
+/* Agrupador a la derecha del header */
+.header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Espacio entre el botón y la fecha */
+}
+
+/* --- BOTÓN ZONA UNIVERSITARIA --- */
+.btn-university {
+  /* Gradiente moderno: Azul a Violeta */
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
+  /* Opción B (Más morado): background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  
+  border: none;
+  padding: 10px 20px;
+  border-radius: 12px;
+  color: #000; /* Texto negro para contraste con el cian brillante */
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  
+  /* Sombra brillante */
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-university i {
+  font-size: 1.2rem;
+}
+
+/* Efecto Hover */
+.btn-university:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(79, 172, 254, 0.6);
+  padding-right: 25px; /* Pequeña animación de expansión */
+}
+
+/* Pequeño brillo al pasar el mouse */
+.btn-university::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: 0.5s;
+}
+
+.btn-university:hover::after {
+  left: 100%;
+}
+
+/* Ajuste Responsive */
+@media (max-width: 768px) {
+  .dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .header-right-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

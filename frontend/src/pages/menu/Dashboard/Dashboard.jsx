@@ -14,29 +14,20 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-        // 1. Obtenemos el token guardado al hacer Login
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-        // Si no hay token, lo mandamos al login
         if (!token) {
             navigate('/login');
             return;
         }
 
         try {
-            // 2. PETICIÓN REAL AL BACKEND
-            // Enviamos el token en el header 'Authorization'
             const response = await axios.get('http://localhost:4000/api/auth/profile', {
-                headers: {
-                    'Authorization': `Bearer ${token}` // O 'x-access-token' según tu middleware
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const realUserData = response.data;
             setUser(realUserData);
 
-            // 3. Generar "Jugadores Similares" basado en los datos reales recién traídos
-            // (Aquí podrías hacer otra petición al backend si tuvieras el endpoint)
             const mockSimilar = [
                 { username: 'Kratos_99', game: realUserData.selectedGames?.[0] || 'General' },
                 { username: 'SlayerX', game: realUserData.selectedGames?.[1] || 'FPS' },
@@ -46,7 +37,6 @@ const Dashboard = () => {
 
         } catch (error) {
             console.error("Error cargando perfil:", error);
-            // Si el token expiró o es inválido (Error 401/403), cerramos sesión
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('esportefyUser');
@@ -62,11 +52,9 @@ const Dashboard = () => {
 
   if (loading) return <div className="loading-screen">Conectando con el servidor...</div>;
 
-  // 4. MAPEO DE DATOS (MongoDB -> Frontend)
-  // Usamos el operador ?. para evitar errores si algún campo viene vacío de la DB
   const userData = {
       username: user?.username || 'Jugador',
-      experience: user?.experience?.[0] || 'Rookie', // Tu DB guarda array ["Rookie"]
+      experience: user?.experience?.[0] || 'Rookie',
       platforms: user?.platforms || [],
       mainGoal: user?.goals?.[0] || 'Explorar',
       games: user?.selectedGames || []
@@ -89,15 +77,25 @@ const Dashboard = () => {
                 <h1>Bienvenido, <span className="highlight-text">{userData.username}</span></h1>
                 <p>Resumen de tu actividad en Esportefy.</p>
             </div>
-            <div className="date-badge">
-                <i className='bx bx-calendar'></i> {today}
+            
+            {/* GRUPO DE ACCIONES DERECHA */}
+            <div className="header-right-actions">
+                
+                {/* --- NUEVO BOTÓN ZONA UNIVERSITARIA --- */}
+                <button className="btn-university" onClick={() => navigate('/university')}>
+                    <i className='bx bxs-graduation'></i>
+                    <span>Zona Universitaria</span>
+                </button>
+
+                <div className="date-badge">
+                    <i className='bx bx-calendar'></i> {today}
+                </div>
             </div>
         </div>
 
         {/* STATS GRID */}
         <div className="stats-grid">
-            
-            {/* NIVEL */}
+            {/* ... (El resto de tu código de stats sigue igual) ... */}
             <div className="stat-card">
                 <div className="stat-icon-wrapper">
                     <i className='bx bx-medal'></i>
@@ -108,7 +106,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* PLATAFORMAS */}
             <div className="stat-card">
                 <div className="stat-icon-wrapper platform-wrapper">
                     {userData.platforms.length > 0 ? (
@@ -125,7 +122,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* OBJETIVO */}
             <div className="stat-card">
                 <div className="stat-icon-wrapper">
                     <i className='bx bx-target-lock'></i>
@@ -136,7 +132,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* TORNEOS (Placeholder) */}
             <div className="stat-card">
                 <div className="stat-icon-wrapper">
                     <i className='bx bx-trophy'></i>
@@ -148,9 +143,13 @@ const Dashboard = () => {
             </div>
         </div>
 
+        {/* ... (El resto de tu código content-grid sigue igual) ... */}
         <div className="content-grid">
-            
-            {/* JUEGOS FAVORITOS */}
+             {/* ... Tu código existente de Content Grid ... */}
+             {/* Simplemente copié la parte de arriba para mostrarte dónde va el botón */}
+             {/* Asegúrate de mantener tu código original de content-grid aquí abajo */}
+             
+             {/* JUEGOS FAVORITOS */}
             <div className="content-panel">
                 <div className="panel-header">
                     <h3><i className='bx bx-game'></i> Tus Juegos</h3>
@@ -159,7 +158,6 @@ const Dashboard = () => {
                 <div className="my-games-list">
                     {userData.games.length > 0 ? (
                         userData.games.map((gameId, index) => {
-                            // Mapeo de imagen
                             const imageSrc = Object.entries(GAME_IMAGES).find(([key]) => 
                                 key.toLowerCase().includes(gameId.toLowerCase()) || 
                                 key.toLowerCase() === gameId.toLowerCase()
@@ -188,7 +186,6 @@ const Dashboard = () => {
                 </div>
                 
                 <div className="community-box">
-                    {/* Renderizado condicional basado en datos REALES de 'goals' */}
                     {userData.mainGoal.includes('Fun') || userData.mainGoal.includes('Diversión') ? (
                         <div className="suggestion-box">
                             <i className='bx bx-party'></i>
@@ -233,7 +230,6 @@ const Dashboard = () => {
                     <button className="btn-neon-small">Ver Detalles</button>
                 </div>
             </div>
-
         </div>
     </div>
   );

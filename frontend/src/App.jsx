@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import './App.css';
 
 
+
 // --- EXTENSIONES DE NOTIFICACIONES ---
 import { NotificationProvider, useNotification } from './context/NotificationContext';
 import ToastContainer from './components/Toasts/ToastContainer';
@@ -29,6 +30,9 @@ import CreateTeamPage from './pages/menu/Teams/CreateTeamPage/CreateTeamPage';
 // Configuración y ayuda
 import Settings from './pages/menu/Settings/Settings';
 import SupportPage from './pages/menu/Settings/Support/SupportMain';
+//Universidad
+import UniversityPage from './pages/University/UniversityPage';
+
 // Formularios
 import TeamRegistration from './pages/menu/Tournaments/TeamRegistration/TeamRegistration';
 import CreateTournament from './pages/menu/Tournaments/CreateTournament/CreateTournament';
@@ -187,7 +191,7 @@ function App() {
             <Route path="/game/starcraft" element={<StarcraftPage />} />
             <Route path="/game/lor" element={<RuneterraPage />} />  
             <Route path="/game/nba2k" element={<Nba2k14Page />} />
-             
+            <Route path="/university" element={<UniversityPage />} />
 
             {/* Rutas dinámicas */  }
             <Route path="/group/:id" element={<GroupPage />} />

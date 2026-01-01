@@ -1,77 +1,162 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
 import './Tournaments.scss'; 
 import { GAME_IMAGES } from '../../../data/gameImages';
 
-// Configuración de colores e iconos para TODOS los juegos nuevos
 const GAME_CONFIG = {
-  "All":                  { color: "#ffffff", icon: "bx-grid-alt" },
-  
-  // Shooters & Battle Royale
-  "Valorant":             { color: "#ff4655", icon: "bx-crosshair" },
-  "CS:GO 2":              { color: "#de9b35", icon: "bx-target-lock" },
-  "Call of Duty":         { color: "#54b946", icon: "bx-run" },
-  "Warzone":              { color: "#54b946", icon: "bx-radar" },
-  "Fortnite":             { color: "#a349a4", icon: "bx-building" },
-  "Free Fire":            { color: "#f39c12", icon: "bx-flame" },
-  "PUBG":                 { color: "#f1c40f", icon: "bx-target-lock" },
-  "Apex Legends":         { color: "#e74c3c", icon: "bx-shield-quarter" },
-  "Overwatch 2":          { color: "#f39c12", icon: "bx-shield" },
-  "Rainbow Six Siege":    { color: "#3498db", icon: "bx-window" },
-
-  // MOBA
-  "League of Legends":    { color: "#c1a05e", icon: "bx-world" },
-  "Dota 2":               { color: "#e74c3c", icon: "bx-map-alt" },
-  "Mobile Legends":       { color: "#ffbf00", icon: "bx-mobile-landscape" },
-  "Honor of Kings":       { color: "#e6b333", icon: "bx-crown" },
-  "Smite":                { color: "#f1c40f", icon: "bx-bolt-circle" },
-  "Wild Rift":            { color: "#00a8ff", icon: "bx-mobile" },
-
-  // Deportes / Pelea / Coches
-  "FIFA 24":              { color: "#2ecc71", icon: "bx-football" },
-  "NBA 2K24":             { color: "#e67e22", icon: "bx-basketball" },
-  "Rocket League":        { color: "#0088ff", icon: "bx-car" },
-  "Street Fighter 6":     { color: "#f39c12", icon: "bx-walk" },
-  "Tekken 8":             { color: "#c0392b", icon: "bx-angry" },
-
-  // Estrategia
-  "Clash Royale":         { color: "#3498db", icon: "bx-crown" },
-  "Teamfight Tactics":    { color: "#f1c40f", icon: "bx-grid" },
-  "Hearthstone":          { color: "#f39c12", icon: "bx-book" },
+  "All": { color: "#ffffff", icon: "bx-grid-alt" },
+  "Valorant": { color: "#ff4655", icon: "bx-crosshair" },
+  "CS:GO 2": { color: "#de9b35", icon: "bx-target-lock" },
+  "Call of Duty": { color: "#54b946", icon: "bx-run" },
+  "Warzone": { color: "#54b946", icon: "bx-radar" },
+  "Fortnite": { color: "#a349a4", icon: "bx-building" },
+  "Free Fire": { color: "#f39c12", icon: "bx-flame" },
+  "PUBG": { color: "#f1c40f", icon: "bx-target-lock" },
+  "Apex Legends": { color: "#e74c3c", icon: "bx-shield-quarter" },
+  "Overwatch 2": { color: "#f39c12", icon: "bx-shield" },
+  "Rainbow Six Siege": { color: "#3498db", icon: "bx-window" },
+  "League of Legends": { color: "#c1a05e", icon: "bx-world" },
+  "Dota 2": { color: "#e74c3c", icon: "bx-map-alt" },
+  "Mobile Legends": { color: "#ffbf00", icon: "bx-mobile-landscape" },
+  "Honor of Kings": { color: "#e6b333", icon: "bx-crown" },
+  "Smite": { color: "#f1c40f", icon: "bx-bolt-circle" },
+  "Wild Rift": { color: "#00a8ff", icon: "bx-mobile" },
+  "FIFA 24": { color: "#2ecc71", icon: "bx-football" },
+  "NBA 2K24": { color: "#e67e22", icon: "bx-basketball" },
+  "Rocket League": { color: "#0088ff", icon: "bx-car" },
+  "Street Fighter 6": { color: "#f39c12", icon: "bx-walk" },
+  "Tekken 8": { color: "#c0392b", icon: "bx-angry" },
+  "Clash Royale": { color: "#3498db", icon: "bx-crown" },
+  "Teamfight Tactics": { color: "#f1c40f", icon: "bx-grid" },
+  "Hearthstone": { color: "#f39c12", icon: "bx-book" },
   "Legends of Runeterra": { color: "#3498db", icon: "bx-book-open" },
-  "StarCraft II":         { color: "#00a8ff", icon: "bx-planet" }
+  "StarCraft II": { color: "#00a8ff", icon: "bx-planet" }
 };
+
+const sponsors = [
+    {
+      id: 1,
+      name: "Red Bull",
+      badgeColor: "linear-gradient(45deg, #f00, #ff0)",
+      bgImage: "https://images.unsplash.com/photo-1621503747124-777616674176?q=80&w=2070&auto=format&fit=crop",
+      logo: "https://upload.wikimedia.org/wikipedia/en/thumb/f/f5/Red_Bull_GmbH_logo.svg/1200px-Red_Bull_GmbH_logo.svg.png",
+      title: "ENERGÍA QUE IMPULSA TU JUEGO",
+      desc: "Domina el servidor con la energía que necesitas.",
+      btnText: "Conseguir Alas",
+      btnIcon: "bx-bolt-circle"
+    },
+    {
+      id: 2,
+      name: "Logitech G",
+      badgeColor: "linear-gradient(45deg, #00B8FC, #2E3192)", 
+      bgImage: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop", 
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Logitech_logo.svg/2560px-Logitech_logo.svg.png", 
+      title: "JUEGA A LA VELOCIDAD DE LA LUZ",
+      desc: "40% de descuento en periféricos PRO Series.",
+      btnText: "Ver Gear",
+      btnIcon: "bx-mouse"
+    },
+    {
+      id: 3,
+      name: "Intel",
+      badgeColor: "linear-gradient(45deg, #0068B5, #00C7FD)",
+      bgImage: "https://images.unsplash.com/photo-1591405351990-4726e331f141?q=80&w=2070&auto=format&fit=crop",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Logitech_logo.svg/2560px-Logitech_logo.svg.png",
+      title: "POTENCIA, MAXIMIZA TU RENDIMIENTO",
+      desc: "Procesadores i9 de 13ava generación.",
+      btnText: "Upgrade PC",
+      btnIcon: "bx-chip"
+    }
+];
 
 const Tournaments = () => {
   const navigate = useNavigate();
   const { notify } = useNotification(); 
   
-  const [userRole, setUserRole] = useState('gamer'); 
+  // --- STATES ---
+  const [current, setCurrent] = useState(0); 
   const [activeFilter, setActiveFilter] = useState('All');
   const [showAllFilters, setShowAllFilters] = useState(false);
+  
+  // ESTADO MODAL ORGANIZADOR
   const [showInfoModal, setShowInfoModal] = useState(false); 
+  
+  // ESTADO MODAL DETALLES TORNEO (ESTE ES EL QUE NO TE FUNCIONABA)
+  const [selectedTournament, setSelectedTournament] = useState(null); 
+  
+  const [userRole, setUserRole] = useState('gamer');
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false); 
+  const rightPanelRef = useRef(null);
 
-  // Helper para obtener imagen segura
-  const getGameImage = (gameName) => {
-    return GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
-  };
-
-  // DATOS AMPLIADOS CON LAS IMÁGENES NUEVAS
-  const [tournaments, setTournaments] = useState([
-    { id: 1, game: 'Valorant', title: 'Valorant Masters: Tokyo', date: '2024-10-24', time: '18:00', prize: '$50,000', entry: 'Gratis', slots: '12/16' },
-    { id: 2, game: 'League of Legends', title: "Summoner's Cup", date: '2024-10-25', time: '20:00', prize: '$10,000', entry: '$50', slots: '8/32' },
-    { id: 3, game: 'Mobile Legends', title: 'M5 Qualifier', date: '2024-11-01', time: '16:00', prize: '$25,000', entry: 'Gratis', slots: '60/64' },
-    { id: 4, game: 'CS:GO 2', title: 'Blast Premier Fall', date: '2024-11-05', time: '14:00', prize: '$100,000', entry: '$100', slots: '15/16' },
-    { id: 5, game: 'Fortnite', title: 'FNCS Global', date: '2024-11-10', time: '17:00', prize: '$2M', entry: 'Gratis', slots: '98/100' },
-    { id: 6, game: 'FIFA 24', title: 'eLibertadores', date: '2024-11-12', time: '19:00', prize: '$5,000', entry: '$20', slots: '4/32' },
-    { id: 7, game: 'Rocket League', title: 'RLCS Major', date: '2024-11-15', time: '15:00', prize: '$40,000', entry: 'Gratis', slots: '10/16' },
-    { id: 8, game: 'Free Fire', title: 'World Series', date: '2024-11-20', time: '20:00', prize: '$15,000', entry: 'Gratis', slots: '45/48' },
-    { id: 9, game: 'Call of Duty', title: 'CDL Championship', date: '2024-11-22', time: '21:00', prize: '$200,000', entry: '$150', slots: '7/8' },
-    { id: 10, game: 'Tekken 8', title: 'Iron Fist Tournament', date: '2024-11-25', time: '18:00', prize: '$10,000', entry: '$10', slots: '60/64' },
-    { id: 11, game: 'Clash Royale', title: 'Crown Championship', date: '2024-11-28', time: '15:00', prize: '$5,000', entry: 'Gratis', slots: '100/128' },
-    { id: 12, game: 'Overwatch 2', title: 'OW World Cup', date: '2024-12-01', time: '17:00', prize: '$30,000', entry: '$25', slots: '12/16' }
+  // --- DATOS COMPLETOS DE TORNEOS ---
+  const [tournaments] = useState([
+    { 
+        id: 1, game: 'Valorant', title: 'Valorant Masters: Tokyo', date: '2024-10-24', prize: '$50,000', slots: '12/16', 
+        time: '18:00 EST', entry: '$10 USD', organizer: 'Riot Games', format: '5v5 - Elim. Simple',
+        desc: 'El torneo más competitivo de la temporada. Requiere rango Ascendente o superior. Anti-cheat Vanguard obligatorio. Mapas: Bind, Haven, Split.'
+    },
+    { 
+        id: 2, game: 'League of Legends', title: "Summoner's Cup: Regional", date: '2024-10-25', prize: '$10,000', slots: '32/32', 
+        time: '20:00 EST', entry: 'Gratis', organizer: 'Esportefy Latam', format: '5v5 - Grieta',
+        desc: 'Torneo abierto para toda la comunidad. Ideal para equipos amateur que buscan su primera experiencia competitiva. Modo Draft con 3 baneos.'
+    },
+    { 
+        id: 3, game: 'CS:GO 2', title: 'Blast Premier Fall Showdown', date: '2024-11-05', prize: '$100,000', slots: '15/16', 
+        time: '21:00 EST', entry: '$50 USD', organizer: 'BLAST Premier', format: '5v5 - BO3',
+        desc: 'Clasificatorio directo para la Major. Solo equipos verificados con Prime Status activo. Se requiere check-in 1 hora antes.'
+    },
+    { 
+        id: 4, game: 'Free Fire', title: 'Copa Survivors Latam', date: '2024-11-08', prize: '$5,000', slots: '45/48', 
+        time: '19:00 EST', entry: 'Gratis', organizer: 'Garena', format: 'Squads - Battle Royale',
+        desc: 'Demuestra quién manda en Bermuda. 3 mapas rotativos. Puntos por kill y posicionamiento. ¡Booyah garantizado para el ganador!'
+    },
+    { 
+        id: 5, game: 'FIFA 24', title: 'Ultimate Team Championship', date: '2024-11-12', prize: '$2,000', slots: '60/64', 
+        time: '14:00 EST', entry: '$5 USD', organizer: 'EA Sports', format: '1v1 - Global Series',
+        desc: 'Torneo oficial de fin de semana. Prohibido el uso de jugadores cedidos. Formato de ida y vuelta con gol de oro en desempate.'
+    },
+    { 
+        id: 6, game: 'Rocket League', title: 'Nitro League 3v3', date: '2024-11-15', prize: '$1,500', slots: '8/16', 
+        time: '17:30 EST', entry: 'Gratis', organizer: 'Psyonix Community', format: '3v3 - Estándar',
+        desc: 'Acelera y vuela hacia la victoria. Torneo rápido de eliminación doble. Se permiten suplentes registrados previamente.'
+    },
+    { 
+        id: 7, game: 'Call of Duty', title: 'Warfare Elite Ops', date: '2024-11-20', prize: '$15,000', slots: '10/12', 
+        time: '22:00 EST', entry: '$20 USD', organizer: 'Activision', format: '4v4 - Hardpoint/S&D',
+        desc: 'Rotación de modos competitivos (CDL Ruleset). Prohibidas las armas restringidas por la liga oficial. Solo PC y Consola (Crossplay ON).'
+    },
+    { 
+        id: 8, game: 'Rainbow Six Siege', title: 'Operator League: Six Invite', date: '2024-11-25', prize: '$8,000', slots: '4/8', 
+        time: '16:00 EST', entry: '$15 USD', organizer: 'Ubisoft', format: '5v5 - Bomb',
+        desc: 'Táctica y destrucción. Mapas competitivos oficiales. Se requiere Moss Anti-Cheat ejecutándose en segundo plano.'
+    }
   ]);
+
+  // --- LOGICA CARRUSEL ---
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev === sponsors.length - 1 ? 0 : prev + 1));
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleDotClick = (index) => setCurrent(index);
+  const activeSponsor = sponsors[current] || sponsors[0];
+  const getGameImage = (gameName) => GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
+
+  // --- CLICK OUTSIDE SIDEBAR ---
+  useEffect(() => {
+    const handleClickOutsideRight = (event) => {
+      if (isRightPanelOpen && rightPanelRef.current && !rightPanelRef.current.contains(event.target)) {
+        if (!event.target.closest('.toggle-right-sidebar-btn')) {
+            setIsRightPanelOpen(false);
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutsideRight);
+    return () => document.removeEventListener("mousedown", handleClickOutsideRight);
+  }, [isRightPanelOpen]);
 
   const filteredTournaments = activeFilter === 'All' 
     ? tournaments 
@@ -83,42 +168,39 @@ const Tournaments = () => {
     if (userRole === 'organizer') {
         navigate('/create-tournament');
     } else {
-        notify('danger', 'Acceso Restringido', 'Solo los Organizadores Verificados pueden crear torneos. Solicita tu verificación.');
+        notify('danger', 'Acceso Restringido', 'Solo los Organizadores Verificados pueden crear torneos.');
     }
   };
 
-  const handleApplyOrganizer = () => {
-    navigate('/organizer-application');
+  const handleBecomeOrganizer = () => {
     setShowInfoModal(false);
+    navigate('/organizer-application');
   };
 
   return (
     <div className="tournaments-page-wrapper">
         
-        {/* --- NUEVO: MODAL DE INFORMACIÓN (Blanco y Negro) --- */}
+        {/* ======================================================= */}
+        {/* 1. MODAL DE ORGANIZADOR (CONVERTIRSE EN PRO)            */}
+        {/* ======================================================= */}
         {showInfoModal && (
-            <div className="modal-backdrop" onClick={() => setShowInfoModal(false)}>
-                <div className="info-modal-content" onClick={e => e.stopPropagation()}>
-                    <div className="modal-header">
-                        <h3><i className='bx bx-info-circle'></i> Política de Creadores</h3>
-                        <button className="close-btn" onClick={() => setShowInfoModal(false)}>
-                            <i className='bx bx-x'></i>
-                        </button>
+            <div className="modal-overlay-backdrop" onClick={() => setShowInfoModal(false)}>
+                <div className="organizer-modal-card" onClick={e => e.stopPropagation()}>
+                    <div className="modal-icon-glow">
+                        <i className='bx bx-crown'></i>
                     </div>
-                    
-                    <div className="modal-body">
-                        <p>Para garantizar la seguridad y calidad de los eventos en Esportefy, la creación de torneos está reservada exclusivamente para <strong>Organizadores Verificados</strong>.</p>
-                        <p>Esto nos permite evitar estafas, asegurar el pago de premios y mantener un estándar competitivo profesional.</p>
-                        
-                        <div className="organizer-promo">
-                            <h4>¿Quieres organizar tus propios torneos?</h4>
-                            <p>Solicita la insignia de organizador y desbloquea herramientas de gestión avanzadas.</p>
-                        </div>
+                    <div className="modal-content-text">
+                        <h3>Conviértete en Organizador</h3>
+                        <p>
+                            Lleva tu pasión al siguiente nivel. Crea tus propios torneos, 
+                            gestiona equipos y ofrece premios reales a la comunidad.
+                            <br/><br/>
+                            <strong>¿Estás listo para liderar la arena?</strong>
+                        </p>
                     </div>
-
-                    <div className="modal-footer">
-                        <button className="btn-cancel" onClick={() => setShowInfoModal(false)}>Entendido</button>
-                        <button className="btn-apply" onClick={handleApplyOrganizer}>
+                    <div className="modal-actions">
+                        <button className="btn-cancel" onClick={() => setShowInfoModal(false)}>Cancelar</button>
+                        <button className="btn-confirm" onClick={handleBecomeOrganizer}>
                             Ser Organizador <i className='bx bx-right-arrow-alt'></i>
                         </button>
                     </div>
@@ -126,129 +208,230 @@ const Tournaments = () => {
             </div>
         )}
 
-        <div className="tournaments-page">
-            
-            {/* HERO */}
-            <div className="hero-banner">
-                <div className="hero-content">
-                    <span className="badge-live">● EN VIVO</span>
-                    <h1>World Championship 2024</h1>
-                    <p>La competencia más grande del año ha comenzado.</p>
-                    <button className="hero-btn">Ver Transmisión</button>
-                </div>
-            </div>
+        {/* ======================================================= */}
+        {/* 2. MODAL DE DETALLES DEL TORNEO (EL QUE NO TE SALÍA)    */}
+        {/* ======================================================= */}
+        {selectedTournament && (
+            <div className="modal-overlay-backdrop" onClick={() => setSelectedTournament(null)} style={{zIndex: 10000}}>
+                <div className="tournament-details-modal" onClick={e => e.stopPropagation()}>
+                    
+                    <div className="modal-header-banner" style={{backgroundImage: `url(${getGameImage(selectedTournament.game)})`}}>
+                        <div className="overlay-dark"></div>
+                        <button className="close-btn-round" onClick={() => setSelectedTournament(null)}><i className='bx bx-x'></i></button>
 
-            {/* HEADER */}
-            <div className="header-actions">
-                <div>
-                    <h1>🏆 Torneos Activos</h1>
-                    <p>Explora, compite y gana premios.</p>
-                </div>
-                
-                <div className="action-group">
-                    <button className="info-btn" onClick={() => setShowInfoModal(true)} title="Información">
-                        <i className='bx bx-question-mark'></i>
-                    </button>
-
-                    <button className="create-btn" onClick={handleCreateClick}>
-                        <i className='bx bx-plus'></i> Crear Torneo
-                    </button>
-                </div>
-            </div>
-
-            {/* FILTROS */}
-            <div className="filters-bar">
-                <div className="chips-wrapper">
-                    {(showAllFilters ? Object.keys(GAME_CONFIG) : Object.keys(GAME_CONFIG).slice(0, 10)).map(cat => {
-                         const style = GAME_CONFIG[cat] || { color: '#fff' };
-                         return (
-                            <button key={cat} 
-                                className={`game-chip ${activeFilter === cat ? 'active' : ''}`} 
-                                onClick={() => setActiveFilter(cat)}
-                                style={{ '--chip-color': style.color }}
-                            >
-                                <i className={`bx ${style.icon || 'bx-game'}`}></i>
-                                <span>{cat}</span>
-                            </button>
-                         )
-                    })}
-                </div>
-                <button className="toggle-filters-btn" onClick={() => setShowAllFilters(!showAllFilters)}>
-                    {showAllFilters ? <span><i className='bx bx-chevron-up'></i> Menos</span> : <span><i className='bx bx-chevron-down'></i> Ver más</span>}
-                </button>
-            </div>
-
-           {/* GRID */}
-            <div className="tournaments-grid">
-                {filteredTournaments.length > 0 ? (
-                    filteredTournaments.map((torneo) => (
-                        <div key={torneo.id} className="tournament-card">
-                            
-                            {/* HEADER CON IMAGEN Y BADGES */}
-                            <div className="card-img">
-                                <img src={getGameImage(torneo.game)} alt={torneo.game} loading="lazy" />
-                                
-                                {/* Badge del Juego */}
-                                <div className="game-tag" style={{borderColor: GAME_CONFIG[torneo.game]?.color || '#fff'}}>
-                                    <i className={`bx ${GAME_CONFIG[torneo.game]?.icon || 'bx-joystick'}`}></i> 
-                                    <span>{torneo.game}</span>
-                                </div>
-                                
-                                {/* Badge Nuevo */}
-                                <div className="hashtags-overlay">
-                                    <span className="hash-badge">Nuevo</span>
-                                </div>
+                        <div className="banner-content">
+                            <div className="top-tags">
+                                <span className="game-badge" style={{background: GAME_CONFIG[selectedTournament.game]?.color || '#fff'}}>
+                                    <i className={`bx ${GAME_CONFIG[selectedTournament.game]?.icon}`}></i> {selectedTournament.game}
+                                </span>
                             </div>
-                            
-                            {/* CUERPO LIMPIO */}
-                            <div className="card-body">
-                                {/* Título y Organizador */}
-                                <div className="title-section">
-                                    <h3>{torneo.title}</h3>
-                                    <p className="organizer-text">Organizado por: <span>Esportefy</span></p>
-                                </div>
-
-                                {/* Metadatos: Fecha y Premio */}
-                                <div className="meta-row">
-                                    <div className="meta-item">
-                                        <i className='bx bx-calendar'></i> 
-                                        <span>{torneo.date}</span>
-                                    </div>
-                                    <div className="meta-item prize">
-                                        <i className='bx bx-trophy'></i> 
-                                        <span>{torneo.prize}</span>
-                                    </div>
-                                </div>
-
-                                {/* Cupos (Sin barra de progreso) */}
-                                <div className="slots-info">
-                                    <i className='bx bx-group'></i>
-                                    <span>Cupos: <strong>{torneo.slots}</strong></span>
-                                </div>
-
-                                {/* FOOTER CON DOS BOTONES */}
-                                <div className="card-footer-dual">
-                                    <button className="btn-secondary">
-                                        <i className='bx bx-info-circle'></i> Info
-                                    </button>
-                                    <button 
-                                        className="btn-primary" 
-                                        onClick={() => goToRegistration(torneo)}
-                                        style={{background: GAME_CONFIG[torneo.game]?.color || '#8EDB15'}}
-                                    >
-                                        Inscribirse
-                                    </button>
-                                </div>
+                            <h2>{selectedTournament.title}</h2>
+                            <div className="host-info">
+                                <span>Organizado por:</span>
+                                <strong style={{color: '#fff'}}>{selectedTournament.organizer}</strong>
+                                <i className='bx bxs-badge-check' style={{color: '#00b894'}}></i>
                             </div>
-
                         </div>
-                    ))
-                ) : (
-                    <div className="no-results">
-                        <i className='bx bx-ghost'></i> <p>No hay torneos disponibles en esta categoría.</p>
                     </div>
-                )}
+                    
+                    <div className="modal-content-body">
+                        <div className="stats-grid">
+                            <div className="stat-box">
+                                <span className="label">Fecha</span>
+                                <span className="value">{selectedTournament.date}</span>
+                            </div>
+                            <div className="stat-box">
+                                <span className="label">Hora</span>
+                                <span className="value">{selectedTournament.time}</span>
+                            </div>
+                            <div className="stat-box prize">
+                                <span className="label">Premio</span>
+                                <span className="value highlight">{selectedTournament.prize}</span>
+                            </div>
+                            <div className="stat-box">
+                                <span className="label">Formato</span>
+                                <span className="value">{selectedTournament.format}</span>
+                            </div>
+                            <div className="stat-box">
+                                <span className="label">Cupos</span>
+                                <span className="value">{selectedTournament.slots}</span>
+                            </div>
+                            <div className="stat-box">
+                                <span className="label">Entrada</span>
+                                <span className="value">{selectedTournament.entry}</span>
+                            </div>
+                        </div>
+
+                        <div className="divider"></div>
+
+                        <div className="info-section">
+                            <h4><i className='bx bx-file'></i> Descripción y Reglas</h4>
+                            <p>{selectedTournament.desc}</p>
+                        </div>
+
+                        <div className="modal-actions-footer">
+                            <button className="btn-secondary" onClick={() => setSelectedTournament(null)}>Cerrar</button>
+                            <button 
+                                className="btn-primary-action" 
+                                onClick={() => { setSelectedTournament(null); goToRegistration(selectedTournament); }}
+                                style={{
+                                    background: GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15',
+                                    boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color}40`
+                                }}
+                            >
+                                Inscribirse Ahora <i className='bx bx-right-arrow-alt'></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
+        )}
+
+        {/* --- MAIN LAYOUT GRID --- */}
+        <div className="main-layout-container">
+            
+            {/* LEFT COLUMN */}
+            <div className="content-area">
+                <div className="tournaments-page">
+                    
+                    {/* HERO */}
+                    <div className="hero-banner cinema-style">
+                        {sponsors.map((sponsor, index) => (
+                            <div key={sponsor.id} className={`hero-bg-image ${index === current ? 'active' : ''}`} style={{ backgroundImage: `url('${sponsor.bgImage}')` }}></div>
+                        ))}
+                        <div className="hero-gradient-overlay"></div>
+                        <div className="hero-content-container">
+                            <div className="sponsor-tag">
+                                <span className="badge-glow" style={{ background: activeSponsor.badgeColor }}>PARTNER OFICIAL</span>
+                                <img src={activeSponsor.logo} alt="Sponsor Logo" className="sponsor-logo" />
+                            </div>
+                            <h1 className="hero-title">{activeSponsor.title}</h1>
+                            <p className="hero-subtitle">{activeSponsor.desc}</p>
+                            <div className="hero-buttons">
+                                <button className="btn-action primary">{activeSponsor.btnText} <i className={`bx ${activeSponsor.btnIcon}`}></i></button>
+                                <button className="btn-action secondary">Más Detalles</button>
+                            </div>
+                        </div>
+                        <div className="hero-dots">
+                            {sponsors.map((_, index) => (
+                                <span key={index} className={`dot ${index === current ? 'active' : ''}`} onClick={() => handleDotClick(index)}></span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* HEADER & FILTERS */}
+                    <div className="header-actions">
+                        <div><h1>🏆 Torneos Activos</h1><p>Explora, compite y gana premios.</p></div>
+                        <div className="action-group">
+                            <button className="create-btn toggle-right-sidebar-btn mobile-only" onClick={(e) => { e.stopPropagation(); setIsRightPanelOpen(!isRightPanelOpen); }}><i className='bx bx-layout'></i> Info</button>
+                            <button className="info-btn" onClick={() => setShowInfoModal(true)}><i className='bx bx-question-mark'></i></button>
+                            <button className="create-btn" onClick={handleCreateClick}><i className='bx bx-plus'></i> Crear Torneo</button>
+                        </div>
+                    </div>
+
+                    <div className="filters-bar">
+                        <div className="chips-wrapper">
+                            {(showAllFilters ? Object.keys(GAME_CONFIG) : Object.keys(GAME_CONFIG).slice(0, 10)).map(cat => {
+                                const style = GAME_CONFIG[cat] || { color: '#fff' };
+                                return (
+                                    <button key={cat} className={`game-chip ${activeFilter === cat ? 'active' : ''}`} onClick={() => setActiveFilter(cat)} style={{ '--chip-color': style.color }}>
+                                        <i className={`bx ${style.icon || 'bx-game'}`}></i><span>{cat}</span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                        <button className="toggle-filters-btn" onClick={() => setShowAllFilters(!showAllFilters)}>
+                            {showAllFilters ? <span><i className='bx bx-chevron-up'></i> Menos</span> : <span><i className='bx bx-chevron-down'></i> Ver más</span>}
+                        </button>
+                    </div>
+
+                    {/* TOURNAMENTS GRID */}
+                    <div className="tournaments-grid">
+                        {filteredTournaments.length > 0 ? (
+                            filteredTournaments.map((torneo) => {
+                                const [ocupados, totales] = torneo.slots.split('/').map(Number);
+                                const estaLleno = ocupados >= totales;
+
+                                return (
+                                    <div key={torneo.id} className="tournament-card-pro">
+                                        <div className="card-image-container">
+                                            <img src={getGameImage(torneo.game)} alt={torneo.game} loading="lazy" />
+                                            <div className="overlay-gradient"></div>
+                                            <div className="top-badges">
+                                                <span className="game-pill" style={{borderColor: GAME_CONFIG[torneo.game]?.color || '#fff', color: '#fff'}}>
+                                                    <i className={`bx ${GAME_CONFIG[torneo.game]?.icon || 'bx-joystick'}`}></i> {torneo.game}
+                                                </span>
+                                                {estaLleno ? (
+                                                    <span className="status-badge full" style={{background: '#ff4655', padding:'4px 8px', borderRadius:'4px', fontSize:'0.7rem', fontWeight:'800', color: 'white'}}>LLENO</span>
+                                                ) : (
+                                                    <span className="status-dot" style={{width:'10px', height:'10px', borderRadius:'50%', background:'#00ff88', boxShadow:'0 0 10px #00ff88'}}></span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="card-content">
+                                            <h3 title={torneo.title}>{torneo.title}</h3>
+                                            <div className="info-row">
+                                                <div className="info-pill"><i className='bx bx-calendar'></i> {torneo.date}</div>
+                                                <div className="info-pill prize-pill"><i className='bx bx-trophy'></i> {torneo.prize}</div>
+                                            </div>
+
+                                            <div className="tournament-status-row">
+                                                <div className="teams-counter"><i className='bx bx-group'></i><span>{torneo.slots} Equipos</span></div>
+                                                <div className={`status-label ${estaLleno ? 'full' : 'available'}`}>
+                                                    {estaLleno ? <><i className='bx bx-lock-alt'></i> Cerrado</> : <><i className='bx bx-check-circle'></i> Disponible</>}
+                                                </div>
+                                            </div>
+
+                                            <div className="card-actions">
+                                                <button className="btn-details" onClick={() => setSelectedTournament(torneo)}>
+                                                    <i className='bx bx-info-circle'></i> Ver Info
+                                                </button>
+                                                <button 
+                                                    className={`btn-join ${estaLleno ? 'disabled' : ''}`}
+                                                    onClick={() => !estaLleno && goToRegistration(torneo)}
+                                                    style={{
+                                                        background: estaLleno ? '#333' : (GAME_CONFIG[torneo.game]?.color || '#8EDB15'),
+                                                        cursor: estaLleno ? 'not-allowed' : 'pointer',
+                                                        color: estaLleno ? '#666' : '#000'
+                                                    }}
+                                                >
+                                                    {estaLleno ? 'Cerrado' : 'Inscribirse'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="no-results"><i className='bx bx-ghost'></i><h3>Nada por aquí...</h3><p>No hay torneos disponibles.</p></div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* RIGHT SIDEBAR */}
+            <div className={`sidebar-area right-sidebar ${isRightPanelOpen ? 'open' : ''}`} ref={rightPanelRef}>
+                <aside className="right-info-sidebar">
+                    <button className="close-right-sidebar mobile-only" onClick={() => setIsRightPanelOpen(false)}><i className='bx bx-x'></i></button>
+                    <div className="sidebar-widget">
+                        <h3><i className='bx bx-bolt-circle'></i> Acciones Rápidas</h3>
+                        <div className="quick-actions-grid">
+                            <button className="qa-btn" onClick={() => navigate('/create-team')}><i className='bx bx-group'></i> Crear Equipo</button>
+                            <button className="qa-btn" onClick={() => navigate('/premium')}><i className='bx bx-star'></i> Premium</button>
+                        </div>
+                    </div>
+                    <div className="sidebar-widget">
+                        <h3><i className='bx bx-time-five'></i> En vivo hoy</h3>
+                        <div className="mini-event-list">
+                            <div className="mini-event"><span className="time">18:00</span><div className="details"><strong>Final Regional</strong><small>Valorant</small></div></div>
+                            <div className="mini-event"><span className="time">20:30</span><div className="details"><strong>Scrim vs Team Liquid</strong><small>CS:GO 2</small></div></div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+            
+            {isRightPanelOpen && <div className="sidebar-overlay-mobile"></div>}
 
         </div>
     </div>
