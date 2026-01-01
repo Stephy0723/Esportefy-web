@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
 import './Tournaments.scss'; 
 import { GAME_IMAGES } from '../../../data/gameImages';
 
@@ -47,10 +48,11 @@ const Tournaments = () => {
   const navigate = useNavigate();
   const { notify } = useNotification(); 
   
-  const [userRole, setUserRole] = useState('gamer'); 
+  const { user, loading } = useAuth(); 
   const [activeFilter, setActiveFilter] = useState('All');
   const [showAllFilters, setShowAllFilters] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false); 
+
 
   // Helper para obtener imagen segura
   const getGameImage = (gameName) => {
@@ -80,12 +82,21 @@ const Tournaments = () => {
   const goToRegistration = (torneo) => navigate('/team-registration', { state: { tournament: torneo } });
 
   const handleCreateClick = () => {
-    if (userRole === 'organizer') {
-        navigate('/create-tournament');
-    } else {
-        notify('danger', 'Acceso Restringido', 'Solo los Organizadores Verificados pueden crear torneos. Solicita tu verificación.');
-    }
-  };
+        if (loading) return; // Evita clics mientras carga el contexto
+
+        if (!user) {
+            notify('warning', 'Acceso Denegado', 'Debes iniciar sesión para crear un torneo.');
+            return;
+        }
+
+        // VALIDACIÓN CLAVE: Usamos el campo de tu base de datos
+        if (user.isOrganizer === true) {
+            navigate('/create-tournament');
+        } else {
+            notify('danger', 'Acceso Restringido', 'Solo los Organizadores Verificados pueden crear torneos. Solicita tu verificación.');
+            
+        }
+    };
 
   const handleApplyOrganizer = () => {
     navigate('/organizer-application');

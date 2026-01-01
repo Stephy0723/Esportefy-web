@@ -4,15 +4,17 @@ import './index.css'
 import App from './App.jsx'
 import './index.scss'
 
-// 1. IMPORTAMOS EL PROVEEDOR DEL TEMA
-// (Asegúrate de que la ruta sea correcta según donde creaste el archivo)
 import { ThemeProvider } from './context/ThemeContext'
+// 1. IMPORTA EL PROVEEDOR DE AUTENTICACIÓN
+import { AuthProvider } from './context/AuthContext' 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {/* 2. ENVOLVEMOS LA APP CON EL PROVEEDOR */}
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    {/* 2. ENVUELVE CON AMBOS PROVEEDORES */}
+    <AuthProvider> 
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </AuthProvider>
   </StrictMode>,
 )
