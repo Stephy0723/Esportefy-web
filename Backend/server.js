@@ -16,4 +16,5 @@ app.listen (PORT, ()=>{
     console.log(`http://localhost:${PORT}/api/teams/join`);
     console.log(`http://localhost:${PORT}/api/tournaments/`);
     console.log(`http://localhost:${PORT}/api/tournaments/create`);
+    console.log(`http://localhost:${PORT}/api/tournaments/register`);
 });
