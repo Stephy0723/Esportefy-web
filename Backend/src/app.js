@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.routes.js';
 import teamRoutes from './routes/team.routes.js';
+import tournamentRoutes from './routes/tournament.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 
 
@@ -18,7 +19,7 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
-
+app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/settings', settingsRoutes);
 
 
