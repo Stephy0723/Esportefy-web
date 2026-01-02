@@ -54,11 +54,12 @@ const Profile = () => {
                     <div className="user-identity">
                         <div className="name-row">
                             <h1>{user.username}</h1>
-                            <span className="player-badge">JUGADOR</span>
-                            {/* Lógica condicional: Solo se muestra si isOrganizer es true */}
-                            {user.isOrganizer && (
-                                <span className="organizer-badge">Organizador</span>
-                            )}
+                            <div className="badge-group">
+                                <span className="player-badge">Jugador</span>
+                                {user.isOrganizer && (
+                                    <span className="organizer-badge">Organizador</span>
+                                )}
+                            </div>
                         </div>
                         <p className="real-name-text">{user.fullName}</p>
                     </div>
@@ -75,13 +76,18 @@ const Profile = () => {
                 <div className="profile-card bio-card">
                     <div className="card-title"><FaGlobeAmericas /> <h3>Biografía</h3></div>
                     <div className="card-body">
-                        <div className="bio-item">
-                            <label>País:</label> <span>{user.country || "No especificado"}</span>
+                        {/* Aquí aplicamos tu nueva clase de grid */}
+                        <div className="input-row-group">
+                            <div className="bio-item">
+                                <label>País</label> 
+                                <span>{user.country || "No especificado"}</span>
+                            </div>
+                            <div className="bio-item">
+                                <label>Experiencia</label> 
+                                <span>{Array.isArray(user.experience) ? user.experience.join(", ") : user.experience || "Principiante"}</span>
+                            </div>
                         </div>
-                        <div className="bio-item">
-                            <label>Experiencia:</label> 
-                            <span>{Array.isArray(user.experience) ? user.experience.join(", ") : user.experience || "Principiante"}</span>
-                        </div>
+                        
                         <div className="bio-quote">
                             <FaQuoteLeft className="quote-icon"/>
                             <p>{user.goals || "Sin metas definidas."}</p>
@@ -126,27 +132,39 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* 2. JUEGOS */}
-                <div className="profile-card games-card">
-                    <div className="card-title"><FaGamepad /> <h3>Mis Juegos</h3></div>
-                    <div className="card-body">
-                        <div className="tags-cloud">
-                            {user.selectedGames?.length > 0 ? (
-                                user.selectedGames.map((g, i) => <span key={i} className="game-tag">{g}</span>)
-                            ) : (
-                                <span className="empty-text">Sin juegos registrados</span>
+                {/* 2. JUEGOS Y PLATAFORMAS */}
+                    <div className="profile-card games-card">
+                        <div className="card-title"><FaGamepad /> <h3>Mis Juegos</h3></div>
+                        <div className="card-body">
+                            <div className="tags-cloud">
+                                {/* Validación para Juegos */}
+                                {Array.isArray(user.selectedGames) ? (
+                                    user.selectedGames.map((g, i) => <span key={i} className="game-tag">{g}</span>)
+                                ) : user.selectedGames ? (
+                                    user.selectedGames.split(',').map((g, i) => <span key={i} className="game-tag">{g.trim()}</span>)
+                                ) : (
+                                    <span className="empty-text">Sin juegos registrados</span>
+                                )}
+                            </div>
+
+                            {/* Sección de Plataformas Corregida */}
+                            {(user.platforms && user.platforms.length > 0) && (
+                                <div className="platforms-section">
+                                    <h4>Plataformas</h4>
+                                    <div className="platform-icons">
+                                        {Array.isArray(user.platforms) ? (
+                                            user.platforms.map((p, i) => <span key={i} className="platform-tag">{p}</span>)
+                                        ) : (
+                                            // Si llega como string "pc, console", lo limpiamos y dividimos
+                                            user.platforms.split(',').map((p, i) => (
+                                                <span key={i} className="platform-tag">{p.trim()}</span>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             )}
                         </div>
-                        {user.platforms?.length > 0 && (
-                            <div className="platforms-section">
-                                <h4>Plataformas</h4>
-                                <div className="platform-icons">
-                                    {user.platforms.map((p, i) => <span key={i} className="platform-tag">{p}</span>)}
-                                </div>
-                            </div>
-                        )}
                     </div>
-                </div>
 
                 {/* 3. EQUIPOS */}
                 <div className="profile-card teams-card">

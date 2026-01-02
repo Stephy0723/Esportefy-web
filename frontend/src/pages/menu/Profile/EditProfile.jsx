@@ -4,12 +4,53 @@ import axios from 'axios';
 import { FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft, FaCamera } from 'react-icons/fa';
 import './EditProfile.css';
 
+// --- ACTIVOS E IMÁGENES (Sincronizados con el Registro) ---
+import imgLol from '../../../assets/gameImages/lol.png';
+import imgMlbb from '../../../assets/gameImages/mlbb.png';
+import imgHok from '../../../assets/gameImages/hok.png';
+import imgMoco from '../../../assets/gameImages/moco.png';
+import imgMarvel from '../../../assets/gameImages/marvel.png';
+import imgFreeFire from '../../../assets/gameImages/freefire.png';
+import imgFortnite from '../../../assets/gameImages/fortnite.png';
+import imgCodm from '../../../assets/gameImages/codm.png';
+import imgMk11 from '../../../assets/gameImages/mk11.png';
+
+const mobaGames = [
+    { id: 'lol', name: 'League of Legends', img: imgLol },
+    { id: 'mlbb', name: 'Mobile Legends', img: imgMlbb },
+    { id: 'hok', name: 'Honor of Kings', img: imgHok },
+    { id: 'marvel', name: 'Marvel Rivals', img: imgMarvel },
+    { id: 'moco', name: 'Mo.co', img: imgMoco },
+    { id: 'freefire', name: 'Free Fire', img: imgFreeFire },
+    { id: 'fortnite', name: 'Fortnite', img: imgFortnite },
+    { id: 'codm', name: 'CoD Mobile', img: imgCodm },
+    { id: 'mk11', name: 'Mortal Kombat', img: imgMk11 }
+];
+
+const platformsList = [
+    { id: 'pc', name: 'PC', icon: 'bx-laptop' },
+    { id: 'mobile', name: 'Mobile', icon: 'bx-mobile' },
+    { id: 'console', name: 'Consola', icon: 'bx-joystick' }
+];
+
+const goalsList = [
+    { id: 'Torneos', label: 'Torneos', icon: 'bx-joystick' },
+    { id: 'Equipo', label: 'Equipo / Duo', icon: 'bx-group' },
+    { id: 'Fun', label: 'Diversión', icon: 'bx-smile' }
+];
+
+const experienceLevels = [
+    { id: 'Rookie', label: 'ROOKIE', desc: 'Principiante', icon: 'bx-user' },
+    { id: 'Mid', label: 'MID', desc: 'Intermedio', icon: 'bx-medal' },
+    { id: 'Pro', label: 'PRO', desc: 'Avanzado', icon: 'bx-trophy' }
+];
+
 const EditProfile = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('general');
     const [user, setUser] = useState(null);
-    const [file, setFile] = useState(null); 
-    const [preview, setPreview] = useState(""); 
+    const [file, setFile] = useState(null);
+    const [preview, setPreview] = useState("");
 
     const [formData, setFormData] = useState({
         username: '',
@@ -17,10 +58,11 @@ const EditProfile = () => {
         email: '',
         country: '',
         avatar: '',
-        selectedGames: '',
-        platforms: '',
+        selectedGames: [], // Ahora manejado como Array
+        platforms: [],     // Ahora manejado como Array
+        goals: [],         // Ahora manejado como Array
         experience: '',
-        goals: '', 
+        goalsDescription: '', // Para el textarea de biografía
         isProfileHidden: false
     });
 
@@ -29,12 +71,14 @@ const EditProfile = () => {
         if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
+            
+            // Sincronización de datos para asegurar que los campos multisección sean Arrays
             setFormData({
                 ...parsedUser,
-                selectedGames: Array.isArray(parsedUser.selectedGames) ? parsedUser.selectedGames.join(', ') : parsedUser.selectedGames,
-                platforms: Array.isArray(parsedUser.platforms) ? parsedUser.platforms.join(', ') : parsedUser.platforms,
-                experience: Array.isArray(parsedUser.experience) ? parsedUser.experience.join(', ') : parsedUser.experience,
-                goals: Array.isArray(parsedUser.goals) ? parsedUser.goals.join(', ') : parsedUser.goals,
+                selectedGames: Array.isArray(parsedUser.selectedGames) ? parsedUser.selectedGames : [],
+                platforms: Array.isArray(parsedUser.platforms) ? parsedUser.platforms : [],
+                goals: Array.isArray(parsedUser.goals) ? parsedUser.goals : [],
+                goalsDescription: parsedUser.goalsDescription || parsedUser.goals || "",
                 isProfileHidden: parsedUser.isProfileHidden || false
             });
         }
@@ -43,6 +87,16 @@ const EditProfile = () => {
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    };
+
+    const toggleSelection = (field, id) => {
+        setFormData(prev => {
+            const list = prev[field] || [];
+            const newList = list.includes(id)
+                ? list.filter(x => x !== id)
+                : [...list, id];
+            return { ...prev, [field]: newList };
+        });
     };
 
     const handleFileChange = (e) => {
@@ -57,11 +111,15 @@ const EditProfile = () => {
         e.preventDefault();
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         
-        // Usamos FormData para enviar el archivo binario
         const data = new FormData();
         Object.keys(formData).forEach(key => {
             if (key === 'teams') return;
-            data.append(key, formData[key]);
+            // Si el campo es un array (juegos, plataformas, metas), lo enviamos como JSON string o adjuntamos elementos
+            if (Array.isArray(formData[key])) {
+                formData[key].forEach(val => data.append(`${key}[]`, val));
+            } else {
+                data.append(key, formData[key]);
+            }
         });
         
         if (file) {
@@ -88,7 +146,7 @@ const EditProfile = () => {
         }
     };
 
-    if (!user) return <div className="loading">Cargando...</div>;
+    if (!user) return <div className="loading">Cargando la arena...</div>;
 
     return (
         <div className="edit-profile-page fade-in">
@@ -108,6 +166,8 @@ const EditProfile = () => {
 
                 <main className="settings-content">
                     <form onSubmit={handleSave}>
+                        
+                        {/* PESTAÑA 1: GENERAL */}
                         {activeTab === 'general' && (
                             <div className="tab-content fade-in">
                                 <h3>Información Personal</h3>
@@ -127,25 +187,96 @@ const EditProfile = () => {
                             </div>
                         )}
 
+                        {/* PESTAÑA 2: PERFIL GAMER */}
                         {activeTab === 'gamer' && (
                             <div className="tab-content fade-in">
                                 <h3>Perfil de Jugador</h3>
-                                <div className="form-group"><label>Biografía / Metas</label><textarea rows="4" name="goals" value={formData.goals} onChange={handleChange} placeholder="Escribe tus objetivos..."></textarea></div>
-                                <div className="form-group"><label>Juegos (Comas)</label><input type="text" name="selectedGames" value={formData.selectedGames} onChange={handleChange} /></div>
-                                <div className="form-group"><label>Plataformas (Comas)</label><input type="text" name="platforms" value={formData.platforms} onChange={handleChange} /></div>
-                                <div className="form-group"><label>Experiencia</label><input type="text" name="experience" value={formData.experience} onChange={handleChange} /></div>
+                                
+                                {/* NIVEL DE EXPERIENCIA */}
+                                <label className="section-label">Nivel de Experiencia</label>
+                                <div className="levels-row mb-4">
+                                    {experienceLevels.map((lvl) => (
+                                        <div 
+                                            key={lvl.id} 
+                                            className={`level-card ${formData.experience === lvl.id ? 'selected' : ''}`} 
+                                            onClick={() => setFormData({...formData, experience: lvl.id})}
+                                        >
+                                            <i className={`bx ${lvl.icon} level-icon`}></i>
+                                            <div className="level-info">
+                                                <span className="lvl-label">{lvl.label}</span>
+                                                <span className="lvl-desc">{lvl.desc}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* SELECCIÓN DE JUEGOS */}
+                                <label className="section-label">Tus Juegos</label>
+                                <div className="games-grid mb-4">
+                                    {mobaGames.map(game => (
+                                        <div 
+                                            key={game.id} 
+                                            className={`game-card-pro ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`} 
+                                            onClick={() => toggleSelection('selectedGames', game.id)}
+                                        >
+                                            <div className="game-img-wrapper">
+                                                <img src={game.img} alt={game.name} />
+                                            </div>
+                                            <span>{game.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* SELECCIÓN DE PLATAFORMAS */}
+                                <label className="section-label">Plataformas</label>
+                                <div className="platforms-row mb-4">
+                                    {platformsList.map(p => (
+                                        <div 
+                                            key={p.id} 
+                                            className={`platform-chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`} 
+                                            onClick={() => toggleSelection('platforms', p.id)}
+                                        >
+                                            <i className={`bx ${p.icon}`}></i> {p.name}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* SELECCIÓN DE OBJETIVOS */}
+                                <label className="section-label">¿Qué buscas?</label>
+                                <div className="goals-row mb-4">
+                                    {goalsList.map((goal) => (
+                                        <div 
+                                            key={goal.id} 
+                                            className={`goal-card ${formData.goals.includes(goal.id) ? 'selected' : ''}`} 
+                                            onClick={() => toggleSelection('goals', goal.id)}
+                                        >
+                                            <i className={`bx ${goal.icon}`}></i>
+                                            <span>{goal.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Biografía / Metas (Texto)</label>
+                                    <textarea 
+                                        rows="4" 
+                                        name="goalsDescription" 
+                                        value={formData.goalsDescription} 
+                                        onChange={handleChange} 
+                                        placeholder="Escribe tus objetivos detallados..."
+                                    ></textarea>
+                                </div>
                             </div>
                         )}
 
-                         {/* PESTAÑA: PRIVACIDAD */}
+                        {/* PESTAÑA 3: PRIVACIDAD */}
                         {activeTab === 'privacy' && (
                             <div className="tab-content fade-in">
                                 <h3>Privacidad y Seguridad</h3>
-                                
                                 <div className="privacy-option">
                                     <div className="privacy-text">
                                         <h4>Ocultar Perfil</h4>
-                                        <p>Si activas esto, nadie podrá ver tu perfil en las búsquedas.</p>
+                                        <p>Si activas esto, nadie podrá ver tu perfil en las búsquedas globales.</p>
                                     </div>
                                     <label className="switch">
                                         <input 
@@ -159,14 +290,14 @@ const EditProfile = () => {
                                 </div>
 
                                 <div className="privacy-alert">
-                                    <h4>Zona de Peligro</h4>
-                                    <p>Cambiar contraseña o eliminar cuenta requiere confirmación por email.</p>
-                                    <button type="button" className="btn-danger" disabled>Cambiar Contraseña (Pronto)</button>
+                                    <h4>Zona de Seguridad</h4>
+                                    <p>Para cambiar tu correo electrónico o contraseña, visita la sección de seguridad en la web oficial.</p>
+                                    <button type="button" className="btn-danger" style={{opacity: 0.5, cursor: 'not-allowed'}}>Eliminar Cuenta</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* BOTÓN DE GUARDAR FLOTANTE */}
+                        {/* BOTÓN DE GUARDAR */}
                         <div className="form-actions">
                             <button type="submit" className="btn-save-primary">
                                 <FaSave /> Guardar Cambios
