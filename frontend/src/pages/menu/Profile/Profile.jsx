@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Importante tener axios instalado
-import { FaUserEdit, FaGamepad, FaUsers, FaTrophy, FaGlobeAmericas, FaQuoteLeft } from 'react-icons/fa';
+import axios from 'axios';
+import { 
+    FaUserEdit, FaGamepad, FaUsers, FaTrophy, 
+    FaGlobeAmericas, FaQuoteLeft, FaDiscord, 
+    FaSteam, FaFacebook, FaShareAlt, FaBullseye 
+} from 'react-icons/fa'; // Añadidos nuevos iconos
 import './Profile.css';
 
 const Profile = () => {
@@ -13,47 +17,29 @@ const Profile = () => {
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                // 1. Obtener el token de localStorage o sessionStorage
                 const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
                 if (!token) {
-                    console.warn("No se encontró token, redirigiendo...");
                     navigate('/login');
                     return;
                 }
-
-                // 2. Hacer la petición a la API
                 const response = await axios.get('http://localhost:4000/api/auth/profile', {
-                    headers: {
-                        Authorization: `Bearer ${token}` // Enviamos el token para que el backend nos reconozca
-                    }
+                    headers: { Authorization: `Bearer ${token}` }
                 });
-
-                // 3. Guardar los datos en el estado
                 setUser(response.data);
                 setLoading(false);
-
             } catch (err) {
-                console.error("Error al obtener perfil:", err);
                 setError("No se pudo cargar la información del perfil.");
                 setLoading(false);
-                
-                // Si el error es 401 (No autorizado), mandamos al login
-                if (err.response?.status === 401) {
-                    navigate('/login');
-                }
+                if (err.response?.status === 401) navigate('/login');
             }
         };
-
         fetchUserProfile();
     }, [navigate]);
 
-    // Pantallas de estado
     if (loading) return <div className="loading-container"><div className="loader"></div><p>Sincronizando con la arena...</p></div>;
     if (error) return <div className="error-text">{error}</div>;
     if (!user) return null;
 
-    // Avatar generado si no hay foto en la base de datos
     const avatarUrl = user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=8EDB15&color=000&size=200&bold=true`;
 
     return (
@@ -72,7 +58,6 @@ const Profile = () => {
                         </div>
                         <p className="real-name-text">{user.fullName}</p>
                     </div>
-                    
                     <button className="btn-edit-action" onClick={() => navigate('/edit-profile')}>
                         <FaUserEdit /> Editar Datos
                     </button>
@@ -91,19 +76,48 @@ const Profile = () => {
                         </div>
                         <div className="bio-item">
                             <label>Experiencia:</label> 
-                            <span>
-                                {Array.isArray(user.experience) 
-                                    ? user.experience.join(", ") 
-                                    : user.experience || "Principiante"}
-                            </span>
+                            <span>{Array.isArray(user.experience) ? user.experience.join(", ") : user.experience || "Principiante"}</span>
                         </div>
                         <div className="bio-quote">
                             <FaQuoteLeft className="quote-icon"/>
-                            <p>
-                                {Array.isArray(user.goals) 
-                                    ? user.goals.join(". ") 
-                                    : user.goals || "Sin metas definidas."}
-                            </p>
+                            <p>{user.goals || "Sin metas definidas."}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* NUEVA SECCIÓN: CONEXIONES (SOCIALES) */}
+                <div className="profile-card social-card">
+                    <div className="card-title"><FaShareAlt /> <h3>Conexiones</h3></div>
+                    <div className="card-body">
+                        <div className="social-links-grid">
+                            <div className="social-item">
+                                <div className="social-icon discord"><FaDiscord /></div>
+                                <div className="social-info">
+                                    <label>Discord</label>
+                                    <span>{user.discord || "No conectado"}</span>
+                                </div>
+                            </div>
+                            <div className="social-item">
+                                <div className="social-icon riot"><FaBullseye /></div>
+                                <div className="social-info">
+                                    <label>Riot ID</label>
+                                    <span>{user.riotId || "No vinculado"}</span>
+                                </div>
+                            </div>
+                            <div className="social-item">
+                                <div className="social-icon steam"><FaSteam /></div>
+                                <div className="social-info">
+                                    <label>Steam</label>
+                                    <span>{user.steam || "No vinculado"}</span>
+                                </div>
+                            </div>
+                            <div className="social-item">
+                                <div className="social-icon facebook"><FaFacebook /></div>
+                                <div className="social-info">
+                                    <label>Facebook</label>
+                                    <span>{user.facebook || "No vinculado"}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -113,14 +127,13 @@ const Profile = () => {
                     <div className="card-title"><FaGamepad /> <h3>Mis Juegos</h3></div>
                     <div className="card-body">
                         <div className="tags-cloud">
-                            {user.selectedGames && user.selectedGames.length > 0 ? (
+                            {user.selectedGames?.length > 0 ? (
                                 user.selectedGames.map((g, i) => <span key={i} className="game-tag">{g}</span>)
                             ) : (
                                 <span className="empty-text">Sin juegos registrados</span>
                             )}
                         </div>
-                        
-                        {user.platforms && user.platforms.length > 0 && (
+                        {user.platforms?.length > 0 && (
                             <div className="platforms-section">
                                 <h4>Plataformas</h4>
                                 <div className="platform-icons">
@@ -131,19 +144,15 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* 3. EQUIPOS Y COMUNIDADES (Se mantienen estáticos por ahora) */}
+                {/* 3. EQUIPOS */}
                 <div className="profile-card teams-card">
                     <div className="card-title"><FaTrophy /> <h3>Equipos</h3></div>
                     <div className="card-body">
-                        {user.teams && user.teams.length > 0 ? (
+                        {user.teams?.length > 0 ? (
                             <div className="teams-list">
                                 {user.teams.map((team) => (
                                     <div key={team._id} className="team-item-mini">
-                                        <img 
-                                            src={team.logo || 'default-team-logo.png'} 
-                                            alt={team.name} 
-                                            className="team-logo-small" 
-                                        />
+                                        <img src={team.logo || 'default-team-logo.png'} alt={team.name} className="team-logo-small" />
                                         <div className="team-info-mini">
                                             <span className="team-name">{team.name}</span>
                                             <span className="team-game-tag">{team.game}</span>
@@ -152,17 +161,8 @@ const Profile = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="empty-state">
-                                <p>No perteneces a ningún equipo aún.</p>
-                            </div>
+                            <div className="empty-state"><p>No perteneces a ningún equipo aún.</p></div>
                         )}
-                    </div>
-                </div>
-
-                <div className="profile-card communities-card">
-                    <div className="card-title"><FaUsers /> <h3>Comunidades</h3></div>
-                    <div className="card-body empty-state">
-                        <p>Explora comunidades para unirte.</p>
                     </div>
                 </div>
             </div>
