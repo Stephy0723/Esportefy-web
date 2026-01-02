@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
 import './Tournaments.scss'; 
 import { GAME_IMAGES } from '../../../data/gameImages';
+import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
+
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
@@ -413,28 +415,45 @@ const Tournaments = () => {
             {/* RIGHT SIDEBAR */}
             <div className={`sidebar-area right-sidebar ${isRightPanelOpen ? 'open' : ''}`} ref={rightPanelRef}>
                 <aside className="right-info-sidebar">
-                    <button className="close-right-sidebar mobile-only" onClick={() => setIsRightPanelOpen(false)}><i className='bx bx-x'></i></button>
+                    
+                    {/* Botón cerrar para móvil */}
+                    <button className="close-right-sidebar mobile-only" onClick={() => setIsRightPanelOpen(false)}>
+                        <i className='bx bx-x'></i>
+                    </button>
+                    
+                    {/* WIDGET 1: ACCIONES RÁPIDAS (Lo mantenemos) */}
                     <div className="sidebar-widget">
                         <h3><i className='bx bx-bolt-circle'></i> Acciones Rápidas</h3>
                         <div className="quick-actions-grid">
-                            <button className="qa-btn" onClick={() => navigate('/create-team')}><i className='bx bx-group'></i> Crear Equipo</button>
-                            <button className="qa-btn" onClick={() => navigate('/premium')}><i className='bx bx-star'></i> Premium</button>
+                            <button className="qa-btn" onClick={() => navigate('/create-team')}>
+                                <i className='bx bx-group'></i> Crear Equipo
+                            </button>
+                            <button className="qa-btn" onClick={() => navigate('/premium')}>
+                                <i className='bx bx-star'></i> Premium
+                            </button>
                         </div>
                     </div>
+
+                    {/* WIDGET 2: CALENDARIO DE PARTIDOS (AQUÍ ESTÁ) */}
                     <div className="sidebar-widget">
-                        <h3><i className='bx bx-time-five'></i> En vivo hoy</h3>
-                        <div className="mini-event-list">
-                            <div className="mini-event"><span className="time">18:00</span><div className="details"><strong>Final Regional</strong><small>Valorant</small></div></div>
-                            <div className="mini-event"><span className="time">20:30</span><div className="details"><strong>Scrim vs Team Liquid</strong><small>CS:GO 2</small></div></div>
-                        </div>
+                        {/* Puedes pasarle datos reales en el futuro con: <MatchCalendar matches={misDatos} /> */}
+                        <MatchCalendar />
                     </div>
+
+                    {/* WIDGET 3: (Opcional) BANNER PUBLICIDAD O INFO EXTRA */}
+                    <div className="sidebar-widget promo-box" style={{marginTop: '20px', padding: '15px', background: 'linear-gradient(45deg, #18181b, #202025)', borderRadius: '12px', border: '1px solid #333'}}>
+                        <h4 style={{color: '#fff', fontSize: '0.9rem', marginBottom: '5px'}}>¿Buscas Scrims?</h4>
+                        <p style={{color: '#aaa', fontSize: '0.8rem', marginBottom: '10px'}}>Encuentra rivales de tu nivel ahora mismo.</p>
+                        <button style={{width: '100%', padding: '8px', background: '#8EDB15', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer'}}>Buscar Scrim</button>
+                    </div>
+
                 </aside>
+            </div>
             </div>
             
             {isRightPanelOpen && <div className="sidebar-overlay-mobile"></div>}
 
         </div>
-    </div>
   );
 };
 

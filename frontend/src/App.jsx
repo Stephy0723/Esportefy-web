@@ -32,7 +32,8 @@ import Settings from './pages/menu/Settings/Settings';
 import SupportPage from './pages/menu/Settings/Support/SupportMain';
 //Universidad
 import UniversityPage from './pages/University/UniversityPage';
-
+//Calendario
+import CalendarPage from './components/Calendar/CalendarPage/CalendarPage';
 // Formularios
 import TeamRegistration from './pages/menu/Tournaments/TeamRegistration/TeamRegistration';
 import CreateTournament from './pages/menu/Tournaments/CreateTournament/CreateTournament';
@@ -134,7 +135,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
-
+          <Route path="/CalendarPage" element={<CalendarPage />} /> 
           
           {/* LEGALES */}
           <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />
@@ -163,6 +164,7 @@ function App() {
             <Route path="/create-tournament" element={<CreateTournament />} />
             {/* Rutas de Comunidad */}
             <Route path="/games/:id" element={<GamesPage />} />
+            <Route path="/university" element={<UniversityPage />} />
 
             {/* Rutas con nombre propio */}
             <Route path="/game/valorant" element={<ValorantPage />} />
@@ -191,7 +193,6 @@ function App() {
             <Route path="/game/starcraft" element={<StarcraftPage />} />
             <Route path="/game/lor" element={<RuneterraPage />} />  
             <Route path="/game/nba2k" element={<Nba2k14Page />} />
-            <Route path="/university" element={<UniversityPage />} />
 
             {/* Rutas dinámicas */  }
             <Route path="/group/:id" element={<GroupPage />} />

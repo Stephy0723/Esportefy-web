@@ -12,15 +12,37 @@
     --primary-hover: #7ac40f;    /* Hover */
     --primary-dim: rgba(142, 219, 21, 0.15); /* Brillo sutil */
 
-    /* --- FONDOS --- */
-    --bg-page: #000000;          /* Negro OLED */
-    --bg-card: #121212;          /* Gris Tarjeta */
-    --bg-input: #1E1E1E;         /* Gris Input */
-    --border-color: #333333;     /* Bordes sutiles */
+:root {
+  /* --- FONDOS (LIGHT) --- */
+  --bg-page: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f2f2f2;
+  --border-color: #dddddd;
 
-    /* --- TEXTOS --- */
-    --text-main: #FFFFFF;
-    --text-muted: #888888;
+  /* --- TEXTOS --- */
+  --text-main: #000000;
+  --text-muted: #555555;
+
+  /* --- PRIMARIO --- */
+  --primary: #8EDB15;
+  --primary-hover: #7ac40f;
+  --primary-dim: rgba(142, 219, 21, 0.15);
+
+  --font-stack: 'Poppins', sans-serif;
+  
+}
+.dark {
+  --bg-page: #000000;
+  --bg-card: #000000;
+  --bg-input: #111111;
+  --border-color: #222222;
+
+  --text-main: #ffffff;
+  --text-muted: #bbbbbb;
+}
+    --primary-hover: #7ac40f;    /* Hover */
+
+
 
     /* --- TIPOGRAFÍA --- */
     --font-stack: 'Poppins', sans-serif;
