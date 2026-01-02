@@ -55,6 +55,10 @@ const Profile = () => {
                         <div className="name-row">
                             <h1>{user.username}</h1>
                             <span className="player-badge">JUGADOR</span>
+                            {/* Lógica condicional: Solo se muestra si isOrganizer es true */}
+                            {user.isOrganizer && (
+                                <span className="organizer-badge">Organizador</span>
+                            )}
                         </div>
                         <p className="real-name-text">{user.fullName}</p>
                     </div>
