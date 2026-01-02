@@ -70,6 +70,7 @@ import Tekken8Page from './pages/Game/Tekken8Page.jsx';
 import StarcraftPage from './pages/Game/StarcraftPage.jsx';
 import RuneterraPage from './pages/Game/RuneteraPage.jsx';
 import Nba2k14Page from './pages/Game/Nba2k14Page.jsx';
+import Rankings from './pages/menu/Rankings/Rankings.jsx';
 
 // --- COMPONENTE AUXILIAR: DETECTOR DE BIENVENIDA ---
 const WelcomeTrigger = () => {
@@ -153,6 +154,8 @@ function App() {
             <Route path="/equipos" element={<Teams />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/rankings" element={<Rankings />} />
+            
             {/* Rutas de Gestión de Torneos */}
             <Route path="/team-registration" element={<TeamRegistration />} />
             <Route path="/organizer-application" element={<OrganizerApplication />} />
