@@ -71,3 +71,4 @@ node_modules
 
 //no guardar carpetas de uploads
 uploads/avatars/*
+uploads/tournaments/*

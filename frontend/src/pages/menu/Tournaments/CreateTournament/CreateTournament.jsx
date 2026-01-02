@@ -3,12 +3,43 @@ import Navbar from '../../../../components/Navbar/Navbar';
 import Sidebar from '../../../../components/Sidebar/Sidebar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
+import axios from 'axios'; // Importamos Axios
 import { 
     FaPlus, FaGamepad, FaUsers, FaMicrophone, FaAward, 
     FaCalendarAlt, FaSitemap, FaTicketAlt, FaFileUpload, FaFilePdf,
-    FaServer, FaTrash, FaCheckCircle, FaStar, FaGift, FaTag, FaLink, FaImage
+    FaServer, FaTrash, FaCheckCircle, FaStar, FaGift, FaTag, FaLink, FaImage, FaCheck
 } from 'react-icons/fa';
 import './CreateTournament.css';
+
+const GAME_CONFIG = {
+  "All": { color: "#ffffff", icon: "bx-grid-alt" },
+  "Valorant": { color: "#ff4655", icon: "bx-crosshair" },
+  "CS:GO 2": { color: "#de9b35", icon: "bx-target-lock" },
+  "Call of Duty": { color: "#54b946", icon: "bx-run" },
+  "Warzone": { color: "#54b946", icon: "bx-radar" },
+  "Fortnite": { color: "#a349a4", icon: "bx-building" },
+  "Free Fire": { color: "#f39c12", icon: "bx-flame" },
+  "PUBG": { color: "#f1c40f", icon: "bx-target-lock" },
+  "Apex Legends": { color: "#e74c3c", icon: "bx-shield-quarter" },
+  "Overwatch 2": { color: "#f39c12", icon: "bx-shield" },
+  "Rainbow Six Siege": { color: "#3498db", icon: "bx-window" },
+  "League of Legends": { color: "#c1a05e", icon: "bx-world" },
+  "Dota 2": { color: "#e74c3c", icon: "bx-map-alt" },
+  "Mobile Legends": { color: "#ffbf00", icon: "bx-mobile-landscape" },
+  "Honor of Kings": { color: "#e6b333", icon: "bx-crown" },
+  "Smite": { color: "#f1c40f", icon: "bx-bolt-circle" },
+  "Wild Rift": { color: "#00a8ff", icon: "bx-mobile" },
+  "FIFA 24": { color: "#2ecc71", icon: "bx-football" },
+  "NBA 2K24": { color: "#e67e22", icon: "bx-basketball" },
+  "Rocket League": { color: "#0088ff", icon: "bx-car" },
+  "Street Fighter 6": { color: "#f39c12", icon: "bx-walk" },
+  "Tekken 8": { color: "#c0392b", icon: "bx-angry" },
+  "Clash Royale": { color: "#3498db", icon: "bx-crown" },
+  "Teamfight Tactics": { color: "#f1c40f", icon: "bx-grid" },
+  "Hearthstone": { color: "#f39c12", icon: "bx-book" },
+  "Legends of Runeterra": { color: "#3498db", icon: "bx-book-open" },
+  "StarCraft II": { color: "#00a8ff", icon: "bx-planet" }
+};
 
 const CreateTournament = () => {
   // --- 1. HOOKS (Navegación y Autenticación) ---
@@ -21,6 +52,7 @@ const CreateTournament = () => {
     title: '',
     description: '',
     game: '',
+    gender: '',
     modality: '',
     date: '',
     time: '',
@@ -34,17 +66,68 @@ const CreateTournament = () => {
     bannerFile: null,
     rulesPdf: null,
     organizerName: user?.username || 'Organizador Oficial',
-    sponsors: [{ name: '', logoFile: null }],
+    sponsors: [{ name: '', link: '', tier: 'Partner', logoFile: null }],
     staff: { moderators: [''], casters: [''] },
-    incentives: [] // Aseguramos que inicie como array
+    incentives: [] 
   });
 
   // --- 3. HANDLERS DE FORMULARIO Y ARCHIVOS ---
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aquí iría tu lógica de guardado (fetch/axios)
-    setIsPublished(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Preparar FormData para Multer
+    const data = new FormData();
+    const token = localStorage.getItem('token');
+
+    // Campos básicos
+    data.append('title', tournament.title);
+    data.append('description', tournament.description);
+    data.append('game', tournament.game);
+    data.append('modality', tournament.modality);
+    data.append('date', tournament.date);
+    data.append('time', tournament.time);
+    data.append('prizePool', tournament.prizePool);
+    data.append('entryFee', tournament.entryFee);
+    data.append('maxSlots', tournament.maxSlots);
+    data.append('format', tournament.format);
+    data.append('server', tournament.server);
+    data.append('platform', tournament.platform);
+    data.append('gender', tournament.gender);
+
+    // Objetos complejos (se envían como JSON string para parsear en el backend)
+    data.append('prizesByRank', JSON.stringify(tournament.prizesByRank));
+    data.append('staff', JSON.stringify(tournament.staff));
+    data.append('sponsorsData', JSON.stringify(tournament.sponsors.map(s => ({ 
+        name: s.name, 
+        link: s.link, 
+        tier: s.tier 
+    }))));
+
+    // Archivos principales
+    if (tournament.bannerFile) data.append('bannerFile', tournament.bannerFile);
+    if (tournament.rulesPdf) data.append('rulesPdf', tournament.rulesPdf);
+
+    // Archivos de Sponsors (Logos individuales)
+    tournament.sponsors.forEach((s, index) => {
+        if (s.logoFile) {
+            data.append(`sponsorLogo_${index}`, s.logoFile);
+        }
+    });
+
+    try {
+        await axios.post('http://localhost:4000/api/tournaments', data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        setIsPublished(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+        console.error("Error al publicar:", err.response?.data || err.message);
+        alert("Hubo un error al publicar el torneo. Revisa la consola.");
+    }
   };
 
   const handleFileChange = (e, field, index = null) => {
@@ -59,20 +142,16 @@ const CreateTournament = () => {
   };
 
   // --- 4. FUNCIONES DE GESTIÓN (Añadir/Eliminar/Actualizar) ---
-
-  // Sponsors
   const addSponsor = () => setTournament({ 
     ...tournament, 
-    sponsors: [...tournament.sponsors, { name: '', logoFile: null }] 
+    sponsors: [...tournament.sponsors, { name: '', link: '', tier: 'Partner', logoFile: null }] 
   });
 
-  // Staff
   const addStaffField = (type) => setTournament({ 
     ...tournament, 
     staff: { ...tournament.staff, [type]: [...tournament.staff[type], ''] } 
   });
 
-  // Incentivos
   const addIncentive = () => {
     setTournament({
       ...tournament,
@@ -103,38 +182,55 @@ const CreateTournament = () => {
 
           <div className="profile-grid">
             
-            {/* 1. IDENTIDAD Y REGLAS (SUBIR ARCHIVOS) */}
+            {/* 1. IDENTIDAD Y REGLAS */}
             <div className="profile-card full-span-card">
   <div className="card-title"><FaAward /> <h3>Información General</h3></div>
   
-  {/* FILA 1: IDENTIFICACIÓN BÁSICA */}
   <div className="input-row-group">
     <div className="form-column">
       <div className="custom-input-box">
         <label>Título del Torneo</label>
-        <input type="text" placeholder="Nombre oficial del evento" required />
+        <input 
+            type="text" 
+            placeholder="Nombre oficial del evento" 
+            required 
+            value={tournament.title}
+            onChange={(e) => setTournament({...tournament, title: e.target.value})}
+        />
       </div>
     </div>
     <div className="form-column">
-      <div className="custom-input-box">
-        <label>Seleccionar Juego</label>
-        <select required>
-          <option value="">-- Elige un juego --</option>
-          <option value="valorant">Valorant</option>
-          <option value="lol">League of Legends</option>
-          <option value="freefire">Free Fire</option>
-        </select>
-        <p className="file-help-text"><FaGamepad /> Título competitivo</p>
-      </div>
-    </div>
+  <div className="custom-input-box">
+    <label>Seleccionar Juego</label>
+    <select 
+      required 
+      value={tournament.game}
+      onChange={(e) => setTournament({...tournament, game: e.target.value})}
+    >
+      <option value="">-- Elige un juego --</option>
+      {/* Generamos las opciones dinámicamente desde GAME_CONFIG */}
+      {Object.keys(GAME_CONFIG).map((game) => (
+        game !== "All" && (
+          <option key={game} value={game}>
+            {game}
+          </option>
+        )
+      ))}
+    </select>
+    <p className="file-help-text">
+      <FaGamepad /> 
+      {tournament.game ? `Compitiendo en ${tournament.game}` : "Título competitivo"}
+    </p>
+  </div>
+</div>
+
   </div>
 
-  {/* FILA 2: DATOS TÉCNICOS IMPORTANTES */}
   <div className="input-row-group" style={{marginTop: '20px'}}>
     <div className="form-column">
       <div className="custom-input-box">
         <label>Plataforma</label>
-        <select>
+        <select value={tournament.platform} onChange={(e) => setTournament({...tournament, platform: e.target.value})}>
           <option value="pc">PC</option>
           <option value="mobile">Mobile</option>
           <option value="console">Consola</option>
@@ -146,38 +242,48 @@ const CreateTournament = () => {
     <div className="form-column">
       <div className="custom-input-box">
         <label>Región / Servidor</label>
-        <input type="text" placeholder="Ej: Latam Norte / NA / EUW" />
+        <input 
+            type="text" 
+            placeholder="Ej: Latam Norte / NA / EUW" 
+            value={tournament.server}
+            onChange={(e) => setTournament({...tournament, server: e.target.value})}
+        />
         <p className="file-help-text"><FaServer /> Ubicación del servidor</p>
       </div>
     </div>
   </div>
 
-  {/* FILA 3: ARCHIVOS Y DESCRIPCIÓN */}
   <div className="input-row-group" style={{marginTop: '20px'}}>
-    {/* IZQUIERDA: DESCRIPCIÓN */}
     <div className="form-column">
       <div className="custom-input-box">
         <label>Descripción Breve</label>
-        <textarea placeholder="Resumen rápido del torneo..." rows="5"></textarea>
+        <textarea 
+            placeholder="Resumen rápido del torneo..." 
+            rows="5"
+            value={tournament.description}
+            onChange={(e) => setTournament({...tournament, description: e.target.value})}
+        ></textarea>
       </div>
     </div>
 
-    {/* DERECHA: ARCHIVOS APILADOS */}
     <div className="form-column">
       <div className="custom-input-box">
         <label>Subir Banner del Torneo</label>
         <div className="file-upload-wrapper">
-          <input type="file" id="banner" accept="image/*" />
-          <label htmlFor="banner" className="file-label">ELEGIR ARCHIVO</label>
+          <input type="file" id="banner" accept="image/*" onChange={(e) => handleFileChange(e, 'bannerFile')} />
+          <label htmlFor="banner" className={`file-label ${tournament.bannerFile ? 'active-file' : ''}`}>
+             {tournament.bannerFile ? tournament.bannerFile.name : 'ELEGIR ARCHIVO'}
+          </label>
         </div>
         <p className="file-help-text"><FaFileUpload /> Seleccionar Imagen</p>
       </div>
-
       <div className="custom-input-box" style={{marginTop: '15px'}}>
         <label>Reglamento Oficial (PDF)</label>
         <div className="file-upload-wrapper pdf-style">
-          <input type="file" id="rules" accept=".pdf" />
-          <label htmlFor="rules" className="file-label">ELEGIR ARCHIVO</label>
+          <input type="file" id="rules" accept=".pdf" onChange={(e) => handleFileChange(e, 'rulesPdf')} />
+          <label htmlFor="rules" className={`file-label ${tournament.rulesPdf ? 'active-file' : ''}`}>
+             {tournament.rulesPdf ? tournament.rulesPdf.name : 'ELEGIR ARCHIVO'}
+          </label>
         </div>
         <p className="file-help-text"><FaFilePdf /> Subir Normas en PDF</p>
       </div>
@@ -189,18 +295,40 @@ const CreateTournament = () => {
 <div className="profile-card full-span-card" style={{ marginTop: '20px' }}>
   <div className="card-title"><FaSitemap /> <h3>Formato y Cupos</h3></div>
 
-  {/* FILA 1: CAPACIDAD Y EQUIPO */}
   <div className="input-row-group">
     <div className="form-column">
       <div className="custom-input-box">
         <label>Cupos Máximos</label>
-        <input type="number" placeholder="Ej: 32" required />
+        <input 
+            type="number" 
+            placeholder="Ej: 32" 
+            required 
+            value={tournament.maxSlots}
+            onChange={(e) => setTournament({...tournament, maxSlots: e.target.value})}
+        />
         <p className="file-help-text"><FaUsers /> Capacidad total de equipos</p>
       </div>
+      {/* COLUMNA DE GÉNERO */}
+    <div className="form-column">
+        <div className="custom-input-box">
+            <label>Categoría de Género</label>
+            <select 
+                required 
+                value={tournament.gender}
+                onChange={(e) => setTournament({...tournament, gender: e.target.value})}
+            >
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+                <option value="Mixto">Mixto</option>
+            </select>
+            <p className="file-help-text"><FaUsers /> Restricción de participantes</p>
+        </div>
+    </div>
 
       <div className="custom-input-box" style={{ marginTop: '20px' }}>
         <label>Tamaño del Equipo</label>
-        <select>
+        <select value={tournament.modality} onChange={(e) => setTournament({...tournament, modality: e.target.value})}>
+          <option value="">Seleccionar</option>
           <option value="1v1">1v1 (Solo)</option>
           <option value="2v2">2v2 (Duos)</option>
           <option value="4v4">4v4 (Squad)</option>
@@ -213,29 +341,30 @@ const CreateTournament = () => {
     <div className="form-column">
       <div className="custom-input-box">
         <label>Tipo de Registro</label>
-        <select>
-          <option>Abierto (Todo público)</option>
-          <option>Por Invitación</option>
-          <option>Con Contraseña</option>
-          <option>Premium / Pago</option>
+        <select value={tournament.entryFee} onChange={(e) => setTournament({...tournament, entryFee: e.target.value})}>
+          <option value="Gratis">Abierto (Todo público)</option>
+          <option value="Invitación">Por Invitación</option>
+          <option value="Password">Con Contraseña</option>
+          <option value="Pago">Premium / Pago</option>
         </select>
         <p className="file-help-text"><FaTicketAlt /> Método de inscripción</p>
       </div>
 
       <div className="custom-input-box" style={{ marginTop: '20px' }}>
-        <label>Tiempo de Check-in (Minutos)</label>
-        <input type="number" placeholder="Ej: 30" />
-        <p className="file-help-text"><FaCalendarAlt /> Antes de iniciar el match</p>
+        <label>Fecha y Hora de Inicio</label>
+        <div style={{display: 'flex', gap: '10px'}}>
+             <input type="date" value={tournament.date} onChange={(e) => setTournament({...tournament, date: e.target.value})} />
+             <input type="time" value={tournament.time} onChange={(e) => setTournament({...tournament, time: e.target.value})} />
+        </div>
       </div>
     </div>
   </div>
 
-  {/* FILA 2: ESTRUCTURA Y COMPETENCIA */}
   <div className="input-row-group" style={{ marginTop: '20px' }}>
     <div className="form-column">
       <div className="custom-input-box">
         <label>Formato de Eliminación</label>
-        <select>
+        <select value={tournament.format} onChange={(e) => setTournament({...tournament, format: e.target.value})}>
           <option>Eliminación Directa</option>
           <option>Doble Eliminación</option>
           <option>Suizo (Swiss)</option>
@@ -244,45 +373,10 @@ const CreateTournament = () => {
         <p className="file-help-text"><FaSitemap /> Estructura de las llaves</p>
       </div>
     </div>
-
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Sistema de Partida (Match)</label>
-        <select>
-          <option>Best of 1 (Bo1)</option>
-          <option>Best of 3 (Bo3)</option>
-          <option>Best of 5 (Bo5)</option>
-          <option>Puntaje por kills</option>
-        </select>
-        <p className="file-help-text"><FaGamepad /> Rondas para ganar</p>
-      </div>
-    </div>
-  </div>
-
-  {/* FILA 3: RESTRICCIONES Y SEGURIDAD */}
-  <div className="input-row-group" style={{ marginTop: '20px' }}>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Restricción de Rango / Nivel</label>
-        <input type="text" placeholder="Ej: Oro a Diamante" />
-        <p className="file-help-text"><FaAward /> Filtro de habilidad</p>
-      </div>
-    </div>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Software Anti-Cheat</label>
-        <select>
-          <option>No Requerido</option>
-          <option>Vanguard (Valorant)</option>
-          <option>Easy Anti-Cheat</option>
-          <option>Grabación de Pantalla Obligatoria</option>
-        </select>
-        <p className="file-help-text"><FaAward /> Medidas de seguridad</p>
-      </div>
-    </div>
   </div>
 </div>
-            {/* 3. MARCAS (SUBIR LOGOS + BOTÓN MÁS) */}
+
+            {/* 3. MARCAS */}
             <div className="profile-card">
   <div className="card-title">
     <h3>Marcas / Sponsors</h3> 
@@ -292,7 +386,6 @@ const CreateTournament = () => {
   <div className="sponsors-list">
     {tournament.sponsors.map((s, i) => (
       <div key={i} className="sponsor-upload-row-premium">
-        {/* NOMBRE DE LA MARCA */}
         <input 
           type="text" 
           placeholder="Nombre Marca" 
@@ -305,10 +398,9 @@ const CreateTournament = () => {
           }}
         />
 
-        {/* NUEVO: ENLACE WEB (IMPORTANTE PARA REDES) */}
         <input 
           type="url" 
-          placeholder="Link Web (https://...)" 
+          placeholder="Link Web" 
           className="mini-input"
           value={s.link || ''}
           onChange={(e) => {
@@ -318,7 +410,6 @@ const CreateTournament = () => {
           }}
         />
 
-        {/* NUEVO: NIVEL DE SPONSOR */}
         <select 
           className="mini-select"
           value={s.tier || 'Partner'}
@@ -333,7 +424,6 @@ const CreateTournament = () => {
           <option value="Colaborador">Colaborador</option>
         </select>
 
-        {/* SUBIDA DE LOGO */}
         <div className="file-upload-wrapper small">
             <input 
               type="file" 
@@ -342,11 +432,10 @@ const CreateTournament = () => {
               onChange={(e) => handleFileChange(e, 'logoFile', i)} 
             />
             <label htmlFor={`logo-${i}`} className={`file-label-small ${s.logoFile ? 'active' : ''}`}>
-                {s.logoFile ? <><FaCheck /> Listo</> : <><FaFileUpload /> Logo</>}
+                {s.logoFile ? <FaCheck /> : <FaFileUpload />}
             </label>
         </div>
 
-        {/* BOTÓN ELIMINAR (FUNDAMENTAL) */}
         <button 
           type="button" 
           className="btn-del-mini"
@@ -362,20 +451,18 @@ const CreateTournament = () => {
   </div>
 </div>
 
-            {/* 4. PREMIOS Y STAFF (Igual que antes pero estilizado) */}
+            {/* 4. PREMIOS */}
             <div className="profile-card full-span-card premium-prize-card">
   <div className="card-title">
     <div className="title-with-icon">
       <FaTicketAlt className="title-icon-gold" />
       <h3>Premios Desglosados</h3>
     </div>
-    {/* Resumen dinámico del pozo total */}
     <div className="prize-pool-badge">
-       Prize Pool: <span>{tournament.prizePool || '0.00'}</span>
+        Prize Pool: <span>{tournament.prizePool || '0.00'}</span>
     </div>
   </div>
 
-  {/* FILA GLOBAL: TOTAL Y MONEDA */}
   <div className="input-row-group" style={{ marginBottom: '25px' }}>
     <div className="form-column">
       <div className="custom-input-box">
@@ -386,7 +473,6 @@ const CreateTournament = () => {
           value={tournament.prizePool}
           onChange={(e) => setTournament({...tournament, prizePool: e.target.value})}
         />
-        <p className="file-help-text"><FaAward /> Suma de todos los premios</p>
       </div>
     </div>
     <div className="form-column">
@@ -396,33 +482,50 @@ const CreateTournament = () => {
           value={tournament.currency}
           onChange={(e) => setTournament({...tournament, currency: e.target.value})}
         >
+          <option value="DO">DO - Peso Dominicano</option>
           <option value="USD">USD - Dólares</option>
           <option value="EUR">EUR - Euros</option>
-          <option value="CLP">CLP - Pesos Chilenos</option>
-          <option value="ARS">ARS - Pesos Argentinos</option>
-          <option value="MXN">MXN - Pesos Mexicanos</option>
         </select>
-        <p className="file-help-text"><FaTicketAlt /> Tipo de cambio oficial</p>
       </div>
     </div>
   </div>
 
-  {/* GRID DE PODIO: 1ro, 2do, 3ro */}
   <div className="prize-distribution-grid">
     <div className="prize-item gold">
       <label>🥇 1er Lugar</label>
-      <input type="text" placeholder="Monto o Regalo" />
-      <span className="percentage-tag">60% del pozo</span>
+      <input 
+        type="text" 
+        placeholder="Monto" 
+        value={tournament.prizesByRank.first}
+        onChange={(e) => setTournament({
+            ...tournament, 
+            prizesByRank: {...tournament.prizesByRank, first: e.target.value}
+        })}
+      />
     </div>
     <div className="prize-item silver">
       <label>🥈 2do Lugar</label>
-      <input type="text" placeholder="Monto o Regalo" />
-      <span className="percentage-tag">30% del pozo</span>
+      <input 
+        type="text" 
+        placeholder="Monto" 
+        value={tournament.prizesByRank.second}
+        onChange={(e) => setTournament({
+            ...tournament, 
+            prizesByRank: {...tournament.prizesByRank, second: e.target.value}
+        })}
+      />
     </div>
     <div className="prize-item bronze">
       <label>🥉 3er Lugar</label>
-      <input type="text" placeholder="Monto o Regalo" />
-      <span className="percentage-tag">10% del pozo</span>
+      <input 
+        type="text" 
+        placeholder="Monto" 
+        value={tournament.prizesByRank.third}
+        onChange={(e) => setTournament({
+            ...tournament, 
+            prizesByRank: {...tournament.prizesByRank, third: e.target.value}
+        })}
+      />
     </div>
   </div>  
 </div>
@@ -433,7 +536,6 @@ const CreateTournament = () => {
         </div>
       </form>
     ) : (
-      /* --- VISTA DE ÉXITO --- */
       <div className="success-overlay animate-in">
     <div className="success-glass-card">
       <div className="success-check-wrapper">
@@ -458,8 +560,6 @@ const CreateTournament = () => {
     )}
   </div>
 );
-     
-  
 };
 
 export default CreateTournament;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -80,6 +81,9 @@ const Tournaments = () => {
   const { user, loading } = useAuth(); 
   const [activeFilter, setActiveFilter] = useState('All');
   const [showAllFilters, setShowAllFilters] = useState(false);
+
+  const [tournaments, setTournaments] = useState([]); // Ahora inicia vacío
+  const [loadingTournaments, setLoadingTournaments] = useState(true);
   
   // ESTADO MODAL ORGANIZADOR
   const [showInfoModal, setShowInfoModal] = useState(false); 
@@ -92,7 +96,7 @@ const Tournaments = () => {
   const getGameImage = (gameName) => {
     return GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
   };
-
+/*
   // --- DATOS COMPLETOS DE TORNEOS ---
   const [tournaments] = useState([
     { 
@@ -135,7 +139,7 @@ const Tournaments = () => {
         time: '16:00 EST', entry: '$15 USD', organizer: 'Ubisoft', format: '5v5 - Bomb',
         desc: 'Táctica y destrucción. Mapas competitivos oficiales. Se requiere Moss Anti-Cheat ejecutándose en segundo plano.'
     }
-  ]);
+  ]);*///juegos de ejemplo
 
   // --- LOGICA CARRUSEL ---
   useEffect(() => {
@@ -144,6 +148,42 @@ const Tournaments = () => {
     }, 5000);
     return () => clearInterval(timer);
   }, []);
+
+  // --- CARGA DINÁMICA DE TORNEOS ---
+useEffect(() => {
+    const fetchTournaments = async () => {
+        try {
+            setLoadingTournaments(true);
+            const response = await axios.get('http://localhost:4000/api/tournaments');
+            
+            // Adaptamos los datos de la base de datos al formato que usa tu diseño
+            const formattedTournaments = response.data.map(t => ({
+                id: t._id,
+                game: t.game,
+                title: t.title,
+                date: new Date(t.date).toLocaleDateString(), // Formatea la fecha
+                prize: t.prizePool || t.prize, // Soporta ambos nombres de campo
+                slots: `${t.currentSlots}/${t.maxSlots}`,
+                time: t.time,
+                entry: t.entryFee || t.entry,
+                organizer: t.organizer?.username || 'Organizador',
+                format: t.format || 'Por definir',
+                desc: t.description || 'Sin descripción disponible.',
+                tournamentId: t.tournamentId,
+                gender: t.gender 
+            }));
+
+            setTournaments(formattedTournaments);
+        } catch (err) {
+            console.error("Error cargando torneos:", err);
+            notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
+        } finally {
+            setLoadingTournaments(false);
+        }
+    };
+
+    fetchTournaments();
+}, []);
 
   const handleDotClick = (index) => setCurrent(index);
   const activeSponsor = sponsors[current] || sponsors[0];
@@ -383,10 +423,12 @@ const Tournaments = () => {
                                         </div>
 
                                         <div className="card-content">
+                                            <span className="tournament-id-tag" style={{ fontSize: '0.65rem', color: '#888', fontWeight: 'bold' }}>#{torneo.tournamentId}</span>
                                             <h3 title={torneo.title}>{torneo.title}</h3>
                                             <div className="info-row">
                                                 <div className="info-pill"><i className='bx bx-calendar'></i> {torneo.date}</div>
                                                 <div className="info-pill prize-pill"><i className='bx bx-trophy'></i> {torneo.prize}</div>
+                                                <div className="info-pill gender-pill"><i className='bx bx-user'></i> {torneo.gender}</div>
                                             </div>
 
                                             <div className="tournament-status-row">
@@ -413,6 +455,7 @@ const Tournaments = () => {
                                                 </button>
                                             </div>
                                         </div>
+
                                     </div>
                                 );
                             })
