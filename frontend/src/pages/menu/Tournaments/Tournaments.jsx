@@ -83,7 +83,10 @@ const Tournaments = () => {
   
   // ESTADO MODAL ORGANIZADOR
   const [showInfoModal, setShowInfoModal] = useState(false); 
-
+  const [current, setCurrent] = useState(0);
+  const [selectedTournament, setSelectedTournament] = useState(null);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const rightPanelRef = useRef(null);
 
   // Helper para obtener imagen segura
   const getGameImage = (gameName) => {
@@ -144,7 +147,7 @@ const Tournaments = () => {
 
   const handleDotClick = (index) => setCurrent(index);
   const activeSponsor = sponsors[current] || sponsors[0];
-  const getGameImage = (gameName) => GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
+  const getGameImage1 = (gameName) => GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
 
   // --- CLICK OUTSIDE SIDEBAR ---
   useEffect(() => {
