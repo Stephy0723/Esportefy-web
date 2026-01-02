@@ -14,4 +14,6 @@ app.listen (PORT, ()=>{
     console.log(`http://localhost:${PORT}/api/auth/reset-password/:token`);
     console.log(`http://localhost:${PORT}/api/teams/create`);
     console.log(`http://localhost:${PORT}/api/teams/join`);
+    console.log(`http://localhost:${PORT}/api/tournaments/`);
+    console.log(`http://localhost:${PORT}/api/tournaments/create`);
 });

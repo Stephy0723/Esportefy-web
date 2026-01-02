@@ -21,7 +21,7 @@ import {
 
 const router = Router();
 
-// 🔓 OAuth Discord (SIN verifyToken)
+// 🔓 OAuth Discord (SIN verifyToaken)
 router.get('/discord', discordAuth);
 router.get('/discord/callback', discordCallback);
 

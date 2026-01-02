@@ -1,7 +1,8 @@
 import React from 'react';
 import Navbar from '../../../../components/Navbar/Navbar';
 import Sidebar from '../../../../components/Sidebar/Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../../../context/AuthContext';
 import './CreateTournament.css';
 
 const TeamRegistration = () => {

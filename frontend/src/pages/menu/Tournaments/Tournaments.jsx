@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
 import './Tournaments.scss'; 
 import { GAME_IMAGES } from '../../../data/gameImages';
 import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
@@ -76,20 +77,18 @@ const Tournaments = () => {
   const navigate = useNavigate();
   const { notify } = useNotification(); 
   
-  // --- STATES ---
-  const [current, setCurrent] = useState(0); 
+  const { user, loading } = useAuth(); 
   const [activeFilter, setActiveFilter] = useState('All');
   const [showAllFilters, setShowAllFilters] = useState(false);
   
   // ESTADO MODAL ORGANIZADOR
   const [showInfoModal, setShowInfoModal] = useState(false); 
-  
-  // ESTADO MODAL DETALLES TORNEO (ESTE ES EL QUE NO TE FUNCIONABA)
-  const [selectedTournament, setSelectedTournament] = useState(null); 
-  
-  const [userRole, setUserRole] = useState('gamer');
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false); 
-  const rightPanelRef = useRef(null);
+
+
+  // Helper para obtener imagen segura
+  const getGameImage = (gameName) => {
+    return GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
+  };
 
   // --- DATOS COMPLETOS DE TORNEOS ---
   const [tournaments] = useState([
@@ -167,12 +166,21 @@ const Tournaments = () => {
   const goToRegistration = (torneo) => navigate('/team-registration', { state: { tournament: torneo } });
 
   const handleCreateClick = () => {
-    if (userRole === 'organizer') {
-        navigate('/create-tournament');
-    } else {
-        notify('danger', 'Acceso Restringido', 'Solo los Organizadores Verificados pueden crear torneos.');
-    }
-  };
+        if (loading) return; // Evita clics mientras carga el contexto
+
+        if (!user) {
+            notify('warning', 'Acceso Denegado', 'Debes iniciar sesión para crear un torneo.');
+            return;
+        }
+
+        // VALIDACIÓN CLAVE: Usamos el campo de tu base de datos
+        if (user.isOrganizer === true) {
+            navigate('/create-tournament');
+        } else {
+            notify('danger', 'Acceso Restringido', 'Solo los Organizadores Verificados pueden crear torneos. Solicita tu verificación.');
+            
+        }
+    };
 
   const handleBecomeOrganizer = () => {
     setShowInfoModal(false);
