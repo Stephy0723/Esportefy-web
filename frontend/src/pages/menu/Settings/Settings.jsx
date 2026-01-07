@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import React, { useState } from 'react';
 import {
     FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret,
@@ -13,6 +13,9 @@ import { useEffect } from "react";
 
 
 export default function Settings() {
+
+    const location = useLocation();
+
     const [privacy, setPrivacy] = useState({
         allowTeamInvites: false,
         showOnlineStatus: false,
@@ -25,6 +28,12 @@ export default function Settings() {
         riot: {},
         steam: {}
     });
+
+    // ===== RIOT STATE =====
+    const [riotGameName, setRiotGameName] = useState('');
+    const [riotTagLine, setRiotTagLine] = useState('');
+    const [riotLoading, setRiotLoading] = useState(false);
+
 
     const [loading, setLoading] = useState(true);
 
@@ -49,28 +58,111 @@ export default function Settings() {
     const [activeTab, setActiveTab] = useState('security');
     const navigate = useNavigate();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    useEffect(() => {
-        const fetchPrivacy = async () => {
-            try {
-                const res = await axios.get(
-                    "http://localhost:4000/api/settings",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
+
+    const fetchSettings = async () => {
+        try {
+            const res = await axios.get(
+                "http://localhost:4000/api/auth/profile",
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
                     }
-                );
+                }
+            );
 
-                setPrivacy(res.data.privacy);
-                setConnections(res.data.connections); // ✅ ahora sí existe
-                setLoading(false);
-            } catch (error) {
-                console.error("Error cargando privacidad", error);
-            }
-        };
+            setConnections(res.data.connections);
+            setPrivacy(res.data.privacy);
+            setLoading(false);
 
-        fetchPrivacy();
+        } catch (error) {
+            console.error("Error cargando settings", error.response?.data || error.message);
+        }
+    };
+
+    const unlinkDiscord = async () => {
+        try {
+            await axios.delete(
+                'http://localhost:4000/api/auth/discord',
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            await fetchSettings(); // 🔥 refresca estado real
+        } catch (error) {
+            console.error(
+                'Error al desvincular Discord',
+                error.response?.data || error.message
+            );
+        }
+    };
+
+    const linkRiot = async () => {
+        if (!riotGameName.trim() || !riotTagLine.trim()) {
+            alert('Debes completar GameName y TagLine');
+            return;
+        }
+
+        try {
+            setRiotLoading(true);
+
+            const token = localStorage.getItem('token');
+
+            await axios.post(
+                'http://localhost:4000/api/auth/riot',
+                {
+                    riotId: `${riotGameName}#${riotTagLine}`
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+
+            await fetchSettings(); // 🔥 refresca conexiones
+            alert('Cuenta Riot validada y vinculada');
+
+        } catch (error) {
+            alert(
+                error.response?.data?.message ||
+                'Riot ID inválido o no existe'
+            );
+        } finally {
+            setRiotLoading(false);
+        }
+    };
+    useEffect(() => {
+        if (token) fetchSettings();
     }, [token]);
+
+    const unlinkRiot = async () => {
+        try {
+            const token = localStorage.getItem('token');
+
+            await axios.delete(
+                'http://localhost:4000/api/auth/riot',
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+
+            // 🔥 refrescar estado real desde backend
+            fetchSettings();
+
+        } catch (error) {
+            console.error(
+                'Error al desvincular Riot',
+                error.response?.data || error.message
+            );
+        }
+    };
 
 
     const renderContent = () => {
@@ -212,59 +304,78 @@ export default function Settings() {
                                 </div>
 
                                 {connections?.discord?.id ? (
-                                    <button className="btn-disconnect">Desvincular</button>
+                                    <button
+                                        className="btn-disconnect"
+                                        onClick={unlinkDiscord}
+                                    >
+                                        Desvincular
+                                    </button>
                                 ) : (
                                     <button
                                         className="btn-connect"
                                         onClick={() => {
                                             window.location.href =
-                                                `http://localhost:4000/api/auth/discord?token=${localStorage.getItem('token')}`;
+                                                `http://localhost:4000/api/auth/discord?token=${token}`;
                                         }}
                                     >
                                         Conectar
                                     </button>
                                 )}
 
+
                             </div>
 
 
-                            <div className={`integration-card ${connections?.riot?.gameName ? 'connected' : ''}`}>
+                            <div className={`integration-card ${connections?.riot?.verified ? 'connected' : ''}`}>
 
-                                <div className={`int-status ${connections?.riot?.gameName ? '' : 'pending'}`}>
-                                    {connections?.riot?.gameName ? 'Conectado' : 'No conectado'}
+                                <div className="int-status">
+                                    {connections?.riot?.verified ? 'Conectado' : 'No conectado'}
                                 </div>
 
                                 <div className="int-icon riot">
-                                    <img src="/riot-icon.png" alt="Riot" />
+                                    <img src="/riot-icon.png" alt="Riot Games" />
                                 </div>
 
                                 <div className="int-details">
                                     <h4>Riot Games</h4>
-                                    <span>
-                                        {connections?.riot?.gameName
-                                            ? `${connections.riot.gameName}#${connections.riot.tagLine}`
-                                            : 'Sin vincular'}
-                                    </span>
+
+                                    {connections?.riot?.verified ? (
+                                        <span>
+                                            {connections.riot.gameName}#{connections.riot.tagLine}
+                                        </span>
+                                    ) : (
+                                        <div className="riot-form">
+                                            <input
+                                                type="text"
+                                                placeholder="GameName"
+                                                value={riotGameName}
+                                                onChange={(e) => setRiotGameName(e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="TagLine"
+                                                value={riotTagLine}
+                                                onChange={(e) => setRiotTagLine(e.target.value)}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
-                                {connections?.riot?.gameName ? (
-                                    <button className="btn-disconnect">
+                                {connections?.riot?.verified ? (
+                                    <button className="btn-disconnect" onClick={unlinkRiot}>
                                         Desvincular
                                     </button>
                                 ) : (
                                     <button
                                         className="btn-connect"
-                                        onClick={() =>
-                                            connectProvider('riot', {
-                                                gameName: 'Angel',
-                                                tagLine: 'LAN'
-                                            })
-                                        }
+                                        onClick={linkRiot}
+                                        disabled={riotLoading}
                                     >
-                                        Conectar
+                                        {riotLoading ? 'Validando...' : 'Validar Riot ID'}
                                     </button>
                                 )}
                             </div>
+
 
 
                             <div className={`integration-card ${connections?.steam?.steamId ? 'connected' : ''}`}>

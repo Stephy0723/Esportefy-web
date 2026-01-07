@@ -42,8 +42,22 @@ const UserSchema = new mongoose.Schema({
             verified: { type: Boolean, default: false }
         },
         riot: {
+            puuid: { type: String },
             gameName: { type: String },
             tagLine: { type: String },
+            region: { type: String, default: 'la1' },
+
+            summonerId: { type: String },
+            profileIconId: { type: Number },
+            summonerLevel: { type: Number },
+
+            rank: {
+                queueType: { type: String },
+                tier: { type: String },
+                division: { type: String },
+                lp: { type: Number }
+            },
+
             verified: { type: Boolean, default: false }
         },
         steam: {
@@ -52,7 +66,6 @@ const UserSchema = new mongoose.Schema({
         }
     },
 
-
     privacy: {
         allowTeamInvites: { type: Boolean, default: true },
         showOnlineStatus: { type: Boolean, default: true },
@@ -60,8 +73,6 @@ const UserSchema = new mongoose.Schema({
 
 
     },
-
-
 
 }, { timestamps: true });
 
