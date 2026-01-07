@@ -340,9 +340,27 @@ export default function Settings() {
                                     <h4>Riot Games</h4>
 
                                     {connections?.riot?.verified ? (
-                                        <span>
-                                            {connections.riot.gameName}#{connections.riot.tagLine}
-                                        </span>
+                                        <div className="riot-profile-box">
+                                            <img
+                                                src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${connections.riot.profileIconId}.png`}
+                                                alt="Riot Icon"
+                                                className="riot-avatar"
+                                            />
+
+                                            <div className="riot-meta">
+                                                <strong>
+                                                    {connections.riot.gameName}#{connections.riot.tagLine}
+                                                </strong>
+
+                                                <span>Nivel {connections.riot.summonerLevel}</span>
+
+                                                <span>
+                                                    {connections.riot.rank
+                                                        ? `${connections.riot.rank.tier} ${connections.riot.rank.division} (${connections.riot.rank.lp} LP)`
+                                                        : 'Sin clasificar'}
+                                                </span>
+                                            </div>
+                                        </div>
                                     ) : (
                                         <div className="riot-form">
                                             <input
@@ -359,6 +377,7 @@ export default function Settings() {
                                             />
                                         </div>
                                     )}
+
                                 </div>
 
                                 {connections?.riot?.verified ? (
