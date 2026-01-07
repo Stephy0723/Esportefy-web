@@ -99,7 +99,6 @@ export const linkRiotAccount = async (req, res) => {
   }
 };
 
-
 /* =========================
    UNLINK RIOT
 ========================= */
