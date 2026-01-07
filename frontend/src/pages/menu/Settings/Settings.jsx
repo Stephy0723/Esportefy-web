@@ -326,7 +326,8 @@ export default function Settings() {
                             </div>
 
 
-                            <div className={`integration-card ${connections?.riot?.verified ? 'connected' : ''}`}>
+                            <div className={`integration-card riot-card ${connections?.riot?.verified ? 'connected' : ''}`}>
+
 
                                 <div className="int-status">
                                     {connections?.riot?.verified ? 'Conectado' : 'No conectado'}

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-    FaUserEdit, FaGamepad, FaUsers, FaTrophy, 
-    FaGlobeAmericas, FaQuoteLeft, FaDiscord, 
-    FaSteam, FaFacebook, FaShareAlt, FaBullseye 
+import {
+    FaUserEdit, FaGamepad, FaUsers, FaTrophy,
+    FaGlobeAmericas, FaQuoteLeft, FaDiscord,
+    FaSteam, FaFacebook, FaShareAlt, FaBullseye
 } from 'react-icons/fa'; // Añadidos nuevos iconos
 import './Profile.css';
 
@@ -54,6 +54,15 @@ const Profile = () => {
                     <div className="user-identity">
                         <div className="name-row">
                             <h1>{user.username}</h1>
+                            {/* BADGE RIOT */}
+                            {user.connections?.riot?.verified && (
+                                <div className={`riot-rank-badge ${user.connections.riot.rank?.tier?.toLowerCase() || 'unranked'}`}>
+                                    {user.connections.riot.rank
+                                        ? `${user.connections.riot.rank.tier} ${user.connections.riot.rank.division}`
+                                        : 'UNRANKED'}
+                                </div>
+                            )}
+
                             <div className="badge-group">
                                 <span className="player-badge">Jugador</span>
                                 {user.isOrganizer && (
@@ -71,7 +80,7 @@ const Profile = () => {
 
             {/* GRID DE DATOS */}
             <div className="profile-grid">
-                
+
                 {/* 1. BIOGRAFÍA */}
                 <div className="profile-card bio-card">
                     <div className="card-title"><FaGlobeAmericas /> <h3>Biografía</h3></div>
@@ -79,17 +88,17 @@ const Profile = () => {
                         {/* Aquí aplicamos tu nueva clase de grid */}
                         <div className="input-row-group">
                             <div className="bio-item">
-                                <label>País</label> 
+                                <label>País</label>
                                 <span>{user.country || "No especificado"}</span>
                             </div>
                             <div className="bio-item">
-                                <label>Experiencia</label> 
+                                <label>Experiencia</label>
                                 <span>{Array.isArray(user.experience) ? user.experience.join(", ") : user.experience || "Principiante"}</span>
                             </div>
                         </div>
-                        
+
                         <div className="bio-quote">
-                            <FaQuoteLeft className="quote-icon"/>
+                            <FaQuoteLeft className="quote-icon" />
                             <p>{user.goals || "Sin metas definidas."}</p>
                         </div>
                     </div>
@@ -104,21 +113,60 @@ const Profile = () => {
                                 <div className="social-icon discord"><FaDiscord /></div>
                                 <div className="social-info">
                                     <label>Discord</label>
-                                    <span>{user.discord || "No conectado"}</span>
+                                    <span>
+                                        {user.connections?.discord?.verified
+                                            ? user.connections.discord.username
+                                            : "No conectado"}
+                                    </span>
+
                                 </div>
                             </div>
                             <div className="social-item">
-                                <div className="social-icon riot"><FaBullseye /></div>
+                                <div className="social-icon riot">
+                                    <FaBullseye />
+                                </div>
+
                                 <div className="social-info">
-                                    <label>Riot ID</label>
-                                    <span>{user.riotId || "No vinculado"}</span>
+                                    <label>Riot Games</label>
+
+                                    {user.connections?.riot?.verified ? (
+                                        <span>
+                                            {user.connections.riot.gameName}#
+                                            {user.connections.riot.tagLine}
+                                            <br />
+                                            <small>
+                                                Nivel {user.connections.riot.summonerLevel}
+                                                {user.connections.riot.rank
+                                                    ? ` · ${user.connections.riot.rank.tier} ${user.connections.riot.rank.division} (${user.connections.riot.rank.lp} LP)`
+                                                    : ' · Sin clasificar'}
+                                            </small>
+                                        </span>
+                                    ) : (
+                                        <>
+                                            <span>No vinculado</span>
+                                            <button
+                                                className="btn-link"
+                                                style={{ marginTop: '6px', padding: 0 }}
+                                                onClick={() => navigate('/settings')}
+                                            >
+                                                Vincular Riot
+                                            </button>
+                                        </>
+                                    )}
+
                                 </div>
                             </div>
+
                             <div className="social-item">
                                 <div className="social-icon steam"><FaSteam /></div>
                                 <div className="social-info">
                                     <label>Steam</label>
-                                    <span>{user.steam || "No vinculado"}</span>
+                                    <span>
+                                        {user.connections?.steam?.verified
+                                            ? 'Cuenta vinculada'
+                                            : 'No vinculado'}
+                                    </span>
+
                                 </div>
                             </div>
                             <div className="social-item">
@@ -133,38 +181,38 @@ const Profile = () => {
                 </div>
 
                 {/* 2. JUEGOS Y PLATAFORMAS */}
-                    <div className="profile-card games-card">
-                        <div className="card-title"><FaGamepad /> <h3>Mis Juegos</h3></div>
-                        <div className="card-body">
-                            <div className="tags-cloud">
-                                {/* Validación para Juegos */}
-                                {Array.isArray(user.selectedGames) ? (
-                                    user.selectedGames.map((g, i) => <span key={i} className="game-tag">{g}</span>)
-                                ) : user.selectedGames ? (
-                                    user.selectedGames.split(',').map((g, i) => <span key={i} className="game-tag">{g.trim()}</span>)
-                                ) : (
-                                    <span className="empty-text">Sin juegos registrados</span>
-                                )}
-                            </div>
-
-                            {/* Sección de Plataformas Corregida */}
-                            {(user.platforms && user.platforms.length > 0) && (
-                                <div className="platforms-section">
-                                    <h4>Plataformas</h4>
-                                    <div className="platform-icons">
-                                        {Array.isArray(user.platforms) ? (
-                                            user.platforms.map((p, i) => <span key={i} className="platform-tag">{p}</span>)
-                                        ) : (
-                                            // Si llega como string "pc, console", lo limpiamos y dividimos
-                                            user.platforms.split(',').map((p, i) => (
-                                                <span key={i} className="platform-tag">{p.trim()}</span>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                <div className="profile-card games-card">
+                    <div className="card-title"><FaGamepad /> <h3>Mis Juegos</h3></div>
+                    <div className="card-body">
+                        <div className="tags-cloud">
+                            {/* Validación para Juegos */}
+                            {Array.isArray(user.selectedGames) ? (
+                                user.selectedGames.map((g, i) => <span key={i} className="game-tag">{g}</span>)
+                            ) : user.selectedGames ? (
+                                user.selectedGames.split(',').map((g, i) => <span key={i} className="game-tag">{g.trim()}</span>)
+                            ) : (
+                                <span className="empty-text">Sin juegos registrados</span>
                             )}
                         </div>
+
+                        {/* Sección de Plataformas Corregida */}
+                        {(user.platforms && user.platforms.length > 0) && (
+                            <div className="platforms-section">
+                                <h4>Plataformas</h4>
+                                <div className="platform-icons">
+                                    {Array.isArray(user.platforms) ? (
+                                        user.platforms.map((p, i) => <span key={i} className="platform-tag">{p}</span>)
+                                    ) : (
+                                        // Si llega como string "pc, console", lo limpiamos y dividimos
+                                        user.platforms.split(',').map((p, i) => (
+                                            <span key={i} className="platform-tag">{p.trim()}</span>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
+                </div>
 
                 {/* 3. EQUIPOS */}
                 <div className="profile-card teams-card">

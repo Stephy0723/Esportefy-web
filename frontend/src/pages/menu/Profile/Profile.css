@@ -328,3 +328,64 @@ body.dark .organizer-badge {
 @media (max-width: 600px) {
     .social-links-grid { grid-template-columns: 1fr; }
 }
+
+.riot-rank-badge {
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  width: fit-content;
+  text-transform: uppercase;
+}
+
+/* UNRANKED */
+.riot-rank-badge.unranked {
+  background: #2a2a2a;
+  color: #aaa;
+}
+
+/* IRON */
+.riot-rank-badge.iron {
+  background: #3b2f2f;
+  color: #c7b299;
+}
+
+/* BRONZE */
+.riot-rank-badge.bronze {
+  background: #4e342e;
+  color: #cd7f32;
+}
+
+/* SILVER */
+.riot-rank-badge.silver {
+  background: #37474f;
+  color: #cfd8dc;
+}
+
+/* GOLD */
+.riot-rank-badge.gold {
+  background: #5d4037;
+  color: #ffca28;
+}
+
+/* PLATINUM */
+.riot-rank-badge.platinum {
+  background: #263238;
+  color: #4dd0e1;
+}
+
+/* DIAMOND */
+.riot-rank-badge.diamond {
+  background: #1a237e;
+  color: #90caf9;
+}
+
+/* MASTER+ */
+.riot-rank-badge.master,
+.riot-rank-badge.grandmaster,
+.riot-rank-badge.challenger {
+  background: linear-gradient(135deg, #ff1744, #ff9100);
+  color: #fff;
+}

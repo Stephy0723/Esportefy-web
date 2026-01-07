@@ -39,30 +39,47 @@ export const createTournament = async (req, res) => {
 
         const newTournament = new Tournament({
             ...data,
-            tournamentId: tournamentId,
+            tournamentId,
             prizesByRank: parseField(data.prizesByRank),
             sponsors: parseField(data.sponsors),
             staff: parseField(data.staff),
             bannerImage: bannerPath,
             rulesPdf: pdfPath,
-            organizer: req.userId // Proviene del middleware verifyToken
+            organizer: req.userId,
+
+            status: 'open',
+            registrationClosed: false,
+            currentSlots: 0
         });
+
+        if (!data.date || new Date(data.date) < new Date()) {
+            return res.status(400).json({ message: 'La fecha del torneo no es válida' });
+        }
+
+        if (!data.maxSlots || data.maxSlots < 2) {
+            return res.status(400).json({ message: 'El torneo debe tener al menos 2 cupos' });
+        }
+
 
         const savedTournament = await newTournament.save();
         res.status(201).json(savedTournament);
 
     } catch (error) {
         console.error("Error al crear el torneo:", error);
-        res.status(500).json({ 
-            message: "Error interno del servidor", 
-            error: error.message 
+        res.status(500).json({
+            message: "Error interno del servidor",
+            error: error.message
         });
     }
 };
 
 export const getTournaments = async (req, res) => {
     try {
-        const tournaments = await Tournament.find().populate('organizer', 'username email');
+        const tournaments = await Tournament.find({
+            status: { $ne: 'draft' }
+        })
+            .populate('organizer', 'username email');
+
         res.status(200).json(tournaments);
     } catch (error) {
         console.error("Error al obtener torneos:", error);
@@ -70,7 +87,7 @@ export const getTournaments = async (req, res) => {
             message: "Error interno del servidor",
             error: error.message
         });
-    }   
+    }
 };
 
 // Buscar torneo por su ID único (TOR-XXXXXX)

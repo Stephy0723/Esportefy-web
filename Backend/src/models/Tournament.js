@@ -20,7 +20,7 @@ const tournamentSchema = new mongoose.Schema({
     format: { type: String, default: 'Eliminación Directa' },
     date: { type: Date, required: true },
     time: { type: String, required: true },
-    
+
     // Premios y Economía
     prizePool: String,
     currency: { type: String, default: 'USD' },
@@ -30,7 +30,7 @@ const tournamentSchema = new mongoose.Schema({
         third: String
     },
     entryFee: { type: String, default: 'Gratis' },
-    
+
     // Cupos y Gestión
     maxSlots: { type: Number, required: true },
     currentSlots: { type: Number, default: 0 },
@@ -59,14 +59,45 @@ const tournamentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['open', 'in_progress', 'finished', 'cancelled'],
+        enum: ['draft', 'open', 'ongoing', 'finished', 'cancelled'],
         default: 'open'
-    }
+    },
+
+    registrationClosed: {
+        type: Boolean,
+        default: false
+    },
+
+    riotRequirements: {
+    required: { type: Boolean, default: false },
+
+    minTier: {
+        type: String,
+        enum: [
+            'IRON', 'BRONZE', 'SILVER', 'GOLD',
+            'PLATINUM', 'DIAMOND', 'MASTER',
+            'GRANDMASTER', 'CHALLENGER'
+        ]
+    },
+
+    maxTier: {
+        type: String,
+        enum: [
+            'IRON', 'BRONZE', 'SILVER', 'GOLD',
+            'PLATINUM', 'DIAMOND', 'MASTER',
+            'GRANDMASTER', 'CHALLENGER'
+        ]
+    },
+
+    soloQueueOnly: { type: Boolean, default: true }
+}
+
+
 }, { timestamps: true });
 
 
 // Virtual para formato de cupos (Ej: 12/32)
-tournamentSchema.virtual('slotsFormatted').get(function() {
+tournamentSchema.virtual('slotsFormatted').get(function () {
     return `${this.currentSlots}/${this.maxSlots}`;
 });
 
