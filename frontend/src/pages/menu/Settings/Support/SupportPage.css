@@ -3,10 +3,12 @@
    ========================================= */
 .support-page {
     padding: 2rem;
-    color: white;
+    color: var(--text-main);
     font-family: 'Rajdhani', sans-serif;
     min-height: 100vh;
-    background-color: #09090b;
+    background-color: var(--bg-page);
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .support-header {
@@ -18,13 +20,13 @@
     font-size: 3rem;
     text-transform: uppercase;
     margin: 0;
-    background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .support-header p {
-    color: #71717a;
+    color: var(--text-muted);
     font-size: 1.2rem;
     margin-top: 10px;
 }
@@ -32,7 +34,7 @@
 /* GRID PRINCIPAL */
 .support-grid {
     display: grid;
-    grid-template-columns: 1.2fr 0.8fr; /* FAQ más ancho que el form */
+    grid-template-columns: 1.2fr 0.8fr;
     gap: 3rem;
     max-width: 1200px;
     margin: 0 auto;
@@ -46,31 +48,65 @@
     align-items: center;
     gap: 15px;
     margin-bottom: 1.5rem;
-    color: #00e676;
+    color: var(--neon-green);
 }
-.section-title h2 { margin: 0; text-transform: uppercase; }
+.section-title h2 { margin: 0; text-transform: uppercase; color: var(--text-main); }
 .icon-title { font-size: 1.8rem; }
 
-/* Buscador */
+/* CONTENEDOR PARA CENTRAR */
 .search-faq {
     position: relative;
-    margin-bottom: 2rem;
+    max-width: 100%; /* Ocupa el ancho del grid */
+    margin: 0 auto 2.5rem auto; /* Centra horizontalmente */
+    display: flex;
+    align-items: center;
 }
-.search-faq input {
-    width: 100%;
-    background: #18181b;
-    border: 1px solid #333;
-    padding: 15px 15px 15px 45px;
-    border-radius: 8px;
-    color: white;
-    font-size: 1rem;
-}
+
+/* LA LUPA */
 .search-icon {
     position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #777;
+    left: 20px;
+    color: var(--text-muted); /* Cambia de color según el tema */
+    font-size: 1.1rem;
+    pointer-events: none;
+    z-index: 5;
+    transition: color 0.3s ease;
+}
+
+/* EL INPUT DINÁMICO */
+.search-faq input {
+    width: 100%;
+    height: 55px;
+    /* USAMOS VARIABLE AQUÍ PARA EL CAMBIO DE COLOR */
+    background-color: var(--search-bg) !important; 
+    border: 1.5px solid var(--border-color);
+    border-radius: 50px; /* Estilo cápsula de tu imagen image_52f0a8.png */
+    padding: 0 25px 0 55px;
+    color: var(--text-main); /* Texto negro en light / blanco en dark */
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* EFECTO AL ESCRIBIR */
+.search-faq input:focus {
+    border-color: var(--neon-green);
+    background-color: var(--search-bg);
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.1);
+}
+
+/* Ilumina la lupa cuando el usuario hace clic */
+.search-faq input:focus + .search-icon,
+.search-faq:focus-within .search-icon {
+    color: var(--neon-green);
+}
+
+/* COLOR DEL TEXTO "Buscar pregunta..." */
+.search-faq input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
 }
 
 /* Lista Acordeón */
@@ -81,8 +117,8 @@
 }
 
 .faq-item {
-    background: #121214;
-    border: 1px solid #27272a;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
     transition: 0.3s;
@@ -90,12 +126,13 @@
 }
 
 .faq-item:hover {
-    border-color: #444;
+    border-color: var(--neon-green);
 }
 
 .faq-item.active {
-    border-color: #00e676;
-    background: rgba(0, 230, 118, 0.02);
+    border-color: var(--neon-green);
+    /* Se usa el fondo dinámico que definimos en root */
+    background: var(--faq-answer-bg);
 }
 
 .faq-question {
@@ -103,105 +140,36 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-weight: 600;
+    font-weight: 800;
     font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.faq-item.active .faq-question {
+    color: var(--neon-green);
 }
 
 .faq-answer {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease-in-out, padding 0.3s;
-    background: rgba(0,0,0,0.2);
-    color: #ccc;
+    transition: all 0.3s ease-in-out;
+    background: transparent;
+    color: var(--text-muted);
     line-height: 1.6;
 }
 
 .faq-item.active .faq-answer {
-    max-height: 200px; /* Altura suficiente para el texto */
+    max-height: 500px;
     padding: 1.2rem;
-    border-top: 1px solid #27272a;
+    border-top: 1px solid var(--border-color);
 }
 
 /* =========================================
-   SECCIÓN BUG REPORT (DERECHA)
+   TARJETA DE CONTACTO (DERECHA)
    ========================================= */
-.bug-card {
-    background: #121214;
-    border: 1px solid #ef4444; /* Rojo alerta para bugs */
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
-}
-
-.bug-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid rgba(239, 68, 68, 0.3);
-    padding-bottom: 1rem;
-}
-.bug-icon-main { font-size: 2.5rem; color: #ef4444; }
-.bug-header h2 { margin: 0; color: #ef4444; text-transform: uppercase; }
-.bug-header p { margin: 5px 0 0 0; color: #aaa; font-size: 0.9rem; }
-
-/* Formulario */
-.bug-form { display: flex; flex-direction: column; gap: 1.5rem; }
-
-.bug-form label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #ccc;
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.bug-form input, .bug-form select, .bug-form textarea {
-    width: 100%;
-    background: #18181b;
-    border: 1px solid #333;
-    padding: 12px;
-    border-radius: 6px;
-    color: white;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1rem;
-}
-
-.bug-form input:focus, .bug-form textarea:focus {
-    outline: none;
-    border-color: #ef4444; /* Foco rojo */
-}
-
-.btn-submit-bug {
-    background: #ef4444;
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 8px;
-    font-weight: 800;
-    text-transform: uppercase;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    transition: 0.3s;
-}
-
-.btn-submit-bug:hover {
-    background: #d32f2f;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
-}
-
-/* Responsive */
-@media (max-width: 900px) {
-    .support-grid { grid-template-columns: 1fr; }
-}
-/* Tarjeta de Inquietudes (Derecha) */
 .inquiry-card {
-    background: linear-gradient(145deg, #18181b, #121214);
-    border: 1px solid #333;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 2.5rem;
     text-align: center;
@@ -209,30 +177,41 @@
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+    color: var(--text-main);
 }
+
+body:not(.dark) .inquiry-card {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
 .sticky-card {
     position: sticky;
     top: 20px;
 }
+
 .inquiry-icon-wrapper {
     font-size: 3rem;
     color: var(--neon-green);
     margin-bottom: 1rem;
 }
+
 .btn-open-modal {
     background: var(--neon-green);
-    color: black;
+    color: #000000; /* Texto oscuro sobre neón para legibilidad */
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
     font-weight: 800;
+    text-transform: uppercase;
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     margin-top: 1rem;
     transition: transform 0.2s;
 }
+
 .btn-open-modal:hover {
     transform: scale(1.05);
 }
@@ -240,87 +219,120 @@
 /* --- ESTILOS DEL MODAL --- */
 .modal-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
+    inset: 0;
+    background: var(--modal-overlay);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
-    background: #18181b;
+    background: var(--bg-card);
     border: 1px solid var(--neon-green);
-    padding: 2.5rem;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 500px;
+    padding: 3rem;
+    border-radius: 28px; /* Coherente con tus 28px de las cartas */
+    width: 95%;
+    max-width: 550px;
     position: relative;
-    box-shadow: 0 0 30px rgba(142, 219, 21, 0.15);
+    color: var(--text-main);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
+/* --- CABECERA ORGANIZADA --- */
+.modal-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 2rem;
+    padding-right: 30px; /* Espacio para la X */
+}
+
+.modal-header h3 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0;
+    color: var(--text-main);
+    letter-spacing: 1px;
+}
+
+.modal-header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* --- ELEMENTOS DE FORMULARIO --- */
 .btn-close-modal {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 25px;
+    right: 25px;
     background: transparent;
     border: none;
-    color: #777;
-    font-size: 1.2rem;
+    color: var(--text-muted);
+    font-size: 1.5rem;
     cursor: pointer;
+    transition: 0.2s;
 }
-.btn-close-modal:hover { color: white; }
 
-.modal-header h3 { margin: 0 0 5px 0; color: white; font-size: 1.5rem; }
-.modal-header p { color: #aaa; margin-bottom: 1.5rem; font-size: 0.9rem; }
+.btn-close-modal:hover {
+    color: var(--neon-green);
+    transform: rotate(90deg);
+}
 
 .modal-content textarea {
     width: 100%;
-    background: #09090b;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 15px;
-    color: white;
-    font-family: inherit;
-    font-size: 1rem;
-    resize: vertical;
-    margin-bottom: 1.5rem;
+    min-height: 160px;
+    background: var(--bg-input) !important;
+    border: 2px solid var(--border-color);
+    border-radius: 18px;
+    padding: 20px;
+    color: var(--text-main);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    resize: none;
+    margin-bottom: 2rem;
+    outline: none;
+    transition: border-color 0.3s;
 }
-.modal-content textarea:focus { outline: none; border-color: var(--neon-green); }
 
+.modal-content textarea:focus {
+    border-color: var(--neon-green);
+}
+
+/* --- BOTÓN DINÁMICO --- */
 .btn-submit-inquiry {
     width: 100%;
-    background: white;
-    color: black;
+    height: 55px;
+    background: var(--neon-green);
+    color: #000 !important; /* Texto oscuro sobre neón para legibilidad */
     border: none;
-    padding: 12px;
-    font-weight: bold;
-    border-radius: 8px;
+    padding: 0;
+    font-weight: 900;
+    font-size: 1rem;
+    border-radius: 50px;
     cursor: pointer;
     text-transform: uppercase;
-}
-.btn-submit-inquiry:hover { background: #eee; }
-
-/* Botón Volver */
-.btn-back-support {
-    position: absolute;
-    top: 2rem;
-    left: 2rem;
-    background: transparent;
-    border: 1px solid #333;
-    color: #ccc;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: bold;
+    letter-spacing: 2px;
     transition: 0.3s;
-    z-index: 10;
 }
-.btn-back-support:hover {
-    border-color: var(--neon-green);
-    color: var(--neon-green);
+
+.btn-submit-inquiry:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(142, 219, 21, 0.4);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 900px) {
+    .support-grid { grid-template-columns: 1fr; }
+    .btn-back-support { position: static; margin-bottom: 2rem; }
 }

@@ -273,8 +273,11 @@ export default function Settings() {
                                         </div>
                                     </div>
                                 )}
+  
                             </div>
                         </div>
+
+                        
                     </div>
                 );
             case 'connections':
@@ -452,7 +455,7 @@ export default function Settings() {
                             <div className="toggle-item streamer-mode-box">
                                 <div className="toggle-info">
                                     <div className="icon-title">
-                                        <FaEyeSlash style={{ color: '#a55eea' }} />
+                                        <FaEyeSlash />
                                         <h4>Modo Streamer</h4>
                                     </div>
                                     <p>Oculta correos electrónicos, IDs de invitación y notificaciones sensibles mientras transmites.</p>
@@ -598,7 +601,7 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        <div className="divider" style={{ margin: '3rem 0' }}></div>
+                        <div className="divider" ></div>
 
                         {/* 2. OPCIONES DE PAGO (MENSUAL vs ANUAL) */}
                         <div className="upgrade-title">
@@ -686,7 +689,7 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        <div className="info-box" style={{ marginTop: '2rem' }}>
+                        <div className="info-box" >
                             <FaFlag className="info-icon" />
                             <div>
                                 <strong>Historial de Reportes</strong>
@@ -715,12 +718,12 @@ export default function Settings() {
                                     className="btn-ghost small"
                                     onClick={() => navigate('/support')}
                                 >
-                                    Ver FAQ <FaExternalLinkAlt style={{ fontSize: '0.7rem', marginLeft: '5px' }} />
+                                    Ver FAQ <FaExternalLinkAlt  />
                                 </button>
                             </div>
 
                             <div className="support-card">
-                                <FaDiscord className="support-icon" style={{ color: '#5865F2' }} />
+                                <FaDiscord className="support-icon" />
                                 <h4>Comunidad Discord</h4>
                                 <p>Ayuda en tiempo real con moderadores.</p>
                                 <button className="btn-ghost small">Unirse al Server</button>
@@ -763,7 +766,7 @@ export default function Settings() {
                             <FaCreditCard /> Suscripción
                         </button>
 
-                        <div className="divider" style={{ margin: '0.5rem 0' }}></div>
+                        <div className="divider" ></div>
 
                         {/* PESTAÑA REPORTAR */}
                         <button className={`nav-item ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
