@@ -558,7 +558,159 @@
 .btn-university:hover::after {
   left: 100%;
 }
+/* --- AJUSTE TOTAL AL CONTENT PANEL --- */
+.content-panel {
+    background: #181A20;
+    border: 1px solid #2B2F38;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box; /* Asegura que el padding no rompa el ancho */
+    overflow: hidden; /* Evita que el carrusel se salga del panel */
+}
 
+/* --- GALERÍA DE JUEGOS V6 (ESTILO POSTER GRANDE) --- */
+
+.dash-games-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Divide el panel en 2 columnas grandes */
+    gap: 20px;
+    padding: 10px 0;
+    width: 100%;
+}
+
+.game-card-v6 {
+    width: 100%;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.poster-container-v6 {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 2.8; /* Proporción vertical de poster cinematográfico */
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.poster-container-v6 img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Crucial para que las imágenes de Community se vean perfectas */
+    transition: transform 0.6s ease;
+}
+
+.card-overlay-v6 {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(142, 219, 21, 0.9), transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.overlay-btn {
+    background: #fff;
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+/* EFECTOS AL PASAR EL MOUSE */
+.game-card-v6:hover {
+    transform: scale(1.03);
+}
+
+.game-card-v6:hover .card-overlay-v6 {
+    opacity: 1;
+}
+
+.game-card-v6:hover .overlay-btn {
+    transform: translateY(0);
+}
+
+.game-card-v6:hover img {
+    transform: scale(1.1);
+}
+
+/* PIE DE LA TARJETA */
+.game-footer-v6 {
+    padding: 10px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.game-title-v6 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.game-status-v6 {
+    font-size: 0.65rem;
+    color: #8EDB15; /* El verde de tu marca */
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+/* AJUSTE PARA EL PANEL PADRE */
+.content-panel {
+    background: #181A20;
+    border: 1px solid #2B2F38;
+    border-radius: 20px;
+    padding: 25px;
+    width: 100%;
+    box-sizing: border-box;
+}
+/* Contenedor del scroll */
+.gallery-scroll-container {
+    max-height: 500px; /* Ajusta este valor según el tamaño de tus posters */
+    overflow-y: auto;
+    padding-right: 8px; /* Espacio para que el scrollbar no tape las cartas */
+}
+
+/* Estilo del Scrollbar para que sea discreto y estilo gaming */
+.gallery-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.gallery-scroll-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.gallery-scroll-container::-webkit-scrollbar-thumb {
+    background: #8EDB15; /* El verde de tu marca */
+    border-radius: 10px;
+}
+
+/* Aseguramos que la red no se estire */
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    align-items: start; /* Importante: alinea los paneles arriba para que no se estiren entre sí */
+}
+
+.dash-games-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    width: 100%;
+}
 /* Ajuste Responsive */
 @media (max-width: 768px) {
   .dash-header {

@@ -78,10 +78,7 @@ const Dashboard = () => {
                     <p>Resumen de tu actividad en Esportefy.</p>
                 </div>
 
-                {/* GRUPO DE ACCIONES DERECHA */}
                 <div className="header-right-actions">
-
-                    {/* --- NUEVO BOTÓN ZONA UNIVERSITARIA --- */}
                     <button className="btn-university" onClick={() => navigate('/university')}>
                         <i className='bx bxs-graduation'></i>
                         <span>Zona Universitaria</span>
@@ -92,6 +89,7 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
             {/* RIOT STATUS CARD */}
             {user?.connections?.riot?.verified ? (
                 <div className="dashboard-riot-card">
@@ -100,17 +98,9 @@ const Dashboard = () => {
                         alt="Riot Icon"
                         className="riot-avatar"
                     />
-
                     <div className="riot-info">
-                        <strong>
-                            {user.connections.riot.gameName}#
-                            {user.connections.riot.tagLine}
-                        </strong>
-
-                        <span>
-                            Nivel {user.connections.riot.summonerLevel}
-                        </span>
-
+                        <strong>{user.connections.riot.gameName}#{user.connections.riot.tagLine}</strong>
+                        <span>Nivel {user.connections.riot.summonerLevel}</span>
                         <span>
                             {user.connections.riot.rank
                                 ? `${user.connections.riot.rank.tier} ${user.connections.riot.rank.division} (${user.connections.riot.rank.lp} LP)`
@@ -121,19 +111,14 @@ const Dashboard = () => {
             ) : (
                 <div className="dashboard-riot-card empty">
                     <p>No tienes cuenta Riot vinculada</p>
-                    <button onClick={() => navigate('/settings')}>
-                        Vincular Riot
-                    </button>
+                    <button onClick={() => navigate('/settings')}>Vincular Riot</button>
                 </div>
             )}
 
             {/* STATS GRID */}
             <div className="stats-grid">
-                {/* ... (El resto de tu código de stats sigue igual) ... */}
                 <div className="stat-card">
-                    <div className="stat-icon-wrapper">
-                        <i className='bx bx-medal'></i>
-                    </div>
+                    <div className="stat-icon-wrapper"><i className='bx bx-medal'></i></div>
                     <div className="stat-info">
                         <span className="stat-label">Nivel</span>
                         <h3>{userData.experience}</h3>
@@ -142,13 +127,9 @@ const Dashboard = () => {
 
                 <div className="stat-card">
                     <div className="stat-icon-wrapper platform-wrapper">
-                        {userData.platforms.length > 0 ? (
-                            userData.platforms.map((plat, index) => (
-                                <i key={index} className={`bx ${getPlatformIcon(plat)}`} title={plat}></i>
-                            ))
-                        ) : (
-                            <i className='bx bx-question-mark'></i>
-                        )}
+                        {userData.platforms.map((plat, index) => (
+                            <i key={index} className={`bx ${getPlatformIcon(plat)}`} title={plat}></i>
+                        ))}
                     </div>
                     <div className="stat-info">
                         <span className="stat-label">Plataformas</span>
@@ -157,9 +138,7 @@ const Dashboard = () => {
                 </div>
 
                 <div className="stat-card">
-                    <div className="stat-icon-wrapper">
-                        <i className='bx bx-target-lock'></i>
-                    </div>
+                    <div className="stat-icon-wrapper"><i className='bx bx-target-lock'></i></div>
                     <div className="stat-info">
                         <span className="stat-label">Objetivo Actual</span>
                         <h3>{userData.mainGoal}</h3>
@@ -167,9 +146,7 @@ const Dashboard = () => {
                 </div>
 
                 <div className="stat-card">
-                    <div className="stat-icon-wrapper">
-                        <i className='bx bx-trophy'></i>
-                    </div>
+                    <div className="stat-icon-wrapper"><i className='bx bx-trophy'></i></div>
                     <div className="stat-info">
                         <span className="stat-label">Torneos</span>
                         <h3>0</h3>
@@ -177,42 +154,47 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* ... (El resto de tu código content-grid sigue igual) ... */}
+            {/* JUEGOS FAVORITOS REFACTORIZADOS (V5) */}
             <div className="content-grid">
-                {/* ... Tu código existente de Content Grid ... */}
-                {/* Simplemente copié la parte de arriba para mostrarte dónde va el botón */}
-                {/* Asegúrate de mantener tu código original de content-grid aquí abajo */}
-
-                {/* JUEGOS FAVORITOS */}
+                
+                {/* SECCIÓN JUEGOS: GALERÍA VERTICAL TIPO POSTER */}
                 <div className="content-panel">
                     <div className="panel-header">
                         <h3><i className='bx bx-game'></i> Tus Juegos</h3>
                         <button className="btn-link">Editar</button>
                     </div>
-                    <div className="my-games-list">
-                        {userData.games.length > 0 ? (
-                            userData.games.map((gameId, index) => {
-                                const imageSrc = Object.entries(GAME_IMAGES).find(([key]) =>
-                                    key.toLowerCase().includes(gameId.toLowerCase()) ||
-                                    key.toLowerCase() === gameId.toLowerCase()
-                                )?.[1] || GAME_IMAGES.Default;
 
-                                return (
-                                    <div key={index} className="mini-game-card">
-                                        <div className="game-thumb">
-                                            <img src={imageSrc} alt={gameId} />
+                    {/* Este contenedor controlará el scroll después de 4 juegos */}
+                    <div className="gallery-scroll-container">
+                        <div className="dash-games-gallery">
+                            {userData.games.length > 0 ? (
+                                userData.games.map((gameId, index) => {
+                                    const imageSrc = Object.entries(GAME_IMAGES).find(([key]) =>
+                                        key.toLowerCase().includes(gameId.toLowerCase())
+                                    )?.[1] || GAME_IMAGES.Default;
+
+                                    return (
+                                        <div key={index} className="game-card-v6" onClick={() => navigate(`/games/${gameId.toLowerCase()}`)}>
+                                            <div className="poster-container-v6">
+                                                <img src={imageSrc} alt={gameId} />
+                                                <div className="card-overlay-v6">
+                                                    <span className="overlay-btn">JUGAR</span>
+                                                </div>
+                                            </div>
+                                            <div className="game-footer-v6">
+                                                <span className="game-title-v6">{gameId.toUpperCase()}</span>
+                                            </div>
                                         </div>
-                                        <span>{gameId.toUpperCase()}</span>
-                                    </div>
-                                )
-                            })
-                        ) : (
-                            <p className="empty-text">Sin juegos seleccionados.</p>
-                        )}
+                                    );
+                                })
+                            ) : (
+                                <p className="empty-text">Sin juegos seleccionados.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* COMUNIDAD / JUGADORES SIMILARES */}
+                {/* COMUNIDAD / TU RED */}
                 <div className="content-panel">
                     <div className="panel-header">
                         <h3><i className='bx bx-group'></i> Tu Red</h3>
