@@ -14,6 +14,7 @@ import imgFreeFire from '../../../assets/gameImages/freefire.png';
 import imgFortnite from '../../../assets/gameImages/fortnite.png';
 import imgCodm from '../../../assets/gameImages/codm.png';
 import imgMk11 from '../../../assets/gameImages/mk11.png';
+import imgMarioKart from '../../../assets/gameImages/mariokart.png';
 
 const mobaGames = [
     { id: 'lol', name: 'League of Legends', img: imgLol },
@@ -24,7 +25,8 @@ const mobaGames = [
     { id: 'freefire', name: 'Free Fire', img: imgFreeFire },
     { id: 'fortnite', name: 'Fortnite', img: imgFortnite },
     { id: 'codm', name: 'CoD Mobile', img: imgCodm },
-    { id: 'mk11', name: 'Mortal Kombat', img: imgMk11 }
+    { id: 'mk11', name: 'Mortal Kombat', img: imgMk11 },
+    { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart }
 ];
 
 const platformsList = [

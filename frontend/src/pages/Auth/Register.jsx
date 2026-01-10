@@ -14,6 +14,8 @@ import imgFreeFire from '../../assets/gameImages/freefire.png';
 import imgFortnite from '../../assets/gameImages/fortnite.png';
 import imgCodm from '../../assets/gameImages/codm.png';
 import imgMk from '../../assets/gameImages/mk11.png';
+import imgMarioKart from '../../assets/gameImages/mariokart.png';
+
 
 const Register = () => {
   const navigate = useNavigate();
@@ -63,13 +65,15 @@ const Register = () => {
   const mobaGames = [
     { id: 'lol', name: 'League of Legends', img: imgLol },
     { id: 'mlbb', name: 'Mobile Legends', img: imgMlbb },
-    { id: 'hok', name: 'Honor of Kings', img: imgHok },
+    { id: 'Honor of Kings', name: 'Honor of Kings', img: imgHok },
     { id: 'marvel', name: 'Marvel Rivals', img: imgMarvel },
     { id: 'moco', name: 'Mo.co', img: imgMoco },
-    { id: 'freefire', name: 'Free Fire', img: imgFreeFire },
+    { id: 'free fire', name: 'Free Fire', img: imgFreeFire },
     { id: 'fortnite', name: 'Fortnite', img: imgFortnite },
     { id: 'codm', name: 'CoD Mobile', img: imgCodm },
-    { id: 'mk11', name: 'Mortal Kombat', img: imgMk }
+    { id: 'mk11', name: 'Mortal Kombat', img: imgMk },
+    { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart }
+
   ];
 
   const platformsList = [

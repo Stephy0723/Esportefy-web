@@ -9,7 +9,7 @@ import cs2 from '../assets/games/cs2.jpg';
 import dota2 from '../assets/games/dota2.jpg';
 import fifa from '../assets/games/fifa.jpg';
 import fortnite from '../assets/games/fornite.jpg';
-import freefire from '../assets/games/frefire.jpg'; //me quede aqui
+import freefire from '../assets/games/freefire.jpg'; //me quede aqui
 import hearthstone from '../assets/games/hearthstone.jpg';
 import hok from '../assets/games/hok.jpg';
 import lol from '../assets/games/lol.jpg';
@@ -63,6 +63,15 @@ export const GAME_IMAGES = {
     "Rocket League": rocket,
     "Street Fighter 6": sf6,
     "Tekken 8": tekken,
+
+    "LoL": lol,  // Alias para League of Legends
+    "Dota": dota2,  // Alias para Dota 2
+    "COD": cod,  // Alias para Call of Duty
+    "CSGO": cs2,  // Alias para CS:GO 2
+    "mlbb": mlbb,  // Alias para Mobile Legends
+    "tft": tft,  // Alias para Teamfight Tactics
+    "codm": cod,  // Alias para Call of Duty Mobile
+    "free fire": freefire,  // Alias para Free Fire
 
     // Fallback
     "Default": def
