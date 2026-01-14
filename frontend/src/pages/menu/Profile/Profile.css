@@ -389,3 +389,44 @@ body.dark .organizer-badge {
   background: linear-gradient(135deg, #ff1744, #ff9100);
   color: #fff;
 }
+
+/* Contenedor principal de la sección de juegos */
+.profile-card.content-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Contenedor con scroll interno */
+.gallery-scroll-container {
+    max-height: 500px; /* Altura máxima antes de activar scroll */
+    overflow-y: auto;
+    padding-right: 8px;
+    margin-top: 1rem;
+}
+
+/* Personalización del Scrollbar (Estilo Neon) */
+.gallery-scroll-container::-webkit-scrollbar {
+    width: 5px;
+}
+
+.gallery-scroll-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.gallery-scroll-container::-webkit-scrollbar-thumb {
+    background: #8EDB15; /* Tu color verde neon */
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(142, 219, 21, 0.5);
+}
+
+/* Grid de los Posters */
+.dash-games-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+}
