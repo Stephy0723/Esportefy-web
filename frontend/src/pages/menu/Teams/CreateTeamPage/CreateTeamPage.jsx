@@ -166,31 +166,40 @@ const CreateTeamPage = () => {
     const finalizeCreation = async () => {
     setSubmitting(true);
     
-    // Construimos el payload exactamente como lo espera el backend
-    const payload = {
-        formData,
-        roster,
-        logoPreview
-    };
-
     try {
-        const response = await fetch('http://localhost:4000/api/teams/create', {
+        const token = localStorage.getItem('token');
+        const data = new FormData();
+
+        // 1. Convertimos el logoPreview (base64) a un archivo real si existe
+        if (logoPreview && logoPreview.startsWith('data:image')) {
+            const response = await fetch(logoPreview);
+            const blob = await response.blob();
+            data.append('logo', blob, `logo-${Date.now()}.png`);
+        }
+
+        // 2. Adjuntamos los datos del formulario
+        // Los enviamos como string para que el backend los parsee (JSON.parse)
+        data.append('formData', JSON.stringify(formData));
+        data.append('roster', JSON.stringify(roster));
+
+        // 3. Petición al servidor
+        const res = await fetch('http://localhost:4000/api/teams/create', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                // Si usas autenticación, añade el token aquí:
-                'Authorization': `Bearer ${localStorage.getItem('token')}` 
+                // NOTA: Al usar FormData NO debes poner 'Content-Type': 'application/json'
+                // El navegador pondrá automáticamente 'multipart/form-data' con el boundary correcto
+                'Authorization': `Bearer ${token}` 
             },
-            body: JSON.stringify(payload)
+            body: data
         });
 
-        const data = await response.json();
+        const result = await res.json();
 
-        if (response.ok) {
-            setInviteLink(data.inviteLink); // El link real generado por el server
+        if (res.ok) {
+            setInviteLink(result.inviteLink); 
             setStep(3);
         } else {
-            alert(data.message || "Error al guardar equipo");
+            alert(result.message || "Error al guardar equipo");
         }
     } catch (error) {
         console.error("Error de red:", error);

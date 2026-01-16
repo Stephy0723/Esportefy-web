@@ -389,3 +389,139 @@ body.dark .organizer-badge {
   background: linear-gradient(135deg, #ff1744, #ff9100);
   color: #fff;
 }
+
+/* Contenedor principal de la sección de juegos */
+.profile-card.content-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Contenedor con scroll interno */
+.gallery-scroll-container {
+    max-height: 500px; /* Altura máxima antes de activar scroll */
+    overflow-y: auto;
+    padding-right: 8px;
+    margin-top: 1rem;
+}
+
+/* Personalización del Scrollbar (Estilo Neon) */
+.gallery-scroll-container::-webkit-scrollbar {
+    width: 5px;
+}
+
+.gallery-scroll-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.gallery-scroll-container::-webkit-scrollbar-thumb {
+    background: #8EDB15; /* Tu color verde neon */
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(142, 219, 21, 0.5);
+}
+
+/* Grid de los Posters */
+.dash-games-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+/* Contenedor de la lista de equipos */
+.teams-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 5px;
+}
+
+/* Item de equipo individual */
+.team-item-mini {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03); /* Fondo ultra sutil */
+    border: 1px solid rgba(255, 255, 255, 0.08); /* Borde de cristal */
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Efecto Hover */
+.team-item-mini:hover {
+    background: rgba(142, 219, 21, 0.08); /* Tu color verde característico con opacidad */
+    border-color: #8EDB15; /* Brillo verde al pasar el mouse */
+    transform: translateX(5px); /* Desplazamiento sutil */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Logo del equipo */
+.team-logo-small {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px; /* Bordes ligeramente redondeados, estilo eSports */
+    object-fit: cover;
+    background: #1a1a1a;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Información del equipo */
+.team-info-mini {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+}
+
+/* Nombre del equipo */
+.team-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+/* Tag del juego */
+.team-game-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #8EDB15; /* El verde de tu marca */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+
+/* Badge opcional de "Activo" o "Status" si decides agregarlo luego */
+.team-badge-status {
+    font-size: 10px;
+    background: rgba(142, 219, 21, 0.15);
+    color: #8EDB15;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Animación de entrada para la lista */
+.fade-in {
+    animation: fadeInSlide 0.5s ease forwards;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

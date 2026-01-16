@@ -1,4 +1,5 @@
 // Backend/src/controllers/auth.controller.js
+
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -7,7 +8,6 @@ import nodemailer from "nodemailer";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -38,7 +38,6 @@ export const upload = multer({
     storage,
    
 });
-
 
 export const register = async (req, res) => {
     try {
@@ -77,7 +76,7 @@ export const register = async (req, res) => {
             error: error.message 
         });
     }
-}
+};
 
 export const login = async (req, res) => {
     try {
@@ -118,21 +117,11 @@ export const login = async (req, res) => {
 
 export const getProfile = async (req, res) => {
     try {
-        // 1. Buscamos al usuario usando el ID del middleware de auth
-        const user = await User.findById(req.userId)
-            // 2. IMPORTANTE: Reemplaza los IDs de equipos por los datos reales del modelo Team
-            .populate({
-                path: 'teams',
-                select: 'name logo game description' // Solo traemos lo necesario para el perfil
-            })
-            // 3. Excluimos datos sensibles
-            .select('-password -confirmPassword');
+        const user = await User.findById(req.userId).populate('teams', 'name avatar'); // Poblar solo nombre y avatar de los equipos
         
         if (!user) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
-
-        // 4. Enviamos el objeto completo (ahora user.teams tendrá objetos, no solo IDs)
         res.status(200).json(user);
 
     } catch (error) {
@@ -245,7 +234,6 @@ export const resetPassword = async (req, res) => {
         res.status(500).json({ message: "Error al actualizar la contraseña" });
     }
 };
-
 
 // 3. Actualizar perfil
 export const updateProfile = async (req, res) => {

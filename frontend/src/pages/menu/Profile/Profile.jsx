@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-    FaUserEdit, FaGamepad, FaUsers, FaTrophy,
+    FaUserEdit, FaGamepad, FaTrophy,
     FaGlobeAmericas, FaQuoteLeft, FaDiscord,
     FaSteam, FaFacebook, FaShareAlt, FaBullseye
-} from 'react-icons/fa'; // Añadidos nuevos iconos
+} from 'react-icons/fa';
+import { GAME_IMAGES } from '../../../data/gameImages';
 import './Profile.css';
 
 const Profile = () => {
@@ -36,11 +37,18 @@ const Profile = () => {
         fetchUserProfile();
     }, [navigate]);
 
-    if (loading) return <div className="loading-container"><div className="loader"></div><p>Sincronizando con la arena...</p></div>;
+    // --- 1. GESTIÓN DE ESTADOS DE CARGA ---
+    if (loading) return <div className="loading-container"><div className="loader"></div><p>Sincronizando...</p></div>;
     if (error) return <div className="error-text">{error}</div>;
     if (!user) return null;
 
+    // --- 2. DEFINICIÓN DE VARIABLES (Aquí se soluciona el error) ---
     const avatarUrl = user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=8EDB15&color=000&size=200&bold=true`;
+
+    // Normalizamos los juegos para que siempre sea un Array (evita el error de "undefined")
+    const normalizedGames = Array.isArray(user.selectedGames) 
+        ? user.selectedGames 
+        : (user.selectedGames ? user.selectedGames.split(',').map(g => g.trim()) : []);
 
     return (
         <div className="profile-page fade-in">
@@ -49,26 +57,18 @@ const Profile = () => {
                 <div className="header-banner"></div>
                 <div className="header-content">
                     <div className="avatar-wrapper">
-                        <img src={avatarUrl} alt="Avatar del jugador" />
+                        <img src={avatarUrl} alt="Avatar" />
                     </div>
                     <div className="user-identity">
                         <div className="name-row">
                             <h1>{user.username}</h1>
-                            {/* BADGE RIOT */}
                             {user.connections?.riot?.verified && (
                                 <div className={`riot-rank-badge ${user.connections.riot.rank?.tier?.toLowerCase() || 'unranked'}`}>
-                                    {user.connections.riot.rank
-                                        ? `${user.connections.riot.rank.tier} ${user.connections.riot.rank.division}`
+                                    {user.connections.riot.rank 
+                                        ? `${user.connections.riot.rank.tier} ${user.connections.riot.rank.division}` 
                                         : 'UNRANKED'}
                                 </div>
                             )}
-
-                            <div className="badge-group">
-                                <span className="player-badge">Jugador</span>
-                                {user.isOrganizer && (
-                                    <span className="organizer-badge">Organizador</span>
-                                )}
-                            </div>
                         </div>
                         <p className="real-name-text">{user.fullName}</p>
                     </div>
@@ -78,14 +78,11 @@ const Profile = () => {
                 </div>
             </header>
 
-            {/* GRID DE DATOS */}
             <div className="profile-grid">
-
                 {/* 1. BIOGRAFÍA */}
                 <div className="profile-card bio-card">
                     <div className="card-title"><FaGlobeAmericas /> <h3>Biografía</h3></div>
                     <div className="card-body">
-                        {/* Aquí aplicamos tu nueva clase de grid */}
                         <div className="input-row-group">
                             <div className="bio-item">
                                 <label>País</label>
@@ -96,7 +93,6 @@ const Profile = () => {
                                 <span>{Array.isArray(user.experience) ? user.experience.join(", ") : user.experience || "Principiante"}</span>
                             </div>
                         </div>
-
                         <div className="bio-quote">
                             <FaQuoteLeft className="quote-icon" />
                             <p>{user.goals || "Sin metas definidas."}</p>
@@ -104,7 +100,7 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* NUEVA SECCIÓN: CONEXIONES (SOCIALES) */}
+                {/* 2. CONEXIONES */}
                 <div className="profile-card social-card">
                     <div className="card-title"><FaShareAlt /> <h3>Conexiones</h3></div>
                     <div className="card-body">
@@ -113,125 +109,98 @@ const Profile = () => {
                                 <div className="social-icon discord"><FaDiscord /></div>
                                 <div className="social-info">
                                     <label>Discord</label>
-                                    <span>
-                                        {user.connections?.discord?.verified
-                                            ? user.connections.discord.username
-                                            : "No conectado"}
-                                    </span>
-
+                                    <span>{user.connections?.discord?.verified ? user.connections.discord.username : "No conectado"}</span>
                                 </div>
                             </div>
                             <div className="social-item">
-                                <div className="social-icon riot">
-                                    <FaBullseye />
-                                </div>
-
+                                <div className="social-icon riot"><FaBullseye /></div>
                                 <div className="social-info">
                                     <label>Riot Games</label>
-
-                                    {user.connections?.riot?.verified ? (
-                                        <span>
-                                            {user.connections.riot.gameName}#
-                                            {user.connections.riot.tagLine}
-                                            <br />
-                                            <small>
-                                                Nivel {user.connections.riot.summonerLevel}
-                                                {user.connections.riot.rank
-                                                    ? ` · ${user.connections.riot.rank.tier} ${user.connections.riot.rank.division} (${user.connections.riot.rank.lp} LP)`
-                                                    : ' · Sin clasificar'}
-                                            </small>
-                                        </span>
-                                    ) : (
-                                        <>
-                                            <span>No vinculado</span>
-                                            <button
-                                                className="btn-link"
-                                                style={{ marginTop: '6px', padding: 0 }}
-                                                onClick={() => navigate('/settings')}
-                                            >
-                                                Vincular Riot
-                                            </button>
-                                        </>
-                                    )}
-
-                                </div>
-                            </div>
-
-                            <div className="social-item">
-                                <div className="social-icon steam"><FaSteam /></div>
-                                <div className="social-info">
-                                    <label>Steam</label>
-                                    <span>
-                                        {user.connections?.steam?.verified
-                                            ? 'Cuenta vinculada'
-                                            : 'No vinculado'}
-                                    </span>
-
-                                </div>
-                            </div>
-                            <div className="social-item">
-                                <div className="social-icon facebook"><FaFacebook /></div>
-                                <div className="social-info">
-                                    <label>Facebook</label>
-                                    <span>{user.facebook || "No vinculado"}</span>
+                                    <span>{user.connections?.riot?.verified ? `${user.connections.riot.gameName}#${user.connections.riot.tagLine}` : "No vinculado"}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 2. JUEGOS Y PLATAFORMAS */}
-                <div className="profile-card games-card">
-                    <div className="card-title"><FaGamepad /> <h3>Mis Juegos</h3></div>
-                    <div className="card-body">
-                        <div className="tags-cloud">
-                            {/* Validación para Juegos */}
-                            {Array.isArray(user.selectedGames) ? (
-                                user.selectedGames.map((g, i) => <span key={i} className="game-tag">{g}</span>)
-                            ) : user.selectedGames ? (
-                                user.selectedGames.split(',').map((g, i) => <span key={i} className="game-tag">{g.trim()}</span>)
+                {/* 3. SECCIÓN JUEGOS (IGUAL AL DASHBOARD) */}
+                <div className="profile-card games-card content-panel"> 
+                    <div className="panel-header card-title">
+                        <div className="title-with-icon" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <FaGamepad /> 
+                            <h3>Mis Juegos</h3>
+                        </div>
+                        <button className="btn-link" onClick={() => navigate('/settings')}>Editar</button>
+                    </div>
+
+                    <div className="gallery-scroll-container">
+                        <div className="dash-games-gallery">
+                            {normalizedGames.length > 0 ? (
+                                normalizedGames.map((gameId, index) => {
+                                    const imageSrc = Object.entries(GAME_IMAGES).find(([key]) =>
+                                        key.toLowerCase().includes(gameId.toLowerCase())
+                                    )?.[1] || GAME_IMAGES.Default;
+
+                                    return (
+                                        <div key={index} className="game-card-v6" onClick={() => navigate(`/games/${gameId.toLowerCase()}`)}>
+                                            <div className="poster-container-v6">
+                                                <img src={imageSrc} alt={gameId} />
+                                                <div className="card-overlay-v6">
+                                                    <span className="overlay-btn">VER INFO</span>
+                                                </div>
+                                            </div>
+                                            <div className="game-footer-v6">
+                                                <span className="game-title-v6">{gameId.toUpperCase()}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             ) : (
-                                <span className="empty-text">Sin juegos registrados</span>
+                                <p className="empty-text">Sin juegos seleccionados.</p>
                             )}
                         </div>
-
-                        {/* Sección de Plataformas Corregida */}
-                        {(user.platforms && user.platforms.length > 0) && (
-                            <div className="platforms-section">
-                                <h4>Plataformas</h4>
-                                <div className="platform-icons">
-                                    {Array.isArray(user.platforms) ? (
-                                        user.platforms.map((p, i) => <span key={i} className="platform-tag">{p}</span>)
-                                    ) : (
-                                        // Si llega como string "pc, console", lo limpiamos y dividimos
-                                        user.platforms.split(',').map((p, i) => (
-                                            <span key={i} className="platform-tag">{p.trim()}</span>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
-                {/* 3. EQUIPOS */}
+                {/* 4. EQUIPOS */}
                 <div className="profile-card teams-card">
-                    <div className="card-title"><FaTrophy /> <h3>Equipos</h3></div>
+                    <div className="card-title">
+                        <FaTrophy className="icon-gold" /> <h3>Equipos</h3>
+                    </div>
                     <div className="card-body">
                         {user.teams?.length > 0 ? (
                             <div className="teams-list">
-                                {user.teams.map((team) => (
-                                    <div key={team._id} className="team-item-mini">
-                                        <img src={team.logo || 'default-team-logo.png'} alt={team.name} className="team-logo-small" />
-                                        <div className="team-info-mini">
-                                            <span className="team-name">{team.name}</span>
-                                            <span className="team-game-tag">{team.game}</span>
+                                {user.teams.map((team) => {
+                                    // Imagen por defecto con estilo gaming si no hay logo
+                                    const defaultLogo = "https://i.ibb.co/VWV0YmP/default-esports-team.png"; // Sustituir por tu ruta local
+                                    const teamLogo = team.logo || defaultLogo;
+
+                                    return (
+                                        <div key={team._id} className="team-item-mini fade-in-list">
+                                            <div className="team-logo-wrapper">
+                                                <img 
+                                                    src={teamLogo} 
+                                                    alt={team.name} 
+                                                    className="team-logo-small" 
+                                                    onError={(e) => e.target.src = defaultLogo}
+                                                />
+                                            </div>
+                                            <div className="team-info-mini">
+                                                <span className="team-name">{team.name}</span>
+                                                <span className="team-game-tag">{team.game}</span>
+                                            </div>
+                                            <div className="team-action-indicator">
+                                                <div className="dot-active"></div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="empty-state"><p>No perteneces a ningún equipo aún.</p></div>
+                            <div className="empty-state-modern">
+                                <FaTrophy className="empty-icon" />
+                                <p>No perteneces a ningún equipo aún.</p>
+                            </div>
                         )}
                     </div>
                 </div>

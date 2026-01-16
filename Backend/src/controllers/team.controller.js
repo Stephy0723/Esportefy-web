@@ -1,31 +1,75 @@
 // Backend/src/controllers/team.controller.js
 
 import Team from "../models/Team.js";
+import User from "../models/User.js";
 import crypto from "crypto";
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = './uploads/teams/';
+
+        // 1. PRIMERO: Verificar y crear la carpeta
+        try {
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+                console.log("Carpeta de equipos creada con éxito.");
+            }
+        } catch (err) {
+            console.error("Error al crear la carpeta:", err);
+        }
+
+        // 2. SEGUNDO: Pasar el control a Multer
+        cb(null, uploadDir); 
+    },
+    filename: (req, file, cb) => {
+        // Nombre único: ID-Timestamp.ext
+        const ext = path.extname(file.originalname);
+        // Usamos req.userId (que viene del middleware verifyToken)
+        cb(null, `${req.userId}-${Date.now()}${ext}`);
+    }
+});
+
+export const upload = multer({ 
+    storage,
+   
+});
 
 export const createTeam = async (req, res) => {
     try {
-        // Extraemos todo lo que viene del CreateTeamPage.jsx
-        const { formData, roster, logoPreview } = req.body;
+        // Multer pone los textos en req.body y el archivo en req.file
+        let { formData, roster } = req.body;
+
+        // IMPORTANTE: Parsear si vienen como string
+        const parsedFormData = typeof formData === 'string' ? JSON.parse(formData) : formData;
+        const parsedRoster = typeof roster === 'string' ? JSON.parse(roster) : roster;
+
+        const logoPath = req.file 
+            ? `${req.protocol}://${req.get('host')}/uploads/teams/${req.file.filename}`
+            : '/uploads/teams/default.png';
 
         const newTeam = new Team({
-            ...formData,
-            logo: logoPreview,
-            roster: roster,
-            captain: req.userId, // Viene de tu middleware de auth
+            ...parsedFormData,
+            logo: logoPath,
+            roster: parsedRoster,
+            captain: req.userId,
+            members: [req.userId],
             inviteCode: crypto.randomBytes(4).toString('hex').toUpperCase()
         });
 
         const savedTeam = await newTeam.save();
         
+        // Actualizar al usuario para que vea su nuevo equipo
+        await User.findByIdAndUpdate(req.userId, { $push: { teams: savedTeam._id } });
+
         res.status(201).json({
-            message: "Equipo creado con éxito",
-            team: savedTeam,
+            message: "Equipo creado",
             inviteLink: `http://localhost:3000/join/${savedTeam.inviteCode}`
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error al crear el equipo", error });
+        res.status(500).json({ message: "Error", error: error.message });
     }
 };
 
