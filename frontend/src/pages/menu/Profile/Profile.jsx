@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -164,22 +164,43 @@ const Profile = () => {
 
                 {/* 4. EQUIPOS */}
                 <div className="profile-card teams-card">
-                    <div className="card-title"><FaTrophy /> <h3>Equipos</h3></div>
+                    <div className="card-title">
+                        <FaTrophy className="icon-gold" /> <h3>Equipos</h3>
+                    </div>
                     <div className="card-body">
                         {user.teams?.length > 0 ? (
                             <div className="teams-list">
-                                {user.teams.map((team) => (
-                                    <div key={team._id} className="team-item-mini">
-                                        <img src={team.logo || 'default-team-logo.png'} alt={team.name} className="team-logo-small" />
-                                        <div className="team-info-mini">
-                                            <span className="team-name">{team.name}</span>
-                                            <span className="team-game-tag">{team.game}</span>
+                                {user.teams.map((team) => {
+                                    // Imagen por defecto con estilo gaming si no hay logo
+                                    const defaultLogo = "https://i.ibb.co/VWV0YmP/default-esports-team.png"; // Sustituir por tu ruta local
+                                    const teamLogo = team.logo || defaultLogo;
+
+                                    return (
+                                        <div key={team._id} className="team-item-mini fade-in-list">
+                                            <div className="team-logo-wrapper">
+                                                <img 
+                                                    src={teamLogo} 
+                                                    alt={team.name} 
+                                                    className="team-logo-small" 
+                                                    onError={(e) => e.target.src = defaultLogo}
+                                                />
+                                            </div>
+                                            <div className="team-info-mini">
+                                                <span className="team-name">{team.name}</span>
+                                                <span className="team-game-tag">{team.game}</span>
+                                            </div>
+                                            <div className="team-action-indicator">
+                                                <div className="dot-active"></div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="empty-state"><p>No perteneces a ningún equipo aún.</p></div>
+                            <div className="empty-state-modern">
+                                <FaTrophy className="empty-icon" />
+                                <p>No perteneces a ningún equipo aún.</p>
+                            </div>
                         )}
                     </div>
                 </div>

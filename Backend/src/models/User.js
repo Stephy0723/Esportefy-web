@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: true },
     checkTerms: { type: Boolean, required: true },
 
-    // --- Seguridad y Recuperación ---
+    // -- Seguridad y Recuperación ---
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
 
@@ -41,6 +41,7 @@ const UserSchema = new mongoose.Schema({
             username: { type: String },
             verified: { type: Boolean, default: false }
         },
+
         riot: {
             puuid: { type: String },
             gameName: { type: String },
@@ -65,13 +66,11 @@ const UserSchema = new mongoose.Schema({
             verified: { type: Boolean, default: false }
         }
     },
-
+    
     privacy: {
         allowTeamInvites: { type: Boolean, default: true },
         showOnlineStatus: { type: Boolean, default: true },
         allowTournamentInvites: { type: Boolean, default: true }
-
-
     },
 
 }, { timestamps: true });

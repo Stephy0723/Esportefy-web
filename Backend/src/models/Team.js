@@ -19,7 +19,6 @@ const teamSchema = new mongoose.Schema({
     teamLanguage: String,
     logo: String,
     captain: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    // Estructura de Roster que coincide con tu estado en React
     roster: {
         starters: [playerSchema],
         subs: [playerSchema],
