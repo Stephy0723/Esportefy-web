@@ -71,50 +71,93 @@ const Dashboard = () => {
     return (
         <div className="dashboard-content-only">
 
-            {/* HEADER DE BIENVENIDA */}
-            <div className="dash-header">
-                <div className="header-content">
-                    <h1>Bienvenido, <span className="highlight-text">{userData.username}</span></h1>
-                    <p>Resumen de tu actividad en Esportefy.</p>
+     <div className="dashboard-content-only">
+    {/* SECCIÓN BIENVENIDA CON AVATAR */}
+ <div className="dashboard-content-only">
+    <div className="top-layout">
+        <div className="welcome-section">
+            <div className="welcome-header">
+                {/* CONTENEDOR DE LA FOTO */}
+                <div className="user-profile-pic">
+                    <img src={user?.avatar || "https://i.pravatar.cc/150?u=yutukai"} alt="Profile" />
                 </div>
-
-                <div className="header-right-actions">
-                    <button className="btn-university" onClick={() => navigate('/university')}>
-                        <i className='bx bxs-graduation'></i>
-                        <span>Zona Universitaria</span>
-                    </button>
-
-                    <div className="date-badge">
-                        <i className='bx bx-calendar'></i> {today}
-                    </div>
+                <div className="welcome-text">
+                    <h1>BIENVENIDA DE NUEVO, <span className="user-name">{userData.username}</span></h1>
+                    <p>Aquí tienes el resumen de tu rendimiento y actividad para hoy.</p>
                 </div>
             </div>
 
-            {/* RIOT STATUS CARD */}
-            {user?.connections?.riot?.verified ? (
-                <div className="dashboard-riot-card">
-                    <img
-                        src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${user.connections.riot.profileIconId}.png`}
-                        alt="Riot Icon"
-                        className="riot-avatar"
-                    />
-                    <div className="riot-info">
-                        <strong>{user.connections.riot.gameName}#{user.connections.riot.tagLine}</strong>
-                        <span>Nivel {user.connections.riot.summonerLevel}</span>
-                        <span>
-                            {user.connections.riot.rank
-                                ? `${user.connections.riot.rank.tier} ${user.connections.riot.rank.division} (${user.connections.riot.rank.lp} LP)`
-                                : 'Sin clasificar'}
-                        </span>
-                    </div>
+            <div className="university-banner" onClick={() => navigate('/university')}>
+                <div className="uni-icon"><i className='bx bxs-graduation'></i></div>
+                <div className="uni-text">
+                    <h4>ESPORTEFY UNIVERSITY</h4>
+                    <p>Programas de Becas y Scouting para jugadores de élite.</p>
                 </div>
-            ) : (
-                <div className="dashboard-riot-card empty">
-                    <p>No tienes cuenta Riot vinculada</p>
-                    <button onClick={() => navigate('/settings')}>Vincular Riot</button>
-                </div>
-            )}
+                <i className='bx bx-chevron-right'></i>
+            </div>
+        </div>
 
+        <div className="quick-stats-row">
+            <div className="mini-kpi">
+                <span className="kpi-label">WIN RATE</span>
+                <span className="kpi-value">68.4%</span>
+                <span className="kpi-trend">+2.1%</span>
+            </div>
+            <div className="mini-kpi">
+                <span className="kpi-label">TORNEOS</span>
+                <span className="kpi-value">24</span>
+                <span className="kpi-trend">Global</span>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+</div>
+
+      
+<div className="uni-scouting-card" onClick={() => navigate('/university')}>
+    <div className="uni-badge-top">BECAS DISPONIBLES</div>
+    <div className="uni-content">
+        <div className="uni-info-main">
+            <h3>Programa de Scouting Universitario</h3>
+            <p>Hay <strong>12 universidades</strong> buscando jugadores de tu nivel en {userData.games[0] || 'Esports'}.</p>
+            <div className="uni-tags">
+                <span className="tag"><i className='bx bxs-graduation'></i> Becas del 50-100%</span>
+                <span className="tag"><i className='bx bxs-map'></i> Global</span>
+            </div>
+        </div>
+        <button className="btn-uni-apply">
+            EXPLORAR BECAS <i className='bx bx-right-arrow-alt'></i>
+        </button>
+    </div>
+</div>
+
+{/* SNAKE BAR NOTIFICATION - PRO VERSION */}
+<div className="riot-snake-bar">
+    <div className="snake-bar-container">
+        {/* Línea de escaneo perimetral que cubre todo el panel */}
+        <div className="snake-border-glow"></div>
+        
+        <div className="snake-inner-content">
+            <p className="snake-message">
+                VINCULA TU CUENTA RIOT PARA ESTADÍSTICAS PRO
+            </p>
+
+            {/* Botón Centralizado */}
+            <div className="snake-action-center">
+                <button className="snake-btn-main" onClick={() => navigate('/settings')}>
+                    VINCULAR AHORA
+                </button>
+            </div>
+
+            {/* Botón Cancelar (X) */}
+            <button className="snake-close-btn" onClick={() => {/* Aquí pondrías tu lógica de ocultar por hoy */}}>
+                <i className='bx bx-x'></i>
+            </button>
+        </div>
+    </div>
+</div>
             {/* STATS GRID */}
             <div className="stats-grid">
                 <div className="stat-card">
@@ -178,7 +221,7 @@ const Dashboard = () => {
                                             <div className="poster-container-v6">
                                                 <img src={imageSrc} alt={gameId} />
                                                 <div className="card-overlay-v6">
-                                                    <span className="overlay-btn">JUGAR</span>
+                                                    <span className="overlay-btn">IR A COMUNIDAD</span>
                                                 </div>
                                             </div>
                                             <div className="game-footer-v6">
@@ -194,44 +237,93 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* COMUNIDAD / TU RED */}
-                <div className="content-panel">
-                    <div className="panel-header">
-                        <h3><i className='bx bx-group'></i> Tu Red</h3>
-                        <span className="badge-notification">Sugerencias</span>
-                    </div>
+          {/* --- SECCIÓN COMUNIDAD Y TOP GLOBAL --- */}
+<div className="admin-community-grid">
+    
+    {/* PANEL: TU RED (COMUNIDAD) */}
+    <div className="content-panel community-panel">
+        <div className="panel-header">
+            <h3><i className='bx bx-group'></i> TU RED</h3>
+            <span className="badge-notification">Sugerencias</span>
+        </div>
 
-                    <div className="community-box">
-                        {userData.mainGoal.includes('Fun') || userData.mainGoal.includes('Diversión') ? (
-                            <div className="suggestion-box">
-                                <i className='bx bx-party'></i>
-                                <p>Buscas <strong>Diversión</strong>. Únete a salas casuales.</p>
-                                <button className="btn-small">Ver Salas</button>
-                            </div>
-                        ) : (
-                            <div className="suggestion-box">
-                                <i className='bx bx-trophy'></i>
-                                <p>Modo <strong>Competitivo</strong> detectado. Busca equipo aquí.</p>
-                                <button className="btn-small">Reclutamiento</button>
-                            </div>
-                        )}
+        <div className="community-box">
+            {/* Sugerencia Dinámica basada en el objetivo */}
+            <div className="suggestion-box">
+                <i className={userData.mainGoal?.includes('Fun') ? 'bx bx-party' : 'bx bx-trophy'}></i>
+                <p>
+                    {userData.mainGoal?.includes('Fun') 
+                        ? <>Buscas <strong>Diversión</strong>. Únete a salas casuales.</>
+                        : <>Modo <strong>Competitivo</strong> detectado. Busca equipo aquí.</>
+                    }
+                </p>
+                <button className="btn-small-neon">
+                    {userData.mainGoal?.includes('Fun') ? 'Ver Salas' : 'Reclutamiento'}
+                </button>
+            </div>
 
-                        <div className="friend-list">
-                            <p className="list-title">Jugadores Similares:</p>
-                            {similarPlayers.map((player, idx) => (
-                                <div key={idx} className="friend-item">
-                                    <div className="avatar" style={{ background: idx % 2 === 0 ? '#4facfe' : '#ff0055' }}></div>
-                                    <div>
-                                        <span>{player.username}</span>
-                                        <small>Interés: {player.game}</small>
-                                    </div>
-                                    <i className='bx bx-user-plus action-icon'></i>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+
+            {/* Lista de Amigos Sugeridos */}
+    <div className="friend-list">
+    <p className="list-title">JUGADORES SIMILARES</p>
+    <div className="friends-scroll-area">
+        {similarPlayers.map((player, idx) => (
+            <div key={idx} className="friend-item-v2">
+                <div className="avatar-circle-wrapper">
+                    <img src={`https://i.pravatar.cc/150?u=${player.username}`} alt="avatar" />
+                    <div className="status-dot online"></div>
+                </div>
+                
+                <div className="friend-info">
+                    <span className="friend-name">{player.username}</span>
+                    <small className="friend-game">{player.game}</small>
                 </div>
 
+                <button className="btn-add-tech">
+                    <i className='bx bx-plus'></i>
+                </button>
+            </div>
+        ))}
+    </div>
+</div>
+    </div>
+    </div> 
+
+
+   {/* PANEL: MEJORES JUGADORES / EQUIPOS */}
+<div className="content-panel ranking-panel">
+    <div className="panel-header">
+        <h3><i className='bx bxs-star'></i> TOP GLOBAL</h3>
+        <div className="ranking-tabs">
+            {/* Podemos hacer que cada tab filtre o lleve a una ruta específica */}
+            <span className="active" onClick={() => navigate('/rankings/players')}>JUGADORES</span>
+            <span onClick={() => navigate('/rankings/teams')}>EQUIPOS</span>
+        </div>
+    </div>
+
+    <div className="ranking-list">
+        {[1, 2, 3, 4].map((rank) => (
+            <div key={rank} className="ranking-item" onClick={() => navigate(`/profile/pro-${rank}`)}>
+                <div className={`rank-number pos-${rank}`}>#{rank}</div>
+                <div className="rank-avatar">
+                    <img src={`https://i.pravatar.cc/150?img=${rank + 10}`} alt="pro-player" />
+                    {rank === 1 && <i className='bx bxs-crown crown-icon'></i>}
+                </div>
+                <div className="rank-details">
+                    <p className="rank-name">ProPlayer_{rank}</p>
+                    <p className="rank-xp">2,450 MMR</p>
+                </div>
+                <div className="rank-badge-v2">PRO</div>
+            </div>
+        ))}
+    </div>
+    
+    {/* BOTÓN VINCULADO A /rankings */}
+    <button className="btn-view-all-ranking" onClick={() => navigate('/rankings')}>
+        VER RANKING COMPLETO <i className='bx bx-right-arrow-alt'></i>
+    </button>
+</div>
+</div>
                 {/* TORNEOS SUGERIDOS */}
                 <div className="content-panel full-width">
                     <div className="panel-header">

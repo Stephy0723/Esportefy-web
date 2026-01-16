@@ -16,7 +16,8 @@ import Sidebar from './components/Sidebar/Sidebar';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
-
+//rANKINGS
+import Rankings from './pages/menu/Rankings/Rankings';
 // CORRECCIÓN AQUÍ: Quité el punto y coma (;) que estaba DENTRO de las comillas
 import ResetPassword from './pages/Auth/ForgotPasswordFlow'; 
 import Dashboard from './pages/menu/Dashboard/Dashboard';
@@ -75,7 +76,7 @@ import Tekken8Page from './pages/Game/Tekken8Page.jsx';
 import StarcraftPage from './pages/Game/StarcraftPage.jsx';
 import RuneterraPage from './pages/Game/RuneteraPage.jsx';
 import Nba2k14Page from './pages/Game/Nba2k14Page.jsx';
-import Rankings from './pages/menu/Rankings/Rankings.jsx';
+
 
 // --- COMPONENTE AUXILIAR: DETECTOR DE BIENVENIDA ---
 const WelcomeTrigger = () => {
@@ -196,6 +197,8 @@ function App() {
             <Route path="/game/starcraft" element={<StarcraftPage />} />
             <Route path="/game/lor" element={<RuneterraPage />} />  
             <Route path="/game/nba2k" element={<Nba2k14Page />} />
+            {/* Rankings */  }
+            <Route path="/rankings" element={<Rankings />} />
 
             {/* Rutas dinámicas */  }
             <Route path="/group/:id" element={<GroupPage />} />
