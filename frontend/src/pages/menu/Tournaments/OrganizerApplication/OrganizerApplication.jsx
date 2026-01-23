@@ -51,7 +51,7 @@ const OrganizerApplication = () => {
 
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      await axios.post('http://localhost:4000/api/auth/apply-organizer', data, {
+      await axios.post('http://76.13.97.163:4000/api/auth/apply-organizer', data, {
         headers: { 
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
