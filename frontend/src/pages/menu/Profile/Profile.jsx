@@ -23,7 +23,7 @@ const Profile = () => {
                     navigate('/login');
                     return;
                 }
-                const response = await axios.get('http://localhost:4000/api/auth/profile', {
+                const response = await axios.get('http://76.13.97.163:4000/api/auth/profile', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUser(response.data);

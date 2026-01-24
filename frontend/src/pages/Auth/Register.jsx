@@ -46,7 +46,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:4000/api/auth/register', formData);
+      const response = await axios.post('http://76.13.97.163:4000/api/auth/register', formData);
       console.log("Usuario registrado:", response.data);
       alert("¡Cuenta creada con éxito! Ahora puedes iniciar sesión.");
       navigate('/login');

@@ -1,6 +1,6 @@
 // Importamos los banners desde tu nueva carpeta assets/banner
 import BannerLol from '../assets/banner/BannerLol.jpg';
-import BannerValo from '../assets/banner/BannerValo.jpg';
+import BannerValo from '../assets/banner/BannerValorant.jpg';
 import BannerDota from '../assets/banner/BannerDota.jpg';
 import BannerMlbb from '../assets/banner/BannerMlbb.jpg';
 import BannerWildRift from '../assets/banner/BannerWild.jpg';

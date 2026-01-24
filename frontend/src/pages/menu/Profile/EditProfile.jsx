@@ -130,7 +130,7 @@ const EditProfile = () => {
 
         try {
             const response = await axios.put(
-                'http://localhost:4000/api/auth/update-profile', 
+                'http://76.13.97.163:4000/api/auth/update-profile', 
                 data,
                 { 
                     headers: { 

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaHandshake, FaUsers, FaStar } from 'react-icons/fa';
 import { gamesDetailedData } from '../../data/gamesDetailedData';
-import bannerValorant from '../../assets/banner/BannerValo.jpg'; 
+import bannerValorant from '../../assets/banner/BannerValorant.jpg'; 
 import './GamePageIndividual.css';
 
 const ValorantPage = () => {

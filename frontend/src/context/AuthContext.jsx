@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
             if (token) {
                 try {
                     // AJUSTA ESTA URL A TU ENDPOINT DE PERFIL REAL
-                    const response = await fetch('http://localhost:4000/api/auth/profile', {
+                    const response = await fetch('http://76.13.97.163:4000/api/auth/profile', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('token')}`,
