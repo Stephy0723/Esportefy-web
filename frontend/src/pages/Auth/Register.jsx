@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Auth.css';
-import sideImage from '../../assets/images/login-bg.jpg';
+import './Register.css';
+// 1. IMPORTAR EL CEREBRO DEL TEMA (IGUAL QUE EN SIDEBAR)
+import { useTheme } from '../../context/ThemeContext'; 
 
-// --- IMPORTACIONES ---
+// 2. IMPORTAR TUS DOS IMÁGENES DE FONDO
+import bgWhite from '../../assets/images/login-black.png'; // Imagen Oscura
+import bgBlack from '../../assets/images/login-white.png'; // Imagen Clara (Asegúrate que exista con este nombre)
+
+// --- IMPORTACIONES DE JUEGOS ---
 import imgLol from '../../assets/gameImages/lol.png';
 import imgMlbb from '../../assets/gameImages/mlbb.png';
 import imgHok from '../../assets/gameImages/hok.png';
@@ -16,12 +21,15 @@ import imgCodm from '../../assets/gameImages/codm.png';
 import imgMk from '../../assets/gameImages/mk11.png';
 import imgMarioKart from '../../assets/gameImages/mariokart.png';
 
-
 const Register = () => {
   const navigate = useNavigate();
+  
+  // 3. OBTENER SI ESTÁ EN MODO OSCURO (IGUAL QUE EN SIDEBAR)
+  const { isDarkMode } = useTheme();
+
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false); // <--- Para el estado de carga
+  const [loading, setLoading] = useState(false); 
 
   const [formData, setFormData] = useState({
     fullName: '', phone: '', country: '', birthDate: '',
@@ -73,7 +81,6 @@ const Register = () => {
     { id: 'codm', name: 'CoD Mobile', img: imgCodm },
     { id: 'mk11', name: 'Mortal Kombat', img: imgMk },
     { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart }
-
   ];
 
   const platformsList = [
@@ -83,7 +90,8 @@ const Register = () => {
   ];
 
   return (
-    <div className="auth-container-split">
+    // 4. USAR isDarkMode PARA LA CLASE CSS DEL COLOR DE FONDO
+    <div className={`auth-container-split ${!isDarkMode ? 'light-mode' : ''}`}>
       <div className="auth-left">
         <div className="auth-nav">
           <span className="brand">ESPORTEFY</span>
@@ -223,14 +231,10 @@ const Register = () => {
                 </div>
                 <label className="remember-me mt-2">
                   <input type="checkbox" name="checkTerms" checked={formData.checkTerms} onChange={handleChange} />
-<span className="terms-text">
-    He leído y acepto los 
-    {/* Enlace corregido */}
-    <a href="/legal/terms" target="_blank" rel="noreferrer"> Términos de Servicio </a>
-    y la 
-    {/* Enlace corregido */}
-    <a href="/legal/privacy" target="_blank" rel="noreferrer"> Política de Privacidad</a>.
-</span>                </label>
+                  <span className="terms-text">
+                    He leído y acepto los <a href="/legal/terms" target="_blank" rel="noreferrer"> Términos de Servicio </a> y la <a href="/legal/privacy" target="_blank" rel="noreferrer"> Política de Privacidad</a>.
+                  </span>
+                </label>
 
                 {error && <div className="error-alert" style={{color: '#ff4d4d', marginTop: '10px'}}>{error}</div>}
 
@@ -245,15 +249,26 @@ const Register = () => {
                     {loading ? 'PROCESANDO...' : 'FINALIZAR'}
                   </button>
                 </div>
+                <div className="sidebar-credit">
+                    <span className="text">Dev by <strong>Steliant</strong></span>
+                </div>
               </div>
             )}
           </form>
         </div>
       </div>
+      
+      {/* 5. SECCIÓN DERECHA CON CAMBIO DE IMAGEN */}
       <div className="auth-right">
         <div className="image-overlay"></div>
-        <img src={sideImage} alt="Setup Gamer" />
+        {/* Aquí está la lógica EXACTA de tu Sidebar: Si isDarkMode es true, usa bgBlack, si no bgWhite */}
+        <img 
+            src={isDarkMode ? bgBlack : bgWhite} 
+            alt="Setup Gamer" 
+            className="dynamic-bg"
+        />
       </div>
+      
     </div>
   );
 };

@@ -2,57 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-
 /* ========================================= */
 /* ADN DEL PROYECTO (VARIABLES GLOBALES)     */
 /* ========================================= */
-:root {
-    /* --- PALETA DE COLORES --- */
-    --primary: #8EDB15;          /* Verde Neón */
-    --primary-hover: #7ac40f;    /* Hover */
-    --primary-dim: rgba(142, 219, 21, 0.15); /* Brillo sutil */
 
 :root {
-  /* --- FONDOS (LIGHT) --- */
-  --bg-page: #ffffff;
-  --bg-card: #ffffff;
-  --bg-input: #f2f2f2;
-  --border-color: #dddddd;
+    /* --- COLOR PRIMARIO (VERDE NEÓN) --- */
+    --primary: #8EDB15;
+    --primary-hover: #7ac40f;
+    --primary-dim: rgba(142, 219, 21, 0.15);
 
-  /* --- TEXTOS --- */
-  --text-main: #000000;
-  --text-muted: #555555;
+    /* --- FONDOS Y BORDES (MODO CLARO POR DEFECTO) --- */
+    --bg-page: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f2f2f2;
+    --border-color: #dddddd;
 
-  /* --- PRIMARIO --- */
-  --primary: #8EDB15;
-  --primary-hover: #7ac40f;
-  --primary-dim: rgba(142, 219, 21, 0.15);
-
-  --font-stack: 'Poppins', sans-serif;
-  
-}
-.dark {
-  --bg-page: #000000;
-  --bg-card: #000000;
-  --bg-input: #111111;
-  --border-color: #222222;
-
-  --text-main: #ffffff;
-  --text-muted: #bbbbbb;
-}
-    --primary-hover: #7ac40f;    /* Hover */
-
-
+    /* --- TEXTOS (MODO CLARO) --- */
+    --text-main: #000000;
+    --text-muted: #555555;
 
     /* --- TIPOGRAFÍA --- */
     --font-stack: 'Poppins', sans-serif;
+}
+
+/* --- MODO OSCURO (OVERRIDES) --- */
+/* Esto se activa cuando la etiqueta <html> o un padre tiene la clase 'dark' */
+.dark {
+    --bg-page: #000000;
+    --bg-card: #000000;
+    --bg-input: #111111;
+    --border-color: #222222;
+
+    --text-main: #ffffff;
+    --text-muted: #bbbbbb;
+}
+
+/* ========================================= */
+/* RESET BÁSICO (IMPORTANTE PARA FULL SCREEN)*/
+/* ========================================= */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden; /* Evita scroll lateral blanco */
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: var(--font-stack);
 }
 
 /* ========================================= */
 /* CLASES DE UTILIDAD (ESTILOS REUTILIZABLES)*/
 /* ========================================= */
 
-/* 1. Efecto Vidrio (Úsalo en tarjetas flotantes) */
+/* 1. Efecto Vidrio */
 .glass-panel {
     background: rgba(18, 18, 18, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -60,7 +63,7 @@
     backdrop-filter: blur(10px);
 }
 
-/* 2. Input Cyberpunk (Línea inferior) */
+/* 2. Input Cyberpunk */
 .input-line {
     background: transparent;
     border: none;
@@ -82,7 +85,7 @@
     color: var(--text-muted);
 }
 
-/* 3. Botón Neón (Para botones principales) */
+/* 3. Botón Neón */
 .btn-neon {
     background-color: var(--primary);
     color: #000000;
@@ -98,7 +101,7 @@
 }
 
 .btn-neon:hover {
-    background-color: #a3ff2e; /* Un poco más claro */
+    background-color: #a3ff2e;
     box-shadow: 0 0 20px rgba(142, 219, 21, 0.6);
     transform: translateY(-2px);
 }

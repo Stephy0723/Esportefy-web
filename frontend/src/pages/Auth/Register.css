@@ -1,0 +1,775 @@
+/* =========================================
+   1. VARIABLES DE TEMA (DINÁMICAS)
+   ========================================= */
+
+/* --- TEMA OSCURO (Por Defecto) --- */
+:root {
+    /* Fondos y Textos Base */
+    --bg-page: #09090b;       /* Fondo "Zinc 950" (Negro elegante) */
+    --text-main: #ffffff;     /* Texto Blanco */
+    --text-muted: #a1a1aa;    /* Gris Suave */
+    
+    /* Colores de Marca */
+    --brand-color: #8EDB15;   /* VERDE NEÓN */
+    --brand-hover: #7ac111;   /* Verde un poco más oscuro para hover */
+    --btn-text: #000000;      /* Texto negro dentro del botón verde */
+
+    /* Inputs */
+    --input-border: #3f3f46;  /* Línea gris oscura en reposo */
+    --input-focus: var(--brand-color); /* Línea verde al escribir */
+    
+    /* Variable técnica para el autocompletado de Chrome */
+    --autofill-bg: #09090b;   
+}
+
+/* --- TEMA CLARO (Se activa si el contenedor tiene la clase .light-mode) --- */
+.light-mode {
+    --bg-page: #ffffff;       /* Fondo Blanco Puro */
+    --text-main: #18181b;     /* Texto Negro */
+    --text-muted: #71717a;    /* Gris Oscuro */
+    
+    --input-border: #d4d4d8;  /* Línea gris clara en reposo */
+    --input-focus: #65a30d;   /* Verde un poco más oscuro para contraste en blanco */
+    
+    --autofill-bg: #ffffff;
+}
+
+/* Reset básico */
+* { box-sizing: border-box; }
+
+/* =========================================
+   2. ESTRUCTURA PRINCIPAL (LAYOUT)
+   ========================================= */
+.auth-container-split {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-page); /* ¡Aquí ocurre la magia del cambio de color! */
+    color: var(--text-main);
+    font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Panel Izquierdo (Formulario) */
+.auth-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 80px; /* Espacio de respiración (Sistema de 8pts) */
+    background-color: var(--bg-page);
+    position: relative;
+    max-width: 600px;
+}
+
+/* Header y Textos */
+.auth-nav { position: absolute; top: 40px; left: 80px; }
+.brand { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+
+.header-text { margin-top: 50px; margin-bottom: 40px; }
+.header-text h1 { 
+    font-size: 3rem; 
+    margin: 10px 0; 
+    color: var(--text-main); 
+    line-height: 1.1; 
+}
+.subtitle { color: var(--text-muted); font-size: 1.1rem; }
+
+/* Etiqueta decorativa (Seguridad / Pro) */
+.badge-pro {
+    display: inline-block; padding: 6px 12px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;
+    border: 1px solid currentColor;
+}
+
+/* =========================================
+   3. INPUTS: ESTILO "SOLO LÍNEA"
+   ========================================= */
+.input-row {
+    display: flex;
+    align-items: flex-end; /* Alinea el texto del label con la línea base */
+    margin-bottom: 30px;
+    gap: 20px;
+}
+
+/* Etiqueta (Email, Contraseña...) */
+.input-row label {
+    width: 140px;          /* Ancho fijo para alineación perfecta */
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: left;
+    padding-bottom: 10px;  /* Separación visual con la línea */
+    letter-spacing: 1px;
+}
+
+.input-wrapper {
+    flex-grow: 1;
+    position: relative;
+}
+
+/* EL INPUT REAL (Transparente y minimalista) */
+.input-wrapper input {
+    width: 100%;
+    background-color: transparent !important; /* SIN FONDO */
+    border: none !important;
+    border-bottom: 1px solid var(--input-border) !important; /* SOLO LÍNEA ABAJO */
+    border-radius: 0 !important;
+    padding: 10px 35px 10px 0;
+    
+    color: var(--text-main);
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: inherit;
+    transition: border-color 0.3s ease;
+    
+    /* Eliminar estilos por defecto */
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.input-wrapper input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+/* AL HACER CLICK (FOCUS) */
+.input-wrapper input:focus {
+    border-bottom: 2px solid var(--input-focus) !important; /* La línea se pone VERDE */
+    background: transparent !important;
+}
+
+/* --- HACK PARA ELIMINAR FONDO AZUL DE CHROME (AUTOCOMPLETADO) --- */
+.input-wrapper input:-webkit-autofill,
+.input-wrapper input:-webkit-autofill:hover, 
+.input-wrapper input:-webkit-autofill:focus {
+    /* "Pinta" el fondo del mismo color que la página usando una sombra interior */
+    -webkit-box-shadow: 0 0 0 30px var(--bg-page) inset !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Iconos (Sobre, Ojo) */
+.input-wrapper i {
+    position: absolute;
+    right: 0;
+    bottom: 10px; /* Alineado con la línea */
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    pointer-events: none;
+    transition: color 0.3s;
+}
+
+/* El icono también se pone verde al enfocar */
+.input-wrapper input:focus + i { color: var(--input-focus); }
+.input-wrapper i.toggle-pass { pointer-events: auto; cursor: pointer; }
+
+
+/* =========================================
+   4. CHECKBOX Y OPCIONES
+   ========================================= */
+.options-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    width: 100%;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Checkbox personalizado */
+.remember-me input[type="checkbox"] {
+    accent-color: var(--brand-color); /* VERDE */
+    width: 16px; 
+    height: 16px;
+    cursor: pointer;
+}
+
+/* =========================================
+   5. BOTONES DE ACCIÓN (Atrás y Enviar)
+   ========================================= */
+.form-actions {
+    margin-top: 40px;
+    display: flex;
+    gap: 15px; /* Separación entre botones */
+    width: 100%;
+}
+
+/* BOTÓN PRINCIPAL (VERDE NEÓN) */
+.btn-primary {
+    flex: 2; /* Ocupa el 66% del ancho (Proporción 2) */
+    padding: 16px;
+    background: var(--brand-color);
+    color: var(--btn-text); /* Texto Negro */
+    border: none;
+    border-radius: 4px;
+    
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.btn-primary:hover { 
+    background: var(--brand-hover); 
+    transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* BOTÓN SECUNDARIO / ATRÁS (TRANSPARENTE CON BORDE) */
+.btn-secondary {
+    flex: 1; /* Ocupa el 33% del ancho (Proporción 1) */
+    padding: 16px; /* Misma altura que el primario */
+    
+    background: transparent !important;
+    border: 1px solid var(--input-border) !important; /* Borde gris fino */
+    color: var(--text-muted) !important;
+    
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    /* Centrado flex para asegurar alineación del texto */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-main) !important; /* Borde se pone blanco/negro */
+    color: var(--text-main) !important;        /* Texto se pone blanco/negro */
+    background: rgba(125, 125, 125, 0.1) !important;
+}
+
+/* Footer Links */
+.footer-text { margin-top: 30px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+.footer-text a { color: var(--text-main); text-decoration: none; font-weight: 700; transition: color 0.2s; }
+.footer-text a:hover { color: var(--brand-color); }
+
+/* =========================================
+   6. PANEL DERECHO (IMAGEN)
+   ========================================= */
+.auth-right {
+    flex: 1.5; /* Ocupa el 60% de la pantalla */
+    position: relative;
+    overflow: hidden;
+    background-color: var(--bg-page);
+}
+
+.auth-right img.dynamic-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Esto hace que la imagen no se estire feo */
+    display: block;
+}
+.image-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    /* Degradado sutil para integrar la imagen con el fondo */
+    background: linear-gradient(to right, var(--bg-page), transparent 30%);
+    pointer-events: none;
+}
+
+/* Animaciones */
+.step-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 900px) { .auth-right { display: none; } } /* Ocultar imagen en tablets */
+@media (max-width: 480px) {
+    .auth-left { padding: 20px; }
+    .input-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+    .input-row label { width: 100%; padding-bottom: 0; margin-bottom: 5px; }
+}
+/* =========================================
+   STEP INDICATOR (CÍRCULOS 1-2-3-4)
+   ========================================= */
+.step-indicator {
+    display: flex;
+    justify-content: center; /* Centrado en la pantalla */
+    align-items: center;
+    margin-bottom: 40px;     /* Espacio antes del título */
+    width: 100%;
+}
+
+/* Contenedor de cada paso (Círculo + Línea) */
+.step-item {
+    display: flex;
+    align-items: center;
+}
+
+/* EL CÍRCULO */
+.step-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%; /* Lo hace perfectamente redondo */
+    
+    /* Estado Inactivo (Gris) */
+    background-color: transparent;
+    border: 2px solid var(--text-muted); 
+    color: var(--text-muted);
+    
+    /* Centrar el número */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    position: relative;
+    z-index: 2; /* Para que quede encima de la línea */
+    transition: all 0.3s ease;
+}
+
+/* LA LÍNEA CONECTORA */
+.step-line {
+    width: 50px;           /* Largo de la línea */
+    height: 2px;           /* Grosor */
+    background-color: var(--input-border); /* Gris por defecto */
+    margin: 0 8px;         /* Espacio entre círculo y línea */
+    transition: all 0.3s ease;
+}
+
+/* --- ESTADO ACTIVO (Cuando step >= num) --- */
+
+/* 1. El Círculo se pone VERDE NEÓN */
+.step-item.active .step-circle {
+    border-color: var(--brand-color);    /* Borde Verde */
+    background-color: var(--brand-color); /* Relleno Verde */
+    color: #000000;                      /* Número Negro (Contraste) */
+    box-shadow: 0 0 10px rgba(142, 219, 21, 0.4); /* Pequeño brillo neon */
+}
+
+/* 2. La Línea se pone VERDE NEÓN (Truco visual) */
+/* Nota: Esto pintará la línea a la derecha del círculo activo */
+.step-item.active .step-line {
+    background-color: var(--brand-color);
+}
+
+/* Título del paso (Ej: "Información Real") */
+.step-title {
+    font-size: 1.8rem;
+    color: var(--text-main);
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+}
+
+/* =========================================
+   INPUTS LADO A LADO (SPLIT)
+   ========================================= */
+
+/* El contenedor que tiene los dos inputs */
+.input-row.split {
+    display: flex;       /* Activa el modo lado-a-lado */
+    gap: 20px;           /* Espacio en el medio (calle) */
+    align-items: flex-start;
+    width: 100%;
+}
+
+/* Hacemos que cada input-wrapper ocupe el 50% */
+.input-row.split .input-wrapper {
+    flex: 1;             /* Crece para ocupar espacio igual */
+    width: 100%;         /* Asegura que el input interno llene su espacio */
+    min-width: 0;        /* Evita desbordes en flexbox */
+}
+
+/* RESPONSIVE: En celular, volver a poner uno debajo del otro */
+@media (max-width: 600px) {
+    .input-row.split {
+        flex-direction: column; /* Columna vertical */
+        gap: 0;                 /* Sin espacio extra, usa el margin-bottom normal */
+    }
+    
+    .step-line {
+        width: 30px; /* Líneas más cortas en pantalla pequeña */
+    }
+}
+/* =========================================
+   GRID DE JUEGOS (Dinámico Blanco/Negro)
+   ========================================= */
+
+/* 1. Contenedor de la cuadrícula */
+.games-grid {
+    display: grid;
+    /* Columnas automáticas: mínimo 100px de ancho, máximo lo que quepa */
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+/* 2. La Tarjeta del Juego INDIVIDUAL */
+.game-card-pro {
+    /* IMPORTANTE: Fondo transparente para tomar el color de la página */
+    background-color: transparent; 
+    
+    /* Borde dinámico: gris oscuro en tema oscuro, gris claro en tema claro */
+    border: 1px solid var(--input-border); 
+    
+    border-radius: 12px;
+    padding: 20px 10px;
+    cursor: pointer;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+/* 3. Hover (Al pasar el mouse) */
+.game-card-pro:hover {
+    border-color: var(--text-main); /* El borde se pone del color del texto (Blanco/Negro) */
+    transform: translateY(-3px);    /* Se levanta un poco */
+}
+
+/* 4. ESTADO SELECCIONADO (La magia del Verde) */
+/* La clase .selected se agrega con tu JS cuando haces click */
+.game-card-pro.selected {
+    border-color: var(--brand-color);       /* Borde Verde Neón */
+    background-color: rgba(142, 219, 21, 0.05); /* Fondo verde muy, muy suave */
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.15); /* Resplandor verde */
+}
+
+/* 5. Contenedor de la imagen (Icono del juego) */
+.game-img-wrapper {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    
+    /* Fondo neutral por si la imagen tiene transparencia */
+    background-color: transparent; 
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+/* Efecto zoom en la imagen al seleccionar */
+.game-card-pro.selected .game-img-wrapper img {
+    transform: scale(1.1);
+}
+
+/* 6. Texto (Nombre del juego) */
+.game-card-pro span {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    
+    /* El color del texto cambia automáticamente */
+    color: var(--text-muted); 
+}
+
+/* Al seleccionar, el texto se pone del color principal (Blanco/Negro) */
+.game-card-pro.selected span {
+    color: var(--text-main);
+}
+/* =========================================
+   PASO 3: EXPERIENCIA, PLATAFORMA Y METAS
+   ========================================= */
+
+/* --- 1. NIVEL DE EXPERIENCIA (ROOKIE / MID / PRO) --- */
+.levels-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.level-card {
+    flex: 1; /* Los 3 ocupan el mismo ancho */
+    background-color: transparent;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 20px 10px;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+/* Icono del Nivel (Medalla, Trofeo...) */
+.level-card .level-icon {
+    font-size: 2rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    transition: color 0.2s;
+}
+
+/* Info de texto */
+.level-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.lvl-label {
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    letter-spacing: 1px;
+}
+
+.lvl-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ESTADO SELECCIONADO (NIVEL) */
+.level-card.selected {
+    border-color: var(--brand-color);           /* Borde Verde */
+    background-color: rgba(142, 219, 21, 0.05); /* Fondo verde sutil */
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.1);
+    transform: translateY(-2px);
+}
+
+.level-card.selected .level-icon {
+    color: var(--brand-color); /* Icono se pone verde */
+}
+
+/* Hover simple */
+.level-card:hover {
+    border-color: var(--text-muted);
+}
+
+
+/* --- 2. PLATAFORMAS (CHIPS / PÍLDORAS) --- */
+.platforms-row {
+    display: flex;
+    flex-wrap: wrap; /* Permite que bajen si no caben */
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.platform-chip {
+    padding: 10px 20px;
+    border: 1px solid var(--input-border);
+    border-radius: 50px; /* Forma de píldora redondeada */
+    background-color: transparent;
+    
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espacio entre icono y texto */
+}
+
+.platform-chip i { font-size: 1.1rem; }
+
+/* ESTADO SELECCIONADO (PLATAFORMA) */
+.platform-chip.selected {
+    border-color: var(--brand-color);
+    background-color: var(--brand-color); /* Fondo Verde sólido */
+    color: #000000; /* Texto negro para leerse bien sobre el verde */
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(142, 219, 21, 0.4);
+}
+
+.platform-chip:hover:not(.selected) {
+    border-color: var(--text-main);
+    color: var(--text-main);
+}
+
+
+/* --- 3. OBJETIVOS (TORNEOS / EQUIPO / FUN) --- */
+.goals-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columnas iguales */
+    gap: 15px;
+    margin-bottom: 40px;
+}
+
+.goal-card {
+    background-color: transparent;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.goal-card i {
+    font-size: 1.8rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.goal-card span {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* ESTADO SELECCIONADO (OBJETIVO) */
+.goal-card.selected {
+    border-color: var(--brand-color);
+    background-color: rgba(142, 219, 21, 0.05);
+}
+
+.goal-card.selected i { color: var(--brand-color); }
+.goal-card.selected span { color: var(--text-main); }
+
+.goal-card:hover { transform: translateY(-2px); }
+
+/* UTILIDAD MARGIN TOP */
+.mt-4 { margin-top: 1.5rem !important; }
+
+/* RESPONSIVE (MÓVIL) */
+@media (max-width: 500px) {
+    .levels-row { flex-direction: column; } /* Niveles uno bajo otro */
+    .goals-row { grid-template-columns: 1fr; } /* Objetivos uno bajo otro */
+    
+    .platform-chip {
+        flex: 1; /* Que se estiren en móvil */
+        justify-content: center;
+    }
+}
+/* =========================================
+   CHECKBOX DE TÉRMINOS Y CONDICIONES
+   ========================================= */
+
+/* Contenedor de la fila (Checkbox + Texto) */
+.terms-row {
+    display: flex;
+    align-items: flex-start; /* Alineado arriba por si el texto es largo */
+    gap: 12px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+/* El Checkbox cuadrado (reutilizando estilo anterior) */
+.terms-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    background-color: transparent;
+    cursor: pointer;
+    margin-top: 2px; /* Ajuste fino para alinear con la primera línea de texto */
+    flex-shrink: 0;  /* Evita que se aplaste */
+    position: relative;
+}
+
+/* Cuando está marcado (Verde) */
+.terms-checkbox:checked {
+    background-color: var(--brand-color);
+    border-color: var(--brand-color);
+}
+
+/* El "Tick" o palomita (creado con CSS puro) */
+.terms-checkbox:checked::after {
+    content: '✔';
+    font-size: 14px;
+    color: #000; /* Tick negro sobre fondo verde */
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+}
+
+/* El Texto de los términos */
+.terms-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* LOS ENLACES (Links) dentro del texto */
+.terms-text a {
+    color: var(--brand-color); /* Verde Neón */
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent; /* Para el efecto hover */
+}
+
+.terms-text a:hover {
+    filter: brightness(1.1);
+    border-bottom-color: var(--brand-color); /* Subrayado al pasar el mouse */
+}
+
+
+/* =========================================
+  /* CRÉDITO DEL DESARROLLADOR (FOOTER)        */
+/* ========================================= */
+.sidebar-credit {
+    margin-top: 15px;       /* Separación del botón de modo oscuro */
+    margin-bottom: 10px;    /* Separación del borde final */
+    text-align: center;     /* Centrado */
+    font-size: 11px;        /* Letra pequeña y discreta */
+    color: var(--text-color-sidebar);
+    opacity: 0.5;           /* Un poco transparente para no distraer */
+    transition: 0.3s;
+    white-space: nowrap;    /* Que no se rompa la línea */
+}
+
+/* El nombre de la empresa en negrita y quizás con color al pasar el mouse */
+.sidebar-credit strong {
+    font-weight: 800;
+    color: var(--text-hover); /* Se pone más oscuro/claro según el tema */
+    cursor: default;
+}
+
+/* Efecto hover sutil */
+.sidebar-credit:hover {
+    opacity: 1;
+}
+
+/* OCULTAR AL CERRAR LA BARRA */
+/* Como no cabe en 88px, lo ocultamos para mantener la limpieza */
+.sidebar.close .sidebar-credit {
+    display: none;
+}

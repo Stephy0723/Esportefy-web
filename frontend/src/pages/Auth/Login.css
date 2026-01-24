@@ -1,0 +1,322 @@
+/* =========================================
+   AUTH.CSS - VERSIÓN FINAL PRO GAMING
+   ========================================= */
+
+/* --- VARIABLES --- */
+:root {
+    --body-bg: #ffffff; /* <--- AQUÍ se define el blanco */
+    --bg-dark: #09090b;       /* Fondo principal */
+    --bg-card: #121215;       /* Fondo secundario */
+    --primary: #8EDB15;       /* Morado (si lo usas en otros lados) */
+    --accent: #8EDB15;        /* VERDE NEÓN (Marca principal) */
+    --text-main: #ffffff;
+    --text-muted: #a1a1aa;
+    --border-color: #3f3f46;
+    --text-color: #000000;
+}
+body.dark {
+    --body-bg: #09090b; /* Aquí cambia a oscuro */
+    --text-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+/* --- CONTENEDOR PRINCIPAL (PANTALLA DIVIDIDA) --- */
+.auth-container-split {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-dark);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text-main);
+}
+
+/* --- LADO IZQUIERDO (FORMULARIO) --- */
+.auth-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 80px;
+    position: relative;
+    max-width: 600px;
+    background: var(--bg-dark);
+}
+
+/* Navbar superior */
+.auth-nav {
+    position: absolute;
+    top: 40px;
+    left: 80px;
+    right: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* LOGO DE MARCA */
+.brand {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    
+    /* Esta variable hace que cambie entre blanco y negro automáticamente */
+color: var(--text-main) !important;  
+
+    transition: color 0.3s ease;
+    display: inline-flex; /* Asegura alineación */
+}
+
+/* EL PUNTO VERDE NEÓN */
+.brand-dot {
+    color: var(--brand-color); /* Usa tu verde (#8EDB15) */
+    font-size: 1.8rem; /* Un poquito más grande para estilo */
+    line-height: 1;
+}
+.nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 20px;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+.nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+
+/* Contenido del Formulario */
+.auth-content { width: 100%; margin-top: 60px; }
+
+/* Encabezados */
+.header-text { margin-bottom: 50px; }
+
+.badge-pro {
+    display: inline-block;
+    background: rgba(142, 219, 21, 0.1);
+    color: var(--accent);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(142, 219, 21, 0.2);
+}
+
+.header-text h1 {
+    font-size: 3rem;
+    line-height: 1.1;
+    margin: 0 0 10px 0;
+    letter-spacing: -1px;
+}
+.subtitle { color: var(--text-muted); font-size: 1.1rem; }
+
+/* =========================================
+   INPUTS ESTILO LÍNEA (Side-by-Side)
+   ========================================= */
+.input-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 35px;
+    gap: 20px;
+}
+
+/* Label (Izquierda) */
+.input-row label {
+    width: 140px; /* Ancho fijo para alinear */
+    margin-bottom: 0;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: left;
+    line-height: 1.2;
+}
+
+/* Wrapper invisible (Derecha) */
+.input-wrapper {
+    flex-grow: 1;
+    position: relative;
+    background: transparent !important;
+    border: none !important;
+    padding: 0;
+}
+
+/* Input (Línea inferior) */
+.input-wrapper input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    padding: 10px 30px 10px 0; /* Espacio derecho para el icono */
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.input-wrapper input::placeholder { color: #52525b; opacity: 0.5; }
+
+/* Foco */
+.input-wrapper input:focus {
+    outline: none;
+    border-bottom: 2px solid var(--accent); /* Línea Verde */
+}
+
+/* Iconos dentro del input */
+.input-wrapper i {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    color: #52525b;
+    pointer-events: none;
+    transition: color 0.3s;
+}
+
+.input-wrapper input:focus + i { color: var(--accent); }
+
+.input-wrapper i.toggle-pass { pointer-events: auto; cursor: pointer; }
+.input-wrapper i.toggle-pass:hover { color: var(--text-main); }
+
+
+/* =========================================
+   OPCIONES (Checkbox y Link)
+   ========================================= */
+.options-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-left: 0; /* PEGADO A LA IZQUIERDA */
+    width: 100%;
+}
+
+/* Checkbox container */
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.3s;
+}
+.remember-me:hover { color: var(--text-main); }
+
+/* =========================================
+   CHECKBOX FORZADO (Gris en Blanco / Gris Oscuro en Negro)
+   ========================================= */
+
+/* 1. RESET TOTAL DEL NAVEGADOR */
+.remember-me input[type="checkbox"] {
+    -webkit-appearance: none !important; /* Obligatorio para Chrome/Safari */
+    appearance: none !important;         /* Obligatorio para Firefox */
+    background-color: transparent !important;
+    margin-right: 10px;
+    cursor: pointer;
+    
+    /* Dimensiones */
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: grid;
+    place-content: center;
+    
+    /* --- COLOR DEL BORDE (Aquí está tu petición) --- */
+    /* Usamos la variable que definimos: Será gris oscuro en modo Dark, y gris claro en modo Light */
+    border: 2px solid var(--input-border) !important; 
+    
+    transition: all 0.2s ease;
+}
+
+/* 2. HOVER (Al pasar el mouse se ilumina un poco) */
+.remember-me input[type="checkbox"]:hover {
+    border-color: var(--text-main) !important; /* Se pone del color del texto (blanco o negro) */
+}
+
+/* 3. ESTADO MARCADO (Verde) */
+.remember-me input[type="checkbox"]:checked {
+    background-color: #8EDB15 !important; /* Relleno Verde */
+    border-color: #8EDB15 !important;     /* Borde Verde */
+}
+
+/* 4. LA PALOMITA (El Check ✔) */
+.remember-me input[type="checkbox"]::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    transform: scale(0);
+    transition: 120ms transform ease-in-out;
+    box-shadow: inset 1em 1em black; /* Check negro */
+    
+    /* Forma del check usando clip-path (más moderno y nítido) */
+    transform-origin: center;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+.remember-me input[type="checkbox"]:checked::before {
+    transform: scale(1);
+}
+/* =========================================
+   BOTONES Y FOOTER
+   ========================================= */
+.btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent); /* Verde Marca */
+    color: #000; /* Texto negro para contraste */
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.4);
+}
+
+.footer-text {
+    margin-top: 30px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+.footer-text a { color: var(--text-main); font-weight: 700; text-decoration: none; margin-left: 5px; }
+.footer-text a:hover { color: var(--accent); }
+
+
+/* --- LADO DERECHO (IMAGEN) --- */
+.auth-right {
+    flex: 1.5;
+    position: relative;
+    overflow: hidden;
+    display: none;
+}
+.auth-right img { width: 100%; height: 100%; object-fit: cover; }
+.image-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to right, var(--bg-dark), transparent 50%);
+    pointer-events: none;
+}
+
+/* --- RESPONSIVE --- */
+@media (min-width: 900px) { .auth-right { display: block; } }
+
+@media (max-width: 600px) {
+    .auth-left { padding: 20px 25px; }
+    .auth-nav { top: 20px; left: 25px; right: 25px; }
+    .header-text h1 { font-size: 2.2rem; }
+    
+    /* En móvil, los inputs vuelven a apilarse verticalmente */
+    .input-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+    .input-row label { width: 100%; }
+}

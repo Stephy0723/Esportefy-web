@@ -1,344 +1,389 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Dashboard.css';
-import { GAME_IMAGES } from '../../../data/gameImages';
+import './Dashboard.css'; 
+import { gamesDetailedData } from '../../../data/gamesDetailedData'; 
+import defaultBanner from '../../../assets/images/login-black.png'; // Ajusta tu ruta
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [similarPlayers, setSimilarPlayers] = useState([]);
+    const [activeGameIndex, setActiveGameIndex] = useState(0);
 
-    const today = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+    // --- DATOS MOCK PARA LAS NUEVAS SECCIONES ---
+    const mockCalendar = [
+        { day: '24', month: 'OCT', title: 'Scrim vs Team Liquid', time: '20:00', type: 'scrim' },
+        { day: '28', month: 'OCT', title: 'Torneo Regional (Qualifiers)', time: '16:00', type: 'tourney' },
+        { day: '02', month: 'NOV', title: 'Entrenamiento Táctico', time: '18:00', type: 'training' },
+    ];
+
+    const mockSocial = {
+        team: { name: 'SKT T1 ACADEMY', logo: 'https://i.pravatar.cc/150?u=team', role: 'Capitán' },
+        requests: [
+            { id: 1, name: 'Faker_Jr', img: 'https://i.pravatar.cc/150?u=1' },
+            { id: 2, name: 'ViperX', img: 'https://i.pravatar.cc/150?u=2' }
+        ],
+        tournaments: [
+            { name: 'Worlds 2024 Qualifiers', status: 'En Curso', rank: 'Top 32' },
+            { name: 'Red Bull Solo Q', status: 'Registrado', rank: '-' }
+        ]
+    };
+
+    const scrollToSection = (id) => {
+        const element = document.getElementById(id);
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) {
-                navigate('/login');
-                return;
-            }
-
+            if (!token) { navigate('/login'); return; }
             try {
                 const response = await axios.get('http://localhost:4000/api/auth/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
-                const realUserData = response.data;
-                setUser(realUserData);
-
-                const mockSimilar = [
-                    { username: 'Kratos_99', game: realUserData.selectedGames?.[0] || 'General' },
-                    { username: 'SlayerX', game: realUserData.selectedGames?.[1] || 'FPS' },
-                    { username: 'NinaV', game: 'Competitivo' }
-                ];
-                setSimilarPlayers(mockSimilar);
-
+                setUser(response.data);
             } catch (error) {
-                console.error("Error cargando perfil:", error);
-                if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('esportefyUser');
-                    navigate('/login');
-                }
+                console.error(error);
+                navigate('/login');
             } finally {
                 setLoading(false);
             }
         };
-
         fetchProfile();
     }, [navigate]);
 
-    if (loading) return <div className="loading-screen">Conectando con el servidor...</div>;
-
     const userData = {
         username: user?.username || 'Jugador',
-        experience: user?.experience?.[0] || 'Rookie',
-        platforms: user?.platforms || [],
-        mainGoal: user?.goals?.[0] || 'Explorar',
         games: user?.selectedGames || []
     };
 
-    const getPlatformIcon = (platString) => {
-        const p = platString.toLowerCase();
-        if (p.includes('pc')) return 'bx-laptop';
-        if (p.includes('console') || p.includes('consola')) return 'bx-joystick';
-        if (p.includes('mobile') || p.includes('celular')) return 'bx-mobile';
-        return 'bx-game';
+    const getActiveGameData = () => {
+        if (!userData.games.length) return null;
+        const gameId = userData.games[activeGameIndex];
+        return gamesDetailedData[gameId] || { name: gameId, banner: defaultBanner, tags: ['Juego'], history: '...', winRate: 'N/A' };
     };
+    const activeGame = getActiveGameData();
+
+    if (loading) return <div className="loading-screen">Cargando...</div>;
 
     return (
-        <div className="dashboard-content-only">
+        <div className="dashboard-dashboard-container">        
+         
 
-     <div className="dashboard-content-only">
-    {/* SECCIÓN BIENVENIDA CON AVATAR */}
- <div className="dashboard-content-only">
-    <div className="top-layout">
-        <div className="welcome-section">
-            <div className="welcome-header">
-                {/* CONTENEDOR DE LA FOTO */}
-                <div className="user-profile-pic">
-                    <img src={user?.avatar || "https://i.pravatar.cc/150?u=yutukai"} alt="Profile" />
-                </div>
-                <div className="welcome-text">
-                    <h1>BIENVENIDA DE NUEVO, <span className="user-name">{userData.username}</span></h1>
-                    <p>Aquí tienes el resumen de tu rendimiento y actividad para hoy.</p>
-                </div>
-            </div>
-
-            <div className="university-banner" onClick={() => navigate('/university')}>
-                <div className="uni-icon"><i className='bx bxs-graduation'></i></div>
-                <div className="uni-text">
-                    <h4>ESPORTEFY UNIVERSITY</h4>
-                    <p>Programas de Becas y Scouting para jugadores de élite.</p>
-                </div>
-                <i className='bx bx-chevron-right'></i>
-            </div>
-        </div>
-
-        <div className="quick-stats-row">
-            <div className="mini-kpi">
-                <span className="kpi-label">WIN RATE</span>
-                <span className="kpi-value">68.4%</span>
-                <span className="kpi-trend">+2.1%</span>
-            </div>
-            <div className="mini-kpi">
-                <span className="kpi-label">TORNEOS</span>
-                <span className="kpi-value">24</span>
-                <span className="kpi-trend">Global</span>
-            </div>
-        </div>
-    </div>
-
-    
-</div>
-</div>
-
-      
-<div className="uni-scouting-card" onClick={() => navigate('/university')}>
-    <div className="uni-badge-top">BECAS DISPONIBLES</div>
-    <div className="uni-content">
-        <div className="uni-info-main">
-            <h3>Programa de Scouting Universitario</h3>
-            <p>Hay <strong>12 universidades</strong> buscando jugadores de tu nivel en {userData.games[0] || 'Esports'}.</p>
-            <div className="uni-tags">
-                <span className="tag"><i className='bx bxs-graduation'></i> Becas del 50-100%</span>
-                <span className="tag"><i className='bx bxs-map'></i> Global</span>
-            </div>
-        </div>
-        <button className="btn-uni-apply">
-            EXPLORAR BECAS <i className='bx bx-right-arrow-alt'></i>
-        </button>
-    </div>
-</div>
-
-{/* SNAKE BAR NOTIFICATION - PRO VERSION */}
-<div className="riot-snake-bar">
-    <div className="snake-bar-container">
-        {/* Línea de escaneo perimetral que cubre todo el panel */}
-        <div className="snake-border-glow"></div>
-        
-        <div className="snake-inner-content">
-            <p className="snake-message">
-                VINCULA TU CUENTA RIOT PARA ESTADÍSTICAS PRO
-            </p>
-
-            {/* Botón Centralizado */}
-            <div className="snake-action-center">
-                <button className="snake-btn-main" onClick={() => navigate('/settings')}>
-                    VINCULAR AHORA
-                </button>
-            </div>
-
-            {/* Botón Cancelar (X) */}
-            <button className="snake-close-btn" onClick={() => {/* Aquí pondrías tu lógica de ocultar por hoy */}}>
-                <i className='bx bx-x'></i>
-            </button>
-        </div>
-    </div>
-</div>
-            {/* STATS GRID */}
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper"><i className='bx bx-medal'></i></div>
-                    <div className="stat-info">
-                        <span className="stat-label">Nivel</span>
-                        <h3>{userData.experience}</h3>
+            {/* --- SECCIÓN 1: HERO --- */}
+            <section id="sec-1" className="page-section hero-section">
+                <div className="hero-content-wrapper">
+                    <div className="hero-header">
+                        <div className="avatar-glow-container">
+                            <img src={user?.avatar || "https://i.pravatar.cc/150?u=user"} alt="Avatar" className="big-avatar"/>
+                            <div className="status-indicator"></div>
+                        </div>
+                        <div className="hero-text-group">
+                            <span className="welcome-small">BIENVENIDO AL HUB</span>
+                            <h1 className="hero-title">{userData.username.toUpperCase()}</h1>
+                        </div>
+                    </div>
+                    <div className="hero-stats-grid">
+                        <div className="hero-stat-card"><i className='bx bx-crosshair'></i><div className="stat-data"><span className="s-label">WIN RATE</span><span className="s-value highlight">68.4%</span></div></div>
+                        <div className="hero-stat-card"><i className='bx bx-trophy'></i><div className="stat-data"><span className="s-label">TORNEOS</span><span className="s-value">12</span></div></div>
+                        <div className="hero-stat-card"><i className='bx bx-bar-chart-alt-2'></i><div className="stat-data"><span className="s-label">NIVEL</span><span className="s-value">42</span></div></div>
+                        <div className="hero-stat-card"><i className='bx bx-medal'></i><div className="stat-data"><span className="s-label">RANGO</span><span className="s-value text-blue">DIAMANTE</span></div></div>
                     </div>
                 </div>
+                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-2')}><span>VER JUEGOS</span><i className='bx bx-chevron-down animated-arrow'></i></div>
+            </section>
 
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper platform-wrapper">
-                        {userData.platforms.map((plat, index) => (
-                            <i key={index} className={`bx ${getPlatformIcon(plat)}`} title={plat}></i>
+            {/* --- SECCIÓN 2: ARSENAL (Tus juegos) --- */}
+            <section id="sec-2" className="cinematic-section">
+                <div className="cinematic-bg" style={{ backgroundImage: `url(${activeGame?.banner || defaultBanner})` }}><div className="cinematic-overlay"></div></div>
+                <div className="cinematic-content-grid">
+                    {activeGame ? (
+                        <>
+                            <div className="game-info-left">
+                                <span className="developer-label">{activeGame.developer}</span>
+                                <h2 className="game-big-title">{activeGame.name.toUpperCase()}</h2>
+                                <div className="tags-row">{activeGame.tags?.map((tag, i) => <span key={i} className="meta-tag">{tag}</span>)}</div>
+                                <p className="game-desc">{activeGame.history}</p>
+                            </div>
+                            <div className="game-analysis-right">
+                                <div className="analysis-card">
+                                    <div className="card-header"><h3><i className='bx bx-stats'></i> RENDIMIENTO</h3><span className="live-badge">EN VIVO</span></div>
+                                    <div className="stats-arithmetic">
+                                        <div className="stat-row"><span>WIN RATE</span><strong className="highlight">{activeGame.winRate || 'N/A'}</strong></div>
+                                        <div className="stat-row"><span>KDA / AVG</span><strong>{activeGame.kda || 'N/A'}</strong></div>
+                                    </div>
+                                    <div className="improvement-box">
+                                        <h4>A MEJORAR</h4>
+                                        <div className="imp-tags">{activeGame.toImprove?.map((imp, i) => <span key={i} className="imp-tag">{imp}</span>) || <span>Sin datos</span>}</div>
+                                    </div>
+                                    <button className="btn-analyze-full">VER COMO ANÁLISIS <i className='bx bx-right-arrow-alt'></i></button>
+                                </div>
+                            </div>
+                        </>
+                    ) : (<div className="empty-state"><h2>Selecciona tus juegos.</h2></div>)}
+                </div>
+                <div className="cards-carousel-wrapper">
+                    <div className="cards-track">
+                        {userData.games.map((gameId, index) => {
+                            const miniGame = gamesDetailedData[gameId];
+                            if(!miniGame) return null;
+                            return (
+                                <div key={index} className={`game-mini-card ${index === activeGameIndex ? 'active' : ''}`} onClick={() => setActiveGameIndex(index)}>
+                                    <img src={miniGame.banner} alt={gameId} />
+                                    {index === activeGameIndex && <div className="active-indicator"></div>}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-3')}><span>RENDIMIENTO Y CALENDARIO</span><i className='bx bx-chevron-down animated-arrow'></i></div>
+            </section>
+
+           {/* --- SECCIÓN 3: PERFORMANCE LAB (Analíticas y Calendario) --- */}
+            <section id="sec-3" className="page-section section-performance">
+                <div className="performance-grid">
+                    
+                    {/* Columna Izquierda: Gráficos y Métricas */}
+                    <div className="panel-glass chart-panel">
+                        <div className="panel-header">
+                            <h2><i className='bx bx-line-chart'></i> MÉTRICAS DE RENDIMIENTO</h2>
+                            <select className="neon-select">
+                                <option>Últimos 7 días</option>
+                                <option>Este Mes</option>
+                            </select>
+                        </div>
+                        
+                        <div className="chart-container-mock">
+                            {/* Barras animadas simuladas */}
+                            <div className="bar-chart">
+                                <div className="bar" style={{height: '40%'}} title="Lunes"></div>
+                                <div className="bar" style={{height: '70%'}} title="Martes"></div>
+                                <div className="bar active" style={{height: '90%'}} title="Miércoles"></div>
+                                <div className="bar" style={{height: '50%'}} title="Jueves"></div>
+                                <div className="bar" style={{height: '80%'}} title="Viernes"></div>
+                                <div className="bar" style={{height: '60%'}} title="Sábado"></div>
+                                <div className="bar" style={{height: '75%'}} title="Domingo"></div>
+                            </div>
+                            <div className="chart-legend">
+                                <span><span className="dot-l green"></span> Victorias</span>
+                                <span><span className="dot-l gray"></span> Derrotas</span>
+                            </div>
+                        </div>
+                        
+                        <div className="mini-stats-row">
+                            <div className="ms-item"><span>KDA</span><strong>4.2</strong></div>
+                            <div className="ms-item"><span>CS/MIN</span><strong>8.5</strong></div>
+                            <div className="ms-item"><span>DMG</span><strong>22%</strong></div>
+                        </div>
+                    </div>
+
+                    {/* Columna Derecha: Calendario y Agenda */}
+                    <div className="panel-glass calendar-panel">
+                        <div className="panel-header">
+                            <h2><i className='bx bx-calendar'></i> AGENDA COMPETITIVA</h2>
+                            <button className="btn-icon-small"><i className='bx bx-plus'></i></button>
+                        </div>
+                        <div className="calendar-list">
+                            {mockCalendar.map((event, i) => (
+                                <div key={i} className={`calendar-item type-${event.type}`}>
+                                    <div className="cal-date">
+                                        <span className="cal-day">{event.day}</span>
+                                        <span className="cal-month">{event.month}</span>
+                                    </div>
+                                    <div className="cal-info">
+                                        <h4>{event.title}</h4>
+                                        <span className="cal-time"><i className='bx bx-time'></i> {event.time}</span>
+                                    </div>
+                                    <button className="btn-cal-action"><i className='bx bx-bell'></i></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-4')}>
+                    <span>SOCIAL Y EQUIPO</span>
+                    <i className='bx bx-chevron-down animated-arrow'></i>
+                </div>
+            </section>
+
+            {/* --- SECCIÓN 4: SOCIAL HQ (Equipo, Amigos, Torneos) --- */}
+            <section id="sec-4" className="page-section section-social">
+                <div className="social-grid-layout">
+                    
+                    {/* TARJETA DE EQUIPO */}
+                    <div className="panel-glass team-card">
+                        <div className="team-bg-blur" style={{backgroundImage: `url(${mockSocial.team.logo})`}}></div>
+                        <div className="team-content">
+                            <div className="team-avatar">
+                                <img src={mockSocial.team.logo} alt="Team" />
+                            </div>
+                            <h3>{mockSocial.team.name}</h3>
+                            <span className="role-badge">{mockSocial.team.role}</span>
+                            <div className="team-actions">
+                                <button className="btn-neon-outline">VER ROSTER</button>
+                                <button className="btn-neon-outline">SCRIMS</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* COLUMNA CENTRAL: TORNEOS */}
+                    <div className="panel-glass tournaments-list">
+                        <div className="panel-header-simple">TORNEOS ACTIVOS</div>
+                        {mockSocial.tournaments.map((t, i) => (
+                            <div key={i} className="tourney-item">
+                                <div className="t-icon"><i className='bx bx-trophy'></i></div>
+                                <div className="t-info">
+                                    <h4>{t.name}</h4>
+                                    <span className={`status-dot ${t.status === 'En Curso' ? 'live' : 'reg'}`}>{t.status}</span>
+                                </div>
+                                <div className="t-rank">{t.rank}</div>
+                            </div>
                         ))}
                     </div>
-                    <div className="stat-info">
-                        <span className="stat-label">Plataformas</span>
-                        <h3 className="sub-text">Activo</h3>
-                    </div>
-                </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper"><i className='bx bx-target-lock'></i></div>
-                    <div className="stat-info">
-                        <span className="stat-label">Objetivo Actual</span>
-                        <h3>{userData.mainGoal}</h3>
-                    </div>
-                </div>
-
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper"><i className='bx bx-trophy'></i></div>
-                    <div className="stat-info">
-                        <span className="stat-label">Torneos</span>
-                        <h3>0</h3>
-                    </div>
-                </div>
-            </div>
-
-            {/* JUEGOS FAVORITOS REFACTORIZADOS (V5) */}
-            <div className="content-grid">
-                
-                {/* SECCIÓN JUEGOS: GALERÍA VERTICAL TIPO POSTER */}
-                <div className="content-panel">
-                    <div className="panel-header">
-                        <h3><i className='bx bx-game'></i> Tus Juegos</h3>
-                        <button className="btn-link">Editar</button>
-                    </div>
-
-                    {/* Este contenedor controlará el scroll después de 4 juegos */}
-                    <div className="gallery-scroll-container">
-                        <div className="dash-games-gallery">
-                            {userData.games.length > 0 ? (
-                                userData.games.map((gameId, index) => {
-                                    const imageSrc = Object.entries(GAME_IMAGES).find(([key]) =>
-                                        key.toLowerCase().includes(gameId.toLowerCase())
-                                    )?.[1] || GAME_IMAGES.Default;
-
-                                    return (
-                                        <div key={index} className="game-card-v6" onClick={() => navigate(`/games/${gameId.toLowerCase()}`)}>
-                                            <div className="poster-container-v6">
-                                                <img src={imageSrc} alt={gameId} />
-                                                <div className="card-overlay-v6">
-                                                    <span className="overlay-btn">IR A COMUNIDAD</span>
-                                                </div>
-                                            </div>
-                                            <div className="game-footer-v6">
-                                                <span className="game-title-v6">{gameId.toUpperCase()}</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <p className="empty-text">Sin juegos seleccionados.</p>
-                            )}
+                    {/* COLUMNA DERECHA: SOLICITUDES */}
+                    <div className="panel-glass requests-panel">
+                        <div className="panel-header-simple">SOLICITUDES ({mockSocial.requests.length})</div>
+                        <div className="req-list">
+                            {mockSocial.requests.map((req) => (
+                                <div key={req.id} className="req-item">
+                                    <img src={req.img} alt={req.name} />
+                                    <div className="req-name">{req.name}</div>
+                                    <div className="req-actions">
+                                        <button className="btn-accept"><i className='bx bx-check'></i></button>
+                                        <button className="btn-deny"><i className='bx bx-x'></i></button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
+
                 </div>
-
-          {/* --- SECCIÓN COMUNIDAD Y TOP GLOBAL --- */}
-<div className="admin-community-grid">
-    
-    {/* PANEL: TU RED (COMUNIDAD) */}
-    <div className="content-panel community-panel">
-        <div className="panel-header">
-            <h3><i className='bx bx-group'></i> TU RED</h3>
-            <span className="badge-notification">Sugerencias</span>
-        </div>
-
-        <div className="community-box">
-            {/* Sugerencia Dinámica basada en el objetivo */}
-            <div className="suggestion-box">
-                <i className={userData.mainGoal?.includes('Fun') ? 'bx bx-party' : 'bx bx-trophy'}></i>
-                <p>
-                    {userData.mainGoal?.includes('Fun') 
-                        ? <>Buscas <strong>Diversión</strong>. Únete a salas casuales.</>
-                        : <>Modo <strong>Competitivo</strong> detectado. Busca equipo aquí.</>
-                    }
-                </p>
-                <button className="btn-small-neon">
-                    {userData.mainGoal?.includes('Fun') ? 'Ver Salas' : 'Reclutamiento'}
-                </button>
-            </div>
-
-
-            {/* Lista de Amigos Sugeridos */}
-    <div className="friend-list">
-    <p className="list-title">JUGADORES SIMILARES</p>
-    <div className="friends-scroll-area">
-        {similarPlayers.map((player, idx) => (
-            <div key={idx} className="friend-item-v2">
-                <div className="avatar-circle-wrapper">
-                    <img src={`https://i.pravatar.cc/150?u=${player.username}`} alt="avatar" />
-                    <div className="status-dot online"></div>
+                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-5')}>
+                    <span>CENTRO DE MANDO</span>
+                    <i className='bx bx-chevron-down animated-arrow'></i>
                 </div>
-                
-                <div className="friend-info">
-                    <span className="friend-name">{player.username}</span>
-                    <small className="friend-game">{player.game}</small>
-                </div>
+            </section>
 
-                <button className="btn-add-tech">
-                    <i className='bx bx-plus'></i>
-                </button>
-            </div>
-        ))}
-    </div>
-</div>
-    </div>
-    </div> 
-
-
-   {/* PANEL: MEJORES JUGADORES / EQUIPOS */}
-<div className="content-panel ranking-panel">
-    <div className="panel-header">
-        <h3><i className='bx bxs-star'></i> TOP GLOBAL</h3>
-        <div className="ranking-tabs">
-            {/* Podemos hacer que cada tab filtre o lleve a una ruta específica */}
-            <span className="active" onClick={() => navigate('/rankings/players')}>JUGADORES</span>
-            <span onClick={() => navigate('/rankings/teams')}>EQUIPOS</span>
-        </div>
-    </div>
-
-    <div className="ranking-list">
-        {[1, 2, 3, 4].map((rank) => (
-            <div key={rank} className="ranking-item" onClick={() => navigate(`/profile/pro-${rank}`)}>
-                <div className={`rank-number pos-${rank}`}>#{rank}</div>
-                <div className="rank-avatar">
-                    <img src={`https://i.pravatar.cc/150?img=${rank + 10}`} alt="pro-player" />
-                    {rank === 1 && <i className='bx bxs-crown crown-icon'></i>}
-                </div>
-                <div className="rank-details">
-                    <p className="rank-name">ProPlayer_{rank}</p>
-                    <p className="rank-xp">2,450 MMR</p>
-                </div>
-                <div className="rank-badge-v2">PRO</div>
-            </div>
-        ))}
-    </div>
-    
-    {/* BOTÓN VINCULADO A /rankings */}
-    <button className="btn-view-all-ranking" onClick={() => navigate('/rankings')}>
-        VER RANKING COMPLETO <i className='bx bx-right-arrow-alt'></i>
-    </button>
-</div>
-</div>
-                {/* TORNEOS SUGERIDOS */}
-                <div className="content-panel full-width">
-                    <div className="panel-header">
-                        <h3><i className='bx bx-trophy'></i> Torneos Recomendados</h3>
-                        <button className="btn-link" onClick={() => navigate('/tournaments')}>Explorar</button>
+            {/* --- SECCIÓN 5: THE NEXUS (Botones Importantes) --- */}
+            <section id="sec-5" className="page-section section-nexus">
+                <h2 className="nexus-title">CENTRO DE MANDO</h2>
+                <div className="nexus-grid">
+                    <div className="nexus-card" onClick={() => navigate('/profile')}>
+                        <i className='bx bxs-user-detail'></i>
+                        <h3>EDITAR PERFIL</h3>
+                        <p>Ajusta tu avatar y biografía</p>
                     </div>
-                    <div className="rec-tournament">
-                        <div className="rec-info">
-                            <h4>Torneo Semanal de {userData.games[0] ? userData.games[0].toUpperCase() : 'Apertura'}</h4>
-                            <p>Categoría {userData.experience} - Inscripción Abierta</p>
+                    <div className="nexus-card" onClick={() => navigate('/settings')}>
+                        <i className='bx bxs-cog'></i>
+                        <h3>CONFIGURACIÓN</h3>
+                        <p>Privacidad y Conexiones</p>
+                    </div>
+                    <div className="nexus-card" onClick={() => navigate('/university')}>
+                        <i className='bx bxs-graduation'></i>
+                        <h3>UNIVERSIDAD</h3>
+                        <p>Becas y Scouting</p>
+                    </div>
+                    <div className="nexus-card" onClick={() => navigate('/marketplace')}>
+                        <i className='bx bxs-store'></i>
+                        <h3>MARKETPLACE</h3>
+                        <p>Tienda de recompensas</p>
+                    </div>
+                    <div className="nexus-card logout" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
+                        <i className='bx bx-log-out'></i>
+                        <h3>CERRAR SESIÓN</h3>
+                    </div>
+                </div>
+            </section>
+
+            {/* --- SECCIÓN 4: SOCIAL HQ (Equipo, Amigos, Torneos) --- */}
+            <section id="sec-4" className="page-section section-social">
+                <div className="social-grid-layout">
+                    
+                    {/* TARJETA DE EQUIPO */}
+                    <div className="panel-glass team-card">
+                        <div className="team-bg-blur" style={{backgroundImage: `url(${mockSocial.team.logo})`}}></div>
+                        <div className="team-content">
+                            <div className="team-avatar"><img src={mockSocial.team.logo} alt="Team" /></div>
+                            <h3>{mockSocial.team.name}</h3>
+                            <span className="role-badge">{mockSocial.team.role}</span>
+                            <div className="team-actions">
+                                <button className="btn-neon-outline">VER ROSTER</button>
+                                <button className="btn-neon-outline">SCRIMS</button>
+                            </div>
                         </div>
-                        <button className="btn-neon-small">Ver Detalles</button>
+                    </div>
+
+                    {/* COLUMNA CENTRAL: TORNEOS */}
+                    <div className="panel-glass tournaments-list">
+                        <div className="panel-header-simple">TORNEOS ACTIVOS</div>
+                        {mockSocial.tournaments.map((t, i) => (
+                            <div key={i} className="tourney-item">
+                                <div className="t-icon"><i className='bx bx-trophy'></i></div>
+                                <div className="t-info">
+                                    <h4>{t.name}</h4>
+                                    <span className={`status-dot ${t.status === 'En Curso' ? 'live' : 'reg'}`}>{t.status}</span>
+                                </div>
+                                <div className="t-rank">{t.rank}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* COLUMNA DERECHA: SOLICITUDES */}
+                    <div className="panel-glass requests-panel">
+                        <div className="panel-header-simple">SOLICITUDES ({mockSocial.requests.length})</div>
+                        <div className="req-list">
+                            {mockSocial.requests.map((req) => (
+                                <div key={req.id} className="req-item">
+                                    <img src={req.img} alt={req.name} />
+                                    <div className="req-name">{req.name}</div>
+                                    <div className="req-actions">
+                                        <button className="btn-accept"><i className='bx bx-check'></i></button>
+                                        <button className="btn-deny"><i className='bx bx-x'></i></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                </div>
+                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-5')}><span>CENTRO DE MANDO</span><i className='bx bx-chevron-down animated-arrow'></i></div>
+            </section>
+
+            {/* --- SECCIÓN 5: THE NEXUS (Botones Importantes) --- */}
+            <section id="sec-5" className="page-section section-nexus">
+                <h2 className="nexus-title">CENTRO DE MANDO</h2>
+                <div className="nexus-grid">
+                    <div className="nexus-card" onClick={() => navigate('/profile')}>
+                        <i className='bx bxs-user-detail'></i>
+                        <h3>EDITAR PERFIL</h3>
+                        <p>Ajusta tu avatar y biografía</p>
+                    </div>
+                    <div className="nexus-card" onClick={() => navigate('/settings')}>
+                        <i className='bx bxs-cog'></i>
+                        <h3>CONFIGURACIÓN</h3>
+                        <p>Privacidad y Conexiones</p>
+                    </div>
+                    <div className="nexus-card" onClick={() => navigate('/university')}>
+                        <i className='bx bxs-graduation'></i>
+                        <h3>UNIVERSIDAD</h3>
+                        <p>Becas y Scouting</p>
+                    </div>
+                    <div className="nexus-card" onClick={() => navigate('/marketplace')}>
+                        <i className='bx bxs-store'></i>
+                        <h3>MARKETPLACE</h3>
+                        <p>Tienda de recompensas</p>
+                    </div>
+                    <div className="nexus-card logout" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
+                        <i className='bx bx-log-out'></i>
+                        <h3>CERRAR SESIÓN</h3>
                     </div>
                 </div>
-            </div>
+            </section>
+
         </div>
     );
 };

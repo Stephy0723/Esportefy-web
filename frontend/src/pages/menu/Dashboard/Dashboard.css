@@ -1,1337 +1,715 @@
 /* =========================================
-   VARIABLES DE SISTEMA (ESTILO MODERNO)
+   ESTILOS BASE (HERO Y GENERALES)
    ========================================= */
-:root {
-    /* MODO CLARO (Default) */
-    --bg-page: #ffffff;
-    --bg-card: #ffffff;
-    --bg-item-list: #f4f4f5; /* GRIS SUAVE PARA LAS BARRAS Y FILAS */
-    --text-main: #18181b;
-    --text-muted: #71717a;
-    --border-color: #e4e4e7;
-}
+.dashboard-dashboard-container { width: 100%; background-color: var(--bg-page); color: var(--text-main); overflow-x: hidden; }
+.dash-nav { position: fixed; top: 0; left: 0; width: 100%; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+.brand-text { font-size: 1.5rem; font-weight: 800; letter-spacing: -1px; color: #fff; }
+.brand-dot { color: #8EDB15; }
+.user-avatar-circle img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #8EDB15; }
+.page-section { min-height: 100vh; width: 100%; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-top: 60px; box-sizing: border-box;}
 
-body.dark {
-    /* MODO OSCURO */
-    --bg-page: #09090b;
-    --bg-card: #121214;
-    --bg-item-list: #18181b; /* GRIS OSCURO / NEGRO PARA MODO DARK */
-    --text-main: #ffffff;
-    --text-muted: #a1a1aa;
-    --border-color: #27272a;
-}
+/* Hero (Bienvenida) */
+.hero-content { display: flex; flex-direction: column; align-items: center; z-index: 2; text-align: center; }
+.avatar-glow-container { width: 150px; height: 150px; margin-bottom: 20px; border-radius: 50%; padding: 5px; border: 2px dashed rgba(142, 219, 21, 0.5); box-shadow: 0 0 60px rgba(142, 219, 21, 0.2); }
+.big-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.hero-title { font-size: 3.5rem; font-weight: 900; line-height: 1; margin-bottom: 10px; color: var(--text-main); }
+.highlight-text { color: #8EDB15; }
+.hero-message { color: var(--text-muted); font-size: 1.2rem; margin-bottom: 30px; }
+.quick-stats-row { display: flex; gap: 30px; }
+.mini-kpi { background: rgba(128,128,128,0.05); border: 1px solid var(--input-border); border-radius: 15px; padding: 15px 30px; min-width: 120px; display: flex; flex-direction: column; align-items: center; }
+.kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
 
-/* --- ESTRUCTURA --- */
-.dashboard-content-only {
-    padding-top: 80px; /* Bajada mínima para el Navbar */
-    padding-left: 5%;
-    padding-right: 5%;
-    padding-bottom: 20px;
-    background-color: var(--bg-page);
-    min-height: auto; /* IMPORTANTE: Quitamos el 100vh que crea el espacio vacío */
-    display: block;   /* Cambiamos de flex a block para evitar el estiramiento */
-}
-/* --- LAYOUT SUPERIOR --- */
-.top-layout {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 20px;
-    margin-bottom: 20px; /* Reducimos el margen inferior */
-}
-.welcome-header {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 15px;
-}
-.user-profile-pic img {
-    width: 65px;
-    height: 65px;
-    border-radius: 18px; /* Radio de 18px para estilo cápsula */
-    border: 2px solid var(--neon-green);
-    object-fit: cover;
-    box-shadow: 0 0 15px rgba(142, 219, 21, 0.2);
-}
-.welcome-text h1 {
-    font-size: 1.6rem;
-    font-weight: 900;
-    margin: 0;
-}
-.welcome-header h1 {
-    font-size: 2rem;
-    margin-bottom: 0.2rem; /* Texto más pegado a su descripción */
-}
 
-.welcome-header p {
-    margin-bottom: 0.5rem;
-}
+/* =========================================
+   SECCIÓN 2: CINEMATIC GAMER UI (ESTILO VIDEO)
+   ========================================= */
 
-/* Reducimos el margen del banner universitario */
-.university-banner {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-color);
-    border-radius: 15px;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 10px;
-}
-.dashboard-content-only::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100px; /* Misma altura que el padding-top */
-    background: linear-gradient(to bottom, var(--bg-page) 20%, transparent 100%);
-    z-index: 5;
-    pointer-events: none;
-}
-
-/* --- CONTENEDOR BIENVENIDA --- */
-.welcome-container-premium {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--bg-card);
-    padding: 2rem 2.5rem;
-    border-radius: 28px; /* Radio de 28px */
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-soft);
-    margin-bottom: 2.5rem;
-}
-
-.welcome-main-info {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-/* --- AVATAR CON PULSO --- */
-.user-avatar-wrapper {
+.cinematic-section {
     position: relative;
-    width: 70px;
-    height: 70px;
+    /* CAMBIO CLAVE: Forzar ancho de ventana completo y romper el contenedor padre */
+    width: 100vw; 
+    height: 100vh;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    /* Fondo de seguridad negro por si tarda en cargar la imagen */
+    background-color: #000; 
 }
 
-.user-avatar-wrapper img {
+/* 1. FONDO QUE CAMBIA */
+.cinematic-bg {
+    position: absolute;
+    top: 0; left: 0; 
+    width: 100%; /* Ocupará el 100% de la nueva sección de 100vw */
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: background-image 0.5s ease-in-out;
+    z-index: 0;
+}
+
+/* Overlay negro degradado para que el texto se lea */
+.cinematic-overlay {
+    position: absolute;
+    top: 0; left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.4) 100%);
+    z-index: 1;
+}
+
+/* 2. CONTENEDOR DE LA INTERFAZ */
+.cinematic-content {
+    position: relative;
+    z-index: 2;
     width: 100%;
     height: 100%;
-    border-radius: 20px; /* Estilo cápsula */
-    object-fit: cover;
-    border: 2px solid var(--neon-green);
-}
-
-.online-pulse {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 15px;
-    height: 15px;
-    background: var(--neon-green);
-    border: 3px solid var(--bg-card);
-    border-radius: 50%;
-    box-shadow: 0 0 10px var(--neon-green);
-}
-
-/* --- TEXTO DE BIENVENIDA --- */
-.welcome-text h1 {
-    font-size: 1.8rem;
-    font-weight: 900;
-    margin: 0;
-    color: var(--text-main);
-}
-
-.welcome-text p {
-    color: var(--text-muted);
-    margin-top: 5px;
-    font-weight: 500;
-}
-
-/* --- CARD DE PROGRESO (DERECHA) --- */
-.welcome-progress-card {
-    background: var(--bg-card);
-    padding: 1.2rem 2rem; /* Reducido de 1.8rem */
-    border-radius: 28px;
-    margin-bottom: 1.5rem; /* Reducido para que lo de abajo suba */
-}
-.progress-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center; /* Centrado verticalmente */
+    padding-left: 80px; /* Margen izquierdo */
+    padding-right: 40px;
+}
+
+/* INFORMACIÓN DEL JUEGO (IZQUIERDA) */
+.active-game-info {
+    max-width: 600px;
+    margin-bottom: 50px;
+    animation: slideRight 0.5s ease-out;
+}
+
+@keyframes slideRight {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.game-subtitle {
+    font-size: 0.9rem;
+    color: #8EDB15;
+    letter-spacing: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: block;
     margin-bottom: 10px;
-    font-weight: 800;
-    font-size: 0.8rem;
-    color: var(--text-main);
 }
 
-.progress-bar-root {
-    background-color: var(--bg-item-list) !important;
-    border: 1px solid var(--border-color);
-}
-.progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--neon-green), #b4f54e);
-    border-radius: 50px;
-    box-shadow: 0 0 10px rgba(142, 219, 21, 0.4);
-}
-
-/* RESPONSIVO */
-@media (max-width: 1000px) {
-    .welcome-container-premium {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
-    }
-    .welcome-progress-card {
-        width: 100%;
-    }
+.game-big-title {
+    font-size: 5rem; /* Título Gigante */
+    font-weight: 900;
+    line-height: 0.9;
+    color: #fff;
+    text-transform: uppercase;
+    margin-bottom: 25px;
+    text-shadow: 0 10px 30px rgba(0,0,0,0.8);
 }
 
-
-/* --- GRID DE CONTENIDO (COMUNIDAD & RANKING) --- */
-.admin-community-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* UNO AL LADO DEL OTRO */
-    gap: 2rem;
-    margin-bottom: 2.5rem;
-}
-
-.content-panel {
-    background: var(--bg-card);
-    border-radius: 28px; /* 28PX REQUERIDO */
-    padding: 2rem;
-    margin-bottom: 20px;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-soft);
-}
-
-.panel-header {
+.game-meta-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
+    gap: 15px;
+    margin-bottom: 40px;
 }
 
-.panel-header h3 {
-    margin: 0;
+.meta-tag {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(5px);
+    padding: 8px 16px;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.meta-tag.active {
+    background: #8EDB15;
+    color: #000;
+    border-color: #8EDB15;
+    font-weight: 800;
+}
+
+.btn-play-cinematic {
+    padding: 18px 50px;
+    background: #fff;
+    color: #000;
     font-size: 1.2rem;
     font-weight: 800;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* --- TU RED (ESTILO LIMPIO) --- */
-.suggestion-box {
-    background: var(--bg-item-list);
-    border: 2px dashed var(--neon-green);
-    border-radius: 20px;
-    padding: 1.5rem;
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-
-.btn-small-neon {
-    background: var(--neon-green);
-    color: #000;
     border: none;
-    padding: 8px 20px;
-    border-radius: 50px;
-    font-weight: 800;
+    border-radius: 5px; /* Bordes un poco más rectos estilo PS5 */
     cursor: pointer;
-}
-
-.friend-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 12px;
-    border-radius: 18px;
-    transition: 0.2s;
-}
-
-.friend-item:hover { background: var(--bg-input); }
-
-.avatar-frame { position: relative; width: 45px; height: 45px; }
-.avatar-frame img { width: 100%; border-radius: 50%; border: 2px solid var(--neon-green); }
-
-.online-dot {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 10px; height: 10px;
-    background: var(--neon-green);
-    border: 2px solid var(--bg-card);
-    border-radius: 50%;
-}
-
-/* --- RANKING (TOP GLOBAL) --- */
-.ranking-tabs { display: flex; gap: 15px; font-size: 0.8rem; font-weight: 800; }
-.ranking-tabs .active { color: var(--neon-green); border-bottom: 2px solid var(--neon-green); }
-
-.ranking-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 12px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.rank-number { font-weight: 900; color: var(--neon-green); min-width: 30px; }
-.rank-avatar img { width: 40px; height: 40px; border-radius: 50%; }
-
-.rank-details { flex: 1; }
-.rank-name { font-weight: 700; margin: 0; font-size: 0.95rem; }
-.rank-xp { color: var(--text-muted); font-size: 0.8rem; margin: 0; }
-
-.rank-badge {
-    background: var(--bg-input);
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 800;
-}
-
-/* --- BOTONES FINALES --- */
-.btn-view-all {
-    width: 100%;
-    margin-top: 1.5rem;
-    padding: 12px;
-    border-radius: 15px;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-muted);
-    font-weight: 700;
-    cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
     transition: 0.3s;
 }
 
-.btn-view-all:hover {
-    border-color: var(--neon-green);
-    color: var(--neon-green);
-}
-/* Contenedor principal que oculta lo que sobresale */
-.gallery-scroll-container {
-    width: 100%;
-    overflow: hidden;
-    padding: 20px 0;
-    position: relative;
-}
-/* --- JUEGOS GALLERY --- */
-.dash-games-gallery {
-    display: flex;
-    gap: 30px; /* Espacio entre tarjetas grandes */
-    width: max-content;
-    animation: infiniteScroll 30s linear infinite; /* Movimiento continuo */
-}
-/* Pausar al pasar el mouse para que el usuario pueda hacer clic */
-.dash-games-gallery:hover {
-    animation-play-state: paused;
-}
-.game-card-v6 {
-    flex: 0 0 280px; /* Tamaño fijo más grande (Ancho) */
-    background: var(--bg-card);
-    border-radius: 28px;
-    padding: 15px;
-    box-shadow: 10px 10px 20px var(--neu-shadow), 
-               -10px -10px 20px var(--neu-white);
-    transition: transform 0.4s ease;
-    cursor: pointer;
-}
-.game-card-v6:hover {
+.btn-play-cinematic:hover {
+    background: #8EDB15;
     transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(142, 219, 21, 0.4);
 }
 
-.poster-container-v6 {
-    width: 100%;
-    height: 380px; /* Altura más grande tipo poster pro */
-    border-radius: 20px;
+
+/* 3. CARRUSEL DE TARJETAS (ABAJO) */
+.cards-carousel-wrapper {
+    position: absolute;
+    bottom: 50px;
+    left: 80px;
+    right: 0;
+    overflow-x: auto;
+    padding-bottom: 20px;
+    /* Ocultar scrollbar */
+    scrollbar-width: none; 
+}
+.cards-carousel-wrapper::-webkit-scrollbar { display: none; }
+
+.cards-track {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+}
+
+.game-mini-card {
+    width: 140px;
+    height: 200px; /* Formato Poster */
+    border-radius: 10px;
     overflow: hidden;
     position: relative;
-}
-
-.poster-container-v6 img { width: 100%; height: 100%; object-fit: cover; }
-
-.card-overlay-v6 {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: 0.3s;
-}
-
-.game-card-v6:hover .card-overlay-v6 { opacity: 1; }
-
-/* EL BOTÓN JUGAR (El que no se veía) */
-.overlay-btn {
-    background-color: #8EDB15 !important; /* Verde Neón Esportefy */
-    color: #000000 !important; /* Texto negro para contraste */
-    padding: 12px 30px;
-    border-radius: 50px;
-    font-weight: 900;
-    font-size: 1rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    box-shadow: 0 0 20px rgba(142, 219, 21, 0.6); /* Resplandor verde */
-    transform: translateY(20px); /* Efecto de subir */
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: inline-block;
-}
-/* Animación del botón cuando aparece el overlay */
-.game-card-v6:hover .overlay-btn {
-    transform: translateY(0);
-}
-/* Efecto al tocar el botón directamente */
-.overlay-btn:hover {
-    background-color: #ffffff !important;
-    transform: scale(1.1);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
-}
-
-.game-title-v6 {
-    display: block;
-    text-align: center;
-    margin-top: 15px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    color: var(--text-main);
-}
-/* ANIMACIÓN INFINITA */
-@keyframes infiniteScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); } /* Ajusta según el duplicado de items */
-}
-
-/* --- RESPONSIVE --- */
-@media (max-width: 1200px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .admin-community-grid { grid-template-columns: 1fr; }
-}
-/* --- ANÁLISIS DE DESEMPEÑO V2 --- */
-.analysis-panel {
-    background-color: var(--bg-card);
-    border-radius: 28px;
-    padding: 2rem;
-    box-shadow: var(--shadow-soft);
-}
-
-.analysis-grid-v2 {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 30px;
-    align-items: center;
-}
-
-/* TARJETA PRINCIPAL IZQUIERDA */
-.kpi-main-card {
-    background: var(--bg-input);
-    padding: 30px;
-    border-radius: 24px;
-    display: flex;
-    align-items: center;
-    gap: 25px;
-    box-shadow: inset 5px 5px 10px rgba(0,0,0,0.05), inset -5px -5px 10px rgba(255,255,255,0.02);
-}
-
-.kpi-circle-large {
-    width: 120px;
-    filter: drop-shadow(0 0 10px rgba(142, 219, 21, 0.2));
-}
-
-.circular-chart-v2 { display: block; margin: 0 auto; }
-.circle-bg-v2 { fill: none; stroke: var(--border-color); stroke-width: 2.5; }
-.circle-v2 { fill: none; stroke: var(--neon-green); stroke-width: 2.8; stroke-linecap: round; }
-.percentage-v2 { fill: var(--text-main); font-size: 0.5rem; font-weight: 900; text-anchor: middle; }
-
-.kpi-main-info strong { font-size: 1.2rem; display: block; margin-bottom: 5px; }
-.kpi-main-info p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px; }
-.kpi-val-main { font-weight: 900; font-size: 1.3rem; color: var(--neon-green); }
-
-/* ITEMS LATERALES */
-.kpi-side-list { display: flex; flex-direction: column; gap: 20px; }
-
-.kpi-side-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 10px;
-}
-
-.kpi-mini-circle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 0.7rem;
-    background: var(--bg-card);
-    box-shadow: 5px 5px 10px rgba(0,0,0,0.1), -5px -5px 10px rgba(255,255,255,0.05);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    opacity: 0.6;
+    transform: scale(0.9);
     border: 2px solid transparent;
 }
 
-.kpi-mini-circle.orange { border-color: #ff9f43; color: #ff9f43; }
-.kpi-mini-circle.blue { border-color: #4facfe; color: #4facfe; }
-
-.kpi-side-text strong { display: block; font-size: 0.95rem; }
-.kpi-side-text span { font-size: 0.75rem; color: var(--text-muted); }
-
-/* SELECTOR 7D/30D */
-.period-selector {
-    background: var(--bg-input);
-    border-radius: 12px;
-    padding: 4px;
+.game-mini-card img {
+    width: 100%; height: 100%; object-fit: cover;
 }
 
-.period-btn {
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    padding: 6px 14px;
-    font-weight: 800;
-    cursor: pointer;
-    border-radius: 10px;
+/* Estado Activo (Tarjeta Seleccionada) */
+.game-mini-card.active {
+    opacity: 1;
+    transform: scale(1.1);
+    border-color: #8EDB15;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 10;
 }
 
-.period-btn.active {
-    background: var(--neon-green);
-    color: #000;
+.game-mini-card:hover {
+    opacity: 1;
+    transform: scale(1);
 }
 
-@media (max-width: 900px) {
-    .analysis-grid-v2 { grid-template-columns: 1fr; }
-}
-/* --- WIDGET DE SCOUTING UNIVERSITARIO --- */
-.uni-scouting-card {
-    background: var(--bg-card);
-    border-radius: 28px;
-    padding: 30px;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    border: 1px solid rgba(0, 150, 255, 0.2); /* Borde azul sutil */
-    box-shadow: 15px 15px 35px var(--neu-shadow), 
-                -15px -15px 35px var(--neu-white);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    margin-bottom: 25px;
-}
-
-.uni-scouting-card:hover {
-    transform: translateY(-8px);
-    border-color: #00d2ff;
-    box-shadow: 20px 20px 40px var(--neu-shadow), 
-                0 10px 25px rgba(0, 150, 255, 0.15);
-}
-/* Badge Superior */
-.uni-badge-top {
+.active-indicator {
     position: absolute;
-    top: 0;
-    right: 30px;
-    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-    color: white;
-    padding: 6px 15px;
-    border-radius: 0 0 15px 15px;
-    font-size: 0.7rem;
-    font-weight: 900;
-    letter-spacing: 1px;
-    box-shadow: 0 5px 15px rgba(58, 123, 213, 0.3);
+    bottom: 0; left: 0; width: 100%; height: 4px;
+    background: #8EDB15;
 }
 
-/* Títulos y Párrafos */
-.uni-info-main h3 {
-    color: #3a7bd5; /* Azul Universitario */
-    font-size: 1.5rem;
-    font-weight: 900;
-    margin-bottom: 10px;
+/* BOTÓN DE BAJAR IZQUIERDO */
+.scroll-down-btn {
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; cursor: pointer; color: var(--text-muted); z-index: 20;
 }
-
-.uni-info-main p {
-    color: var(--text-dim);
-    font-size: 1rem;
-    max-width: 80%;
+.scroll-down-btn.left-aligned {
+    left: 40px; 
+    transform: none;
+    bottom: 40px;
+    flex-direction: row;
+    gap: 10px;
+    color: rgba(255,255,255,0.5);
 }
+.scroll-down-btn.left-aligned:hover { color: #fff; }
 
-.uni-info-main strong {
-    color: #00d2ff;
+.animated-arrow { font-size: 1.8rem; animation: bounce 2s infinite; }
+@keyframes bounce { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-8px);} }
+
+
+/* SECCIÓN 3 GRID */
+.grid-content-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 900px; width: 100%; }
+.uni-scouting-card { background: #18181b; border: 1px solid #3f3f46; border-radius: 15px; padding: 30px; position: relative; cursor: pointer; transition: 0.3s; }
+.uni-scouting-card:hover { border-color: #8EDB15; }
+.uni-badge-top { position: absolute; top: 0; right: 0; background: #8EDB15; color: #000; font-size: 0.7rem; font-weight: 800; padding: 5px 10px; border-bottom-left-radius: 10px; }
+.btn-uni-apply { margin-top: 15px; background: transparent; border: 1px solid #8EDB15; color: #8EDB15; padding: 8px 15px; font-weight: 700; cursor: pointer; }
+.content-panel { background: var(--bg-card); border: 1px solid var(--input-border); border-radius: 15px; padding: 20px; }
+.ranking-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--input-border); }
+.rank-pos { color: #8EDB15; font-weight: 800; }
+
+@media (max-width: 768px) {
+    .cinematic-content { padding-left: 20px; padding-right: 20px; align-items: center; text-align: center; }
+    .game-big-title { font-size: 3rem; }
+    .game-meta-row { justify-content: center; }
+    .cards-carousel-wrapper { left: 0; padding-left: 20px; }
+    .active-game-info { margin-bottom: 250px; /* Espacio para las cartas abajo */ }
+    .scroll-down-btn.left-aligned { display: none; }
 }
+/* ... (Mantén tus estilos base de nav y hero) ... */
 
-/* Tags con iconos azules */
-.uni-tags {
+/* =========================================
+   SECCIÓN 2: CINEMATIC CON ANÁLISIS
+   ========================================= */
+
+.cinematic-section {
+    position: relative;
+    /* ESTO ES LO QUE ELIMINA LOS BORDES BLANCOS */
+    width: 100vw; 
+    height: 100vh;
+    margin-left: calc(-50vw + 50%); /* Centrado forzado */
+    margin-right: calc(-50vw + 50%);
+    
+    overflow: hidden; 
     display: flex;
-    gap: 15px;
+    align-items: center;
+    box-sizing: border-box;
+}
+/* FONDO */
+.cinematic-bg {
+    position: absolute;
+    top: 0; left: 0; 
+    width: 100%; 
+    height: 100%;
+    
+    /* Asegura que cubra TODO el espacio sin deformarse */
+    background-size: cover;     
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    transition: background-image 0.5s ease-in-out;
+    z-index: 0;
+}
+.cinematic-overlay {
+    position: absolute;
+    top: 0; left: 0; 
+    width: 100%; 
+    height: 100%;
+    
+    /* Degradado más suave para que se vea más la imagen del juego */
+    background: linear-gradient(
+        90deg, 
+        rgba(0,0,0,0.85) 0%,   /* Oscuro a la izquierda para el texto */
+        rgba(0,0,0,0.4) 50%,   /* Transparente al centro */
+        rgba(0,0,0,0.1) 100%   /* Muy claro a la derecha */
+    );
+    z-index: 1;
+}
+
+/* GRID DE CONTENIDO (INFO IZQ - ANÁLISIS DER) */
+.cinematic-content-grid {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1400px; /* Ancho máximo del contenido interno */
+    margin: 0 auto;    /* Centrado */
+    padding: 0 50px;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 60px;
+    align-items: center;
+    height: 70%;
+}
+/* IZQUIERDA: INFO DEL JUEGO */
+.game-info-left { animation: slideInLeft 0.5s ease; }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+.developer-label { color: #8EDB15; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 10px; }
+.game-big-title { font-size: 5rem; font-weight: 900; line-height: 0.9; color: #fff; text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+.game-desc { font-size: 1.1rem; color: #ccc; max-width: 600px; line-height: 1.5; margin-top: 20px; }
+
+.tags-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.meta-tag { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem; font-weight: 700; color: #ddd; }
+
+/* DERECHA: TARJETA DE ANÁLISIS */
+.game-analysis-right { animation: slideInRight 0.5s ease; }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+.analysis-card {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+.card-header h3 { font-size: 1.2rem; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px; }
+.live-badge { background: #ff004c; color: #fff; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; animation: pulse 2s infinite; }
+
+.stats-arithmetic { margin-bottom: 25px; }
+.stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1rem; color: #ccc; }
+.stat-row strong { font-size: 1.3rem; color: #fff; }
+.stat-row strong.highlight { color: #8EDB15; }
+
+.improvement-box h4 { font-size: 0.9rem; color: #ffab00; margin-bottom: 10px; }
+.imp-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 25px; }
+.imp-tag { background: rgba(255, 171, 0, 0.1); color: #ffab00; border: 1px solid rgba(255, 171, 0, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; }
+
+/* BOTÓN ANÁLISIS */
+.btn-analyze-full {
+    width: 100%; padding: 15px;
+    background: #8EDB15; color: #000;
+    font-weight: 800; border: none; border-radius: 8px;
+    cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px;
+    transition: 0.3s;
+}
+.btn-analyze-full:hover { background: #fff; transform: scale(1.02); }
+
+
+/* CARRUSEL MINIATURAS (ABAJO) */
+.cards-carousel-wrapper {
+    position: absolute;
+    bottom: 40px;
+    
+    /* Alineamos el carrusel con el mismo padding del texto */
+    left: 0; 
+    padding-left: 8%; /* Mismo 8% que arriba para que quede alineado */
+    
+    right: 0;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    z-index: 10;
+    scrollbar-width: none;
+}
+.cards-track { display: flex; gap: 15px; }
+.game-mini-card {
+    width: 120px; height: 160px; border-radius: 8px; overflow: hidden; position: relative;
+    cursor: pointer; opacity: 0.5; transform: scale(0.9); transition: 0.3s; border: 2px solid transparent;
+}
+.game-mini-card img { width: 100%; height: 100%; object-fit: cover; }
+.game-mini-card.active { opacity: 1; transform: scale(1.1); border-color: #8EDB15; z-index: 10; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+.active-indicator { position: absolute; bottom: 0; width: 100%; height: 4px; background: #8EDB15; }
+
+/* Responsive */
+@media (max-width: 968px) {
+    .cinematic-content-grid { grid-template-columns: 1fr; height: auto; padding-top: 100px; }
+    .game-analysis-right { display: none; /* Ocultar análisis en móvil si no cabe, o ponerlo debajo */ }
+    .game-big-title { font-size: 3rem; }
+    .cards-carousel-wrapper { left: 20px; }
+}
+/* =========================================
+   SECCIÓN 1: HERO (FULL SCREEN REAL)
+   ========================================= */
+
+.hero-section {
+    min-height: 100vh; /* OBLIGATORIO: Ocupa toda la altura */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centra verticalmente */
+    align-items: center;     /* Centra horizontalmente */
+    position: relative;
+    padding: 0 5%;           /* Margen lateral para que no toque bordes */
+    box-sizing: border-box;
+    padding-bottom: 110px;
+    /* SIN BACKGROUND-COLOR (Transparente/Heredado) */
+}
+
+/* Contenedor que agrupa todo para centrarlo visualmente */
+.hero-content-wrapper {
+    width: 100%;
+    max-width: 1200px; /* Ancho máximo para pantallas muy grandes */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 60px; /* Espacio GRANDE entre el Avatar y los Stats */
+    z-index: 2;
+    margin-top: 90px;
+}
+
+/* --- 1. ZONA SUPERIOR (AVATAR + TEXTO) --- */
+.hero-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.avatar-glow-container {
+    width: 180px; /* Avatar GRANDE */
+    height: 180px;
+    border-radius: 50%;
+    padding: 8px;
+    border: 2px dashed rgba(142, 219, 21, 0.5); /* Tu verde neón */
+    box-shadow: 0 0 50px rgba(142, 219, 21, 0.15); /* Glow sutil para llenar espacio */
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.big-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.status-indicator {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    width: 25px; height: 25px;
+    background-color: #8EDB15;
+    border: 4px solid var(--bg-page); /* Borde del color de fondo para separar */
+    border-radius: 50%;
+}
+
+.welcome-small {
+    font-size: 1rem;
+    letter-spacing: 4px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: block;
+    text-transform: uppercase;
+}
+
+.hero-title {
+    font-size: 5rem; /* TIPOGRAFÍA GIGANTE para llenar pantalla */
+    font-weight: 900;
+    line-height: 1;
+    margin: 0 0 20px 0;
+    color: var(--text-main);
+    letter-spacing: -2px;
+}
+
+.hero-message {
+    font-size: 1.3rem;
+    color: var(--text-muted);
+    max-width: 700px;
+    font-weight: 300;
+    font-style: italic;
+}
+
+/* --- 2. ZONA MEDIA (GRID DE ESTADÍSTICAS) --- */
+/* Esto es lo que hace que la pantalla se vea "llena" y profesional */
+.hero-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columnas iguales */
+    gap: 30px;
+    width: 100%;
     margin-top: 20px;
 }
 
-.uni-tags .tag {
-    background: rgba(0, 210, 255, 0.08);
-    color: #3a7bd5;
-    padding: 6px 14px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 700;
+.hero-stat-card {
+    /* Estilo Glassmorphism sutil */
+    background: rgba(128, 128, 128, 0.05);
+    border: 1px solid var(--input-border);
+    border-radius: 16px;
+    padding: 25px 20px;
+    
     display: flex;
     align-items: center;
-    gap: 8px;
-    border: 1px solid rgba(58, 123, 213, 0.1);
+    gap: 20px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
 }
 
-.uni-tags .tag i {
-    font-size: 1.1rem;
+.hero-stat-card:hover {
+    transform: translateY(-5px);
+    border-color: #8EDB15;
 }
 
-/* BOTÓN EXPLORAR (BLUE GLOW) */
-.btn-uni-apply {
-    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 18px;
-    font-weight: 900;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    box-shadow: 0 8px 20px rgba(58, 123, 213, 0.3);
-    transition: 0.3s;
-    margin-top: 25px;
-}
-
-.btn-uni-apply:hover {
-    transform: scale(1.05);
-    box-shadow: 0 12px 25px rgba(0, 210, 255, 0.4);
-}
-
-/* Efecto de fondo sutil */
-.uni-scouting-card::after {
-    content: "\eb92"; /* Código de icono graduation cap en Boxicons */
-    font-family: 'boxicons';
-    position: absolute;
-    right: -20px;
-    bottom: -20px;
-    font-size: 10rem;
-    color: rgba(58, 123, 213, 0.03);
-    transform: rotate(-15deg);
-    pointer-events: none;
-}
-
-/* --- BANNER UNIVERSITARIO (SCOUTING & BECAS) --- */
-.university-banner {
-    margin-top: 1.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 1.2rem 1.8rem;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Efecto gamer sutil al hover */
-.university-banner:hover {
-    border-color: var(--neon-green);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.uni-icon {
-    width: 50px;
-    height: 50px;
-    background: var(--bg-input);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--neon-green);
-    font-size: 1.8rem;
-    border: 1px solid var(--border-color);
-}
-
-.uni-text h4 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--text-main);
-}
-
-.uni-text p {
-    margin: 2px 0 0 0;
-    font-size: 0.85rem;
+.hero-stat-card i {
+    font-size: 2.5rem; /* Iconos grandes */
     color: var(--text-muted);
 }
 
-/* --- QUICK STATS (KPI PROFESIONAL) --- */
-.quick-stats-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.mini-kpi {
-    background: var(--bg-item-list);
-    border: 1px solid var(--border-color);
-    padding: 1.5rem;
-    border-radius: 24px;
+.stat-data {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    box-shadow: var(--shadow-soft);
 }
 
-.kpi-label {
-    font-size: 0.7rem;
+.s-label {
+    font-size: 0.75rem;
     font-weight: 800;
-    text-transform: uppercase;
-    color: var(--text-muted);
     letter-spacing: 1px;
+    color: var(--text-muted);
     margin-bottom: 5px;
 }
 
-.kpi-value {
+.s-value {
     font-size: 1.8rem;
     font-weight: 900;
     color: var(--text-main);
     line-height: 1;
 }
 
-.kpi-trend {
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-top: 5px;
-}
+.s-value.highlight { color: #8EDB15; }
+.s-value.text-blue { color: #00d2ff; }
 
-.kpi-trend.up { color: var(--neon-green); }
-
-/* --- WIDGET PROGRESO (DEBAJO DEL TOP LAYOUT) --- */
-.welcome-progress-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    padding: 1.8rem 2.2rem;
-    border-radius: 28px; /* 28PX REQUERIDO */
-    box-shadow: var(--shadow-soft);
-    margin-bottom: 2.5rem;
-}
-
-.progress-header {
+/* --- 3. BOTÓN DE BAJAR --- */
+.scroll-down-btn {
+    position: absolute;
+    bottom: 40px;
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    font-weight: 800;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.progress-bar-root {
-    width: 100%;
-    height: 12px;
-    background: var(--bg-input);
-    border-radius: 50px;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-}
-
-.progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--neon-green), #b4f54e);
-    border-radius: 50px;
-    box-shadow: 0 0 15px rgba(142, 219, 21, 0.4);
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* --- RESPONSIVO --- */
-@media (max-width: 1100px) {
-    .top-layout { grid-template-columns: 1fr; gap: 1.5rem; }
-    .quick-stats-row { grid-template-columns: 1fr 1fr; }
-}
-/* Fondo de las filas de Jugadores y Ranking */
-.friend-item, .ranking-item {
-    background-color: var(--bg-item-list) !important;
-    border: 1px solid var(--border-color);
-    transition: background 0.3s ease;
-}
-/* --- ICONOS CON FONDO DINÁMICO --- */
-.stat-icon-wrapper, 
-.uni-icon, 
-.icon-container {
-    /* Usamos la variable que cambia de Gris Claro a Gris Oscuro */
-    background-color: var(--bg-item-list) !important;
-    
-    /* El icono en sí siempre debe ser Verde Neón para mantener el estilo Gamer */
-    color: var(--neon-green) !important;
-    
-    /* Diseño de cápsula profesional */
-    width: 50px;
-    height: 50px;
-    border-radius: 12px; 
-    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    
-    /* Un borde sutil para que no se pierda en el blanco */
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: 0.3s;
 }
 
-/* Efecto cuando pasas el mouse por la tarjeta */
-.stat-card:hover .stat-icon-wrapper,
-.university-banner:hover .uni-icon {
-    background-color: var(--neon-green) !important;
-    color: #000 !important; /* El icono se vuelve negro sobre el fondo neón */
-    box-shadow: 0 0 15px rgba(142, 219, 21, 0.4);
+.scroll-down-btn span {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 2px;
 }
 
-/* --- REFUERZO PARA LAS VARIABLES (Asegúrate de tener esto) --- */
-:root {
-    --bg-page: #ffffff;
-    --bg-card: #ffffff;
-    --bg-item-list: #f4f4f5; /* Este es el gris que verás detrás de los iconos */
-    --border-color: #e4e4e7;
+.scroll-down-btn:hover {
+    color: #8EDB15;
 }
 
-body.dark {
-    --bg-page: #09090b;
-    --bg-card: #121214;
-    --bg-item-list: #1c1c1f; /* Gris muy oscuro para el modo dark */
-    --border-color: #27272a;
+.animated-arrow {
+    font-size: 2rem;
+    animation: bounce 2s infinite;
+}
+
+/* RESPONSIVE: En celular se pone en columna para seguir llenando pantalla */
+@media (max-width: 900px) {
+    .hero-title { font-size: 3rem; }
+    .hero-stats-grid { 
+        grid-template-columns: 1fr 1fr; /* 2 columnas en tablets */
+        gap: 15px; 
+    }
+}
+
+@media (max-width: 600px) {
+    .hero-stats-grid { 
+        grid-template-columns: 1fr; /* 1 columna en móvil */
+    }
+    .hero-message { font-size: 1rem; }
 }
 /* =========================================
-   ESTILO DE LA CUADRÍCULA DE ESTADÍSTICAS
+   SECCIÓN 3: PERFORMANCE LAB (FIX TOTAL DE COLORES)
    ========================================= */
 
-/* Contenedor Grid Principal */
-.stats-grid {
+/* FONDO PRINCIPAL DE LA SECCIÓN */
+.section-performance {
+    /* En modo claro será blanco/gris suave, en oscuro será negro */
+    background: var(--bg-page);
+    padding: 0 5%;
+    display: flex; justify-content: center; align-items: center;
+}
+
+.performance-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 25px;
-    margin-bottom: 35px;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 40px;
+    width: 100%; max-width: 1400px;
+    height: 70vh;
 }
 
-/* Tarjeta Individual */
-.stat-card {
-    background: var(--bg-card);
-    padding: 25px;
-    border-radius: 28px; /* Bordes solicitados */
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    border: 1px solid var(--card-border);
-    box-shadow: 10px 10px 20px var(--neu-shadow), 
-               -10px -10px 20px var(--neu-white);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 15px 15px 30px var(--neu-shadow);
-}
-
-/* Contenedor del Icono (Efecto hundido) */
-.stat-icon-wrapper {
-    width: 55px;
-    height: 55px;
-    background: var(--bg-card);
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: var(--neon);
-    box-shadow: inset 4px 4px 8px var(--neu-shadow), 
-                inset -4px -4px 8px var(--neu-white);
-}
-
-/* Variación para múltiples iconos de plataforma */
-.platform-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    padding: 5px;
-}
-
-.platform-wrapper i {
-    font-size: 1.1rem;
-}
-
-/* Información de Texto */
-.stat-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.stat-label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-dim);
-    margin-bottom: 4px;
-}
-
-.stat-card h3 {
-    font-size: 1.2rem;
-    font-weight: 900;
-    margin: 0;
-    color: var(--text-main);
-}
-
-.sub-text {
-    font-size: 1.1rem !important;
-    color: var(--neon) !important; /* Resalte para el estado activo */
-}/* --- CONTENEDOR MAESTRO (POSICIÓN) --- */
-.riot-snake-bar {
-    position: fixed;
-    bottom: 30px;
-    right: 4%;
-    z-index: 10000;
-    min-width: 500px;
-    animation: snakeCycle 130s infinite ease-in-out;
-}
-
-.snake-bar-container {
-    background: var(--bg-card); /* Se adapta a blanco/negro */
-    border-radius: 28px;
-    padding: 15px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid rgba(255, 70, 85, 0.2);
-    box-shadow: 15px 15px 35px var(--neu-shadow), 
-                -10px -10px 30px var(--neu-white);
-}
-
-/* --- LÍNEA DE DISEÑO QUE CUBRE TODO EL PANEL (BORDE NEÓN) --- */
-.snake-border-glow {
-    position: absolute;
-    inset: 0;
-    border: 2px solid #ff4655;
-    border-radius: 28px;
-    opacity: 0.4;
-    mask-image: linear-gradient(to right, transparent, black, transparent);
-    animation: borderRun 4s linear infinite;
-    pointer-events: none;
-}
-
-.snake-inner-content {
-    display: flex;
-    flex-direction: column; /* Cambiado a columna para centrar mejor el botón */
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-}
-
-.snake-message {
-    font-size: 0.75rem;
-    font-weight: 800;
-    color: var(--text-dim);
-    letter-spacing: 1.5px;
-    margin: 0;
-    text-transform: uppercase;
-}
-
-/* --- BOTÓN CENTRALIZADO --- */
-.snake-action-center {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.snake-btn-main {
-    background: linear-gradient(90deg, #ff4655 0%, #ff6b78 100%);
-    color: white;
-    border: none;
-    padding: 10px 30px;
-    border-radius: 50px;
-    font-weight: 900;
-    font-size: 0.8rem;
-    cursor: pointer;
-    box-shadow: 0 8px 20px rgba(255, 70, 85, 0.4);
-    transition: all 0.3s ease;
-    letter-spacing: 1px;
-}
-
-.snake-btn-main:hover {
-    transform: scale(1.05);
-    filter: brightness(1.1);
-    box-shadow: 0 10px 25px rgba(255, 70, 85, 0.6);
-}
-
-/* --- BOTÓN CANCELAR (TOP RIGHT) --- */
-.snake-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: transparent;
-    border: none;
-    color: var(--text-dim);
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.snake-close-btn:hover {
-    color: #ff4655;
-    transform: rotate(90deg);
-}
-
-/* --- ANIMACIONES --- */
-
-/* Movimiento de la línea de diseño perimetral */
-@keyframes borderRun {
-    0% { opacity: 0.2; }
-    50% { opacity: 0.6; }
-    100% { opacity: 0.2; }
-}
-
-/* Ciclo de aparecer y desaparecer */
-@keyframes snakeCycle {
-    0%, 2% { transform: translateY(150%); opacity: 0; }
-    5%, 15% { transform: translateY(0); opacity: 1; }
-    18%, 100% { transform: translateY(150%); opacity: 0; }
-}
-/* --- CONTENEDOR DE RANKING --- */
-.ranking-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.ranking-tabs {
-    display: flex;
-    gap: 15px;
-    background: var(--neu-shadow);
-    padding: 5px;
-    border-radius: 12px;
-    box-shadow: inset 2px 2px 5px var(--neu-shadow), inset -2px -2px 5px var(--neu-white);
-}
-
-.ranking-tabs span {
-    padding: 6px 12px;
-    font-size: 0.7rem;
-    font-weight: 800;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: 0.3s;
-    color: var(--text-dim);
-}
-
-.ranking-tabs span.active {
-    background: var(--bg-card);
-    color: var(--neon);
-    box-shadow: 3px 3px 6px var(--neu-shadow);
-}
-
-/* --- ITEMS DE LA LISTA --- */
-.ranking-item {
-    display: flex;
-    align-items: center;
-    padding: 12px 18px;
-    margin-bottom: 12px;
-    border-radius: 20px;
-    background: var(--bg-card);
-    box-shadow: 5px 5px 10px var(--neu-shadow), -5px -5px 10px var(--neu-white);
-    transition: transform 0.2s ease;
-    cursor: pointer;
-}
-
-.ranking-item:hover {
-    transform: scale(1.02);
-    border: 1px solid var(--neon);
-}
-
-/* Colores por posición */
-.rank-number {
-    font-weight: 900;
-    width: 35px;
-    font-size: 1.1rem;
-    color: var(--text-dim);
-}
-
-.pos-1 { color: #FFD700; font-size: 1.4rem; } /* Oro */
-.pos-2 { color: #C0C0C0; } /* Plata */
-.pos-3 { color: #CD7F32; } /* Bronce */
-
-.rank-avatar {
-    position: relative;
-    margin-right: 15px;
-}
-
-.rank-avatar img {
-    width: 45px;
-    height: 45px;
-    border-radius: 12px;
-    border: 2px solid var(--neu-white);
-}
-
-.crown-icon {
-    position: absolute;
-    top: -10px;
-    right: -5px;
-    color: #FFD700;
-    font-size: 1.2rem;
-    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
-}
-
-.rank-name {
-    font-weight: 800;
-    color: var(--text-main);
-    margin: 0;
-}
-
-.rank-xp {
-    font-size: 0.75rem;
-    color: var(--neon);
-    margin: 0;
-    font-weight: 700;
-}
-
-.rank-badge-v2 {
-    margin-left: auto;
-    background: rgba(142, 219, 21, 0.1);
-    color: var(--neon);
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 0.6rem;
-    font-weight: 900;
-    border: 1px solid var(--neon);
-}
-
-/* --- BOTÓN FINAL --- */
-.btn-view-all-ranking {
-    width: 100%;
-    padding: 15px;
-    margin-top: 10px;
-    background: var(--bg-card);
-    border: none;
-    border-radius: 15px;
-    color: var(--text-main);
-    font-weight: 800;
-    font-size: 0.8rem;
-    cursor: pointer;
-    box-shadow: 6px 6px 12px var(--neu-shadow), -6px -6px 12px var(--neu-white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+/* PANEL GENÉRICO (IMPORTANTE: Esto controla el color de las tarjetas) */
+.panel-glass {
+    /* Fondo adaptativo: Blanco en Light Mode, Gris oscuro en Dark Mode */
+    background-color: var(--bg-card); 
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 30px;
+    display: flex; flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08); /* Sombra más suave por defecto */
     transition: 0.3s;
 }
 
-.btn-view-all-ranking:hover {
-    background: var(--neon);
-    color: #000;
-    box-shadow: 0 5px 15px rgba(142, 219, 21, 0.4);
-}
-/* --- CONTENEDOR DE LA LISTA --- */
-.friend-list {
-    padding: 10px 5px;
-}
-.list-title {
-    font-size: 0.7rem;
-    font-weight: 900;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-    padding-left: 5px;
-}
-/* --- TÍTULO DE LA LISTA --- */
-.list-title {
-    font-size: 0.75rem;
-    font-weight: 900;
-    color: var(--neon);
-    letter-spacing: 2px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* --- ITEM DEL JUGADOR --- */
-.friend-item-v2 {
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 10px 15px;
-    border-radius: 20px;
-    margin-bottom: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: 0.3s ease;
-}
-
-.friend-item-v2:hover {
-    background: rgba(142, 219, 21, 0.05);
-    border-color: var(--neon);
-    transform: translateX(5px);
-}
-
-/* --- AVATAR CIRCULAR (EL TRUCO) --- */
-.avatar-circle-wrapper {
-    position: relative;
-    width: 45px;
-    height: 45px;
-    min-width: 45px; /* Evita que se aplaste */
-    margin-right: 15px;
-}
-
-.avatar-circle-wrapper img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%; /* Círculo perfecto */
-    object-fit: cover; /* Evita que la imagen se vea mal o estirada */
-    border: 2px solid var(--neon);
-    box-shadow: 0 0 10px rgba(142, 219, 21, 0.3);
-}
-
-/* Punto de estado */
-.status-dot {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    border: 2px solid #12141a; /* Color de fondo para separarlo */
-}
-
-.status-dot.online {
-    background: var(--neon);
-    box-shadow: 0 0 8px var(--neon);
-}
-
-/* --- INFORMACIÓN --- */
-.friend-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.friend-name {
-    color: #fff;
+/* Encabezados y Textos */
+.panel-header h2 { 
+    color: var(--text-main); /* Negro en light, Blanco en dark */
     font-weight: 800;
-    font-size: 0.9rem;
 }
 
-.friend-game {
-    color: var(--text-dim);
-    font-size: 0.7rem;
-    text-transform: uppercase;
+/* SELECTOR NEÓN (El dropdown) */
+.neon-select {
+    background: var(--bg-input); /* Gris claro en light, oscuro en dark */
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 16px; 
+    border-radius: 20px; 
+    cursor: pointer;
     font-weight: 600;
 }
 
-/* --- BOTÓN AÑADIR --- */
-.btn-add-tech {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* GRÁFICAS DE BARRAS */
+.chart-container-mock { 
+    flex-grow: 1; 
+    display: flex; flex-direction: column; justify-content: flex-end; 
+    margin-bottom: 20px; 
+}
+
+.bar-chart { 
+    display: flex; justify-content: space-around; align-items: flex-end; 
+    height: 100%; 
+    border-bottom: 2px solid var(--border-color); /* Línea base gris en ambos */
+    padding-bottom: 5px; 
+}
+
+.bar { 
+    width: 8%; 
+    /* Color base de barras inactivas: Gris suave visible en ambos modos */
+    background-color: #d1d5db; /* Gris neutro */
+    border-radius: 6px 6px 0 0; 
+    transition: 0.3s; 
+    cursor: pointer; 
+}
+/* En modo oscuro, las barras inactivas deben ser más oscuras */
+.dark .bar { background-color: #374151; }
+
+.bar:hover, .bar.active { 
+    background-color: #8EDB15 !important; /* Verde siempre al activar */
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.4); 
+}
+
+/* Leyenda */
+.chart-legend span { color: var(--text-muted); font-weight: 600; }
+
+/* Mini Stats (KDA, CS/MIN) */
+.mini-stats-row { 
+    display: flex; justify-content: space-around; 
+    border-top: 1px solid var(--border-color); 
+    padding-top: 20px; 
+}
+.ms-item span { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; }
+.ms-item strong { color: var(--text-main); font-size: 1.5rem; font-weight: 800; }
+
+/* AGENDA / CALENDARIO (Tarjeta Derecha) */
+.calendar-list { overflow-y: auto; padding-right: 10px; }
+
+.calendar-item {
+    background-color: var(--bg-input); /* Diferente al fondo de tarjeta */
+    border: 1px solid transparent;
+    color: var(--text-main);
+    padding: 15px; border-radius: 12px; margin-bottom: 10px; 
+    display: flex; align-items: center; gap: 15px;
     transition: 0.3s;
 }
-
-.btn-add-tech:hover {
-    background: var(--neon);
-    color: #000;
-    border-color: var(--neon);
-    box-shadow: 0 0 15px var(--neon);
-}
-.content-panel.full-width {
-    grid-column: 1 / -1;
-    background: var(--bg-card) !important;
-    border: 1px solid var(--card-border) !important;
-    border-radius: 28px !important;
-    padding: 30px !important;
-    box-shadow: 10px 10px 20px var(--neu-shadow), 
-                -10px -10px 20px var(--neu-white) !important;
-    transition: all 0.3s ease;
+.calendar-item:hover { 
+    border-color: #8EDB15; 
+    background-color: var(--bg-page); /* Ligero contraste al hover */
 }
 
-/* --- TARJETA DEL TORNEO (ESTILO B&W DINÁMICO) --- */
-.rec-tournament {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /* Usa el fondo del root: Blanco en Light, Negro en Dark */
-    background: var(--bg-card); 
-    padding: 25px;
-    /* Consistencia con el resto de la interfaz */
-    border-radius: 28px; 
-    border: 1px solid var(--card-border);
-    box-shadow: 10px 10px 20px var(--neu-shadow), 
-                -10px -10px 20px var(--neu-white);
-    transition: 0.3s ease;
+/* Fechas */
+.cal-date { 
+    background-color: var(--bg-card); /* Blanco en light, negro en dark */
+    border: 1px solid var(--border-color);
+    padding: 5px 12px; border-radius: 8px; 
+    min-width: 55px; text-align: center;
 }
+.cal-day { color: var(--text-main); font-weight: 800; font-size: 1.2rem; }
+.cal-month { color: var(--text-muted); font-size: 0.7rem; font-weight: 700; }
 
-.rec-tournament:hover {
-    border-color: #8EDB15; /* El verde oficial */
-    transform: translateY(-5px);
+/* Info Evento */
+.cal-info h4 { margin: 0; color: var(--text-main); font-weight: 700; font-size: 1rem; }
+.cal-time { color: #8EDB15; font-weight: 600; font-size: 0.85rem; }
+
+/* Botón Campana */
+.btn-cal-action { 
+    margin-left: auto; 
+    background: transparent; 
+    border: 1px solid var(--border-color); 
+    color: var(--text-muted); 
+    width: 35px; height: 35px; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: 0.2s;
 }
-
-/* --- TEXTOS ADAPTABLES --- */
-.rec-info h4 {
-    margin: 0 0 8px 0;
-    /* Cambia entre negro y blanco automáticamente */
-    color: var(--text-main); 
-    font-size: 1.2rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.rec-info p {
-    margin: 0;
-    /* Gris dinámico del root */
-    color: var(--text-dim); 
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-/* --- BOTÓN NEÓN OFICIAL (#8EDB15) --- */
-.btn-neon-small {
-    background: transparent;
-    /* Color verde exacto de tu página */
-    border: 2px solid #8EDB15; 
-    color: #8EDB15;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 0 10px rgba(142, 219, 21, 0.1);
-}
-
-.btn-neon-small:hover {
-    /* Al hacer hover se llena con el verde oficial */
-    background: #8EDB15;
-    color: #000000; /* Texto negro para contraste */
-    box-shadow: 0 0 20px rgba(142, 219, 21, 0.5);
-    transform: scale(1.05);
-}
-
-/* --- DETALLE PARA EL MODO OSCURO --- */
-[data-theme='dark'] .rec-tournament {
-    background: #0b0d11; /* Negro profundo para el panel */
-    border-color: rgba(255, 255, 255, 0.05);
+.btn-cal-action:hover { 
+    background-color: var(--text-main); 
+    color: var(--bg-page); 
 }

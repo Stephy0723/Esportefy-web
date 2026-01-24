@@ -1,0 +1,286 @@
+/* =========================================
+   VARIABLES DE TEMA (Claro / Oscuro)
+   ========================================= */
+:root {
+    /* MODO OSCURO (Default) */
+    --bg-page: #000000;         /* Fondo Negro puro */
+    --text-main: #ffffff;       /* Texto Blanco */
+    --text-muted: #a1a1aa;      /* Gris */
+    --line-color: #3f3f46;      /* Color de la línea en reposo */
+    --line-focus: #8EDB15;      /* Color de la línea al hacer clic (Verde) */
+    --btn-primary: #8EDB15;     /* Botón Morado */
+}
+
+.light-mode {
+    /* MODO CLARO (Se activa con JS) */
+    --bg-page: #ffffff;
+    --text-main: #000000;
+    --text-muted: #52525b;
+    --line-color: #d4d4d8;
+    --line-focus: #8EDB15;      /* Color foco en blanco */
+}
+
+* { box-sizing: border-box; }
+
+/* CONTENEDOR PRINCIPAL */
+.auth-container-split {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-page); /* CAMBIA EL FONDO AQUÍ */
+    color: var(--text-main);
+    font-family: sans-serif;
+    transition: background-color 0.3s ease;
+}
+
+.auth-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 80px;
+    background-color: var(--bg-page);
+    position: relative;
+}
+
+/* HEADER */
+.brand { font-size: 1.5rem; font-weight: 800; }
+.header-text { margin-top: 50px; margin-bottom: 40px; }
+.header-text h1 { font-size: 3rem; margin: 10px 0; line-height: 1.1; }
+
+/* =========================================
+   INPUTS: SOLO LÍNEA (NUCLEAR OPTION)
+   ========================================= */
+.input-row {
+    display: flex;
+    align-items: flex-end; /* Alinea el texto con la línea */
+    margin-bottom: 30px;
+    gap: 20px;
+}
+
+.input-row label {
+    width: 130px;
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    text-align: left;
+    padding-bottom: 10px; /* Separación con la línea */
+}
+
+.input-wrapper {
+    flex-grow: 1;
+    position: relative;
+}
+
+/* EL INPUT REAL - AQUÍ QUITAMOS LA CAJA */
+.input-wrapper input {
+    width: 100%;
+    background: transparent !important;   /* SIN FONDO */
+    border: none !important;              /* SIN BORDE ALREDEDOR */
+    border-bottom: 1px solid var(--line-color) !important; /* SOLO LÍNEA ABAJO */
+    border-radius: 0 !important;          /* SIN ESQUINAS REDONDAS */
+    padding: 10px 35px 10px 0;            /* Espacio para escribir */
+    
+    color: var(--text-main);
+    font-size: 1rem;
+    outline: none;
+    box-shadow: none !important;          /* MATA EL BRILLO VERDE/AZUL */
+}
+
+/* AL HACER CLIC (FOCUS) */
+.input-wrapper input:focus {
+    background: transparent !important;
+    border-bottom: 2px solid var(--line-focus) !important; /* La línea cambia de color */
+    box-shadow: none !important;
+}
+
+/* --- SOLUCIÓN PARA EL FONDO AZUL DEL AUTOCOMPLETADO --- */
+.input-wrapper input:-webkit-autofill,
+.input-wrapper input:-webkit-autofill:hover, 
+.input-wrapper input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 30px var(--bg-page) inset !important; /* "Pinta" el fondo del color de la página */
+    -webkit-text-fill-color: var(--text-main) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ICONOS */
+.input-wrapper i {
+    position: absolute;
+    right: 0;
+    bottom: 10px; /* Pegado a la línea */
+    color: var(--text-muted);
+    font-size: 1.2rem;
+}
+
+/* =========================================
+   CHECKBOX Y BOTONES
+   ========================================= */
+.options-row {
+    display: flex;
+    justify-content: space-between; /* Checkbox izquierda, link derecha */
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+/* Alineación correcta del checkbox */
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Estilo simple del cuadrito */
+.remember-me input[type="checkbox"] {
+    accent-color: var(--line-focus);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* =========================================
+   BOTONES DE ACCIÓN (LADO A LADO)
+   ========================================= */
+
+.form-actions {
+    margin-top: 40px;
+    display: flex;
+    gap: 15px; /* Espacio entre los dos botones */
+    align-items: stretch; /* Asegura que ambos tengan la misma altura */
+}
+
+/* 1. BOTÓN PRINCIPAL (El de color) */
+.btn-primary {
+    flex: 1; /* Ocupa todo el espacio posible */
+    padding: 16px;
+    background: var(--btn-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: 4px; /* Bordes ligeramente redondeados (o 0 si prefieres cuadrados) */
+    
+    font-size: 0.9rem;
+    font-weight: 800; /* Letra gruesa */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1); /* Se ilumina un poco al pasar el mouse */
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* 2. BOTÓN SECUNDARIO (ATRÁS) - ARREGLADO */
+.btn-secondary {
+    flex: 0 0 auto; /* No se estira, mantiene su ancho según el texto */
+    min-width: 100px; /* Ancho mínimo para que no se vea aplastado */
+    padding: 0 20px;
+    
+    background: transparent; /* Fondo transparente */
+    border: 1px solid var(--line-color); /* Borde del color de la línea de inputs */
+    color: var(--text-muted); /* Texto grisáceo */
+    border-radius: 4px;
+    
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    /* Centrado perfecto del texto */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Efecto Hover para el botón Atrás */
+.btn-secondary:hover {
+    border-color: var(--text-main); /* El borde se pone del color del texto principal (Blanco/Negro) */
+    color: var(--text-main);        /* El texto se ilumina */
+    background: rgba(128, 128, 128, 0.1); /* Fondo sutil al pasar el mouse */
+}
+/* SECCIÓN DERECHA (IMAGEN) */
+.auth-right {
+    flex: 1.5;
+    background-color: var(--bg-page);
+    position: relative;
+}
+.auth-right img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Responsive */
+@media (max-width: 900px) { .auth-right { display: none; } }
+@media (max-width: 480px) {
+    .auth-left { padding: 20px; }
+    .input-row { flex-direction: column; align-items: flex-start; gap: 5px; } 
+}
+/* =========================================
+   BOTONES DE ACCIÓN (SOLUCIÓN DEFINITIVA)
+   ========================================= */
+
+.form-actions {
+    display: flex;         /* Pone los botones uno al lado del otro */
+    gap: 15px;             /* Espacio en el medio */
+    margin-top: 40px;
+    width: 100%;
+}
+
+/* 1. BOTÓN PRINCIPAL (Morado/Verde) */
+.btn-primary {
+    flex: 2;               /* Ocupa el 66% del espacio (más grande) */
+    padding: 15px;         /* Altura cómoda */
+    background: var(--btn-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* 2. BOTÓN ATRÁS (Borde gris, fondo transparente) */
+.btn-secondary {
+    flex: 1;               /* Ocupa el 33% del espacio (más pequeño pero visible) */
+    padding: 15px;         /* MISMA altura que el primario */
+    
+    background-color: transparent !important; /* Forzar transparencia */
+    border: 1px solid var(--input-border) !important; /* Borde del mismo color que inputs */
+    color: var(--text-muted) !important;
+    border-radius: 4px;
+    
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    /* Centrar texto */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hover del Botón Atrás */
+.btn-secondary:hover {
+    border-color: var(--text-main) !important; /* Borde se pone blanco/negro */
+    color: var(--text-main) !important;        /* Texto se pone blanco/negro */
+    background-color: rgba(128, 128, 128, 0.1) !important;
+}

@@ -30,6 +30,7 @@ export const gamesDetailedData = {
 lol: {
         id: 'lol',
         name: 'League of Legends',
+        banner: BannerLol,
         developer: 'Riot Games',
         history: 'League of Legends es un juego de estrategia por equipos en el que dos equipos de cinco campeones se enfrentan para ver quién destruye antes la base del otro. Elige entre un plantel de más de 140 campeones para realizar jugadas épicas, asegurar asesinatos y destruir torretas mientras avanzas hacia la victoria.',
         tags: ['MOBA', 'PC', 'Competitivo', 'E-Sports', 'Estrategia'],

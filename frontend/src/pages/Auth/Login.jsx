@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Auth.css';
+import './Login.css'; 
 
-// Imagen lateral (Asegúrate de que la ruta sea correcta)
-import sideImage from '../../assets/images/login-bg.jpg'; 
+// 1. IMPORTAR CONTEXTO DE TEMA
+import { useTheme } from '../../context/ThemeContext'; 
+
+// 2. IMPORTAR AMBAS IMÁGENES
+import bgWhite from '../../assets/images/login-black.png'; 
+import bgBlack from '../../assets/images/login-white.png';
+
 
 const Login = () => {
   const navigate = useNavigate();
   
-  // ESTADOS PARA LA LÓGICA DE UI
-  const [showPassword, setShowPassword] = useState(false); // Ver/Ocultar pass
-  const [rememberMe, setRememberMe] = useState(false);     // Checkbox
+  // 3. OBTENER EL VALOR DEL TEMA (isDarkMode)
+  const { isDarkMode } = useTheme(); 
+
+  // ESTADOS
+  const [showPassword, setShowPassword] = useState(false); 
+  const [rememberMe, setRememberMe] = useState(false);     
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,13 +28,11 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-            // 3. Petición POST al endpoint del backend
             const response = await axios.post('http://localhost:4000/api/auth/login', {
                 email,
                 password
             });
 
-            // 4. Si el login es exitoso, guardamos el token
             const { token, user } = response.data;
             
             if (rememberMe) {
@@ -38,24 +44,27 @@ const Login = () => {
                 sessionStorage.setItem('esportefyUser', JSON.stringify(user));
                 sessionStorage.setItem('user', JSON.stringify(user));
             }
+            
+            window.dispatchEvent(new Event('user-update'));
 
-            // 5. Redirigir al inicio o dashboard
             navigate('/dashboard');
             
         } catch (err) {
-            // Capturar errores del backend (ej: "Usuario no encontrado")
             const message = err.response?.data?.message || 'Error al conectar con el servidor';
             setError(message);
         }
     };
 
   return (
-    <div className="auth-container-split">
+    // 4. AGREGAR CLASE 'light-mode' SI NO ES MODO OSCURO (Para el formulario)
+    <div className={`auth-container-split ${!isDarkMode ? 'light-mode' : ''}`}>
       
       {/* SECCIÓN IZQUIERDA: FORMULARIO */}
       <div className="auth-left">
         <div className="auth-nav">
-            <span className="brand">ESPORTEFY</span>
+      <span className="brand">
+          ESPORTEFY<span className="brand-dot">.</span>
+            </span>            
             <div className="nav-links">
                 <Link to="/">Inicio</Link>
                 <Link to="/register" className="active">Unirse</Link>
@@ -63,42 +72,45 @@ const Login = () => {
         </div>
 
         <div className="auth-content">
-            {/* TEXTOS PROFESIONALES GAMING */}
+            {/* TEXTOS */}
             <div className="header-text">
                 <span className="badge-pro">PRO ACCESS</span>
                 <h1>Bienvenido<br/>de nuevo</h1>
-                <p className="subtitle">Gestiona tus torneos. Domina la arena.</p>
+                <p className="subtitle">Gestiona tus torneos.</p>
             </div>
 
+            {/* MENSAJE DE ERROR */}
+            {error && <div style={{color: '#ff4d4d', marginBottom: '15px', fontSize: '0.9rem'}}>{error}</div>}
+
             <form onSubmit={handleSubmit}>
+                {/* CAMPO EMAIL */}
                 <div className="input-row">
+                    <label>Email Profesional</label>
                     <div className="input-wrapper">
-                        <label>Email Profesional</label>
                         <input 
                             type="email" 
                             placeholder="usuario@team.com" 
                             value={email}                       
                             onChange={(e) => setEmail(e.target.value)}
-                            autocomplete="email"
+                            autoComplete="email"
                             required 
                         />
                         <i className='bx bx-envelope'></i>
-
                     </div>
                 </div>
 
+                {/* CAMPO CONTRASEÑA */}
                 <div className="input-row">
+                    <label>Contraseña</label>
                     <div className="input-wrapper">
-                        <label>Contraseña</label>
                         <input 
                             type={showPassword ? "text" : "password"} 
                             placeholder="••••••••" 
                             value={password}                  
                             onChange={(e) => setPassword(e.target.value)} 
-                            autocomplete="current-password"
+                            autoComplete="current-password"
                             required 
                         />
-                        {/* ICONO DEL OJO FUNCIONAL */}
                         <i 
                             className={`bx ${showPassword ? 'bx-show' : 'bx-hide'} toggle-pass`}
                             onClick={() => setShowPassword(!showPassword)}
@@ -107,7 +119,7 @@ const Login = () => {
                     </div>
                 </div>
 
-                {/* FILA DE OPCIONES (CHECKBOX Y OLVIDÉ CONTRASEÑA) */}
+                {/* OPCIONES */}
                 <div className="options-row">
                     <label className="remember-me">
                         <input 
@@ -120,8 +132,8 @@ const Login = () => {
                     <Link to="/reset-password" className="forgot-link">¿Recuperar cuenta?</Link>
                 </div>
 
+                {/* BOTÓN Y FOOTER */}
                 <div className="form-actions">
-                    {/* BOTÓN ÚNICO Y POTENTE */}
                     <button type="submit" className="btn-primary">ACCEDER A LA PLATAFORMA</button>
                 </div>
                 
@@ -129,14 +141,24 @@ const Login = () => {
                     ¿Aún no tienes equipo? <Link to="/register">Crea tu cuenta de jugador</Link>
                 </p>
             </form>
+             <div className="sidebar-credit">
+                    <span className="text">Dev by <strong>Steliant</strong></span>
+                </div>
         </div>
       </div>
 
-      {/* SECCIÓN DERECHA */}
+      {/* SECCIÓN DERECHA: IMAGEN DINÁMICA */}
       <div className="auth-right">
         <div className="image-overlay"></div>
-        <img src={sideImage} alt="Esports Arena" />
+        
+        {/* 5. AQUÍ SE CAMBIA LA IMAGEN USANDO LA VARIABLE isDarkMode */}
+        <img 
+            src={isDarkMode ? bgBlack : bgWhite} 
+            alt="Esports Arena Background" 
+            className="dynamic-bg"
+        />
       </div>
+      
 
     </div>
   );

@@ -7,27 +7,45 @@ const Navbar = () => {
   const [activeUser, setActiveUser] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-
+  // Función para leer el usuario del almacenamiento
+  const checkUser = () => {
     const storedUser = localStorage.getItem('esportefyUser');
     if (storedUser) {
       try {
         setActiveUser(JSON.parse(storedUser));
       } catch (e) {
         console.error("Error parsing user", e);
+        setActiveUser(null);
       }
+    } else {
+      setActiveUser(null);
     }
+  };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
+    // 1. Chequeo inicial al cargar
+    checkUser();
+
+    // 2. Escuchar evento de scroll
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    // 3. AGREGADO: Escuchar evento personalizado cuando alguien inicia sesión o se registra
+    window.addEventListener('user-update', checkUser);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('user-update', checkUser); // Limpiar evento
+    };
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('esportefyUser');
-    setActiveUser(null);
+    // Despachar el evento para que el Navbar sepa que se cerró sesión
+    window.dispatchEvent(new Event('user-update'));
     navigate('/');
   };
 
@@ -35,19 +53,19 @@ const Navbar = () => {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-container">
         
-        {/* 1. LOGO A LA IZQUIERDA */}
+        {/* LOGO */}
         <Link to="/" className="navbar-logo">
           <i className='bx bx-joystick'></i>
           <span>ESPORTE<span className="highlight">FY</span></span>
         </Link>
 
-        {/* 2. BUSCADOR EN EL CENTRO (Movido aquí para poder centrarlo) */}
+        {/* BUSCADOR */}
         <div className="search-box">
            <i className='bx bx-search'></i>
            <input type="text" placeholder="Buscar..." />
         </div>
         
-        {/* 3. ACCIONES A LA DERECHA */}
+        {/* ACCIONES */}
         <div className="navbar-actions">
           <button className="notify-btn" onClick={() => navigate('/notifications')}>
             <i className='bx bx-bell'></i>
@@ -55,6 +73,7 @@ const Navbar = () => {
           </button>
 
           {activeUser ? (
+            /* ESTO SE MOSTRARÁ CUANDO HAYA USUARIO */
             <div className="user-profile container-unified">
               <Link to="/profile" className="profile-link-part">
                 <img 
@@ -65,12 +84,15 @@ const Navbar = () => {
                 <span className="username">{activeUser.username || activeUser.name}</span>
               </Link>
               <div className="separator-vertical"></div>
-              <button onClick={handleLogout} className="logout-btn-integrated">
+              <button onClick={handleLogout} className="logout-btn-integrated" title="Salir">
                 <i className='bx bx-log-out'></i>
               </button>
             </div>
           ) : (
-            <Link to="/login" className="login-btn">INGRESAR</Link>
+            /* ESTO SE MOSTRARÁ CUANDO NO HAYA USUARIO */
+            <div className="auth-buttons">
+                <Link to="/login" className="login-btn">INGRESAR</Link>
+            </div>
           )}
         </div>
 

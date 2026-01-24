@@ -32,12 +32,16 @@ body.dark {
 /* ========================================= */
 /* 2. ESTRUCTURA PRINCIPAL                   */
 /* ========================================= */
+
 .sidebar {
     position: fixed;
     top: 0; left: 0;
     height: 100vh;
     width: 250px;
-    padding: 10px 14px;
+    
+    /* CAMBIO AQUÍ: Aumentamos de 20px a 50px para bajar todo el contenido */
+    padding-top: 50px; 
+    
     background: var(--sidebar-bg);
     border-right: 1px solid var(--sidebar-border);
     transition: all 0.5s ease;
@@ -50,6 +54,7 @@ body.dark {
     justify-content: space-between;
 }
 
+/* Ancho al cerrar */
 .sidebar.close { width: 88px; }
 
 /* ========================================= */
@@ -57,17 +62,36 @@ body.dark {
 /* ========================================= */
 .sidebar header {
     position: relative;
-    margin: 10px 0 20px 0;
+    /* Altura suficiente para que quepa el logo */
+    height: 80px;  
     display: flex;
-    align-items: center;
-    /* Ajuste para que se vea centrado cuando está cerrado */
-    padding-left: 0; 
+    /* Centra verticalmente el contenido (logo y texto) */
+    align-items: center; 
+    padding: 0 20px;
+    background: transparent;
+    /* IMPORTANTE: Quitamos overflow: hidden para que no corte nada */
+    /* overflow: hidden;  <-- ELIMINADA O COMENTADA */
+    transition: all 0.5s ease;
 }
 
+/* CENTRADO DEL HEADER AL CERRAR */
+.sidebar.close header {
+    padding: 0; /* Al cerrar, quitamos padding lateral para centrar mejor */
+    justify-content: center; /* Centra horizontalmente el logo */
+}
 .sidebar .image-text {
     display: flex;
     align-items: center;
-    gap: 12px; /* Separación entre logo y texto */
+    /* Reserva espacio para el logo incluso cuando está cerrado */
+    min-width: 60px; 
+    height: 60px; /* Altura fija para el contenedor */
+    justify-content: center; /* Centra el contenido dentro de este contenedor */
+}
+/* Ajuste al cerrar para centrar logo */
+.sidebar.close .image-text {
+    gap: 0; /* Elimina el espacio extra */
+    justify-content: center;
+    width: 100%;
 }
 
 /* Contenedor del Icono/Imagen */
@@ -78,13 +102,17 @@ body.dark {
     align-items: center;
     justify-content: center;
     border-radius: 10px;
+    /* Asegura que la imagen no se encoja */
+    flex-shrink: 0; 
 }
 
 /* Opción A: Imagen PNG */
 .sidebar-logo {
-    width: 45px; 
-    height: 45px;
-    object-fit: contain;
+    width: 45px; /* Ancho fijo para el logo */
+    height: 45px; /* Alto fijo para el logo */
+    object-fit: contain; /* Mantiene la proporción de la imagen */
+    display: block; /* Asegura que se comporte como un bloque */
+    margin-right: 10px; /* Espacio entre el logo y el texto */
 }
 
 /* Opción B: Icono (Fallback) */
@@ -99,9 +127,8 @@ body.dark {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    opacity: 1;
-    transition: 0.3s;
-    white-space: nowrap; /* Evita que el texto se rompa */
+    opacity: 1; /* Asegura que el texto sea visible */
+    transition: opacity 0.3s ease; /* Transición suave si se decide ocultar después */
 }
 
 .sidebar .name {
@@ -123,7 +150,7 @@ body.dark {
 .sidebar.close .header-info {
     opacity: 0;
     pointer-events: none;
-    display: none;
+    display: none; /* Oculta completamente para no ocupar espacio */
 }
 
 /* TOGGLE (Flecha) */
@@ -139,7 +166,7 @@ body.dark {
     display: flex; align-items: center; justify-content: center;
     font-size: 22px; cursor: pointer;
     transition: 0.3s ease;
-    display: none; /* Opcional: Ocultar flecha si usas clic en barra */
+    /* display: none;  <-- COMENTADO: Si quieres ver la flecha para probar, descoméntalo o quítalo */
 }
 .sidebar.close .toggle { transform: translateY(-50%) rotate(0deg); }
 
@@ -147,30 +174,66 @@ body.dark {
 /* ========================================= */
 /* 4. MENÚ Y LISTAS                          */
 /* ========================================= */
-.sidebar .menu-bar { height: 100%; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+.sidebar .menu-bar { 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column; 
+    overflow-y: auto; 
+    overflow-x: hidden; 
+}
 .menu-bar::-webkit-scrollbar { display: none; }
 
-.sidebar li { height: 50px; list-style: none; display: flex; align-items: center; margin-top: 10px; }
-.sidebar li a { list-style: none; height: 100%; width: 100%; display: flex; align-items: center; text-decoration: none; border-radius: 6px; transition: 0.3s ease; }
+.sidebar li { 
+    height: 50px; 
+    list-style: none; 
+    display: flex; 
+    align-items: center; 
+    margin-top: 10px; 
+}
+
+.sidebar li a { 
+    list-style: none; 
+    height: 100%; 
+    width: 100%; 
+    display: flex; 
+    align-items: center; 
+    text-decoration: none; 
+    border-radius: 6px; 
+    transition: 0.3s ease; 
+}
+
+/* CENTRADO DE ITEMS AL CERRAR */
+.sidebar.close li a {
+    justify-content: center; /* Centra el contenido del enlace */
+}
 
 .sidebar li .icon { 
-    min-width: 60px; 
+    min-width: 60px; /* Ancho fijo para el icono */
     font-size: 20px; 
-    display: flex; align-items: center; justify-content: center; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
     color: var(--text-color-sidebar); 
     transition: 0.3s ease; 
 }
+
 .sidebar li .text { 
-    font-size: 16px; font-weight: 500; 
+    font-size: 16px; 
+    font-weight: 500; 
     color: var(--text-color-sidebar); 
     white-space: nowrap; 
-    opacity: 1; transition: 0.3s; 
+    opacity: 1; 
+    transition: 0.3s; 
 }
-.sidebar.close .text { opacity: 0; }
+
+.sidebar.close .text { 
+    opacity: 0; 
+    display: none; /* Oculta el texto para centrar solo el icono */
+}
 
 .sidebar li:hover .icon, .sidebar li:hover .text { color: var(--text-hover); }
 
-/* Colores Hover */
+/* Colores Hover (Se mantienen igual) */
 .sidebar li:nth-child(1) a:hover { background: rgba(0, 242, 255, 0.1); } .sidebar li:nth-child(1) a:hover * { color: var(--neon-blue) !important; }
 .sidebar li:nth-child(2) a:hover { background: rgba(255, 204, 0, 0.1); } .sidebar li:nth-child(2) a:hover * { color: var(--neon-gold) !important; }
 .sidebar li:nth-child(3) a:hover { background: rgba(189, 0, 255, 0.1); } .sidebar li:nth-child(3) a:hover * { color: var(--neon-purple) !important; }
@@ -194,8 +257,32 @@ body.dark {
 .sidebar.close .social-trigger { display: flex; justify-content: center; width: 100%; }
 .sidebar.close .social-trigger:hover { color: var(--brand-green); }
 
-.sidebar .mode { border-radius: 6px; background-color: var(--toggle-bg); position: relative; transition: 0.3s ease; margin-top: 10px; display: flex; align-items: center; padding: 0; cursor: pointer; }
-.sidebar .mode .sun-moon { height: 50px; width: 60px; min-width: 60px; display: flex; align-items: center; justify-content: center; }
+.sidebar .mode { 
+    border-radius: 6px; 
+    background-color: var(--toggle-bg); 
+    position: relative; 
+    transition: 0.3s ease; 
+    margin-top: 10px; 
+    display: flex; 
+    align-items: center; 
+    padding: 0; 
+    cursor: pointer; 
+}
+.sidebar .mode .sun-moon { 
+    height: 50px; 
+    width: 60px; 
+    min-width: 60px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+/* CENTRADO MODO OSCURO AL CERRAR */
+.sidebar.close .mode {
+    background-color: transparent; /* Opcional: quita fondo al cerrar para ver solo icono */
+    justify-content: center;
+}
+
 .sidebar .mode .sun-moon i { position: absolute; transition: 0.3s; font-size: 20px; }
 .sidebar .mode .sun-moon i.sun { opacity: 1; transform: rotate(0deg); color: var(--toggle-icon); }
 .sidebar .mode .sun-moon i.moon { opacity: 0; transform: rotate(90deg); color: var(--toggle-icon); }
@@ -207,5 +294,179 @@ body.dark .sidebar .mode .sun-moon i.moon { opacity: 1; transform: rotate(0deg);
 .sidebar .mode .switch { position: relative; height: 22px; width: 40px; border-radius: 25px; background-color: #ccc; transition: 0.3s; }
 .sidebar .mode .switch::before { content: ''; position: absolute; height: 15px; width: 15px; border-radius: 50%; top: 50%; left: 4px; transform: translateY(-50%); background-color: #fff; transition: 0.3s; }
 body.dark .sidebar .mode .switch { background-color: var(--brand-green); }
-body.dark .sidebar .mode .switch::before { left: 20px; background-color: #000; }
+body.dark .sidebar .mode .switch::before { left: 20px; background-color: #000; }/* ========================================= */
+/* CRÉDITO DEL DESARROLLADOR (FOOTER)        */
+/* ========================================= */
+.sidebar-credit {
+    margin-top: 15px;       /* Separación del botón de modo oscuro */
+    margin-bottom: 10px;    /* Separación del borde final */
+    text-align: center;     /* Centrado */
+    font-size: 11px;        /* Letra pequeña y discreta */
+    color: var(--text-color-sidebar);
+    opacity: 0.5;           /* Un poco transparente para no distraer */
+    transition: 0.3s;
+    white-space: nowrap;    /* Que no se rompa la línea */
+}
+
+/* El nombre de la empresa en negrita y quizás con color al pasar el mouse */
+.sidebar-credit strong {
+    font-weight: 800;
+    color: var(--text-hover); /* Se pone más oscuro/claro según el tema */
+    cursor: default;
+}
+
+/* Efecto hover sutil */
+.sidebar-credit:hover {
+    opacity: 1;
+}
+
+/* OCULTAR AL CERRAR LA BARRA */
+/* Como no cabe en 88px, lo ocultamos para mantener la limpieza */
+.sidebar.close .sidebar-credit {
+    display: none;
+}
+
 .sidebar.close .mode-text, .sidebar.close .toggle-switch { display: none; }
+
+/* ========================================= */
+/* TÍTULOS DE SECCIÓN (Categorías)           */
+/* ========================================= */
+.menu-header {
+    margin-top: 15px;
+    padding-left: 16px; 
+    margin-bottom: 5px;
+}
+body.dark .section-title {
+    color: #888888; /* Gris un poco más oscuro si el fondo es muy negro */
+}
+.section-title {
+    font-size: 10px;
+    font-weight: 700;
+    
+    /* CAMBIO AQUÍ: Color gris en lugar de verde/otro */
+    color: #a1a1aa; /* Un gris medio muy elegante */
+    
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+}
+.sidebar.close .section-title, 
+.sidebar.close .menu-header { display: none; }
+
+/* ========================================= */
+/* FILA DE REDES SOCIALES (NUEVO)            */
+/* ========================================= */
+.social-row {
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    background: rgba(0,0,0,0.02); /* Fondo sutil para separar */
+    border-radius: 8px;
+    margin: 10px 10px;
+}
+
+.icons-container {
+    display: flex;
+    justify-content: space-between; /* Distribuye los iconos */
+    gap: 10px;
+}
+
+.social-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    font-size: 20px;
+    text-decoration: none;
+    transition: transform 0.2s, background 0.2s;
+    background: var(--toggle-bg);
+    color: var(--text-color-sidebar);
+}
+
+.social-mini:hover {
+    transform: translateY(-3px);
+    color: #fff;
+}
+
+/* Colores específicos al pasar el mouse */
+.social-mini.twitch:hover { background: #9146FF; }
+.social-mini.youtube:hover { background: #FF0000; }
+.social-mini.facebook:hover { background: #1877F2; }
+.social-mini.discord:hover { background: #5865F2; }
+
+/* Ajuste del Header para que no se corte el logo (Del arreglo anterior) */
+.sidebar header { height: 80px; overflow: visible; } 
+.sidebar .image-text { min-width: 60px; }
+.sidebar-logo { width: 45px; height: 45px; object-fit: contain; }
+
+/* ========================================= */
+/* LOGICA DEL ICONO COMPARTIR (SHARE)        */
+/* ========================================= */
+
+/* Por defecto (Barra Abierta): Ocultamos el icono solitario */
+.social-trigger-closed {
+    display: none; 
+}
+
+/* Cuando la barra está CERRADA (.close): */
+.sidebar.close .social-trigger-closed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;       /* Misma altura que los otros items */
+    margin-top: 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+/* Estilo del icono cuando aparece */
+.sidebar.close .social-trigger-closed .icon {
+    font-size: 20px;
+    min-width: 60px; /* Para que se alinee con los otros iconos */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color-sidebar);
+}
+
+/* Efecto Hover al icono de compartir */
+.sidebar.close .social-trigger-closed:hover {
+    background: var(--toggle-bg);
+}
+.sidebar.close .social-trigger-closed:hover .icon {
+    color: var(--text-hover);
+}
+/* ========================================= */
+/* BOTÓN TOGGLE "VER MÁS"                    */
+/* ========================================= */
+.toggle-more-btn {
+    cursor: pointer;
+    border-top: 1px dashed var(--sidebar-border); /* Separador sutil */
+    margin-top: 5px;
+}
+
+.toggle-more-btn:hover {
+    background-color: rgba(0,0,0,0.03); /* Hover muy ligero */
+}
+
+/* Animación de entrada suave */
+.expanded-menu-animation {
+    animation: slideDown 0.3s ease-out forwards;
+    transform-origin: top;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Si la barra está cerrada, el texto "Ver Más" desaparece, 
+   pero queda el icono de flecha hacia abajo/arriba para expandir los iconos */
