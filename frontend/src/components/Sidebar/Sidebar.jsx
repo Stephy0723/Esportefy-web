@@ -49,10 +49,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
           </div>
         </div>
 
-        <i className='bx bx-chevron-right toggle' onClick={(e) => {
-              e.stopPropagation();
-              setIsClosed(!isClosed);
-        }}></i>
+        
       </header>
 
       <div className="menu-bar">
