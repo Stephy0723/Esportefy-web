@@ -26,7 +26,7 @@ const Team = () => {
             try {
                 setLoading(true);
                 // Llamada a tu API de Node.js
-                const response = await axios.get('http://76.13.97.163:4000/api/teams');
+                const response = await axios.get('http://localhost:4000/api/teams');
                 setTeams(response.data);
                 setError(false);
             } catch (err) {

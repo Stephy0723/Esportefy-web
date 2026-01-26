@@ -257,6 +257,15 @@ export const updateProfile = async (req, res) => {
                 updateData[field] = arr.map(s => s.trim()).filter(Boolean);
             }
         });
+        // 2.5 Normalización de campos simples
+        const allowedSimpleFields = ['status', 'selectedFrameId', 'selectedBgId'];
+
+        allowedSimpleFields.forEach(field => {
+            if (updateData[field] === "" || updateData[field] === undefined) {
+                delete updateData[field];
+            }
+        });
+
 
         // 3. ¡SOLUCIÓN AL ERROR!: Limpieza del campo 'teams'
         if (updateData.teams) {

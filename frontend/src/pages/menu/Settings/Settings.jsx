@@ -42,7 +42,7 @@ export default function Settings() {
     const updatePrivacy = async (newPrivacy) => {
         try {
             await axios.put(
-                "http://76.13.97.163:4000/api/settings/privacy",
+                "http://localhost:4000/api/settings/privacy",
                 { privacy: newPrivacy },
                 {
                     headers: { Authorization: `Bearer ${token}` }
@@ -62,7 +62,7 @@ export default function Settings() {
     const fetchSettings = async () => {
         try {
             const res = await axios.get(
-                "http://76.13.97.163:4000/api/auth/profile",
+                "http://localhost:4000/api/auth/profile",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -82,7 +82,7 @@ export default function Settings() {
     const unlinkDiscord = async () => {
         try {
             await axios.delete(
-                'http://76.13.97.163:4000/api/auth/discord',
+                'http://localhost:4000/api/auth/discord',
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -111,7 +111,7 @@ export default function Settings() {
             const token = localStorage.getItem('token');
 
             await axios.post(
-                'http://76.13.97.163:4000/api/auth/riot',
+                'http://localhost:4000/api/auth/riot',
                 {
                     riotId: `${riotGameName}#${riotTagLine}`
                 },
@@ -144,7 +144,7 @@ export default function Settings() {
             const token = localStorage.getItem('token');
 
             await axios.delete(
-                'http://76.13.97.163:4000/api/auth/riot',
+                'http://localhost:4000/api/auth/riot',
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -318,7 +318,7 @@ export default function Settings() {
                                         className="btn-connect"
                                         onClick={() => {
                                             window.location.href =
-                                                `http://76.13.97.163:4000/api/auth/discord?token=${token}`;
+                                                `http://localhost:4000/api/auth/discord?token=${token}`;
                                         }}
                                     >
                                         Conectar

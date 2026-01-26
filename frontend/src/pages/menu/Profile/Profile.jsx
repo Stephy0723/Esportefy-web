@@ -7,6 +7,8 @@ import {
     FaSteam, FaFacebook, FaShareAlt, FaBullseye
 } from 'react-icons/fa';
 import { GAME_IMAGES } from '../../../data/gameImages';
+import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
+import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle'; 
 import './Profile.css';
 
 const Profile = () => {
@@ -14,7 +16,8 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-
+    
+    
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
@@ -23,7 +26,7 @@ const Profile = () => {
                     navigate('/login');
                     return;
                 }
-                const response = await axios.get('http://76.13.97.163:4000/api/auth/profile', {
+                const response = await axios.get('http://localhost:4000/api/auth/profile', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUser(response.data);
@@ -36,28 +39,37 @@ const Profile = () => {
         };
         fetchUserProfile();
     }, [navigate]);
-
+    
     // --- 1. GESTIÓN DE ESTADOS DE CARGA ---
     if (loading) return <div className="loading-container"><div className="loader"></div><p>Sincronizando...</p></div>;
     if (error) return <div className="error-text">{error}</div>;
     if (!user) return null;
-
+    
     // --- 2. DEFINICIÓN DE VARIABLES (Aquí se soluciona el error) ---
     const avatarUrl = user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=8EDB15&color=000&size=200&bold=true`;
-
+    
     // Normalizamos los juegos para que siempre sea un Array (evita el error de "undefined")
     const normalizedGames = Array.isArray(user.selectedGames) 
-        ? user.selectedGames 
-        : (user.selectedGames ? user.selectedGames.split(',').map(g => g.trim()) : []);
-
+    ? user.selectedGames 
+    : (user.selectedGames ? user.selectedGames.split(',').map(g => g.trim()) : []);
+    
+    const currentFrame = FRAMES.find(frame => frame.id === user?.selectedFrameId) || FRAMES[0];
+    const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0];
     return (
         <div className="profile-page fade-in">
             {/* HEADER */}
             <header className="profile-header">
-                <div className="header-banner"></div>
+                <div className="header-banner">
+                    <img src={currentBg.src} alt="Background" className="header-bg-image" />
+                    <div className="header-bg-overlay"></div>
+                </div>
                 <div className="header-content">
                     <div className="avatar-wrapper">
-                        <img src={avatarUrl} alt="Avatar" />
+                        <AvatarCircle 
+                                            src={ user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                            frameConfig={currentFrame}
+                                            size="120px"
+                                            status={user.status} />
                     </div>
                     <div className="user-identity">
                         <div className="name-row">

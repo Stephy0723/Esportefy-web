@@ -154,7 +154,7 @@ useEffect(() => {
     const fetchTournaments = async () => {
         try {
             setLoadingTournaments(true);
-            const response = await axios.get('http://76.13.97.163:4000/api/tournaments');
+            const response = await axios.get('http://localhost:4000/api/tournaments');
             
             // Adaptamos los datos de la base de datos al formato que usa tu diseño
             const formattedTournaments = response.data.map(t => ({

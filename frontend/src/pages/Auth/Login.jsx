@@ -28,7 +28,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-            const response = await axios.post('http://76.13.97.163:4000/api/auth/login', {
+            const response = await axios.post('http://localhost:4000/api/auth/login', {
                 email,
                 password
             });

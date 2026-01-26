@@ -183,7 +183,7 @@ const CreateTeamPage = () => {
         data.append('roster', JSON.stringify(roster));
 
         // 3. Petición al servidor
-        const res = await fetch('http://76.13.97.163:4000/api/teams/create', {
+        const res = await fetch('http://localhost:4000/api/teams/create', {
             method: 'POST',
             headers: {
                 // NOTA: Al usar FormData NO debes poner 'Content-Type': 'application/json'

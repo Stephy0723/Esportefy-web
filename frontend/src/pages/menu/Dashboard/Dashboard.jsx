@@ -8,6 +8,7 @@ import defaultBanner from '../../../assets/images/login-black.png'; // Ajusta tu
 
 import { backgroundList } from '../../../data/backgroundImages'; // Tu lista de fondos
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx'; // El nuevo componente
+import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -47,7 +48,7 @@ const Dashboard = () => {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             if (!token) { navigate('/login'); return; }
             try {
-                const response = await axios.get('http://76.13.97.163:4000/api/auth/profile', {
+                const response = await axios.get('http://localhost:4000/api/auth/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 setUser(response.data);
@@ -72,6 +73,8 @@ const Dashboard = () => {
         return gamesDetailedData[gameId] || { name: gameId, banner: defaultBanner, tags: ['Juego'], history: '...', winRate: 'N/A' };
     };
     const activeGame = getActiveGameData();
+    const currentFrame = FRAMES.find(frame => frame.id === user?.selectedFrameId) || FRAMES[0];
+    const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0]; 
 
     if (loading) return <div className="loading-screen">Cargando...</div>;
 
@@ -85,7 +88,7 @@ const Dashboard = () => {
                 {/* 1. EL BANNER DE FONDO */}
                 <div 
                     className="hero-banner-bg" 
-                    style={{ backgroundImage: `url(${currentHeroBg})` }}
+                    style={{ backgroundImage: `url(${currentBg.src})` }}
                 >
                     <div className="banner-overlay"></div>
                 </div>
@@ -94,16 +97,13 @@ const Dashboard = () => {
                 <div className="hero-profile-card">
                     
                     {/* --- AQUI ESTA EL CAMBIO PRINCIPAL --- */}
-                    {/* Usamos el nuevo componente AvatarCircle */}
                     <div className="profile-avatar-wrapper">
                         <AvatarCircle 
-                            src={user?.avatar || "https://i.pravatar.cc/300?u=default"}
-                            alt={userData.username}
-                            size="160px"       
-                            isActive={true}
-                            borderColor="var(--brand-green)"
-                            // Ya no usamos customFrame aquí, usamos el estilo CSS por defecto
-                        />
+                                            src={ user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                            frameConfig={currentFrame}
+                                            size="120px"
+                                            status={user.status}
+                         />
                     </div>
                     {/* --- FIN DEL CAMBIO --- */}
 

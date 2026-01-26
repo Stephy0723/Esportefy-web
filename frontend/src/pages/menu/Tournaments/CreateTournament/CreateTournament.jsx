@@ -115,7 +115,7 @@ const CreateTournament = () => {
     });
 
     try {
-        await axios.post('http://76.13.97.163:4000/api/tournaments', data, {
+        await axios.post('http://localhost:4000/api/tournaments', data, {
             headers: {
                 'Content-Type': 'multipart/form-data',
                 'Authorization': `Bearer ${token}`

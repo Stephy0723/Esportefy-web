@@ -143,7 +143,7 @@ const EditProfile = () => {
 
         try {
             const response = await axios.put(
-                'http://76.13.97.163:4000/api/auth/update-profile', 
+                'http://localhost:4000/api/auth/update-profile', 
                 data,
                 { 
                     headers: { 
@@ -154,7 +154,6 @@ const EditProfile = () => {
             );
 
             localStorage.setItem('esportefyUser', JSON.stringify(response.data));
-            alert('¡Perfil actualizado con éxito!');
             navigate('/profile'); 
         } catch (err) {
             alert(err.response?.data?.message || 'Error al guardar');

@@ -47,9 +47,41 @@ body.dark {
 }
 
 .header-banner {
+    position: relative;
     height: 180px;
+    width: 100%;
+    overflow: hidden;
     background: var(--banner-gradient);
 }
+.header-bg-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 1;
+}
+
+.header-bg-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+
+    /* SOLO oscurecer, no tapar */
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.45)
+    );
+}
+
+
+.header-content {
+    position: relative;
+    z-index: 3;
+}
+
 
 .header-content {
     padding: 0 2.5rem 2.5rem 2.5rem;

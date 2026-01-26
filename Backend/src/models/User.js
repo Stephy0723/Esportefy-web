@@ -34,6 +34,24 @@ const UserSchema = new mongoose.Schema({
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
 
+    // -- Datos visuales ---
+    status: {
+            type: String,
+            enum: ['online', 'dnd', 'tournament', 'offline'],
+            default: 'online'
+            },
+
+            selectedFrameId: {
+            type: String,
+            default: null
+            },
+
+            selectedBgId: {
+            type: String,
+            default: null
+            },
+
+
     // ===== SETTINGS =====
     connections: {
         discord: {
