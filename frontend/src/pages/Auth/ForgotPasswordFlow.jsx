@@ -30,7 +30,7 @@ const ForgotPasswordFlow = () => {
         setLoading(true);
 
         try {
-            await axios.post('http://localhost:4000/api/auth/forgot-password', { email });
+            await axios.post('http://76.13.97.163:4000/api/auth/forgot-password', { email });
             setStep(2); 
         } catch (err) {
             setError(err.response?.data?.message || 'Error al enviar el correo.');

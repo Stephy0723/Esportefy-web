@@ -4,6 +4,10 @@ import axios from 'axios';
 import './Dashboard.css'; 
 import { gamesDetailedData } from '../../../data/gamesDetailedData'; 
 import defaultBanner from '../../../assets/images/login-black.png'; // Ajusta tu ruta
+// 1. IMPORTAMOS LOS NUEVOS ASSETS Y COMPONENTES
+
+import { backgroundList } from '../../../data/backgroundImages'; // Tu lista de fondos
+import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx'; // El nuevo componente
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -29,7 +33,10 @@ const Dashboard = () => {
             { name: 'Red Bull Solo Q', status: 'Registrado', rank: '-' }
         ]
     };
-
+    const [selectedBgIndex, setSelectedBgIndex] = useState(2); 
+    const currentHeroBg = backgroundList[selectedBgIndex] || defaultBanner;
+    
+    
     const scrollToSection = (id) => {
         const element = document.getElementById(id);
         if (element) element.scrollIntoView({ behavior: 'smooth' });
@@ -72,29 +79,70 @@ const Dashboard = () => {
         <div className="dashboard-dashboard-container">        
          
 
-            {/* --- SECCIÓN 1: HERO --- */}
-            <section id="sec-1" className="page-section hero-section">
-                <div className="hero-content-wrapper">
-                    <div className="hero-header">
-                        <div className="avatar-glow-container">
-                            <img src={user?.avatar || "https://i.pravatar.cc/150?u=user"} alt="Avatar" className="big-avatar"/>
-                            <div className="status-indicator"></div>
-                        </div>
-                        <div className="hero-text-group">
-                            <span className="welcome-small">BIENVENIDO AL HUB</span>
-                            <h1 className="hero-title">{userData.username.toUpperCase()}</h1>
-                        </div>
+           {/* --- SECCIÓN 1: HERO --- */}
+            <section id="sec-1" className="hero-profile-section">
+                
+                {/* 1. EL BANNER DE FONDO */}
+                <div 
+                    className="hero-banner-bg" 
+                    style={{ backgroundImage: `url(${currentHeroBg})` }}
+                >
+                    <div className="banner-overlay"></div>
+                </div>
+
+                {/* 2. LA TARJETA DE INFORMACIÓN */}
+                <div className="hero-profile-card">
+                    
+                    {/* --- AQUI ESTA EL CAMBIO PRINCIPAL --- */}
+                    {/* Usamos el nuevo componente AvatarCircle */}
+                    <div className="profile-avatar-wrapper">
+                        <AvatarCircle 
+                            src={user?.avatar || "https://i.pravatar.cc/300?u=default"}
+                            alt={userData.username}
+                            size="160px"       
+                            isActive={true}
+                            borderColor="var(--brand-green)"
+                            // Ya no usamos customFrame aquí, usamos el estilo CSS por defecto
+                        />
                     </div>
-                    <div className="hero-stats-grid">
-                        <div className="hero-stat-card"><i className='bx bx-crosshair'></i><div className="stat-data"><span className="s-label">WIN RATE</span><span className="s-value highlight">68.4%</span></div></div>
-                        <div className="hero-stat-card"><i className='bx bx-trophy'></i><div className="stat-data"><span className="s-label">TORNEOS</span><span className="s-value">12</span></div></div>
-                        <div className="hero-stat-card"><i className='bx bx-bar-chart-alt-2'></i><div className="stat-data"><span className="s-label">NIVEL</span><span className="s-value">42</span></div></div>
-                        <div className="hero-stat-card"><i className='bx bx-medal'></i><div className="stat-data"><span className="s-label">RANGO</span><span className="s-value text-blue">DIAMANTE</span></div></div>
+                    {/* --- FIN DEL CAMBIO --- */}
+
+                    {/* CONTENIDO DE LA TARJETA */}
+                    <div className="profile-content">
+                        <span className="welcome-badge">BIENVENIDO AL HUB</span>
+                        <h1 className="profile-username">{userData.username.toUpperCase()}</h1>
+                        
+                        {/* ... (Resto del contenido de stats se queda IGUAL) ... */}
+                        <p className="profile-quote">"La victoria está reservada para aquellos que están dispuestos a pagar su precio."</p>
+                        <div className="profile-stats-row">
+                             {/* ... tus stats ... */}
+                             <div className="p-stat-item">
+                                <i className='bx bx-crosshair'></i>
+                                <div><span className="lbl">WIN RATE</span><span className="val highlight">68.4%</span></div>
+                            </div>
+                            <div className="p-stat-item">
+                                <i className='bx bx-trophy'></i>
+                                <div><span className="lbl">TORNEOS</span><span className="val">12</span></div>
+                            </div>
+                            <div className="p-stat-item">
+                                <i className='bx bx-bar-chart-alt-2'></i>
+                                <div><span className="lbl">NIVEL</span><span className="val">42</span></div>
+                            </div>
+                            <div className="p-stat-item">
+                                <i className='bx bx-medal'></i>
+                                <div><span className="lbl">RANGO</span><span className="val text-blue">DIAMANTE</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-2')}><span>VER JUEGOS</span><i className='bx bx-chevron-down animated-arrow'></i></div>
+
+                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-2')}>
+                    <span>VER JUEGOS</span>
+                    <i className='bx bx-chevron-down animated-arrow'></i>
+                </div>
             </section>
 
+            
             {/* --- SECCIÓN 2: ARSENAL (Tus juegos) --- */}
             <section id="sec-2" className="cinematic-section">
                 <div className="cinematic-bg" style={{ backgroundImage: `url(${activeGame?.banner || defaultBanner})` }}><div className="cinematic-overlay"></div></div>

@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft, FaCamera } from 'react-icons/fa';
+// AÑADIDO: FaPaintBrush para el icono de personalización
+import { FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft, FaCamera, FaPaintBrush } from 'react-icons/fa';
 import './EditProfile.css';
 
-// --- ACTIVOS E IMÁGENES (Sincronizados con el Registro) ---
+// --- NUEVAS IMPORTACIONES PARA PERSONALIZACIÓN ---
+import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions'; 
+import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle'; 
+
+// --- ACTIVOS DE JUEGOS ---
 import imgLol from '../../../assets/gameImages/lol.png';
 import imgMlbb from '../../../assets/gameImages/mlbb.png';
 import imgHok from '../../../assets/gameImages/hok.png';
@@ -60,13 +65,20 @@ const EditProfile = () => {
         email: '',
         country: '',
         avatar: '',
-        selectedGames: [], // Ahora manejado como Array
-        platforms: [],     // Ahora manejado como Array
-        goals: [],         // Ahora manejado como Array
+        selectedGames: [],
+        platforms: [],
+        goals: [],
         experience: '',
-        goalsDescription: '', // Para el textarea de biografía
-        isProfileHidden: false
+        goalsDescription: '',
+        isProfileHidden: false,
+        // NUEVOS CAMPOS DE ESTADO
+        selectedFrameId: 'none',
+        selectedBgId: 'bg-1'
     });
+
+    // Helpers para la vista previa
+    const currentFrame = FRAMES.find(f => f.id === formData.selectedFrameId) || FRAMES[0];
+    const currentBg = BACKGROUNDS.find(b => b.id === formData.selectedBgId) || BACKGROUNDS[0];
 
     useEffect(() => {
         const storedUser = localStorage.getItem('esportefyUser');
@@ -74,14 +86,16 @@ const EditProfile = () => {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             
-            // Sincronización de datos para asegurar que los campos multisección sean Arrays
             setFormData({
                 ...parsedUser,
                 selectedGames: Array.isArray(parsedUser.selectedGames) ? parsedUser.selectedGames : [],
                 platforms: Array.isArray(parsedUser.platforms) ? parsedUser.platforms : [],
                 goals: Array.isArray(parsedUser.goals) ? parsedUser.goals : [],
                 goalsDescription: parsedUser.goalsDescription || parsedUser.goals || "",
-                isProfileHidden: parsedUser.isProfileHidden || false
+                isProfileHidden: parsedUser.isProfileHidden || false,
+                // Cargar personalización guardada o defaults
+                selectedFrameId: parsedUser.selectedFrameId || 'none',
+                selectedBgId: parsedUser.selectedBgId || 'bg-1'
             });
         }
     }, []);
@@ -116,7 +130,6 @@ const EditProfile = () => {
         const data = new FormData();
         Object.keys(formData).forEach(key => {
             if (key === 'teams') return;
-            // Si el campo es un array (juegos, plataformas, metas), lo enviamos como JSON string o adjuntamos elementos
             if (Array.isArray(formData[key])) {
                 formData[key].forEach(val => data.append(`${key}[]`, val));
             } else {
@@ -161,6 +174,10 @@ const EditProfile = () => {
                     <h2>Configuración</h2>
                     <nav>
                         <button className={activeTab === 'general' ? 'active' : ''} onClick={() => setActiveTab('general')} type="button"><FaUser /> General</button>
+                        
+                        {/* NUEVA PESTAÑA PERSONALIZACIÓN */}
+                        <button className={activeTab === 'customization' ? 'active' : ''} onClick={() => setActiveTab('customization')} type="button"><FaPaintBrush /> Personalización</button>
+                        
                         <button className={activeTab === 'gamer' ? 'active' : ''} onClick={() => setActiveTab('gamer')} type="button"><FaGamepad /> Perfil Gamer</button>
                         <button className={activeTab === 'privacy' ? 'active' : ''} onClick={() => setActiveTab('privacy')} type="button"><FaLock /> Privacidad</button>
                     </nav>
@@ -174,13 +191,14 @@ const EditProfile = () => {
                             <div className="tab-content fade-in">
                                 <h3>Información Personal</h3>
                                 <div className="avatar-edit-section">
-                                    <img src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`} alt="Preview" />
+                                    {/* Muestra avatar normal aquí, la previsualización "gamer" está en la otra pestaña */}
+                                    <img src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`} alt="Preview" className="simple-avatar-preview"/>
                                     <div className="avatar-inputs">
                                         <label className="btn-upload-custom">
-                                            <FaCamera /> Subir desde PC
+                                            <FaCamera /> Subir Foto
                                             <input type="file" accept="image/*" onChange={handleFileChange} style={{display: 'none'}} />
                                         </label>
-                                        <input type="text" name="avatar" value={formData.avatar} onChange={handleChange} placeholder="O pega una URL de imagen..." className="mt-2" />
+                                        <input type="text" name="avatar" value={formData.avatar} onChange={handleChange} placeholder="O pega una URL..." className="mt-2" />
                                     </div>
                                 </div>
                                 <div className="form-group"><label>Nickname</label><input type="text" name="username" value={formData.username} onChange={handleChange} /></div>
@@ -189,20 +207,93 @@ const EditProfile = () => {
                             </div>
                         )}
 
-                        {/* PESTAÑA 2: PERFIL GAMER */}
+                        {/* PESTAÑA NUEVA: PERSONALIZACIÓN */}
+                        {activeTab === 'customization' && (
+                            <div className="tab-content fade-in">
+                                <h3>Estilo Visual</h3>
+                                
+                                {/* PREVISUALIZACIÓN EN VIVO */}
+                                <div className="live-preview-box" style={{ backgroundImage: `url(${currentBg.src})` }}>
+                                    <div className="preview-overlay-dark"></div>
+                                    <div className="preview-center-content">
+                                        <AvatarCircle 
+                                            src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`}
+                                            frameConfig={currentFrame}
+                                            size="120px"
+                                            status={formData.status} />
+                                        <span className="preview-name-label">{formData.username}</span>
+                                    </div>
+                                </div>
+                                {/* --- NUEVO: SELECTOR DE ESTADO --- */}
+        <div className="status-selector-container mt-4">
+            <label className="section-label">Tu Estado</label>
+            <div className="status-options-grid">
+                {[
+                    { id: 'online', label: 'En Línea', color: '#10b981' },
+                    { id: 'dnd', label: 'No Molestar', color: '#ef4444' },
+                    { id: 'tournament', label: 'En Torneo', color: '#fbbf24' },
+                    { id: 'offline', label: 'Invisible', color: '#6b7280' }
+                ].map(status => (
+                    <button
+                        key={status.id}
+                        type="button"
+                        className={`status-option-btn ${formData.status === status.id ? 'active' : ''}`}
+                        onClick={() => setFormData({...formData, status: status.id})}
+                        style={{ '--status-color': status.color }}
+                    >
+                        <span className="status-dot" style={{ backgroundColor: status.color }}></span>
+                        {status.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+        {/* -------------------------------- */}
+                                {/* SELECTOR DE MARCOS */}
+                                <label className="section-label mt-4">Elige tu Marco</label>
+                                <div className="frames-selection-grid">
+                                    {FRAMES.map(frame => (
+                                        <div 
+                                            key={frame.id} 
+                                            className={`frame-option-card ${formData.selectedFrameId === frame.id ? 'active' : ''}`}
+                                            onClick={() => setFormData({...formData, selectedFrameId: frame.id})}
+                                        >
+                                            <div className="mini-frame-view">
+                                                {frame.type === 'image' ? (
+                                                    <img src={frame.src} alt={frame.name} />
+                                                ) : (
+                                                    <div className="css-dot-preview" style={{borderColor: frame.color || '#555'}}></div>
+                                                )}
+                                            </div>
+                                            <span>{frame.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* SELECTOR DE FONDOS */}
+                                <label className="section-label mt-4">Fondo de Perfil</label>
+                                <div className="backgrounds-selection-grid">
+                                    {BACKGROUNDS.map(bg => (
+                                        <div 
+                                            key={bg.id} 
+                                            className={`bg-option-card ${formData.selectedBgId === bg.id ? 'active' : ''}`}
+                                            onClick={() => setFormData({...formData, selectedBgId: bg.id})}
+                                        >
+                                            <img src={bg.src} alt={bg.name} loading="lazy" />
+                                            {formData.selectedBgId === bg.id && <div className="check-mark">✔</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PESTAÑA 2: PERFIL GAMER (Sin cambios mayores) */}
                         {activeTab === 'gamer' && (
                             <div className="tab-content fade-in">
                                 <h3>Perfil de Jugador</h3>
-                                
-                                {/* NIVEL DE EXPERIENCIA */}
                                 <label className="section-label">Nivel de Experiencia</label>
                                 <div className="levels-row mb-4">
                                     {experienceLevels.map((lvl) => (
-                                        <div 
-                                            key={lvl.id} 
-                                            className={`level-card ${formData.experience === lvl.id ? 'selected' : ''}`} 
-                                            onClick={() => setFormData({...formData, experience: lvl.id})}
-                                        >
+                                        <div key={lvl.id} className={`level-card ${formData.experience === lvl.id ? 'selected' : ''}`} onClick={() => setFormData({...formData, experience: lvl.id})}>
                                             <i className={`bx ${lvl.icon} level-icon`}></i>
                                             <div className="level-info">
                                                 <span className="lvl-label">{lvl.label}</span>
@@ -212,46 +303,29 @@ const EditProfile = () => {
                                     ))}
                                 </div>
 
-                                {/* SELECCIÓN DE JUEGOS */}
                                 <label className="section-label">Tus Juegos</label>
                                 <div className="games-grid mb-4">
                                     {mobaGames.map(game => (
-                                        <div 
-                                            key={game.id} 
-                                            className={`game-card-pro ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`} 
-                                            onClick={() => toggleSelection('selectedGames', game.id)}
-                                        >
-                                            <div className="game-img-wrapper">
-                                                <img src={game.img} alt={game.name} />
-                                            </div>
+                                        <div key={game.id} className={`game-card-pro ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`} onClick={() => toggleSelection('selectedGames', game.id)}>
+                                            <div className="game-img-wrapper"><img src={game.img} alt={game.name} /></div>
                                             <span>{game.name}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* SELECCIÓN DE PLATAFORMAS */}
                                 <label className="section-label">Plataformas</label>
                                 <div className="platforms-row mb-4">
                                     {platformsList.map(p => (
-                                        <div 
-                                            key={p.id} 
-                                            className={`platform-chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`} 
-                                            onClick={() => toggleSelection('platforms', p.id)}
-                                        >
+                                        <div key={p.id} className={`platform-chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`} onClick={() => toggleSelection('platforms', p.id)}>
                                             <i className={`bx ${p.icon}`}></i> {p.name}
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* SELECCIÓN DE OBJETIVOS */}
                                 <label className="section-label">¿Qué buscas?</label>
                                 <div className="goals-row mb-4">
                                     {goalsList.map((goal) => (
-                                        <div 
-                                            key={goal.id} 
-                                            className={`goal-card ${formData.goals.includes(goal.id) ? 'selected' : ''}`} 
-                                            onClick={() => toggleSelection('goals', goal.id)}
-                                        >
+                                        <div key={goal.id} className={`goal-card ${formData.goals.includes(goal.id) ? 'selected' : ''}`} onClick={() => toggleSelection('goals', goal.id)}>
                                             <i className={`bx ${goal.icon}`}></i>
                                             <span>{goal.label}</span>
                                         </div>
@@ -259,14 +333,8 @@ const EditProfile = () => {
                                 </div>
 
                                 <div className="form-group">
-                                    <label>Biografía / Metas (Texto)</label>
-                                    <textarea 
-                                        rows="4" 
-                                        name="goalsDescription" 
-                                        value={formData.goalsDescription} 
-                                        onChange={handleChange} 
-                                        placeholder="Escribe tus objetivos detallados..."
-                                    ></textarea>
+                                    <label>Biografía / Metas</label>
+                                    <textarea rows="4" name="goalsDescription" value={formData.goalsDescription} onChange={handleChange} placeholder="Escribe tus objetivos..."></textarea>
                                 </div>
                             </div>
                         )}
@@ -281,25 +349,18 @@ const EditProfile = () => {
                                         <p>Si activas esto, nadie podrá ver tu perfil en las búsquedas globales.</p>
                                     </div>
                                     <label className="switch">
-                                        <input 
-                                            type="checkbox" 
-                                            name="isProfileHidden" 
-                                            checked={formData.isProfileHidden} 
-                                            onChange={handleChange} 
-                                        />
+                                        <input type="checkbox" name="isProfileHidden" checked={formData.isProfileHidden} onChange={handleChange} />
                                         <span className="slider round"></span>
                                     </label>
                                 </div>
-
                                 <div className="privacy-alert">
                                     <h4>Zona de Seguridad</h4>
-                                    <p>Para cambiar tu correo electrónico o contraseña, visita la sección de seguridad en la web oficial.</p>
-                                    <button type="button" className="btn-danger" style={{opacity: 0.5, cursor: 'not-allowed'}}>Eliminar Cuenta</button>
+                                    <p>Para cambiar contraseña, contacta a soporte o usa el flujo de recuperación.</p>
+                                    <button type="button" className="btn-danger" disabled>Eliminar Cuenta</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* BOTÓN DE GUARDAR */}
                         <div className="form-actions">
                             <button type="submit" className="btn-save-primary">
                                 <FaSave /> Guardar Cambios
