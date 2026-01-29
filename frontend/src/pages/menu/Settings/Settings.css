@@ -459,21 +459,61 @@ input[type="password"] {
 
 /* --- FORMULARIO RIOT (INPUTS INTERNOS) --- */
 .riot-form {
-    display: flex;
-    gap: 10px;
-    margin: 1.5rem 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 1.5rem 0 0;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid var(--border-color);
 }
 
 .riot-form input {
-    width: 110px;
+    width: 100%;
     height: 45px;
     background-color: var(--bg-input) !important;
     border: 1px solid var(--border-color) !important;
     color: var(--text-main) !important;
-    border-radius: 12px; /* Un poco menos redondeado para inputs internos */
-    padding: 0 15px;
-    text-align: center;
+    border-radius: 12px;
+    padding: 0 14px;
+    text-align: left;
     font-family: 'Rajdhani', sans-serif;
+}
+
+.riot-form .riot-otp {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+}
+
+.riot-msg {
+    grid-column: 1 / -1;
+    opacity: 0.9;
+    margin-top: 2px;
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.riot-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.riot-actions .btn-connect,
+.riot-actions .btn-disconnect {
+    width: 100%;
+    height: 46px;
+}
+
+@media (max-width: 520px) {
+    .riot-form {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* --- BOTONES DE CONEXIÓN --- */
@@ -514,6 +554,10 @@ input[type="password"] {
 
 .theme-light .riot-profile-box {
     background: #f4f4f5;
+}
+
+.theme-light .riot-form {
+    background: #f8fafc;
 }
 
 .theme-light .riot-meta strong {

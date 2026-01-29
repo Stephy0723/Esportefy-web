@@ -34,6 +34,11 @@ export default function Settings() {
     const [riotTagLine, setRiotTagLine] = useState('');
     const [riotLoading, setRiotLoading] = useState(false);
 
+    // ===== RIOT OTP FLOW =====
+    const [riotStep, setRiotStep] = useState('idle'); // idle | otpSent
+    const [riotOtp, setRiotOtp] = useState('');
+    const [riotMsg, setRiotMsg] = useState('');
+
 
     const [loading, setLoading] = useState(true);
 
@@ -99,42 +104,61 @@ export default function Settings() {
         }
     };
 
-    const linkRiot = async () => {
+    const initRiotLink = async () => {
         if (!riotGameName.trim() || !riotTagLine.trim()) {
-            alert('Debes completar GameName y TagLine');
+            setRiotMsg('Debes completar GameName y TagLine');
             return;
         }
 
         try {
             setRiotLoading(true);
-
-            const token = localStorage.getItem('token');
+            setRiotMsg('');
 
             await axios.post(
-                'http://localhost:4000/api/auth/riot',
-                {
-                    riotId: `${riotGameName}#${riotTagLine}`
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
+                'http://localhost:4000/api/auth/riot/link/init',
+                { riotId: `${riotGameName}#${riotTagLine}` },
+                { headers: { Authorization: `Bearer ${token}` } }
             );
 
-
-            await fetchSettings(); // 🔥 refresca conexiones
-            alert('Cuenta Riot validada y vinculada');
-
+            setRiotStep('otpSent');
+            setRiotMsg('Te enviamos un código al correo. Escríbelo para confirmar.');
         } catch (error) {
-            alert(
-                error.response?.data?.message ||
-                'Riot ID inválido o no existe'
-            );
+            setRiotMsg(error.response?.data?.message || 'Error enviando código');
         } finally {
             setRiotLoading(false);
         }
     };
+
+    const confirmRiotLink = async () => {
+        if (!riotOtp.trim()) {
+            setRiotMsg('Escribe el código que te llegó al correo');
+            return;
+        }
+
+        try {
+            setRiotLoading(true);
+            setRiotMsg('');
+
+            await axios.post(
+                'http://localhost:4000/api/auth/riot/link/confirm',
+                { otp: riotOtp },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            await fetchSettings();
+
+            setRiotMsg('Riot vinculado y sincronizado ✅');
+            setRiotStep('idle');
+            setRiotOtp('');
+            setRiotGameName('');
+            setRiotTagLine('');
+        } catch (error) {
+            setRiotMsg(error.response?.data?.message || 'Error confirmando código');
+        } finally {
+            setRiotLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (token) fetchSettings();
     }, [token]);
@@ -273,11 +297,11 @@ export default function Settings() {
                                         </div>
                                     </div>
                                 )}
-  
+
                             </div>
                         </div>
 
-                        
+
                     </div>
                 );
             case 'connections':
@@ -372,14 +396,68 @@ export default function Settings() {
                                                 placeholder="GameName"
                                                 value={riotGameName}
                                                 onChange={(e) => setRiotGameName(e.target.value)}
+                                                disabled={riotLoading || riotStep === 'otpSent'}
                                             />
                                             <input
                                                 type="text"
                                                 placeholder="TagLine"
                                                 value={riotTagLine}
                                                 onChange={(e) => setRiotTagLine(e.target.value)}
+                                                disabled={riotLoading || riotStep === 'otpSent'}
                                             />
+
+                                            {riotStep === 'otpSent' && (
+                                                <input
+                                                    type="text"
+                                                    className="riot-otp"
+                                                    placeholder="Código (OTP)"
+                                                    value={riotOtp}
+                                                    onChange={(e) => setRiotOtp(e.target.value)}
+                                                />
+                                            )}
+
+                                            {riotMsg && (
+                                                <small className="riot-msg">
+                                                    {riotMsg}
+                                                </small>
+                                            )}
+
+                                            <div className="riot-actions">
+                                                {riotStep !== 'otpSent' ? (
+                                                    <button
+                                                        className="btn-connect"
+                                                        onClick={initRiotLink}
+                                                        disabled={riotLoading}
+                                                    >
+                                                        {riotLoading ? 'Enviando código...' : 'Enviar código'}
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            className="btn-connect"
+                                                            onClick={confirmRiotLink}
+                                                            disabled={riotLoading}
+                                                        >
+                                                            {riotLoading ? 'Confirmando...' : 'Confirmar'}
+                                                        </button>
+
+                                                        <button
+                                                            className="btn-disconnect"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setRiotStep('idle');
+                                                                setRiotOtp('');
+                                                                setRiotMsg('');
+                                                            }}
+                                                            disabled={riotLoading}
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
+
                                     )}
 
                                 </div>
@@ -388,15 +466,7 @@ export default function Settings() {
                                     <button className="btn-disconnect" onClick={unlinkRiot}>
                                         Desvincular
                                     </button>
-                                ) : (
-                                    <button
-                                        className="btn-connect"
-                                        onClick={linkRiot}
-                                        disabled={riotLoading}
-                                    >
-                                        {riotLoading ? 'Validando...' : 'Validar Riot ID'}
-                                    </button>
-                                )}
+                                ) : null}
                             </div>
 
 
@@ -718,7 +788,7 @@ export default function Settings() {
                                     className="btn-ghost small"
                                     onClick={() => navigate('/support')}
                                 >
-                                    Ver FAQ <FaExternalLinkAlt  />
+                                    Ver FAQ <FaExternalLinkAlt />
                                 </button>
                             </div>
 

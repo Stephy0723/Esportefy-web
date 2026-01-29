@@ -61,23 +61,48 @@ const UserSchema = new mongoose.Schema({
         },
 
         riot: {
-            puuid: { type: String },
-            gameName: { type: String },
-            tagLine: { type: String },
-            region: { type: String, default: 'la1' },
+            puuid: String,
+            gameName: String,
+            tagLine: String,
 
-            summonerId: { type: String },
-            profileIconId: { type: Number },
-            summonerLevel: { type: Number },
+            accountRegion: { type: String, default: 'americas' }, // para account-v1
+            verified: { type: Boolean, default: false },
+            linkedAt: Date,
 
+            // seguridad / verificación por OTP
+            pendingLink: {
+                otpHash: String,
+                expiresAt: Date,
+                puuid: String,
+                gameName: String,
+                tagLine: String
+            }
+        }
+    },
+
+    gameProfiles: {
+        lol: {
+            exists: { type: Boolean, default: false },
+            platformRegion: { type: String, default: '' }, // la1/na1/euw1 etc
+            summonerId: String,
+            profileIconId: Number,
+            summonerLevel: Number,
             rank: {
-                queueType: { type: String },
-                tier: { type: String },
-                division: { type: String },
-                lp: { type: Number }
+                tier: String,
+                division: String,
+                lp: Number
             },
+            lastSyncAt: Date
+        },
 
-            verified: { type: Boolean, default: false }
+        valorant: {
+            exists: { type: Boolean, default: false },
+            shard: { type: String, default: '' }, // na / latam / br / eu / ap / kr (depende del API)
+            rank: {
+                tier: String,
+                rr: Number
+            },
+            lastSyncAt: Date
         },
         steam: {
             steamId: { type: String },

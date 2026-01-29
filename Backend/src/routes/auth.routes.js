@@ -22,12 +22,10 @@ import {
 } from '../controllers/discord.controller.js';
 
 import {
-  linkRiotAccount,
+  initRiotLink,
+  confirmRiotLink,
   unlinkRiotAccount,
-  getSummonerV4,
-  getLeagueV4,
-  getMatchIdsV5,
-  getMatchDetailsV5
+  syncRiotNow
 } from '../controllers/riot.controller.js';
 
 const router = Router();
@@ -55,11 +53,11 @@ router.get('/verify-organizer/:userId/:action', verifyOrganizerAction);
 /* =========================
    RIOT
 ========================= */
-router.post('/riot', verifyToken, linkRiotAccount);
+router.post('/riot/link/init', verifyToken, initRiotLink);
+router.post('/riot/link/confirm', verifyToken, confirmRiotLink);
 router.delete('/riot', verifyToken, unlinkRiotAccount);
-router.get('/riot/summoner', verifyToken, getSummonerV4);
-router.get('/riot/league', verifyToken, getLeagueV4);
-router.get('/riot/matches', verifyToken, getMatchIdsV5);
-router.get('/riot/matches/:matchId', verifyToken, getMatchDetailsV5);
+
+// (Opcional) sync manual
+router.post('/riot/sync', verifyToken, syncRiotNow);
 
 export default router;
