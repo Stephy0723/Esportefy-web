@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './TeamRegistration.css';
+import axios from 'axios';
 
 const TeamRegistration = () => {
   const navigate = useNavigate();
@@ -17,14 +18,58 @@ const TeamRegistration = () => {
   
   const tournament = {
     title: incomingTournament?.title || "Torneo Global",
-    // Aquí está el truco: Si incoming.image es null/undefined/vacío, usa DEFAULT_IMAGE
-    image: incomingTournament?.image ? incomingTournament.image : DEFAULT_IMAGE
+    // Aquí está el truco: Si no hay banner, usa DEFAULT_IMAGE
+    image: incomingTournament?.bannerImage || incomingTournament?.image || DEFAULT_IMAGE,
+    tournamentId: incomingTournament?.tournamentId || ''
   };
 
-  const handleRegister = (e) => {
+  const [teamName, setTeamName] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [starters, setStarters] = useState(['', '', '', '', '']);
+  const [sub, setSub] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const updateStarter = (index, value) => {
+    setStarters((prev) => prev.map((v, i) => (i === index ? value : v)));
+  };
+
+  const handleRegister = async (e) => {
     e.preventDefault();
-    alert("¡Equipo Registrado! GL HF.");
-    navigate('/tournaments');
+    if (!tournament.tournamentId) {
+      alert('No se pudo identificar el torneo.');
+      return;
+    }
+    if (!teamName.trim()) {
+      alert('Nombre de equipo requerido.');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Debes iniciar sesión.');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await axios.post(
+        `http://localhost:4000/api/tournaments/${tournament.tournamentId}/register`,
+        {
+          teamName: teamName.trim(),
+          logoUrl: logoUrl.trim(),
+          roster: {
+            starters: starters.map(s => s.trim()).filter(Boolean),
+            subs: sub ? [sub.trim()] : []
+          }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("¡Equipo Registrado! GL HF.");
+      navigate('/tournaments');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'No se pudo registrar el equipo';
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Función de respaldo por si la URL falla al cargar (404, bloqueo, etc)
@@ -49,13 +94,13 @@ const TeamRegistration = () => {
 
                     <form onSubmit={handleRegister}>
                         <div className="neon-input-group">
-                            <input type="text" required placeholder=" " />
+                            <input type="text" required placeholder=" " value={teamName} onChange={(e) => setTeamName(e.target.value)} />
                             <label>Nombre del Equipo</label>
                             <span className="bar"></span>
                         </div>
 
                         <div className="neon-input-group">
-                            <input type="text" required placeholder=" " />
+                            <input type="text" placeholder=" " value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} />
                             <label>Logo URL (Opcional)</label>
                             <span className="bar"></span>
                         </div>
@@ -64,31 +109,31 @@ const TeamRegistration = () => {
                         
                         <div className="roster-grid">
                             <div className="neon-input-group compact">
-                                <input type="text" defaultValue="GamerPro_99" readOnly />
+                                <input type="text" placeholder=" " value={starters[0]} onChange={(e) => updateStarter(0, e.target.value)} />
                                 <label className="fixed-label">Capitán</label>
                             </div>
                             <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
+                                <input type="text" placeholder=" " value={starters[1]} onChange={(e) => updateStarter(1, e.target.value)} />
                                 <label>Jugador 2</label>
                                 <span className="bar"></span>
                             </div>
                             <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
+                                <input type="text" placeholder=" " value={starters[2]} onChange={(e) => updateStarter(2, e.target.value)} />
                                 <label>Jugador 3</label>
                                 <span className="bar"></span>
                             </div>
                             <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
+                                <input type="text" placeholder=" " value={starters[3]} onChange={(e) => updateStarter(3, e.target.value)} />
                                 <label>Jugador 4</label>
                                 <span className="bar"></span>
                             </div>
                             <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
+                                <input type="text" placeholder=" " value={starters[4]} onChange={(e) => updateStarter(4, e.target.value)} />
                                 <label>Jugador 5</label>
                                 <span className="bar"></span>
                             </div>
                             <div className="neon-input-group compact">
-                                <input type="text" placeholder=" " />
+                                <input type="text" placeholder=" " value={sub} onChange={(e) => setSub(e.target.value)} />
                                 <label>Suplente</label>
                                 <span className="bar"></span>
                             </div>
@@ -96,7 +141,9 @@ const TeamRegistration = () => {
 
                         <div className="actions">
                             <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>Cancelar</button>
-                            <button type="submit" className="btn-confirm">Confirmar Registro</button>
+                            <button type="submit" className="btn-confirm" disabled={submitting}>
+                              {submitting ? 'Registrando...' : 'Confirmar Registro'}
+                            </button>
                         </div>
                     </form>
                 </div>

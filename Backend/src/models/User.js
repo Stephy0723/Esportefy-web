@@ -8,6 +8,7 @@ const UserSchema = new mongoose.Schema({
     bio: { type: String, default: "" },
     teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
     isOrganizer: { type: Boolean, default: false },
+    isAdmin: { type: Boolean, default: false },
 
 
     // --- Etapa 1: Datos Personales ---

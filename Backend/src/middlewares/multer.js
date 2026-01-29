@@ -29,5 +29,6 @@ export const uploadTournamentFiles = multer({
     }
 }).fields([
     { name: 'bannerFile', maxCount: 1 },
-    { name: 'rulesPdf', maxCount: 1 }
+    { name: 'rulesPdf', maxCount: 1 },
+    { name: 'sponsorLogos', maxCount: 10 }
 ]);

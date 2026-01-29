@@ -858,6 +858,41 @@
 .val.highlight { color: #8EDB15; }
 .val.text-blue { color: #00d2ff; }
 
+.riot-mini-card {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-input);
+}
+
+.riot-mini-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    border: 2px solid #8EDB15;
+    object-fit: cover;
+}
+
+.riot-mini-meta {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.riot-mini-meta strong {
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.riot-mini-meta span {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .profile-stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }

@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../../../../components/Navbar/Navbar';
 import Sidebar from '../../../../components/Sidebar/Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios'; // Importamos Axios
 import { 
@@ -44,6 +44,7 @@ const GAME_CONFIG = {
 const CreateTournament = () => {
   // --- 1. HOOKS (Navegación y Autenticación) ---
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   // --- 2. ESTADOS (States) ---
@@ -57,6 +58,7 @@ const CreateTournament = () => {
     date: '',
     time: '',
     prizePool: '',
+    currency: 'USD',
     prizesByRank: { first: '', second: '', third: '' },
     entryFee: 'Gratis',
     maxSlots: '',
@@ -70,6 +72,38 @@ const CreateTournament = () => {
     staff: { moderators: [''], casters: [''] },
     incentives: [] 
   });
+  const editTournament = location.state?.editTournament;
+  const isEditMode = Boolean(editTournament?.tournamentId);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    const dateValue = editTournament?.dateRaw ? new Date(editTournament.dateRaw) : null;
+    const dateIso = dateValue ? dateValue.toISOString().slice(0, 10) : '';
+
+    setTournament((prev) => ({
+      ...prev,
+      title: editTournament.title || '',
+      description: editTournament.desc || editTournament.description || '',
+      game: editTournament.game || '',
+      gender: editTournament.gender || '',
+      modality: editTournament.modality || '',
+      date: dateIso || '',
+      time: editTournament.time || '',
+      prizePool: editTournament.prize || editTournament.prizePool || '',
+      currency: editTournament.currency || prev.currency,
+      prizesByRank: editTournament.prizesByRank || prev.prizesByRank,
+      entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
+      maxSlots: editTournament.maxSlots || prev.maxSlots,
+      format: editTournament.format || prev.format,
+      server: editTournament.server || '',
+      platform: editTournament.platform || prev.platform,
+      organizerName: editTournament.organizer || prev.organizerName,
+      sponsors: Array.isArray(editTournament.sponsors) && editTournament.sponsors.length
+        ? editTournament.sponsors.map((s) => ({ name: s.name || '', link: s.link || '', tier: s.tier || 'Partner', logoFile: null }))
+        : prev.sponsors,
+      staff: editTournament.staff || prev.staff
+    }));
+  }, [isEditMode, editTournament]);
 
   // --- 3. HANDLERS DE FORMULARIO Y ARCHIVOS ---
   const handleSubmit = async (e) => {
@@ -87,6 +121,7 @@ const CreateTournament = () => {
     data.append('date', tournament.date);
     data.append('time', tournament.time);
     data.append('prizePool', tournament.prizePool);
+    data.append('currency', tournament.currency);
     data.append('entryFee', tournament.entryFee);
     data.append('maxSlots', tournament.maxSlots);
     data.append('format', tournament.format);
@@ -97,25 +132,37 @@ const CreateTournament = () => {
     // Objetos complejos (se envían como JSON string para parsear en el backend)
     data.append('prizesByRank', JSON.stringify(tournament.prizesByRank));
     data.append('staff', JSON.stringify(tournament.staff));
-    data.append('sponsorsData', JSON.stringify(tournament.sponsors.map(s => ({ 
-        name: s.name, 
-        link: s.link, 
-        tier: s.tier 
-    }))));
+
+    const sponsorsPayload = [];
+    let logoIndex = 0;
+    tournament.sponsors.forEach((s) => {
+        const payload = { name: s.name, link: s.link, tier: s.tier };
+        if (s.logoFile) {
+            payload.logoIndex = logoIndex;
+            data.append('sponsorLogos', s.logoFile);
+            logoIndex += 1;
+        }
+        sponsorsPayload.push(payload);
+    });
+    data.append('sponsors', JSON.stringify(sponsorsPayload));
 
     // Archivos principales
     if (tournament.bannerFile) data.append('bannerFile', tournament.bannerFile);
     if (tournament.rulesPdf) data.append('rulesPdf', tournament.rulesPdf);
 
     // Archivos de Sponsors (Logos individuales)
-    tournament.sponsors.forEach((s, index) => {
-        if (s.logoFile) {
-            data.append(`sponsorLogo_${index}`, s.logoFile);
-        }
-    });
+    // sponsorLogos ya agregados en el bloque de sponsors
 
     try {
-        await axios.post('http://localhost:4000/api/tournaments', data, {
+        const url = isEditMode
+          ? `http://localhost:4000/api/tournaments/${editTournament.tournamentId}`
+          : 'http://localhost:4000/api/tournaments';
+        const method = isEditMode ? 'put' : 'post';
+
+        await axios({
+            url,
+            method,
+            data,
             headers: {
                 'Content-Type': 'multipart/form-data',
                 'Authorization': `Bearer ${token}`
@@ -159,6 +206,19 @@ const CreateTournament = () => {
     });
   };
 
+  const goToDashboard = () => {
+    try {
+      navigate('/dashboard', { replace: true });
+    } finally {
+      // Fallback duro por si el router no navega por algún motivo
+      setTimeout(() => {
+        if (window.location.pathname !== '/dashboard') {
+          window.location.assign('/dashboard');
+        }
+      }, 0);
+    }
+  };
+
   const updateIncentive = (index, field, value) => {
     const newIncentives = [...tournament.incentives];
     newIncentives[index][field] = value;
@@ -176,7 +236,7 @@ const CreateTournament = () => {
     {!isPublished ? (        
         <form className="create-tournament-form" onSubmit={handleSubmit}>
           <header className="form-header-premium">
-            <h1>Configurar <span className="highlight">Torneo Profesional</span></h1>
+            <h1>{isEditMode ? 'Editar' : 'Configurar'} <span className="highlight">Torneo Profesional</span></h1>
             <p>Panel de Administración de: <strong>{tournament.organizerName}</strong></p>
           </header>
 
@@ -354,7 +414,7 @@ const CreateTournament = () => {
         <label>Fecha y Hora de Inicio</label>
         <div style={{display: 'flex', gap: '10px'}}>
              <input type="date" value={tournament.date} onChange={(e) => setTournament({...tournament, date: e.target.value})} />
-             <input type="time" value={tournament.time} onChange={(e) => setTournament({...tournament, time: e.target.value})} />
+            <input type="time" required value={tournament.time} onChange={(e) => setTournament({...tournament, time: e.target.value})} />
         </div>
       </div>
     </div>
@@ -532,7 +592,14 @@ const CreateTournament = () => {
 </div>
 
          <div className="submit-container">
-          <button type="submit" className="btn-main-publish">PUBLICAR TORNEO</button>
+          {isEditMode && (
+            <button type="button" className="btn-success-outline" onClick={() => navigate('/tournaments')}>
+              Cancelar edición
+            </button>
+          )}
+          <button type="submit" className="btn-main-publish">
+            {isEditMode ? ' GUARDAR CAMBIOS' : ' PUBLICAR TORNEO'}
+          </button>
         </div>
       </form>
     ) : (
@@ -542,16 +609,23 @@ const CreateTournament = () => {
         <FaCheckCircle className="success-pulse-icon" />
       </div>
       
-      <h2 className="success-title">¡Torneo Registrado!</h2>
+      <h2 className="success-title">{isEditMode ? '¡Torneo Actualizado!' : '¡Torneo Registrado!'}</h2>
       <p className="success-text">
-        El torneo <span className="highlight-text">"{tournament.title}"</span> ha sido publicado con éxito.
+        El torneo <span className="highlight-text">"{tournament.title}"</span> {isEditMode ? 'ha sido actualizado con éxito.' : 'ha sido publicado con éxito.'}
       </p>
 
       <div className="success-button-group">
-        <button className="btn-success-outline" onClick={() => setIsPublished(false)}>
-          <FaPlus /> Crear otro torneo
-        </button>
-        <button className="btn-success-solid" onClick={() => navigate('/dashboard')}>
+        {!isEditMode && (
+          <button className="btn-success-outline" onClick={() => setIsPublished(false)}>
+            <FaPlus /> Crear otro torneo
+          </button>
+        )}
+        {isEditMode && (
+          <button className="btn-success-outline" onClick={() => navigate('/tournaments')}>
+            <FaPlus /> Volver a torneos
+          </button>
+        )}
+        <button type="button" className="btn-success-solid" onClick={goToDashboard}>
           <FaSitemap /> Ir al Dashboard
         </button>
       </div>

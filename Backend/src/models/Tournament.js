@@ -92,6 +92,18 @@ const tournamentSchema = new mongoose.Schema({
     soloQueueOnly: { type: Boolean, default: true }
 }
 
+,
+    registrations: [{
+        teamName: { type: String, required: true },
+        logoUrl: { type: String, default: '' },
+        captain: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        roster: {
+            starters: [String],
+            subs: [String]
+        },
+        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+        registeredAt: { type: Date, default: Date.now }
+    }]
 
 }, { timestamps: true });
 

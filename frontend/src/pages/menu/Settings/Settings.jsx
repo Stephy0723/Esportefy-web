@@ -28,6 +28,7 @@ export default function Settings() {
         riot: {},
         steam: {}
     });
+    const [gameProfiles, setGameProfiles] = useState({});
 
     // ===== RIOT STATE =====
     const [riotGameName, setRiotGameName] = useState('');
@@ -77,12 +78,16 @@ export default function Settings() {
 
             setConnections(res.data.connections);
             setPrivacy(res.data.privacy);
+            setGameProfiles(res.data.gameProfiles || {});
             setLoading(false);
-
         } catch (error) {
             console.error("Error cargando settings", error.response?.data || error.message);
         }
     };
+
+    const riotProfileIconId = gameProfiles?.lol?.profileIconId ?? 0;
+    const riotSummonerLevel = gameProfiles?.lol?.summonerLevel;
+    const riotRank = gameProfiles?.lol?.rank;
 
     const unlinkDiscord = async () => {
         try {
@@ -361,7 +366,7 @@ export default function Settings() {
                                 </div>
 
                                 <div className="int-icon riot">
-                                    <img src="/riot-icon.png" alt="Riot Games" />
+                                    <img src="/riot-icon.svg" alt="Riot Games" />
                                 </div>
 
                                 <div className="int-details">
@@ -370,7 +375,7 @@ export default function Settings() {
                                     {connections?.riot?.verified ? (
                                         <div className="riot-profile-box">
                                             <img
-                                                src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${connections.riot.profileIconId}.png`}
+                                                src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${riotProfileIconId}.png`}
                                                 alt="Riot Icon"
                                                 className="riot-avatar"
                                             />
@@ -380,11 +385,11 @@ export default function Settings() {
                                                     {connections.riot.gameName}#{connections.riot.tagLine}
                                                 </strong>
 
-                                                <span>Nivel {connections.riot.summonerLevel}</span>
+                                                <span>Nivel {riotSummonerLevel ?? '-'}</span>
 
                                                 <span>
-                                                    {connections.riot.rank
-                                                        ? `${connections.riot.rank.tier} ${connections.riot.rank.division} (${connections.riot.rank.lp} LP)`
+                                                    {riotRank
+                                                        ? `${riotRank.tier} ${riotRank.division} (${riotRank.lp} LP)`
                                                         : 'Sin clasificar'}
                                                 </span>
                                             </div>

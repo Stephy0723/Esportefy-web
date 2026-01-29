@@ -75,6 +75,12 @@ const Dashboard = () => {
     const activeGame = getActiveGameData();
     const currentFrame = FRAMES.find(frame => frame.id === user?.selectedFrameId) || FRAMES[0];
     const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0]; 
+    const riotLinked = user?.connections?.riot?.verified;
+    const riotProfileIconId = user?.gameProfiles?.lol?.profileIconId ?? 0;
+    const riotSummonerLevel = user?.gameProfiles?.lol?.summonerLevel;
+    const riotRank = user?.gameProfiles?.lol?.rank;
+    const riotName = user?.connections?.riot?.gameName;
+    const riotTagLine = user?.connections?.riot?.tagLine;
 
     if (loading) return <div className="loading-screen">Cargando...</div>;
 
@@ -116,7 +122,7 @@ const Dashboard = () => {
                         <p className="profile-quote">"La victoria está reservada para aquellos que están dispuestos a pagar su precio."</p>
                         <div className="profile-stats-row">
                              {/* ... tus stats ... */}
-                             <div className="p-stat-item">
+                            <div className="p-stat-item">
                                 <i className='bx bx-crosshair'></i>
                                 <div><span className="lbl">WIN RATE</span><span className="val highlight">68.4%</span></div>
                             </div>
@@ -133,6 +139,25 @@ const Dashboard = () => {
                                 <div><span className="lbl">RANGO</span><span className="val text-blue">DIAMANTE</span></div>
                             </div>
                         </div>
+
+                        {riotLinked && (
+                            <div className="riot-mini-card">
+                                <img
+                                    src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${riotProfileIconId}.png`}
+                                    alt="Riot Icon"
+                                    className="riot-mini-avatar"
+                                />
+                                <div className="riot-mini-meta">
+                                    <strong>{riotName}#{riotTagLine}</strong>
+                                    <span>Nivel {riotSummonerLevel ?? '-'}</span>
+                                    <span>
+                                        {riotRank
+                                            ? `${riotRank.tier} ${riotRank.division} (${riotRank.lp} LP)`
+                                            : 'Sin clasificar'}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -74,6 +74,46 @@ const sponsors = [
     }
 ];
 
+const BACKEND_URL = 'http://localhost:4000';
+
+const toAssetUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${BACKEND_URL}/${path.replace(/^\//, '')}`;
+};
+
+const formatTournamentFromApi = (t) => ({
+  id: t._id,
+  game: t.game,
+  title: t.title,
+  date: t.date ? new Date(t.date).toLocaleDateString() : '',
+  dateRaw: t.date || '',
+  prize: t.prizePool || t.prize,
+  prizePool: t.prizePool || '',
+  currency: t.currency || 'USD',
+  slots: `${t.currentSlots}/${t.maxSlots}`,
+  maxSlots: t.maxSlots,
+  time: t.time,
+  entry: t.entryFee || t.entry,
+  entryFee: t.entryFee || '',
+  organizer: t.organizer?.username || 'Organizador',
+  organizerId: t.organizer?._id || t.organizer || '',
+  format: t.format || 'Por definir',
+  desc: t.description || 'Sin descripción disponible.',
+  description: t.description || '',
+  tournamentId: t.tournamentId,
+  gender: t.gender,
+  modality: t.modality,
+  platform: t.platform,
+  server: t.server,
+  prizesByRank: t.prizesByRank,
+  staff: t.staff,
+  sponsors: t.sponsors,
+  registrations: t.registrations || [],
+  bannerImage: toAssetUrl(t.bannerImage),
+  rulesPdf: toAssetUrl(t.rulesPdf)
+});
+
 const Tournaments = () => {
   const navigate = useNavigate();
   const { notify } = useNotification(); 
@@ -89,6 +129,7 @@ const Tournaments = () => {
   const [showInfoModal, setShowInfoModal] = useState(false); 
   const [current, setCurrent] = useState(0);
   const [selectedTournament, setSelectedTournament] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const rightPanelRef = useRef(null);
 
@@ -157,21 +198,7 @@ useEffect(() => {
             const response = await axios.get('http://localhost:4000/api/tournaments');
             
             // Adaptamos los datos de la base de datos al formato que usa tu diseño
-            const formattedTournaments = response.data.map(t => ({
-                id: t._id,
-                game: t.game,
-                title: t.title,
-                date: new Date(t.date).toLocaleDateString(), // Formatea la fecha
-                prize: t.prizePool || t.prize, // Soporta ambos nombres de campo
-                slots: `${t.currentSlots}/${t.maxSlots}`,
-                time: t.time,
-                entry: t.entryFee || t.entry,
-                organizer: t.organizer?.username || 'Organizador',
-                format: t.format || 'Por definir',
-                desc: t.description || 'Sin descripción disponible.',
-                tournamentId: t.tournamentId,
-                gender: t.gender 
-            }));
+            const formattedTournaments = response.data.map(formatTournamentFromApi);
 
             setTournaments(formattedTournaments);
         } catch (err) {
@@ -184,6 +211,21 @@ useEffect(() => {
 
     fetchTournaments();
 }, []);
+
+  const openTournamentDetails = async (torneo) => {
+    setDetailLoading(true);
+    setSelectedTournament({ ...torneo });
+    try {
+      const response = await axios.get(`http://localhost:4000/api/tournaments/${torneo.tournamentId}`);
+      const formatted = formatTournamentFromApi(response.data);
+      setSelectedTournament({ ...torneo, ...formatted });
+    } catch (err) {
+      console.error('Error cargando detalle del torneo:', err);
+      notify('danger', 'Error', 'No se pudo cargar el detalle del torneo.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const handleDotClick = (index) => setCurrent(index);
   const activeSponsor = sponsors[current] || sponsors[0];
@@ -207,6 +249,32 @@ useEffect(() => {
     : tournaments.filter(t => t.game === activeFilter);
 
   const goToRegistration = (torneo) => navigate('/team-registration', { state: { tournament: torneo } });
+
+  const canManageTournament = (torneo) => {
+    if (!user) return false;
+    return user?.isAdmin === true || String(torneo?.organizerId) === String(user?._id);
+  };
+
+  const goToEditTournament = (torneo) => {
+    navigate('/create-tournament', { state: { editTournament: torneo } });
+  };
+
+  const deleteTournament = async (torneo) => {
+    const ok = window.confirm(`¿Eliminar el torneo "${torneo.title}"? Esta acción no se puede deshacer.`);
+    if (!ok) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:4000/api/tournaments/${torneo.tournamentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSelectedTournament(null);
+      setTournaments((prev) => prev.filter((t) => t.id !== torneo.id));
+      notify('success', 'Torneo eliminado', 'El torneo fue eliminado correctamente.');
+    } catch (err) {
+      console.error('Error eliminando torneo:', err);
+      notify('danger', 'Error', 'No se pudo eliminar el torneo.');
+    }
+  };
 
   const handleCreateClick = () => {
         if (loading) return; // Evita clics mientras carga el contexto
@@ -268,7 +336,7 @@ useEffect(() => {
             <div className="modal-overlay-backdrop" onClick={() => setSelectedTournament(null)} style={{zIndex: 10000}}>
                 <div className="tournament-details-modal" onClick={e => e.stopPropagation()}>
                     
-                    <div className="modal-header-banner" style={{backgroundImage: `url(${getGameImage(selectedTournament.game)})`}}>
+                    <div className="modal-header-banner" style={{backgroundImage: `url(${selectedTournament.bannerImage || getGameImage(selectedTournament.game)})`}}>
                         <div className="overlay-dark"></div>
                         <button className="close-btn-round" onClick={() => setSelectedTournament(null)}><i className='bx bx-x'></i></button>
 
@@ -322,8 +390,69 @@ useEffect(() => {
                             <p>{selectedTournament.desc}</p>
                         </div>
 
+                        {Array.isArray(selectedTournament.registrations) && selectedTournament.registrations.length > 0 && (
+                            <div className="info-section" style={{ marginTop: 18 }}>
+                                <h4><i className='bx bx-group'></i> Equipos inscritos</h4>
+                                <div className="tournament-registrations">
+                                    {selectedTournament.registrations.map((r, idx) => (
+                                        <div key={`${r.teamName}-${idx}`} className="registration-row">
+                                            <div className="registration-main">
+                                                <strong>{r.teamName}</strong>
+                                                {r.status && <span className={`reg-status ${r.status}`}>{r.status}</span>}
+                                            </div>
+                                            {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
+                                                <div className="registration-roster">
+                                                    {r.roster.starters.join(' • ')}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {(selectedTournament.platform || selectedTournament.server || selectedTournament.gender) && (
+                            <div className="stats-grid" style={{ marginTop: 14 }}>
+                                {selectedTournament.platform && (
+                                    <div className="stat-box">
+                                        <span className="label">Plataforma</span>
+                                        <span className="value">{selectedTournament.platform}</span>
+                                    </div>
+                                )}
+                                {selectedTournament.server && (
+                                    <div className="stat-box">
+                                        <span className="label">Servidor</span>
+                                        <span className="value">{selectedTournament.server}</span>
+                                    </div>
+                                )}
+                                {selectedTournament.gender && (
+                                    <div className="stat-box">
+                                        <span className="label">Género</span>
+                                        <span className="value">{selectedTournament.gender}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {selectedTournament.rulesPdf && (
+                            <a
+                                className="btn-secondary"
+                                href={selectedTournament.rulesPdf}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                            >
+                                Ver reglas (PDF)
+                            </a>
+                        )}
+
                         <div className="modal-actions-footer">
                             <button className="btn-secondary" onClick={() => setSelectedTournament(null)}>Cerrar</button>
+                            {canManageTournament(selectedTournament) && (
+                                <button className="btn-secondary" onClick={() => goToEditTournament(selectedTournament)}>
+                                    Editar
+                                </button>
+                            )}
                             <button 
                                 className="btn-primary-action" 
                                 onClick={() => { setSelectedTournament(null); goToRegistration(selectedTournament); }}
@@ -332,8 +461,13 @@ useEffect(() => {
                                     boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color}40`
                                 }}
                             >
-                                Inscribirse Ahora <i className='bx bx-right-arrow-alt'></i>
+                                {detailLoading ? 'Cargando...' : 'Inscribirse Ahora'} <i className='bx bx-right-arrow-alt'></i>
                             </button>
+                            {canManageTournament(selectedTournament) && (
+                                <button className="btn-danger-action" onClick={() => deleteTournament(selectedTournament)}>
+                                    Eliminar
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -439,7 +573,7 @@ useEffect(() => {
                                             </div>
 
                                             <div className="card-actions">
-                                                <button className="btn-details" onClick={() => setSelectedTournament(torneo)}>
+                                                <button className="btn-details" onClick={() => openTournamentDetails(torneo)}>
                                                     <i className='bx bx-info-circle'></i> Ver Info
                                                 </button>
                                                 <button 
