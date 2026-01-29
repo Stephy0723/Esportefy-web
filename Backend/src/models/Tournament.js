@@ -13,6 +13,7 @@ const tournamentSchema = new mongoose.Schema({
     },
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
+    category: { type: String, default: '' },
     game: { type: String, required: true },
     modality: { type: String }, // Ej: 5v5, 1v1
     platform: { type: String, default: 'PC' },
@@ -94,14 +95,33 @@ const tournamentSchema = new mongoose.Schema({
 
 ,
     registrations: [{
+        teamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team' },
         teamName: { type: String, required: true },
         logoUrl: { type: String, default: '' },
         captain: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        roster: {
-            starters: [String],
-            subs: [String]
+        teamMeta: {
+            category: String,
+            teamCountry: String,
+            teamLevel: String,
+            coach: String
         },
-        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+        roster: {
+            starters: [{
+                nickname: String,
+                gameId: String,
+                region: String,
+                role: String,
+                riotId: String
+            }],
+            subs: [{
+                nickname: String,
+                gameId: String,
+                region: String,
+                role: String,
+                riotId: String
+            }]
+        },
+        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
         registeredAt: { type: Date, default: Date.now }
     }]
 

@@ -763,6 +763,18 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
             p { color: #a1a1aa; line-height: 1.6; font-size: 0.95rem; }
         }
 
+        .tournament-status-pill {
+            margin-top: 10px;
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.1);
+            color: #d1d5db;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
         .tournament-registrations {
             display: flex;
             flex-direction: column;
@@ -807,6 +819,44 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
             font-size: 0.85rem;
         }
 
+        .riot-requirements {
+            display: grid;
+            gap: 6px;
+            color: #a1a1aa;
+            font-size: 0.9rem;
+        }
+
+        .riot-note {
+            margin-top: 6px;
+            color: #8EDB15;
+            font-size: 0.85rem;
+        }
+
+        .registration-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .reg-btn {
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .reg-btn.approve {
+            background: rgba(16,185,129,0.2);
+            color: #34d399;
+        }
+
+        .reg-btn.reject {
+            background: rgba(239,68,68,0.2);
+            color: #f87171;
+        }
+
         // FOOTER DE BOTONES
         .modal-actions-footer {
             margin-top: 30px;
@@ -834,6 +884,11 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
                 color: #fff;
                 display: flex; align-items: center; gap: 8px;
                 &:hover { transform: translateY(-2px); filter: brightness(1.05); }
+            }
+
+            .tournament-admin-actions {
+                display: flex;
+                gap: 8px;
             }
         }
     }

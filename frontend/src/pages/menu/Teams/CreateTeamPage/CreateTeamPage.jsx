@@ -6,7 +6,7 @@ import {
     FaCamera, FaUser, FaUserAstronaut, FaCheckCircle, FaPlus, FaWhatsapp, 
     FaArrowLeft, FaIdCard, FaGlobe, FaTrophy, FaVenusMars, FaLanguage, 
     FaMapMarkerAlt, FaCheck, FaCopy, FaSearch, FaDiscord, FaTwitter, 
-    FaFacebook, FaPaperPlane, FaGamepad, FaUpload 
+    FaFacebook, FaPaperPlane, FaGamepad, FaUpload, FaEye, FaUsers 
 } from 'react-icons/fa';
 import './CreateTeamPage.css';
 
@@ -40,6 +40,7 @@ const CreateTeamPage = () => {
         // Identidad
         name: '', 
         slogan: '', 
+        category: '',
         game: '',
         // Perfil de Escuadra
         teamGender: 'Mixto',      
@@ -221,6 +222,9 @@ const CreateTeamPage = () => {
         return roles ? roles[index] : `Player ${index + 1}`;
     };
 
+    const safeStarters = Array.isArray(roster?.starters) ? roster.starters : [];
+    const safeSubs = Array.isArray(roster?.subs) ? roster.subs : [];
+
     // --- RENDERIZADO ---
     return (
         <div className={`create-team-layout ${getThemeClass()}`}>
@@ -319,7 +323,14 @@ const CreateTeamPage = () => {
                             <div className="split-row">
                                 <div className="form-group">
                                     <label className="section-label">Categoría</label>
-                                    <select className="select-modern" onChange={e => setSelectedCategory(e.target.value)}>
+                                    <select
+                                        className="select-modern"
+                                        onChange={e => {
+                                            const cat = e.target.value;
+                                            setSelectedCategory(cat);
+                                            setFormData(prev => ({ ...prev, category: cat }));
+                                        }}
+                                    >
                                         <option value="">Seleccionar...</option>
                                         {Object.keys(esportsCatalog).map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                     </select>
@@ -331,6 +342,41 @@ const CreateTeamPage = () => {
                                         {selectedCategory && Object.keys(esportsCatalog[selectedCategory]).map(g => <option key={g} value={g}>{g}</option>)}
                                     </select>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* 3.5 VISTA PREVIA DEL EQUIPO */}
+                        <div className="section-card team-preview-card">
+                            <h3 style={{marginBottom: '1rem', color: 'var(--theme-color)', fontSize: '1.2rem'}}>
+                                <FaEye style={{marginRight: '8px'}}/> Vista previa
+                            </h3>
+                            <div className="preview-header">
+                                <div className="preview-logo">
+                                    {logoPreview ? (
+                                        <img src={logoPreview} alt="Logo" />
+                                    ) : (
+                                        <FaUsers />
+                                    )}
+                                </div>
+                                <div className="preview-meta">
+                                    <h4>{formData.name || 'Nombre del equipo'}</h4>
+                                    <span>{formData.category || 'Categoría'} • {formData.game || 'Juego'}</span>
+                                    <p>{formData.slogan || 'Eslogan del equipo'}</p>
+                                </div>
+                            </div>
+                            <div className="preview-list">
+                                {safeStarters.map((slot, i) => (
+                                    <div key={`starter-${i}`} className="preview-item">
+                                        <span className="preview-role">{getRoleLabel(i)}</span>
+                                        <span className="preview-name">{slot?.nickname || 'Vacante'}</span>
+                                    </div>
+                                ))}
+                                {safeSubs.map((slot, i) => (
+                                    <div key={`sub-${i}`} className="preview-item">
+                                        <span className="preview-role">Suplente {i + 1}</span>
+                                        <span className="preview-name">{slot?.nickname || 'Vacante'}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -416,7 +462,7 @@ const CreateTeamPage = () => {
                         <div className="roles-section">
                             <label className="section-label">Titulares</label>
                             <div className="circles-grid">
-                                {roster.starters.map((slot, idx) => (
+                                {safeStarters.map((slot, idx) => (
                                     <div key={idx} className="role-item" onClick={() => handleSlotClick('starters', idx)}>
                                         <div className={`role-circle ${slot ? 'filled' : 'empty'}`}>
                                             {/* AQUÍ SE MUESTRA LA FOTO SI EXISTE */}
@@ -443,8 +489,8 @@ const CreateTeamPage = () => {
                             <div className="roles-section">
                                 <label className="section-label">Suplentes</label>
                                 <div className="circles-grid">
-                                    {roster.subs.map((slot, idx) => (
-                                        <div key={idx} className="role-item" onClick={() => handleSlotClick('subs', idx)}>
+                                {safeSubs.map((slot, idx) => (
+                                    <div key={idx} className="role-item" onClick={() => handleSlotClick('subs', idx)}>
                                             <div className={`role-circle small ${slot ? 'filled' : 'empty'}`}>
                                                 {slot ? (
                                                     slot.photo ? (

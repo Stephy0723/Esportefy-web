@@ -10,6 +10,7 @@ import {
     FaServer, FaTrash, FaCheckCircle, FaStar, FaGift, FaTag, FaLink, FaImage, FaCheck
 } from 'react-icons/fa';
 import './CreateTournament.css';
+import { esportsCatalog } from '../../../../data/esportsCatalog.jsx';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
@@ -77,6 +78,13 @@ const CreateTournament = () => {
 
   useEffect(() => {
     if (!isEditMode) return;
+    if (!user) return;
+    const canEdit = user?.isAdmin === true || String(editTournament?.organizerId) === String(user?._id);
+    if (!canEdit) {
+      alert('No tienes permisos para editar este torneo.');
+      navigate('/tournaments');
+      return;
+    }
     const dateValue = editTournament?.dateRaw ? new Date(editTournament.dateRaw) : null;
     const dateIso = dateValue ? dateValue.toISOString().slice(0, 10) : '';
 
@@ -103,7 +111,7 @@ const CreateTournament = () => {
         : prev.sponsors,
       staff: editTournament.staff || prev.staff
     }));
-  }, [isEditMode, editTournament]);
+  }, [isEditMode, editTournament, user, navigate]);
 
   // --- 3. HANDLERS DE FORMULARIO Y ARCHIVOS ---
   const handleSubmit = async (e) => {
@@ -117,6 +125,8 @@ const CreateTournament = () => {
     data.append('title', tournament.title);
     data.append('description', tournament.description);
     data.append('game', tournament.game);
+    const categoryFromGame = Object.keys(esportsCatalog).find(cat => esportsCatalog[cat][tournament.game]);
+    if (categoryFromGame) data.append('category', categoryFromGame);
     data.append('modality', tournament.modality);
     data.append('date', tournament.date);
     data.append('time', tournament.time);

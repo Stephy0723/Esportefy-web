@@ -116,6 +116,20 @@ const UserSchema = new mongoose.Schema({
         showOnlineStatus: { type: Boolean, default: true },
         allowTournamentInvites: { type: Boolean, default: true }
     },
+    notifications: [{
+        type: { type: String, default: 'info' },
+        category: { type: String, default: 'system' },
+        title: String,
+        source: { type: String, default: 'Sistema' },
+        message: String,
+        status: { type: String, enum: ['unread', 'read'], default: 'unread' },
+        visuals: {
+            icon: String,
+            color: String,
+            glow: Boolean
+        },
+        createdAt: { type: Date, default: Date.now }
+    }]
 
 }, { timestamps: true });
 

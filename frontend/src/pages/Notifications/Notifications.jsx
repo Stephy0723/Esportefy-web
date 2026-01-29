@@ -1,12 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNotification } from '../../context/NotificationContext'; 
 import './Notifications.css';
+import axios from 'axios';
 
 const Notifications = () => {
   // 1. OBTENER DATOS Y FUNCIONES DEL CEREBRO
-  const { notifications, removeNotification, addToast } = useNotification();
+  const { notifications, removeNotification, addToast, loadNotifications } = useNotification();
   
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await axios.get('http://localhost:4000/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        loadNotifications(res.data);
+      } catch (e) {
+        // silencio: fallback a locales
+      }
+    };
+    fetchNotifications();
+  }, [loadNotifications]);
 
   // --- LÓGICA DE FILTRADO ---
   const getFilteredNotes = () => {

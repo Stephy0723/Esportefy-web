@@ -110,9 +110,22 @@ const formatTournamentFromApi = (t) => ({
   staff: t.staff,
   sponsors: t.sponsors,
   registrations: t.registrations || [],
+  status: t.status,
+  registrationClosed: t.registrationClosed,
+  riotRequirements: t.riotRequirements,
   bannerImage: toAssetUrl(t.bannerImage),
   rulesPdf: toAssetUrl(t.rulesPdf)
 });
+
+const RIOT_GAMES = new Set([
+  'Valorant',
+  'League of Legends',
+  'Wild Rift',
+  'Teamfight Tactics',
+  'Legends of Runeterra'
+]);
+
+const isRiotGame = (game) => RIOT_GAMES.has(game);
 
 const Tournaments = () => {
   const navigate = useNavigate();
@@ -131,6 +144,9 @@ const Tournaments = () => {
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [showTeamPreview, setShowTeamPreview] = useState(false);
+  const [selectedTeamIdForPreview, setSelectedTeamIdForPreview] = useState(null);
+  const [selectedTeamPreview, setSelectedTeamPreview] = useState(null);
   const rightPanelRef = useRef(null);
 
   // Helper para obtener imagen segura
@@ -249,6 +265,8 @@ useEffect(() => {
     : tournaments.filter(t => t.game === activeFilter);
 
   const goToRegistration = (torneo) => navigate('/team-registration', { state: { tournament: torneo } });
+  const needsRiot = (torneo) => isRiotGame(torneo.game) && torneo?.riotRequirements?.required;
+  const hasRiotLinked = Boolean(user?.connections?.riot?.verified);
 
   const canManageTournament = (torneo) => {
     if (!user) return false;
@@ -257,6 +275,78 @@ useEffect(() => {
 
   const goToEditTournament = (torneo) => {
     navigate('/create-tournament', { state: { editTournament: torneo } });
+  };
+
+  const updateRegistrationStatus = async (torneo, registrationId, status) => {
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      await axios.patch(
+        `http://localhost:4000/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
+        { status },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSelectedTournament((prev) => {
+        if (!prev) return prev;
+        const nextRegs = status === 'rejected'
+          ? (prev.registrations || []).filter((r) => String(r._id) !== String(registrationId))
+          : (prev.registrations || []).map((r) =>
+              String(r._id) === String(registrationId) ? { ...r, status } : r
+            );
+        return { ...prev, registrations: nextRegs };
+      });
+      notify('success', 'Estado actualizado', `Equipo ${status === 'approved' ? 'aprobado' : 'rechazado'}.`);
+    } catch (err) {
+      console.error('Error actualizando registro:', err);
+      notify('danger', 'Error', err.response?.data?.message || 'No se pudo actualizar el estado del equipo.');
+    }
+  };
+
+  const removeRegistration = async (torneo, registrationId) => {
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      await axios.delete(
+        `http://localhost:4000/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSelectedTournament((prev) => {
+        if (!prev) return prev;
+        const nextRegs = (prev.registrations || []).filter((r) => String(r._id) !== String(registrationId));
+        return { ...prev, registrations: nextRegs };
+      });
+      notify('success', 'Equipo removido', 'El equipo fue eliminado del torneo.');
+    } catch (err) {
+      notify('danger', 'Error', err.response?.data?.message || 'No se pudo remover el equipo.');
+    }
+  };
+
+  const updateTournamentStatus = async (torneo, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(
+        `http://localhost:4000/api/tournaments/${torneo.tournamentId}/status`,
+        { action },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSelectedTournament((prev) => prev ? ({
+        ...prev,
+        status: response.data.status,
+        registrationClosed: response.data.registrationClosed
+      }) : prev);
+    } catch (err) {
+      console.error('Error actualizando estado:', err);
+      notify('danger', 'Error', 'No se pudo actualizar el estado del torneo.');
+    }
+  };
+
+  const openTeamPreview = async (teamId) => {
+    try {
+      const res = await axios.get('http://localhost:4000/api/teams');
+      const team = (res.data || []).find(t => String(t._id) === String(teamId));
+      setSelectedTeamPreview(team || null);
+      setShowTeamPreview(true);
+    } catch (err) {
+      notify('danger', 'Error', 'No se pudo cargar el equipo.');
+    }
   };
 
   const deleteTournament = async (torneo) => {
@@ -352,6 +442,11 @@ useEffect(() => {
                                 <strong style={{color: '#fff'}}>{selectedTournament.organizer}</strong>
                                 <i className='bx bxs-badge-check' style={{color: '#00b894'}}></i>
                             </div>
+                            {selectedTournament.status && (
+                                <div className="tournament-status-pill">
+                                    {selectedTournament.status}
+                                </div>
+                            )}
                         </div>
                     </div>
                     
@@ -395,16 +490,67 @@ useEffect(() => {
                                 <h4><i className='bx bx-group'></i> Equipos inscritos</h4>
                                 <div className="tournament-registrations">
                                     {selectedTournament.registrations.map((r, idx) => (
-                                        <div key={`${r.teamName}-${idx}`} className="registration-row">
+                                        <div key={r._id || `${r.teamName}-${idx}`} className="registration-row">
                                             <div className="registration-main">
                                                 <strong>{r.teamName}</strong>
                                                 {r.status && <span className={`reg-status ${r.status}`}>{r.status}</span>}
                                             </div>
+                                            
                                             {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
                                                 <div className="registration-roster">
-                                                    {r.roster.starters.join(' • ')}
+                                                    {r.roster.starters.map(p => p.nickname || '').filter(Boolean).join(' • ')}
                                                 </div>
                                             )}
+                                            {/* {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
+                                                <div className="registration-roster">
+                                                    {r.roster.starters.map((p, i) => (
+                                                        <span key={`${r._id}-p-${i}`}>
+                                                            {p.nickname}{p.riotId ? ` (${p.riotId})` : ''}{i < r.roster.starters.length - 1 ? ' • ' : ''}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )} */}
+                                            
+                                            {(r.teamMeta || r.teamId) && (
+                                                <div className="registration-meta">
+                                                    {r.teamMeta?.category && <span>Categoría: {r.teamMeta.category}</span>}
+                                                    {r.teamMeta?.teamCountry && <span>País: {r.teamMeta.teamCountry}</span>}
+                                                    {r.teamMeta?.teamLevel && <span>Nivel: {r.teamMeta.teamLevel}</span>}
+                                                    {r.teamMeta?.coach && <span>Coach: {r.teamMeta.coach}</span>}
+                                                </div>
+                                            )}{canManageTournament(selectedTournament) && (
+                                                <div className="registration-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="reg-btn reject"
+                                                        onClick={() => removeRegistration(selectedTournament, r._id)}
+                                                    >
+                                                        Quitar equipo
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {r.teamId && (
+                                                
+                                                <button
+                                                    type="button"
+                                                    className="reg-btn approve"
+                                                    onClick={() => openTeamPreview(r.teamId)}
+                                                >
+                                                    Ver equipo
+                                                </button>
+                                                
+                                            )}
+                                            {/* {canManageTournament(selectedTournament) && (
+                                                <div className="registration-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="reg-btn reject"
+                                                        onClick={() => removeRegistration(selectedTournament, r._id)}
+                                                    >
+                                                        Quitar equipo
+                                                    </button>
+                                                </div>
+                                            )} */}
                                         </div>
                                     ))}
                                 </div>
@@ -434,6 +580,25 @@ useEffect(() => {
                             </div>
                         )}
 
+                        {isRiotGame(selectedTournament.game) && selectedTournament.riotRequirements?.required && (
+                            <div className="info-section" style={{ marginTop: 18 }}>
+                                <h4><i className='bx bx-shield-quarter'></i> Requisitos Riot</h4>
+                                <div className="riot-requirements">
+                                    <div><strong>Cuenta Riot vinculada:</strong> requerida</div>
+                                    {selectedTournament.riotRequirements?.minTier && (
+                                        <div><strong>Rango mínimo:</strong> {selectedTournament.riotRequirements.minTier}</div>
+                                    )}
+                                    {selectedTournament.riotRequirements?.maxTier && (
+                                        <div><strong>Rango máximo:</strong> {selectedTournament.riotRequirements.maxTier}</div>
+                                    )}
+                                    {typeof selectedTournament.riotRequirements?.soloQueueOnly === 'boolean' && (
+                                        <div><strong>Solo Queue:</strong> {selectedTournament.riotRequirements.soloQueueOnly ? 'Sí' : 'No'}</div>
+                                    )}
+                                    <div className="riot-note">Se verifica tu perfil Riot para evitar trampas.</div>
+                                </div>
+                            </div>
+                        )}
+
                         {selectedTournament.rulesPdf && (
                             <a
                                 className="btn-secondary"
@@ -453,13 +618,35 @@ useEffect(() => {
                                     Editar
                                 </button>
                             )}
+                            {canManageTournament(selectedTournament) && (
+                                <div className="tournament-admin-actions">
+                                    <button className="btn-secondary" onClick={() => updateTournamentStatus(selectedTournament, 'open')}>
+                                        Abrir inscripciones
+                                    </button>
+                                    <button className="btn-secondary" onClick={() => updateTournamentStatus(selectedTournament, 'close')}>
+                                        Cerrar inscripciones
+                                    </button>
+                                    <button className="btn-secondary" onClick={() => updateTournamentStatus(selectedTournament, 'cancel')}>
+                                        Cancelar torneo
+                                    </button>
+                                </div>
+                            )}
                             <button 
                                 className="btn-primary-action" 
-                                onClick={() => { setSelectedTournament(null); goToRegistration(selectedTournament); }}
+                                onClick={() => {
+                                    if (needsRiot(selectedTournament) && !hasRiotLinked) {
+                                        notify('danger', 'Riot requerido', 'Debes vincular tu cuenta Riot en Settings para inscribirte.');
+                                        navigate('/settings');
+                                        return;
+                                    }
+                                    setSelectedTournament(null);
+                                    goToRegistration(selectedTournament);
+                                }}
                                 style={{
                                     background: GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15',
                                     boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color}40`
                                 }}
+                                disabled={needsRiot(selectedTournament) && !hasRiotLinked}
                             >
                                 {detailLoading ? 'Cargando...' : 'Inscribirse Ahora'} <i className='bx bx-right-arrow-alt'></i>
                             </button>
@@ -468,6 +655,52 @@ useEffect(() => {
                                     Eliminar
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {showTeamPreview && (
+            <div className="modal-overlay-backdrop" onClick={() => setShowTeamPreview(false)} style={{zIndex: 10001}}>
+                <div className="tournament-details-modal" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header-banner" style={{backgroundImage: `url(${selectedTeamPreview?.bannerImage || getGameImage(selectedTeamPreview?.game || '')})`}}>
+                        <div className="overlay-dark"></div>
+                        <button className="close-btn-round" onClick={() => setShowTeamPreview(false)}><i className='bx bx-x'></i></button>
+                        <div className="banner-content">
+                            <h2>{selectedTeamPreview?.name || 'Equipo'}</h2>
+                            <div className="host-info">
+                                <span>Juego:</span>
+                                <strong style={{color: '#fff'}}>{selectedTeamPreview?.game || 'N/A'}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-content-body">
+                        <div className="info-section">
+                            <h4><i className='bx bx-info-circle'></i> Datos del equipo</h4>
+                            <p>Categoría: {selectedTeamPreview?.category || 'N/A'}</p>
+                            <p>País: {selectedTeamPreview?.teamCountry || 'N/A'}</p>
+                            <p>Nivel: {selectedTeamPreview?.teamLevel || 'N/A'}</p>
+                            <p>Coach: {selectedTeamPreview?.roster?.coach?.nickname || 'N/A'}</p>
+                        </div>
+                        <div className="info-section">
+                            <h4><i className='bx bx-group'></i> Roster</h4>
+                            <div className="tournament-registrations">
+                                {(selectedTeamPreview?.roster?.starters || []).map((p, i) => (
+                                    <div key={`team-prev-${i}`} className="registration-row">
+                                        <div className="registration-main">
+                                            <strong>{p?.nickname || 'Vacante'}</strong>
+                                            {p?.role && <span className="reg-status approved">{p.role}</span>}
+                                        </div>
+                                        <div className="registration-roster">
+                                            {p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} • {p?.region || 'Región: N/A'}{p?.riotId ? ` • Riot: ${p.riotId}` : ''}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="modal-actions-footer">
+                            <button className="btn-secondary" onClick={() => setShowTeamPreview(false)}>Cerrar</button>
                         </div>
                     </div>
                 </div>
@@ -578,14 +811,23 @@ useEffect(() => {
                                                 </button>
                                                 <button 
                                                     className={`btn-join ${estaLleno ? 'disabled' : ''}`}
-                                                    onClick={() => !estaLleno && goToRegistration(torneo)}
-                                                    style={{
-                                                        background: estaLleno ? '#333' : (GAME_CONFIG[torneo.game]?.color || '#8EDB15'),
-                                                        cursor: estaLleno ? 'not-allowed' : 'pointer',
-                                                        color: estaLleno ? '#666' : '#000'
+                                                    onClick={() => {
+                                                        if (estaLleno) return;
+                                                        if (needsRiot(torneo) && !hasRiotLinked) {
+                                                            notify('danger', 'Riot requerido', 'Debes vincular tu cuenta Riot en Settings para inscribirte.');
+                                                            navigate('/settings');
+                                                            return;
+                                                        }
+                                                        goToRegistration(torneo);
                                                     }}
+                                                    style={{
+                                                        background: (estaLleno || (needsRiot(torneo) && !hasRiotLinked)) ? '#333' : (GAME_CONFIG[torneo.game]?.color || '#8EDB15'),
+                                                        cursor: (estaLleno || (needsRiot(torneo) && !hasRiotLinked)) ? 'not-allowed' : 'pointer',
+                                                        color: (estaLleno || (needsRiot(torneo) && !hasRiotLinked)) ? '#666' : '#000'
+                                                    }}
+                                                    disabled={estaLleno || (needsRiot(torneo) && !hasRiotLinked)}
                                                 >
-                                                    {estaLleno ? 'Cerrado' : 'Inscribirse'}
+                                                    {estaLleno ? 'Cerrado' : (needsRiot(torneo) && !hasRiotLinked) ? 'Riot requerido' : 'Inscribirse'}
                                                 </button>
                                             </div>
                                         </div>

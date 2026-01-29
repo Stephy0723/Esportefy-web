@@ -19,6 +19,11 @@ const Team = () => {
     const [activeTab, setActiveTab] = useState('all'); 
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [isPreviewEditing, setIsPreviewEditing] = useState(false);
+    const [previewForm, setPreviewForm] = useState({});
+    const storedUser = localStorage.getItem('esportefyUser');
+    const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
     // --- EFECTO DE CARGA ---
     useEffect(() => {
@@ -124,9 +129,13 @@ const filteredTeams = teams.filter(team => {
                     <div className="teams-grid-pro">
                         {filteredTeams.map(team => {
                             const config = getTeamConfig(team.teamLevel);
+                            const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+                            const startersFilled = starters.filter(p => p && p.nickname).length;
+                            const startersTotal = starters.length || team.maxMembers || 0;
+                            const isComplete = startersTotal > 0 && startersFilled >= startersTotal;
                             return (
                                 <div key={team._id} className={`team-card-banner ${config.styleClass}`} 
-                                     onClick={() => { setSelectedTeam(team); setIsViewModalOpen(true); }}>
+                                     onClick={() => { setSelectedTeam(team); setIsPreviewOpen(true); }}>
                                     <div className="card-bg-glow"></div>
                                     <div className="card-top-row">
                                         <div className="team-identity">
@@ -136,6 +145,7 @@ const filteredTeams = teams.filter(team => {
                                             <div className="team-texts">
                                                 <h3>{team.name}</h3>
                                                 <span className="game-label">{team.game}</span>
+                                                <span className="team-category-label">{team.category || 'Sin categoría'}</span>
                                             </div>
                                         </div>
                                         <div className="rank-badge">{config.icon}</div>
@@ -154,7 +164,19 @@ const filteredTeams = teams.filter(team => {
 
                                     <div className="card-footer-row">
                                         <span className="coach-label">COACH: {team.roster?.coach?.nickname || "Sin asignar"}</span>
-                                        <button className="btn-view-mini">EXPEDIENTE</button>
+                                        <span className={`roster-status ${isComplete ? 'complete' : 'incomplete'}`}>
+                                            Roster {startersFilled}/{startersTotal || startersFilled}
+                                        </span>
+                                        <button
+                                            className="btn-view-mini"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedTeam(team);
+                                                setIsViewModalOpen(true);
+                                            }}
+                                        >
+                                            Unirse
+                                        </button>
                                     </div>
                                 </div>
                             );
@@ -202,8 +224,138 @@ const filteredTeams = teams.filter(team => {
                 <ViewTeamModal 
                     isOpen={isViewModalOpen} 
                     onClose={() => setIsViewModalOpen(false)} 
-                    team={selectedTeam} 
+                    team={selectedTeam}
+                    currentUser={currentUser}
+                    onTeamUpdated={(updated) => {
+                        setSelectedTeam(updated);
+                        setTeams((prev) => prev.map(t => String(t._id) === String(updated._id) ? updated : t));
+                    }}
                 />
+            )}
+
+            {selectedTeam && isPreviewOpen && (
+                <div className="modal-overlay" onClick={() => setIsPreviewOpen(false)}>
+                    <div className="modal-content-dark" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header-text">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2>{selectedTeam.name}</h2>
+                                <button className="btn-close-x" onClick={() => setIsPreviewOpen(false)}>&times;</button>
+                            </div>
+                            <p className="team-game-tag">{selectedTeam.game?.toUpperCase() || 'SIN JUEGO'}</p>
+                        </div>
+
+                        <div className="team-info-body">
+                            <div className="info-section">
+                                <label>Categoría</label>
+                                {isPreviewEditing ? (
+                                    <input
+                                        className="preview-input"
+                                        value={previewForm.category || ''}
+                                        onChange={(e) => setPreviewForm({ ...previewForm, category: e.target.value })}
+                                    />
+                                ) : (
+                                    <p>{selectedTeam.category || 'Sin categoría'}</p>
+                                )}
+                            </div>
+                            <div className="info-section">
+                                <label>País / Región</label>
+                                {isPreviewEditing ? (
+                                    <input
+                                        className="preview-input"
+                                        value={previewForm.teamCountry || ''}
+                                        onChange={(e) => setPreviewForm({ ...previewForm, teamCountry: e.target.value })}
+                                    />
+                                ) : (
+                                    <p>{selectedTeam.teamCountry || 'No definido'}</p>
+                                )}
+                            </div>
+                            <div className="info-section">
+                                <label>Nivel</label>
+                                {isPreviewEditing ? (
+                                    <input
+                                        className="preview-input"
+                                        value={previewForm.teamLevel || ''}
+                                        onChange={(e) => setPreviewForm({ ...previewForm, teamLevel: e.target.value })}
+                                    />
+                                ) : (
+                                    <p>{selectedTeam.teamLevel || 'No definido'}</p>
+                                )}
+                            </div>
+                            <div className="info-section">
+                                <label>Roster</label>
+                                <div className="members-scroll-list">
+                                    {(selectedTeam.roster?.starters || []).map((p, i) => (
+                                        <div key={`p-${i}`} className="member-row-item">
+                                            <div className="member-avatar">
+                                                <i className='bx bxs-user-circle'></i>
+                                            </div>
+                                            <div className="member-info">
+                                                <span className="member-name">{p?.nickname || 'Vacante'}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button className="btn-primary-small" onClick={() => setIsPreviewOpen(false)}>CERRAR</button>
+                            {(currentUser?.isAdmin || String(selectedTeam.captain?._id || selectedTeam.captain) === String(currentUser?._id)) && (
+                                <>
+                                    <button
+                                        className="btn-secondary-small"
+                                        onClick={async () => {
+                                            if (!isPreviewEditing) {
+                                                setPreviewForm({
+                                                    category: selectedTeam.category || '',
+                                                    teamCountry: selectedTeam.teamCountry || '',
+                                                    teamLevel: selectedTeam.teamLevel || ''
+                                                });
+                                                setIsPreviewEditing(true);
+                                                return;
+                                            }
+                                            try {
+                                                const token = localStorage.getItem('token');
+                                                const res = await axios.patch(
+                                                    `http://localhost:4000/api/teams/${selectedTeam._id}`,
+                                                    previewForm,
+                                                    { headers: { Authorization: `Bearer ${token}` } }
+                                                );
+                                                const updated = res.data.team;
+                                                setSelectedTeam(updated);
+                                                setTeams((prev) => prev.map(t => String(t._id) === String(updated._id) ? updated : t));
+                                                setIsPreviewEditing(false);
+                                            } catch (err) {
+                                                notify('danger', 'Error', 'No se pudo guardar el equipo');
+                                            }
+                                        }}
+                                    >
+                                        {isPreviewEditing ? 'Guardar' : 'Editar'}
+                                    </button>
+                                    <button
+                                        className="btn-danger-action"
+                                        onClick={async () => {
+                                            const ok = window.confirm('¿Eliminar este equipo?');
+                                            if (!ok) return;
+                                            try {
+                                                const token = localStorage.getItem('token');
+                                                await axios.delete(`http://localhost:4000/api/teams/${selectedTeam._id}`, {
+                                                    headers: { Authorization: `Bearer ${token}` }
+                                                });
+                                                setTeams((prev) => prev.filter(t => String(t._id) !== String(selectedTeam._id)));
+                                                setIsPreviewOpen(false);
+                                            } catch (err) {
+                                                notify('danger', 'Error', 'No se pudo eliminar el equipo');
+                                            }
+                                        }}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
