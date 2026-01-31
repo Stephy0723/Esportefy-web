@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { esportsCatalog } from '../../../data/esportsCatalog.jsx';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -11,24 +12,131 @@ const ROLE_NAMES = {
     "Free Fire": ["Rusher", "Support", "Sniper", "IGL"]
 };
 
+const RIOT_GAMES = new Set([
+    'Valorant',
+    'League of Legends',
+    'Wild Rift',
+    'Teamfight Tactics',
+    'Legends of Runeterra'
+]);
+
+const REGION_OPTIONS = [
+    "LAN",
+    "LAS",
+    "NA",
+    "BR",
+    "EUW",
+    "EUNE",
+    "TR",
+    "RU",
+    "OCE",
+    "KR",
+    "JP",
+    "PH",
+    "SG",
+    "TH",
+    "TW",
+    "VN",
+    "LATAM",
+    "GLOBAL"
+];
+
 const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) => {
     if (!isOpen || !team) return null;
+
+    const normalizeGame = (value) => String(value || '').trim().toLowerCase();
+    const isRiotGame = (game) => RIOT_GAMES.has(String(game || '').trim());
+    const getGameRules = (game) => {
+        const target = normalizeGame(game);
+        if (!target) return null;
+        const cats = Object.values(esportsCatalog || {});
+        for (const cat of cats) {
+            if (!cat) continue;
+            for (const [name, rules] of Object.entries(cat)) {
+                if (normalizeGame(name) === target) return rules;
+            }
+        }
+        return null;
+    };
 
     const gameLabel = team.game ? team.game.toUpperCase() : 'SIN JUEGO';
     const description = team.description || team.slogan || "Este equipo aún no tiene una descripción.";
     const membersRaw = Array.isArray(team.members) ? team.members : [];
     const rosterStarters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
     const rosterSubs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
-    const rosterRaw = membersRaw.length ? membersRaw : [...rosterStarters, ...rosterSubs];
-    const members = rosterRaw.map((m, i) => ({
-        id: m?._id || m?.id || `${i}`,
-        name: m?.fullName || m?.nickname || m?.email || (typeof m === 'string' ? m : 'Jugador'),
-    }));
+    const rosterEntries = (() => {
+        const list = [];
+        if (membersRaw.length) {
+            membersRaw.forEach((m, i) => {
+                list.push({
+                    id: m?._id || m?.id || `${i}`,
+                    name: m?.fullName || m?.nickname || m?.email || (typeof m === 'string' ? m : 'Jugador'),
+                    role: m?.role || '',
+                    userId: m?.user || m?._id || null,
+                    slotType: 'starters',
+                    slotIndex: i
+                });
+            });
+            return list;
+        }
+        rosterStarters.forEach((m, i) => {
+            if (!m) return;
+            list.push({
+                id: m?._id || `${i}`,
+                name: m?.fullName || m?.nickname || m?.email || 'Jugador',
+                role: m?.role || '',
+                userId: m?.user || null,
+                slotType: 'starters',
+                slotIndex: i
+            });
+        });
+        rosterSubs.forEach((m, i) => {
+            if (!m) return;
+            list.push({
+                id: m?._id || `s-${i}`,
+                name: m?.fullName || m?.nickname || m?.email || 'Jugador',
+                role: m?.role || '',
+                userId: m?.user || null,
+                slotType: 'subs',
+                slotIndex: i
+            });
+        });
+        if (team.roster?.coach) {
+            const c = team.roster.coach;
+            list.push({
+                id: c?._id || 'coach',
+                name: c?.fullName || c?.nickname || c?.email || 'Coach',
+                role: c?.role || 'Coach',
+                userId: c?.user || null,
+                slotType: 'coach',
+                slotIndex: 0
+            });
+        }
+        return list;
+    })();
+    const members = rosterEntries;
     const captainId = team.captain?._id || team.captain;
     const isCaptain = currentUser?._id && String(captainId) === String(currentUser._id);
+    const isMember = (() => {
+        if (!currentUser?._id) return false;
+        const uid = String(currentUser._id);
+        const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+        const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+        const inStarters = starters.some(p => String(p?.user) === uid);
+        const inSubs = subs.some(p => String(p?.user) === uid);
+        const inCoach = team.roster?.coach && String(team.roster.coach.user) === uid;
+        return inStarters || inSubs || inCoach;
+    })();
 
-    const starterSlots = Array.isArray(team.roster?.starters) ? team.roster.starters.length : 0;
-    const subSlots = Array.isArray(team.roster?.subs) ? team.roster.subs.length : 0;
+    const rules = getGameRules(team.game);
+    const maxStarters = Number(team.maxMembers);
+    const maxSubs = Number(team.maxSubstitutes);
+    const starterSlots = Number.isFinite(maxStarters) && maxStarters > 0
+        ? maxStarters
+        : (Number.isFinite(rules?.maxPlayers) ? rules.maxPlayers : (Array.isArray(team.roster?.starters) ? team.roster.starters.length : 0));
+    const subSlots = Number.isFinite(maxSubs) && maxSubs > 0
+        ? maxSubs
+        : (Number.isFinite(rules?.maxSubs) ? rules.maxSubs : (Array.isArray(team.roster?.subs) ? team.roster.subs.length : 0));
     const [inviteCode, setInviteCode] = useState('');
     const [slotType, setSlotType] = useState('starters');
     const [slotIndex, setSlotIndex] = useState(0);
@@ -36,16 +144,56 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
     const [submitting, setSubmitting] = useState(false);
 
     const pendingRequests = useMemo(() => {
-        const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
-        const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
-        return (team.joinRequests || []).filter(r => {
-            if (r.status !== 'pending') return false;
-            if (r.slotType === 'coach') return !team.roster?.coach;
-            if (r.slotType === 'starters') return !starters[r.slotIndex];
-            if (r.slotType === 'subs') return !subs[r.slotIndex];
-            return true;
-        });
-    }, [team.joinRequests, team.roster]);
+        return (team.joinRequests || []).filter(r => r.status === 'pending');
+    }, [team.joinRequests]);
+
+    const mapRiotRegion = (raw) => {
+        const value = String(raw || '').toLowerCase().trim();
+        const map = {
+            la1: 'LAN',
+            la2: 'LAS',
+            na1: 'NA',
+            br1: 'BR',
+            euw1: 'EUW',
+            eun1: 'EUNE',
+            tr1: 'TR',
+            ru: 'RU',
+            oc1: 'OCE',
+            kr: 'KR',
+            jp1: 'JP',
+            ph2: 'PH',
+            sg2: 'SG',
+            th2: 'TH',
+            tw2: 'TW',
+            vn2: 'VN',
+            na: 'NA',
+            br: 'BR',
+            latam: 'LATAM',
+            americas: 'LATAM',
+            eu: 'EUW'
+        };
+        return map[value] || '';
+    };
+
+    useEffect(() => {
+        if (!isRiotGame(team.game)) return;
+        if (isCaptain) return;
+        if (!currentUser?.connections?.riot?.verified) return;
+        const gameName = currentUser.connections.riot.gameName || '';
+        const tagLine = currentUser.connections.riot.tagLine || '';
+        const regionRaw =
+            currentUser?.gameProfiles?.lol?.platformRegion ||
+            currentUser?.gameProfiles?.valorant?.shard ||
+            currentUser?.connections?.riot?.accountRegion ||
+            '';
+        const region = mapRiotRegion(regionRaw);
+        setPlayer((prev) => ({
+            ...prev,
+            nickname: prev.nickname || gameName,
+            gameId: prev.gameId || tagLine,
+            region: prev.region || region
+        }));
+    }, [team.game, isCaptain, currentUser]);
 
     const handleJoin = async (e) => {
         e.preventDefault();
@@ -68,6 +216,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                 );
                 if (onTeamUpdated) onTeamUpdated(res.data.team);
                 alert('Te uniste al equipo.');
+                window.dispatchEvent(new Event('user-update'));
             } else {
                 await axios.post(
                     `http://localhost:4000/api/teams/${team._id}/requests`,
@@ -106,6 +255,64 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
         }
     };
 
+    const handleAddMemberDirect = async (e) => {
+        e.preventDefault();
+        if (!player.nickname) return alert('Nickname requerido');
+        try {
+            setSubmitting(true);
+            const token = localStorage.getItem('token');
+            if (!token) return alert('Debes iniciar sesión');
+            const res = await axios.post(
+                `http://localhost:4000/api/teams/${team._id}/roster`,
+                { slotType, slotIndex, player },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (onTeamUpdated) onTeamUpdated(res.data.team);
+            alert('Jugador agregado.');
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error al agregar jugador');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleLeaveTeam = async () => {
+        const ok = window.confirm('¿Seguro que quieres salir del equipo?');
+        if (!ok) return;
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return alert('Debes iniciar sesión');
+            const res = await axios.post(
+                `http://localhost:4000/api/teams/leave/${team._id}`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (onTeamUpdated && res.data?.team) onTeamUpdated(res.data.team);
+            alert('Saliste del equipo.');
+            window.dispatchEvent(new Event('user-update'));
+            onClose();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error al salir del equipo');
+        }
+    };
+
+    const handleRemoveMember = async (entry) => {
+        const ok = window.confirm('¿Seguro que quieres remover a este jugador?');
+        if (!ok) return;
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return alert('Debes iniciar sesión');
+            const res = await axios.patch(
+                `http://localhost:4000/api/teams/${team._id}/roster/remove`,
+                { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (onTeamUpdated) onTeamUpdated(res.data.team);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error al remover jugador');
+        }
+    };
+
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content-dark" onClick={(e) => e.stopPropagation()}>
@@ -133,10 +340,16 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                                     </div>
                                     <div className="member-info">
                                         <span className="member-name">{member.name}</span>
-                                        {captainId && String(captainId) === String(member.id) && (
+                                        {member.role && <span className="role-badge">{member.role}</span>}
+                                        {member.userId && captainId && String(captainId) === String(member.userId) && (
                                             <span className="captain-badge">CAPITÁN</span>
                                         )}
                                     </div>
+                                    {isCaptain && (!member.userId || String(member.userId) !== String(captainId)) && (
+                                        <button className="btn-secondary-small" onClick={() => handleRemoveMember(member)}>
+                                            Sacar
+                                        </button>
+                                    )}
                                 </div>
                             )) : (
                                 <div className="member-row-item">
@@ -148,87 +361,153 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                         </div>
                     </div>
 
-                    <div className="info-section">
-                        <label>Unirse al equipo</label>
-                        <form onSubmit={handleJoin} className="team-join-form">
-                            <input
-                                type="text"
-                                placeholder="Código de invitación (opcional)"
-                                value={inviteCode}
-                                onChange={(e) => setInviteCode(e.target.value)}
-                            />
-                            <div className="join-row">
-                                <select value={slotType} onChange={(e) => setSlotType(e.target.value)}>
-                                    <option value="starters">Starter</option>
-                                    <option value="subs">Suplente</option>
-                                    <option value="coach">Coach</option>
-                                </select>
-                                {(slotType === 'starters' || slotType === 'subs') && (
-                                    <select value={slotIndex} onChange={(e) => setSlotIndex(Number(e.target.value))}>
-                                        {(slotType === 'starters' ? Array.from({ length: starterSlots }) : Array.from({ length: subSlots }))
-                                            .map((_, i) => {
-                                                const current = slotType === 'starters' ? team.roster?.starters?.[i] : team.roster?.subs?.[i];
-                                                const roleLabel = current?.role || current?.nickname || `Rol ${i + 1}`;
-                                                return (
-                                                    <option key={i} value={i} disabled={Boolean(current)}>
-                                                        {roleLabel}{current ? ' (ocupado)' : ''}
-                                                    </option>
-                                                );
-                                            })}
+                    {!isMember && (
+                        <div className="info-section">
+                            <label>Unirse al equipo</label>
+                            <form onSubmit={handleJoin} className="team-join-form">
+                                <input
+                                    type="text"
+                                    placeholder="Código de invitación (opcional)"
+                                    value={inviteCode}
+                                    onChange={(e) => setInviteCode(e.target.value)}
+                                />
+                                <div className="join-row">
+                                    <select value={slotType} onChange={(e) => setSlotType(e.target.value)}>
+                                        <option value="starters">Starter</option>
+                                        <option value="subs">Suplente</option>
+                                        <option value="coach">Coach</option>
                                     </select>
-                                )}
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Nickname"
-                                value={player.nickname}
-                                onChange={(e) => setPlayer({ ...player, nickname: e.target.value })}
-                                required
-                            />
-                            <input
-                                type="text"
-                                placeholder="Game ID"
-                                value={player.gameId}
-                                onChange={(e) => setPlayer({ ...player, gameId: e.target.value })}
-                            />
-                            <select
-                                value={player.region}
-                                onChange={(e) => setPlayer({ ...player, region: e.target.value })}
-                            >
-                                <option value="">Selecciona región</option>
-                                <option value="NA">NA</option>
-                                <option value="LATAM">LATAM</option>
-                                <option value="BR">BR</option>
-                                <option value="EUW">EUW</option>
-                                <option value="EUNE">EUNE</option>
-                                <option value="KR">KR</option>
-                                <option value="JP">JP</option>
-                                <option value="OCE">OCE</option>
-                                <option value="SEA">SEA</option>
-                            </select>
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                value={player.email}
-                                onChange={(e) => setPlayer({ ...player, email: e.target.value })}
-                            />
-                            <select
-                                value={player.role}
-                                onChange={(e) => setPlayer({ ...player, role: e.target.value })}
-                            >
-                                <option value="">Selecciona rol</option>
-                                {(ROLE_NAMES[team.game] || []).map((role) => (
-                                    <option key={role} value={role}>{role}</option>
-                                ))}
-                                <option value="Suplente">Suplente</option>
-                                <option value="Coach">Coach</option>
-                            </select>
-                            <button type="submit" className="btn-primary-small" disabled={submitting}>
-                                {submitting ? 'Enviando...' : (inviteCode.trim() ? 'Unirme' : 'Solicitar')}
-                            </button>
-                        </form>
-                    </div>
+                                    {(slotType === 'starters' || slotType === 'subs') && (
+                                        <select value={slotIndex} onChange={(e) => setSlotIndex(Number(e.target.value))}>
+                                            {(slotType === 'starters' ? Array.from({ length: starterSlots }) : Array.from({ length: subSlots }))
+                                                .map((_, i) => {
+                                                    const current = slotType === 'starters' ? team.roster?.starters?.[i] : team.roster?.subs?.[i];
+                                                    const roleLabel = current?.role || current?.nickname || `Rol ${i + 1}`;
+                                                    return (
+                                                        <option key={i} value={i} disabled={Boolean(current)}>
+                                                            {roleLabel}{current ? ' (ocupado)' : ''}
+                                                        </option>
+                                                    );
+                                                })}
+                                        </select>
+                                    )}
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Nickname"
+                                    value={player.nickname}
+                                    onChange={(e) => setPlayer({ ...player, nickname: e.target.value })}
+                                    required
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Game ID"
+                                    value={player.gameId}
+                                    onChange={(e) => setPlayer({ ...player, gameId: e.target.value })}
+                                />
+                                <select
+                                    value={player.region}
+                                    onChange={(e) => setPlayer({ ...player, region: e.target.value })}
+                                >
+                                    <option value="">Selecciona región</option>
+                                    {REGION_OPTIONS.map((r) => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    value={player.email}
+                                    onChange={(e) => setPlayer({ ...player, email: e.target.value })}
+                                />
+                                <select
+                                    value={player.role}
+                                    onChange={(e) => setPlayer({ ...player, role: e.target.value })}
+                                >
+                                    <option value="">Selecciona rol</option>
+                                    {(ROLE_NAMES[team.game] || []).map((role) => (
+                                        <option key={role} value={role}>{role}</option>
+                                    ))}
+                                    <option value="Suplente">Suplente</option>
+                                    <option value="Coach">Coach</option>
+                                </select>
+                                <button type="submit" className="btn-primary-small" disabled={submitting}>
+                                    {submitting ? 'Enviando...' : (inviteCode.trim() ? 'Unirme' : 'Solicitar')}
+                                </button>
+                            </form>
+                        </div>
+                    )}
 
+                    {isCaptain && (
+                        <div className="info-section">
+                            <label>Gestionar equipo</label>
+                            <form onSubmit={handleAddMemberDirect} className="team-join-form">
+                                <div className="join-row">
+                                    <select value={slotType} onChange={(e) => setSlotType(e.target.value)}>
+                                        <option value="starters">Starter</option>
+                                        <option value="subs">Suplente</option>
+                                        <option value="coach">Coach</option>
+                                    </select>
+                                    {(slotType === 'starters' || slotType === 'subs') && (
+                                        <select value={slotIndex} onChange={(e) => setSlotIndex(Number(e.target.value))}>
+                                            {(slotType === 'starters' ? Array.from({ length: starterSlots }) : Array.from({ length: subSlots }))
+                                                .map((_, i) => {
+                                                    const current = slotType === 'starters' ? team.roster?.starters?.[i] : team.roster?.subs?.[i];
+                                                    const roleLabel = current?.role || current?.nickname || `Rol ${i + 1}`;
+                                                    return (
+                                                        <option key={i} value={i} disabled={Boolean(current)}>
+                                                            {roleLabel}{current ? ' (ocupado)' : ''}
+                                                        </option>
+                                                    );
+                                                })}
+                                        </select>
+                                    )}
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Nickname"
+                                    value={player.nickname}
+                                    onChange={(e) => setPlayer({ ...player, nickname: e.target.value })}
+                                    required
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Game ID"
+                                    value={player.gameId}
+                                    onChange={(e) => setPlayer({ ...player, gameId: e.target.value })}
+                                />
+                                <select
+                                    value={player.region}
+                                    onChange={(e) => setPlayer({ ...player, region: e.target.value })}
+                                >
+                                    <option value="">Selecciona región</option>
+                                    {REGION_OPTIONS.map((r) => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    value={player.email}
+                                    onChange={(e) => setPlayer({ ...player, email: e.target.value })}
+                                />
+                                <select
+                                    value={player.role}
+                                    onChange={(e) => setPlayer({ ...player, role: e.target.value })}
+                                >
+                                    <option value="">Selecciona rol</option>
+                                    {(ROLE_NAMES[team.game] || []).map((role) => (
+                                        <option key={role} value={role}>{role}</option>
+                                    ))}
+                                    <option value="Suplente">Suplente</option>
+                                    <option value="Coach">Coach</option>
+                                </select>
+                                <button type="submit" className="btn-primary-small" disabled={submitting}>
+                                    {submitting ? 'Guardando...' : 'Agregar jugador'}
+                                </button>
+                            </form>
+                        </div>
+                    )}
                     {isCaptain && pendingRequests.length > 0 && (
                         <div className="info-section">
                             <label>Solicitudes pendientes</label>
@@ -252,10 +531,16 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                             </div>
                         </div>
                     )}
+
                 </div>
 
                 <div className="modal-actions">
                     <button className="btn-primary-small" onClick={onClose}>CERRAR</button>
+                    {isMember && !isCaptain && (
+                        <button className="btn-secondary-small" onClick={handleLeaveTeam}>
+                            Salir del equipo
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

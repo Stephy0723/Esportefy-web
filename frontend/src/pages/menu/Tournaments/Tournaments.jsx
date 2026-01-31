@@ -82,6 +82,12 @@ const toAssetUrl = (path) => {
   return `${BACKEND_URL}/${path.replace(/^\//, '')}`;
 };
 
+const getInitials = (name) => {
+  const parts = String(name || '').trim().split(' ').filter(Boolean);
+  if (!parts.length) return 'EQ';
+  return parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
+};
+
 const formatTournamentFromApi = (t) => ({
   id: t._id,
   game: t.game,
@@ -148,6 +154,23 @@ const Tournaments = () => {
   const [selectedTeamIdForPreview, setSelectedTeamIdForPreview] = useState(null);
   const [selectedTeamPreview, setSelectedTeamPreview] = useState(null);
   const rightPanelRef = useRef(null);
+  const [rosterTeamIds, setRosterTeamIds] = useState([]);
+
+  const userTeamIds = Array.isArray(user?.teams)
+    ? user.teams.map((t) => String(t?._id || t))
+    : [];
+  const effectiveTeamIds = userTeamIds.length ? userTeamIds : rosterTeamIds;
+
+  const hasRegisteredTeam = (tournament) => {
+    if (!tournament) return false;
+    const regs = Array.isArray(tournament.registrations) ? tournament.registrations : [];
+    const uid = user?._id || user?.id;
+    return regs.some((r) => {
+      if (uid && String(r.captain) === String(uid)) return true;
+      if (r.teamId && effectiveTeamIds.includes(String(r.teamId))) return true;
+      return false;
+    });
+  };
 
   // Helper para obtener imagen segura
   const getGameImage = (gameName) => {
@@ -228,6 +251,31 @@ useEffect(() => {
     fetchTournaments();
 }, []);
 
+  useEffect(() => {
+    const loadRosterTeams = async () => {
+      if (!user?._id) return;
+      if (userTeamIds.length > 0) return;
+      try {
+        const res = await axios.get('http://localhost:4000/api/teams');
+        const uid = String(user._id);
+        const ids = (res.data || [])
+          .filter((t) => {
+            const starters = Array.isArray(t.roster?.starters) ? t.roster.starters : [];
+            const subs = Array.isArray(t.roster?.subs) ? t.roster.subs : [];
+            const coach = t.roster?.coach;
+            return starters.some(p => String(p?.user) === uid) ||
+              subs.some(p => String(p?.user) === uid) ||
+              (coach && String(coach.user) === uid);
+          })
+          .map((t) => String(t._id));
+        setRosterTeamIds(ids);
+      } catch (_) {
+        // no bloquear
+      }
+    };
+    loadRosterTeams();
+  }, [user?._id, userTeamIds.length]);
+
   const openTournamentDetails = async (torneo) => {
     setDetailLoading(true);
     setSelectedTournament({ ...torneo });
@@ -272,6 +320,8 @@ useEffect(() => {
     if (!user) return false;
     return user?.isAdmin === true || String(torneo?.organizerId) === String(user?._id);
   };
+
+  const canSeeTeamIds = (torneo) => canManageTournament(torneo);
 
   const goToEditTournament = (torneo) => {
     navigate('/create-tournament', { state: { editTournament: torneo } });
@@ -492,7 +542,22 @@ useEffect(() => {
                                     {selectedTournament.registrations.map((r, idx) => (
                                         <div key={r._id || `${r.teamName}-${idx}`} className="registration-row">
                                             <div className="registration-main">
-                                                <strong>{r.teamName}</strong>
+                                                <div className="team-row">
+                                                    <div className="team-logo">
+                                                        {r.logoUrl
+                                                            ? <img src={toAssetUrl(r.logoUrl)} alt={r.teamName || 'Equipo'} />
+                                                            : <span>{getInitials(r.teamName)}</span>
+                                                        }
+                                                    </div>
+                                                    <div className="team-text">
+                                                        <strong>{r.teamName}</strong>
+                                                        {(r.teamMeta?.category || r.teamMeta?.teamLevel) && (
+                                                            <span className="team-sub">
+                                                                {r.teamMeta?.category || 'Sin categoría'} • {r.teamMeta?.teamLevel || 'Nivel N/A'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                                 {r.status && <span className={`reg-status ${r.status}`}>{r.status}</span>}
                                             </div>
                                             
@@ -514,32 +579,38 @@ useEffect(() => {
                                             {(r.teamMeta || r.teamId) && (
                                                 <div className="registration-meta">
                                                     {r.teamMeta?.category && <span>Categoría: {r.teamMeta.category}</span>}
+                                                    <br />
                                                     {r.teamMeta?.teamCountry && <span>País: {r.teamMeta.teamCountry}</span>}
+                                                    <br />
                                                     {r.teamMeta?.teamLevel && <span>Nivel: {r.teamMeta.teamLevel}</span>}
+                                                    <br />
                                                     {r.teamMeta?.coach && <span>Coach: {r.teamMeta.coach}</span>}
                                                 </div>
-                                            )}{canManageTournament(selectedTournament) && (
+                                            )}
+                                            {(canManageTournament(selectedTournament) || r.teamId) && (
                                                 <div className="registration-actions">
-                                                    <button
-                                                        type="button"
-                                                        className="reg-btn reject"
-                                                        onClick={() => removeRegistration(selectedTournament, r._id)}
-                                                    >
-                                                        Quitar equipo
-                                                    </button>
+                                                    
+                                                    {r.teamId && (
+                                                        <button
+                                                            type="button"
+                                                            className="reg-btn approve"
+                                                            onClick={() => openTeamPreview(r.teamId)}
+                                                        >
+                                                            Ver equipo
+                                                        </button>
+                                                    )}
+                                                    {canManageTournament(selectedTournament) && (
+                                                        <button
+                                                            type="button"
+                                                            className="reg-btn reject"
+                                                            onClick={() => removeRegistration(selectedTournament, r._id)}
+                                                        >
+                                                            Quitar equipo
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
-                                            {r.teamId && (
-                                                
-                                                <button
-                                                    type="button"
-                                                    className="reg-btn approve"
-                                                    onClick={() => openTeamPreview(r.teamId)}
-                                                >
-                                                    Ver equipo
-                                                </button>
-                                                
-                                            )}
+                                            
                                             {/* {canManageTournament(selectedTournament) && (
                                                 <div className="registration-actions">
                                                     <button
@@ -631,25 +702,30 @@ useEffect(() => {
                                     </button>
                                 </div>
                             )}
-                            <button 
-                                className="btn-primary-action" 
-                                onClick={() => {
-                                    if (needsRiot(selectedTournament) && !hasRiotLinked) {
-                                        notify('danger', 'Riot requerido', 'Debes vincular tu cuenta Riot en Settings para inscribirte.');
-                                        navigate('/settings');
-                                        return;
-                                    }
-                                    setSelectedTournament(null);
-                                    goToRegistration(selectedTournament);
-                                }}
-                                style={{
-                                    background: GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15',
-                                    boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color}40`
-                                }}
-                                disabled={needsRiot(selectedTournament) && !hasRiotLinked}
-                            >
-                                {detailLoading ? 'Cargando...' : 'Inscribirse Ahora'} <i className='bx bx-right-arrow-alt'></i>
-                            </button>
+                            
+                        </div>
+                        <div className="modal-actions-footer">
+                            {!hasRegisteredTeam(selectedTournament) && (
+                                <button 
+                                    className="btn-primary-action" 
+                                    onClick={() => {
+                                        if (needsRiot(selectedTournament) && !hasRiotLinked) {
+                                            notify('danger', 'Riot requerido', 'Debes vincular tu cuenta Riot en Settings para inscribirte.');
+                                            navigate('/settings');
+                                            return;
+                                        }
+                                        setSelectedTournament(null);
+                                        goToRegistration(selectedTournament);
+                                    }}
+                                    style={{
+                                        background: GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15',
+                                        boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color}40`
+                                    }}
+                                    disabled={needsRiot(selectedTournament) && !hasRiotLinked}
+                                >
+                                    {detailLoading ? 'Cargando...' : 'Inscribirse Ahora'} <i className='bx bx-right-arrow-alt'></i>
+                                </button>
+                            )}
                             {canManageTournament(selectedTournament) && (
                                 <button className="btn-danger-action" onClick={() => deleteTournament(selectedTournament)}>
                                     Eliminar
@@ -668,10 +744,20 @@ useEffect(() => {
                         <div className="overlay-dark"></div>
                         <button className="close-btn-round" onClick={() => setShowTeamPreview(false)}><i className='bx bx-x'></i></button>
                         <div className="banner-content">
-                            <h2>{selectedTeamPreview?.name || 'Equipo'}</h2>
-                            <div className="host-info">
-                                <span>Juego:</span>
-                                <strong style={{color: '#fff'}}>{selectedTeamPreview?.game || 'N/A'}</strong>
+                            <div className="team-brand">
+                                <div className="team-logo large">
+                                    {selectedTeamPreview?.logo
+                                        ? <img src={toAssetUrl(selectedTeamPreview.logo)} alt={selectedTeamPreview?.name || 'Equipo'} />
+                                        : <span>{getInitials(selectedTeamPreview?.name)}</span>
+                                    }
+                                </div>
+                                <div>
+                                    <h2>{selectedTeamPreview?.name || 'Equipo'}</h2>
+                                    <div className="host-info">
+                                        <span>Juego:</span>
+                                        <strong style={{color: '#fff'}}>{selectedTeamPreview?.game || 'N/A'}</strong>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -693,7 +779,10 @@ useEffect(() => {
                                             {p?.role && <span className="reg-status approved">{p.role}</span>}
                                         </div>
                                         <div className="registration-roster">
-                                            {p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} • {p?.region || 'Región: N/A'}{p?.riotId ? ` • Riot: ${p.riotId}` : ''}
+                                            {canSeeTeamIds(selectedTournament)
+                                                ? `${p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} • ${p?.region || 'Región: N/A'}${p?.riotId ? ` • Riot: ${p.riotId}` : ''}`
+                                                : `ID: Oculto • ${p?.region || 'Región: N/A'}`
+                                            }
                                         </div>
                                     </div>
                                 ))}
@@ -771,6 +860,9 @@ useEffect(() => {
                             filteredTournaments.map((torneo) => {
                                 const [ocupados, totales] = torneo.slots.split('/').map(Number);
                                 const estaLleno = ocupados >= totales;
+                                const hasTeam = userTeamIds.length > 0;
+                                const alreadyIn = hasRegisteredTeam(torneo);
+                                const canJoin = !estaLleno && hasTeam && !alreadyIn;
 
                                 return (
                                     <div key={torneo.id} className="tournament-card-pro">
@@ -809,26 +901,41 @@ useEffect(() => {
                                                 <button className="btn-details" onClick={() => openTournamentDetails(torneo)}>
                                                     <i className='bx bx-info-circle'></i> Ver Info
                                                 </button>
-                                                <button 
-                                                    className={`btn-join ${estaLleno ? 'disabled' : ''}`}
-                                                    onClick={() => {
-                                                        if (estaLleno) return;
-                                                        if (needsRiot(torneo) && !hasRiotLinked) {
-                                                            notify('danger', 'Riot requerido', 'Debes vincular tu cuenta Riot en Settings para inscribirte.');
-                                                            navigate('/settings');
-                                                            return;
-                                                        }
-                                                        goToRegistration(torneo);
-                                                    }}
-                                                    style={{
-                                                        background: (estaLleno || (needsRiot(torneo) && !hasRiotLinked)) ? '#333' : (GAME_CONFIG[torneo.game]?.color || '#8EDB15'),
-                                                        cursor: (estaLleno || (needsRiot(torneo) && !hasRiotLinked)) ? 'not-allowed' : 'pointer',
-                                                        color: (estaLleno || (needsRiot(torneo) && !hasRiotLinked)) ? '#666' : '#000'
-                                                    }}
-                                                    disabled={estaLleno || (needsRiot(torneo) && !hasRiotLinked)}
-                                                >
-                                                    {estaLleno ? 'Cerrado' : (needsRiot(torneo) && !hasRiotLinked) ? 'Riot requerido' : 'Inscribirse'}
-                                                </button>
+                                                {canJoin ? (
+                                                    <button 
+                                                        className="btn-join"
+                                                        onClick={() => {
+                                                            if (needsRiot(torneo) && !hasRiotLinked) {
+                                                                notify('danger', 'Riot requerido', 'Debes vincular tu cuenta Riot en Settings para inscribirte.');
+                                                                navigate('/settings');
+                                                                return;
+                                                            }
+                                                            goToRegistration(torneo);
+                                                        }}
+                                                        style={{
+                                                            background: GAME_CONFIG[torneo.game]?.color || '#8EDB15',
+                                                            cursor: 'pointer',
+                                                            color: '#000'
+                                                        }}
+                                                    >
+                                                        Inscribirse
+                                                    </button>
+                                                ) : (
+                                                    <button 
+                                                        className={`btn-join ${!hasTeam ? '' : 'disabled'}`}
+                                                        onClick={() => {
+                                                            if (!hasTeam) navigate('/create-team');
+                                                        }}
+                                                        style={{
+                                                            background: !hasTeam ? '#8EDB15' : '#333',
+                                                            cursor: !hasTeam ? 'pointer' : 'not-allowed',
+                                                            color: !hasTeam ? '#0b0f0c' : '#666'
+                                                        }}
+                                                        disabled={hasTeam || alreadyIn || estaLleno}
+                                                    >
+                                                        {estaLleno ? 'Cerrado' : alreadyIn ? 'Ya inscrito' : !hasTeam ? 'Crear equipo' : 'No disponible'}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 

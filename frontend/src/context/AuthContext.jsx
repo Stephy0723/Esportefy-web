@@ -50,6 +50,16 @@ export const AuthProvider = ({ children }) => {
         };
 
         checkAuth();
+
+        const handleUserUpdate = () => {
+            checkAuth();
+        };
+
+        window.addEventListener('user-update', handleUserUpdate);
+
+        return () => {
+            window.removeEventListener('user-update', handleUserUpdate);
+        };
     }, []);
 
     const login = (userData, token) => {

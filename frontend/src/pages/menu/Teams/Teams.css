@@ -404,6 +404,38 @@
     font-weight: 700;
 }
 
+.member-meta {
+    font-size: 0.65rem;
+    color: #8f95a3;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.logo-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-preview-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: grid;
+    place-items: center;
+    color: #9ca3af;
+    font-size: 0.7rem;
+    overflow: hidden;
+}
+
+.logo-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 .captain-badge {
     padding: 2px 8px;
     border-radius: 999px;
@@ -411,6 +443,15 @@
     font-weight: 800;
     background: rgba(0,230,118,0.15);
     color: #00e676;
+}
+
+.role-badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(79, 172, 254, 0.15);
+    color: #4facfe;
 }
 
 .modal-actions {

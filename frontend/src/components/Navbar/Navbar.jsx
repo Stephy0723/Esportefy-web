@@ -5,6 +5,7 @@ import './Navbar.css';
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [activeUser, setActiveUser] = useState(null);
+  const [hasUnread, setHasUnread] = useState(false);
   const navigate = useNavigate();
 
   // Función para leer el usuario del almacenamiento
@@ -27,18 +28,43 @@ const Navbar = () => {
       setScrolled(window.scrollY > 10);
     };
 
+    const checkNotifications = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setHasUnread(false);
+        return;
+      }
+      try {
+        const res = await fetch('http://localhost:4000/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const unread = Array.isArray(data) && data.some(n => n.status === 'unread');
+        setHasUnread(unread);
+      } catch (_) {
+        // no bloquear UI
+      }
+    };
+
     // 1. Chequeo inicial al cargar
     checkUser();
+    checkNotifications();
 
     // 2. Escuchar evento de scroll
     window.addEventListener('scroll', handleScroll);
     
     // 3. AGREGADO: Escuchar evento personalizado cuando alguien inicia sesión o se registra
     window.addEventListener('user-update', checkUser);
+    window.addEventListener('user-update', checkNotifications);
+
+    const notifTimer = setInterval(checkNotifications, 60000);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('user-update', checkUser); // Limpiar evento
+      window.removeEventListener('user-update', checkNotifications);
+      clearInterval(notifTimer);
     };
   }, []);
 
@@ -54,7 +80,7 @@ const Navbar = () => {
       <div className="navbar-container">
         
         {/* LOGO */}
-        <Link to="/" className="navbar-logo">
+        <Link to={activeUser ? "/dashboard" : "/"} className="navbar-logo">
           <i className='bx bx-joystick'></i>
           <span>ESPORTE<span className="highlight">FY</span></span>
         </Link>
@@ -69,7 +95,7 @@ const Navbar = () => {
         <div className="navbar-actions">
           <button className="notify-btn" onClick={() => navigate('/notifications')}>
             <i className='bx bx-bell'></i>
-            {activeUser && <span className="dot"></span>}
+            {activeUser && hasUnread && <span className="dot"></span>}
           </button>
 
           {activeUser ? (

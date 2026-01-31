@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import './Teams.css';
 import ViewTeamModal from './ViewTeamModal'; 
+import { useNotification } from '../../../context/NotificationContext';
 
 const Team = () => {
     const navigate = useNavigate();
+    const { addToast } = useNotification();
     
     // --- ESTADOS ---
     const [teams, setTeams] = useState([]);
@@ -22,8 +24,53 @@ const Team = () => {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [isPreviewEditing, setIsPreviewEditing] = useState(false);
     const [previewForm, setPreviewForm] = useState({});
+    const [logoFile, setLogoFile] = useState(null);
+    const [logoPreview, setLogoPreview] = useState(null);
     const storedUser = localStorage.getItem('esportefyUser');
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
+
+    const handleLogoChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setLogoFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoPreview(reader.result);
+        reader.readAsDataURL(file);
+    };
+
+    const isUserMember = (team) => {
+        if (!currentUser?._id || !team) return false;
+        const uid = String(currentUser._id);
+        const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+        const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+        const inStarters = starters.some(p => String(p?.user) === uid);
+        const inSubs = subs.some(p => String(p?.user) === uid);
+        const inCoach = team.roster?.coach && String(team.roster.coach.user) === uid;
+        return inStarters || inSubs || inCoach;
+    };
+
+    const getPendingRequests = (team) => {
+        if (!team) return [];
+        return (team.joinRequests || []).filter(r => r.status === 'pending');
+    };
+
+    const handleRequestAction = async (teamId, requestId, action) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return addToast('Debes iniciar sesión', 'error');
+            const res = await axios.patch(
+                `http://localhost:4000/api/teams/${teamId}/requests/${requestId}`,
+                { action },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (res.data?.team) {
+                setSelectedTeam(res.data.team);
+                setTeams((prev) => prev.map(t => String(t._id) === String(res.data.team._id) ? res.data.team : t));
+            }
+        } catch (err) {
+            addToast(err.response?.data?.message || 'Error al gestionar solicitud', 'error');
+        }
+    };
 
     // --- EFECTO DE CARGA ---
     useEffect(() => {
@@ -131,8 +178,9 @@ const filteredTeams = teams.filter(team => {
                             const config = getTeamConfig(team.teamLevel);
                             const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
                             const startersFilled = starters.filter(p => p && p.nickname).length;
-                            const startersTotal = starters.length || team.maxMembers || 0;
+                            const startersTotal = team.maxMembers || starters.length || 0;
                             const isComplete = startersTotal > 0 && startersFilled >= startersTotal;
+                            const isMember = isUserMember(team);
                             return (
                                 <div key={team._id} className={`team-card-banner ${config.styleClass}`} 
                                      onClick={() => { setSelectedTeam(team); setIsPreviewOpen(true); }}>
@@ -175,7 +223,7 @@ const filteredTeams = teams.filter(team => {
                                                 setIsViewModalOpen(true);
                                             }}
                                         >
-                                            Unirse
+                                            {isMember ? 'Ver' : 'Unirse'}
                                         </button>
                                     </div>
                                 </div>
@@ -281,9 +329,43 @@ const filteredTeams = teams.filter(team => {
                                     <p>{selectedTeam.teamLevel || 'No definido'}</p>
                                 )}
                             </div>
+                            {isPreviewEditing && (
+                                <div className="info-section">
+                                    <label>Logo del equipo</label>
+                                    <div className="logo-upload-row">
+                                        <div className="logo-preview-box">
+                                            {logoPreview || selectedTeam.logo ? (
+                                                <img src={logoPreview || selectedTeam.logo} alt="Logo equipo" />
+                                            ) : (
+                                                <span>Sin logo</span>
+                                            )}
+                                        </div>
+                                        <input type="file" accept="image/*" onChange={handleLogoChange} />
+                                    </div>
+                                </div>
+                            )}
                             <div className="info-section">
                                 <label>Roster</label>
                                 <div className="members-scroll-list">
+                                    {(() => {
+                                        const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
+                                        const captainFromRoster = (selectedTeam?.roster?.starters || []).find(p => String(p?.user) === String(captainId));
+                                        const captainName = selectedTeam?.captain?.fullName || captainFromRoster?.nickname || 'No definido';
+                                        const captainRole = captainFromRoster?.role || 'Capitán';
+                                        const captainRegion = captainFromRoster?.region || '';
+                                        return (
+                                            <div className="member-row-item">
+                                                <div className="member-avatar">
+                                                    <i className='bx bxs-crown'></i>
+                                                </div>
+                                                <div className="member-info">
+                                                    <span className="member-name">{captainName}</span>
+                                                    <span className="role-badge">{captainRole}</span>
+                                                    {captainRegion && <span className="member-meta">Región: {captainRegion}</span>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                     {(selectedTeam.roster?.starters || []).map((p, i) => (
                                         <div key={`p-${i}`} className="member-row-item">
                                             <div className="member-avatar">
@@ -291,12 +373,71 @@ const filteredTeams = teams.filter(team => {
                                             </div>
                                             <div className="member-info">
                                                 <span className="member-name">{p?.nickname || 'Vacante'}</span>
+                                                {p?.role && <span className="role-badge">{p.role}</span>}
+                                                {p?.region && <span className="member-meta">Región: {p.region}</span>}
                                             </div>
+                                            <span className="member-meta">Titular</span>
                                         </div>
                                     ))}
+                                    {(selectedTeam.roster?.subs || []).map((p, i) => (
+                                        <div key={`s-${i}`} className="member-row-item">
+                                            <div className="member-avatar">
+                                                <i className='bx bxs-user-voice'></i>
+                                            </div>
+                                            <div className="member-info">
+                                                <span className="member-name">{p?.nickname || 'Vacante'}</span>
+                                                {p?.role && <span className="role-badge">{p.role}</span>}
+                                                {p?.region && <span className="member-meta">Región: {p.region}</span>}
+                                            </div>
+                                            <span className="member-meta">Suplente</span>
+                                        </div>
+                                    ))}
+                                    {selectedTeam.roster?.coach && (
+                                        <div className="member-row-item">
+                                            <div className="member-avatar">
+                                                <i className='bx bxs-user-badge'></i>
+                                            </div>
+                                            <div className="member-info">
+                                                <span className="member-name">{selectedTeam.roster.coach?.nickname || 'Coach'}</span>
+                                                <span className="role-badge">{selectedTeam.roster.coach?.role || 'Coach'}</span>
+                                                {selectedTeam.roster.coach?.region && <span className="member-meta">Región: {selectedTeam.roster.coach.region}</span>}
+                                            </div>
+                                            <span className="member-meta">Coach</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
+
+                        {(() => {
+                            const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
+                            const isCaptain = currentUser?._id && String(captainId) === String(currentUser._id);
+                            const pendingRequests = getPendingRequests(selectedTeam);
+                            if (!isCaptain || pendingRequests.length === 0) return null;
+                            return (
+                                <div className="info-section">
+                                    <label>Solicitudes pendientes</label>
+                                    <div className="members-scroll-list">
+                                        {pendingRequests.map((r) => (
+                                            <div key={r._id} className="member-row-item">
+                                                <div className="member-info">
+                                                    <span className="member-name">{r.player?.nickname || 'Jugador'}</span>
+                                                    <span className="captain-badge">{r.player?.role || 'Rol'}</span>
+                                                </div>
+                                                <div className="request-actions">
+                                                    <button className="btn-primary-small" onClick={() => handleRequestAction(selectedTeam._id, r._id, 'approve')}>
+                                                        Aprobar
+                                                    </button>
+                                                    <button className="btn-secondary-small" onClick={() => handleRequestAction(selectedTeam._id, r._id, 'reject')}>
+                                                        Rechazar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         <div className="modal-actions">
                             <button className="btn-primary-small" onClick={() => setIsPreviewOpen(false)}>CERRAR</button>
@@ -311,22 +452,37 @@ const filteredTeams = teams.filter(team => {
                                                     teamCountry: selectedTeam.teamCountry || '',
                                                     teamLevel: selectedTeam.teamLevel || ''
                                                 });
+                                                setLogoFile(null);
+                                                setLogoPreview(null);
                                                 setIsPreviewEditing(true);
                                                 return;
                                             }
                                             try {
                                                 const token = localStorage.getItem('token');
+                                                let updated = selectedTeam;
                                                 const res = await axios.patch(
                                                     `http://localhost:4000/api/teams/${selectedTeam._id}`,
                                                     previewForm,
                                                     { headers: { Authorization: `Bearer ${token}` } }
                                                 );
-                                                const updated = res.data.team;
+                                                updated = res.data.team || updated;
+                                                if (logoFile) {
+                                                    const data = new FormData();
+                                                    data.append('logo', logoFile);
+                                                    const resLogo = await axios.patch(
+                                                        `http://localhost:4000/api/teams/${selectedTeam._id}/logo`,
+                                                        data,
+                                                        { headers: { Authorization: `Bearer ${token}` } }
+                                                    );
+                                                    updated = resLogo.data.team || updated;
+                                                }
                                                 setSelectedTeam(updated);
                                                 setTeams((prev) => prev.map(t => String(t._id) === String(updated._id) ? updated : t));
                                                 setIsPreviewEditing(false);
+                                                setLogoFile(null);
+                                                setLogoPreview(null);
                                             } catch (err) {
-                                                notify('danger', 'Error', 'No se pudo guardar el equipo');
+                                                addToast('No se pudo guardar el equipo', 'error');
                                             }
                                         }}
                                     >
@@ -345,7 +501,7 @@ const filteredTeams = teams.filter(team => {
                                                 setTeams((prev) => prev.filter(t => String(t._id) !== String(selectedTeam._id)));
                                                 setIsPreviewOpen(false);
                                             } catch (err) {
-                                                notify('danger', 'Error', 'No se pudo eliminar el equipo');
+                                                addToast('No se pudo eliminar el equipo', 'error');
                                             }
                                         }}
                                     >

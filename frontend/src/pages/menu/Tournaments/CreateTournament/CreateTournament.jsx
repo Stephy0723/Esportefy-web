@@ -10,7 +10,6 @@ import {
     FaServer, FaTrash, FaCheckCircle, FaStar, FaGift, FaTag, FaLink, FaImage, FaCheck
 } from 'react-icons/fa';
 import './CreateTournament.css';
-import { esportsCatalog } from '../../../../data/esportsCatalog.jsx';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
@@ -78,13 +77,6 @@ const CreateTournament = () => {
 
   useEffect(() => {
     if (!isEditMode) return;
-    if (!user) return;
-    const canEdit = user?.isAdmin === true || String(editTournament?.organizerId) === String(user?._id);
-    if (!canEdit) {
-      alert('No tienes permisos para editar este torneo.');
-      navigate('/tournaments');
-      return;
-    }
     const dateValue = editTournament?.dateRaw ? new Date(editTournament.dateRaw) : null;
     const dateIso = dateValue ? dateValue.toISOString().slice(0, 10) : '';
 
@@ -111,7 +103,7 @@ const CreateTournament = () => {
         : prev.sponsors,
       staff: editTournament.staff || prev.staff
     }));
-  }, [isEditMode, editTournament, user, navigate]);
+  }, [isEditMode, editTournament]);
 
   // --- 3. HANDLERS DE FORMULARIO Y ARCHIVOS ---
   const handleSubmit = async (e) => {
@@ -125,8 +117,6 @@ const CreateTournament = () => {
     data.append('title', tournament.title);
     data.append('description', tournament.description);
     data.append('game', tournament.game);
-    const categoryFromGame = Object.keys(esportsCatalog).find(cat => esportsCatalog[cat][tournament.game]);
-    if (categoryFromGame) data.append('category', categoryFromGame);
     data.append('modality', tournament.modality);
     data.append('date', tournament.date);
     data.append('time', tournament.time);
@@ -423,7 +413,7 @@ const CreateTournament = () => {
       <div className="custom-input-box" style={{ marginTop: '20px' }}>
         <label>Fecha y Hora de Inicio</label>
         <div style={{display: 'flex', gap: '10px'}}>
-             <input type="date" value={tournament.date} onChange={(e) => setTournament({...tournament, date: e.target.value})} />
+             <input type="date" min={new Date().toISOString().split('T')[0]} value={tournament.date} onChange={(e) => setTournament({...tournament, date: e.target.value})} />
             <input type="time" required value={tournament.time} onChange={(e) => setTournament({...tournament, time: e.target.value})} />
         </div>
       </div>
@@ -538,7 +528,8 @@ const CreateTournament = () => {
       <div className="custom-input-box">
         <label>Monto Total del Torneo</label>
         <input 
-          type="text" 
+          type="number"
+          min="0" 
           placeholder="Ej: 1000" 
           value={tournament.prizePool}
           onChange={(e) => setTournament({...tournament, prizePool: e.target.value})}
@@ -564,7 +555,8 @@ const CreateTournament = () => {
     <div className="prize-item gold">
       <label>🥇 1er Lugar</label>
       <input 
-        type="text" 
+        type="number"
+        min="0"
         placeholder="Monto" 
         value={tournament.prizesByRank.first}
         onChange={(e) => setTournament({
@@ -576,7 +568,8 @@ const CreateTournament = () => {
     <div className="prize-item silver">
       <label>🥈 2do Lugar</label>
       <input 
-        type="text" 
+        type="number"
+        min="0"
         placeholder="Monto" 
         value={tournament.prizesByRank.second}
         onChange={(e) => setTournament({
@@ -588,7 +581,8 @@ const CreateTournament = () => {
     <div className="prize-item bronze">
       <label>🥉 3er Lugar</label>
       <input 
-        type="text" 
+        type="number"
+        min="0"
         placeholder="Monto" 
         value={tournament.prizesByRank.third}
         onChange={(e) => setTournament({

@@ -11,6 +11,14 @@ const ROLE_NAMES = {
     "FIFA / EA FC": ["Player"],
     "Free Fire": ["Rusher", "Support", "Sniper", "IGL"]
 };
+
+const RIOT_GAMES = new Set([
+    'Valorant',
+    'League of Legends',
+    'Wild Rift',
+    'Teamfight Tactics',
+    'Legends of Runeterra'
+]);
 import fs from 'fs';
 
 // Función auxiliar para generar el código TOR-123456
@@ -92,6 +100,16 @@ export const createTournament = async (req, res) => {
 
         if (!data.maxSlots || data.maxSlots < 2) {
             return res.status(400).json({ message: 'El torneo debe tener al menos 2 cupos' });
+        }
+
+        const prizeValues = [
+            data?.prizesByRank?.first,
+            data?.prizesByRank?.second,
+            data?.prizesByRank?.third
+        ];
+        const hasNegative = prizeValues.some(v => Number(v) < 0);
+        if (hasNegative) {
+            return res.status(400).json({ message: 'Los premios no pueden ser negativos' });
         }
 
 
@@ -271,8 +289,9 @@ export const registerTeam = async (req, res) => {
             return res.status(400).json({ message: 'No hay cupos disponibles' });
         }
 
+        const requiresRiot = tournament.riotRequirements?.required === true || RIOT_GAMES.has(tournament.game);
         // Requisitos Riot (si aplica)
-        if (tournament.riotRequirements?.required === true) {
+        if (requiresRiot) {
             const user = await User.findById(req.userId).select('connections.riot gameProfiles.lol');
             if (!user?.connections?.riot?.verified) {
                 return res.status(400).json({ message: 'Debes vincular tu cuenta Riot para inscribirte' });
@@ -343,7 +362,7 @@ export const registerTeam = async (req, res) => {
             const riotMap = new Map(
                 riotUsers.map(u => [String(u._id), u.connections?.riot?.verified ? `${u.connections.riot.gameName}#${u.connections.riot.tagLine}` : ''])
             );
-            if (tournament.riotRequirements?.required === true) {
+            if (requiresRiot) {
                 const missing = starters.slice(0, expected).find(p => p?.user && !riotMap.get(String(p.user)));
                 if (missing) {
                     return res.status(400).json({ message: 'Todos los titulares deben tener Riot vinculado' });

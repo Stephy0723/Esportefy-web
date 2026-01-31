@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema({
     // --- Etapa 1: Datos Personales ---
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
+    gender: { type: String, enum: ['Masculino', 'Femenino', 'Otro'], default: 'Otro' },
     country: { type: String, required: true },
     birthDate: { type: Date, required: true },
 

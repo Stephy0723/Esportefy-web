@@ -15,6 +15,8 @@ const Dashboard = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeGameIndex, setActiveGameIndex] = useState(0);
+    const [myTeams, setMyTeams] = useState([]);
+    const [activeTeam, setActiveTeam] = useState(null);
 
     // --- DATOS MOCK PARA LAS NUEVAS SECCIONES ---
     const mockCalendar = [
@@ -62,6 +64,38 @@ const Dashboard = () => {
         fetchProfile();
     }, [navigate]);
 
+    useEffect(() => {
+        const fetchTeams = async () => {
+            if (!user?._id) return;
+            try {
+                const res = await axios.get('http://localhost:4000/api/teams');
+                const allTeams = res.data || [];
+                const uid = String(user._id);
+                let list = [];
+
+                if (Array.isArray(user?.teams) && user.teams.length > 0) {
+                    const ids = user.teams.map((t) => String(t?._id || t));
+                    list = allTeams.filter((t) => ids.includes(String(t._id)));
+                } else {
+                    list = allTeams.filter((t) => {
+                        const starters = Array.isArray(t.roster?.starters) ? t.roster.starters : [];
+                        const subs = Array.isArray(t.roster?.subs) ? t.roster.subs : [];
+                        const coach = t.roster?.coach;
+                        return starters.some(p => String(p?.user) === uid) ||
+                            subs.some(p => String(p?.user) === uid) ||
+                            (coach && String(coach.user) === uid);
+                    });
+                }
+
+                setMyTeams(list);
+                setActiveTeam(list[0] || null);
+            } catch (err) {
+                console.error('Error cargando equipos:', err);
+            }
+        };
+        fetchTeams();
+    }, [user?._id, user?.teams?.length]);
+
     const userData = {
         username: user?.username || 'Jugador',
         games: user?.selectedGames || []
@@ -81,6 +115,61 @@ const Dashboard = () => {
     const riotRank = user?.gameProfiles?.lol?.rank;
     const riotName = user?.connections?.riot?.gameName;
     const riotTagLine = user?.connections?.riot?.tagLine;
+
+    const resolveTeamRole = (team) => {
+        if (!team || !user?._id) return '';
+        const uid = String(user._id);
+        const captainId = team.captain?._id || team.captain;
+        if (String(captainId) === uid) return 'Capitán';
+        const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+        const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+        const coach = team.roster?.coach;
+        if (coach && String(coach.user) === uid) return coach.role || 'Coach';
+        const starter = starters.find((p) => String(p?.user) === uid);
+        if (starter) return starter.role || 'Titular';
+        const sub = subs.find((p) => String(p?.user) === uid);
+        if (sub) return sub.role || 'Suplente';
+        return 'Miembro';
+    };
+
+    const renderTeamCard = () => {
+        if (!activeTeam) {
+            return (
+                <div className="panel-glass team-card">
+                    <div className="team-bg-blur"></div>
+                    <div className="team-content">
+                        <div className="team-avatar">
+                            <i className='bx bx-group'></i>
+                        </div>
+                        <h3>Sin equipo</h3>
+                        <span className="role-badge">Crea o únete</span>
+                        <div className="team-actions">
+                            <button className="btn-neon-outline" onClick={() => navigate('/create-team')}>CREAR EQUIPO</button>
+                            <button className="btn-neon-outline" onClick={() => navigate('/teams')}>BUSCAR EQUIPOS</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const role = resolveTeamRole(activeTeam);
+        return (
+            <div className="panel-glass team-card">
+                <div className="team-bg-blur" style={{backgroundImage: `url(${activeTeam.logo || mockSocial.team.logo})`}}></div>
+                <div className="team-content">
+                    <div className="team-avatar">
+                        <img src={activeTeam.logo || mockSocial.team.logo} alt="Team" />
+                    </div>
+                    <h3>{activeTeam.name}</h3>
+                    <span className="role-badge">{role}</span>
+                    <div className="team-actions">
+                        <button className="btn-neon-outline" onClick={() => navigate('/teams')}>VER ROSTER</button>
+                        <button className="btn-neon-outline" onClick={() => navigate('/tournaments')}>TORNEOS</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     if (loading) return <div className="loading-screen">Cargando...</div>;
 
@@ -158,6 +247,26 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         )}
+
+                        <div className={`team-mini-card ${activeTeam ? '' : 'empty'}`}>
+                            <div className="team-mini-avatar">
+                                {activeTeam?.logo ? (
+                                    <img src={activeTeam.logo} alt={activeTeam.name} />
+                                ) : (
+                                    <i className='bx bx-group'></i>
+                                )}
+                            </div>
+                            <div className="team-mini-meta">
+                                <strong>{activeTeam?.name || 'Sin equipo'}</strong>
+                                <span>{activeTeam ? resolveTeamRole(activeTeam) : 'Crea o únete a uno'}</span>
+                            </div>
+                            <button
+                                className="team-mini-btn"
+                                onClick={() => navigate(activeTeam ? '/equipos' : '/create-team')}
+                            >
+                                {activeTeam ? 'Ver' : 'Crear'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -287,20 +396,7 @@ const Dashboard = () => {
                 <div className="social-grid-layout">
                     
                     {/* TARJETA DE EQUIPO */}
-                    <div className="panel-glass team-card">
-                        <div className="team-bg-blur" style={{backgroundImage: `url(${mockSocial.team.logo})`}}></div>
-                        <div className="team-content">
-                            <div className="team-avatar">
-                                <img src={mockSocial.team.logo} alt="Team" />
-                            </div>
-                            <h3>{mockSocial.team.name}</h3>
-                            <span className="role-badge">{mockSocial.team.role}</span>
-                            <div className="team-actions">
-                                <button className="btn-neon-outline">VER ROSTER</button>
-                                <button className="btn-neon-outline">SCRIMS</button>
-                            </div>
-                        </div>
-                    </div>
+                    {renderTeamCard()}
 
                     {/* COLUMNA CENTRAL: TORNEOS */}
                     <div className="panel-glass tournaments-list">
@@ -377,18 +473,7 @@ const Dashboard = () => {
                 <div className="social-grid-layout">
                     
                     {/* TARJETA DE EQUIPO */}
-                    <div className="panel-glass team-card">
-                        <div className="team-bg-blur" style={{backgroundImage: `url(${mockSocial.team.logo})`}}></div>
-                        <div className="team-content">
-                            <div className="team-avatar"><img src={mockSocial.team.logo} alt="Team" /></div>
-                            <h3>{mockSocial.team.name}</h3>
-                            <span className="role-badge">{mockSocial.team.role}</span>
-                            <div className="team-actions">
-                                <button className="btn-neon-outline">VER ROSTER</button>
-                                <button className="btn-neon-outline">SCRIMS</button>
-                            </div>
-                        </div>
-                    </div>
+                    {renderTeamCard()}
 
                     {/* COLUMNA CENTRAL: TORNEOS */}
                     <div className="panel-glass tournaments-list">

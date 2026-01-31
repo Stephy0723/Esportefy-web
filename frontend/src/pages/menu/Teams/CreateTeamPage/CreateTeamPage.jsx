@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
@@ -6,7 +6,7 @@ import {
     FaCamera, FaUser, FaUserAstronaut, FaCheckCircle, FaPlus, FaWhatsapp, 
     FaArrowLeft, FaIdCard, FaGlobe, FaTrophy, FaVenusMars, FaLanguage, 
     FaMapMarkerAlt, FaCheck, FaCopy, FaSearch, FaDiscord, FaTwitter, 
-    FaFacebook, FaPaperPlane, FaGamepad, FaUpload, FaEye, FaUsers 
+    FaFacebook, FaPaperPlane, FaGamepad, FaUpload 
 } from 'react-icons/fa';
 import './CreateTeamPage.css';
 
@@ -21,11 +21,19 @@ const ROLE_NAMES = {
     "Free Fire": ["Rusher", "Support", "Sniper", "IGL"]
 };
 
+const RIOT_GAMES = new Set([
+    'Valorant',
+    'League of Legends',
+    'Wild Rift',
+    'Teamfight Tactics',
+    'Legends of Runeterra'
+]);
+
 const CreateTeamPage = () => {
     const navigate = useNavigate();
     
     // --- ESTADOS Y DATOS ---
-    const userString = localStorage.getItem('user');
+    const userString = localStorage.getItem('esportefyUser');
     const currentUser = userString ? JSON.parse(userString) : { name: "Usuario" };
     
     const [step, setStep] = useState(1);
@@ -90,6 +98,54 @@ const CreateTeamPage = () => {
         if (cat === 'Fighting') return 'theme-fighting';
         return 'theme-default';
     };
+
+    const mapRiotRegion = (raw) => {
+        const value = String(raw || '').toLowerCase().trim();
+        const map = {
+            la1: 'LAS',
+            la2: 'LAS',
+            na1: 'NA',
+            br1: 'BR',
+            euw1: 'EUW',
+            eun1: 'EUNE',
+            tr1: 'TR',
+            ru: 'RU',
+            oc1: 'OCE',
+            kr: 'KR',
+            jp1: 'JP',
+            ph2: 'PH',
+            sg2: 'SG',
+            th2: 'TH',
+            tw2: 'TW',
+            vn2: 'VN',
+            na: 'NA',
+            br: 'BR',
+            latam: 'LATAM',
+            americas: 'LATAM',
+            eu: 'EUW'
+        };
+        return map[value] || '';
+    };
+
+    useEffect(() => {
+        if (!RIOT_GAMES.has(String(formData.game || '').trim())) return;
+        if (!currentUser?.connections?.riot?.verified) return;
+        const gameName = currentUser.connections.riot.gameName || '';
+        const tagLine = currentUser.connections.riot.tagLine || '';
+        const regionRaw =
+            currentUser?.gameProfiles?.lol?.platformRegion ||
+            currentUser?.gameProfiles?.valorant?.shard ||
+            currentUser?.connections?.riot?.accountRegion ||
+            '';
+        const region = mapRiotRegion(regionRaw);
+
+        setFormData((prev) => ({
+            ...prev,
+            leaderIgn: prev.leaderIgn || gameName,
+            leaderGameId: prev.leaderGameId || tagLine,
+            leaderRegion: prev.leaderRegion || region
+        }));
+    }, [formData.game, currentUser]);
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -222,9 +278,6 @@ const CreateTeamPage = () => {
         return roles ? roles[index] : `Player ${index + 1}`;
     };
 
-    const safeStarters = Array.isArray(roster?.starters) ? roster.starters : [];
-    const safeSubs = Array.isArray(roster?.subs) ? roster.subs : [];
-
     // --- RENDERIZADO ---
     return (
         <div className={`create-team-layout ${getThemeClass()}`}>
@@ -345,41 +398,6 @@ const CreateTeamPage = () => {
                             </div>
                         </div>
 
-                        {/* 3.5 VISTA PREVIA DEL EQUIPO */}
-                        <div className="section-card team-preview-card">
-                            <h3 style={{marginBottom: '1rem', color: 'var(--theme-color)', fontSize: '1.2rem'}}>
-                                <FaEye style={{marginRight: '8px'}}/> Vista previa
-                            </h3>
-                            <div className="preview-header">
-                                <div className="preview-logo">
-                                    {logoPreview ? (
-                                        <img src={logoPreview} alt="Logo" />
-                                    ) : (
-                                        <FaUsers />
-                                    )}
-                                </div>
-                                <div className="preview-meta">
-                                    <h4>{formData.name || 'Nombre del equipo'}</h4>
-                                    <span>{formData.category || 'Categoría'} • {formData.game || 'Juego'}</span>
-                                    <p>{formData.slogan || 'Eslogan del equipo'}</p>
-                                </div>
-                            </div>
-                            <div className="preview-list">
-                                {safeStarters.map((slot, i) => (
-                                    <div key={`starter-${i}`} className="preview-item">
-                                        <span className="preview-role">{getRoleLabel(i)}</span>
-                                        <span className="preview-name">{slot?.nickname || 'Vacante'}</span>
-                                    </div>
-                                ))}
-                                {safeSubs.map((slot, i) => (
-                                    <div key={`sub-${i}`} className="preview-item">
-                                        <span className="preview-role">Suplente {i + 1}</span>
-                                        <span className="preview-name">{slot?.nickname || 'Vacante'}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
                         {/* 4. DATOS DEL CAPITÁN */}
                         <div className="section-card">
                             <h3 style={{marginBottom: '1rem', color: 'var(--theme-color)', fontSize: '1.2rem'}}>
@@ -462,7 +480,7 @@ const CreateTeamPage = () => {
                         <div className="roles-section">
                             <label className="section-label">Titulares</label>
                             <div className="circles-grid">
-                                {safeStarters.map((slot, idx) => (
+                                {roster.starters.map((slot, idx) => (
                                     <div key={idx} className="role-item" onClick={() => handleSlotClick('starters', idx)}>
                                         <div className={`role-circle ${slot ? 'filled' : 'empty'}`}>
                                             {/* AQUÍ SE MUESTRA LA FOTO SI EXISTE */}
@@ -489,8 +507,8 @@ const CreateTeamPage = () => {
                             <div className="roles-section">
                                 <label className="section-label">Suplentes</label>
                                 <div className="circles-grid">
-                                {safeSubs.map((slot, idx) => (
-                                    <div key={idx} className="role-item" onClick={() => handleSlotClick('subs', idx)}>
+                                    {roster.subs.map((slot, idx) => (
+                                        <div key={idx} className="role-item" onClick={() => handleSlotClick('subs', idx)}>
                                             <div className={`role-circle small ${slot ? 'filled' : 'empty'}`}>
                                                 {slot ? (
                                                     slot.photo ? (
