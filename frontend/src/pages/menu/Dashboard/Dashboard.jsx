@@ -9,6 +9,8 @@ import defaultBanner from '../../../assets/images/login-black.png'; // Ajusta tu
 import { backgroundList } from '../../../data/backgroundImages'; // Tu lista de fondos
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx'; // El nuevo componente
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
+import PlayerTag from '../../../components/PlayerTag/PlayerTag'; // <--- EL COMPONENTE NUEVO
+import { PLAYER_TAGS } from '../../../data/playerTags';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -109,8 +111,13 @@ const Dashboard = () => {
 
                     {/* CONTENIDO DE LA TARJETA */}
                     <div className="profile-content">
-                        <span className="welcome-badge">BIENVENIDO AL HUB</span>
-                        <h1 className="profile-username">{userData.username.toUpperCase()}</h1>
+                        <span className="welcome-badge">BIENVENIDO AL HUB</span><br></br>
+                        <PlayerTag className="profile-username"
+                            name={userData.username.toUpperCase() || "Player"} 
+                            tagId={user.selectedTagId} 
+                            size="normal" 
+                            fontTag='3.2rem'
+                        />                       
                         
                         {/* ... (Resto del contenido de stats se queda IGUAL) ... */}
                         <p className="profile-quote">"La victoria está reservada para aquellos que están dispuestos a pagar su precio."</p>
@@ -340,95 +347,7 @@ const Dashboard = () => {
                         <h3>MARKETPLACE</h3>
                         <p>Tienda de recompensas</p>
                     </div>
-                    <div className="nexus-card logout" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
-                        <i className='bx bx-log-out'></i>
-                        <h3>CERRAR SESIÓN</h3>
-                    </div>
-                </div>
-            </section>
-
-            {/* --- SECCIÓN 4: SOCIAL HQ (Equipo, Amigos, Torneos) --- */}
-            <section id="sec-4" className="page-section section-social">
-                <div className="social-grid-layout">
-                    
-                    {/* TARJETA DE EQUIPO */}
-                    <div className="panel-glass team-card">
-                        <div className="team-bg-blur" style={{backgroundImage: `url(${mockSocial.team.logo})`}}></div>
-                        <div className="team-content">
-                            <div className="team-avatar"><img src={mockSocial.team.logo} alt="Team" /></div>
-                            <h3>{mockSocial.team.name}</h3>
-                            <span className="role-badge">{mockSocial.team.role}</span>
-                            <div className="team-actions">
-                                <button className="btn-neon-outline">VER ROSTER</button>
-                                <button className="btn-neon-outline">SCRIMS</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* COLUMNA CENTRAL: TORNEOS */}
-                    <div className="panel-glass tournaments-list">
-                        <div className="panel-header-simple">TORNEOS ACTIVOS</div>
-                        {mockSocial.tournaments.map((t, i) => (
-                            <div key={i} className="tourney-item">
-                                <div className="t-icon"><i className='bx bx-trophy'></i></div>
-                                <div className="t-info">
-                                    <h4>{t.name}</h4>
-                                    <span className={`status-dot ${t.status === 'En Curso' ? 'live' : 'reg'}`}>{t.status}</span>
-                                </div>
-                                <div className="t-rank">{t.rank}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* COLUMNA DERECHA: SOLICITUDES */}
-                    <div className="panel-glass requests-panel">
-                        <div className="panel-header-simple">SOLICITUDES ({mockSocial.requests.length})</div>
-                        <div className="req-list">
-                            {mockSocial.requests.map((req) => (
-                                <div key={req.id} className="req-item">
-                                    <img src={req.img} alt={req.name} />
-                                    <div className="req-name">{req.name}</div>
-                                    <div className="req-actions">
-                                        <button className="btn-accept"><i className='bx bx-check'></i></button>
-                                        <button className="btn-deny"><i className='bx bx-x'></i></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                </div>
-                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-5')}><span>CENTRO DE MANDO</span><i className='bx bx-chevron-down animated-arrow'></i></div>
-            </section>
-
-            {/* --- SECCIÓN 5: THE NEXUS (Botones Importantes) --- */}
-            <section id="sec-5" className="page-section section-nexus">
-                <h2 className="nexus-title">CENTRO DE MANDO</h2>
-                <div className="nexus-grid">
-                    <div className="nexus-card" onClick={() => navigate('/profile')}>
-                        <i className='bx bxs-user-detail'></i>
-                        <h3>EDITAR PERFIL</h3>
-                        <p>Ajusta tu avatar y biografía</p>
-                    </div>
-                    <div className="nexus-card" onClick={() => navigate('/settings')}>
-                        <i className='bx bxs-cog'></i>
-                        <h3>CONFIGURACIÓN</h3>
-                        <p>Privacidad y Conexiones</p>
-                    </div>
-                    <div className="nexus-card" onClick={() => navigate('/university')}>
-                        <i className='bx bxs-graduation'></i>
-                        <h3>UNIVERSIDAD</h3>
-                        <p>Becas y Scouting</p>
-                    </div>
-                    <div className="nexus-card" onClick={() => navigate('/marketplace')}>
-                        <i className='bx bxs-store'></i>
-                        <h3>MARKETPLACE</h3>
-                        <p>Tienda de recompensas</p>
-                    </div>
-                    <div className="nexus-card logout" onClick={() => { localStorage.removeItem('token'); navigate('/login'); }}>
-                        <i className='bx bx-log-out'></i>
-                        <h3>CERRAR SESIÓN</h3>
-                    </div>
+                
                 </div>
             </section>
 

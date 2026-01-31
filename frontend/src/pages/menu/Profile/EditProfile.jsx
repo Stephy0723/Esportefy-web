@@ -4,7 +4,9 @@ import axios from 'axios';
 // AÑADIDO: FaPaintBrush para el icono de personalización
 import { FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft, FaCamera, FaPaintBrush } from 'react-icons/fa';
 import './EditProfile.css';
-
+// ... tus otros imports ...
+import PlayerTag from '../../../components/PlayerTag/PlayerTag'; // <--- EL COMPONENTE NUEVO
+import { PLAYER_TAGS } from '../../../data/playerTags'; // <--- LOS DATOS DE LAS IMAGENES
 // --- NUEVAS IMPORTACIONES PARA PERSONALIZACIÓN ---
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions'; 
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle'; 
@@ -33,6 +35,7 @@ const mobaGames = [
     { id: 'mk11', name: 'Mortal Kombat', img: imgMk11 },
     { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart }
 ];
+
 
 const platformsList = [
     { id: 'pc', name: 'PC', icon: 'bx-laptop' },
@@ -71,9 +74,10 @@ const EditProfile = () => {
         experience: '',
         goalsDescription: '',
         isProfileHidden: false,
-        // NUEVOS CAMPOS DE ESTADO
         selectedFrameId: 'none',
-        selectedBgId: 'bg-1'
+        selectedBgId: 'bg-1',
+        status: 'online',
+        selectedTagId: 'tag1' // <--- AÑADE ESTA LÍNEA (Tag por defecto)
     });
 
     // Helpers para la vista previa
@@ -220,7 +224,14 @@ const EditProfile = () => {
                                             frameConfig={currentFrame}
                                             size="120px"
                                             status={formData.status} />
-                                        <span className="preview-name-label">{formData.username}</span>
+                                        {/* --- AQUÍ ESTÁ EL CAMBIO: Usamos PlayerTag en lugar de texto plano --- */}
+        <div style={{ marginTop: '15px' }}>
+            <PlayerTag 
+                name={formData.username || "Player"} 
+                tagId={formData.selectedTagId} 
+                size="normal"                 
+            />
+        </div>
                                     </div>
                                 </div>
                                 {/* --- NUEVO: SELECTOR DE ESTADO --- */}
@@ -246,6 +257,28 @@ const EditProfile = () => {
                 ))}
             </div>
         </div>
+        {/* --- SECCIÓN NUEVA: ETIQUETAS DE JUGADOR --- */}
+<label className="section-label mt-4">Placa de Jugador</label>
+<div className="tags-selection-grid" style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}>
+    {PLAYER_TAGS.map(tag => (
+        <div 
+            key={tag.id}
+            onClick={() => setFormData({...formData, selectedTagId: tag.id})}
+            className={formData.selectedTagId === tag.id ? 'active-tag' : ''}
+            style={{ 
+                cursor: 'pointer', 
+                border: formData.selectedTagId === tag.id ? '2px solid #00f2ff' : '2px solid transparent', // Borde neón si está activo
+                borderRadius: '12px',
+                padding: '2px',
+                transition: 'all 0.2s'
+            }}
+        >
+            {/* Mostramos el Tag en pequeño para elegir */}
+            <PlayerTag name="Preview" tagId={tag.id} size="small" />
+        </div>
+    ))}
+</div>
+{/* ------------------------------------------- */}
         {/* -------------------------------- */}
                                 {/* SELECTOR DE MARCOS */}
                                 <label className="section-label mt-4">Elige tu Marco</label>
