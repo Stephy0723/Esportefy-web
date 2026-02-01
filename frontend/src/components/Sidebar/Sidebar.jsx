@@ -35,21 +35,25 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
         onClick={handleSidebarClick}
     >
       <header>
-        <div className="image-text">
+        <div className="image-text-logo">
           <span className="image">
-            {logoWhite && logoBlack ? (
-                <img src={isDarkMode ? logoWhite : logoBlack} alt="Logo" className="sidebar-logo" />
-            ) : (
-                <i className='bx bx-game logo-icon'></i>
-            )}
+            {/* El logo se mantiene siempre, el CSS se encarga de centrarlo */}
+            <img 
+              src={isDarkMode ? logoWhite : logoBlack} 
+              alt="Esportefy Logo" 
+              className="sidebar-logo" 
+            />
           </span>
-          <div className="header-info logo-text">
-            <span className="name">ESPORTEFY</span>
-            <span className="profession">Pro Gaming</span>
-          </div>
+          
+          {/* El texto solo es visible si la barra está abierta */}
+          {!isClosed && (
+            <div className="header-info">
+              <span className="name">ESPORTEFY</span>
+              <span className="profession">Pro Gaming</span>
+            </div>
+          )}
         </div>
 
-        
       </header>
 
       <div className="menu-bar">
@@ -78,12 +82,29 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
           {/* BOTÓN "VER MÁS / VER MENOS"           */}
           {/* ===================================== */}
           <ul className="menu-links">
-            <li className="nav-link toggle-more-btn" onClick={() => setIsMenuExpanded(!isMenuExpanded)}>
-                {/* Cambiamos el icono según el estado */}
-                <i className={`bx bx-chevron-${isMenuExpanded ? 'up' : 'down'} icon`} style={{color: 'var(--brand-green)'}}></i>
-                <span className="text nav-text" style={{fontWeight: 'bold', color: 'var(--brand-green)'}}>
-                    {isMenuExpanded ? 'Menos Opciones' : 'Ver Más...'}
-                </span>
+            <li 
+              className="nav-link toggle-more-btn" 
+              onClick={() => setIsMenuExpanded(!isMenuExpanded)}
+              style={{ justifyContent: isClosed ? 'center' : 'flex-start' }}
+            >
+              <i 
+                className={`bx bx-chevron-${isMenuExpanded ? 'up' : 'down'} icon`} 
+                style={{
+                  color: 'var(--brand-green)', 
+                  minWidth: isClosed ? '88px' : '60px' // Forzamos el centro en close
+                }}
+              ></i>
+              
+              <span 
+                className="text nav-text" 
+                style={{
+                  fontWeight: 'bold', 
+                  color: 'var(--brand-green)',
+                  display: isClosed ? 'none' : 'block' // Evita que el texto ocupe espacio invisible
+                }}
+              >
+                {isMenuExpanded ? 'Menos Opciones' : 'Ver Más...'}
+              </span>
             </li>
           </ul>
 

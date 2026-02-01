@@ -29,6 +29,7 @@ body.dark {
     --toggle-icon: #cccccc;
 }
 
+
 /* ========================================= */
 /* 2. ESTRUCTURA PRINCIPAL                   */
 /* ========================================= */
@@ -79,7 +80,7 @@ body.dark {
     padding: 0; /* Al cerrar, quitamos padding lateral para centrar mejor */
     justify-content: center; /* Centra horizontalmente el logo */
 }
-.sidebar .image-text {
+.sidebar .image-text-logo {
     display: flex;
     align-items: center;
     /* Reserva espacio para el logo incluso cuando está cerrado */
@@ -88,7 +89,7 @@ body.dark {
     justify-content: center; /* Centra el contenido dentro de este contenedor */
 }
 /* Ajuste al cerrar para centrar logo */
-.sidebar.close .image-text {
+.sidebar.close .image-text-logo {
     gap: 0; /* Elimina el espacio extra */
     justify-content: center;
     width: 100%;
@@ -397,7 +398,7 @@ body.dark .section-title {
 
 /* Ajuste del Header para que no se corte el logo (Del arreglo anterior) */
 .sidebar header { height: 80px; overflow: visible; } 
-.sidebar .image-text { min-width: 60px; }
+.sidebar .image-text-logo { min-width: 60px; }
 .sidebar-logo { width: 45px; height: 45px; object-fit: contain; }
 
 /* ========================================= */
