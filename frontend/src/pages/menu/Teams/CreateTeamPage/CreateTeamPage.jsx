@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
@@ -21,11 +21,19 @@ const ROLE_NAMES = {
     "Free Fire": ["Rusher", "Support", "Sniper", "IGL"]
 };
 
+const RIOT_GAMES = new Set([
+    'Valorant',
+    'League of Legends',
+    'Wild Rift',
+    'Teamfight Tactics',
+    'Legends of Runeterra'
+]);
+
 const CreateTeamPage = () => {
     const navigate = useNavigate();
     
     // --- ESTADOS Y DATOS ---
-    const userString = localStorage.getItem('user');
+    const userString = localStorage.getItem('esportefyUser');
     const currentUser = userString ? JSON.parse(userString) : { name: "Usuario" };
     
     const [step, setStep] = useState(1);
@@ -40,6 +48,7 @@ const CreateTeamPage = () => {
         // Identidad
         name: '', 
         slogan: '', 
+        category: '',
         game: '',
         // Perfil de Escuadra
         teamGender: 'Mixto',      
@@ -89,6 +98,54 @@ const CreateTeamPage = () => {
         if (cat === 'Fighting') return 'theme-fighting';
         return 'theme-default';
     };
+
+    const mapRiotRegion = (raw) => {
+        const value = String(raw || '').toLowerCase().trim();
+        const map = {
+            la1: 'LAS',
+            la2: 'LAS',
+            na1: 'NA',
+            br1: 'BR',
+            euw1: 'EUW',
+            eun1: 'EUNE',
+            tr1: 'TR',
+            ru: 'RU',
+            oc1: 'OCE',
+            kr: 'KR',
+            jp1: 'JP',
+            ph2: 'PH',
+            sg2: 'SG',
+            th2: 'TH',
+            tw2: 'TW',
+            vn2: 'VN',
+            na: 'NA',
+            br: 'BR',
+            latam: 'LATAM',
+            americas: 'LATAM',
+            eu: 'EUW'
+        };
+        return map[value] || '';
+    };
+
+    useEffect(() => {
+        if (!RIOT_GAMES.has(String(formData.game || '').trim())) return;
+        if (!currentUser?.connections?.riot?.verified) return;
+        const gameName = currentUser.connections.riot.gameName || '';
+        const tagLine = currentUser.connections.riot.tagLine || '';
+        const regionRaw =
+            currentUser?.gameProfiles?.lol?.platformRegion ||
+            currentUser?.gameProfiles?.valorant?.shard ||
+            currentUser?.connections?.riot?.accountRegion ||
+            '';
+        const region = mapRiotRegion(regionRaw);
+
+        setFormData((prev) => ({
+            ...prev,
+            leaderIgn: prev.leaderIgn || gameName,
+            leaderGameId: prev.leaderGameId || tagLine,
+            leaderRegion: prev.leaderRegion || region
+        }));
+    }, [formData.game, currentUser]);
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -319,7 +376,14 @@ const CreateTeamPage = () => {
                             <div className="split-row">
                                 <div className="form-group">
                                     <label className="section-label">Categoría</label>
-                                    <select className="select-modern" onChange={e => setSelectedCategory(e.target.value)}>
+                                    <select
+                                        className="select-modern"
+                                        onChange={e => {
+                                            const cat = e.target.value;
+                                            setSelectedCategory(cat);
+                                            setFormData(prev => ({ ...prev, category: cat }));
+                                        }}
+                                    >
                                         <option value="">Seleccionar...</option>
                                         {Object.keys(esportsCatalog).map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                     </select>

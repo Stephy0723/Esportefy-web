@@ -8,11 +8,13 @@ const UserSchema = new mongoose.Schema({
     bio: { type: String, default: "" },
     teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
     isOrganizer: { type: Boolean, default: false },
+    isAdmin: { type: Boolean, default: false },
 
 
     // --- Etapa 1: Datos Personales ---
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
+    gender: { type: String, enum: ['Masculino', 'Femenino', 'Otro'], default: 'Otro' },
     country: { type: String, required: true },
     birthDate: { type: Date, required: true },
 
@@ -65,23 +67,48 @@ const UserSchema = new mongoose.Schema({
         },
 
         riot: {
-            puuid: { type: String },
-            gameName: { type: String },
-            tagLine: { type: String },
-            region: { type: String, default: 'la1' },
+            puuid: String,
+            gameName: String,
+            tagLine: String,
 
-            summonerId: { type: String },
-            profileIconId: { type: Number },
-            summonerLevel: { type: Number },
+            accountRegion: { type: String, default: 'americas' }, // para account-v1
+            verified: { type: Boolean, default: false },
+            linkedAt: Date,
 
+            // seguridad / verificación por OTP
+            pendingLink: {
+                otpHash: String,
+                expiresAt: Date,
+                puuid: String,
+                gameName: String,
+                tagLine: String
+            }
+        }
+    },
+
+    gameProfiles: {
+        lol: {
+            exists: { type: Boolean, default: false },
+            platformRegion: { type: String, default: '' }, // la1/na1/euw1 etc
+            summonerId: String,
+            profileIconId: Number,
+            summonerLevel: Number,
             rank: {
-                queueType: { type: String },
-                tier: { type: String },
-                division: { type: String },
-                lp: { type: Number }
+                tier: String,
+                division: String,
+                lp: Number
             },
+            lastSyncAt: Date
+        },
 
-            verified: { type: Boolean, default: false }
+        valorant: {
+            exists: { type: Boolean, default: false },
+            shard: { type: String, default: '' }, // na / latam / br / eu / ap / kr (depende del API)
+            rank: {
+                tier: String,
+                rr: Number
+            },
+            lastSyncAt: Date
         },
         steam: {
             steamId: { type: String },
@@ -94,6 +121,20 @@ const UserSchema = new mongoose.Schema({
         showOnlineStatus: { type: Boolean, default: true },
         allowTournamentInvites: { type: Boolean, default: true }
     },
+    notifications: [{
+        type: { type: String, default: 'info' },
+        category: { type: String, default: 'system' },
+        title: String,
+        source: { type: String, default: 'Sistema' },
+        message: String,
+        status: { type: String, enum: ['unread', 'read'], default: 'unread' },
+        visuals: {
+            icon: String,
+            color: String,
+            glow: Boolean
+        },
+        createdAt: { type: Date, default: Date.now }
+    }]
 
 }, { timestamps: true });
 

@@ -67,6 +67,23 @@ export const NotificationProvider = ({ children }) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
+  const loadNotifications = (list) => {
+    if (!Array.isArray(list)) return;
+    setNotifications(list.map((n) => ({
+      id: n._id || n.id,
+      category: n.category || 'system',
+      type: n.type || 'info',
+      title: n.title || 'Notificación',
+      source: n.source || 'Sistema',
+      message: n.message || '',
+      time: n.createdAt ? 'Ahora mismo' : 'Ahora mismo',
+      status: n.status || 'unread',
+      isSaved: false,
+      isArchived: false,
+      visuals: n.visuals || { icon: 'bx-bell', color: '#8EDB15', glow: false }
+    })));
+  };
+
   // --- SECUENCIA DE BIENVENIDA (Usando nuestra nueva función notify) ---
   const triggerWelcomeSequence = () => {
      // Usamos la función genérica pero con datos personalizados
@@ -93,6 +110,7 @@ export const NotificationProvider = ({ children }) => {
       notify, // <--- ESTA ES LA FUNCIÓN QUE EXPORTAMOS PARA USAR FUERA
       addToast,
       removeNotification,
+      loadNotifications,
       triggerWelcomeSequence 
     }}>
       {children}

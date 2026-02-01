@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './TeamRegistration.css';
+import axios from 'axios';
 
 const TeamRegistration = () => {
   const navigate = useNavigate();
@@ -17,14 +18,81 @@ const TeamRegistration = () => {
   
   const tournament = {
     title: incomingTournament?.title || "Torneo Global",
-    // Aquí está el truco: Si incoming.image es null/undefined/vacío, usa DEFAULT_IMAGE
-    image: incomingTournament?.image ? incomingTournament.image : DEFAULT_IMAGE
+    // Aquí está el truco: Si no hay banner, usa DEFAULT_IMAGE
+    image: incomingTournament?.bannerImage || incomingTournament?.image || DEFAULT_IMAGE,
+    tournamentId: incomingTournament?.tournamentId || ''
   };
 
-  const handleRegister = (e) => {
+  const [teamName, setTeamName] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [userTeams, setUserTeams] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [loadingTeams, setLoadingTeams] = useState(true);
+
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        setLoadingTeams(true);
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('esportefyUser');
+        const user = storedUser ? JSON.parse(storedUser) : null;
+        const response = await axios.get('http://localhost:4000/api/teams', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const allTeams = response.data || [];
+        const mine = user?._id
+          ? allTeams.filter(t => String(t.captain?._id || t.captain) === String(user._id))
+          : allTeams;
+        setUserTeams(mine);
+      } catch (err) {
+        console.error('Error cargando equipos:', err);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+    loadTeams();
+  }, []);
+
+  useEffect(() => {
+    const team = userTeams.find(t => String(t._id) === String(selectedTeamId));
+    if (!team) return;
+    setTeamName(team.name || '');
+    setLogoUrl(team.logo || '');
+  }, [selectedTeamId, userTeams]);
+
+  const handleRegister = async (e) => {
     e.preventDefault();
-    alert("¡Equipo Registrado! GL HF.");
-    navigate('/tournaments');
+    if (!tournament.tournamentId) {
+      alert('No se pudo identificar el torneo.');
+      return;
+    }
+    if (!selectedTeamId) {
+      alert('Selecciona un equipo.');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Debes iniciar sesión.');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await axios.post(
+        `http://localhost:4000/api/tournaments/${tournament.tournamentId}/register`,
+        {
+          teamId: selectedTeamId
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("¡Equipo Registrado! GL HF.");
+      navigate('/tournaments');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'No se pudo registrar el equipo';
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Función de respaldo por si la URL falla al cargar (404, bloqueo, etc)
@@ -49,54 +117,35 @@ const TeamRegistration = () => {
 
                     <form onSubmit={handleRegister}>
                         <div className="neon-input-group">
-                            <input type="text" required placeholder=" " />
-                            <label>Nombre del Equipo</label>
+                            <select
+                              className="select-modern"
+                              value={selectedTeamId}
+                              onChange={(e) => setSelectedTeamId(e.target.value)}
+                              disabled={loadingTeams}
+                              required
+                            >
+                              <option value="">Selecciona tu equipo</option>
+                              {userTeams.map(team => (
+                                <option key={team._id} value={team._id}>{team.name}</option>
+                              ))}
+                            </select>
+                            <label>Equipo</label>
+                            
                             <span className="bar"></span>
                         </div>
-
-                        <div className="neon-input-group">
-                            <input type="text" required placeholder=" " />
-                            <label>Logo URL (Opcional)</label>
-                            <span className="bar"></span>
-                        </div>
-
-                        <h3 className="roster-title">Alineación (Roster)</h3>
-                        
-                        <div className="roster-grid">
-                            <div className="neon-input-group compact">
-                                <input type="text" defaultValue="GamerPro_99" readOnly />
-                                <label className="fixed-label">Capitán</label>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 2</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 3</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 4</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 5</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" placeholder=" " />
-                                <label>Suplente</label>
-                                <span className="bar"></span>
-                            </div>
-                        </div>
+                        {(!loadingTeams && userTeams.length === 0) && (
+                          <div className="neon-input-group">
+                            <button type="button" className="btn-confirm" onClick={() => navigate('/create-team')}>
+                              Crear equipo
+                            </button>
+                          </div>
+                        )}
 
                         <div className="actions">
                             <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>Cancelar</button>
-                            <button type="submit" className="btn-confirm">Confirmar Registro</button>
+                            <button type="submit" className="btn-confirm" disabled={submitting}>
+                              {submitting ? 'Registrando...' : 'Confirmar Registro'}
+                            </button>
                         </div>
                     </form>
                 </div>

@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes.js';
 import teamRoutes from './routes/team.routes.js';
 import tournamentRoutes from './routes/tournament.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 dotenv.config();
 connectDB();
@@ -23,5 +24,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 export default app;

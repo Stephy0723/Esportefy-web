@@ -1,37 +1,106 @@
 /* Layout General */
 .notifications-layout {
     display: grid;
-    grid-template-columns: 3fr 1fr; /* Proporción Feed / Sidebar */
-    gap: 40px;
-    max-width: 1100px;
-    margin: 100px auto 40px auto;
-    padding: 30px;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 110px 40px 50px;
+    min-height: calc(100vh - 80px);
     color: #fff;
     font-family: 'Poppins', sans-serif;
 }
 
+.notif-feed {
+    background: rgba(14, 16, 20, 0.7);
+    border: 1px solid #1f242d;
+    border-radius: 18px;
+    padding: 26px 26px 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+}
+
+.notif-list {
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.notif-sidebar {
+    background: rgba(14, 16, 20, 0.6);
+    border: 1px solid #1f242d;
+    border-radius: 18px;
+    padding: 22px;
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
 /* --- FEED IZQUIERDA --- */
 .feed-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 25px; border-bottom: 1px solid #2B2F38; padding-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #2B2F38;
+    padding-bottom: 18px;
+    gap: 20px;
 }
-.feed-header h2 { font-size: 18px; font-weight: 600; margin: 0; color: #fff; }
+
+.feed-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    color: #fff;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+}
+
+.feed-sub {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #7c8493;
+    line-height: 1.4;
+}
 
 .mark-read-btn {
-    background: transparent; border: none; color: #8F95A3; cursor: pointer;
-    font-size: 12px; display: flex; align-items: center; gap: 6px; transition: 0.3s;
+    background: transparent;
+    border: none;
+    color: #8F95A3;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.3s;
 }
+
 .mark-read-btn:hover { color: #8EDB15; }
 
 /* TARJETA PRO */
 .notif-card-pro {
-    background: #181A20;
+    background: linear-gradient(145deg, rgba(22, 26, 33, 0.98), rgba(14, 16, 20, 0.98));
     border: 1px solid #2B2F38;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 15px;
+    border-radius: 14px;
+    padding: 18px 20px;
     transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
+.notif-card-pro::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    background: rgba(142, 219, 21, 0.35);
+    border-radius: 6px;
+}
+
 .notif-card-pro:hover {
     border-color: #444;
     transform: translateY(-2px);
@@ -39,7 +108,8 @@
 }
 
 /* Cabecera Tarjeta */
-.card-top { display: flex; gap: 15px; position: relative; margin-bottom: 10px; }
+.card-top { display: flex; gap: 15px; position: relative; margin-bottom: 10px; align-items: flex-start; }
+.card-meta { min-width: 0; }
 
 .icon-box {
     width: 42px; height: 42px; border-radius: 10px;
@@ -48,12 +118,16 @@
 }
 
 .card-meta h4 {
-    margin: 0 0 4px 0; font-size: 15px; color: #fff; font-weight: 600;
+    margin: 0 0 6px 0;
+    font-size: 15px;
+    color: #fff;
+    font-weight: 600;
+    line-height: 1.25;
 }
 .card-meta .source { font-weight: 400; color: #888; font-size: 13px; }
 .card-meta .time { font-size: 11px; color: #666; display: block; }
 
-/* Acciones Superiores (Guardar / Eliminar) */
+/* Acciones Superiores */
 .top-actions { margin-left: auto; display: flex; gap: 5px; }
 
 .icon-btn {
@@ -61,22 +135,27 @@
     font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; transition: 0.2s;
 }
 .icon-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
-.icon-btn.active { color: #8EDB15; } /* Marcado como guardado */
 .icon-btn.close:hover { color: #ff4d4d; }
 
 /* Cuerpo */
 .card-body p {
-    font-size: 13px; color: #ccc; margin: 0 0 15px 0; line-height: 1.5;
-    padding-left: 57px; /* Alineado */
+    font-size: 13px;
+    color: #ccc;
+    margin: 0 0 14px 0;
+    line-height: 1.55;
+    padding-left: 57px;
 }
 
 /* Pie de Tarjeta */
 .card-footer {
     padding-left: 57px;
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-/* --- BOTONES DE DECISIÓN (Aceptar / Cancelar) --- */
+/* --- BOTONES DE DECISIÓN --- */
 .decision-buttons { display: flex; gap: 10px; }
 
 .btn-decision {
@@ -85,72 +164,13 @@
     background: transparent; border: 1px solid transparent;
 }
 
-/* Estilo Aceptar */
-.btn-decision.accept {
-    border-color: #8EDB15; color: #8EDB15;
-}
+.btn-decision.accept { border-color: #8EDB15; color: #8EDB15; }
 .btn-decision.accept:hover { background: #8EDB15; color: #000; }
 
-/* Estilo Cancelar */
-.btn-decision.cancel {
-    border-color: #ff4d4d; color: #ff4d4d;
-}
+.btn-decision.cancel { border-color: #ff4d4d; color: #ff4d4d; }
 .btn-decision.cancel:hover { background: #ff4d4d; color: #fff; }
 
-/* Botón Texto (Archivar) */
-.btn-text {
-    background: transparent; border: none; color: #666; font-size: 12px;
-    cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;
-    transition: 0.2s; margin-left: auto; /* Empuja a la derecha */
-}
-.btn-text:hover { color: #fff; text-decoration: underline; }
-
-/* Badges de Estado */
-.status-badge {
-    font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;
-}
-.status-badge.success { color: #8EDB15; }
-.status-badge.danger { color: #ff4d4d; }
-
-/* --- SIDEBAR --- */
-.sidebar-section { margin-bottom: 30px; }
-.sidebar-section h4 {
-    font-size: 11px; text-transform: uppercase; color: #666; margin-bottom: 12px; letter-spacing: 1px; font-weight: 700;
-}
-.sidebar-section ul { list-style: none; padding: 0; }
-
-.sidebar-section li {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 15px; border-radius: 8px; color: #999;
-    font-size: 13px; cursor: pointer; transition: 0.2s; margin-bottom: 5px;
-}
-.sidebar-section li:hover { background: #181A20; color: #fff; }
-.sidebar-section li.active {
-    background: #181A20; color: #fff; font-weight: 600; border-left: 3px solid #8EDB15;
-}
-
-.dot { width: 8px; height: 8px; border-radius: 50%; }
-
-/* Estado Vacío */
-.empty-feed {
-    text-align: center; padding: 40px; color: #555;
-    border: 1px dashed #2B2F38; border-radius: 12px;
-}
-.empty-feed i { font-size: 30px; margin-bottom: 10px; display: block; }
-
-/* Responsive */
-@media (max-width: 900px) {
-    .notifications-layout { grid-template-columns: 1fr; }
-    .notif-sidebar { order: -1; display: flex; gap: 20px; overflow-x: auto; }
-    .sidebar-section { min-width: 150px; }
-}
-/* Efecto de "No leído" (Borde izquierdo brillante) */
-.notif-card-pro.unread-glow {
-    border-left: 3px solid var(--accent-green);
-    background: linear-gradient(90deg, rgba(142, 219, 21, 0.05) 0%, rgba(24, 26, 32, 1) 100%);
-}
-
-/* Enlaces simples (Ver estadísticas, Ver recompensas) */
+/* Enlaces */
 .btn-link {
     background: transparent;
     border: none;
@@ -161,28 +181,45 @@
     display: flex; align-items: center; gap: 5px;
     padding: 0;
 }
-.btn-link:hover {
-    color: #fff;
-    text-decoration: underline;
+.btn-link:hover { color: #fff; text-decoration: underline; }
+
+/* --- SIDEBAR --- */
+.sidebar-section { margin-bottom: 30px; }
+
+.sidebar-section h4 {
+    font-size: 11px; text-transform: uppercase; color: #666; margin-bottom: 12px; letter-spacing: 1px; font-weight: 700;
 }
 
-/* Texto de estado Neutral (ej: Saliste del equipo) */
-.status-text.neutral { color: #666; font-style: italic; }
+.sidebar-section ul { list-style: none; padding: 0; }
 
-/* Ajuste de Iconos */
-.icon-box i { font-size: 22px; }
+.sidebar-section li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 15px; border-radius: 8px; color: #999;
+    font-size: 13px; cursor: pointer; transition: 0.2s; margin-bottom: 5px;
+}
 
-/* El resto del CSS se mantiene igual al anterior (Layout grid, feed, sidebar...) */
-/* --- ESTILOS ESPECIALES DE BIENVENIDA --- */
+.sidebar-section li:hover { background: #181A20; color: #fff; }
 
-/* Efecto de Brillo para tarjeta especial */
+.sidebar-section li.active {
+    background: #181A20; color: #fff; font-weight: 600; border-left: 3px solid #8EDB15;
+}
+
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Estado Vacío */
+.empty-feed {
+    text-align: center; padding: 60px 20px; color: #555;
+    border: 2px dashed #2B2F38; border-radius: 12px;
+}
+.empty-feed i { font-size: 40px; margin-bottom: 15px; display: block; opacity: 0.5; }
+
+/* Efecto de Brillo */
 .notif-card-pro.glow-effect {
     border: 1px solid rgba(142, 219, 21, 0.3);
     background: linear-gradient(145deg, rgba(142, 219, 21, 0.05) 0%, rgba(24, 26, 32, 1) 100%);
     box-shadow: 0 0 20px rgba(142, 219, 21, 0.1);
 }
 
-/* Contenedor de Insignias */
 .badge-container {
     display: flex;
     gap: 10px;
@@ -191,7 +228,6 @@
     flex-wrap: wrap;
 }
 
-/* Diseño de la Insignia (Pill) */
 .special-badge {
     display: inline-flex;
     align-items: center;
@@ -204,7 +240,6 @@
     letter-spacing: 0.5px;
 }
 
-/* Colores de Insignias */
 .special-badge.green {
     background: rgba(142, 219, 21, 0.15);
     color: #8EDB15;
@@ -217,17 +252,9 @@
     border: 1px solid rgba(79, 172, 254, 0.3);
 }
 
-/* Estado Vacío mejorado */
-.empty-feed {
-    text-align: center;
-    padding: 60px 20px;
-    color: #555;
-    border: 2px dashed #2B2F38;
-    border-radius: 12px;
-}
-.empty-feed i {
-    font-size: 40px;
-    margin-bottom: 15px;
-    display: block;
-    opacity: 0.5;
+/* Responsive */
+@media (max-width: 900px) {
+    .notifications-layout { grid-template-columns: 1fr; padding: 100px 18px 40px; }
+    .notif-sidebar { order: -1; display: flex; gap: 20px; overflow-x: auto; position: static; }
+    .sidebar-section { min-width: 150px; }
 }

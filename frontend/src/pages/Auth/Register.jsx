@@ -32,7 +32,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false); 
 
   const [formData, setFormData] = useState({
-    fullName: '', phone: '', country: '', birthDate: '',
+    fullName: '', phone: '', gender: 'Otro', country: '', birthDate: '',
     selectedGames: [], platforms: [],
     experience: '', goals: [],
     username: '', email: '', password: '', confirmPassword: '',
@@ -89,6 +89,12 @@ const Register = () => {
     { id: 'console', name: 'Consola', icon: 'bx-joystick' }
   ];
 
+  const countries = [
+    'Argentina','Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba','Dominicana','Ecuador',
+    'El Salvador','Guatemala','Honduras','México','Nicaragua','Panamá','Paraguay','Perú','Puerto Rico',
+    'Uruguay','Venezuela','España','Estados Unidos'
+  ];
+
   return (
     // 4. USAR isDarkMode PARA LA CLASE CSS DEL COLOR DE FONDO
     <div className={`auth-container-split ${!isDarkMode ? 'light-mode' : ''}`}>
@@ -136,9 +142,23 @@ const Register = () => {
                 <div className="input-row split">
                   <div className="input-wrapper">
                     <label>País</label>
-                    <input type="text" name="country" placeholder="Tu país" value={formData.country} onChange={handleChange} />
+                    <select name="country" value={formData.country} onChange={handleChange}>
+                      <option value="">Selecciona tu país</option>
+                      {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                     <i className='bx bx-globe'></i>
                   </div>
+                  <div className="input-wrapper">
+                    <label>Género</label>
+                    <select name="gender" value={formData.gender} onChange={handleChange}>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Femenino">Femenino</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                    <i className='bx bx-user'></i>
+                  </div>
+                </div>
+                <div className="input-row split">
                   <div className="input-wrapper">
                     <label>Fecha Nacimiento</label>
                     <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} />

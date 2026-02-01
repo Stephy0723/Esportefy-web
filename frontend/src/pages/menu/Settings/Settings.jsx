@@ -28,11 +28,17 @@ export default function Settings() {
         riot: {},
         steam: {}
     });
+    const [gameProfiles, setGameProfiles] = useState({});
 
     // ===== RIOT STATE =====
     const [riotGameName, setRiotGameName] = useState('');
     const [riotTagLine, setRiotTagLine] = useState('');
     const [riotLoading, setRiotLoading] = useState(false);
+
+    // ===== RIOT OTP FLOW =====
+    const [riotStep, setRiotStep] = useState('idle'); // idle | otpSent
+    const [riotOtp, setRiotOtp] = useState('');
+    const [riotMsg, setRiotMsg] = useState('');
 
 
     const [loading, setLoading] = useState(true);
@@ -72,12 +78,16 @@ export default function Settings() {
 
             setConnections(res.data.connections);
             setPrivacy(res.data.privacy);
+            setGameProfiles(res.data.gameProfiles || {});
             setLoading(false);
-
         } catch (error) {
             console.error("Error cargando settings", error.response?.data || error.message);
         }
     };
+
+    const riotProfileIconId = gameProfiles?.lol?.profileIconId ?? 0;
+    const riotSummonerLevel = gameProfiles?.lol?.summonerLevel;
+    const riotRank = gameProfiles?.lol?.rank;
 
     const unlinkDiscord = async () => {
         try {
@@ -99,42 +109,61 @@ export default function Settings() {
         }
     };
 
-    const linkRiot = async () => {
+    const initRiotLink = async () => {
         if (!riotGameName.trim() || !riotTagLine.trim()) {
-            alert('Debes completar GameName y TagLine');
+            setRiotMsg('Debes completar GameName y TagLine');
             return;
         }
 
         try {
             setRiotLoading(true);
-
-            const token = localStorage.getItem('token');
+            setRiotMsg('');
 
             await axios.post(
-                'http://localhost:4000/api/auth/riot',
-                {
-                    riotId: `${riotGameName}#${riotTagLine}`
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
+                'http://localhost:4000/api/auth/riot/link/init',
+                { riotId: `${riotGameName}#${riotTagLine}` },
+                { headers: { Authorization: `Bearer ${token}` } }
             );
 
-
-            await fetchSettings(); // 🔥 refresca conexiones
-            alert('Cuenta Riot validada y vinculada');
-
+            setRiotStep('otpSent');
+            setRiotMsg('Te enviamos un código al correo. Escríbelo para confirmar.');
         } catch (error) {
-            alert(
-                error.response?.data?.message ||
-                'Riot ID inválido o no existe'
-            );
+            setRiotMsg(error.response?.data?.message || 'Error enviando código');
         } finally {
             setRiotLoading(false);
         }
     };
+
+    const confirmRiotLink = async () => {
+        if (!riotOtp.trim()) {
+            setRiotMsg('Escribe el código que te llegó al correo');
+            return;
+        }
+
+        try {
+            setRiotLoading(true);
+            setRiotMsg('');
+
+            await axios.post(
+                'http://localhost:4000/api/auth/riot/link/confirm',
+                { otp: riotOtp },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            await fetchSettings();
+
+            setRiotMsg('Riot vinculado y sincronizado ✅');
+            setRiotStep('idle');
+            setRiotOtp('');
+            setRiotGameName('');
+            setRiotTagLine('');
+        } catch (error) {
+            setRiotMsg(error.response?.data?.message || 'Error confirmando código');
+        } finally {
+            setRiotLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (token) fetchSettings();
     }, [token]);
@@ -273,11 +302,11 @@ export default function Settings() {
                                         </div>
                                     </div>
                                 )}
-  
+
                             </div>
                         </div>
 
-                        
+
                     </div>
                 );
             case 'connections':
@@ -337,7 +366,7 @@ export default function Settings() {
                                 </div>
 
                                 <div className="int-icon riot">
-                                    <img src="/riot-icon.png" alt="Riot Games" />
+                                    <img src="/riot-icon.svg" alt="Riot Games" />
                                 </div>
 
                                 <div className="int-details">
@@ -346,7 +375,7 @@ export default function Settings() {
                                     {connections?.riot?.verified ? (
                                         <div className="riot-profile-box">
                                             <img
-                                                src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${connections.riot.profileIconId}.png`}
+                                                src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${riotProfileIconId}.png`}
                                                 alt="Riot Icon"
                                                 className="riot-avatar"
                                             />
@@ -356,11 +385,11 @@ export default function Settings() {
                                                     {connections.riot.gameName}#{connections.riot.tagLine}
                                                 </strong>
 
-                                                <span>Nivel {connections.riot.summonerLevel}</span>
+                                                <span>Nivel {riotSummonerLevel ?? '-'}</span>
 
                                                 <span>
-                                                    {connections.riot.rank
-                                                        ? `${connections.riot.rank.tier} ${connections.riot.rank.division} (${connections.riot.rank.lp} LP)`
+                                                    {riotRank
+                                                        ? `${riotRank.tier} ${riotRank.division} (${riotRank.lp} LP)`
                                                         : 'Sin clasificar'}
                                                 </span>
                                             </div>
@@ -372,14 +401,68 @@ export default function Settings() {
                                                 placeholder="GameName"
                                                 value={riotGameName}
                                                 onChange={(e) => setRiotGameName(e.target.value)}
+                                                disabled={riotLoading || riotStep === 'otpSent'}
                                             />
                                             <input
                                                 type="text"
                                                 placeholder="TagLine"
                                                 value={riotTagLine}
                                                 onChange={(e) => setRiotTagLine(e.target.value)}
+                                                disabled={riotLoading || riotStep === 'otpSent'}
                                             />
+
+                                            {riotStep === 'otpSent' && (
+                                                <input
+                                                    type="text"
+                                                    className="riot-otp"
+                                                    placeholder="Código (OTP)"
+                                                    value={riotOtp}
+                                                    onChange={(e) => setRiotOtp(e.target.value)}
+                                                />
+                                            )}
+
+                                            {riotMsg && (
+                                                <small className="riot-msg">
+                                                    {riotMsg}
+                                                </small>
+                                            )}
+
+                                            <div className="riot-actions">
+                                                {riotStep !== 'otpSent' ? (
+                                                    <button
+                                                        className="btn-connect"
+                                                        onClick={initRiotLink}
+                                                        disabled={riotLoading}
+                                                    >
+                                                        {riotLoading ? 'Enviando código...' : 'Enviar código'}
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            className="btn-connect"
+                                                            onClick={confirmRiotLink}
+                                                            disabled={riotLoading}
+                                                        >
+                                                            {riotLoading ? 'Confirmando...' : 'Confirmar'}
+                                                        </button>
+
+                                                        <button
+                                                            className="btn-disconnect"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setRiotStep('idle');
+                                                                setRiotOtp('');
+                                                                setRiotMsg('');
+                                                            }}
+                                                            disabled={riotLoading}
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
+
                                     )}
 
                                 </div>
@@ -388,15 +471,7 @@ export default function Settings() {
                                     <button className="btn-disconnect" onClick={unlinkRiot}>
                                         Desvincular
                                     </button>
-                                ) : (
-                                    <button
-                                        className="btn-connect"
-                                        onClick={linkRiot}
-                                        disabled={riotLoading}
-                                    >
-                                        {riotLoading ? 'Validando...' : 'Validar Riot ID'}
-                                    </button>
-                                )}
+                                ) : null}
                             </div>
 
 
@@ -718,7 +793,7 @@ export default function Settings() {
                                     className="btn-ghost small"
                                     onClick={() => navigate('/support')}
                                 >
-                                    Ver FAQ <FaExternalLinkAlt  />
+                                    Ver FAQ <FaExternalLinkAlt />
                                 </button>
                             </div>
 
