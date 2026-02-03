@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { Message, Conversation } from './models/Chat.js'; // Importante el .js
+import { Message, Conversation } from './models/chat.js'; // Importante el .js
 
 dotenv.config();
 
