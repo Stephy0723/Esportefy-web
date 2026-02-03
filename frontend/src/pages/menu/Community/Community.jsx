@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    FaGamepad, FaCrown, FaGlobeAmericas, FaAd, 
-    FaUserFriends, FaCheckCircle, FaPlusCircle, FaTimes, 
-    FaRegHeart, FaHeart, FaComments, FaEllipsisH, FaShareAlt, FaPaperPlane,
-    FaCamera, FaSmile, FaImage, FaVideo, FaPoll, FaHashtag, FaAt, FaLock,
+    FaGamepad, FaInfoCircle, FaFilePdf, FaCrown, FaGlobeAmericas, FaAd, FaExclamationTriangle, FaExclamationCircle, FaShieldAlt,
+    FaUserFriends, FaCheckCircle, FaPlusCircle, FaTimes, FaUndo,FaUserShield, FaCheck, FaGavel, FaRocket,
+    FaRegHeart, FaHeart, FaComments, FaEllipsisH, FaShareAlt, FaPaperPlane, FaBullhorn, FaUsers, FaChevronRight,
+    FaCamera, FaSmile, FaImage, FaVideo, FaPoll, FaHashtag, FaAt, FaLock, FaTrash, FaEyeSlash, FaFlag, FaBan,
     FaLink
 } from 'react-icons/fa';
 
@@ -129,8 +129,11 @@ const FeedSection = () => {
     const [commentAttachments, setCommentAttachments] = useState({}); // Archivos por post
     const [activeEmojiPost, setActiveEmojiPost] = useState(null); // Qué post tiene el emoji abierto
     
+    const [showReportModal, setShowReportModal] = useState(false); // Modal reporte
+    const [reportingPostId, setReportingPostId] = useState(null); // ID del post a reportar
     // --- AQUÍ ESTABA EL ERROR: FALTABA ESTE ESTADO ---
     const [replyingTo, setReplyingTo] = useState({}); 
+    
 
     // ESTADO DE PRIVACIDAD
     const [privacy, setPrivacy] = useState("Public");
@@ -138,6 +141,52 @@ const FeedSection = () => {
     const imageInputRef = useRef(null);
     const fileInputRef = useRef(null);
     const textInputRef = useRef(null);
+
+    // --- ESTADO PARA EL MENÚ DE OPCIONES ---
+    const [activeMenuId, setActiveMenuId] = useState(null); // Guarda el ID del post que tiene el menú abierto
+
+  // --- LÓGICA DE MENÚ Y ACCIONES ---
+
+    const toggleMenu = (id) => {
+        if (activeMenuId === id) setActiveMenuId(null);
+        else setActiveMenuId(id);
+    };
+
+    // 1. OCULTAR / DESHACER (Alterna la propiedad hidden)
+    const toggleHidePost = (id) => {
+        setPosts(posts.map(p => {
+            if (p.id === id) return { ...p, hidden: !p.hidden };
+            return p;
+        }));
+        setActiveMenuId(null);
+    };
+
+    // 2. ELIMINAR (Borra permanentemente)
+    const handleDeletePost = (id) => {
+        if (window.confirm("¿Eliminar post permanentemente?")) {
+            setPosts(posts.filter(p => p.id !== id));
+        }
+        setActiveMenuId(null);
+    };
+
+    // 3. INICIAR REPORTE
+    const initiateReport = (id) => {
+        setReportingPostId(id);
+        setShowReportModal(true);
+        setActiveMenuId(null);
+    };
+
+    // 4. CONFIRMAR REPORTE (Viene del Modal)
+    const handleConfirmReport = (data) => {
+        console.log(`Reporte enviado para post ${reportingPostId}:`, data);
+        
+        // Opcional: Ocultar el post automáticamente después de reportar
+        toggleHidePost(reportingPostId); 
+        
+        alert("Gracias. Hemos recibido tu reporte.");
+        setShowReportModal(false);
+        setReportingPostId(null);
+    };
 
     const [posts, setPosts] = useState([
         {
@@ -370,6 +419,7 @@ const FeedSection = () => {
         setInputText(prev => prev + prefix + symbol);
         if(textInputRef.current) textInputRef.current.focus();
     };
+    
 
     const handlePublish = () => {
         if (!inputText.trim() && !attachment) return;
@@ -512,7 +562,37 @@ const FeedSection = () => {
                                 <div className="ui-user-name">{post.user}</div>
                                 <div className="ui-post-time">{post.time}</div>
                             </div>
-                            <button className="ui-more-btn"><FaEllipsisH /></button>
+                            {/* --- MENÚ DE OPCIONES --- */}
+    <div className="post-options-container">
+        <button className="ui-more-btn" onClick={() => toggleMenu(post.id)}>
+            <FaEllipsisH />
+        </button>
+
+        {/* Solo mostramos el menú si el ID coincide */}
+        {activeMenuId === post.id && (
+            <div className="post-menu-dropdown">
+                {/* Opción 1: Guardar (Simulada) */}
+                <button className="menu-item" onClick={() => setActiveMenuId(null)}>
+                    <FaRegHeart /> <span>Guardar publicación</span>
+                </button>
+                
+                {/* Opción 2: Ocultar */}
+                <button className="menu-item" onClick={() => toggleHidePost(post.id)}>
+        <FaEyeSlash /> <span>Ocultar post</span>
+    </button>
+                {/* Opción 3: Reportar */}
+                <button className="menu-item danger" onClick={() => initiateReport(post.id)}>
+        <FaFlag /> <span>Reportar</span>
+    </button>
+                
+                {/* Opción 4: Eliminar (Solo si el post es tuyo, aquí simulamos que todos lo son) */}
+                <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
+                    <FaTrash /> <span>Eliminar</span>
+                </button>
+            </div>
+        )}
+    </div>
+
                         </div>
 
                         {/* BODY DEL POST (Igual) */}
@@ -555,7 +635,7 @@ const FeedSection = () => {
                             </button>
                         </div>
 
-                      {/* --- SECCIÓN DE COMENTARIOS --- */}
+                     {/* --- SECCIÓN DE COMENTARIOS --- */}
                         {post.showComments && (
                             <div className="comments-section">
                                 
@@ -585,7 +665,6 @@ const FeedSection = () => {
                                                         onClick={() => toggleCommentLike(post.id, comment.id)}
                                                     >
                                                         {comment.liked ? <FaHeart /> : <FaRegHeart />}    
-                                                        {/* Número de likes */}
                                                         <span>{comment.likes || 0}</span>  
                                                     </button>
                                                     <button className="action-link" onClick={() => handleReplyTo(post.id, comment.user)}>
@@ -598,93 +677,168 @@ const FeedSection = () => {
                                     ))}
                                 </div>
 
-                                {/* 2. Input de Comentarios (Chat) */}
+                                {/* 2. Input de Comentarios (CORREGIDO Y LIMPIO) */}
                                 <div className="comment-input-area">
-                                    <img src={ValorantImg} alt="me" className="comment-avatar" style={{width:'28px', height:'28px', alignSelf:'flex-end', marginBottom:'8px'}} />
+                                    <img src={ValorantImg} alt="me" className="comment-avatar" />
                                     
-                                    {/* ENVOLTORIO FLEXIBLE (NUEVO) */}
+                                    {/* INICIO DE LA PÍLDORA (WRAPPER) */}
                                     <div className="comment-input-wrapper">
                                         
-                                        {/* A. BARRA DE PREVISUALIZACIÓN DE RESPUESTA (Solo si existe replyingTo) */}
-                                       {replyingTo[post.id] && (
-            <div className="reply-preview-bar">
-                <span className="reply-info">
-                    Replying to <strong style={{color:'var(--brand-green)'}}>@{replyingTo[post.id]}</strong>
-                </span>
-                <button className="btn-cancel-reply" onClick={() => cancelReply(post.id)}>
-                    <FaTimes />
-                </button>
-            </div>
-        )}
-                                        {/* B. PREVISUALIZACIÓN DE ARCHIVO (Ya la tenías, la mantenemos aquí) */}
+                                        {/* A. PREVIEW DE RESPUESTA (Si existe) */}
+                                        {replyingTo[post.id] && (
+                                            <div className="reply-preview-bar">
+                                                <span className="reply-info">
+                                                    Replying to <strong>@{replyingTo[post.id]}</strong>
+                                                </span>
+                                                <button className="btn-cancel-reply" onClick={() => cancelReply(post.id)}>
+                                                    <FaTimes />
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* B. PREVIEW DE ARCHIVO (Si existe) */}
                                         {commentAttachments[post.id] && (
-                                            <div className="mini-attachment-preview" style={{bottom: '100%'}}>
-                                                {commentAttachments[post.id].type === 'media' ? <FaImage/> : <FaLink/>}
-                                                {commentAttachments[post.id].name}
+                                            <div className="reply-preview-bar" style={{borderBottom:'1px solid var(--sidebar-border)', borderRadius:'8px', bottom:'110%'}}>
+                                                <span style={{display:'flex', gap:'5px', alignItems:'center'}}>
+                                                    {commentAttachments[post.id].type === 'media' ? <FaImage/> : <FaLink/>}
+                                                    {commentAttachments[post.id].name}
+                                                </span>
                                                 <FaTimes style={{cursor:'pointer'}} onClick={() => setCommentAttachments({...commentAttachments, [post.id]: null})} />
                                             </div>
                                         )}
 
                                         {/* C. EL INPUT REAL */}
-                                     <input 
-            type="text" 
-            className="comment-input" 
-            placeholder={replyingTo[post.id] ? `Reply to @${replyingTo[post.id]}...` : "Write a comment..."}
-            value={commentInputs[post.id] || ""}
-            onChange={(e) => handleCommentChange(post.id, e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submitComment(post.id)}
-            autoFocus={!!replyingTo[post.id]}
-        />
-                                    </div>
+                                        <input 
+                                            type="text" 
+                                            className="comment-input-textbox" 
+                                            placeholder={replyingTo[post.id] ? `Reply to @${replyingTo[post.id]}...` : "Write a comment..."}
+                                            value={commentInputs[post.id] || ""}
+                                            onChange={(e) => handleCommentChange(post.id, e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && submitComment(post.id)}
+                                            autoFocus={!!replyingTo[post.id]}
+                                        />
 
-                                    {/* HERRAMIENTAS (Cámara, Emoji, Enviar) - SE MANTIENE IGUAL */}
-                                   <div className="comment-tools">
-            <label className="btn-icon-mini" title="Subir imagen">
-                <input type="file" style={{display:'none'}} accept="image/*" onChange={(e) => handleCommentFile(post.id, e, 'media')} />
-                <FaCamera />
-            </label>
-            
-            <label className="btn-icon-mini" title="Adjuntar archivo">
-                <input type="file" style={{display:'none'}} accept=".pdf,.doc" onChange={(e) => handleCommentFile(post.id, e, 'file')} />
-                <FaLink style={{fontSize:'0.95rem'}} />
-            </label>
-            
-            <button className="btn-icon-mini" onClick={() => setActiveEmojiPost(activeEmojiPost === post.id ? null : post.id)}>
-                <FaSmile />
-            </button>
-            
-            <button className="btn-send-comment" onClick={() => submitComment(post.id)}>
-                <FaPaperPlane />
-            </button>
-        </div>
+                                        {/* D. HERRAMIENTAS (DENTRO DEL WRAPPER) */}
+                                        <div className="comment-tools">
+                                            <label className="btn-icon-mini" title="Subir imagen">
+                                                <input type="file" style={{display:'none'}} accept="image/*" onChange={(e) => handleCommentFile(post.id, e, 'media')} />
+                                                <FaCamera />
+                                            </label>
+                                            
+                                            <label className="btn-icon-mini" title="Adjuntar archivo">
+                                                <input type="file" style={{display:'none'}} accept=".pdf,.doc" onChange={(e) => handleCommentFile(post.id, e, 'file')} />
+                                                <FaLink style={{fontSize:'0.95rem'}} />
+                                            </label>
+                                            
+                                            <button className="btn-icon-mini" onClick={() => setActiveEmojiPost(activeEmojiPost === post.id ? null : post.id)}>
+                                                <FaSmile />
+                                            </button>
+                                            
+                                            <button className="btn-send-comment" onClick={() => submitComment(post.id)}>
+                                                <FaPaperPlane />
+                                            </button>
+                                        </div>
 
-                                    {/* EMOJI PICKER (IGUAL QUE ANTES) */}
+                                    </div> 
+                                    {/* CIERRE DEL WRAPPER (PÍLDORA) */}
+
+                                    {/* EMOJI PICKER FLOTANTE */}
                                     {activeEmojiPost === post.id && (
-                                       <div className="emoji-picker-popover" style={{top: 'auto', bottom: '50px', right: 0}}>
-                                           {/* ... tu código del mapa de emojis ... */}
-                                           {EMOJI_CATEGORIES.map((cat, idx) => (
+                                        <div className="emoji-picker-popover" style={{top: 'auto', bottom: '60px', right: 0}}>
+                                            {EMOJI_CATEGORIES.map((cat, idx) => (
                                                 <div key={idx}>
                                                     <div className="emoji-cat-title">{cat.title}</div>
                                                     <div className="emoji-grid">
                                                         {cat.icons.map((item, i) => {
-                                                                if (typeof item === 'object') return <div key={i} className="emoji-item" onClick={() => addEmojiToComment(post.id, item.char)}><item.Comp/></div>
-                                                                return <div key={i} className="emoji-item" onClick={() => addEmojiToComment(post.id, item)}>{item}</div>
+                                                            if (typeof item === 'object') return <div key={i} className="emoji-item" onClick={() => addEmojiToComment(post.id, item.char)}><item.Comp/></div>
+                                                            return <div key={i} className="emoji-item" onClick={() => addEmojiToComment(post.id, item)}>{item}</div>
                                                         })}
                                                     </div>
                                                 </div>
                                             ))}
-                                       </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         )}
+                        
                     </div>
                 ))}
             </div>
         </section>
     );
 };
+// ==========================================
+// NUEVO COMPONENTE: MODAL DE REPORTE
+// ==========================================
+const ReportModal = ({ isOpen, onClose, onSubmit }) => {
+    const [reason, setReason] = useState("");
+    const [details, setDetails] = useState("");
 
+    if (!isOpen) return null;
+
+    const reportOptions = [
+        "Es spam o engañoso",
+        "Lenguaje ofensivo o de odio",
+        "Información falsa",
+        "Acoso o bullying",
+        "Violencia o contenido explícito"
+    ];
+
+    const handleSubmit = () => {
+        onSubmit({ reason, details });
+        // Reset
+        setReason("");
+        setDetails("");
+    }
+    return (
+        <div className="report-modal-overlay" onClick={(e) => e.target.className === 'report-modal-overlay' && onClose()}>
+            <div className="report-modal-content">
+                <div className="report-header">
+                    <h3><FaExclamationTriangle style={{color:'#e91e63', marginRight:'8px'}}/> Reportar publicación</h3>
+                    <button className="btn-icon-mini" onClick={onClose}><FaTimes /></button>
+                </div>
+                
+                <div className="report-body">
+                    <span className="report-label">Selecciona un problema:</span>
+                    <div className="report-options-grid">
+                        {reportOptions.map((opt, idx) => (
+                            <label key={idx} className={`report-option-label ${reason === opt ? 'selected' : ''}`}>
+                                <input 
+                                    type="radio" 
+                                    name="reportReason" 
+                                    className="report-radio"
+                                    checked={reason === opt}
+                                    onChange={() => setReason(opt)}
+                                />
+                                {opt}
+                            </label>
+                        ))}
+                    </div>
+
+                    <span className="report-label">Detalles adicionales (opcional):</span>
+                    <textarea 
+                        className="report-textarea" 
+                        placeholder="Danos más contexto..."
+                        value={details}
+                        onChange={(e) => setDetails(e.target.value)}
+                    ></textarea>
+                </div>
+
+                <div className="report-footer">
+                    <button className="btn-cancel-modal" onClick={onClose}>Cancelar</button>
+                    <button 
+                        className="btn-submit-report" 
+                        onClick={handleSubmit}
+                        disabled={!reason}
+                    >
+                        Enviar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ==========================================
 // 4. SIDEBAR
@@ -759,40 +913,449 @@ const SidebarSection = ({ onOpenModal }) => {
 
 
 // ==========================================
-// 5. MODAL
+// 5. MODAL (MEJORADO Y RESTRINGIDO)
 // ==========================================
-const CreateModal = ({ isOpen, onClose }) => {
+
+// SIMULACIÓN DE ROL
+const CURRENT_USER_ROLE = 'organizer'; 
+
+const CreateCommunityModal = ({ isOpen, onClose }) => {
+    
+    // --- NAVEGACIÓN ---
+    const [activeTab, setActiveTab] = useState('identity'); 
+
+    // --- ESTADOS DEL FORMULARIO COMPLETO ---
+    const [formData, setFormData] = useState({
+        // 1. Identidad Pública
+        name: '', shortUrl: '', description: '', type: 'Mixta', 
+        targetAudience: 'Mixto', language: 'Español', region: 'LATAM', launchDate: '',
+        
+        // 2. Temática y Contenido
+        mainGames: [], allowAllGames: false,
+        contentCategories: { noticias: true, memes: true, opinion: true, clips: true, fanart: true, guias: true },
+        contentProhibited: '',
+        
+        // 3. Sistema de Publicaciones
+        postTypes: { texto: true, imagen: true, video: true, enlace: true, encuestas: true },
+        whoCanPost: 'all', // all, verified, staff
+        allowComments: true, preModeration: false, allowReactions: true, allowShare: true,
+
+        // 4. Usuarios y Roles
+        roles: { owner: true, admin: true, moderator: true, user: true, visitor: true },
+        
+        // 7. Moderación y Reglas
+        rulesText: '', toxicityFilter: true, spoilerTag: true, nsfwAllowed: false,
+        
+        // 8. Reportes & 13. Seguridad
+        reportReasons: { spam: true, hate: true, nsfw: true, spoiler: true },
+        emailVerification: true, antiSpamControl: true,
+
+        // 12. Comunicación & 14. Futuro
+        discordIntegration: false, welcomeEmail: true,
+        futureEvents: false, futureTournaments: false
+    });
+
+    // Archivos
+    const [media, setMedia] = useState({
+        banner: { file: null, preview: null },
+        avatar: { file: null, preview: null },
+        rulesPdf: { file: null, name: '' }
+    });
+
+    // Admins
+    const [adminInput, setAdminInput] = useState('');
+    const [admins, setAdmins] = useState([]);
+
+    // Referencias
+    const bannerRef = useRef(null);
+    const avatarRef = useRef(null);
+    const pdfRef = useRef(null);
+
     if (!isOpen) return null;
+
+    // --- BLOQUEO DE SEGURIDAD ---
+    if (CURRENT_USER_ROLE !== 'organizer') {
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-content restricted-modal fade-in-up">
+                    <div className="restricted-icon-box"><FaLock /></div>
+                    <h2>Acceso Restringido</h2>
+                    <p>Esta herramienta profesional está reservada para <strong>Organizadores Verificados</strong>.</p>
+                    <button className="btn-confirm-v3" onClick={onClose}>Entendido</button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- HANDLERS GENÉRICOS ---
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleCheck = (e) => setFormData({ ...formData, [e.target.name]: e.target.checked });
+    
+    // Handler para objetos anidados (ej: contentCategories.noticias)
+    const handleNestedCheck = (category, key) => {
+        setFormData(prev => ({
+            ...prev,
+            [category]: { ...prev[category], [key]: !prev[category][key] }
+        }));
+    };
+
+    // Manejo de Imágenes
+    const handleImage = (e, type) => {
+        const file = e.target.files[0];
+        if (file) {
+            setMedia(prev => ({ ...prev, [type]: { file, preview: URL.createObjectURL(file) } }));
+        }
+    };
+
+    // Manejo de PDF
+    const handlePdf = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type === 'application/pdf') {
+            setMedia(prev => ({ ...prev, rulesPdf: { file, name: file.name } }));
+        } else {
+            alert("Solo archivos PDF.");
+        }
+    };
+
+    const toggleGame = (game) => {
+        const current = formData.mainGames;
+        if (current.includes(game)) setFormData({ ...formData, mainGames: current.filter(g => g !== game) });
+        else if (current.length < 5) setFormData({ ...formData, mainGames: [...current, game] });
+    };
+
+    const addAdmin = (e) => {
+        if (e.key === 'Enter' && adminInput.trim()) {
+            if (!admins.includes(adminInput.trim())) setAdmins([...admins, adminInput.trim()]);
+            setAdminInput('');
+        }
+    };
+
+    const AVAILABLE_GAMES = ["Valorant", "LoL", "CS2", "Fortnite", "CoD", "FIFA", "Minecraft", "Overwatch 2", "Rocket League", "GTA V"];
+
+    // --- MENSAJES MOTIVACIONALES ---
+    const getMotivationalMessage = () => {
+        switch(activeTab) {
+            case 'identity': return "🚀 El primer paso hacia la grandeza. Define quiénes son.";
+            case 'content': return "🎮 El contenido es el rey. Diseña la experiencia de tus usuarios.";
+            case 'rules': return "⚖️ Un gran poder conlleva una gran responsabilidad. Establece el orden.";
+            case 'team': return "🛡️ No estás solo. Recluta a tus fieles guardianes.";
+            case 'settings': return "⚙️ Los detalles técnicos que marcan la diferencia profesional.";
+            default: return "";
+        }
+    };
 
     return (
         <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && onClose()}>
-            <div className="modal-content fade-in-up">
-                <div className="modal-header">
-                    <div className="modal-title-flex">
-                        <FaPlusCircle className="icon-accent" />
-                        <h2>Nueva Comunidad</h2>
+            <div className="modal-content fade-in-up modal-xl-pro"> 
+                
+                {/* HEADER PRO */}
+                <div className="modal-header-complex">
+                    <div className="header-top">
+                        <div className="header-brand">
+                            <div>
+                                <h3 style={{margin:0}}>Crear Comunidad Profesional</h3>
+                                <small style={{color:'var(--text-muted)'}}>Panel de Control de Organizador</small>
+                            </div>
+                        </div>
+                        <button className="close-btn" onClick={onClose}><FaTimes /></button>
                     </div>
-                    <button className="close-btn" onClick={onClose}><FaTimes /></button>
-                </div>
-                <div className="modal-body">
-                    <div className="form-group-v3">
-                        <label>Nombre de la comunidad</label>
-                        <input type="text" placeholder="Ej: Elite Gamers" className="modal-input-v3" />
+                    
+                    {/* BARRA DE PROGRESO / PESTAÑAS */}
+                    <div className="modal-tabs-pro">
+                        {[
+                            { id: 'identity', icon: FaInfoCircle, label: 'Identidad' },
+                            { id: 'content', icon: FaGamepad, label: 'Contenido' },
+                            { id: 'rules', icon: FaGavel, label: 'Reglas' },
+                            { id: 'team', icon: FaUsers, label: 'Equipo' },
+                            { id: 'settings', icon: FaShieldAlt, label: 'Avanzado' },
+                        ].map(tab => (
+                            <button 
+                                key={tab.id}
+                                className={`tab-btn-pro ${activeTab === tab.id ? 'active' : ''}`} 
+                                onClick={() => setActiveTab(tab.id)}
+                            >
+                                <tab.icon /> {tab.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
+
+                {/* MENSAJE MOTIVACIONAL INTERMEDIO */}
+                <div className="motivational-banner fade-in">
+                    {getMotivationalMessage()}
+                </div>
+
+                <div className="modal-body scrollable-body pro-body">
+                    
+                    {/* ================= PESTAÑA 1: IDENTIDAD ================= */}
+                    {activeTab === 'identity' && (
+                        <div className="tab-content fade-in">
+                            <div className="media-upload-section">
+                                <div className="banner-upload-area" onClick={() => bannerRef.current.click()} style={{backgroundImage: media.banner.preview ? `url(${media.banner.preview})` : 'none'}}>
+                                    {!media.banner.preview && <div className="placeholder-content"><FaImage size={24}/> <span>Banner Principal (1200x300)</span></div>}
+                                    <input type="file" ref={bannerRef} hidden accept="image/*" onChange={(e) => handleImage(e, 'banner')} />
+                                </div>
+                                <div className="avatar-upload-circle" onClick={() => avatarRef.current.click()} style={{backgroundImage: media.avatar.preview ? `url(${media.avatar.preview})` : 'none'}}>
+                                    {!media.avatar.preview && <FaCamera />}
+                                    <input type="file" ref={avatarRef} hidden accept="image/*" onChange={(e) => handleImage(e, 'avatar')} />
+                                </div>
+                            </div>
+
+                            <div className="form-grid">
+                                <div className="form-group-v3">
+                                    <label>Nombre Público</label>
+                                    <input type="text" name="name" className="modal-input-v3" placeholder="Ej: Valorant LATAM Oficial" value={formData.name} onChange={handleChange} />
+                                </div>
+                                <div className="form-group-v3">
+                                    <label>URL Corta / Slug</label>
+                                    <div className="input-prefix-group">
+                                        <span>esportefy.com/c/</span>
+                                        <input type="text" name="shortUrl" placeholder="valorant-latam" value={formData.shortUrl} onChange={handleChange} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="form-group-v3">
+                                <label>Descripción Pública (Misión)</label>
+                                <textarea name="description" className="modal-input-v3" rows="2" placeholder="¿Qué es esta comunidad y para quién?" value={formData.description} onChange={handleChange}></textarea>
+                            </div>
+
+                            <div className="form-grid-3">
+                                <div className="form-group-v3">
+                                    <label>Región</label>
+                                    <select name="region" className="modal-input-v3" value={formData.region} onChange={handleChange}>
+                                        <option>Global</option><option>LATAM</option><option>Europa</option><option>Norteamérica</option><option>Brasil</option>
+                                    </select>
+                                </div>
+                                <div className="form-group-v3">
+                                    <label>Idioma</label>
+                                    <select name="language" className="modal-input-v3" value={formData.language} onChange={handleChange}>
+                                        <option>Español</option><option>Inglés</option><option>Portugués</option><option>Mixto</option>
+                                    </select>
+                                </div>
+                                <div className="form-group-v3">
+                                    <label>Público Objetivo</label>
+                                    <select name="targetAudience" className="modal-input-v3" value={formData.targetAudience} onChange={handleChange}>
+                                        <option>Casual</option><option>Hardcore / Competitivo</option><option>Mixto</option><option>Profesional</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ================= PESTAÑA 2: CONTENIDO ================= */}
+                    {activeTab === 'content' && (
+                        <div className="tab-content fade-in">
+                            <div className="section-block">
+                                <h4><FaGamepad /> Alcance del Contenido</h4>
+                                <div className="form-group-v3">
+                                    <label>Videojuegos Principales (Máx 5)</label>
+                                    <div className="games-grid-selector">
+                                        {AVAILABLE_GAMES.map(game => (
+                                            <div key={game} className={`game-selector-item ${formData.mainGames.includes(game) ? 'selected' : ''}`} onClick={() => toggleGame(game)}>
+                                                {formData.mainGames.includes(game) && <FaCheck className="check-icon"/>}
+                                                {game}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="checkbox-row mt-2">
+                                        <input type="checkbox" name="allowAllGames" checked={formData.allowAllGames} onChange={handleCheck} />
+                                        <span>Permitir contenido Off-Topic / Otros juegos</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="form-grid">
+                                <div className="section-block">
+                                    <h4>Categorías Permitidas</h4>
+                                    <div className="checkbox-grid">
+                                        {Object.keys(formData.contentCategories).map(cat => (
+                                            <label key={cat} className="checkbox-card">
+                                                <input type="checkbox" checked={formData.contentCategories[cat]} onChange={() => handleNestedCheck('contentCategories', cat)} />
+                                                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="section-block">
+                                    <h4>Tipos de Posts</h4>
+                                    <div className="checkbox-grid">
+                                        {Object.keys(formData.postTypes).map(type => (
+                                            <label key={type} className="checkbox-card">
+                                                <input type="checkbox" checked={formData.postTypes[type]} onChange={() => handleNestedCheck('postTypes', type)} />
+                                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="form-group-v3">
+                                <label>Contenido Prohibido (Resumen)</label>
+                                <input type="text" name="contentProhibited" className="modal-input-v3" placeholder="Ej: Piratería, Cheats, NSFW Explicito..." value={formData.contentProhibited} onChange={handleChange} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ================= PESTAÑA 3: REGLAS Y MODERACIÓN ================= */}
+                    {activeTab === 'rules' && (
+                        <div className="tab-content fade-in">
+                            <div className="form-grid">
+                                <div className="section-block">
+                                    <h4><FaFilePdf /> Documentación Legal</h4>
+                                    <div className={`pdf-dropzone ${media.rulesPdf.file ? 'file-selected' : ''}`} onClick={() => pdfRef.current.click()}>
+                                        <FaFilePdf className="pdf-icon" />
+                                        <div className="pdf-info">
+                                            {media.rulesPdf.file ? <span className="filename">{media.rulesPdf.name}</span> : <span>Subir Reglamento PDF</span>}
+                                        </div>
+                                        <input type="file" ref={pdfRef} hidden accept="application/pdf" onChange={handlePdf} />
+                                    </div>
+                                </div>
+                                <div className="section-block">
+                                    <h4><FaGavel /> Filtros Automáticos</h4>
+                                    <div className="toggles-list">
+                                        <label className="toggle-row">
+                                            <span>Filtro de Toxicidad / Hate</span>
+                                            <input type="checkbox" name="toxicityFilter" checked={formData.toxicityFilter} onChange={handleCheck} />
+                                        </label>
+                                        <label className="toggle-row">
+                                            <span>Etiqueta Spoilers Obligatoria</span>
+                                            <input type="checkbox" name="spoilerTag" checked={formData.spoilerTag} onChange={handleCheck} />
+                                        </label>
+                                        <label className="toggle-row">
+                                            <span>Permitir NSFW (+18)</span>
+                                            <input type="checkbox" name="nsfwAllowed" checked={formData.nsfwAllowed} onChange={handleCheck} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="form-group-v3 mt-3">
+                                <label>Normas de Convivencia (Web Visible)</label>
+                                <textarea name="rulesText" className="modal-input-v3" rows="4" placeholder="1. Respeto ante todo...&#10;2. No spam...&#10;3. Usar canales correctos..." value={formData.rulesText} onChange={handleChange}></textarea>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ================= PESTAÑA 4: EQUIPO Y USUARIOS ================= */}
+                    {activeTab === 'team' && (
+                        <div className="tab-content fade-in">
+                            <div className="section-block">
+                                <h4><FaUserShield /> Estructura del Staff</h4>
+                                <div className="admins-input-container">
+                                    <div className="admins-list">
+                                        <span className="admin-tag owner">@Tú (Owner)</span>
+                                        {admins.map((admin, idx) => (
+                                            <span key={idx} className="admin-tag">
+                                                @{admin} <FaTimes onClick={() => setAdmins(admins.filter(a => a !== admin))} />
+                                            </span>
+                                        ))}
+                                        <input type="text" className="transparent-input" placeholder="Añadir Admin..." value={adminInput} onChange={(e) => setAdminInput(e.target.value)} onKeyDown={addAdmin} />
+                                    </div>
+                                </div>
+                                <p className="helper-text">Los administradores tienen acceso completo al panel de moderación y logs.</p>
+                            </div>
+
+                            <div className="form-group-v3 mt-3">
+                                <label>Permisos de Publicación</label>
+                                <div className="radio-group-vertical">
+                                    <label className={`radio-card ${formData.whoCanPost === 'staff' ? 'active' : ''}`}>
+                                        <input type="radio" name="whoCanPost" value="staff" checked={formData.whoCanPost === 'staff'} onChange={handleChange} />
+                                        <div><strong>Solo Staff (Noticias)</strong><p>Usuarios solo comentan.</p></div>
+                                    </label>
+                                    <label className={`radio-card ${formData.whoCanPost === 'verified' ? 'active' : ''}`}>
+                                        <input type="radio" name="whoCanPost" value="verified" checked={formData.whoCanPost === 'verified'} onChange={handleChange} />
+                                        <div><strong>Usuarios Verificados</strong><p>Requiere verificación previa.</p></div>
+                                    </label>
+                                    <label className={`radio-card ${formData.whoCanPost === 'all' ? 'active' : ''}`}>
+                                        <input type="radio" name="whoCanPost" value="all" checked={formData.whoCanPost === 'all'} onChange={handleChange} />
+                                        <div><strong>Comunidad Abierta</strong><p>Cualquiera puede publicar.</p></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ================= PESTAÑA 5: AVANZADO / SETTINGS ================= */}
+                    {activeTab === 'settings' && (
+                        <div className="tab-content fade-in">
+                            <div className="form-grid">
+                                <div className="section-block">
+                                    <h4><FaShieldAlt /> Seguridad</h4>
+                                    <div className="toggles-list">
+                                        <label className="toggle-row">
+                                            <span>Verificación de Email</span>
+                                            <input type="checkbox" name="emailVerification" checked={formData.emailVerification} onChange={handleCheck} />
+                                        </label>
+                                        <label className="toggle-row">
+                                            <span>Control Anti-Spam</span>
+                                            <input type="checkbox" name="antiSpamControl" checked={formData.antiSpamControl} onChange={handleCheck} />
+                                        </label>
+                                        <label className="toggle-row">
+                                            <span>Moderación Previa de Posts</span>
+                                            <input type="checkbox" name="preModeration" checked={formData.preModeration} onChange={handleCheck} />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className="section-block">
+                                    <h4><FaBullhorn /> Comunicación</h4>
+                                    <div className="toggles-list">
+                                        <label className="toggle-row">
+                                            <span>Email de Bienvenida</span>
+                                            <input type="checkbox" name="welcomeEmail" checked={formData.welcomeEmail} onChange={handleCheck} />
+                                        </label>
+                                        <label className="toggle-row">
+                                            <span>Integración Discord (Webhook)</span>
+                                            <input type="checkbox" name="discordIntegration" checked={formData.discordIntegration} onChange={handleCheck} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="section-block mt-3">
+                                <h4><FaRocket /> Futuro (Roadmap)</h4>
+                                <div className="checkbox-grid">
+                                    <label className="checkbox-card">
+                                        <input type="checkbox" name="futureEvents" checked={formData.futureEvents} onChange={handleCheck} />
+                                        Eventos en Vivo
+                                    </label>
+                                    <label className="checkbox-card">
+                                        <input type="checkbox" name="futureTournaments" checked={formData.futureTournaments} onChange={handleCheck} />
+                                        Torneos Oficiales
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+
+                {/* FOOTER */}
                 <div className="modal-footer">
                     <button className="btn-cancel-v3" onClick={onClose}>Cancelar</button>
-                    <button className="btn-confirm-v3" onClick={onClose}>Crear ahora</button>
+                    {activeTab !== 'settings' ? (
+                        <button className="btn-next-v3" onClick={() => {
+                            const tabs = ['identity', 'content', 'rules', 'team', 'settings'];
+                            const nextIndex = tabs.indexOf(activeTab) + 1;
+                            if (nextIndex < tabs.length) setActiveTab(tabs[nextIndex]);
+                        }}>
+                            Siguiente <FaChevronRight />
+                        </button>
+                    ) : (
+                        <button className="btn-confirm-v3" onClick={() => console.log(formData)}>
+                            Lanzar Comunidad <FaRocket />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
 
-
 // ==========================================
 // 6. MAIN
 // ==========================================
+
 const Community = () => {
     const [showModal, setShowModal] = useState(false);
 
@@ -816,9 +1379,15 @@ const Community = () => {
                 </div>
             </div>
 
-            <CreateModal isOpen={showModal} onClose={() => setShowModal(false)} />
+            {/* --- AQUÍ ESTÁ EL CAMBIO --- */}
+            {/* Antes decía <CreateModal ... /> */}
+            <CreateCommunityModal 
+                isOpen={showModal} 
+                onClose={() => setShowModal(false)} 
+            />
         </div>
     );
 };
+
 
 export default Community;
