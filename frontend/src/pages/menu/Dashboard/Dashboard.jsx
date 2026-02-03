@@ -117,6 +117,43 @@ const Dashboard = () => {
     const riotRank = user?.gameProfiles?.lol?.rank;
     const riotName = user?.connections?.riot?.gameName;
     const riotTagLine = user?.connections?.riot?.tagLine;
+    const riotGameIds = new Set(['lol', 'valorant', 'wildrift', 'tft', 'runeterra']);
+    const hasRiotGame = userData.games.some((gameId) => riotGameIds.has(gameId));
+    const profileComplete = Boolean(user?.avatar || user?.bio || user?.description || user?.about);
+
+    const onboardingSteps = [
+        {
+            id: 'profile',
+            label: 'Completa tu perfil',
+            done: profileComplete,
+            cta: 'Editar',
+            action: () => navigate('/profile')
+        },
+        {
+            id: 'games',
+            label: 'Selecciona tus juegos',
+            done: userData.games.length > 0,
+            cta: 'Elegir',
+            action: () => navigate('/profile')
+        },
+        {
+            id: 'team',
+            label: 'Crea o únete a un equipo',
+            done: Boolean(activeTeam),
+            cta: activeTeam ? 'Ver' : 'Crear',
+            action: () => navigate(activeTeam ? '/teams' : '/create-team')
+        },
+        {
+            id: 'riot',
+            label: 'Vincula tu cuenta Riot (ID)',
+            done: Boolean(riotLinked),
+            hidden: !hasRiotGame,
+            cta: 'Vincular',
+            action: () => navigate('/settings')
+        }
+    ];
+    const visibleSteps = onboardingSteps.filter((step) => !step.hidden);
+    const completedSteps = visibleSteps.filter((step) => step.done).length;
 
     const resolveTeamRole = (team) => {
         if (!team || !user?._id) return '';
@@ -273,6 +310,36 @@ const Dashboard = () => {
                             >
                                 {activeTeam ? 'Ver' : 'Crear'}
                             </button>
+                        </div>
+
+                        <div className="onboarding-card">
+                            <div className="onboarding-header">
+                                <div>
+                                    <span className="onboarding-kicker">PRIMEROS PASOS</span>
+                                    <h4>Checklist de Inicio</h4>
+                                </div>
+                                <span className="onboarding-progress">{completedSteps}/{visibleSteps.length}</span>
+                            </div>
+                            <div className="onboarding-steps">
+                                {visibleSteps.map((step) => (
+                                    <div key={step.id} className={`onboarding-step ${step.done ? 'done' : ''}`}>
+                                        <div className="step-status">
+                                            <i className={`bx ${step.done ? 'bx-check-circle' : 'bx-circle'}`}></i>
+                                        </div>
+                                        <div className="step-meta">
+                                            <span className="step-label">{step.label}</span>
+                                            <span className="step-desc">{step.done ? 'Completado' : 'Pendiente'}</span>
+                                        </div>
+                                        <button
+                                            className="step-action"
+                                            onClick={step.action}
+                                            disabled={step.done}
+                                        >
+                                            {step.done ? 'OK' : step.cta}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

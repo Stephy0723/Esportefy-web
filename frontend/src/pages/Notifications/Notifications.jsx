@@ -35,8 +35,26 @@ const Notifications = () => {
     });
   }, [notifications, filter]);
 
-  const handleAction = (id, status) => {
-    addToast(status === 'accepted' ? 'Solicitud aceptada' : 'Solicitud rechazada', status === 'accepted' ? 'success' : 'info');
+  const handleAction = async (note, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (note?.meta?.teamId && note?.meta?.requestId) {
+        await axios.patch(
+          `http://localhost:4000/api/teams/${note.meta.teamId}/requests/${note.meta.requestId}`,
+          { action },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+      if (token) {
+        await axios.patch(`http://localhost:4000/api/notifications/${note.id}/read`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      removeNotification(note.id);
+      addToast(action === 'approve' ? 'Solicitud aceptada' : 'Solicitud rechazada', action === 'approve' ? 'success' : 'info');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'No se pudo procesar', 'error');
+    }
   };
 
   const handleRemove = async (id) => {
@@ -51,6 +69,46 @@ const Notifications = () => {
       // no bloquear UI
     }
     removeNotification(id);
+  };
+
+  const handleSave = async (note) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await axios.patch(
+        `http://localhost:4000/api/notifications/${note.id}/save`,
+        { saved: !note.isSaved },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const updated = res.data?.notification;
+      if (updated) {
+        loadNotifications(
+          notifications.map((n) => (String(n.id) === String(note.id) ? { ...n, isSaved: updated.isSaved } : n))
+        );
+      }
+    } catch (_) {
+      addToast('No se pudo actualizar', 'error');
+    }
+  };
+
+  const handleArchive = async (note) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await axios.patch(
+        `http://localhost:4000/api/notifications/${note.id}/archive`,
+        { archived: !note.isArchived },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const updated = res.data?.notification;
+      if (updated) {
+        loadNotifications(
+          notifications.map((n) => (String(n.id) === String(note.id) ? { ...n, isArchived: updated.isArchived, status: updated.status } : n))
+        );
+      }
+    } catch (_) {
+      addToast('No se pudo archivar', 'error');
+    }
   };
 
   const handleMarkAll = async () => {
@@ -110,6 +168,12 @@ const Notifications = () => {
                     </div>
 
                     <div className="top-actions">
+                      <button className={`icon-btn ${note.isSaved ? 'active' : ''}`} onClick={() => handleSave(note)} title="Guardar">
+                        <i className='bx bx-bookmark'></i>
+                      </button>
+                      <button className={`icon-btn ${note.isArchived ? 'active' : ''}`} onClick={() => handleArchive(note)} title="Archivar">
+                        <i className='bx bx-archive-in'></i>
+                      </button>
                       <button className="icon-btn close" onClick={() => handleRemove(note.id)}>
                         <i className='bx bx-x'></i>
                       </button>
@@ -137,8 +201,8 @@ const Notifications = () => {
 
                     {note.status === 'pending' && (
                       <div className="decision-buttons">
-                        <button className="btn-decision accept" onClick={() => handleAction(note.id, 'accepted')}>Aceptar</button>
-                        <button className="btn-decision cancel" onClick={() => handleAction(note.id, 'rejected')}>Rechazar</button>
+                        <button className="btn-decision accept" onClick={() => handleAction(note, 'approve')}>Aceptar</button>
+                        <button className="btn-decision cancel" onClick={() => handleAction(note, 'reject')}>Rechazar</button>
                       </div>
                     )}
                   </div>

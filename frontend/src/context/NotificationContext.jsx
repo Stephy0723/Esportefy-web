@@ -78,8 +78,9 @@ export const NotificationProvider = ({ children }) => {
       message: n.message || '',
       time: n.createdAt ? 'Ahora mismo' : 'Ahora mismo',
       status: n.status || 'unread',
-      isSaved: false,
-      isArchived: false,
+      isSaved: Boolean(n.isSaved),
+      isArchived: Boolean(n.isArchived),
+      meta: n.meta || {},
       visuals: n.visuals || { icon: 'bx-bell', color: '#8EDB15', glow: false }
     })));
   };

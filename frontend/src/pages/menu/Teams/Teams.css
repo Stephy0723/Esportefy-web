@@ -110,15 +110,15 @@
    ========================================= */
 .teams-grid-pro {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.4rem;
 }
 
 .team-card-banner {
     position: relative;
     border-radius: 20px;
-    padding: 1.5rem;
-    height: 200px;
+    padding: 1.2rem;
+    height: 180px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -163,15 +163,15 @@
 
 /* Elementos Tarjeta */
 .card-top-row { display: flex; justify-content: space-between; align-items: flex-start; }
-.team-identity { display: flex; align-items: center; gap: 15px; }
+.team-identity { display: flex; align-items: center; gap: 12px; }
 .team-logo-circle {
-    width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.1);
+    width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.1);
     display: flex; justify-content: center; align-items: center; font-weight: bold;
     border: 2px solid rgba(255,255,255,0.2); overflow: hidden;
 }
 .team-logo-circle img { width: 100%; height: 100%; object-fit: cover; }
-.team-texts h3 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
-.game-label { font-size: 0.75rem; text-transform: uppercase; color: rgba(255,255,255,0.7); letter-spacing: 2px; }
+.team-texts h3 { margin: 0; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.6px; }
+.game-label { font-size: 0.7rem; text-transform: uppercase; color: rgba(255,255,255,0.7); letter-spacing: 1.5px; }
 .team-category-label {
     display: inline-block;
     margin-top: 6px;
@@ -184,13 +184,13 @@
     padding: 2px 8px;
     border-radius: 999px;
 }
-.rank-badge { font-size: 1.5rem; filter: drop-shadow(0 0 5px currentColor); }
+.rank-badge { font-size: 1.35rem; filter: drop-shadow(0 0 5px currentColor); }
 
 /* Roster Superpuesto */
-.roster-preview { display: flex; padding-left: 10px; }
+.roster-preview { display: flex; padding-left: 8px; }
 .member-avatar-stack {
-    width: 35px; height: 35px; border-radius: 50%; overflow: hidden;
-    border: 2px solid #000; margin-left: -12px; transition: 0.2s;
+    width: 30px; height: 30px; border-radius: 50%; overflow: hidden;
+    border: 2px solid #000; margin-left: -10px; transition: 0.2s;
 }
 .member-avatar-stack img { width: 100%; height: 100%; }
 .member-avatar-stack:hover { transform: translateY(-5px); z-index: 10; }
@@ -198,11 +198,12 @@
 /* Footer Tarjeta */
 .card-footer-row {
     display: flex; justify-content: space-between; align-items: center;
-    border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 8px;
+    gap: 6px;
 }
-.coach-label { font-size: 0.7rem; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.coach-label { font-size: 0.65rem; text-transform: uppercase; color: rgba(255,255,255,0.6); }
 .roster-status {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 800;
     padding: 3px 8px;
     border-radius: 999px;
@@ -215,9 +216,14 @@
     background: rgba(239,68,68,0.2);
     color: #f87171;
 }
+.roster-status.subtle {
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    font-weight: 600;
+}
 .btn-view-mini {
     background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-    color: white; padding: 5px 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;
+    color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; cursor: pointer;
 }
 .btn-view-mini:hover { background: white; color: black; }
 
@@ -344,16 +350,16 @@
 }
 
 .team-info-body {
-    margin-top: 18px;
+    margin-top: 14px;
     display: grid;
-    gap: 16px;
+    gap: 12px;
 }
 
 .info-section {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 16px;
-    padding: 16px;
+    padding: 12px;
 }
 
 .info-section label {
@@ -368,8 +374,8 @@
 .members-scroll-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-height: 260px;
+    gap: 8px;
+    max-height: 240px;
     overflow: auto;
 }
 
@@ -378,15 +384,20 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border-radius: 12px;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
 }
 
+.member-row-item.empty {
+    opacity: 0.65;
+    border-style: dashed;
+}
+
 .member-avatar {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 10px;
     background: rgba(142,219,21,0.15);
     display: grid;
@@ -402,6 +413,7 @@
 
 .member-name {
     font-weight: 700;
+    font-size: 0.9rem;
 }
 
 .member-meta {
@@ -410,6 +422,98 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+}
+
+.form-hint {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.form-hint.direct {
+    color: #d6ff9f;
+    border-color: rgba(142,219,21,0.3);
+    background: rgba(142,219,21,0.08);
+}
+
+.form-hint.pending {
+    color: #facc15;
+    border-color: rgba(250,204,21,0.3);
+    background: rgba(250,204,21,0.08);
+}
+
+.form-alert {
+    font-size: 0.75rem;
+    color: #fca5a5;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+}
+
+.form-alert.ok {
+    color: #bbf7d0;
+    background: rgba(34,197,94,0.15);
+    border-color: rgba(34,197,94,0.35);
+}
+
+.riot-id-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.riot-id-row input {
+    flex: 1;
+}
+
+.btn-validate {
+    border: none;
+    background: #8edb15;
+    color: #0b0f0c;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.btn-validate:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.invite-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.invite-code {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    color: #eaffc7;
+    background: rgba(142,219,21,0.15);
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(142,219,21,0.25);
+}
+
+.btn-copy {
+    border: none;
+    background: #8edb15;
+    color: #0b0f0c;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.75rem;
 }
 
 .logo-upload-row {
@@ -484,12 +588,12 @@
 .team-join-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .team-join-form input,
 .team-join-form select {
-    height: 42px;
+    height: 38px;
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.03);
@@ -500,7 +604,7 @@
 .join-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
 }
 
 .request-actions {

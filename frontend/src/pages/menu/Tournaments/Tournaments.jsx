@@ -172,6 +172,21 @@ const Tournaments = () => {
     });
   };
 
+  const getJoinEligibility = (tournament) => {
+    if (!tournament) return { canJoin: false, reasons: ['Torneo no disponible'] };
+    const reasons = [];
+    const [ocupados, totales] = String(tournament.slots || '0/0').split('/').map(Number);
+    const estaLleno = Number.isFinite(ocupados) && Number.isFinite(totales) ? ocupados >= totales : false;
+    const hasTeam = effectiveTeamIds.length > 0;
+    const alreadyIn = hasRegisteredTeam(tournament);
+    if (tournament.status !== 'open' || tournament.registrationClosed) reasons.push('Inscripciones cerradas');
+    if (estaLleno) reasons.push('No hay cupos disponibles');
+    if (!hasTeam) reasons.push('No tienes equipo creado');
+    if (alreadyIn) reasons.push('Tu equipo ya está inscrito');
+    if (needsRiot(tournament) && !hasRiotLinked) reasons.push('Vincula tu cuenta Riot');
+    return { canJoin: reasons.length === 0, reasons };
+  };
+
   // Helper para obtener imagen segura
   const getGameImage = (gameName) => {
     return GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
@@ -721,7 +736,7 @@ useEffect(() => {
                                         background: GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15',
                                         boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color}40`
                                     }}
-                                    disabled={needsRiot(selectedTournament) && !hasRiotLinked}
+                                    disabled={!getJoinEligibility(selectedTournament).canJoin}
                                 >
                                     {detailLoading ? 'Cargando...' : 'Inscribirse Ahora'} <i className='bx bx-right-arrow-alt'></i>
                                 </button>
@@ -732,6 +747,17 @@ useEffect(() => {
                                 </button>
                             )}
                         </div>
+                        {(() => {
+                          const joinState = getJoinEligibility(selectedTournament);
+                          if (joinState.canJoin) return null;
+                          return (
+                            <div className="join-hints">
+                              {joinState.reasons.map((reason, idx) => (
+                                <span key={`${reason}-${idx}`} className="join-hint">{reason}</span>
+                              ))}
+                            </div>
+                          );
+                        })()}
                     </div>
                 </div>
             </div>

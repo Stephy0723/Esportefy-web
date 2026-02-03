@@ -238,8 +238,18 @@ export const resetPassword = async (req, res) => {
 // 3. Actualizar perfil
 export const updateProfile = async (req, res) => {
     try {
-        // Copiamos los datos del body
-        let updateData = { ...req.body };
+        // Solo permitimos actualizar campos seguros del perfil
+        const allowedFields = [
+            'avatar', 'bio', 'fullName', 'phone', 'gender', 'country', 'birthDate',
+            'selectedGames', 'platforms', 'experience', 'goals',
+            'username', 'email', 'status', 'selectedFrameId', 'selectedBgId'
+        ];
+        let updateData = {};
+        allowedFields.forEach((field) => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        });
 
         // 1. Manejo de la imagen (Multer)
         if (req.file) {
@@ -267,13 +277,8 @@ export const updateProfile = async (req, res) => {
         });
 
 
-        // 3. ¡SOLUCIÓN AL ERROR!: Limpieza del campo 'teams'
-        if (updateData.teams) {
-            // Si es un string vacío o un array con un string vacío
-            if (updateData.teams === "" || (Array.isArray(updateData.teams) && (updateData.teams.length === 0 || updateData.teams[0] === ""))) {
-                delete updateData.teams; // Eliminamos la propiedad para que no de error de casteo
-            }
-        }
+        // 3. No permitir arrays vacíos inválidos
+        if (updateData.selectedGames && updateData.selectedGames.length === 0) delete updateData.selectedGames;
 
         // 4. Actualizar usuario
         const updatedUser = await User.findByIdAndUpdate(

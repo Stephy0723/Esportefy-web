@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
     FaSearch, FaCalendarAlt, FaUserGraduate, FaVenus, FaCrown, 
@@ -9,8 +9,19 @@ import './Teams.css';
 import ViewTeamModal from './ViewTeamModal'; 
 import { useNotification } from '../../../context/NotificationContext';
 
+const ROLE_NAMES = {
+    "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
+    "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
+    "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
+    "Overwatch 2": ["Tank", "DPS", "DPS", "Support", "Support"],
+    "TFT": ["Tactician"],
+    "FIFA / EA FC": ["Player"],
+    "Free Fire": ["Rusher", "Support", "Sniper", "IGL"]
+};
+
 const Team = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { addToast } = useNotification();
     
     // --- ESTADOS ---
@@ -26,6 +37,7 @@ const Team = () => {
     const [previewForm, setPreviewForm] = useState({});
     const [logoFile, setLogoFile] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
+    const [inviteCode, setInviteCode] = useState('');
     const storedUser = localStorage.getItem('esportefyUser');
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
@@ -90,6 +102,25 @@ const Team = () => {
         };
         fetchTeams();
     }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const code = params.get('invite');
+        if (!code) return;
+        const fetchTeamByInvite = async () => {
+            try {
+                const res = await axios.get(`http://localhost:4000/api/teams/invite/${code}`);
+                if (res.data) {
+                    setInviteCode(String(code).toUpperCase());
+                    setSelectedTeam(res.data);
+                    setIsViewModalOpen(true);
+                }
+            } catch (err) {
+                addToast(err.response?.data?.message || 'Código de invitación inválido', 'error');
+            }
+        };
+        fetchTeamByInvite();
+    }, [location.search, addToast]);
 
     // --- CONFIGURACIÓN VISUAL POR CATEGORÍA ---
     const getTeamConfig = (level) => {
@@ -177,9 +208,20 @@ const filteredTeams = teams.filter(team => {
                         {filteredTeams.map(team => {
                             const config = getTeamConfig(team.teamLevel);
                             const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
-                            const startersFilled = starters.filter(p => p && p.nickname).length;
-                            const startersTotal = team.maxMembers || starters.length || 0;
-                            const isComplete = startersTotal > 0 && startersFilled >= startersTotal;
+                            const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+                            const coach = team.roster?.coach;
+                            const startersFilled = starters.filter(p => p && (p.nickname || p.user)).length;
+                            const subsFilled = subs.filter(p => p && (p.nickname || p.user)).length;
+                            const coachFilled = Boolean(coach && (coach.nickname || coach.user));
+                            const startersTotal = Number.isFinite(Number(team.maxMembers)) && Number(team.maxMembers) > 0
+                                ? Number(team.maxMembers)
+                                : starters.length;
+                            const subsTotal = Number.isFinite(Number(team.maxSubstitutes)) && Number(team.maxSubstitutes) > 0
+                                ? Number(team.maxSubstitutes)
+                                : subs.length;
+                            const totalSlots = startersTotal + subsTotal + 1;
+                            const filledSlots = startersFilled + subsFilled + (coachFilled ? 1 : 0);
+                            const isComplete = totalSlots > 0 && filledSlots >= totalSlots;
                             const isMember = isUserMember(team);
                             return (
                                 <div key={team._id} className={`team-card-banner ${config.styleClass}`} 
@@ -201,10 +243,10 @@ const filteredTeams = teams.filter(team => {
 
                                     <div className="roster-preview">
                                         {/* Renderizamos avatares basados en los miembros del roster */}
-                                        {team.roster?.starters?.map((player, idx) => (
+                                        {starters.slice(0, startersTotal).map((player, idx) => (
                                             player && (
-                                                <div key={idx} className="member-avatar-stack" style={{zIndex: 10 - idx}}>
-                                                    <img src={player.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.nickname}`} alt="p" />
+                                                <div key={`st-${idx}`} className="member-avatar-stack" style={{zIndex: 10 - idx}}>
+                                                    <img src={player.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.nickname || idx}`} alt="p" />
                                                 </div>
                                             )
                                         ))}
@@ -213,7 +255,10 @@ const filteredTeams = teams.filter(team => {
                                     <div className="card-footer-row">
                                         <span className="coach-label">COACH: {team.roster?.coach?.nickname || "Sin asignar"}</span>
                                         <span className={`roster-status ${isComplete ? 'complete' : 'incomplete'}`}>
-                                            Roster {startersFilled}/{startersTotal || startersFilled}
+                                            Roster {filledSlots}/{totalSlots}
+                                        </span>
+                                        <span className="roster-status subtle">
+                                            Titulares {startersFilled}/{startersTotal || 0} • Suplentes {subsFilled}/{subsTotal || 0} • Coach {coachFilled ? '1/1' : '0/1'}
                                         </span>
                                         <button
                                             className="btn-view-mini"
@@ -271,9 +316,13 @@ const filteredTeams = teams.filter(team => {
             {selectedTeam && (
                 <ViewTeamModal 
                     isOpen={isViewModalOpen} 
-                    onClose={() => setIsViewModalOpen(false)} 
+                    onClose={() => {
+                        setIsViewModalOpen(false);
+                        setInviteCode('');
+                    }} 
                     team={selectedTeam}
                     currentUser={currentUser}
+                    initialInviteCode={inviteCode}
                     onTeamUpdated={(updated) => {
                         setSelectedTeam(updated);
                         setTeams((prev) => prev.map(t => String(t._id) === String(updated._id) ? updated : t));
@@ -349,6 +398,9 @@ const filteredTeams = teams.filter(team => {
                                 <div className="members-scroll-list">
                                     {(() => {
                                         const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
+                                        const isCaptain = currentUser?._id && String(captainId) === String(currentUser._id);
+                                        const isAdmin = Boolean(currentUser?.isAdmin);
+                                        const canManage = isCaptain || isAdmin;
                                         const captainFromRoster = (selectedTeam?.roster?.starters || []).find(p => String(p?.user) === String(captainId));
                                         const captainName = selectedTeam?.captain?.fullName || captainFromRoster?.nickname || 'No definido';
                                         const captainRole = captainFromRoster?.role || 'Capitán';
@@ -362,49 +414,79 @@ const filteredTeams = teams.filter(team => {
                                                     <span className="member-name">{captainName}</span>
                                                     <span className="role-badge">{captainRole}</span>
                                                     {captainRegion && <span className="member-meta">Región: {captainRegion}</span>}
+                                                    {canManage && captainFromRoster?.gameId && (
+                                                        <span className="member-meta">Riot ID: {captainFromRoster.gameId}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
                                     })()}
-                                    {(selectedTeam.roster?.starters || []).map((p, i) => (
-                                        <div key={`p-${i}`} className="member-row-item">
-                                            <div className="member-avatar">
-                                                <i className='bx bxs-user-circle'></i>
+                                    {(() => {
+                                        const starters = Array.isArray(selectedTeam.roster?.starters) ? selectedTeam.roster.starters : [];
+                                        const subs = Array.isArray(selectedTeam.roster?.subs) ? selectedTeam.roster.subs : [];
+                                        const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
+                                        const isCaptain = currentUser?._id && String(captainId) === String(currentUser._id);
+                                        const isAdmin = Boolean(currentUser?.isAdmin);
+                                        const canManage = isCaptain || isAdmin;
+                                        const starterSlots = Number.isFinite(Number(selectedTeam.maxMembers)) && Number(selectedTeam.maxMembers) > 0
+                                            ? Number(selectedTeam.maxMembers)
+                                            : starters.length;
+                                        const subSlots = Number.isFinite(Number(selectedTeam.maxSubstitutes)) && Number(selectedTeam.maxSubstitutes) > 0
+                                            ? Number(selectedTeam.maxSubstitutes)
+                                            : subs.length;
+                                        const roles = ROLE_NAMES[selectedTeam.game] || [];
+                                        const rows = [];
+                                        for (let i = 0; i < starterSlots; i += 1) {
+                                            const p = starters[i];
+                                            rows.push(
+                                                <div key={`p-${i}`} className={`member-row-item ${p ? '' : 'empty'}`}>
+                                                    <div className="member-avatar">
+                                                        <i className='bx bxs-user-circle'></i>
+                                                    </div>
+                                                    <div className="member-info">
+                                                        <span className="member-name">{p?.nickname || 'Vacante'}</span>
+                                                        <span className="role-badge">{p?.role || roles[i] || `Titular ${i + 1}`}</span>
+                                                        {p?.region && <span className="member-meta">Región: {p.region}</span>}
+                                                        {canManage && p?.gameId && <span className="member-meta">Riot ID: {p.gameId}</span>}
+                                                    </div>
+                                                    <span className="member-meta">Titular</span>
+                                                </div>
+                                            );
+                                        }
+                                        for (let i = 0; i < subSlots; i += 1) {
+                                            const p = subs[i];
+                                            rows.push(
+                                                <div key={`s-${i}`} className={`member-row-item ${p ? '' : 'empty'}`}>
+                                                    <div className="member-avatar">
+                                                        <i className='bx bxs-user-voice'></i>
+                                                    </div>
+                                                    <div className="member-info">
+                                                        <span className="member-name">{p?.nickname || 'Vacante'}</span>
+                                                        <span className="role-badge">{p?.role || `Suplente ${i + 1}`}</span>
+                                                        {p?.region && <span className="member-meta">Región: {p.region}</span>}
+                                                        {canManage && p?.gameId && <span className="member-meta">Riot ID: {p.gameId}</span>}
+                                                    </div>
+                                                    <span className="member-meta">Suplente</span>
+                                                </div>
+                                            );
+                                        }
+                                        const coach = selectedTeam.roster?.coach;
+                                        rows.push(
+                                            <div key="coach" className={`member-row-item ${coach ? '' : 'empty'}`}>
+                                                <div className="member-avatar">
+                                                    <i className='bx bxs-user-badge'></i>
+                                                </div>
+                                                <div className="member-info">
+                                                    <span className="member-name">{coach?.nickname || 'Vacante'}</span>
+                                                    <span className="role-badge">{coach?.role || 'Coach'}</span>
+                                                    {coach?.region && <span className="member-meta">Región: {coach.region}</span>}
+                                                    {canManage && coach?.gameId && <span className="member-meta">Riot ID: {coach.gameId}</span>}
+                                                </div>
+                                                <span className="member-meta">Coach</span>
                                             </div>
-                                            <div className="member-info">
-                                                <span className="member-name">{p?.nickname || 'Vacante'}</span>
-                                                {p?.role && <span className="role-badge">{p.role}</span>}
-                                                {p?.region && <span className="member-meta">Región: {p.region}</span>}
-                                            </div>
-                                            <span className="member-meta">Titular</span>
-                                        </div>
-                                    ))}
-                                    {(selectedTeam.roster?.subs || []).map((p, i) => (
-                                        <div key={`s-${i}`} className="member-row-item">
-                                            <div className="member-avatar">
-                                                <i className='bx bxs-user-voice'></i>
-                                            </div>
-                                            <div className="member-info">
-                                                <span className="member-name">{p?.nickname || 'Vacante'}</span>
-                                                {p?.role && <span className="role-badge">{p.role}</span>}
-                                                {p?.region && <span className="member-meta">Región: {p.region}</span>}
-                                            </div>
-                                            <span className="member-meta">Suplente</span>
-                                        </div>
-                                    ))}
-                                    {selectedTeam.roster?.coach && (
-                                        <div className="member-row-item">
-                                            <div className="member-avatar">
-                                                <i className='bx bxs-user-badge'></i>
-                                            </div>
-                                            <div className="member-info">
-                                                <span className="member-name">{selectedTeam.roster.coach?.nickname || 'Coach'}</span>
-                                                <span className="role-badge">{selectedTeam.roster.coach?.role || 'Coach'}</span>
-                                                {selectedTeam.roster.coach?.region && <span className="member-meta">Región: {selectedTeam.roster.coach.region}</span>}
-                                            </div>
-                                            <span className="member-meta">Coach</span>
-                                        </div>
-                                    )}
+                                        );
+                                        return rows;
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -412,8 +494,10 @@ const filteredTeams = teams.filter(team => {
                         {(() => {
                             const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
                             const isCaptain = currentUser?._id && String(captainId) === String(currentUser._id);
+                            const isAdmin = Boolean(currentUser?.isAdmin);
+                            const canManage = isCaptain || isAdmin;
                             const pendingRequests = getPendingRequests(selectedTeam);
-                            if (!isCaptain || pendingRequests.length === 0) return null;
+                            if (!canManage || pendingRequests.length === 0) return null;
                             return (
                                 <div className="info-section">
                                     <label>Solicitudes pendientes</label>

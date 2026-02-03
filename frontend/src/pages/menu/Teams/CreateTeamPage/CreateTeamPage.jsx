@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
@@ -269,6 +269,25 @@ const CreateTeamPage = () => {
     const copyLink = () => {
         navigator.clipboard.writeText(inviteLink);
         const btn = document.getElementById('copy-btn');
+        if(btn) btn.classList.add('copied');
+        setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
+    };
+
+    const inviteCode = useMemo(() => {
+        if (!inviteLink) return '';
+        try {
+            const url = new URL(inviteLink);
+            return String(url.searchParams.get('invite') || '').toUpperCase();
+        } catch (e) {
+            const match = inviteLink.match(/invite=([A-Za-z0-9]+)/);
+            return match ? String(match[1]).toUpperCase() : '';
+        }
+    }, [inviteLink]);
+
+    const copyCode = () => {
+        if (!inviteCode) return;
+        navigator.clipboard.writeText(inviteCode);
+        const btn = document.getElementById('copy-code-btn');
         if(btn) btn.classList.add('copied');
         setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
     };
@@ -585,6 +604,16 @@ const CreateTeamPage = () => {
                                     <div className="link-action-box-pro">
                                         <div className="link-text-mask">{inviteLink}</div>
                                         <button id="copy-btn" onClick={copyLink} title="Copiar">
+                                            <FaCopy />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="link-section-styled">
+                                    <label className="sub-label">Código de Invitación</label>
+                                    <div className="code-action-box-pro">
+                                        <div className="code-text-mask">{inviteCode || '---'}</div>
+                                        <button id="copy-code-btn" onClick={copyCode} title="Copiar código" disabled={!inviteCode}>
                                             <FaCopy />
                                         </button>
                                     </div>

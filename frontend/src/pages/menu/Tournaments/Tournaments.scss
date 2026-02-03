@@ -348,8 +348,8 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
 
 .tournaments-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 22px;
     padding-bottom: 40px;
 }
 
@@ -387,7 +387,7 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
 
     // --- IMAGEN SUPERIOR ---
     .card-image-container {
-        height: 180px; width: 100%; position: relative; overflow: hidden;
+        height: 150px; width: 100%; position: relative; overflow: hidden;
 
         img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s ease; }
 
@@ -398,13 +398,13 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
         }
 
         .top-badges {
-            position: absolute; top: 15px; left: 15px; right: 15px;
+            position: absolute; top: 12px; left: 12px; right: 12px;
             display: flex; justify-content: space-between; align-items: center; z-index: 2;
             
             .game-pill {
                 background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
-                padding: 5px 12px; border-radius: 50px;
-                font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+                padding: 4px 10px; border-radius: 50px;
+                font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
                 display: flex; align-items: center; gap: 6px; color: #fff; // Badges siempre blancos
             }
             .status-dot {
@@ -491,22 +491,22 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
     }
     // --- CONTENIDO ---
     .card-content {
-        padding: 20px; flex-grow: 1; display: flex; flex-direction: column;
+        padding: 16px; flex-grow: 1; display: flex; flex-direction: column;
 
         h3 {
-            font-size: 1.3rem; margin-bottom: 15px; font-weight: 700;
+            font-size: 1.1rem; margin-bottom: 12px; font-weight: 700;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             color: var(--text-color); // Título adaptable
         }
 
         .info-row {
-            display: flex; gap: 10px; margin-bottom: 20px;
+            display: flex; gap: 8px; margin-bottom: 14px;
             
             .info-pill {
                 // Fondo gris muy claro en Light, oscuro en Dark
                 background: rgba(128, 128, 128, 0.1); 
-                padding: 8px 12px; border-radius: 8px;
-                font-size: 0.85rem; 
+                padding: 6px 10px; border-radius: 8px;
+                font-size: 0.75rem; 
                 color: var(--text-color); opacity: 0.8;
                 display: flex; align-items: center; gap: 8px;
                 
@@ -536,10 +536,10 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
 
         // --- BOTONES ---
         .card-actions {
-            margin-top: auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px;
+            margin-top: auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px;
 
             button {
-                padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.9rem;
+                padding: 10px; border-radius: 10px; font-weight: 700; font-size: 0.85rem;
                 cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 6px;
             }
 
@@ -671,7 +671,7 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
 
     // 2. EL BANNER (LA IMAGEN DE FONDO)
     .modal-header-banner {
-        height: 300px;           // ALTURA FIJA: Esto es lo que te faltaba
+        height: 250px;           // Más compacto
         width: 100%;
         background-size: cover !important;   // Estira la imagen
         background-position: center center !important;
@@ -679,7 +679,7 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
         display: flex;
         flex-direction: column;
         justify-content: flex-end; // Empuja el texto hacia abajo
-        padding: 30px;
+        padding: 22px;
 
         // EL DEGRADADO OSCURO (Overlay)
         .overlay-dark {
@@ -691,7 +691,7 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
         // BOTÓN CERRAR (X)
         .close-btn-round {
             position: absolute; top: 20px; right: 20px; z-index: 10;
-            width: 36px; height: 36px; border-radius: 50%;
+            width: 34px; height: 34px; border-radius: 50%;
             background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2);
             color: #fff; font-size: 20px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
@@ -714,13 +714,13 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
             }
 
             h2 {
-                font-size: 2.5rem; color: #fff; margin: 0 0 10px 0;
+                font-size: 2.1rem; color: #fff; margin: 0 0 8px 0;
                 line-height: 1.1; font-weight: 800; text-transform: uppercase;
                 text-shadow: 0 4px 20px rgba(0,0,0,0.8);
             }
 
             .host-info {
-                color: #ccc; font-size: 0.95rem;
+                color: #ccc; font-size: 0.9rem;
                 strong { color: #fff; margin-left: 5px; }
                 i { color: #00b894; margin-left: 5px; }
             }
@@ -756,24 +756,24 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
 
     // 3. EL CUERPO (DATOS Y BOTONES)
     .modal-content-body {
-        padding: 30px;
+        padding: 22px;
         background: #121212;
 
         // GRID DE DATOS (Fecha, Hora, Premio...)
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); // Responsive
-            gap: 15px;
-            margin-bottom: 30px;
+            gap: 12px;
+            margin-bottom: 22px;
 
             .stat-box {
                 background: #1e1e24; // Gris oscuro
-                padding: 15px; border-radius: 10px;
+                padding: 12px; border-radius: 10px;
                 border: 1px solid rgba(255,255,255,0.05);
                 display: flex; flex-direction: column; gap: 5px;
 
-                .label { font-size: 0.75rem; color: #71717a; text-transform: uppercase; font-weight: 700; }
-                .value { font-size: 1rem; color: #fff; font-weight: 600; }
+                .label { font-size: 0.7rem; color: #71717a; text-transform: uppercase; font-weight: 700; }
+                .value { font-size: 0.95rem; color: #fff; font-weight: 600; }
 
                 &.prize { // Estilo especial para el premio
                     background: rgba(255, 215, 0, 0.08); 
@@ -786,8 +786,8 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
         .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 20px 0; }
 
         .info-section {
-            h4 { color: #fff; margin-bottom: 10px; font-size: 1.1rem; }
-            p { color: #a1a1aa; line-height: 1.6; font-size: 0.95rem; }
+            h4 { color: #fff; margin-bottom: 8px; font-size: 1rem; }
+            p { color: #a1a1aa; line-height: 1.55; font-size: 0.9rem; }
         }
 
         .tournament-status-pill {
@@ -809,7 +809,7 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
         }
 
         .registration-row {
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 10px;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.06);
@@ -824,7 +824,7 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
 
         .registration-main strong {
             color: #fff;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .team-row {
@@ -890,9 +890,9 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
         .reg-status.rejected { background: rgba(239,68,68,0.2); color: #f87171; }
 
         .registration-roster {
-            margin-top: 6px;
+            margin-top: 4px;
             color: #9ca3af;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .riot-requirements {
@@ -909,7 +909,7 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
         }
 
         .registration-actions {
-            margin-top: 8px;
+            margin-top: 6px;
             display: flex;
             gap: 8px;
         }
@@ -935,12 +935,12 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
 
         // FOOTER DE BOTONES
         .modal-actions-footer {
-            margin-top: 30px;
+            margin-top: 20px;
             display: flex; justify-content: flex-end; gap: 15px;
             
             button {
-                padding: 12px 25px; border-radius: 8px; font-weight: 700;
-                cursor: pointer; border: none; font-size: 0.95rem;
+                padding: 10px 18px; border-radius: 8px; font-weight: 700;
+                cursor: pointer; border: none; font-size: 0.85rem;
                 transition: 0.2s;
             }
 
@@ -966,6 +966,24 @@ $navbar-height: 80px;        // Altura estimada de tu Navbar
                 display: flex;
                 gap: 8px;
             }
+        }
+
+        .join-hints {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .join-hint {
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.08);
+            color: #facc15;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
     }
 }

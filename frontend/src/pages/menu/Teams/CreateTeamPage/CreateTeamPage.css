@@ -399,6 +399,23 @@ input:focus, select:focus {
 }
 .link-action-box-pro button:hover { filter: brightness(1.2); }
 
+.code-action-box-pro {
+    display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;
+}
+.code-text-mask {
+    background: #000; color: var(--theme-color); padding: 12px;
+    flex: 1; font-family: monospace; letter-spacing: 0.2em; font-weight: 700;
+    overflow: hidden; white-space: nowrap; text-align: center;
+}
+.code-action-box-pro button {
+    background: var(--theme-color); border: none; padding: 0 20px;
+    color: #000; cursor: pointer; transition: 0.3s;
+}
+.code-action-box-pro button:disabled {
+    opacity: 0.6; cursor: default;
+}
+.code-action-box-pro button:hover { filter: brightness(1.2); }
+
 /* Social Buttons */
 .social-grid-pro { display: flex; gap: 10px; }
 .social-btn-pro {
