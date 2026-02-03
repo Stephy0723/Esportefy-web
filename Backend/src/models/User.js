@@ -43,17 +43,21 @@ const UserSchema = new mongoose.Schema({
             default: 'online'
             },
 
-            selectedFrameId: {
+    selectedFrameId: {
             type: String,
             default: null
             },
 
-            selectedBgId: {
+    selectedBgId: {
             type: String,
             default: null
             },
 
-
+    selectedTagId: {
+            type: String,
+            default: null
+            },
+ 
     // ===== SETTINGS =====
     connections: {
         discord: {

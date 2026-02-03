@@ -9,7 +9,10 @@ import {
 import { GAME_IMAGES } from '../../../data/gameImages';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle'; 
+import PlayerTag from '../../../components/PlayerTag/PlayerTag'; // <--- EL COMPONENTE NUEVO
+import { PLAYER_TAGS } from '../../../data/playerTags';
 import './Profile.css';
+import User from '../../../../../backend/src/models/User';
 
 const Profile = () => {
     const [user, setUser] = useState(null);
@@ -73,7 +76,11 @@ const Profile = () => {
                     </div>
                     <div className="user-identity">
                         <div className="name-row">
-                            <h1>{user.username}</h1>
+                            <PlayerTag 
+                                name={user.username || "Player"} 
+                                tagId={user.selectedTagId} 
+                                size="normal"                                
+                            />
                             {user.connections?.riot?.verified && (
                                 <div className={`riot-rank-badge ${user.connections.riot.rank?.tier?.toLowerCase() || 'unranked'}`}>
                                     {user.connections.riot.rank 
