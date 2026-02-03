@@ -11,6 +11,8 @@ import ToastContainer from './components/Toasts/ToastContainer';
 // COMPONENTES
 import Navbar from './components/Navbar/Navbar'; 
 import Sidebar from './components/Sidebar/Sidebar'; 
+// Templates y layouts
+import CommunityTemplate from './pages/menu/Community/CommunityTemplate/CommunityTemplate';
 
 // PÁGINAS
 import Home from './pages/Home/Home';
@@ -138,8 +140,6 @@ function App() {
           <Route path="/support" element={<SupportPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} /> 
-          
-          {/* LEGALES */}
           <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />
           <Route path="/legal/payment-policy" element={<PaymentPolicy />} />
           <Route path="/legal/terms" element={<TermsConditions />} />
@@ -199,6 +199,9 @@ function App() {
             <Route path="/game/nba2k" element={<Nba2k14Page />} />
             {/* Rankings */  }
             <Route path="/rankings" element={<Rankings />} />
+
+            {/* Ruta de Comunidad Genérica (Template) */}
+            <Route path="/template" element={<CommunityTemplate />} />
 
             {/* Rutas dinámicas */  }
             <Route path="/group/:id" element={<GroupPage />} />

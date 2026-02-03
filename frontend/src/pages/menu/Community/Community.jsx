@@ -920,7 +920,7 @@ const SidebarSection = ({ onOpenModal }) => {
 const CURRENT_USER_ROLE = 'organizer'; 
 
 const CreateCommunityModal = ({ isOpen, onClose }) => {
-    
+    const navigate = useNavigate();
     // --- NAVEGACIÓN ---
     const [activeTab, setActiveTab] = useState('identity'); 
 
@@ -1042,6 +1042,42 @@ const CreateCommunityModal = ({ isOpen, onClose }) => {
             case 'settings': return "⚙️ Los detalles técnicos que marcan la diferencia profesional.";
             default: return "";
         }
+    };
+    // --- FUNCIÓN PARA LANZAR LA COMUNIDAD ---
+    const handleLaunch = () => {
+        // 1. Validar que al menos haya un nombre
+        if (!formData.name) return;
+
+        // 2. Empaquetar todos los datos del formulario para enviarlos
+        const communityData = {
+            name: formData.name,
+            tagline: formData.description,
+            shortUrl: formData.shortUrl,
+            // Si hay imagen (preview), la usamos. Si no, va null.
+            banner: media.banner.preview || null,
+            avatar: media.avatar.preview || null,
+            // Datos por defecto para una comunidad nueva
+            stats: { members: 1, online: 1 },
+            created_at: new Date().toLocaleDateString(),
+            // Pasamos también la configuración avanzada por si la usas luego
+            settings: {
+                privacy: formData.privacy,
+                games: formData.mainGames,
+                rules: formData.rulesText
+            }
+        };
+
+        // 3. Generar el "Slug" (la parte final de la URL)
+        // Si el usuario puso url corta, usamos esa. Si no, convertimos el nombre (Ej: "Elite Gamers" -> "elite-gamers")
+        const slug = formData.shortUrl 
+            ? formData.shortUrl.replace(/\s+/g, '-').toLowerCase() 
+            : formData.name.replace(/\s+/g, '-').toLowerCase();
+
+        // 4. Cerrar el modal
+        onClose();
+
+        // 5. NAVEGAR A LA NUEVA PÁGINA (Pasando los datos en el 'state')
+        navigate(`/community/${slug}`, { state: communityData });
     };
 
     return (
@@ -1331,22 +1367,24 @@ const CreateCommunityModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* FOOTER */}
-                <div className="modal-footer">
-                    <button className="btn-cancel-v3" onClick={onClose}>Cancelar</button>
-                    {activeTab !== 'settings' ? (
-                        <button className="btn-next-v3" onClick={() => {
-                            const tabs = ['identity', 'content', 'rules', 'team', 'settings'];
-                            const nextIndex = tabs.indexOf(activeTab) + 1;
-                            if (nextIndex < tabs.length) setActiveTab(tabs[nextIndex]);
-                        }}>
-                            Siguiente <FaChevronRight />
-                        </button>
-                    ) : (
-                        <button className="btn-confirm-v3" onClick={() => console.log(formData)}>
-                            Lanzar Comunidad <FaRocket />
-                        </button>
-                    )}
-                </div>
+<div className="modal-footer">
+    <button className="btn-cancel-v3" onClick={onClose}>Cancelar</button>
+    
+    {activeTab !== 'settings' ? (
+        <button className="btn-next-v3" onClick={() => {
+            const tabs = ['identity', 'content', 'rules', 'team', 'settings'];
+            const nextIndex = tabs.indexOf(activeTab) + 1;
+            if (nextIndex < tabs.length) setActiveTab(tabs[nextIndex]);
+        }}>
+            Siguiente <FaChevronRight />
+        </button>
+    ) : (
+        // --- AQUÍ ESTÁ EL CAMBIO ---
+        <button className="btn-confirm-v3" onClick={handleLaunch} disabled={!formData.name}>
+            Lanzar Comunidad <FaRocket />
+        </button>
+    )}
+</div>
             </div>
         </div>
     );
