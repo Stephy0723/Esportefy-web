@@ -371,19 +371,48 @@ const FeedSection = () => {
         if(textInputRef.current) textInputRef.current.focus();
     };
 
-    const handlePublish = () => {
-        if (!inputText.trim() && !attachment) return;
+    const handlePublish = async () => {
+    // 1. Validaciones básicas
+    if (!inputText.trim() && !attachment) {
+        alert("Escribe algo o adjunta una imagen");
+        return;
+    }
 
-        const newPost = {
-            id: Date.now(), user: "Tú", avatar: ValorantImg, time: "Just now",
-            text: inputText,
-            image: attachment?.type === 'media' ? attachment.url : null,
-            file: attachment?.type === 'file' ? attachment : null, 
-            likes: 0, liked: false
-        };
-        setPosts([newPost, ...posts]);
-        setInputText(""); setAttachment(null); setShowEmoji(false);
-    };
+    // 2. Crear el contenedor FormData
+    const formData = new FormData();
+    formData.append('user', 'AlexGamer'); // O el usuario real
+    formData.append('text', inputText);
+    formData.append('privacy', privacy);
+    
+    // 3. Adjuntar el archivo real
+    // En tu estado 'attachment', asegúrate de guardar el objeto FILE original de e.target.files[0]
+    if (attachment && attachment.file) {
+        formData.append('image', attachment.file); 
+    }
+
+    try {
+        const response = await fetch('http://localhost:5010/api/posts', {
+            method: 'POST',
+            // ¡IMPORTANTE!: NO pongas headers de Content-Type aquí
+            body: formData
+        });
+
+        if (response.ok) {
+            const newPost = await response.json();
+            console.log("Post guardado con éxito:", newPost);
+            
+            // Limpiar UI
+            setInputText("");
+            setAttachment(null);
+            // Si no usas Sockets aún, podrías hacer setPosts([newPost, ...posts]);
+        } else {
+            const errorData = await response.json();
+            console.error("Error del servidor:", errorData);
+        }
+    } catch (error) {
+        console.error("Error de conexión al microservicio:", error);
+    }
+};
 
     const toggleLike = (id) => {
         setPosts(posts.map(p => p.id === id ? { ...p, likes: p.liked ? p.likes - 1 : p.likes + 1, liked: !p.liked } : p));
