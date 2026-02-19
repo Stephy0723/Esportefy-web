@@ -33,16 +33,14 @@ const Login = () => {
                 password
             });
 
-            const { token, user } = response.data;
+            const { user } = response.data;
             
             if (rememberMe) {
-                localStorage.setItem('token', token);
                 localStorage.setItem('esportefyUser', JSON.stringify(user));
-                localStorage.setItem('user', JSON.stringify(user));
+                sessionStorage.removeItem('esportefyUser');
             } else {
-                sessionStorage.setItem('token', token);
                 sessionStorage.setItem('esportefyUser', JSON.stringify(user));
-                sessionStorage.setItem('user', JSON.stringify(user));
+                localStorage.removeItem('esportefyUser');
             }
             
             window.dispatchEvent(new Event('user-update'));

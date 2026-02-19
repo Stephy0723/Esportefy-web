@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
+import { withCsrfHeaders } from '../../utils/csrf';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -10,7 +11,7 @@ const Navbar = () => {
 
   // Función para leer el usuario del almacenamiento
   const checkUser = () => {
-    const storedUser = localStorage.getItem('esportefyUser');
+    const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
     if (storedUser) {
       try {
         setActiveUser(JSON.parse(storedUser));
@@ -29,14 +30,14 @@ const Navbar = () => {
     };
 
     const checkNotifications = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
+      if (!storedUser) {
         setHasUnread(false);
         return;
       }
       try {
         const res = await fetch('http://localhost:4000/api/notifications', {
-          headers: { Authorization: `Bearer ${token}` }
+          credentials: 'include'
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -69,7 +70,14 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
+    fetch('http://localhost:4000/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: withCsrfHeaders()
+    }).catch(() => {});
+
     localStorage.removeItem('esportefyUser');
+    sessionStorage.removeItem('esportefyUser');
     // Despachar el evento para que el Navbar sepa que se cerró sesión
     window.dispatchEvent(new Event('user-update'));
     navigate('/');

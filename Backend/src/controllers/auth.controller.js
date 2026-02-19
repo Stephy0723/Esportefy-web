@@ -9,6 +9,58 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
+const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || 'csrf_token';
+const AUTH_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+const normalizeSameSite = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'strict' || normalized === 'lax' || normalized === 'none') {
+        return normalized;
+    }
+    return '';
+};
+
+const envSecure = process.env.AUTH_COOKIE_SECURE
+    ? process.env.AUTH_COOKIE_SECURE === 'true'
+    : IS_PRODUCTION;
+const envSameSite = normalizeSameSite(process.env.AUTH_COOKIE_SAME_SITE) || (envSecure ? 'none' : 'lax');
+const AUTH_COOKIE_SECURE = envSameSite === 'none' ? true : envSecure;
+const AUTH_COOKIE_SAME_SITE = envSameSite;
+
+const buildAuthCookieOptions = () => {
+    const options = {
+        httpOnly: true,
+        secure: AUTH_COOKIE_SECURE,
+        sameSite: AUTH_COOKIE_SAME_SITE,
+        maxAge: AUTH_TOKEN_TTL_MS,
+        path: '/'
+    };
+    if (process.env.AUTH_COOKIE_DOMAIN) {
+        options.domain = process.env.AUTH_COOKIE_DOMAIN;
+    }
+    return options;
+};
+
+const buildCsrfCookieOptions = () => {
+    const options = {
+        httpOnly: false,
+        secure: AUTH_COOKIE_SECURE,
+        sameSite: AUTH_COOKIE_SAME_SITE,
+        maxAge: AUTH_TOKEN_TTL_MS,
+        path: '/'
+    };
+    if (process.env.AUTH_COOKIE_DOMAIN) {
+        options.domain = process.env.AUTH_COOKIE_DOMAIN;
+    }
+    return options;
+};
+
+const generateCsrfToken = () => crypto.randomBytes(32).toString('hex');
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = './uploads/avatars/';
@@ -28,7 +80,7 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         // Nombre único: ID-Timestamp.ext
-        const ext = path.extname(file.originalname);
+        const ext = path.extname(file.originalname).toLowerCase();
         // Usamos req.userId (que viene del middleware verifyToken)
         cb(null, `${req.userId}-${Date.now()}${ext}`);
     }
@@ -36,17 +88,66 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ 
     storage,
-   
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const validMime = ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype);
+        const validExt = ALLOWED_IMAGE_EXTENSIONS.has(ext);
+        if (!validMime || !validExt) {
+            return cb(new Error('Archivo inválido. Solo se permiten imágenes JPG, PNG o WEBP.'));
+        }
+        return cb(null, true);
+    }
 });
+
+const normalizeStringArray = (value) => {
+    if (Array.isArray(value)) {
+        return value.map((v) => String(v || '').trim()).filter(Boolean);
+    }
+    if (typeof value === 'string') {
+        return value.split(',').map((v) => v.trim()).filter(Boolean);
+    }
+    return [];
+};
 
 export const register = async (req, res) => {
     try {
-        const { email, password, confirmPassword } = req.body;
+        const payload = req.body || {};
+        const username = String(payload.username || payload.userName || '').trim();
+        const email = String(payload.email || '').trim().toLowerCase();
+        const password = String(payload.password || '');
+        const confirmPassword = String(payload.confirmPassword || '');
+        const fullName = String(payload.fullName || '').trim();
+        const phone = String(payload.phone || '').trim();
+        const country = String(payload.country || '').trim();
+        const birthDate = payload.birthDate;
+        const checkTerms = payload.checkTerms === true;
+
+        if (!fullName || !phone || !country || !birthDate || !username || !email || !password) {
+            return res.status(400).json({ message: 'Faltan campos obligatorios para registro.' });
+        }
+
+        if (!checkTerms) {
+            return res.status(400).json({ message: 'Debes aceptar términos y condiciones.' });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({ message: 'La contraseña debe tener al menos 8 caracteres.' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Correo inválido.' });
+        }
 
         // 1. Validaciones básicas antes de tocar la DB
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'El correo ya está registrado' });
+        }
+        const usernameExists = await User.findOne({ username });
+        if (usernameExists) {
+            return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
         }
 
         if (password !== confirmPassword) {
@@ -56,11 +157,21 @@ export const register = async (req, res) => {
         // 2. Hashear contraseña
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 3. Crear usuario con todos los campos del body
-        // Usamos el spread operator (...) para capturar todos los campos de las Etapas 1-4
+        // 3. Crear usuario con whitelist explícita para evitar mass-assignment
         const user = await User.create({
-            ...req.body,
-            password: hashedPassword
+            fullName,
+            phone,
+            gender: payload.gender,
+            country,
+            birthDate,
+            selectedGames: normalizeStringArray(payload.selectedGames),
+            experience: normalizeStringArray(payload.experience),
+            platforms: normalizeStringArray(payload.platforms),
+            goals: normalizeStringArray(payload.goals),
+            username,
+            email,
+            password: hashedPassword,
+            checkTerms: true
         });
 
         // Opcional: No devolver la contraseña en la respuesta
@@ -71,21 +182,23 @@ export const register = async (req, res) => {
 
     } catch (error) {
         console.error("Error en Registro:", error);
-        res.status(500).json({ 
-            message: 'Error al registrar el usuario', 
-            error: error.message 
-        });
+        res.status(500).json({ message: 'Error al registrar el usuario' });
     }
 };
 
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+
+        if (!normalizedEmail || !password) {
+            return res.status(400).json({ message: 'Correo y contraseña son requeridos' });
+        }
 
         // 1. Buscar usuario
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: normalizedEmail });
         if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+            return res.status(401).json({ message: 'Credenciales inválidas' });
         }
 
         // 2. Verificar contraseña
@@ -94,30 +207,53 @@ export const login = async (req, res) => {
             return res.status(401).json({ message: 'Credenciales inválidas' });
         }
 
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({ message: 'Configuración de autenticación incompleta' });
+        }
+
         // 3. Generar Token
         const token = jwt.sign(
             { id: user._id }, 
-            process.env.JWT_SECRET || 'secret_fallback', // Siempre usa variables de entorno
+            process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
+        const csrfToken = generateCsrfToken();
+
+        res.cookie(AUTH_COOKIE_NAME, token, buildAuthCookieOptions());
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, buildCsrfCookieOptions());
 
         res.status(200).json({ 
-            token, 
-            user: { id: user._id, userName: user.userName } 
+            session: true,
+            user: {
+                id: user._id,
+                userName: user.username,
+                username: user.username
+            }
         });
 
     } catch (error) {
         console.error("Error en Login:", error);
-        res.status(500).json({ 
-            message: 'Error en el servidor', 
-            error: error.message 
-        });
+        res.status(500).json({ message: 'Error en el servidor' });
     }
+};
+
+export const logout = (req, res) => {
+    const clearOptions = { ...buildAuthCookieOptions() };
+    delete clearOptions.maxAge;
+    clearOptions.expires = new Date(0);
+    const clearCsrfOptions = { ...buildCsrfCookieOptions() };
+    delete clearCsrfOptions.maxAge;
+    clearCsrfOptions.expires = new Date(0);
+    res.clearCookie(AUTH_COOKIE_NAME, clearOptions);
+    res.clearCookie(CSRF_COOKIE_NAME, clearCsrfOptions);
+    return res.status(200).json({ message: 'Sesión cerrada' });
 };
 
 export const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.userId).populate('teams', 'name avatar'); // Poblar solo nombre y avatar de los equipos
+        const user = await User.findById(req.userId)
+            .select('-password -resetPasswordToken -resetPasswordExpires -__v -connections.riot.pendingLink')
+            .populate('teams', 'name avatar');
         
         if (!user) {
             return res.status(404).json({ message: "Usuario no encontrado" });
@@ -133,20 +269,25 @@ export const getProfile = async (req, res) => {
 // 1. Solicitar recuperación (Envío de correo)
 export const forgotPassword = async (req, res) => {
     try {
-        const { email } = req.body;
-        const user = await User.findOne({ email });
+        const normalizedEmail = String(req.body?.email || '').trim().toLowerCase();
+        const genericResponse = { message: "Si el correo existe, enviaremos instrucciones para recuperar la cuenta." };
 
-        if (!user) {
-            return res.status(404).json({ message: "No existe un usuario con ese correo." });
+        if (!normalizedEmail) {
+            return res.status(200).json(genericResponse);
         }
 
-        // Generar un token único de 20 caracteres
-       // Generar un código numérico de 6 dígitos
-        const token = Math.floor(100000 + Math.random() * 900000).toString();
+        const user = await User.findOne({ email: normalizedEmail });
+        if (!user) {
+            return res.status(200).json(genericResponse);
+        }
 
-        // El resto sigue igual (guardar en resetPasswordToken y resetPasswordExpires)
-        user.resetPasswordToken = token;
-        user.resetPasswordExpires = Date.now() + 3600000; 
+        // Código de 6 dígitos criptográficamente más robusto
+        const token = crypto.randomInt(100000, 1000000).toString();
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        // Guardamos hash (nunca el código en texto plano)
+        user.resetPasswordToken = tokenHash;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutos
         await user.save();
 
         // Configurar el transporte de correo (Ejemplo con Gmail)
@@ -175,7 +316,7 @@ export const forgotPassword = async (req, res) => {
 
             <div style="padding: 0 40px 40px 40px; text-align: center;">
                 <p style="color: #333; font-size: 16px; line-height: 1.5;">
-                    Hola, <strong>${user.fullName}</strong>. Usa el siguiente código para restablecer tu contraseña. Este código expirará en 60 minutos.
+                    Hola, <strong>${user.fullName}</strong>. Usa el siguiente código para restablecer tu contraseña. Este código expirará en 15 minutos.
                 </p>
 
                 <div style="margin: 30px 0; background-color: #f4f4f4; border-radius: 8px; padding: 20px; border: 1px dashed #cccccc;">
@@ -200,10 +341,10 @@ export const forgotPassword = async (req, res) => {
 }
 
 await transporter.sendMail(mailOptions);
-        res.status(200).json({ message: "Correo de recuperación enviado." });
+        return res.status(200).json(genericResponse);
 
     } catch (error) {
-        res.status(500).json({ message: "Error al enviar el correo", error: error.message });
+        return res.status(500).json({ message: "Error al procesar la recuperación de contraseña" });
     }
 };
 
@@ -212,9 +353,20 @@ export const resetPassword = async (req, res) => {
     try {
         const { token } = req.params;
         const { password } = req.body;
+        const plainToken = String(token || '').trim();
+
+        if (!plainToken || !password) {
+            return res.status(400).json({ message: "Solicitud inválida." });
+        }
+
+        if (String(password).length < 8) {
+            return res.status(400).json({ message: "La contraseña debe tener al menos 8 caracteres." });
+        }
+
+        const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
 
         const user = await User.findOne({
-            resetPasswordToken: token,
+            resetPasswordToken: tokenHash,
             resetPasswordExpires: { $gt: Date.now() } // Verifica que no haya expirado
         });
 
@@ -231,7 +383,7 @@ export const resetPassword = async (req, res) => {
         res.status(200).json({ message: "Contraseña actualizada correctamente." });
 
     } catch (error) {
-        res.status(500).json({ message: "Error al actualizar la contraseña" });
+        return res.status(500).json({ message: "Error al actualizar la contraseña" });
     }
 };
 
@@ -285,7 +437,7 @@ export const updateProfile = async (req, res) => {
             req.userId,
             { $set: updateData },
             { new: true, runValidators: true }
-        ).select('-password');
+        ).select('-password -resetPasswordToken -resetPasswordExpires -__v -connections.riot.pendingLink');
 
         res.status(200).json(updatedUser);
 
@@ -300,17 +452,12 @@ export const applyOrganizer = async (req, res) => {
     const { fullName, idNumber, orgName,eventType, 
         website, experienceYears,maxSize, tools, description } = req.body;
     const file = req.file;
-    const userId = req.userId; // Obtenido del middleware verifyToken
 
     try {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
         });
-
-        // Generamos las URLs para los botones (Ajusta el dominio según tu producción)
-        const approveUrl = `http://localhost:4000/api/auth/verify-organizer/${userId}/approve`;
-        const rejectUrl = `http://localhost:4000/api/auth/verify-organizer/${userId}/reject`;
 
         const mailOptions = {
             from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
@@ -329,13 +476,9 @@ export const applyOrganizer = async (req, res) => {
                     <p><strong>Tamaño de Torneos:</strong> ${maxSize}</p>
                     <p><strong>Herramientas:</strong> ${tools}</p>
                     <p style="background: #111; padding: 15px; border-radius: 5px;">${description}</p>
-                    
-                    <div style="margin-top: 30px; text-align: center;">
-                        <a href="${approveUrl}" style="background-color: #8EDB15; color: #000; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">APROBAR ORGANIZADOR</a>
-                        
-                        <a href="${rejectUrl}" style="background-color: #ff4444; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">RECHAZAR</a>
-                    </div>
-                    <p style="font-size: 12px; color: #666; margin-top: 20px; text-align: center;">Al aprobar, el usuario recibirá permisos de edición de torneos inmediatamente.</p>
+                    <p style="font-size: 12px; color: #666; margin-top: 20px; text-align: center;">
+                        Revisar y aprobar desde el panel administrativo autenticado.
+                    </p>
                 </div>
             `,
             attachments: file ? [{ filename: file.originalname, path: file.path }] : []
@@ -353,31 +496,34 @@ export const applyOrganizer = async (req, res) => {
 
 // 5. Verificar solicitud de Organizador
 export const verifyOrganizerAction = async (req, res) => {
-    const { userId, action } = req.params;
-
     try {
-        if (action === 'approve') {
-            await User.findByIdAndUpdate(userId, { isOrganizer: true });
-            return res.send(`
-                <body style="background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center;">
-                    <div>
-                        <h1 style="color: #8EDB15;">✔️ ¡Usuario Aprobado!</h1>
-                        <p>El usuario ahora tiene rango de <b>Organizador</b> en Esportefy.</p>
-                        <small>Ya puedes cerrar esta pestaña.</small>
-                    </div>
-                </body>
-            `);
-        } else {
-            return res.send(`
-                <body style="background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center;">
-                    <div>
-                        <h1 style="color: #ff4444;">❌ Solicitud Rechazada</h1>
-                        <p>No se han realizado cambios en la cuenta del usuario.</p>
-                    </div>
-                </body>
-            `);
+        const { userId } = req.params;
+        const { action = 'approve' } = req.body || {};
+
+        const adminUser = await User.findById(req.userId).select('isAdmin');
+        if (!adminUser?.isAdmin) {
+            return res.status(403).json({ message: 'No autorizado. Solo administradores pueden realizar esta acción.' });
         }
+
+        if (action !== 'approve') {
+            return res.status(400).json({ message: 'Acción inválida. Solo se permite approve.' });
+        }
+
+        const target = await User.findByIdAndUpdate(
+            userId,
+            { isOrganizer: true },
+            { new: true }
+        ).select('_id isOrganizer');
+
+        if (!target) {
+            return res.status(404).json({ message: 'Usuario objetivo no encontrado.' });
+        }
+
+        return res.status(200).json({
+            message: 'Usuario aprobado como organizador.',
+            user: target
+        });
     } catch (error) {
-        res.status(500).send("Error procesando la acción.");
+        return res.status(500).json({ message: 'Error procesando la acción.' });
     }
 };

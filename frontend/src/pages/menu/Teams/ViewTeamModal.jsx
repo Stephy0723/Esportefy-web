@@ -255,8 +255,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         if (!player.nickname) return alert('Nickname requerido');
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
+            if (!currentUser?._id) return alert('Debes iniciar sesión');
             if (!inviteCode.trim()) {
                 alert('Se requiere un código de invitación para unirse.');
                 return;
@@ -269,8 +268,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                     slotType,
                     slotIndex,
                     player
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
+                }
             );
             if (onTeamUpdated) onTeamUpdated(res.data.team);
             alert('Te uniste al equipo.');
@@ -289,13 +287,11 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         }
         try {
             setRiotCheck({ status: 'loading', message: 'Validando...' });
-            const token = localStorage.getItem('token');
-            if (!token) return setRiotCheck({ status: 'error', message: 'Debes iniciar sesión.' });
+            if (!currentUser?._id) return setRiotCheck({ status: 'error', message: 'Debes iniciar sesión.' });
             const riotId = `${player.nickname}#${player.gameId}`;
             const res = await axios.post(
                 'http://localhost:4000/api/auth/riot/validate',
-                { riotId },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { riotId }
             );
             if (res.data?.ok) {
                 setRiotCheck({ status: 'ok', message: 'Riot ID válido.' });
@@ -309,11 +305,9 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
     const handleRequestAction = async (requestId, action) => {
         try {
-            const token = localStorage.getItem('token');
             const res = await axios.patch(
                 `http://localhost:4000/api/teams/${team._id}/requests/${requestId}`,
-                { action },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { action }
             );
             if (onTeamUpdated) onTeamUpdated(res.data.team);
             // Fallback: remover de la lista local si por algo no viene actualizado
@@ -335,12 +329,10 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         if (!player.nickname) return alert('Nickname requerido');
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
+            if (!currentUser?._id) return alert('Debes iniciar sesión');
             const res = await axios.post(
                 `http://localhost:4000/api/teams/${team._id}/roster`,
-                { slotType, slotIndex, player },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { slotType, slotIndex, player }
             );
             if (onTeamUpdated) onTeamUpdated(res.data.team);
             alert('Jugador agregado.');
@@ -355,12 +347,10 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         const ok = window.confirm('¿Seguro que quieres salir del equipo?');
         if (!ok) return;
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
+            if (!currentUser?._id) return alert('Debes iniciar sesión');
             const res = await axios.post(
                 `http://localhost:4000/api/teams/leave/${team._id}`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
+                {}
             );
             if (onTeamUpdated && res.data?.team) onTeamUpdated(res.data.team);
             alert('Saliste del equipo.');
@@ -375,12 +365,9 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         const ok = window.confirm('¿Seguro que quieres remover a este jugador?');
         if (!ok) return;
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
             const res = await axios.patch(
                 `http://localhost:4000/api/teams/${team._id}/roster/remove`,
-                { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId }
             );
             if (onTeamUpdated) onTeamUpdated(res.data.team);
         } catch (err) {

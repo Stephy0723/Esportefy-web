@@ -38,7 +38,7 @@ const Team = () => {
     const [logoFile, setLogoFile] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
     const [inviteCode, setInviteCode] = useState('');
-    const storedUser = localStorage.getItem('esportefyUser');
+    const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
     const handleLogoChange = (e) => {
@@ -68,12 +68,9 @@ const Team = () => {
 
     const handleRequestAction = async (teamId, requestId, action) => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return addToast('Debes iniciar sesión', 'error');
             const res = await axios.patch(
                 `http://localhost:4000/api/teams/${teamId}/requests/${requestId}`,
-                { action },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { action }
             );
             if (res.data?.team) {
                 setSelectedTeam(res.data.team);
@@ -542,12 +539,10 @@ const filteredTeams = teams.filter(team => {
                                                 return;
                                             }
                                             try {
-                                                const token = localStorage.getItem('token');
                                                 let updated = selectedTeam;
                                                 const res = await axios.patch(
                                                     `http://localhost:4000/api/teams/${selectedTeam._id}`,
-                                                    previewForm,
-                                                    { headers: { Authorization: `Bearer ${token}` } }
+                                                    previewForm
                                                 );
                                                 updated = res.data.team || updated;
                                                 if (logoFile) {
@@ -555,8 +550,7 @@ const filteredTeams = teams.filter(team => {
                                                     data.append('logo', logoFile);
                                                     const resLogo = await axios.patch(
                                                         `http://localhost:4000/api/teams/${selectedTeam._id}/logo`,
-                                                        data,
-                                                        { headers: { Authorization: `Bearer ${token}` } }
+                                                        data
                                                     );
                                                     updated = resLogo.data.team || updated;
                                                 }
@@ -578,10 +572,7 @@ const filteredTeams = teams.filter(team => {
                                             const ok = window.confirm('¿Eliminar este equipo?');
                                             if (!ok) return;
                                             try {
-                                                const token = localStorage.getItem('token');
-                                                await axios.delete(`http://localhost:4000/api/teams/${selectedTeam._id}`, {
-                                                    headers: { Authorization: `Bearer ${token}` }
-                                                });
+                                                await axios.delete(`http://localhost:4000/api/teams/${selectedTeam._id}`);
                                                 setTeams((prev) => prev.filter(t => String(t._id) !== String(selectedTeam._id)));
                                                 setIsPreviewOpen(false);
                                             } catch (err) {

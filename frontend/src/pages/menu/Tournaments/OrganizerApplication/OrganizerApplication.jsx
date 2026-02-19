@@ -50,11 +50,9 @@ const OrganizerApplication = () => {
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
 
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       await axios.post('http://localhost:4000/api/auth/apply-organizer', data, {
         headers: { 
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'multipart/form-data'
         }
       });
 

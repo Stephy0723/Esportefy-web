@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import './App.css';
 
 
 
 // --- EXTENSIONES DE NOTIFICACIONES ---
 import { NotificationProvider, useNotification } from './context/NotificationContext';
+import { useAuth } from './context/AuthContext';
 import ToastContainer from './components/Toasts/ToastContainer';
 
 // COMPONENTES
@@ -89,6 +90,20 @@ const WelcomeTrigger = () => {
   return null;
 };
 
+const ProtectedRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+};
+
 // --- LAYOUT INTERNO ---
 const MainLayout = () => {
   const [isClosed, setIsClosed] = useState(true);
@@ -116,9 +131,6 @@ const MainLayout = () => {
 
 function App() {
   return (
-
-   
-
     <NotificationProvider>
       
       {/* 2. CONTENEDOR VISUAL DE ALERTAS FLOTANTES (TOASTS) */}
@@ -135,75 +147,78 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/support" element={<SupportPage />} />
-          <Route path="/edit-profile" element={<EditProfile />} />
-          <Route path="/CalendarPage" element={<CalendarPage />} /> 
           
           {/* LEGALES */}
           <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />
           <Route path="/legal/payment-policy" element={<PaymentPolicy />} />
           <Route path="/legal/terms" element={<TermsConditions />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-          
-          {/* CREACIÓN DE EQUIPO (Pública o separada del layout principal según tu diseño actual) */}
-          <Route path="/create-team" element={<CreateTeamPage />} />
-          
-          {/* PRIVADAS (Con Sidebar + Navbar) */}
-          <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/chats" element={<Chats />} />
-            <Route path="/tv" element={<Tv />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/torneos" element={<Tournaments />} />
-            <Route path="/comunidad" element={<Community />} />
-            <Route path="/equipos" element={<Teams />} />
-            <Route path="/tournaments" element={<Tournaments />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/rankings" element={<Rankings />} />
-            
-            {/* Rutas de Gestión de Torneos */}
-            <Route path="/team-registration" element={<TeamRegistration />} />
-            <Route path="/organizer-application" element={<OrganizerApplication />} />
-            <Route path="/create-tournament" element={<CreateTournament />} />
-            {/* Rutas de Comunidad */}
-            <Route path="/games/:id" element={<GamesPage />} />
-            <Route path="/university" element={<UniversityPage />} />
 
-            {/* Rutas con nombre propio */}
-            <Route path="/game/valorant" element={<ValorantPage />} />
-            <Route path="/game/dota2" element={<Dota2Page />} />
-            <Route path="/game/lol" element={<LeagueOfLegendsPage />} />
-            <Route path="/game/mlbb" element={<MobileLegendsPage />} />
-            <Route path="/game/wildrift" element={<WildRiftPage />} />
-            <Route path="/game/fortnite" element={<FortnitePage />} />
-            <Route path="/game/freefire" element={<FreeFirePage />} />
-            <Route path="/game/apex" element={<ApexPage />} />
-            <Route path="/game/warzone" element={<CodPage />} />
-            <Route path="/game/fifa" element={<FifaPage />} />  
-            <Route path="/game/hok" element={<HokPage />} />
-            <Route path="/game/hearthstone" element={<HearthstonePage />} />  
-            <Route path="/game/overwatch" element={<OverwatchPage />} />
-            <Route path="/game/pubgm" element={<PubgPage />} />
-            <Route path="/game/r6" element={<RainbowSixPage />} />
-            <Route path="/game/rocket" element={<RocketLeaguePage />} />
-            <Route path="/game/freefire" element={<FreeFirePage />} />
-            <Route path="/game/cs2" element={<CsgoPage />} />  
-            <Route path="/game/apex" element={<ApexPage />} />
-            <Route path="/game/tft" element={<TftPage />} />
-            <Route path="/game/clashroyale" element={<ClashRoyalePage />} />
-            <Route path="/game/sf6" element={<StreetFighter6Page />} />
-            <Route path="/game/tekken8" element={<Tekken8Page />} />
-            <Route path="/game/starcraft" element={<StarcraftPage />} />
-            <Route path="/game/lor" element={<RuneterraPage />} />  
-            <Route path="/game/nba2k" element={<Nba2k14Page />} />
-            {/* Rankings */  }
-            <Route path="/rankings" element={<Rankings />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/support" element={<SupportPage />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
+            <Route path="/CalendarPage" element={<CalendarPage />} />
+            <Route path="/create-team" element={<CreateTeamPage />} />
 
-            {/* Rutas dinámicas */  }
-            <Route path="/group/:id" element={<GroupPage />} />
-            <Route path="/organizer/:id" element={<OrganizerPage />} />
+            {/* PRIVADAS (Con Sidebar + Navbar) */}
+            <Route element={<MainLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/chats" element={<Chats />} />
+              <Route path="/tv" element={<Tv />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/torneos" element={<Tournaments />} />
+              <Route path="/comunidad" element={<Community />} />
+              <Route path="/equipos" element={<Teams />} />
+              <Route path="/tournaments" element={<Tournaments />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/rankings" element={<Rankings />} />
+              
+              {/* Rutas de Gestión de Torneos */}
+              <Route path="/team-registration" element={<TeamRegistration />} />
+              <Route path="/organizer-application" element={<OrganizerApplication />} />
+              <Route path="/create-tournament" element={<CreateTournament />} />
+              {/* Rutas de Comunidad */}
+              <Route path="/games/:id" element={<GamesPage />} />
+              <Route path="/university" element={<UniversityPage />} />
+
+              {/* Rutas con nombre propio */}
+              <Route path="/game/valorant" element={<ValorantPage />} />
+              <Route path="/game/dota2" element={<Dota2Page />} />
+              <Route path="/game/lol" element={<LeagueOfLegendsPage />} />
+              <Route path="/game/mlbb" element={<MobileLegendsPage />} />
+              <Route path="/game/wildrift" element={<WildRiftPage />} />
+              <Route path="/game/fortnite" element={<FortnitePage />} />
+              <Route path="/game/freefire" element={<FreeFirePage />} />
+              <Route path="/game/apex" element={<ApexPage />} />
+              <Route path="/game/warzone" element={<CodPage />} />
+              <Route path="/game/fifa" element={<FifaPage />} />  
+              <Route path="/game/hok" element={<HokPage />} />
+              <Route path="/game/hearthstone" element={<HearthstonePage />} />  
+              <Route path="/game/overwatch" element={<OverwatchPage />} />
+              <Route path="/game/pubgm" element={<PubgPage />} />
+              <Route path="/game/r6" element={<RainbowSixPage />} />
+              <Route path="/game/rocket" element={<RocketLeaguePage />} />
+              <Route path="/game/freefire" element={<FreeFirePage />} />
+              <Route path="/game/cs2" element={<CsgoPage />} />  
+              <Route path="/game/apex" element={<ApexPage />} />
+              <Route path="/game/tft" element={<TftPage />} />
+              <Route path="/game/clashroyale" element={<ClashRoyalePage />} />
+              <Route path="/game/sf6" element={<StreetFighter6Page />} />
+              <Route path="/game/tekken8" element={<Tekken8Page />} />
+              <Route path="/game/starcraft" element={<StarcraftPage />} />
+              <Route path="/game/lor" element={<RuneterraPage />} />  
+              <Route path="/game/nba2k" element={<Nba2k14Page />} />
+              {/* Rankings */  }
+              <Route path="/rankings" element={<Rankings />} />
+
+              {/* Rutas dinámicas */  }
+              <Route path="/group/:id" element={<GroupPage />} />
+              <Route path="/organizer/:id" element={<OrganizerPage />} />
+            </Route>
           </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
 

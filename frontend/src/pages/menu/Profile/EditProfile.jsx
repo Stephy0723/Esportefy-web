@@ -85,7 +85,7 @@ const EditProfile = () => {
     const currentBg = BACKGROUNDS.find(b => b.id === formData.selectedBgId) || BACKGROUNDS[0];
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('esportefyUser');
+        const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
         if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
@@ -129,7 +129,6 @@ const EditProfile = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         
         const data = new FormData();
         Object.keys(formData).forEach(key => {
@@ -151,7 +150,6 @@ const EditProfile = () => {
                 data,
                 { 
                     headers: { 
-                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data' 
                     } 
                 }

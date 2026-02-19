@@ -4,6 +4,7 @@ import { Router } from 'express';
 import {
   register,
   login,
+  logout,
   getProfile,
   forgotPassword,
   resetPassword,
@@ -17,7 +18,7 @@ import { verifyToken } from '../middlewares/auth.middleware.js';
 import { createRateLimiter } from '../middlewares/rateLimit.js';
 
 import {
-  discordAuth,
+  discordAuthStart,
   discordCallback,
   unlinkDiscord
 } from '../controllers/discord.controller.js';
@@ -37,12 +38,12 @@ const rlRegister = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPref
 const rlForgot = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'forgot' });
 const rlReset = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'reset' });
 const rlRiot = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 6, keyPrefix: 'riot' });
+const rlDiscord = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8, keyPrefix: 'discord-oauth' });
 
-// 🔓 OAuth Discord (SIN verifyToaken)
 /* =========================
    DISCORD
 ========================= */
-router.get('/discord', discordAuth);
+router.post('/discord/start', verifyToken, rlDiscord, discordAuthStart);
 router.get('/discord/callback', discordCallback);
 router.delete('/discord', verifyToken, unlinkDiscord);
 
@@ -51,12 +52,13 @@ router.delete('/discord', verifyToken, unlinkDiscord);
 ========================= */
 router.post('/register', rlRegister, register);
 router.post('/login', rlLogin, login);
+router.post('/logout', logout);
 router.get('/profile', verifyToken, getProfile);
 router.put('/update-profile', verifyToken, upload.single('avatarFile'), updateProfile);
 router.post('/forgot-password', rlForgot, forgotPassword);
 router.post('/reset-password/:token', rlReset, resetPassword);
 router.post('/apply-organizer', verifyToken, upload.single('document'), applyOrganizer);
-router.get('/verify-organizer/:userId/:action', verifyOrganizerAction);
+router.patch('/organizer/:userId/approve', verifyToken, verifyOrganizerAction);
 
 /* =========================
    RIOT

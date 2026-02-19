@@ -8,6 +8,7 @@ import {
     FaMapMarkerAlt, FaCheck, FaCopy, FaSearch, FaDiscord, FaTwitter, 
     FaFacebook, FaPaperPlane, FaGamepad, FaUpload 
 } from 'react-icons/fa';
+import { withCsrfHeaders } from '../../../../utils/csrf';
 import './CreateTeamPage.css';
 
 // Configuración de Roles Visuales
@@ -33,7 +34,7 @@ const CreateTeamPage = () => {
     const navigate = useNavigate();
     
     // --- ESTADOS Y DATOS ---
-    const userString = localStorage.getItem('esportefyUser');
+    const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
     const currentUser = userString ? JSON.parse(userString) : { name: "Usuario" };
     
     const [step, setStep] = useState(1);
@@ -224,7 +225,6 @@ const CreateTeamPage = () => {
     setSubmitting(true);
     
     try {
-        const token = localStorage.getItem('token');
         const data = new FormData();
 
         // 1. Convertimos el logoPreview (base64) a un archivo real si existe
@@ -242,11 +242,8 @@ const CreateTeamPage = () => {
         // 3. Petición al servidor
         const res = await fetch('http://localhost:4000/api/teams/create', {
             method: 'POST',
-            headers: {
-                // NOTA: Al usar FormData NO debes poner 'Content-Type': 'application/json'
-                // El navegador pondrá automáticamente 'multipart/form-data' con el boundary correcto
-                'Authorization': `Bearer ${token}` 
-            },
+            credentials: 'include',
+            headers: withCsrfHeaders(),
             body: data
         });
 

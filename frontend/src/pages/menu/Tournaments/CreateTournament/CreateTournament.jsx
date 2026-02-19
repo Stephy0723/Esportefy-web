@@ -111,7 +111,6 @@ const CreateTournament = () => {
     
     // Preparar FormData para Multer
     const data = new FormData();
-    const token = localStorage.getItem('token');
 
     // Campos básicos
     data.append('title', tournament.title);
@@ -164,8 +163,7 @@ const CreateTournament = () => {
             method,
             data,
             headers: {
-                'Content-Type': 'multipart/form-data',
-                'Authorization': `Bearer ${token}`
+                'Content-Type': 'multipart/form-data'
             }
         });
 

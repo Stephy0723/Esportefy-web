@@ -24,14 +24,7 @@ const Profile = () => {
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-                if (!token) {
-                    navigate('/login');
-                    return;
-                }
-                const response = await axios.get('http://localhost:4000/api/auth/profile', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await axios.get('http://localhost:4000/api/auth/profile');
                 setUser(response.data);
                 setLoading(false);
             } catch (err) {

@@ -8,6 +8,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = './uploads/teams/';
@@ -27,7 +30,7 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         // Nombre único: ID-Timestamp.ext
-        const ext = path.extname(file.originalname);
+        const ext = path.extname(file.originalname).toLowerCase();
         // Usamos req.userId (que viene del middleware verifyToken)
         cb(null, `${req.userId}-${Date.now()}${ext}`);
     }
@@ -35,7 +38,16 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ 
     storage,
-   
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const validMime = ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype);
+        const validExt = ALLOWED_IMAGE_EXTENSIONS.has(ext);
+        if (!validMime || !validExt) {
+            return cb(new Error('Archivo inválido. Solo se permiten imágenes JPG, PNG o WEBP.'));
+        }
+        return cb(null, true);
+    }
 });
 
 export const getTeamByInviteCode = async (req, res) => {

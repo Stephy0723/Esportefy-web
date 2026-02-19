@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 // COMPONENTES
 import Navbar from '../../components/Navbar/Navbar';
@@ -13,15 +14,19 @@ import videoMision from '../../assets/video/.vision.mp4';
 
 const Home = () => {
   const [isSidebarClosed, setIsSidebarClosed] = useState(true);
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user);
   
   // Cálculo para empujar el contenido cuando el menú se abre
-  const sidebarWidth = isSidebarClosed ? '88px' : '250px';
+  const sidebarWidth = isAuthenticated ? (isSidebarClosed ? '88px' : '250px') : '0px';
 
   return (
     <div className="home-container bg-[#121212]">
       
-      {/* 1. SIDEBAR (Controlado) */}
-      <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
+      {/* 1. SIDEBAR (Solo para sesión activa) */}
+      {isAuthenticated && (
+        <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
+      )}
 
       {/* 2. CONTENIDO PRINCIPAL (Se mueve al abrir el menú) */}
       <div 

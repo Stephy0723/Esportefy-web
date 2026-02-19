@@ -58,7 +58,7 @@ const UserSchema = new mongoose.Schema({
             default: null
             },
  
-    // ===== SETTINGS =====
+    // --- SETTINGS ---
     connections: {
         discord: {
             id: { type: String },

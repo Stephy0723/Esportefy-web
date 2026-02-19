@@ -344,11 +344,9 @@ useEffect(() => {
 
   const updateRegistrationStatus = async (torneo, registrationId, status) => {
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       await axios.patch(
         `http://localhost:4000/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
-        { status },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { status }
       );
       setSelectedTournament((prev) => {
         if (!prev) return prev;
@@ -368,11 +366,7 @@ useEffect(() => {
 
   const removeRegistration = async (torneo, registrationId) => {
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      await axios.delete(
-        `http://localhost:4000/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.delete(`http://localhost:4000/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`);
       setSelectedTournament((prev) => {
         if (!prev) return prev;
         const nextRegs = (prev.registrations || []).filter((r) => String(r._id) !== String(registrationId));
@@ -386,11 +380,9 @@ useEffect(() => {
 
   const updateTournamentStatus = async (torneo, action) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.patch(
         `http://localhost:4000/api/tournaments/${torneo.tournamentId}/status`,
-        { action },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { action }
       );
       setSelectedTournament((prev) => prev ? ({
         ...prev,
@@ -418,10 +410,7 @@ useEffect(() => {
     const ok = window.confirm(`¿Eliminar el torneo "${torneo.title}"? Esta acción no se puede deshacer.`);
     if (!ok) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:4000/api/tournaments/${torneo.tournamentId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`http://localhost:4000/api/tournaments/${torneo.tournamentId}`);
       setSelectedTournament(null);
       setTournaments((prev) => prev.filter((t) => t.id !== torneo.id));
       notify('success', 'Torneo eliminado', 'El torneo fue eliminado correctamente.');

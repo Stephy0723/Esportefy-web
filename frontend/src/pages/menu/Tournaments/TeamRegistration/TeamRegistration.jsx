@@ -31,7 +31,7 @@ const TeamRegistration = () => {
   const [userTeams, setUserTeams] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [loadingTeams, setLoadingTeams] = useState(true);
-  const storedUser = localStorage.getItem('esportefyUser');
+  const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
   const selectedTeam = userTeams.find(t => String(t._id) === String(selectedTeamId));
@@ -53,12 +53,9 @@ const TeamRegistration = () => {
     const loadTeams = async () => {
       try {
         setLoadingTeams(true);
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('esportefyUser');
+        const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
         const user = storedUser ? JSON.parse(storedUser) : null;
-        const response = await axios.get('http://localhost:4000/api/teams', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
+        const response = await axios.get('http://localhost:4000/api/teams');
         const allTeams = response.data || [];
         const mine = user?._id
           ? allTeams.filter(t => String(t.captain?._id || t.captain) === String(user._id))
@@ -106,19 +103,13 @@ const TeamRegistration = () => {
       alert('Todos los titulares deben tener Riot ID.');
       return;
     }
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Debes iniciar sesión.');
-      return;
-    }
     try {
       setSubmitting(true);
       await axios.post(
         `http://localhost:4000/api/tournaments/${tournament.tournamentId}/register`,
         {
           teamId: selectedTeamId
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
       alert("¡Equipo Registrado! GL HF.");
       navigate('/tournaments');

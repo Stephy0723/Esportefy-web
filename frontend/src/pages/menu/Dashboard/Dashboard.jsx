@@ -49,12 +49,8 @@ const Dashboard = () => {
 
     useEffect(() => {
         const fetchProfile = async () => {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) { navigate('/login'); return; }
             try {
-                const response = await axios.get('http://localhost:4000/api/auth/profile', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const response = await axios.get('http://localhost:4000/api/auth/profile');
                 setUser(response.data);
             } catch (error) {
                 console.error(error);
@@ -202,7 +198,7 @@ const Dashboard = () => {
                     <h3>{activeTeam.name}</h3>
                     <span className="role-badge">{role}</span>
                     <div className="team-actions">
-                        <button className="btn-neon-outline" onClick={() => navigate('/teams')}>VER ROSTER</button>
+                        <button className="btn-neon-outline" onClick={() => navigate('/equipos')}>VER ROSTER</button>
                         <button className="btn-neon-outline" onClick={() => navigate('/tournaments')}>TORNEOS</button>
                     </div>
                 </div>

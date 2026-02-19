@@ -10,11 +10,7 @@ const Notifications = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await axios.get('http://localhost:4000/api/notifications', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await axios.get('http://localhost:4000/api/notifications');
         loadNotifications(res.data);
       } catch (_) {
         // fallback a locales
@@ -37,19 +33,13 @@ const Notifications = () => {
 
   const handleAction = async (note, action) => {
     try {
-      const token = localStorage.getItem('token');
       if (note?.meta?.teamId && note?.meta?.requestId) {
         await axios.patch(
           `http://localhost:4000/api/teams/${note.meta.teamId}/requests/${note.meta.requestId}`,
-          { action },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { action }
         );
       }
-      if (token) {
-        await axios.patch(`http://localhost:4000/api/notifications/${note.id}/read`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      await axios.patch(`http://localhost:4000/api/notifications/${note.id}/read`, {});
       removeNotification(note.id);
       addToast(action === 'approve' ? 'Solicitud aceptada' : 'Solicitud rechazada', action === 'approve' ? 'success' : 'info');
     } catch (err) {
@@ -59,12 +49,7 @@ const Notifications = () => {
 
   const handleRemove = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.patch(`http://localhost:4000/api/notifications/${id}/read`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      await axios.patch(`http://localhost:4000/api/notifications/${id}/read`, {});
     } catch (_) {
       // no bloquear UI
     }
@@ -73,12 +58,9 @@ const Notifications = () => {
 
   const handleSave = async (note) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
       const res = await axios.patch(
         `http://localhost:4000/api/notifications/${note.id}/save`,
-        { saved: !note.isSaved },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { saved: !note.isSaved }
       );
       const updated = res.data?.notification;
       if (updated) {
@@ -93,12 +75,9 @@ const Notifications = () => {
 
   const handleArchive = async (note) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
       const res = await axios.patch(
         `http://localhost:4000/api/notifications/${note.id}/archive`,
-        { archived: !note.isArchived },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { archived: !note.isArchived }
       );
       const updated = res.data?.notification;
       if (updated) {
@@ -113,12 +92,7 @@ const Notifications = () => {
 
   const handleMarkAll = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.patch('http://localhost:4000/api/notifications/read-all', {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      await axios.patch('http://localhost:4000/api/notifications/read-all', {});
       loadNotifications(
         notifications.map((n) => ({
           ...n,

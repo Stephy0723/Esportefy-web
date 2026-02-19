@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'; // <--- Agregamos useState
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 import { useTheme } from '../../context/ThemeContext'; 
+import { withCsrfHeaders } from '../../utils/csrf';
 
 import logoWhite from '../../assets/Logo/logo-black.png';
 import logoBlack from '../../assets/Logo/logo-white.png';
 
 const Sidebar = ({ isClosed, setIsClosed }) => {
   const { isDarkMode, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   
   // ESTADO PARA "VER MÁS"
   const [isMenuExpanded, setIsMenuExpanded] = useState(false); // false = colapsado
@@ -27,6 +29,19 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   const handleSidebarClick = () => {
      if(isClosed) setIsClosed(false);
   }
+
+  const handleLogout = () => {
+    fetch('http://localhost:4000/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: withCsrfHeaders()
+    }).catch(() => {});
+
+    localStorage.removeItem('esportefyUser');
+    sessionStorage.removeItem('esportefyUser');
+    window.dispatchEvent(new Event('user-update'));
+    navigate('/');
+  };
 
   return (
     <nav 
@@ -163,7 +178,10 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
         {/* --- FOOTER --- */}
         <div className="bottom-content">
           <li className="">
-            <Link to="/login"><i className='bx bx-log-out icon'></i><span className="text nav-text">Cerrar Sesión</span></Link>
+            <button type="button" className="logout-link-btn" onClick={handleLogout}>
+              <i className='bx bx-log-out icon'></i>
+              <span className="text nav-text">Cerrar Sesión</span>
+            </button>
           </li>
           <li className="mode" onClick={(e) => { e.stopPropagation(); toggleTheme(); }}>
             <div className="sun-moon"><i className='bx bx-moon icon moon'></i><i className='bx bx-sun icon sun'></i></div>

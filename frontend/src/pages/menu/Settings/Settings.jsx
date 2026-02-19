@@ -10,6 +10,7 @@ import {
 import './Settings.css';
 import axios from "axios";
 import { useEffect } from "react";
+import { withCsrfHeaders } from '../../../utils/csrf';
 
 
 export default function Settings() {
@@ -43,16 +44,11 @@ export default function Settings() {
 
     const [loading, setLoading] = useState(true);
 
-    const token = localStorage.getItem("token");
-
     const updatePrivacy = async (newPrivacy) => {
         try {
             await axios.put(
                 "http://localhost:4000/api/settings/privacy",
-                { privacy: newPrivacy },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
+                { privacy: newPrivacy }
             );
 
             setPrivacy(newPrivacy);
@@ -67,14 +63,7 @@ export default function Settings() {
 
     const fetchSettings = async () => {
         try {
-            const res = await axios.get(
-                "http://localhost:4000/api/auth/profile",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            const res = await axios.get("http://localhost:4000/api/auth/profile");
 
             setConnections(res.data.connections);
             setPrivacy(res.data.privacy);
@@ -91,14 +80,7 @@ export default function Settings() {
 
     const unlinkDiscord = async () => {
         try {
-            await axios.delete(
-                'http://localhost:4000/api/auth/discord',
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            await axios.delete('http://localhost:4000/api/auth/discord');
 
             await fetchSettings(); // 🔥 refresca estado real
         } catch (error) {
@@ -106,6 +88,25 @@ export default function Settings() {
                 'Error al desvincular Discord',
                 error.response?.data || error.message
             );
+        }
+    };
+
+    const startDiscordLink = async () => {
+        try {
+            const response = await axios.post('http://localhost:4000/api/auth/discord/start', {});
+
+            const authorizeUrl = response?.data?.authorizeUrl;
+            if (!authorizeUrl) {
+                throw new Error('No se recibió URL de autorización de Discord');
+            }
+
+            window.location.href = authorizeUrl;
+        } catch (error) {
+            console.error(
+                'Error al iniciar OAuth de Discord',
+                error.response?.data || error.message
+            );
+            alert('No se pudo iniciar la conexión con Discord. Intenta de nuevo.');
         }
     };
 
@@ -121,8 +122,7 @@ export default function Settings() {
 
             await axios.post(
                 'http://localhost:4000/api/auth/riot/link/init',
-                { riotId: `${riotGameName}#${riotTagLine}` },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { riotId: `${riotGameName}#${riotTagLine}` }
             );
 
             setRiotStep('otpSent');
@@ -146,8 +146,7 @@ export default function Settings() {
 
             await axios.post(
                 'http://localhost:4000/api/auth/riot/link/confirm',
-                { otp: riotOtp },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { otp: riotOtp }
             );
 
             await fetchSettings();
@@ -165,21 +164,12 @@ export default function Settings() {
     };
 
     useEffect(() => {
-        if (token) fetchSettings();
-    }, [token]);
+        fetchSettings();
+    }, []);
 
     const unlinkRiot = async () => {
         try {
-            const token = localStorage.getItem('token');
-
-            await axios.delete(
-                'http://localhost:4000/api/auth/riot',
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
+            await axios.delete('http://localhost:4000/api/auth/riot');
 
 
             // 🔥 refrescar estado real desde backend
@@ -296,7 +286,13 @@ export default function Settings() {
                                         <div className="confirm-actions">
                                             <button type="button" className="btn-cancel" onClick={() => setShowDeleteConfirm(false)}>Me quedo a jugar</button>
                                             <button type="button" className="btn-delete-final" onClick={() => {
+                                                fetch('http://localhost:4000/api/auth/logout', {
+                                                    method: 'POST',
+                                                    credentials: 'include',
+                                                    headers: withCsrfHeaders()
+                                                }).catch(() => {});
                                                 localStorage.removeItem('esportefyUser');
+                                                sessionStorage.removeItem('esportefyUser');
                                                 navigate('/');
                                             }}>Adiós, Esportefy</button>
                                         </div>
@@ -345,10 +341,7 @@ export default function Settings() {
                                 ) : (
                                     <button
                                         className="btn-connect"
-                                        onClick={() => {
-                                            window.location.href =
-                                                `http://localhost:4000/api/auth/discord?token=${token}`;
-                                        }}
+                                        onClick={startDiscordLink}
                                     >
                                         Conectar
                                     </button>
