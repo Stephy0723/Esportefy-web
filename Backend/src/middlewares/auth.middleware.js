@@ -1,25 +1,41 @@
 import jwt from 'jsonwebtoken';
 
+const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
+
+const parseCookies = (cookieHeader = '') => {
+    return String(cookieHeader)
+        .split(';')
+        .map((pair) => pair.trim())
+        .filter(Boolean)
+        .reduce((acc, pair) => {
+            const idx = pair.indexOf('=');
+            if (idx === -1) return acc;
+            const key = pair.slice(0, idx).trim();
+            const value = pair.slice(idx + 1).trim();
+            try {
+                acc[key] = decodeURIComponent(value);
+            } catch (_) {
+                acc[key] = value;
+            }
+            return acc;
+        }, {});
+};
+
+const getTokenFromCookie = (req) => {
+    const cookies = parseCookies(req.headers?.cookie || '');
+    return cookies[AUTH_COOKIE_NAME] || null;
+};
+
 export const verifyToken = (req, res, next) => {
     try {
-        // 1. Obtener el token del encabezado 'Authorization'
-        // El formato estándar es: "Bearer <token>"
-        const authHeader = req.headers.authorization;
-        
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(403).json({ message: "Acceso denegado. No se proporcionó un token." });
+        const token = getTokenFromCookie(req);
+
+        if (!token) {
+            return res.status(403).json({ message: "Acceso denegado. No se encontró cookie de sesión." });
         }
 
-        const token = authHeader.split(' ')[1];
-
-        // 2. Verificar el token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // 3. Guardar los datos del usuario decodificados en el objeto 'req'
-        // Esto permite que las siguientes funciones tengan acceso al ID del usuario
         req.userId = decoded.id;
-
-        // 4. Continuar con la ejecución
         next();
     } catch (error) {
         return res.status(401).json({ message: "Token inválido o expirado" });

@@ -20,7 +20,9 @@ const TeamRegistration = () => {
     title: incomingTournament?.title || "Torneo Global",
     // Aquí está el truco: Si no hay banner, usa DEFAULT_IMAGE
     image: incomingTournament?.bannerImage || incomingTournament?.image || DEFAULT_IMAGE,
-    tournamentId: incomingTournament?.tournamentId || ''
+    tournamentId: incomingTournament?.tournamentId || '',
+    game: incomingTournament?.game || '',
+    riotRequirements: incomingTournament?.riotRequirements || {}
   };
 
   const [teamName, setTeamName] = useState('');
@@ -29,17 +31,31 @@ const TeamRegistration = () => {
   const [userTeams, setUserTeams] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [loadingTeams, setLoadingTeams] = useState(true);
+  const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+
+  const selectedTeam = userTeams.find(t => String(t._id) === String(selectedTeamId));
+  const starters = Array.isArray(selectedTeam?.roster?.starters) ? selectedTeam.roster.starters : [];
+  const expectedStarters = Number.isFinite(Number(selectedTeam?.maxMembers)) && Number(selectedTeam?.maxMembers) > 0
+    ? Number(selectedTeam.maxMembers)
+    : starters.length;
+  const filledStarters = starters.slice(0, expectedStarters).filter(p => p && (p.nickname || p.user)).length;
+  const teamComplete = expectedStarters > 0 && filledStarters >= expectedStarters;
+  const gameMatches = !tournament.game || !selectedTeam?.game || String(selectedTeam.game) === String(tournament.game);
+  const requiresRiot = Boolean(tournament.riotRequirements?.required) || ['Valorant','League of Legends','Wild Rift','Teamfight Tactics','Legends of Runeterra'].includes(tournament.game);
+  const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
+  const startersMissingRiotId = requiresRiot
+    ? starters.slice(0, expectedStarters).some(p => p && !p.gameId)
+    : false;
+  const canSubmit = Boolean(selectedTeamId) && teamComplete && gameMatches && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId));
 
   useEffect(() => {
     const loadTeams = async () => {
       try {
         setLoadingTeams(true);
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('esportefyUser');
+        const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
         const user = storedUser ? JSON.parse(storedUser) : null;
-        const response = await axios.get('http://localhost:4000/api/teams', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
+        const response = await axios.get('http://localhost:4000/api/teams');
         const allTeams = response.data || [];
         const mine = user?._id
           ? allTeams.filter(t => String(t.captain?._id || t.captain) === String(user._id))
@@ -71,9 +87,20 @@ const TeamRegistration = () => {
       alert('Selecciona un equipo.');
       return;
     }
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Debes iniciar sesión.');
+    if (!gameMatches) {
+      alert('El juego del equipo no coincide con el torneo.');
+      return;
+    }
+    if (!teamComplete) {
+      alert('El equipo no está completo.');
+      return;
+    }
+    if (requiresRiot && !hasRiotLinked) {
+      alert('Debes vincular tu cuenta Riot para inscribirte.');
+      return;
+    }
+    if (requiresRiot && startersMissingRiotId) {
+      alert('Todos los titulares deben tener Riot ID.');
       return;
     }
     try {
@@ -82,8 +109,7 @@ const TeamRegistration = () => {
         `http://localhost:4000/api/tournaments/${tournament.tournamentId}/register`,
         {
           teamId: selectedTeamId
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
       alert("¡Equipo Registrado! GL HF.");
       navigate('/tournaments');
@@ -140,10 +166,18 @@ const TeamRegistration = () => {
                             </button>
                           </div>
                         )}
+                        {selectedTeam && (
+                          <div className="neon-input-group">
+                            {!gameMatches && <p style={{color:'#ff6b6b'}}>El juego del equipo no coincide con el torneo.</p>}
+                            {!teamComplete && <p style={{color:'#ff6b6b'}}>El equipo no está completo ({filledStarters}/{expectedStarters}).</p>}
+                            {requiresRiot && !hasRiotLinked && <p style={{color:'#ff6b6b'}}>Debes vincular tu cuenta Riot en Settings.</p>}
+                            {requiresRiot && startersMissingRiotId && <p style={{color:'#ff6b6b'}}>Faltan Riot ID en titulares.</p>}
+                          </div>
+                        )}
 
                         <div className="actions">
                             <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>Cancelar</button>
-                            <button type="submit" className="btn-confirm" disabled={submitting}>
+                            <button type="submit" className="btn-confirm" disabled={submitting || !canSubmit}>
                               {submitting ? 'Registrando...' : 'Confirmar Registro'}
                             </button>
                         </div>

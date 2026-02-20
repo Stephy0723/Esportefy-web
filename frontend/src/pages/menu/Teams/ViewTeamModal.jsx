@@ -41,7 +41,7 @@ const REGION_OPTIONS = [
     "GLOBAL"
 ];
 
-const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) => {
+const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, initialInviteCode }) => {
     if (!isOpen || !team) return null;
 
     const normalizeGame = (value) => String(value || '').trim().toLowerCase();
@@ -64,59 +64,82 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
     const membersRaw = Array.isArray(team.members) ? team.members : [];
     const rosterStarters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
     const rosterSubs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+    const rules = getGameRules(team.game);
+    const maxStarters = Number(team.maxMembers);
+    const maxSubs = Number(team.maxSubstitutes);
+    const starterSlots = Number.isFinite(maxStarters) && maxStarters > 0
+        ? maxStarters
+        : (Number.isFinite(rules?.maxPlayers) ? rules.maxPlayers : (Array.isArray(team.roster?.starters) ? team.roster.starters.length : 0));
+    const subSlots = Number.isFinite(maxSubs) && maxSubs > 0
+        ? maxSubs
+        : (Number.isFinite(rules?.maxSubs) ? rules.maxSubs : (Array.isArray(team.roster?.subs) ? team.roster.subs.length : 0));
+
+    const getStarterRoleLabel = (index) => {
+        const roles = ROLE_NAMES[team.game];
+        return roles && roles[index] ? roles[index] : `Titular ${index + 1}`;
+    };
     const rosterEntries = (() => {
         const list = [];
         if (membersRaw.length) {
             membersRaw.forEach((m, i) => {
                 list.push({
                     id: m?._id || m?.id || `${i}`,
-                    name: m?.fullName || m?.nickname || m?.email || (typeof m === 'string' ? m : 'Jugador'),
-                    role: m?.role || '',
+                    name: m?.fullName || m?.nickname || (typeof m === 'string' ? m : 'Jugador'),
+                    role: m?.role || getStarterRoleLabel(i),
                     userId: m?.user || m?._id || null,
+                    gameId: m?.gameId || '',
                     slotType: 'starters',
-                    slotIndex: i
+                    slotIndex: i,
+                    filled: Boolean(m)
                 });
             });
             return list;
         }
-        rosterStarters.forEach((m, i) => {
-            if (!m) return;
-            list.push({
-                id: m?._id || `${i}`,
-                name: m?.fullName || m?.nickname || m?.email || 'Jugador',
-                role: m?.role || '',
-                userId: m?.user || null,
-                slotType: 'starters',
-                slotIndex: i
-            });
-        });
-        rosterSubs.forEach((m, i) => {
-            if (!m) return;
+        for (let i = 0; i < starterSlots; i += 1) {
+            const m = rosterStarters[i];
             list.push({
                 id: m?._id || `s-${i}`,
-                name: m?.fullName || m?.nickname || m?.email || 'Jugador',
-                role: m?.role || '',
+                name: m?.fullName || m?.nickname || 'Vacante',
+                role: m?.role || getStarterRoleLabel(i),
                 userId: m?.user || null,
-                slotType: 'subs',
-                slotIndex: i
-            });
-        });
-        if (team.roster?.coach) {
-            const c = team.roster.coach;
-            list.push({
-                id: c?._id || 'coach',
-                name: c?.fullName || c?.nickname || c?.email || 'Coach',
-                role: c?.role || 'Coach',
-                userId: c?.user || null,
-                slotType: 'coach',
-                slotIndex: 0
+                gameId: m?.gameId || '',
+                slotType: 'starters',
+                slotIndex: i,
+                filled: Boolean(m && (m.nickname || m.user))
             });
         }
+        for (let i = 0; i < subSlots; i += 1) {
+            const m = rosterSubs[i];
+            list.push({
+                id: m?._id || `sub-${i}`,
+                name: m?.fullName || m?.nickname || 'Vacante',
+                role: m?.role || `Suplente ${i + 1}`,
+                userId: m?.user || null,
+                gameId: m?.gameId || '',
+                slotType: 'subs',
+                slotIndex: i,
+                filled: Boolean(m && (m.nickname || m.user))
+            });
+        }
+        const c = team.roster?.coach;
+        list.push({
+            id: c?._id || 'coach',
+            name: c?.fullName || c?.nickname || 'Vacante',
+            role: c?.role || 'Coach',
+            userId: c?.user || null,
+            gameId: c?.gameId || '',
+            slotType: 'coach',
+            slotIndex: 0,
+            filled: Boolean(c && (c.nickname || c.user))
+        });
         return list;
     })();
     const members = rosterEntries;
+    const filledCount = members.filter((m) => m.filled).length;
     const captainId = team.captain?._id || team.captain;
     const isCaptain = currentUser?._id && String(captainId) === String(currentUser._id);
+    const isAdmin = Boolean(currentUser?.isAdmin);
+    const canManage = isCaptain || isAdmin;
     const isMember = (() => {
         if (!currentUser?._id) return false;
         const uid = String(currentUser._id);
@@ -128,20 +151,52 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
         return inStarters || inSubs || inCoach;
     })();
 
-    const rules = getGameRules(team.game);
-    const maxStarters = Number(team.maxMembers);
-    const maxSubs = Number(team.maxSubstitutes);
-    const starterSlots = Number.isFinite(maxStarters) && maxStarters > 0
-        ? maxStarters
-        : (Number.isFinite(rules?.maxPlayers) ? rules.maxPlayers : (Array.isArray(team.roster?.starters) ? team.roster.starters.length : 0));
-    const subSlots = Number.isFinite(maxSubs) && maxSubs > 0
-        ? maxSubs
-        : (Number.isFinite(rules?.maxSubs) ? rules.maxSubs : (Array.isArray(team.roster?.subs) ? team.roster.subs.length : 0));
+    const preferredStarterIndex = useMemo(() => {
+        const list = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+        for (let i = 0; i < starterSlots; i += 1) {
+            const current = list[i];
+            if (!current || (!current.user && !current.nickname && !current.email && !current.gameId)) return i;
+        }
+        return 0;
+    }, [team.roster?.starters, starterSlots]);
+    const preferredSubIndex = useMemo(() => {
+        const list = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+        for (let i = 0; i < subSlots; i += 1) {
+            const current = list[i];
+            if (!current || (!current.user && !current.nickname && !current.email && !current.gameId)) return i;
+        }
+        return 0;
+    }, [team.roster?.subs, subSlots]);
     const [inviteCode, setInviteCode] = useState('');
+
+    useEffect(() => {
+        if (initialInviteCode) {
+            setInviteCode(String(initialInviteCode).toUpperCase());
+        }
+    }, [initialInviteCode]);
     const [slotType, setSlotType] = useState('starters');
     const [slotIndex, setSlotIndex] = useState(0);
     const [player, setPlayer] = useState({ nickname: '', gameId: '', region: '', email: '', role: '' });
+    const inviteMode = inviteCode.trim().length > 0;
+    const currentSlot =
+        slotType === 'coach'
+            ? team.roster?.coach
+            : slotType === 'starters'
+                ? team.roster?.starters?.[slotIndex]
+                : team.roster?.subs?.[slotIndex];
+    const slotOccupied = Boolean(currentSlot && (currentSlot.nickname || currentSlot.user || currentSlot.email));
+    const requireRiotId = isRiotGame(team.game);
+    const isValidNickname = player.nickname.trim().length >= 2;
+    const isValidRiotId = !requireRiotId || player.gameId.trim().length > 0;
+    const [riotCheck, setRiotCheck] = useState({ status: 'idle', message: '' });
+
+    useEffect(() => {
+        if (slotType === 'starters') setSlotIndex(preferredStarterIndex);
+        if (slotType === 'subs') setSlotIndex(preferredSubIndex);
+        if (slotType === 'coach') setSlotIndex(0);
+    }, [slotType, preferredStarterIndex, preferredSubIndex]);
     const [submitting, setSubmitting] = useState(false);
+    const canSubmitJoin = inviteMode && isValidNickname && isValidRiotId && !slotOccupied && !submitting;
 
     const pendingRequests = useMemo(() => {
         return (team.joinRequests || []).filter(r => r.status === 'pending');
@@ -200,31 +255,24 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
         if (!player.nickname) return alert('Nickname requerido');
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
-            if (inviteCode.trim()) {
-                const res = await axios.post(
-                    'http://localhost:4000/api/teams/join',
-                    {
-                        teamId: team._id,
-                        inviteCode: inviteCode.trim(),
-                        slotType,
-                        slotIndex,
-                        player
-                    },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                if (onTeamUpdated) onTeamUpdated(res.data.team);
-                alert('Te uniste al equipo.');
-                window.dispatchEvent(new Event('user-update'));
-            } else {
-                await axios.post(
-                    `http://localhost:4000/api/teams/${team._id}/requests`,
-                    { slotType, slotIndex, player },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                alert('Solicitud enviada. Espera aprobación.');
+            if (!currentUser?._id) return alert('Debes iniciar sesión');
+            if (!inviteCode.trim()) {
+                alert('Se requiere un código de invitación para unirse.');
+                return;
             }
+            const res = await axios.post(
+                'http://localhost:4000/api/teams/join',
+                {
+                    teamId: team._id,
+                    inviteCode: inviteCode.trim(),
+                    slotType,
+                    slotIndex,
+                    player
+                }
+            );
+            if (onTeamUpdated) onTeamUpdated(res.data.team);
+            alert('Te uniste al equipo.');
+            window.dispatchEvent(new Event('user-update'));
         } catch (err) {
             alert(err.response?.data?.message || 'Error al unirse al equipo');
         } finally {
@@ -232,13 +280,34 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
         }
     };
 
+    const handleRiotValidate = async () => {
+        if (!player.nickname || !player.gameId) {
+            setRiotCheck({ status: 'error', message: 'Completa Nickname y Riot ID.' });
+            return;
+        }
+        try {
+            setRiotCheck({ status: 'loading', message: 'Validando...' });
+            if (!currentUser?._id) return setRiotCheck({ status: 'error', message: 'Debes iniciar sesión.' });
+            const riotId = `${player.nickname}#${player.gameId}`;
+            const res = await axios.post(
+                'http://localhost:4000/api/auth/riot/validate',
+                { riotId }
+            );
+            if (res.data?.ok) {
+                setRiotCheck({ status: 'ok', message: 'Riot ID válido.' });
+            } else {
+                setRiotCheck({ status: 'error', message: res.data?.message || 'Riot ID no válido.' });
+            }
+        } catch (err) {
+            setRiotCheck({ status: 'error', message: err.response?.data?.message || 'Riot ID no válido.' });
+        }
+    };
+
     const handleRequestAction = async (requestId, action) => {
         try {
-            const token = localStorage.getItem('token');
             const res = await axios.patch(
                 `http://localhost:4000/api/teams/${team._id}/requests/${requestId}`,
-                { action },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { action }
             );
             if (onTeamUpdated) onTeamUpdated(res.data.team);
             // Fallback: remover de la lista local si por algo no viene actualizado
@@ -260,12 +329,10 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
         if (!player.nickname) return alert('Nickname requerido');
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
+            if (!currentUser?._id) return alert('Debes iniciar sesión');
             const res = await axios.post(
                 `http://localhost:4000/api/teams/${team._id}/roster`,
-                { slotType, slotIndex, player },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { slotType, slotIndex, player }
             );
             if (onTeamUpdated) onTeamUpdated(res.data.team);
             alert('Jugador agregado.');
@@ -280,12 +347,10 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
         const ok = window.confirm('¿Seguro que quieres salir del equipo?');
         if (!ok) return;
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
+            if (!currentUser?._id) return alert('Debes iniciar sesión');
             const res = await axios.post(
                 `http://localhost:4000/api/teams/leave/${team._id}`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
+                {}
             );
             if (onTeamUpdated && res.data?.team) onTeamUpdated(res.data.team);
             alert('Saliste del equipo.');
@@ -300,12 +365,9 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
         const ok = window.confirm('¿Seguro que quieres remover a este jugador?');
         if (!ok) return;
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return alert('Debes iniciar sesión');
             const res = await axios.patch(
                 `http://localhost:4000/api/teams/${team._id}/roster/remove`,
-                { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId }
             );
             if (onTeamUpdated) onTeamUpdated(res.data.team);
         } catch (err) {
@@ -330,11 +392,35 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                         <p>{description}</p>
                     </div>
 
+                    {canManage && (
+                        <div className="info-section">
+                            <label>Código de invitación</label>
+                            <div className="invite-row">
+                                <span className="invite-code">{team.inviteCode || 'N/D'}</span>
+                                <button
+                                    className="btn-copy"
+                                    onClick={() => {
+                                        const code = team.inviteCode || '';
+                                        const link = `${window.location.origin}/teams?invite=${code}`;
+                                        const payload = `Código: ${code}\nLink: ${link}`;
+                                        if (navigator.clipboard?.writeText) {
+                                            navigator.clipboard.writeText(payload);
+                                        } else {
+                                            window.prompt('Copia el enlace:', payload);
+                                        }
+                                    }}
+                                >
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="info-section">
-                        <label>Miembros de la escuadra ({members.length})</label>
+                        <label>Miembros de la escuadra ({filledCount}/{members.length})</label>
                         <div className="members-scroll-list">
                             {members.length ? members.map((member) => (
-                                <div key={member.id} className="member-row-item">
+                                <div key={member.id} className={`member-row-item ${member.filled ? '' : 'empty'}`}>
                                     <div className="member-avatar">
                                         <i className='bx bxs-user-circle'></i>
                                     </div>
@@ -344,8 +430,11 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                                         {member.userId && captainId && String(captainId) === String(member.userId) && (
                                             <span className="captain-badge">CAPITÁN</span>
                                         )}
+                                        {canManage && member.filled && member.gameId && (
+                                            <span className="member-meta">Riot ID: {member.gameId}</span>
+                                        )}
                                     </div>
-                                    {isCaptain && (!member.userId || String(member.userId) !== String(captainId)) && (
+                                    {member.filled && canManage && (!member.userId || String(member.userId) !== String(captainId)) && (
                                         <button className="btn-secondary-small" onClick={() => handleRemoveMember(member)}>
                                             Sacar
                                         </button>
@@ -364,6 +453,11 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                     {!isMember && (
                         <div className="info-section">
                             <label>Unirse al equipo</label>
+                            <div className={`form-hint ${inviteMode ? 'direct' : 'pending'}`}>
+                                {inviteMode
+                                    ? 'Acceso directo por invitación: entrarás sin aprobación.'
+                                    : 'Necesitas un código de invitación para unirte.'}
+                            </div>
                             <form onSubmit={handleJoin} className="team-join-form">
                                 <input
                                     type="text"
@@ -374,7 +468,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                                 <div className="join-row">
                                     <select value={slotType} onChange={(e) => setSlotType(e.target.value)}>
                                         <option value="starters">Starter</option>
-                                        <option value="subs">Suplente</option>
+                                        {subSlots > 0 && <option value="subs">Suplente</option>}
                                         <option value="coach">Coach</option>
                                     </select>
                                     {(slotType === 'starters' || slotType === 'subs') && (
@@ -392,19 +486,48 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                                         </select>
                                     )}
                                 </div>
+                                {slotOccupied && (
+                                    <div className="form-alert">Ese slot ya está ocupado. Elige otro.</div>
+                                )}
                                 <input
                                     type="text"
                                     placeholder="Nickname"
                                     value={player.nickname}
-                                    onChange={(e) => setPlayer({ ...player, nickname: e.target.value })}
+                                    onChange={(e) => {
+                                        setPlayer({ ...player, nickname: e.target.value });
+                                        if (riotCheck.status !== 'idle') setRiotCheck({ status: 'idle', message: '' });
+                                    }}
                                     required
                                 />
-                                <input
-                                    type="text"
-                                    placeholder="Game ID"
-                                    value={player.gameId}
-                                    onChange={(e) => setPlayer({ ...player, gameId: e.target.value })}
-                                />
+                                <div className="riot-id-row">
+                                    <input
+                                        type="text"
+                                        placeholder={requireRiotId ? 'Riot ID (TagLine)' : 'Game ID'}
+                                        value={player.gameId}
+                                        onChange={(e) => {
+                                            setPlayer({ ...player, gameId: e.target.value });
+                                            if (riotCheck.status !== 'idle') setRiotCheck({ status: 'idle', message: '' });
+                                        }}
+                                    />
+                                    {requireRiotId && (
+                                        <button
+                                            type="button"
+                                            className="btn-validate"
+                                            onClick={handleRiotValidate}
+                                            disabled={riotCheck.status === 'loading'}
+                                        >
+                                            {riotCheck.status === 'loading' ? 'Validando...' : 'Validar'}
+                                        </button>
+                                    )}
+                                </div>
+                                {requireRiotId && riotCheck.message && (
+                                    <div className={`form-alert ${riotCheck.status === 'ok' ? 'ok' : ''}`}>
+                                        {riotCheck.message}
+                                    </div>
+                                )}
+                                {requireRiotId && !isValidRiotId && (
+                                    <div className="form-alert">Para juegos de Riot el Riot ID es obligatorio.</div>
+                                )}
                                 <select
                                     value={player.region}
                                     onChange={(e) => setPlayer({ ...player, region: e.target.value })}
@@ -414,12 +537,14 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                                         <option key={r} value={r}>{r}</option>
                                     ))}
                                 </select>
-                                <input
-                                    type="email"
-                                    placeholder="Email"
-                                    value={player.email}
-                                    onChange={(e) => setPlayer({ ...player, email: e.target.value })}
-                                />
+                                {canManage && (
+                                    <input
+                                        type="email"
+                                        placeholder="Email"
+                                        value={player.email}
+                                        onChange={(e) => setPlayer({ ...player, email: e.target.value })}
+                                    />
+                                )}
                                 <select
                                     value={player.role}
                                     onChange={(e) => setPlayer({ ...player, role: e.target.value })}
@@ -431,21 +556,21 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                                     <option value="Suplente">Suplente</option>
                                     <option value="Coach">Coach</option>
                                 </select>
-                                <button type="submit" className="btn-primary-small" disabled={submitting}>
-                                    {submitting ? 'Enviando...' : (inviteCode.trim() ? 'Unirme' : 'Solicitar')}
+                                <button type="submit" className="btn-primary-small" disabled={!canSubmitJoin}>
+                                    {submitting ? 'Enviando...' : 'Unirme'}
                                 </button>
                             </form>
                         </div>
                     )}
 
-                    {isCaptain && (
+                    {canManage && (
                         <div className="info-section">
                             <label>Gestionar equipo</label>
                             <form onSubmit={handleAddMemberDirect} className="team-join-form">
                                 <div className="join-row">
                                     <select value={slotType} onChange={(e) => setSlotType(e.target.value)}>
                                         <option value="starters">Starter</option>
-                                        <option value="subs">Suplente</option>
+                                        {subSlots > 0 && <option value="subs">Suplente</option>}
                                         <option value="coach">Coach</option>
                                     </select>
                                     {(slotType === 'starters' || slotType === 'subs') && (
@@ -485,12 +610,14 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated }) =>
                                         <option key={r} value={r}>{r}</option>
                                     ))}
                                 </select>
-                                <input
-                                    type="email"
-                                    placeholder="Email"
-                                    value={player.email}
-                                    onChange={(e) => setPlayer({ ...player, email: e.target.value })}
-                                />
+                                {canManage && (
+                                    <input
+                                        type="email"
+                                        placeholder="Email"
+                                        value={player.email}
+                                        onChange={(e) => setPlayer({ ...player, email: e.target.value })}
+                                    />
+                                )}
                                 <select
                                     value={player.role}
                                     onChange={(e) => setPlayer({ ...player, role: e.target.value })}

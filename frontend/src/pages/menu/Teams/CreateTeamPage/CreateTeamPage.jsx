@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
@@ -8,6 +8,7 @@ import {
     FaMapMarkerAlt, FaCheck, FaCopy, FaSearch, FaDiscord, FaTwitter, 
     FaFacebook, FaPaperPlane, FaGamepad, FaUpload 
 } from 'react-icons/fa';
+import { withCsrfHeaders } from '../../../../utils/csrf';
 import './CreateTeamPage.css';
 
 // Configuración de Roles Visuales
@@ -33,7 +34,7 @@ const CreateTeamPage = () => {
     const navigate = useNavigate();
     
     // --- ESTADOS Y DATOS ---
-    const userString = localStorage.getItem('esportefyUser');
+    const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
     const currentUser = userString ? JSON.parse(userString) : { name: "Usuario" };
     
     const [step, setStep] = useState(1);
@@ -224,7 +225,6 @@ const CreateTeamPage = () => {
     setSubmitting(true);
     
     try {
-        const token = localStorage.getItem('token');
         const data = new FormData();
 
         // 1. Convertimos el logoPreview (base64) a un archivo real si existe
@@ -242,11 +242,8 @@ const CreateTeamPage = () => {
         // 3. Petición al servidor
         const res = await fetch('http://localhost:4000/api/teams/create', {
             method: 'POST',
-            headers: {
-                // NOTA: Al usar FormData NO debes poner 'Content-Type': 'application/json'
-                // El navegador pondrá automáticamente 'multipart/form-data' con el boundary correcto
-                'Authorization': `Bearer ${token}` 
-            },
+            credentials: 'include',
+            headers: withCsrfHeaders(),
             body: data
         });
 
@@ -269,6 +266,25 @@ const CreateTeamPage = () => {
     const copyLink = () => {
         navigator.clipboard.writeText(inviteLink);
         const btn = document.getElementById('copy-btn');
+        if(btn) btn.classList.add('copied');
+        setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
+    };
+
+    const inviteCode = useMemo(() => {
+        if (!inviteLink) return '';
+        try {
+            const url = new URL(inviteLink);
+            return String(url.searchParams.get('invite') || '').toUpperCase();
+        } catch (e) {
+            const match = inviteLink.match(/invite=([A-Za-z0-9]+)/);
+            return match ? String(match[1]).toUpperCase() : '';
+        }
+    }, [inviteLink]);
+
+    const copyCode = () => {
+        if (!inviteCode) return;
+        navigator.clipboard.writeText(inviteCode);
+        const btn = document.getElementById('copy-code-btn');
         if(btn) btn.classList.add('copied');
         setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
     };
@@ -585,6 +601,16 @@ const CreateTeamPage = () => {
                                     <div className="link-action-box-pro">
                                         <div className="link-text-mask">{inviteLink}</div>
                                         <button id="copy-btn" onClick={copyLink} title="Copiar">
+                                            <FaCopy />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="link-section-styled">
+                                    <label className="sub-label">Código de Invitación</label>
+                                    <div className="code-action-box-pro">
+                                        <div className="code-text-mask">{inviteCode || '---'}</div>
+                                        <button id="copy-code-btn" onClick={copyCode} title="Copiar código" disabled={!inviteCode}>
                                             <FaCopy />
                                         </button>
                                     </div>

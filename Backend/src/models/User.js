@@ -70,7 +70,7 @@ const UserSchema = new mongoose.Schema({
             default: null
             },
  
-    // ===== SETTINGS =====
+    // --- SETTINGS ---
     connections: {
         discord: {
             id: { type: String },
@@ -144,6 +144,9 @@ const UserSchema = new mongoose.Schema({
         source: { type: String, default: 'Sistema' },
         message: String,
         status: { type: String, enum: ['unread', 'read'], default: 'unread' },
+        isSaved: { type: Boolean, default: false },
+        isArchived: { type: Boolean, default: false },
+        meta: { type: mongoose.Schema.Types.Mixed, default: {} },
         visuals: {
             icon: String,
             color: String,

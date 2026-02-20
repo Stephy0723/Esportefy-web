@@ -132,6 +132,29 @@ export const initRiotLink = async (req, res) => {
 };
 
 // =========================
+// 1.5) VALIDATE RIOT ID (NO LINK)
+// =========================
+export const validateRiotId = async (req, res) => {
+  try {
+    const { riotId } = req.body;
+    if (!riotId || !riotId.includes('#')) {
+      return res.status(400).json({ ok: false, message: 'Riot ID inválido. Usa GameName#TagLine' });
+    }
+    const [gameName, tagLine] = riotId.split('#').map(s => s.trim());
+    if (!gameName || !tagLine) {
+      return res.status(400).json({ ok: false, message: 'Riot ID inválido' });
+    }
+    await axios.get(
+      `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
+      { headers: { 'X-Riot-Token': process.env.RIOT_API_KEY } }
+    );
+    return res.json({ ok: true, message: 'Riot ID válido' });
+  } catch (error) {
+    return res.status(400).json({ ok: false, message: 'Riot ID no válido' });
+  }
+};
+
+// =========================
 // 2) CONFIRM LINK (OTP -> LINK + AUTOSYNC)
 // =========================
 export const confirmRiotLink = async (req, res) => {

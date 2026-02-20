@@ -1,6 +1,6 @@
-const timestamp = new Date().toISOString("es-DO");
-
 export const logger = (req, res, next) => {
-    console.log(` ${req.method} ${req.url} ${timestamp}`);
+    const timestamp = new Date().toISOString();
+    const safePath = req.path || (req.originalUrl || req.url || '/').split('?')[0];
+    console.log(`${req.method} ${safePath} ${timestamp}`);
     next();
-}
+};
