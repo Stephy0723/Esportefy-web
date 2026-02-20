@@ -1,7 +1,6 @@
 import Tournament from '../models/Tournament.js';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
-import { NOTIF, pushNotification } from './notification.controller.js';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -21,6 +20,28 @@ const RIOT_GAMES = new Set([
     'Legends of Runeterra'
 ]);
 import fs from 'fs';
+
+const ACTIVE_DAYS = 30;
+
+const pushNotificationMany = async (userIds, payload) => {
+    const ids = Array.isArray(userIds) ? [...new Set(userIds.filter(Boolean).map(String))] : [];
+    if (!ids.length) return;
+    await User.updateMany(
+        { _id: { $in: ids } },
+        { $push: { notifications: payload } }
+    );
+};
+
+const getInterestedUsers = async (game, excludeIds = []) => {
+    const keys = [String(game || ''), String(game || '').toLowerCase()].filter(Boolean);
+    const since = new Date(Date.now() - ACTIVE_DAYS * 24 * 60 * 60 * 1000);
+    const users = await User.find({
+        selectedGames: { $in: keys },
+        updatedAt: { $gte: since },
+        _id: { $nin: excludeIds }
+    }).select('_id');
+    return users.map((u) => String(u._id));
+};
 
 // Función auxiliar para generar el código TOR-123456
 const generateUniqueTournamentId = async () => {
@@ -115,6 +136,20 @@ export const createTournament = async (req, res) => {
 
 
         const savedTournament = await newTournament.save();
+
+        // Notificar usuarios interesados (juego seleccionado) y activos
+        const interestedIds = await getInterestedUsers(savedTournament.game, [req.userId]);
+        await pushNotificationMany(interestedIds, {
+            type: 'tournament',
+            category: 'tournament',
+            title: 'Nuevo torneo disponible',
+            source: savedTournament.title || 'Torneo',
+            message: `Nuevo torneo de ${savedTournament.game}: ${savedTournament.title}`,
+            status: 'unread',
+            meta: { tournamentId: savedTournament.tournamentId, action: 'created' },
+            visuals: { icon: 'bx-trophy', color: '#facc15', glow: true }
+        });
+
         res.status(201).json(savedTournament);
 
     } catch (error) {
@@ -333,12 +368,14 @@ export const registerTeam = async (req, res) => {
             if (String(team.captain) !== String(req.userId)) {
                 return res.status(403).json({ message: 'Solo el capitán puede inscribir al equipo' });
             }
-            if (team.game !== tournament.game) {
+            if (String(team.game) !== String(tournament.game)) {
                 return res.status(400).json({ message: 'El juego del equipo no coincide con el torneo' });
             }
             const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
             const expected = team.maxMembers || starters.length;
-            const complete = expected > 0 && starters.length >= expected && starters.slice(0, expected).every(p => p && p.nickname);
+            const complete = expected > 0
+                && starters.length >= expected
+                && starters.slice(0, expected).every(p => p && p.nickname);
             if (!complete) {
                 return res.status(400).json({ message: 'El equipo no está completo' });
             }
@@ -364,11 +401,21 @@ export const registerTeam = async (req, res) => {
                 riotUsers.map(u => [String(u._id), u.connections?.riot?.verified ? `${u.connections.riot.gameName}#${u.connections.riot.tagLine}` : ''])
             );
             if (requiresRiot) {
-                const missing = starters.slice(0, expected).find(p => p?.user && !riotMap.get(String(p.user)));
+                const missing = starters.slice(0, expected).find(p => {
+                    if (p?.user) return !riotMap.get(String(p.user));
+                    return !p?.gameId;
+                });
                 if (missing) {
                     return res.status(400).json({ message: 'Todos los titulares deben tener Riot vinculado' });
                 }
             }
+
+            const rosterUsers = starters
+                .concat(team.roster?.subs || [])
+                .concat(team.roster?.coach ? [team.roster.coach] : [])
+                .map((p) => p?.user)
+                .filter(Boolean)
+                .map((id) => String(id));
 
             registrationPayload = {
                 teamId: team._id,
@@ -399,6 +446,18 @@ export const registerTeam = async (req, res) => {
                 },
                 status: 'approved'
             };
+
+            // Notificar a todos los integrantes del equipo
+            await pushNotificationMany(rosterUsers, {
+                type: 'tournament',
+                category: 'tournament',
+                title: 'Equipo inscrito',
+                source: tournament.title || 'Torneo',
+                message: `Tu equipo ${team.name} fue inscrito en ${tournament.title}.`,
+                status: 'unread',
+                meta: { tournamentId: tournament.tournamentId, teamId: team._id, action: 'registered' },
+                visuals: { icon: 'bx-trophy', color: '#facc15', glow: true }
+            });
         } else {
             if (!teamName || !String(teamName).trim()) {
                 return res.status(400).json({ message: 'Nombre de equipo requerido' });
@@ -422,9 +481,6 @@ export const registerTeam = async (req, res) => {
 
         tournament.currentSlots = Math.min((tournament.currentSlots || 0) + 1, tournament.maxSlots);
         await tournament.save();
-
-        // Notify the captain
-        await pushNotification(req.userId, NOTIF.tournamentRegistered(tournament.name || tournament.tournamentId));
 
         return res.status(200).json({ message: 'Equipo registrado', tournamentId: tournament.tournamentId });
 
@@ -460,18 +516,42 @@ export const updateRegistrationStatus = async (req, res) => {
             return res.status(404).json({ message: 'Registro no encontrado' });
         }
 
+        const team = reg?.teamId ? await Team.findById(reg.teamId) : null;
+        const rosterUsers = team
+            ? (Array.isArray(team.roster?.starters) ? team.roster.starters : [])
+                .concat(Array.isArray(team.roster?.subs) ? team.roster.subs : [])
+                .concat(team.roster?.coach ? [team.roster.coach] : [])
+                .map((p) => p?.user)
+                .filter(Boolean)
+                .map((id) => String(id))
+            : [];
+
         if (status === 'rejected') {
-            // Notify captain before removing
-            if (reg.captain) {
-                await pushNotification(reg.captain, NOTIF.tournamentRejected(tournament.name || tournament.tournamentId));
-            }
             tournament.registrations = (tournament.registrations || []).filter(r => String(r._id) !== String(registrationId));
             tournament.currentSlots = Math.max((tournament.currentSlots || 0) - 1, 0);
+
+            await pushNotificationMany(rosterUsers, {
+                type: 'tournament',
+                category: 'tournament',
+                title: 'Inscripción rechazada',
+                source: tournament.title || 'Torneo',
+                message: `Tu equipo fue rechazado en ${tournament.title}.`,
+                status: 'unread',
+                meta: { tournamentId: tournament.tournamentId, teamId: reg?.teamId, action: 'rejected' },
+                visuals: { icon: 'bx-x-circle', color: '#ff6b6b', glow: false }
+            });
         } else {
             reg.status = status;
-            if (reg.captain) {
-                await pushNotification(reg.captain, NOTIF.tournamentApproved(tournament.name || tournament.tournamentId));
-            }
+            await pushNotificationMany(rosterUsers, {
+                type: 'tournament',
+                category: 'tournament',
+                title: 'Inscripción aprobada',
+                source: tournament.title || 'Torneo',
+                message: `Tu equipo fue aprobado en ${tournament.title}.`,
+                status: 'unread',
+                meta: { tournamentId: tournament.tournamentId, teamId: reg?.teamId, action: 'approved' },
+                visuals: { icon: 'bx-check-circle', color: '#34d399', glow: true }
+            });
         }
         await tournament.save();
 
@@ -499,15 +579,30 @@ export const removeRegistration = async (req, res) => {
         }
 
         const before = (tournament.registrations || []).length;
-        const removedReg = (tournament.registrations || []).find(r => String(r._id) === String(registrationId));
+        const reg = (tournament.registrations || []).id(registrationId);
         tournament.registrations = (tournament.registrations || []).filter(r => String(r._id) !== String(registrationId));
         if (tournament.registrations.length === before) {
             return res.status(404).json({ message: 'Registro no encontrado' });
         }
-        // Notify the removed team captain
-        if (removedReg?.captain) {
-            await pushNotification(removedReg.captain, NOTIF.tournamentRemoved(tournament.name || tournament.tournamentId));
-        }
+        const team = reg?.teamId ? await Team.findById(reg.teamId) : null;
+        const rosterUsers = team
+            ? (Array.isArray(team.roster?.starters) ? team.roster.starters : [])
+                .concat(Array.isArray(team.roster?.subs) ? team.roster.subs : [])
+                .concat(team.roster?.coach ? [team.roster.coach] : [])
+                .map((p) => p?.user)
+                .filter(Boolean)
+                .map((id) => String(id))
+            : [];
+        await pushNotificationMany(rosterUsers, {
+            type: 'tournament',
+            category: 'tournament',
+            title: 'Equipo removido',
+            source: tournament.title || 'Torneo',
+            message: `Tu equipo fue removido de ${tournament.title}.`,
+            status: 'unread',
+            meta: { tournamentId: tournament.tournamentId, teamId: reg?.teamId, action: 'removed' },
+            visuals: { icon: 'bx-error-circle', color: '#f97316', glow: false }
+        });
         tournament.currentSlots = Math.max((tournament.currentSlots || 0) - 1, 0);
         await tournament.save();
         return res.status(200).json({ message: 'Equipo removido' });
@@ -559,14 +654,49 @@ export const updateTournamentStatus = async (req, res) => {
 
         await tournament.save();
 
-        // Notify all registered captains on key status changes
-        const tName = tournament.name || tournament.tournamentId;
-        const captains = (tournament.registrations || []).map(r => r.captain).filter(Boolean);
-        const notifMap = { start: NOTIF.tournamentStarting, cancel: NOTIF.tournamentCancelled, finish: NOTIF.tournamentFinished };
-        if (notifMap[action]) {
-            for (const captainId of captains) {
-                await pushNotification(captainId, notifMap[action](tName));
-            }
+        const registeredCaptains = (tournament.registrations || [])
+            .map((r) => r.captain)
+            .filter(Boolean)
+            .map((id) => String(id));
+
+        if (action === 'open') {
+            const interestedIds = await getInterestedUsers(tournament.game, [req.userId]);
+            const targets = Array.from(new Set([...interestedIds, ...registeredCaptains]));
+            await pushNotificationMany(targets, {
+                type: 'tournament',
+                category: 'tournament',
+                title: 'Inscripciones abiertas',
+                source: tournament.title || 'Torneo',
+                message: `Las inscripciones para ${tournament.title} están abiertas.`,
+                status: 'unread',
+                meta: { tournamentId: tournament.tournamentId, action: 'open' },
+                visuals: { icon: 'bx-door-open', color: '#8EDB15', glow: true }
+            });
+        }
+
+        if (action === 'close' || action === 'cancel' || action === 'start' || action === 'finish') {
+            const titleMap = {
+                close: 'Inscripciones cerradas',
+                cancel: 'Torneo cancelado',
+                start: 'Torneo en curso',
+                finish: 'Torneo finalizado'
+            };
+            const messageMap = {
+                close: `Las inscripciones para ${tournament.title} se han cerrado.`,
+                cancel: `El torneo ${tournament.title} fue cancelado.`,
+                start: `El torneo ${tournament.title} ha iniciado.`,
+                finish: `El torneo ${tournament.title} ha finalizado.`
+            };
+            await pushNotificationMany(registeredCaptains, {
+                type: 'tournament',
+                category: 'tournament',
+                title: titleMap[action] || 'Actualización de torneo',
+                source: tournament.title || 'Torneo',
+                message: messageMap[action] || `Actualización en ${tournament.title}`,
+                status: 'unread',
+                meta: { tournamentId: tournament.tournamentId, action },
+                visuals: { icon: action === 'close' ? 'bx-lock-alt' : action === 'cancel' ? 'bx-x-circle' : action === 'start' ? 'bx-play' : 'bx-flag', color: '#f97316', glow: false }
+            });
         }
 
         return res.status(200).json({

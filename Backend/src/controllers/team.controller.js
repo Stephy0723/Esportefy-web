@@ -7,7 +7,9 @@ import crypto from "crypto";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { NOTIF, pushNotification } from './notification.controller.js';
+
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -28,7 +30,7 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         // Nombre único: ID-Timestamp.ext
-        const ext = path.extname(file.originalname);
+        const ext = path.extname(file.originalname).toLowerCase();
         // Usamos req.userId (que viene del middleware verifyToken)
         cb(null, `${req.userId}-${Date.now()}${ext}`);
     }
@@ -36,8 +38,29 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ 
     storage,
-   
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const validMime = ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype);
+        const validExt = ALLOWED_IMAGE_EXTENSIONS.has(ext);
+        if (!validMime || !validExt) {
+            return cb(new Error('Archivo inválido. Solo se permiten imágenes JPG, PNG o WEBP.'));
+        }
+        return cb(null, true);
+    }
 });
+
+export const getTeamByInviteCode = async (req, res) => {
+    try {
+        const { code } = req.params;
+        if (!code) return res.status(400).json({ message: "Código requerido" });
+        const team = await Team.findOne({ inviteCode: String(code).toUpperCase() });
+        if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
+        return res.status(200).json(team);
+    } catch (error) {
+        return res.status(500).json({ message: "Error al buscar equipo", error: error.message });
+    }
+};
 
 export const createTeam = async (req, res) => {
     try {
@@ -95,12 +118,9 @@ export const createTeam = async (req, res) => {
         // Actualizar al usuario para que vea su nuevo equipo
         await User.findByIdAndUpdate(req.userId, { $push: { teams: savedTeam._id } });
 
-        // Notificar al creador
-        await pushNotification(req.userId, NOTIF.teamCreated(savedTeam.name || parsedFormData?.name));
-
         res.status(201).json({
             message: "Equipo creado",
-            inviteLink: `http://localhost:3000/join/${savedTeam.inviteCode}`
+            inviteLink: `http://localhost:3000/teams?invite=${savedTeam.inviteCode}`
         });
     } catch (error) {
         res.status(500).json({ message: "Error", error: error.message });
@@ -194,7 +214,9 @@ const findFirstEmptySlot = (team, slotType) => {
     return list.length;
 };
 
-// pushNotification imported from notification.controller.js
+const pushNotification = async (userId, payload) => {
+    await User.findByIdAndUpdate(userId, { $push: { notifications: payload } });
+};
 
 const RIOT_GAMES = new Set([
     'Valorant',
@@ -271,8 +293,15 @@ export const joinTeam = async (req, res) => {
 
         await team.save();
         await User.updateOne({ _id: req.userId }, { $addToSet: { teams: team._id } });
-        await pushNotification(team.captain, NOTIF.teamJoined(team.name, playerPayload.nickname));
-        await pushNotification(req.userId, NOTIF.teamJoinedConfirm(team.name));
+        await pushNotification(team.captain, {
+            type: 'team',
+            category: 'team',
+            title: 'Nuevo miembro',
+            source: team.name,
+            message: `${playerPayload.nickname} se unió a tu equipo.`,
+            status: 'unread',
+            visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
+        });
         res.status(200).json({ message: "Te has unido al equipo", team });
     } catch (error) {
         res.status(500).json({ message: "Error al unirse al equipo" });
@@ -363,7 +392,15 @@ export const removeMemberFromRoster = async (req, res) => {
 
         if (userId) {
             await User.updateOne({ _id: userId }, { $pull: { teams: teamId } });
-            await pushNotification(userId, NOTIF.teamRemoved(team.name));
+            await pushNotification(userId, {
+                type: 'team',
+                category: 'team',
+                title: 'Fuiste removido del equipo',
+                source: team.name,
+                message: `Has sido removido del equipo ${team.name}.`,
+                status: 'unread',
+                visuals: { icon: 'bx-error-circle', color: '#ff6b6b', glow: false }
+            });
         }
 
         return res.status(200).json({ message: "Jugador removido", team });
@@ -374,6 +411,7 @@ export const removeMemberFromRoster = async (req, res) => {
 
 export const requestJoinTeam = async (req, res) => {
     try {
+        return res.status(403).json({ message: "Solo puedes unirte con código de invitación." });
         const { teamId } = req.params;
         const { slotType, slotIndex, player } = req.body;
         const team = await Team.findById(teamId);
@@ -405,7 +443,16 @@ export const requestJoinTeam = async (req, res) => {
             status: 'pending'
         });
         await team.save();
-        await pushNotification(team.captain, NOTIF.teamJoinRequest(team.name, player?.nickname));
+        await pushNotification(team.captain, {
+            type: 'team',
+            category: 'team',
+            title: 'Nueva solicitud',
+            source: team.name,
+            message: `${player?.nickname || 'Un jugador'} solicitó unirse al equipo.`,
+            status: 'unread',
+            meta: { teamId: team._id, requestId: team.joinRequests[team.joinRequests.length - 1]?._id },
+            visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
+        });
         res.status(200).json({ message: "Solicitud enviada" });
     } catch (error) {
         res.status(500).json({ message: "Error al solicitar ingreso" });
@@ -418,8 +465,11 @@ export const handleJoinRequest = async (req, res) => {
         const { action } = req.body || {};
         const team = await Team.findById(teamId);
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
-        if (String(team.captain) !== String(req.userId)) {
-            return res.status(403).json({ message: "Solo el capitán puede gestionar solicitudes" });
+        const user = await User.findById(req.userId).select('isAdmin');
+        const isCaptain = String(team.captain) === String(req.userId);
+        const isAdmin = user?.isAdmin === true;
+        if (!isCaptain && !isAdmin) {
+            return res.status(403).json({ message: "Solo el capitán o un admin puede gestionar solicitudes" });
         }
         if (!Array.isArray(team.joinRequests)) team.joinRequests = [];
         const reqDoc = team.joinRequests.id(requestId);
@@ -457,11 +507,29 @@ export const handleJoinRequest = async (req, res) => {
             }
             await User.updateOne({ _id: reqDoc.user }, { $addToSet: { teams: team._id } });
             team.joinRequests = team.joinRequests.filter(r => String(r._id) !== String(requestId));
-            await pushNotification(reqDoc.user, NOTIF.teamRequestApproved(team.name));
+        await pushNotification(reqDoc.user, {
+            type: 'team',
+            category: 'team',
+            title: 'Solicitud aprobada',
+            source: team.name,
+            message: `Tu solicitud para unirte a ${team.name} fue aprobada.`,
+            status: 'unread',
+            meta: { teamId: team._id, requestId: reqDoc._id, action: 'approve' },
+            visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
+        });
         } else if (action === 'reject') {
             // En rechazo solo eliminamos la solicitud
             team.joinRequests = team.joinRequests.filter(r => String(r._id) !== String(requestId));
-            await pushNotification(reqDoc.user, NOTIF.teamRequestRejected(team.name));
+            await pushNotification(reqDoc.user, {
+                type: 'team',
+                category: 'team',
+                title: 'Solicitud rechazada',
+                source: team.name,
+                message: `Tu solicitud para unirte a ${team.name} fue rechazada.`,
+                status: 'unread',
+                meta: { teamId: team._id, requestId: reqDoc._id, action: 'reject' },
+                visuals: { icon: 'bx-error-circle', color: '#ff6b6b', glow: false }
+            });
         } else {
             return res.status(400).json({ message: "Acción inválida" });
         }
@@ -521,11 +589,6 @@ export const leaveTeam = async (req, res) => {
 
         await team.save();
         await User.updateOne({ _id: userId }, { $pull: { teams: teamId } });
-
-        // Notificar al capitán que alguien abandonó
-        const leaver = await User.findById(userId).select('userName fullName');
-        await pushNotification(team.captain, NOTIF.teamLeft(team.name, leaver?.userName || leaver?.fullName));
-
         res.status(200).json({ message: "Has abandonado el equipo correctamente", team });
     } catch (error) {
         res.status(500).json({ message: "Error al abandonar el equipo", error: error.message });
@@ -594,16 +657,6 @@ export const deleteTeam = async (req, res) => {
         const isAdmin = user?.isAdmin === true;
         if (!isCaptain && !isAdmin) {
             return res.status(403).json({ message: "No tienes permisos para eliminar este equipo" });
-        }
-
-        // Notify all roster members before deletion
-        const allMembers = [
-            ...(Array.isArray(team.roster?.starters) ? team.roster.starters : []),
-            ...(Array.isArray(team.roster?.subs) ? team.roster.subs : []),
-            team.roster?.coach
-        ].filter(p => p?.user && String(p.user) !== String(req.userId));
-        for (const member of allMembers) {
-            await pushNotification(member.user, NOTIF.teamDeleted(team.name));
         }
 
         await Team.deleteOne({ _id: teamId });
