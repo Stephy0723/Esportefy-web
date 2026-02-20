@@ -8,6 +8,7 @@ import nodemailer from "nodemailer";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { NOTIF, pushNotification } from './notification.controller.js';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -63,6 +64,9 @@ export const register = async (req, res) => {
             password: hashedPassword
         });
 
+        // Push welcome notification
+        await pushNotification(user._id, NOTIF.welcome(user.userName || user.fullName || 'Jugador'));
+
         // Opcional: No devolver la contraseña en la respuesta
         const userResponse = user.toObject();
         delete userResponse.password;
@@ -117,7 +121,10 @@ export const login = async (req, res) => {
 
 export const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.userId).populate('teams', 'name avatar'); // Poblar solo nombre y avatar de los equipos
+        const user = await User.findById(req.userId)
+            .populate('teams', 'name slogan category game teamGender teamCountry teamLevel teamLanguage logo maxMembers maxSubstitutes roster inviteCode captain')
+            .populate('followers', '_id')
+            .populate('following', '_id');
         
         if (!user) {
             return res.status(404).json({ message: "Usuario no encontrado" });
@@ -247,7 +254,7 @@ export const updateProfile = async (req, res) => {
         }
 
         // 2. Limpieza de Arrays de Texto (Juegos, Metas, etc.)
-        const arrayFields = ['selectedGames', 'platforms', 'experience', 'goals'];
+        const arrayFields = ['selectedGames', 'platforms', 'experience', 'goals', 'languages', 'preferredRoles'];
         arrayFields.forEach(field => {
             if (updateData[field]) {
                 // Si viene de FormData llega como string, lo convertimos a array y limpiamos
@@ -257,14 +264,51 @@ export const updateProfile = async (req, res) => {
                 updateData[field] = arr.map(s => s.trim()).filter(Boolean);
             }
         });
-        // 2.5 Normalización de campos simples
-        const allowedSimpleFields = ['status', 'selectedFrameId', 'selectedBgId'];
+        // 2.5 Handle socialLinks (nested object from FormData)
+        if (updateData['socialLinks.twitch'] !== undefined ||
+            updateData['socialLinks.youtube'] !== undefined ||
+            updateData['socialLinks.twitter'] !== undefined ||
+            updateData['socialLinks.instagram'] !== undefined ||
+            updateData['socialLinks.tiktok'] !== undefined) {
+            updateData.socialLinks = {
+                twitch: updateData['socialLinks.twitch'] || '',
+                youtube: updateData['socialLinks.youtube'] || '',
+                twitter: updateData['socialLinks.twitter'] || '',
+                instagram: updateData['socialLinks.instagram'] || '',
+                tiktok: updateData['socialLinks.tiktok'] || ''
+            };
+            delete updateData['socialLinks.twitch'];
+            delete updateData['socialLinks.youtube'];
+            delete updateData['socialLinks.twitter'];
+            delete updateData['socialLinks.instagram'];
+            delete updateData['socialLinks.tiktok'];
+        }
+
+        // 2.6 Boolean fields
+        if (updateData.lookingForTeam !== undefined) {
+            updateData.lookingForTeam = updateData.lookingForTeam === 'true' || updateData.lookingForTeam === true;
+        }
+
+        // 2.7 Normalización de campos simples
+        const allowedSimpleFields = ['status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'];
 
         allowedSimpleFields.forEach(field => {
             if (updateData[field] === "" || updateData[field] === undefined) {
                 delete updateData[field];
             }
         });
+
+        // 2.6 Remove protected fields that should never be updated from this endpoint
+        delete updateData.password;
+        delete updateData.email;
+        delete updateData._id;
+        delete updateData.__v;
+        delete updateData.isOrganizer;
+        delete updateData.isAdmin;
+        delete updateData.resetPasswordToken;
+        delete updateData.resetPasswordExpires;
+        delete updateData.followers;
+        delete updateData.following;
 
 
         // 3. ¡SOLUCIÓN AL ERROR!: Limpieza del campo 'teams'
@@ -287,6 +331,58 @@ export const updateProfile = async (req, res) => {
     } catch (error) {
         console.error("DETALLE DEL ERROR:", error);
         res.status(500).json({ message: "Error al actualizar el perfil" });
+    }
+};
+
+// ── Follow / Unfollow ──
+export const followUser = async (req, res) => {
+    try {
+        const { targetId } = req.params;
+        const myId = req.userId;
+        if (targetId === myId) return res.status(400).json({ message: 'No puedes seguirte a ti mismo.' });
+
+        const target = await User.findById(targetId);
+        if (!target) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+        const alreadyFollowing = target.followers.includes(myId);
+
+        if (alreadyFollowing) {
+            // Unfollow
+            await User.findByIdAndUpdate(myId, { $pull: { following: targetId } });
+            await User.findByIdAndUpdate(targetId, { $pull: { followers: myId } });
+            return res.json({ followed: false });
+        } else {
+            // Follow
+            await User.findByIdAndUpdate(myId, { $addToSet: { following: targetId } });
+            await User.findByIdAndUpdate(targetId, { $addToSet: { followers: myId } });
+
+            // Notify the target
+            const me = await User.findById(myId).select('userName fullName');
+            await pushNotification(targetId, NOTIF.newFollower(me?.userName || me?.fullName || 'Alguien'));
+
+            return res.json({ followed: true });
+        }
+    } catch (err) {
+        console.error('Error follow/unfollow:', err);
+        res.status(500).json({ message: 'Error del servidor.' });
+    }
+};
+
+// ── Get User Card (mini profile) ──
+export const getUserCard = async (req, res) => {
+    try {
+        const targetUser = await User.findById(req.params.userId)
+            .select('username fullName avatar status selectedFrameId selectedTagId country experience isOrganizer selectedGames connections.riot followers following teams')
+            .populate('teams', 'name game logo');
+        if (!targetUser) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+        const myId = req.userId;
+        const isFollowing = targetUser.followers.map(f => f.toString()).includes(myId);
+
+        res.json({ ...targetUser.toObject(), isFollowing });
+    } catch (err) {
+        console.error('Error getUserCard:', err);
+        res.status(500).json({ message: 'Error del servidor.' });
     }
 };
 

@@ -1,0 +1,123 @@
+﻿/* --- HOME PAGE â€” Usa variables de index.css --- */
+
+/* --- ESTILO DEL COMPONENTE IMMERSIVE SECTION --- */
+
+/* Contenedor General de la SecciÃ³n */
+.immersive-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 90vh;
+  padding: 80px 10%;
+  gap: 60px;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+/* --- MODO HERO (INICIO) --- */
+/* Cuando es la portada, cambia totalmente */
+.immersive-section.hero-mode {
+  height: 100vh;
+  padding: 0;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.immersive-section.hero-mode .video-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.immersive-section.hero-mode .video-wrapper video {
+  filter: brightness(0.4); /* Oscurece el video para que se lea el texto */
+}
+
+.immersive-section.hero-mode .text-wrapper {
+  z-index: 2;
+  text-align: center;
+  max-width: 800px;
+}
+
+.immersive-section.hero-mode h1 {
+  font-size: 5rem;
+  letter-spacing: 10px;
+  text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+}
+
+/* --- MODO NORMAL (LADO A LADO) --- */
+
+/* Parte del Texto */
+.text-wrapper {
+  flex: 1; /* Toma la mitad del espacio */
+  z-index: 1;
+}
+
+.text-wrapper h2 {
+  font-size: 3.5rem;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  line-height: 1;
+}
+
+.text-wrapper p {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Parte del Video */
+.video-wrapper {
+  flex: 1; /* Toma la otra mitad */
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  height: 400px; /* Altura uniforme */
+  transition: transform 0.3s ease;
+}
+
+.video-wrapper:hover {
+  transform: scale(1.02); /* PequeÃ±o zoom al pasar el mouse */
+  border: 1px solid var(--primary);
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* --- CLASE PARA INVERTIR EL ORDEN --- */
+/* Esto pone el texto a la derecha y video a la izquierda */
+.immersive-section.reversed {
+  flex-direction: row-reverse;
+}
+
+/* --- RESPONSIVE (CELULARES) --- */
+@media (max-width: 900px) {
+  .immersive-section, 
+  .immersive-section.reversed {
+    flex-direction: column; /* Todo en columna */
+    text-align: center;
+    padding: 60px 20px;
+    justify-content: center;
+  }
+
+  .immersive-section.hero-mode h1 {
+    font-size: 3rem;
+  }
+
+  .text-wrapper h2 {
+    font-size: 2.5rem;
+  }
+  
+  .video-wrapper {
+    width: 100%;
+    height: 250px;
+  }
+}

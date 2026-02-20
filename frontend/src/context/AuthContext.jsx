@@ -1,5 +1,6 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { API_URL } from '../config/api';
 
 const AuthContext = createContext();
 
@@ -25,7 +26,7 @@ export const AuthProvider = ({ children }) => {
             if (token) {
                 try {
                     // AJUSTA ESTA URL A TU ENDPOINT DE PERFIL REAL
-                    const response = await fetch('http://localhost:4000/api/auth/profile', {
+                    const response = await fetch(`${API_URL}/api/auth/profile`, {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('token')}`,

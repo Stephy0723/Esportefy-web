@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../../../config/api';
 import { useNotification } from '../../../context/NotificationContext';
 import { useAuth } from '../../../context/AuthContext';
 import './Tournaments.scss'; 
 import { GAME_IMAGES } from '../../../data/gameImages';
 import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
+import PageHud from '../../../components/PageHud/PageHud';
 
 
 const GAME_CONFIG = {
@@ -38,48 +40,63 @@ const GAME_CONFIG = {
   "StarCraft II": { color: "#00a8ff", icon: "bx-planet" }
 };
 
-const sponsors = [
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PROMO SLIDES â€” platform-branded carousel
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+const PROMO_SLIDES = [
     {
-      id: 1,
-      name: "Red Bull",
-      badgeColor: "linear-gradient(45deg, #f00, #ff0)",
-      bgImage: "https://images.unsplash.com/photo-1621503747124-777616674176?q=80&w=2070&auto=format&fit=crop",
-      logo: "https://upload.wikimedia.org/wikipedia/en/thumb/f/f5/Red_Bull_GmbH_logo.svg/1200px-Red_Bull_GmbH_logo.svg.png",
-      title: "ENERGÍA QUE IMPULSA TU JUEGO",
-      desc: "Domina el servidor con la energía que necesitas.",
-      btnText: "Conseguir Alas",
-      btnIcon: "bx-bolt-circle"
+        id: 1,
+        gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+        accent: '#8EDB15',
+        icon: 'bx-trophy',
+        badge: 'ESPORTEFY ARENA',
+        title: 'COMPITE AL MÁXIMO NIVEL',
+        subtitle: 'Inscríbete en torneos oficiales, demuestra tu skill y gana premios reales.',
+        cta: 'Explorar Torneos',
+        ctaIcon: 'bx-right-arrow-alt',
+        ctaAction: 'scroll',
+        particles: ['bx-game', 'bx-joystick', 'bx-trophy', 'bx-medal']
     },
     {
-      id: 2,
-      name: "Logitech G",
-      badgeColor: "linear-gradient(45deg, #00B8FC, #2E3192)", 
-      bgImage: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop", 
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Logitech_logo.svg/2560px-Logitech_logo.svg.png", 
-      title: "JUEGA A LA VELOCIDAD DE LA LUZ",
-      desc: "40% de descuento en periféricos PRO Series.",
-      btnText: "Ver Gear",
-      btnIcon: "bx-mouse"
+        id: 2,
+        gradient: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        accent: '#4facfe',
+        icon: 'bx-crown',
+        badge: 'ORGANIZADOR PRO',
+        title: 'CREA TU PROPIO TORNEO',
+        subtitle: 'Gestiona inscripciones, define premios y construye tu comunidad competitiva.',
+        cta: 'Crear Torneo',
+        ctaIcon: 'bx-plus',
+        ctaAction: 'create',
+        particles: ['bx-crown', 'bx-star', 'bx-shield', 'bx-diamond']
     },
     {
-      id: 3,
-      name: "Intel",
-      badgeColor: "linear-gradient(45deg, #0068B5, #00C7FD)",
-      bgImage: "https://images.unsplash.com/photo-1591405351990-4726e331f141?q=80&w=2070&auto=format&fit=crop",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Logitech_logo.svg/2560px-Logitech_logo.svg.png",
-      title: "POTENCIA, MAXIMIZA TU RENDIMIENTO",
-      desc: "Procesadores i9 de 13ava generación.",
-      btnText: "Upgrade PC",
-      btnIcon: "bx-chip"
+        id: 3,
+        gradient: 'linear-gradient(135deg, #0d1117 0%, #161b22 50%, #21262d 100%)',
+        accent: '#f093fb',
+        icon: 'bx-group',
+        badge: 'TEAM UP',
+        title: 'ENCUENTRA TU ESCUADRA',
+        subtitle: 'Forma equipo con los mejores jugadores y conquista la arena juntos.',
+        cta: 'Armar Equipo',
+        ctaIcon: 'bx-group',
+        ctaAction: 'team',
+        particles: ['bx-user', 'bx-group', 'bx-rocket', 'bx-world']
     }
 ];
 
-const BACKEND_URL = 'http://localhost:4000';
+const STATUS_CONFIG = {
+    open:      { label: 'Abierto',    color: '#00ff88', icon: 'bx-check-circle' },
+    ongoing:   { label: 'En curso',   color: '#4facfe', icon: 'bx-loader-circle' },
+    finished:  { label: 'Finalizado', color: '#888',    icon: 'bx-flag' },
+    cancelled: { label: 'Cancelado',  color: '#ef4444', icon: 'bx-x-circle' },
+    draft:     { label: 'Borrador',   color: '#ffc107', icon: 'bx-pencil' },
+};
 
 const toAssetUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  return `${BACKEND_URL}/${path.replace(/^\//, '')}`;
+  return `${API_URL}/${path.replace(/^\//, '')}`;
 };
 
 const getInitials = (name) => {
@@ -155,6 +172,8 @@ const Tournaments = () => {
   const [selectedTeamPreview, setSelectedTeamPreview] = useState(null);
   const rightPanelRef = useRef(null);
   const [rosterTeamIds, setRosterTeamIds] = useState([]);
+  const [search, setSearch] = useState('');
+  const [activeStatus, setActiveStatus] = useState('all');
 
   const userTeamIds = Array.isArray(user?.teams)
     ? user.teams.map((t) => String(t?._id || t))
@@ -224,8 +243,8 @@ const Tournaments = () => {
   // --- LOGICA CARRUSEL ---
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrent((prev) => (prev === sponsors.length - 1 ? 0 : prev + 1));
-    }, 5000);
+      setCurrent((prev) => (prev === PROMO_SLIDES.length - 1 ? 0 : prev + 1));
+    }, 6000);
     return () => clearInterval(timer);
   }, []);
 
@@ -234,7 +253,7 @@ useEffect(() => {
     const fetchTournaments = async () => {
         try {
             setLoadingTournaments(true);
-            const response = await axios.get('http://localhost:4000/api/tournaments');
+            const response = await axios.get(`${API_URL}/api/tournaments`);
             
             // Adaptamos los datos de la base de datos al formato que usa tu diseño
             const formattedTournaments = response.data.map(formatTournamentFromApi);
@@ -256,7 +275,7 @@ useEffect(() => {
       if (!user?._id) return;
       if (userTeamIds.length > 0) return;
       try {
-        const res = await axios.get('http://localhost:4000/api/teams');
+        const res = await axios.get(`${API_URL}/api/teams`);
         const uid = String(user._id);
         const ids = (res.data || [])
           .filter((t) => {
@@ -280,7 +299,7 @@ useEffect(() => {
     setDetailLoading(true);
     setSelectedTournament({ ...torneo });
     try {
-      const response = await axios.get(`http://localhost:4000/api/tournaments/${torneo.tournamentId}`);
+      const response = await axios.get(`${API_URL}/api/tournaments/${torneo.tournamentId}`);
       const formatted = formatTournamentFromApi(response.data);
       setSelectedTournament({ ...torneo, ...formatted });
     } catch (err) {
@@ -292,8 +311,40 @@ useEffect(() => {
   };
 
   const handleDotClick = (index) => setCurrent(index);
-  const activeSponsor = sponsors[current] || sponsors[0];
-  const getGameImage1 = (gameName) => GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
+  const activeSlide = PROMO_SLIDES[current] || PROMO_SLIDES[0];
+
+  const filteredTournaments = activeFilter === 'All' 
+    ? tournaments 
+    : tournaments.filter(t => t.game === activeFilter);
+
+  // --- FILTERED + SEARCH ---
+  const displayTournaments = useMemo(() => {
+    let list = filteredTournaments;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(t =>
+        t.title?.toLowerCase().includes(q) ||
+        t.game?.toLowerCase().includes(q) ||
+        t.organizer?.toLowerCase().includes(q) ||
+        t.tournamentId?.toLowerCase().includes(q)
+      );
+    }
+    if (activeStatus !== 'all') {
+      list = list.filter(t => t.status === activeStatus);
+    }
+    return list;
+  }, [filteredTournaments, search, activeStatus]);
+
+  // --- STATS ---
+  const stats = useMemo(() => {
+    const active = tournaments.filter(t => t.status === 'open' || t.status === 'ongoing');
+    const totalPrize = tournaments.reduce((sum, t) => {
+      const num = parseFloat(String(t.prize || '0').replace(/[^0-9.]/g, ''));
+      return sum + (isNaN(num) ? 0 : num);
+    }, 0);
+    const uniqueGames = new Set(tournaments.map(t => t.game)).size;
+    return { total: tournaments.length, active: active.length, totalPrize, uniqueGames };
+  }, [tournaments]);
 
   // --- CLICK OUTSIDE SIDEBAR ---
   useEffect(() => {
@@ -307,10 +358,6 @@ useEffect(() => {
     document.addEventListener("mousedown", handleClickOutsideRight);
     return () => document.removeEventListener("mousedown", handleClickOutsideRight);
   }, [isRightPanelOpen]);
-
-  const filteredTournaments = activeFilter === 'All' 
-    ? tournaments 
-    : tournaments.filter(t => t.game === activeFilter);
 
   const goToRegistration = (torneo) => navigate('/team-registration', { state: { tournament: torneo } });
   const needsRiot = (torneo) => isRiotGame(torneo.game) && torneo?.riotRequirements?.required;
@@ -331,7 +378,7 @@ useEffect(() => {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       await axios.patch(
-        `http://localhost:4000/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
+        `${API_URL}/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -355,7 +402,7 @@ useEffect(() => {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       await axios.delete(
-        `http://localhost:4000/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
+        `${API_URL}/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSelectedTournament((prev) => {
@@ -373,7 +420,7 @@ useEffect(() => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.patch(
-        `http://localhost:4000/api/tournaments/${torneo.tournamentId}/status`,
+        `${API_URL}/api/tournaments/${torneo.tournamentId}/status`,
         { action },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -390,7 +437,7 @@ useEffect(() => {
 
   const openTeamPreview = async (teamId) => {
     try {
-      const res = await axios.get('http://localhost:4000/api/teams');
+      const res = await axios.get(`${API_URL}/api/teams`);
       const team = (res.data || []).find(t => String(t._id) === String(teamId));
       setSelectedTeamPreview(team || null);
       setShowTeamPreview(true);
@@ -404,7 +451,7 @@ useEffect(() => {
     if (!ok) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:4000/api/tournaments/${torneo.tournamentId}`, {
+      await axios.delete(`${API_URL}/api/tournaments/${torneo.tournamentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSelectedTournament(null);
@@ -424,7 +471,7 @@ useEffect(() => {
             return;
         }
 
-        // VALIDACIÓN CLAVE: Usamos el campo de tu base de datos
+        // VALIDACI“N CLAVE: Usamos el campo de tu base de datos
         if (user.isOrganizer === true) {
             navigate('/create-tournament');
         } else {
@@ -440,6 +487,7 @@ useEffect(() => {
 
   return (
     <div className="tournaments-page-wrapper">
+        <PageHud page="TORNEOS" />
         
         {/* ======================================================= */}
         {/* 1. MODAL DE ORGANIZADOR (CONVERTIRSE EN PRO)            */}
@@ -470,7 +518,7 @@ useEffect(() => {
         )}
 
         {/* ======================================================= */}
-        {/* 2. MODAL DE DETALLES DEL TORNEO (EL QUE NO TE SALÍA)    */}
+        {/* 2. MODAL DE DETALLES DEL TORNEO */}
         {/* ======================================================= */}
         {selectedTournament && (
             <div className="modal-overlay-backdrop" onClick={() => setSelectedTournament(null)} style={{zIndex: 10000}}>
@@ -553,7 +601,7 @@ useEffect(() => {
                                                         <strong>{r.teamName}</strong>
                                                         {(r.teamMeta?.category || r.teamMeta?.teamLevel) && (
                                                             <span className="team-sub">
-                                                                {r.teamMeta?.category || 'Sin categoría'} • {r.teamMeta?.teamLevel || 'Nivel N/A'}
+                                                                {r.teamMeta?.category || 'Sin categoría'} â€¢ {r.teamMeta?.teamLevel || 'Nivel N/A'}
                                                             </span>
                                                         )}
                                                     </div>
@@ -563,14 +611,14 @@ useEffect(() => {
                                             
                                             {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
                                                 <div className="registration-roster">
-                                                    {r.roster.starters.map(p => p.nickname || '').filter(Boolean).join(' • ')}
+                                                    {r.roster.starters.map(p => p.nickname || '').filter(Boolean).join(' â€¢ ')}
                                                 </div>
                                             )}
                                             {/* {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
                                                 <div className="registration-roster">
                                                     {r.roster.starters.map((p, i) => (
                                                         <span key={`${r._id}-p-${i}`}>
-                                                            {p.nickname}{p.riotId ? ` (${p.riotId})` : ''}{i < r.roster.starters.length - 1 ? ' • ' : ''}
+                                                            {p.nickname}{p.riotId ? ` (${p.riotId})` : ''}{i < r.roster.starters.length - 1 ? ' â€¢ ' : ''}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -780,8 +828,8 @@ useEffect(() => {
                                         </div>
                                         <div className="registration-roster">
                                             {canSeeTeamIds(selectedTournament)
-                                                ? `${p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} • ${p?.region || 'Región: N/A'}${p?.riotId ? ` • Riot: ${p.riotId}` : ''}`
-                                                : `ID: Oculto • ${p?.region || 'Región: N/A'}`
+                                                ? `${p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} â€¢ ${p?.region || 'Región: N/A'}${p?.riotId ? ` â€¢ Riot: ${p.riotId}` : ''}`
+                                                : `ID: Oculto â€¢ ${p?.region || 'Región: N/A'}`
                                             }
                                         </div>
                                     </div>
@@ -803,39 +851,135 @@ useEffect(() => {
             <div className="content-area">
                 <div className="tournaments-page">
                     
-                    {/* HERO */}
-                    <div className="hero-banner cinema-style">
-                        {sponsors.map((sponsor, index) => (
-                            <div key={sponsor.id} className={`hero-bg-image ${index === current ? 'active' : ''}`} style={{ backgroundImage: `url('${sponsor.bgImage}')` }}></div>
-                        ))}
-                        <div className="hero-gradient-overlay"></div>
-                        <div className="hero-content-container">
-                            <div className="sponsor-tag">
-                                <span className="badge-glow" style={{ background: activeSponsor.badgeColor }}>PARTNER OFICIAL</span>
-                                <img src={activeSponsor.logo} alt="Sponsor Logo" className="sponsor-logo" />
-                            </div>
-                            <h1 className="hero-title">{activeSponsor.title}</h1>
-                            <p className="hero-subtitle">{activeSponsor.desc}</p>
-                            <div className="hero-buttons">
-                                <button className="btn-action primary">{activeSponsor.btnText} <i className={`bx ${activeSponsor.btnIcon}`}></i></button>
-                                <button className="btn-action secondary">Más Detalles</button>
+                    {/* ═══ HERO / PROMO CAROUSEL ═══ */}
+                    <div className="tn__hero" style={{ background: activeSlide.gradient }}>
+                        {/* Animated particles */}
+                        <div className="tn__hero-particles">
+                            {activeSlide.particles.map((p, i) => (
+                                <i key={`${current}-${i}`} className={`bx ${p} tn__particle`} style={{ '--delay': `${i * 0.4}s`, '--x': `${20 + i * 22}%`, color: activeSlide.accent }} />
+                            ))}
+                        </div>
+                        <div className="tn__hero-glow" style={{ background: `radial-gradient(ellipse at 30% 80%, ${activeSlide.accent}15 0%, transparent 60%)` }} />
+                        
+                        <div className="tn__hero-content">
+                            <span className="tn__hero-badge" style={{ background: `${activeSlide.accent}20`, color: activeSlide.accent, borderColor: `${activeSlide.accent}40` }}>
+                                <i className={`bx ${activeSlide.icon}`}></i> {activeSlide.badge}
+                            </span>
+                            <h1 className="tn__hero-title">{activeSlide.title}</h1>
+                            <p className="tn__hero-subtitle">{activeSlide.subtitle}</p>
+                            <div className="tn__hero-actions">
+                                <button 
+                                    className="tn__hero-btn tn__hero-btn--primary" 
+                                    style={{ background: activeSlide.accent, boxShadow: `0 8px 25px ${activeSlide.accent}40` }}
+                                    onClick={() => {
+                                        if (activeSlide.ctaAction === 'create') handleCreateClick();
+                                        else if (activeSlide.ctaAction === 'team') navigate('/create-team');
+                                    }}
+                                >
+                                    {activeSlide.cta} <i className={`bx ${activeSlide.ctaIcon}`}></i>
+                                </button>
+                                <button className="tn__hero-btn tn__hero-btn--ghost" onClick={() => setShowInfoModal(true)}>
+                                    Más Info <i className='bx bx-info-circle'></i>
+                                </button>
                             </div>
                         </div>
-                        <div className="hero-dots">
-                            {sponsors.map((_, index) => (
-                                <span key={index} className={`dot ${index === current ? 'active' : ''}`} onClick={() => handleDotClick(index)}></span>
+
+                        {/* Indicator dots */}
+                        <div className="tn__hero-dots">
+                            {PROMO_SLIDES.map((_, index) => (
+                                <button key={index} className={`tn__hero-dot ${index === current ? 'active' : ''}`} onClick={() => handleDotClick(index)} style={index === current ? { background: activeSlide.accent, boxShadow: `0 0 8px ${activeSlide.accent}` } : {}} />
                             ))}
+                        </div>
+                        
+                        {/* Slide counter */}
+                        <div className="tn__hero-counter">
+                            <span style={{ color: activeSlide.accent }}>{String(current + 1).padStart(2, '0')}</span>
+                            <span className="tn__hero-counter-sep">/</span>
+                            <span>{String(PROMO_SLIDES.length).padStart(2, '0')}</span>
                         </div>
                     </div>
 
-                    {/* HEADER & FILTERS */}
-                    <div className="header-actions">
-                        <div><h1>🏆 Torneos Activos</h1><p>Explora, compite y gana premios.</p></div>
-                        <div className="action-group">
-                            <button className="create-btn toggle-right-sidebar-btn mobile-only" onClick={(e) => { e.stopPropagation(); setIsRightPanelOpen(!isRightPanelOpen); }}><i className='bx bx-layout'></i> Info</button>
-                            <button className="info-btn" onClick={() => setShowInfoModal(true)}><i className='bx bx-question-mark'></i></button>
-                            <button className="create-btn" onClick={handleCreateClick}><i className='bx bx-plus'></i> Crear Torneo</button>
+                    {/* ═══ STATS BAR ═══ */}
+                    <div className="tn__stats-bar">
+                        <div className="tn__stat">
+                            <i className='bx bx-trophy' style={{ color: '#ffd700' }}></i>
+                            <div className="tn__stat-info">
+                                <span className="tn__stat-value">{stats.total}</span>
+                                <span className="tn__stat-label">Torneos</span>
+                            </div>
                         </div>
+                        <div className="tn__stat-divider" />
+                        <div className="tn__stat">
+                            <i className='bx bx-check-circle' style={{ color: '#00ff88' }}></i>
+                            <div className="tn__stat-info">
+                                <span className="tn__stat-value">{stats.active}</span>
+                                <span className="tn__stat-label">Activos</span>
+                            </div>
+                        </div>
+                        <div className="tn__stat-divider" />
+                        <div className="tn__stat">
+                            <i className='bx bx-dollar-circle' style={{ color: '#4facfe' }}></i>
+                            <div className="tn__stat-info">
+                                <span className="tn__stat-value">${stats.totalPrize.toLocaleString()}</span>
+                                <span className="tn__stat-label">En premios</span>
+                            </div>
+                        </div>
+                        <div className="tn__stat-divider" />
+                        <div className="tn__stat">
+                            <i className='bx bx-game' style={{ color: '#f093fb' }}></i>
+                            <div className="tn__stat-info">
+                                <span className="tn__stat-value">{stats.uniqueGames}</span>
+                                <span className="tn__stat-label">Juegos</span>
+                            </div>
+                        </div>
+                    </div>
+
+                                        {/* ═══ HEADER + ACTIONS + SEARCH ═══ */}
+                    <div className="header-actions">
+                        <div className="tn__header-left">
+                            <h1><i className='bx bx-trophy'></i> Torneos</h1>
+                            <p>Explora, compite y gana premios.</p>
+                        </div>
+                        <div className="tn__header-right">
+                            <div className="tn__search-box">
+                                <i className='bx bx-search'></i>
+                                <input 
+                                    type="text" 
+                                    placeholder="Buscar torneo, juego, organizador..." 
+                                    value={search} 
+                                    onChange={(e) => setSearch(e.target.value)} 
+                                />
+                                {search && (
+                                    <button className="tn__search-clear" onClick={() => setSearch('')}>
+                                        <i className='bx bx-x'></i>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="action-group">
+                                <button className="create-btn toggle-right-sidebar-btn mobile-only" onClick={(e) => { e.stopPropagation(); setIsRightPanelOpen(!isRightPanelOpen); }}><i className='bx bx-layout'></i> Info</button>
+                                <button className="info-btn" onClick={() => setShowInfoModal(true)} title="¿Cómo ser organizador?"><i className='bx bx-question-mark'></i></button>
+                                <button className="create-btn" onClick={handleCreateClick}><i className='bx bx-plus'></i> Crear Torneo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ═══ STATUS FILTERS ═══ */}
+                    <div className="tn__status-filters">
+                        {[
+                            { key: 'all', label: 'Todos', icon: 'bx-grid-alt' },
+                            { key: 'open', label: 'Abiertos', icon: 'bx-check-circle', dot: '#00ff88' },
+                            { key: 'ongoing', label: 'En Curso', icon: 'bx-loader-circle', dot: '#4facfe' },
+                            { key: 'finished', label: 'Finalizados', icon: 'bx-flag', dot: '#888' },
+                        ].map(s => (
+                            <button 
+                                key={s.key} 
+                                className={`tn__status-btn ${activeStatus === s.key ? 'active' : ''}`} 
+                                onClick={() => setActiveStatus(s.key)}
+                            >
+                                {s.dot && <span className="tn__status-dot" style={{ background: s.dot }} />}
+                                <i className={`bx ${s.icon}`}></i> {s.label}
+                            </button>
+                        ))}
                     </div>
 
                     <div className="filters-bar">
@@ -854,52 +998,103 @@ useEffect(() => {
                         </button>
                     </div>
 
-                    {/* TOURNAMENTS GRID */}
+                    {/* ═══ RESULTS COUNT ═══ */}
+                    {(search || activeStatus !== 'all' || activeFilter !== 'All') && (
+                        <div className="tn__results-count">
+                            <span>{displayTournaments.length} torneo{displayTournaments.length !== 1 ? 's' : ''} encontrado{displayTournaments.length !== 1 ? 's' : ''}</span>
+                            {(search || activeStatus !== 'all') && (
+                                <button className="tn__clear-filters" onClick={() => { setSearch(''); setActiveStatus('all'); setActiveFilter('All'); }}>
+                                    <i className='bx bx-x'></i> Limpiar filtros
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ═══ TOURNAMENTS GRID ═══ */}
                     <div className="tournaments-grid">
-                        {filteredTournaments.length > 0 ? (
-                            filteredTournaments.map((torneo) => {
+                        {loadingTournaments ? (
+                            <div className="tn__loading">
+                                <div className="tn__spinner" />
+                                <p>Cargando torneos...</p>
+                            </div>
+                        ) : displayTournaments.length > 0 ? (
+                            displayTournaments.map((torneo) => {
                                 const [ocupados, totales] = torneo.slots.split('/').map(Number);
+                                const pct = totales > 0 ? (ocupados / totales) * 100 : 0;
                                 const estaLleno = ocupados >= totales;
                                 const hasTeam = userTeamIds.length > 0;
                                 const alreadyIn = hasRegisteredTeam(torneo);
                                 const canJoin = !estaLleno && hasTeam && !alreadyIn;
+                                const gameColor = GAME_CONFIG[torneo.game]?.color || '#8EDB15';
+                                const statusCfg = STATUS_CONFIG[torneo.status] || STATUS_CONFIG.open;
 
                                 return (
-                                    <div key={torneo.id} className="tournament-card-pro">
+                                    <div key={torneo.id} className="tournament-card-pro" style={{ '--card-game': gameColor }}>
+                                        <div className="tn__card-glow" />
+                                        <div className="tn__card-accent" />
                                         <div className="card-image-container">
                                             <img src={getGameImage(torneo.game)} alt={torneo.game} loading="lazy" />
                                             <div className="overlay-gradient"></div>
                                             <div className="top-badges">
-                                                <span className="game-pill" style={{borderColor: GAME_CONFIG[torneo.game]?.color || '#fff', color: '#fff'}}>
+                                                <span className="game-pill" style={{ borderColor: gameColor, color: '#fff' }}>
                                                     <i className={`bx ${GAME_CONFIG[torneo.game]?.icon || 'bx-joystick'}`}></i> {torneo.game}
                                                 </span>
-                                                {estaLleno ? (
-                                                    <span className="status-badge full" style={{background: '#ff4655', padding:'4px 8px', borderRadius:'4px', fontSize:'0.7rem', fontWeight:'800', color: 'white'}}>LLENO</span>
-                                                ) : (
-                                                    <span className="status-dot" style={{width:'10px', height:'10px', borderRadius:'50%', background:'#00ff88', boxShadow:'0 0 10px #00ff88'}}></span>
-                                                )}
+                                                <span className="tn__card-status" style={{ background: `${statusCfg.color}18`, color: statusCfg.color, border: `1px solid ${statusCfg.color}30` }}>
+                                                    <i className={`bx ${statusCfg.icon}`}></i> {statusCfg.label}
+                                                </span>
                                             </div>
                                         </div>
 
                                         <div className="card-content">
-                                            <span className="tournament-id-tag" style={{ fontSize: '0.65rem', color: '#888', fontWeight: 'bold' }}>#{torneo.tournamentId}</span>
+                                            <div className="tn__card-header">
+                                                <span className="tournament-id-tag">#{torneo.tournamentId}</span>
+                                                {torneo.entryFee && torneo.entryFee !== 'Gratis' && (
+                                                    <span className="tn__entry-badge"><i className='bx bx-dollar'></i> {torneo.entryFee}</span>
+                                                )}
+                                                {torneo.entryFee === 'Gratis' && (
+                                                    <span className="tn__free-badge"><i className='bx bx-gift'></i> Gratis</span>
+                                                )}
+                                            </div>
                                             <h3 title={torneo.title}>{torneo.title}</h3>
-                                            <div className="info-row">
-                                                <div className="info-pill"><i className='bx bx-calendar'></i> {torneo.date}</div>
-                                                <div className="info-pill prize-pill"><i className='bx bx-trophy'></i> {torneo.prize}</div>
-                                                <div className="info-pill gender-pill"><i className='bx bx-user'></i> {torneo.gender}</div>
+                                            
+                                            <div className="tn__card-meta">
+                                                <div className="tn__meta-item"><i className='bx bx-calendar'></i> {torneo.date}</div>
+                                                <div className="tn__meta-item"><i className='bx bx-time'></i> {torneo.time}</div>
+                                                {torneo.format && <div className="tn__meta-item"><i className='bx bx-shield'></i> {torneo.format}</div>}
+                                                {torneo.platform && <div className="tn__meta-item"><i className='bx bx-desktop'></i> {torneo.platform}</div>}
                                             </div>
 
-                                            <div className="tournament-status-row">
-                                                <div className="teams-counter"><i className='bx bx-group'></i><span>{torneo.slots} Equipos</span></div>
-                                                <div className={`status-label ${estaLleno ? 'full' : 'available'}`}>
-                                                    {estaLleno ? <><i className='bx bx-lock-alt'></i> Cerrado</> : <><i className='bx bx-check-circle'></i> Disponible</>}
+                                            <div className="tn__card-prize-row">
+                                                <div className="tn__prize-box" style={{ borderColor: `${gameColor}30` }}>
+                                                    <i className='bx bx-trophy' style={{ color: '#ffd700' }}></i>
+                                                    <span>{torneo.prize || 'Sin premio'}</span>
                                                 </div>
+                                                {torneo.gender && (
+                                                    <span className="tn__gender-tag">
+                                                        <i className='bx bx-user'></i> {torneo.gender}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Progress bar */}
+                                            <div className="tn__slots-section">
+                                                <div className="tn__slots-info">
+                                                    <span><i className='bx bx-group'></i> {torneo.slots} Equipos</span>
+                                                    <span className="tn__slots-pct">{Math.round(pct)}%</span>
+                                                </div>
+                                                <div className="tn__slots-bar">
+                                                    <div className="tn__slots-fill" style={{ width: `${pct}%`, background: estaLleno ? '#ef4444' : gameColor }} />
+                                                </div>
+                                            </div>
+
+                                            <div className="tn__card-organizer">
+                                                <i className='bx bxs-badge-check' style={{ color: '#00b894' }}></i>
+                                                <span>{torneo.organizer}</span>
                                             </div>
 
                                             <div className="card-actions">
                                                 <button className="btn-details" onClick={() => openTournamentDetails(torneo)}>
-                                                    <i className='bx bx-info-circle'></i> Ver Info
+                                                    <i className='bx bx-info-circle'></i> Detalles
                                                 </button>
                                                 {canJoin ? (
                                                     <button 
@@ -912,20 +1107,14 @@ useEffect(() => {
                                                             }
                                                             goToRegistration(torneo);
                                                         }}
-                                                        style={{
-                                                            background: GAME_CONFIG[torneo.game]?.color || '#8EDB15',
-                                                            cursor: 'pointer',
-                                                            color: '#000'
-                                                        }}
+                                                        style={{ background: gameColor, color: '#000' }}
                                                     >
-                                                        Inscribirse
+                                                        <i className='bx bx-log-in-circle'></i> Inscribirse
                                                     </button>
                                                 ) : (
                                                     <button 
                                                         className={`btn-join ${!hasTeam ? '' : 'disabled'}`}
-                                                        onClick={() => {
-                                                            if (!hasTeam) navigate('/create-team');
-                                                        }}
+                                                        onClick={() => { if (!hasTeam) navigate('/create-team'); }}
                                                         style={{
                                                             background: !hasTeam ? '#8EDB15' : '#333',
                                                             cursor: !hasTeam ? 'pointer' : 'not-allowed',
@@ -938,12 +1127,20 @@ useEffect(() => {
                                                 )}
                                             </div>
                                         </div>
-
                                     </div>
                                 );
                             })
                         ) : (
-                            <div className="no-results"><i className='bx bx-ghost'></i><h3>Nada por aquí...</h3><p>No hay torneos disponibles.</p></div>
+                            <div className="tn__empty-state">
+                                <div className="tn__empty-icon"><i className='bx bx-ghost'></i></div>
+                                <h3>No se encontraron torneos</h3>
+                                <p>{search ? `Sin resultados para "${search}"` : 'No hay torneos disponibles en esta categoría.'}</p>
+                                {search && (
+                                    <button className="tn__empty-btn" onClick={() => { setSearch(''); setActiveFilter('All'); setActiveStatus('all'); }}>
+                                        <i className='bx bx-refresh'></i> Ver todos
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -971,17 +1168,20 @@ useEffect(() => {
                         </div>
                     </div>
 
-                    {/* WIDGET 2: CALENDARIO DE PARTIDOS (AQUÍ ESTÁ) */}
+                    {/* WIDGET 2: CALENDARIO */}
                     <div className="sidebar-widget">
                         {/* Puedes pasarle datos reales en el futuro con: <MatchCalendar matches={misDatos} /> */}
                         <MatchCalendar />
                     </div>
 
                     {/* WIDGET 3: (Opcional) BANNER PUBLICIDAD O INFO EXTRA */}
-                    <div className="sidebar-widget promo-box" style={{marginTop: '20px', padding: '15px', background: 'linear-gradient(45deg, #18181b, #202025)', borderRadius: '12px', border: '1px solid #333'}}>
-                        <h4 style={{color: '#fff', fontSize: '0.9rem', marginBottom: '5px'}}>¿Buscas Scrims?</h4>
-                        <p style={{color: '#aaa', fontSize: '0.8rem', marginBottom: '10px'}}>Encuentra rivales de tu nivel ahora mismo.</p>
-                        <button style={{width: '100%', padding: '8px', background: '#8EDB15', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer'}}>Buscar Scrim</button>
+                    <div className="sidebar-widget tn__promo-widget">
+                        <div className="tn__promo-icon"><i className='bx bx-search-alt-2'></i></div>
+                        <h4>¿Buscas Scrims?</h4>
+                        <p>Encuentra rivales de tu nivel ahora mismo.</p>
+                        <button className="tn__promo-btn" onClick={() => navigate('/teams')}>
+                            <i className='bx bx-target-lock'></i> Buscar Scrim
+                        </button>
                     </div>
 
                 </aside>

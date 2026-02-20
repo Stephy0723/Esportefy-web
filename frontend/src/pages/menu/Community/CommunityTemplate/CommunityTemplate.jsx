@@ -1,117 +1,88 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom'; 
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
     FaUsers, FaCircle, FaEllipsisH, FaSearch, FaPen, 
-    FaFire, FaGavel, FaGamepad, FaImage, FaShareAlt,
+    FaFire, FaGavel, FaGamepad, FaImage, FaShareAlt, FaMapMarkerAlt, 
+    FaBriefcase, 
     FaCheck, FaInfoCircle, FaUserShield, FaClock, FaGlobe,
-    FaTrophy, FaCalendarAlt, FaClipboardList, FaChessBoard
+    FaTrophy, FaCalendarAlt, FaClipboardList, FaChessBoard,
+    FaFilePdf, FaExclamationTriangle
 } from 'react-icons/fa';
 import './CommunityTemplate.css';
 
-// --- DATOS MOCK DE TORNEOS (Simulación de DB) ---
+// --- DATOS MOCK ---
 const TOURNAMENTS_DATA = [
     {
-        id: 1,
-        name: "Copa Invierno Valorant 2024",
-        status: "active", // active, finished
-        participants: "16/32",
-        logo: "https://cdn-icons-png.flaticon.com/512/3176/3176218.png",
+        id: 1, name: "Copa Invierno Valorant 2024", status: "active",
+        participants: "16/32", logo: "https://cdn-icons-png.flaticon.com/512/3176/3176218.png",
         banner: "https://via.placeholder.com/800x300/000/8EDB15?text=VALORANT+CUP",
-        date: "En Curso - Finaliza 20 Oct",
-        organizer: "Esportefy Staff"
+        date: "Finaliza 20 Oct", organizer: "Esportefy Staff"
     },
     {
-        id: 2,
-        name: "Liga Semanal Rocket League",
-        status: "finished",
-        participants: "8/8",
-        logo: "https://cdn-icons-png.flaticon.com/512/1693/1693244.png",
+        id: 2, name: "Liga Rocket League", status: "finished",
+        participants: "8/8", logo: "https://cdn-icons-png.flaticon.com/512/1693/1693244.png",
         banner: "https://via.placeholder.com/800x300/111/333?text=RL+WEEKLY",
-        date: "Finalizado el 10 Oct",
-        organizer: "RL Community"
+        date: "Finalizado", organizer: "RL Community"
     }
 ];
 
 const CommunityTemplate = () => {
-    // --- ESTADOS ---
     const [activeTab, setActiveTab] = useState('feed'); 
     const [isJoined, setIsJoined] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    
     const location = useLocation(); 
+    const navigate = useNavigate(); 
 
-    // --- RECUPERACIÓN DE DATOS ---
+
+    // --- DATOS ---
     const incomingData = location.state || {};
     const communityData = {
-        name: incomingData.name || "Comunidad Demo",
-        tagline: incomingData.tagline || "Bienvenido a tu nueva comunidad.",
-        description: incomingData.description || incomingData.tagline || "Sin descripción detallada.",
-        banner: incomingData.banner || "https://via.placeholder.com/1200x350/121214/222?text=Sin+Banner",
-        avatar: incomingData.avatar || "https://via.placeholder.com/150/8EDB15/000?text=LOGO",
-        stats: incomingData.stats || { members: 1, online: 1 },
-        created_at: incomingData.created_at || "Recién creada",
-        rules: incomingData.settings?.rules || "No hay reglas definidas.",
-        admins: incomingData.admins || ["Tú (Owner)"], 
+        name: incomingData.name || "Neoxys Esport",
+        tagline: incomingData.tagline || "Comunidad Competitiva Oficial",
+        description: incomingData.description || "Sin descripción.",
+        banner: incomingData.banner || "https://via.placeholder.com/1200x350/000/000",
+        avatar: incomingData.avatar || "https://via.placeholder.com/150/8EDB15/000",
+        stats: incomingData.stats || { members: 1240, online: 45 },
+        created_at: incomingData.created_at || "2024",
+        rules: incomingData.settings?.rules || "1. Respeto.\n2. No toxicidad.",
+        admins: incomingData.admins || ["Admin"], 
         region: incomingData.region || "Global",
         games: incomingData.settings?.games || []
+    };
+    const communitySlug = incomingData?.slug || communityData.name.toLowerCase().replace(/\s+/g, '-');
+
+
+    // --- 💎 VARIABLES CSS DINÁMICAS (CERO ESTILOS INLINE ABAJO) ---
+    const dynamicStyles = {
+        '--hero-banner': `url(${communityData.banner})`,
+        '--hero-avatar': `url(${communityData.avatar})`
     };
 
     const handleJoin = () => setIsJoined(!isJoined);
 
-    // =========================================================
-    // 🏆 CONST: RENDERIZADOR DE TORNEOS (La Pestaña Deportiva)
-    // =========================================================
+    // --- RENDERIZADORES ---
     const renderTournaments = () => (
         <div className="full-width-tab fade-in">
-            {/* Cabecera de Sección */}
-            <div className="section-header-sports">
-                <h3><FaTrophy className="gold-icon"/> Competición & Eventos</h3>
-                <p>Torneos oficiales organizados por {communityData.name}</p>
+            <div className="section-header-tech">
+                <h3><FaTrophy className="neon-icon"/> Torneos Activos</h3>
             </div>
-
-            <div className="tournaments-grid-layout">
-                {TOURNAMENTS_DATA.map(tournament => (
-                    <div key={tournament.id} className={`tournament-card-pro ${tournament.status}`}>
-                        {/* Banner y Estado */}
-                        <div className="t-banner-wrapper" style={{backgroundImage: `url(${tournament.banner})`}}>
+            <div className="tournaments-grid">
+                {TOURNAMENTS_DATA.map(t => (
+                    <div key={t.id} className={`tournament-card-tech ${t.status}`}>
+                        <div className="t-banner-tech" style={{'--t-bg': `url(${t.banner})`}}>
                             <div className="t-overlay"></div>
-                            <span className={`t-status-badge ${tournament.status}`}>
-                                {tournament.status === 'active' ? '🔴 EN VIVO' : '🏁 FINALIZADO'}
-                            </span>
-                            <img src={tournament.logo} alt="T-Logo" className="t-floating-logo" />
+                            <span className="t-badge">{t.status === 'active' ? 'EN VIVO' : 'FINALIZADO'}</span>
+                            <img src={t.logo} alt="logo" className="t-logo-float"/>
                         </div>
-
-                        {/* Info del Torneo */}
-                        <div className="t-info-body">
-                            <h4>{tournament.name}</h4>
-                            <div className="t-meta-row">
-                                <span><FaUserShield/> Org: {tournament.organizer}</span>
-                                <span><FaCalendarAlt/> {tournament.date}</span>
+                        <div className="t-body">
+                            <h4>{t.name}</h4>
+                            <div className="t-meta">
+                                <span><FaUserShield/> {t.organizer}</span>
+                                <span><FaCalendarAlt/> {t.date}</span>
                             </div>
-                            
-                            {/* Botonera de Acción */}
-                            <div className="t-actions-row">
-                                <button className="btn-t-primary">
-                                    <FaUsers/> Ver Equipos ({tournament.participants})
-                                </button>
-                                <button className="btn-t-glass">
-                                    <FaClipboardList/> Reportes
-                                </button>
-                                <button className="btn-t-glass">
-                                    <FaChessBoard/> Draft
-                                </button>
-                                <button className="btn-t-ghost">
-                                    + Más Info
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Footer con "Tachado/Badge" visual (Feed filtrado simulado) */}
-                        <div className="t-feed-preview">
-                            <small>Última actividad en el torneo:</small>
-                            <div className="t-feed-item">
-                                <span className="t-tag-badge">🏆 {tournament.name}</span>
-                                <span>Resultados de la Ronda 3 publicados...</span>
+                            <div className="t-actions">
+                                <button className="btn-tech primary">Ver Bracket</button>
+                                <button className="btn-tech ghost">Detalles</button>
                             </div>
                         </div>
                     </div>
@@ -120,83 +91,208 @@ const CommunityTemplate = () => {
         </div>
     );
 
-    // --- OTROS RENDERIZADORES ---
     const renderFeed = () => (
         <>
             <section className="feed-column fade-in">
                 {isJoined && (
-                    <div className="create-post-box">
-                        <div className="cp-avatar" style={{backgroundImage: `url(${communityData.avatar})`, backgroundSize:'cover'}}></div>
-                        <div className="cp-input-trigger">Publicar en {communityData.name}...</div>
-                        <button className="cp-btn-icon"><FaGamepad /></button>
-                        <button className="cp-btn-icon"><FaImage /></button>
+                    <div className="create-post-tech">
+                        <div className="cp-avatar-tech"></div>
+                        <div className="cp-input-tech">Comparte tu jugada...</div>
+                        <div className="cp-icons">
+                            <button><FaGamepad/></button>
+                            <button><FaImage/></button>
+                        </div>
                     </div>
                 )}
-                <div className="feed-filters-bar">
-                    <button className="filter-chip active"><FaFire /> Destacado</button>
-                    <button className="filter-chip">Nuevos</button>
+                <div className="feed-filters-tech">
+                    <button className="tech-chip active"><FaFire/> Trending</button>
+                    <button className="tech-chip">Nuevos</button>
+                    <button className="tech-chip">Clips</button>
                 </div>
-                <div className="empty-state-feed">
-                    <div className="empty-icon"><FaPen /></div>
-                    <h3>Aún no hay publicaciones</h3>
-                    <p>¡Sé el primero en inaugurar {communityData.name}!</p>
+                <div className="empty-state-tech">
+                    <FaPen className="empty-icon"/>
+                    <h3>Sin actividad reciente</h3>
+                    <p>Sé el primero en publicar en {communityData.name}</p>
                 </div>
             </section>
             <aside className="sidebar-column fade-in">
-                <div className="sidebar-widget">
-                    <div className="widget-header"><h4>Acerca de</h4></div>
+                <div className="widget-tech">
+                    <div className="widget-header"><h4><FaInfoCircle/> Sobre Nosotros</h4></div>
                     <div className="widget-body">
-                        <p className="sidebar-desc">{communityData.tagline}</p>
-                        <div className="sidebar-meta">
-                            <div className="meta-item"><FaClock /> Creada: {communityData.created_at}</div>
-                            <div className="meta-item"><FaGlobe /> Región: {communityData.region}</div>
+                        <p>{communityData.tagline}</p>
+                        <div className="meta-stats-row">
+                            <span><FaGlobe/> {communityData.region}</span>
+                            <span><FaClock/> {communityData.created_at}</span>
                         </div>
                     </div>
                 </div>
             </aside>
         </>
     );
-
+    // ==========================================
+    // ℹ️ RENDER: ABOUT (INFO DETALLADA)
+    // ==========================================
     const renderAbout = () => (
         <div className="full-width-tab fade-in">
-            <div className="content-card">
-                <h3><FaInfoCircle /> Información</h3>
-                <p className="big-desc">{communityData.description}</p>
-                <div className="stats-grid">
-                    <div className="stat-box"><h4>{communityData.stats.members}</h4><span>Miembros</span></div>
-                    <div className="stat-box"><h4>{communityData.stats.online}</h4><span>Online</span></div>
-                    <div className="stat-box"><h4>{communityData.games.length}</h4><span>Juegos</span></div>
+            <div className="about-tech-container">
+                {/* Cabecera Info */}
+                <div className="tech-section-header">
+                    <div className="header-icon-box">
+                        <FaInfoCircle />
+                    </div>
+                    <div>
+                        <h3>Información de la Comunidad</h3>
+                        <p>Todo lo que necesitas saber sobre {communityData.name}</p>
+                    </div>
+                </div>
+
+                {/* Grid de Estadísticas y Descripción */}
+                <div className="about-grid">
+                    <div className="about-main-card">
+                        <h4>Manifiesto</h4>
+                        <p className="about-desc">{communityData.description}</p>
+                        
+                        <div className="tech-separator"></div>
+
+                        <h4>Juegos Principales</h4>
+                        <div className="games-tag-cloud">
+                            {/* Si no hay juegos, mostramos algunos por defecto para el demo */}
+                            {(communityData.games.length > 0 ? communityData.games : ["Valorant", "LoL", "CS2", "Minecraft"]).map((game, i) => (
+                                <span key={i} className="game-tech-tag">
+                                    <FaGamepad className="tiny-icon"/> {game}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="about-stats-column">
+                        <div className="stat-tech-card">
+                            <span className="stat-label">Región</span>
+                            <div className="stat-value"><FaMapMarkerAlt/> {communityData.region}</div>
+                        </div>
+                        <div className="stat-tech-card">
+                            <span className="stat-label">Miembros</span>
+                            <div className="stat-value neon">{communityData.stats.members}</div>
+                        </div>
+                        <div className="stat-tech-card">
+                            <span className="stat-label">Fundación</span>
+                            <div className="stat-value">{communityData.created_at}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     );
 
-    const renderRules = () => (
-        <div className="full-width-tab fade-in">
-            <div className="content-card">
-                <h3><FaGavel /> Normativas</h3>
-                <div className="rules-content">
-                    {communityData.rules.split('\n').map((rule, index) => (
-                        <p key={index} className="rule-paragraph">{rule || "Respeto mutuo y diversión."}</p>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-
+    // ==========================================
+    // 🛡️ RENDER: STAFF & RECLUTAMIENTO
+    // ==========================================
     const renderStaff = () => (
         <div className="full-width-tab fade-in">
-            <div className="content-card">
-                <h3><FaUserShield /> Staff</h3>
-                <div className="staff-list">
+            <div className="staff-tech-wrapper">
+                
+                {/* 1. LISTA DE ADMINS */}
+                <div className="tech-section-header">
+                    <h3><FaUserShield className="neon-icon"/> Equipo Administrativo</h3>
+                </div>
+
+                <div className="staff-grid">
                     {communityData.admins.map((admin, idx) => (
-                        <div key={idx} className="staff-member-row">
-                            <div className="staff-avatar-placeholder">{admin.charAt(0).toUpperCase()}</div>
-                            <div className="staff-info">
-                                <h4>{admin}</h4><span className="role-badge owner">ADMIN</span>
+                        <div key={idx} className="staff-card-tech">
+                            <div className="staff-bg-effect"></div>
+                            <div className="staff-avatar-placeholder">
+                                {admin.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="staff-details">
+                                <h4>{admin}</h4>
+                                <span className="role-badge owner">ADMINISTRADOR</span>
                             </div>
                         </div>
                     ))}
+                    
+                    {/* Tarjeta de Moderador Demo (Para que se vea lleno) */}
+                    <div className="staff-card-tech">
+                        <div className="staff-bg-effect"></div>
+                        <div className="staff-avatar-placeholder mod">M</div>
+                        <div className="staff-details">
+                            <h4>Mod_Tester</h4>
+                            <span className="role-badge mod">MODERADOR</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. SECCIÓN DE APLICAR (RECRUITMENT) */}
+                <div className="recruitment-section">
+                    <div className="recruitment-box">
+                        <div className="recruit-content">
+                            <div className="recruit-icon">
+                                <FaBriefcase />
+                            </div>
+                            <div>
+                                <h3>¿Quieres unirte al Staff?</h3>
+                                <p>Estamos buscando moderadores y organizadores de torneos comprometidos.</p>
+                            </div>
+                        </div>
+                        <button className="btn-tech primary recruitment-btn">
+                            <FaPen /> APLICAR AHORA
+                        </button>
+                        <button
+  className="btn-tech glass"
+  onClick={() =>
+    navigate(`/community/${communitySlug}/admin`, {
+      state: { ...incomingData, ...communityData, slug: communitySlug }
+    })
+  }
+>
+  Panel Admin
+</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+
+ const renderRules = () => (
+        <div className="full-width-tab fade-in">
+            <div className="rules-container-tech">
+                {/* CABECERA */}
+                <div className="rules-header">
+                    <div className="icon-glow">
+                        <FaGavel className="big-icon"/>
+                    </div>
+                    <div>
+                        <h3>Reglamento Oficial</h3>
+                        <p>El desconocimiento no exime de culpa.</p>
+                    </div>
+                </div>
+
+                <div className="rules-grid">
+                    {/* LISTA DE REGLAS (Izquierda) */}
+                    <div className="rules-list">
+                        {communityData.rules.split('\n')
+                            .filter(r => r.trim() !== '') // Elimina líneas vacías
+                            .map((r, i) => (
+                                <div key={i} className="rule-card">
+                                    {/* Genera 01, 02, 10, etc. */}
+                                    <span className="rule-num">{String(i + 1).padStart(2, '0')}</span>
+                                    <p>{r}</p>
+                                </div>
+                        ))}
+                    </div>
+
+                    {/* BOTONES DE ACCIÓN (Derecha) */}
+                    <div className="rules-actions">
+                        <div className="action-box warning">
+                            <FaExclamationTriangle className="action-icon"/>
+                            <span>Reportar Conducta</span>
+                        </div>
+                        <div className="action-box info">
+                            <FaFilePdf className="action-icon"/>
+                            <span>Descargar PDF</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -204,64 +300,77 @@ const CommunityTemplate = () => {
 
     // --- RENDER PRINCIPAL ---
     return (
-        <div className="community-layout">
-            <header className="community-header">
-                <div className="header-banner" style={{ backgroundImage: `url(${communityData.banner})` }}>
-                    <div className="banner-overlay"></div>
+        <div className="community-layout" style={dynamicStyles}>
+            <header className="tech-header">
+                {/* Banner usa variable --hero-banner */}
+                <div className="hero-banner">
+                    <div className="scanline"></div>
+                    <div className="hero-overlay"></div>
                 </div>
-                <div className="header-info-bar">
-                    <div className="container-limit">
-                        <div className="info-flex">
-                            <div className="community-avatar-wrapper">
-                                <img src={communityData.avatar} alt="Logo" className="community-avatar" />
-                                <div className="online-indicator" title="Online"></div>
-                            </div>
-                            <div className="community-texts">
-                                <h1 className="community-title">{communityData.name} <span className="verified-badge">OFICIAL</span></h1>
-                                <p className="community-tagline">{communityData.tagline}</p>
-                                <div className="community-stats">
-                                    <span><FaUsers /> {communityData.stats.members} Miembros</span>
-                                    <span className="stat-separator">•</span>
-                                    <span className="highlight-green"><FaCircle size={8} /> {communityData.stats.online} Online</span>
-                                </div>
-                            </div>
-                            <div className="header-actions">
-                                <button className="btn-secondary-glass"><FaShareAlt /> Compartir</button>
-                                <button className={`btn-primary-neon ${isJoined ? 'joined' : ''}`} onClick={handleJoin}>
-                                    {isJoined ? <><FaCheck /> Miembro</> : "Unirse Ahora"}
-                                </button>
-                                <button className="btn-icon-glass"><FaEllipsisH /></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="community-nav-bar">
-                    <div className="container-limit">
-                        <nav className="nav-links">
-                            <button className={`nav-link ${activeTab === 'feed' ? 'active' : ''}`} onClick={() => setActiveTab('feed')}>Publicaciones</button>
-                            
-                            {/* NUEVO BOTÓN TORNEOS */}
-                            <button className={`nav-link ${activeTab === 'tournaments' ? 'active' : ''}`} onClick={() => setActiveTab('tournaments')}>
-                                Torneos
-                            </button>
 
-                            <button className={`nav-link ${activeTab === 'about' ? 'active' : ''}`} onClick={() => setActiveTab('about')}>Info</button>
-                            <button className={`nav-link ${activeTab === 'rules' ? 'active' : ''}`} onClick={() => setActiveTab('rules')}>Reglas</button>
-                            <button className={`nav-link ${activeTab === 'staff' ? 'active' : ''}`} onClick={() => setActiveTab('staff')}>Staff</button>
-                        </nav>
-                        <div className="nav-search">
-                            <FaSearch />
-                            <input type="text" placeholder="Buscar..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
+                <div className="header-content container-limit">
+                    <div className="profile-grid">
+                        <div className="avatar-container">
+                            {/* Avatar usa variable --hero-avatar */}
+                            <div className="tech-avatar"></div>
+                            <div className="status-light"></div>
+                        </div>
+
+                        <div className="profile-info">
+                            <h1 className="glitch-text">{communityData.name}</h1>
+                            <div className="badges-row">
+                                <span className="tech-badge official">OFICIAL</span>
+                                <span className="tech-badge region">{communityData.region}</span>
+                            </div>
+                            <div className="stats-row">
+                                <span className="stat"><strong className="neon-text">{communityData.stats.members}</strong> Miembros</span>
+                                <span className="stat"><strong className="neon-text">{communityData.stats.online}</strong> Online</span>
+                            </div>
+                        </div>
+
+                        <div className="profile-actions">
+                            <button className="btn-tech glass"><FaShareAlt/> Compartir</button>
+                            <button className={`btn-tech neon ${isJoined ? 'active' : ''}`} onClick={handleJoin}>
+                                {isJoined ? "MIEMBRO" : "UNIRSE"}
+                            </button>
+                            <button className="btn-tech glass icon-only"><FaEllipsisH/></button>
                         </div>
                     </div>
                 </div>
+
+                <div className="tech-nav-bar">
+    <div className="container-limit nav-flex">
+        {/* AGREGUÉ CLASE AQUÍ PARA FORZAR EL FLEXBOX */}
+        <nav className="nav-menu-container">
+            {['feed', 'tournaments', 'about', 'rules', 'staff'].map(tab => (
+                <button 
+                    key={tab}
+                    className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
+                    onClick={() => setActiveTab(tab)}
+                >
+                    {tab.toUpperCase()}
+                </button>
+            ))}
+        </nav>
+
+        <div className="search-box">
+            <FaSearch/>
+            <input 
+                type="text" 
+                placeholder="BUSCAR..." 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)}
+            />
+        </div>
+    </div>
+</div>
             </header>
 
-            <main className="community-content container-limit">
+            <main className="main-content container-limit">
                 {activeTab === 'feed' && renderFeed()}
-                {activeTab === 'tournaments' && renderTournaments()} {/* AQUÍ SE RENDERIZA */}
-                {activeTab === 'about' && renderAbout()}
+                {activeTab === 'tournaments' && renderTournaments()}
                 {activeTab === 'rules' && renderRules()}
+                {activeTab === 'about' && renderAbout()}
                 {activeTab === 'staff' && renderStaff()}
             </main>
         </div>

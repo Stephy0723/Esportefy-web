@@ -1,40 +1,8 @@
-/* =========================================
-   1. VARIABLES DE TEMA (DINÁMICAS)
+﻿/* =========================================
+   AUTH REGISTER â€” Usa variables de index.css
    ========================================= */
 
-/* --- TEMA OSCURO (Por Defecto) --- */
-:root {
-    /* Fondos y Textos Base */
-    --bg-page: #09090b;       /* Fondo "Zinc 950" (Negro elegante) */
-    --text-main: #ffffff;     /* Texto Blanco */
-    --text-muted: #a1a1aa;    /* Gris Suave */
-    
-    /* Colores de Marca */
-    --brand-color: #8EDB15;   /* VERDE NEÓN */
-    --brand-hover: #7ac111;   /* Verde un poco más oscuro para hover */
-    --btn-text: #000000;      /* Texto negro dentro del botón verde */
-
-    /* Inputs */
-    --input-border: #3f3f46;  /* Línea gris oscura en reposo */
-    --input-focus: var(--brand-color); /* Línea verde al escribir */
-    
-    /* Variable técnica para el autocompletado de Chrome */
-    --autofill-bg: #09090b;   
-}
-
-/* --- TEMA CLARO (Se activa si el contenedor tiene la clase .light-mode) --- */
-.light-mode {
-    --bg-page: #ffffff;       /* Fondo Blanco Puro */
-    --text-main: #18181b;     /* Texto Negro */
-    --text-muted: #71717a;    /* Gris Oscuro */
-    
-    --input-border: #d4d4d8;  /* Línea gris clara en reposo */
-    --input-focus: #65a30d;   /* Verde un poco más oscuro para contraste en blanco */
-    
-    --autofill-bg: #ffffff;
-}
-
-/* Reset básico */
+/* Reset bÃ¡sico */
 * { box-sizing: border-box; }
 
 /* =========================================
@@ -43,7 +11,7 @@
 .auth-container-split {
     display: flex;
     min-height: 100vh;
-    background-color: var(--bg-page); /* ¡Aquí ocurre la magia del cambio de color! */
+    background-color: var(--bg-page);
     color: var(--text-main);
     font-family: 'Inter', system-ui, sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -55,7 +23,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 40px 80px; /* Espacio de respiración (Sistema de 8pts) */
+    padding: 40px 80px; /* Espacio de respiraciÃ³n (Sistema de 8pts) */
     background-color: var(--bg-page);
     position: relative;
     max-width: 600px;
@@ -82,25 +50,25 @@
 }
 
 /* =========================================
-   3. INPUTS: ESTILO "SOLO LÍNEA"
+   3. INPUTS: ESTILO "SOLO LÃNEA"
    ========================================= */
 .input-row {
     display: flex;
-    align-items: flex-end; /* Alinea el texto del label con la línea base */
+    align-items: flex-end; /* Alinea el texto del label con la lÃ­nea base */
     margin-bottom: 30px;
     gap: 20px;
 }
 
-/* Etiqueta (Email, Contraseña...) */
+/* Etiqueta (Email, ContraseÃ±a...) */
 .input-row label {
-    width: 140px;          /* Ancho fijo para alineación perfecta */
+    width: 140px;          /* Ancho fijo para alineaciÃ³n perfecta */
     flex-shrink: 0;
     color: var(--text-muted);
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     text-align: left;
-    padding-bottom: 10px;  /* Separación visual con la línea */
+    padding-bottom: 10px;  /* SeparaciÃ³n visual con la lÃ­nea */
     letter-spacing: 1px;
 }
 
@@ -114,7 +82,7 @@
     width: 100%;
     background-color: transparent !important; /* SIN FONDO */
     border: none !important;
-    border-bottom: 1px solid var(--input-border) !important; /* SOLO LÍNEA ABAJO */
+    border-bottom: 1px solid var(--border-color) !important; /* SOLO LÃNEA ABAJO */
     border-radius: 0 !important;
     padding: 10px 35px 10px 0;
     
@@ -136,7 +104,7 @@
 
 /* AL HACER CLICK (FOCUS) */
 .input-wrapper input:focus {
-    border-bottom: 2px solid var(--input-focus) !important; /* La línea se pone VERDE */
+    border-bottom: 2px solid var(--primary) !important; /* La lÃ­nea se pone VERDE */
     background: transparent !important;
 }
 
@@ -144,7 +112,7 @@
 .input-wrapper input:-webkit-autofill,
 .input-wrapper input:-webkit-autofill:hover, 
 .input-wrapper input:-webkit-autofill:focus {
-    /* "Pinta" el fondo del mismo color que la página usando una sombra interior */
+    /* "Pinta" el fondo del mismo color que la pÃ¡gina usando una sombra interior */
     -webkit-box-shadow: 0 0 0 30px var(--bg-page) inset !important;
     -webkit-text-fill-color: var(--text-main) !important;
     transition: background-color 5000s ease-in-out 0s;
@@ -154,15 +122,15 @@
 .input-wrapper i {
     position: absolute;
     right: 0;
-    bottom: 10px; /* Alineado con la línea */
+    bottom: 10px; /* Alineado con la lÃ­nea */
     color: var(--text-muted);
     font-size: 1.2rem;
     pointer-events: none;
     transition: color 0.3s;
 }
 
-/* El icono también se pone verde al enfocar */
-.input-wrapper input:focus + i { color: var(--input-focus); }
+/* El icono tambiÃ©n se pone verde al enfocar */
+.input-wrapper input:focus + i { color: var(--primary); }
 .input-wrapper i.toggle-pass { pointer-events: auto; cursor: pointer; }
 
 
@@ -189,28 +157,28 @@
 
 /* Checkbox personalizado */
 .remember-me input[type="checkbox"] {
-    accent-color: var(--brand-color); /* VERDE */
+    accent-color: var(--primary); /* VERDE */
     width: 16px; 
     height: 16px;
     cursor: pointer;
 }
 
 /* =========================================
-   5. BOTONES DE ACCIÓN (Atrás y Enviar)
+   5. BOTONES DE ACCIÃ“N (AtrÃ¡s y Enviar)
    ========================================= */
 .form-actions {
     margin-top: 40px;
     display: flex;
-    gap: 15px; /* Separación entre botones */
+    gap: 15px; /* SeparaciÃ³n entre botones */
     width: 100%;
 }
 
-/* BOTÓN PRINCIPAL (VERDE NEÓN) */
+/* BOTÃ“N PRINCIPAL (VERDE NEÃ“N) */
 .btn-primary {
-    flex: 2; /* Ocupa el 66% del ancho (Proporción 2) */
+    flex: 2; /* Ocupa el 66% del ancho (ProporciÃ³n 2) */
     padding: 16px;
-    background: var(--brand-color);
-    color: var(--btn-text); /* Texto Negro */
+    background: var(--primary);
+    color: var(--text-inverted); /* Texto Negro */
     border: none;
     border-radius: 4px;
     
@@ -223,7 +191,7 @@
 }
 
 .btn-primary:hover { 
-    background: var(--brand-hover); 
+    background: var(--primary-hover); 
     transform: translateY(-2px);
 }
 
@@ -233,13 +201,13 @@
     transform: none;
 }
 
-/* BOTÓN SECUNDARIO / ATRÁS (TRANSPARENTE CON BORDE) */
+/* BOTÃ“N SECUNDARIO / ATRÃS (TRANSPARENTE CON BORDE) */
 .btn-secondary {
-    flex: 1; /* Ocupa el 33% del ancho (Proporción 1) */
+    flex: 1; /* Ocupa el 33% del ancho (ProporciÃ³n 1) */
     padding: 16px; /* Misma altura que el primario */
     
     background: transparent !important;
-    border: 1px solid var(--input-border) !important; /* Borde gris fino */
+    border: 1px solid var(--border-color) !important; /* Borde gris fino */
     color: var(--text-muted) !important;
     
     border-radius: 4px;
@@ -249,7 +217,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     
-    /* Centrado flex para asegurar alineación del texto */
+    /* Centrado flex para asegurar alineaciÃ³n del texto */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -264,7 +232,7 @@
 /* Footer Links */
 .footer-text { margin-top: 30px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
 .footer-text a { color: var(--text-main); text-decoration: none; font-weight: 700; transition: color 0.2s; }
-.footer-text a:hover { color: var(--brand-color); }
+.footer-text a:hover { color: var(--primary); }
 
 /* =========================================
    6. PANEL DERECHO (IMAGEN)
@@ -304,23 +272,23 @@
     .input-row label { width: 100%; padding-bottom: 0; margin-bottom: 5px; }
 }
 /* =========================================
-   STEP INDICATOR (CÍRCULOS 1-2-3-4)
+   STEP INDICATOR (CÃRCULOS 1-2-3-4)
    ========================================= */
 .step-indicator {
     display: flex;
     justify-content: center; /* Centrado en la pantalla */
     align-items: center;
-    margin-bottom: 40px;     /* Espacio antes del título */
+    margin-bottom: 40px;     /* Espacio antes del tÃ­tulo */
     width: 100%;
 }
 
-/* Contenedor de cada paso (Círculo + Línea) */
+/* Contenedor de cada paso (CÃ­rculo + LÃ­nea) */
 .step-item {
     display: flex;
     align-items: center;
 }
 
-/* EL CÍRCULO */
+/* EL CÃRCULO */
 .step-circle {
     width: 35px;
     height: 35px;
@@ -331,43 +299,43 @@
     border: 2px solid var(--text-muted); 
     color: var(--text-muted);
     
-    /* Centrar el número */
+    /* Centrar el nÃºmero */
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
     font-size: 0.9rem;
     position: relative;
-    z-index: 2; /* Para que quede encima de la línea */
+    z-index: 2; /* Para que quede encima de la lÃ­nea */
     transition: all 0.3s ease;
 }
 
-/* LA LÍNEA CONECTORA */
+/* LA LÃNEA CONECTORA */
 .step-line {
-    width: 50px;           /* Largo de la línea */
+    width: 50px;           /* Largo de la lÃ­nea */
     height: 2px;           /* Grosor */
-    background-color: var(--input-border); /* Gris por defecto */
-    margin: 0 8px;         /* Espacio entre círculo y línea */
+    background-color: var(--border-color); /* Gris por defecto */
+    margin: 0 8px;         /* Espacio entre cÃ­rculo y lÃ­nea */
     transition: all 0.3s ease;
 }
 
 /* --- ESTADO ACTIVO (Cuando step >= num) --- */
 
-/* 1. El Círculo se pone VERDE NEÓN */
+/* 1. El CÃ­rculo se pone VERDE NEÃ“N */
 .step-item.active .step-circle {
-    border-color: var(--brand-color);    /* Borde Verde */
-    background-color: var(--brand-color); /* Relleno Verde */
-    color: #000000;                      /* Número Negro (Contraste) */
-    box-shadow: 0 0 10px rgba(142, 219, 21, 0.4); /* Pequeño brillo neon */
+    border-color: var(--primary);    /* Borde Verde */
+    background-color: var(--primary); /* Relleno Verde */
+    color: var(--text-inverted);                      /* NÃºmero Negro (Contraste) */
+    box-shadow: 0 0 10px rgba(142, 219, 21, 0.4); /* PequeÃ±o brillo neon */
 }
 
-/* 2. La Línea se pone VERDE NEÓN (Truco visual) */
-/* Nota: Esto pintará la línea a la derecha del círculo activo */
+/* 2. La LÃ­nea se pone VERDE NEÃ“N (Truco visual) */
+/* Nota: Esto pintarÃ¡ la lÃ­nea a la derecha del cÃ­rculo activo */
 .step-item.active .step-line {
-    background-color: var(--brand-color);
+    background-color: var(--primary);
 }
 
-/* Título del paso (Ej: "Información Real") */
+/* TÃ­tulo del paso (Ej: "InformaciÃ³n Real") */
 .step-title {
     font-size: 1.8rem;
     color: var(--text-main);
@@ -403,17 +371,17 @@
     }
     
     .step-line {
-        width: 30px; /* Líneas más cortas en pantalla pequeña */
+        width: 30px; /* LÃ­neas mÃ¡s cortas en pantalla pequeÃ±a */
     }
 }
 /* =========================================
-   GRID DE JUEGOS (Dinámico Blanco/Negro)
+   GRID DE JUEGOS (DinÃ¡mico Blanco/Negro)
    ========================================= */
 
-/* 1. Contenedor de la cuadrícula */
+/* 1. Contenedor de la cuadrÃ­cula */
 .games-grid {
     display: grid;
-    /* Columnas automáticas: mínimo 100px de ancho, máximo lo que quepa */
+    /* Columnas automÃ¡ticas: mÃ­nimo 100px de ancho, mÃ¡ximo lo que quepa */
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 15px;
     margin-top: 20px;
@@ -422,11 +390,11 @@
 
 /* 2. La Tarjeta del Juego INDIVIDUAL */
 .game-card-pro {
-    /* IMPORTANTE: Fondo transparente para tomar el color de la página */
+    /* IMPORTANTE: Fondo transparente para tomar el color de la pÃ¡gina */
     background-color: transparent; 
     
-    /* Borde dinámico: gris oscuro en tema oscuro, gris claro en tema claro */
-    border: 1px solid var(--input-border); 
+    /* Borde dinÃ¡mico: gris oscuro en tema oscuro, gris claro en tema claro */
+    border: 1px solid var(--border-color); 
     
     border-radius: 12px;
     padding: 20px 10px;
@@ -451,7 +419,7 @@
 /* 4. ESTADO SELECCIONADO (La magia del Verde) */
 /* La clase .selected se agrega con tu JS cuando haces click */
 .game-card-pro.selected {
-    border-color: var(--brand-color);       /* Borde Verde Neón */
+    border-color: var(--primary);       /* Borde Verde NeÃ³n */
     background-color: rgba(142, 219, 21, 0.05); /* Fondo verde muy, muy suave */
     box-shadow: 0 0 15px rgba(142, 219, 21, 0.15); /* Resplandor verde */
 }
@@ -491,7 +459,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     
-    /* El color del texto cambia automáticamente */
+    /* El color del texto cambia automÃ¡ticamente */
     color: var(--text-muted); 
 }
 
@@ -513,7 +481,7 @@
 .level-card {
     flex: 1; /* Los 3 ocupan el mismo ancho */
     background-color: transparent;
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 20px 10px;
     
@@ -556,14 +524,14 @@
 
 /* ESTADO SELECCIONADO (NIVEL) */
 .level-card.selected {
-    border-color: var(--brand-color);           /* Borde Verde */
+    border-color: var(--primary);           /* Borde Verde */
     background-color: rgba(142, 219, 21, 0.05); /* Fondo verde sutil */
     box-shadow: 0 0 15px rgba(142, 219, 21, 0.1);
     transform: translateY(-2px);
 }
 
 .level-card.selected .level-icon {
-    color: var(--brand-color); /* Icono se pone verde */
+    color: var(--primary); /* Icono se pone verde */
 }
 
 /* Hover simple */
@@ -572,7 +540,7 @@
 }
 
 
-/* --- 2. PLATAFORMAS (CHIPS / PÍLDORAS) --- */
+/* --- 2. PLATAFORMAS (CHIPS / PÃLDORAS) --- */
 .platforms-row {
     display: flex;
     flex-wrap: wrap; /* Permite que bajen si no caben */
@@ -582,8 +550,8 @@
 
 .platform-chip {
     padding: 10px 20px;
-    border: 1px solid var(--input-border);
-    border-radius: 50px; /* Forma de píldora redondeada */
+    border: 1px solid var(--border-color);
+    border-radius: 50px; /* Forma de pÃ­ldora redondeada */
     background-color: transparent;
     
     color: var(--text-muted);
@@ -601,9 +569,9 @@
 
 /* ESTADO SELECCIONADO (PLATAFORMA) */
 .platform-chip.selected {
-    border-color: var(--brand-color);
-    background-color: var(--brand-color); /* Fondo Verde sólido */
-    color: #000000; /* Texto negro para leerse bien sobre el verde */
+    border-color: var(--primary);
+    background-color: var(--primary); /* Fondo Verde sÃ³lido */
+    color: var(--text-inverted); /* Texto negro para leerse bien sobre el verde */
     font-weight: 800;
     box-shadow: 0 0 10px rgba(142, 219, 21, 0.4);
 }
@@ -624,7 +592,7 @@
 
 .goal-card {
     background-color: transparent;
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 20px;
     cursor: pointer;
@@ -653,11 +621,11 @@
 
 /* ESTADO SELECCIONADO (OBJETIVO) */
 .goal-card.selected {
-    border-color: var(--brand-color);
+    border-color: var(--primary);
     background-color: rgba(142, 219, 21, 0.05);
 }
 
-.goal-card.selected i { color: var(--brand-color); }
+.goal-card.selected i { color: var(--primary); }
 .goal-card.selected span { color: var(--text-main); }
 
 .goal-card:hover { transform: translateY(-2px); }
@@ -665,18 +633,18 @@
 /* UTILIDAD MARGIN TOP */
 .mt-4 { margin-top: 1.5rem !important; }
 
-/* RESPONSIVE (MÓVIL) */
+/* RESPONSIVE (MÃ“VIL) */
 @media (max-width: 500px) {
     .levels-row { flex-direction: column; } /* Niveles uno bajo otro */
     .goals-row { grid-template-columns: 1fr; } /* Objetivos uno bajo otro */
     
     .platform-chip {
-        flex: 1; /* Que se estiren en móvil */
+        flex: 1; /* Que se estiren en mÃ³vil */
         justify-content: center;
     }
 }
 /* =========================================
-   CHECKBOX DE TÉRMINOS Y CONDICIONES
+   CHECKBOX DE TÃ‰RMINOS Y CONDICIONES
    ========================================= */
 
 /* Contenedor de la fila (Checkbox + Texto) */
@@ -694,24 +662,24 @@
     -webkit-appearance: none;
     width: 20px;
     height: 20px;
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     background-color: transparent;
     cursor: pointer;
-    margin-top: 2px; /* Ajuste fino para alinear con la primera línea de texto */
+    margin-top: 2px; /* Ajuste fino para alinear con la primera lÃ­nea de texto */
     flex-shrink: 0;  /* Evita que se aplaste */
     position: relative;
 }
 
-/* Cuando está marcado (Verde) */
+/* Cuando estÃ¡ marcado (Verde) */
 .terms-checkbox:checked {
-    background-color: var(--brand-color);
-    border-color: var(--brand-color);
+    background-color: var(--primary);
+    border-color: var(--primary);
 }
 
 /* El "Tick" o palomita (creado con CSS puro) */
 .terms-checkbox:checked::after {
-    content: '✔';
+    content: 'âœ”';
     font-size: 14px;
     color: #000; /* Tick negro sobre fondo verde */
     position: absolute;
@@ -720,7 +688,7 @@
     font-weight: bold;
 }
 
-/* El Texto de los términos */
+/* El Texto de los tÃ©rminos */
 .terms-text {
     font-size: 0.85rem;
     color: var(--text-muted);
@@ -729,7 +697,7 @@
 
 /* LOS ENLACES (Links) dentro del texto */
 .terms-text a {
-    color: var(--brand-color); /* Verde Neón */
+    color: var(--primary); /* Verde NeÃ³n */
     text-decoration: none;
     font-weight: 700;
     transition: all 0.2s ease;
@@ -738,28 +706,28 @@
 
 .terms-text a:hover {
     filter: brightness(1.1);
-    border-bottom-color: var(--brand-color); /* Subrayado al pasar el mouse */
+    border-bottom-color: var(--primary); /* Subrayado al pasar el mouse */
 }
 
 
 /* =========================================
-  /* CRÉDITO DEL DESARROLLADOR (FOOTER)        */
+  /* CRÃ‰DITO DEL DESARROLLADOR (FOOTER)        */
 /* ========================================= */
 .sidebar-credit {
-    margin-top: 15px;       /* Separación del botón de modo oscuro */
-    margin-bottom: 10px;    /* Separación del borde final */
+    margin-top: 15px;       /* SeparaciÃ³n del botÃ³n de modo oscuro */
+    margin-bottom: 10px;    /* SeparaciÃ³n del borde final */
     text-align: center;     /* Centrado */
-    font-size: 11px;        /* Letra pequeña y discreta */
+    font-size: 11px;        /* Letra pequeÃ±a y discreta */
     color: var(--text-color-sidebar);
     opacity: 0.5;           /* Un poco transparente para no distraer */
     transition: 0.3s;
-    white-space: nowrap;    /* Que no se rompa la línea */
+    white-space: nowrap;    /* Que no se rompa la lÃ­nea */
 }
 
-/* El nombre de la empresa en negrita y quizás con color al pasar el mouse */
+/* El nombre de la empresa en negrita y quizÃ¡s con color al pasar el mouse */
 .sidebar-credit strong {
     font-weight: 800;
-    color: var(--text-hover); /* Se pone más oscuro/claro según el tema */
+    color: var(--text-hover); /* Se pone mÃ¡s oscuro/claro segÃºn el tema */
     cursor: default;
 }
 

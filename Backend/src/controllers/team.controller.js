@@ -7,6 +7,7 @@ import crypto from "crypto";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { NOTIF, pushNotification } from './notification.controller.js';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -93,6 +94,9 @@ export const createTeam = async (req, res) => {
         
         // Actualizar al usuario para que vea su nuevo equipo
         await User.findByIdAndUpdate(req.userId, { $push: { teams: savedTeam._id } });
+
+        // Notificar al creador
+        await pushNotification(req.userId, NOTIF.teamCreated(savedTeam.name || parsedFormData?.name));
 
         res.status(201).json({
             message: "Equipo creado",
@@ -190,9 +194,7 @@ const findFirstEmptySlot = (team, slotType) => {
     return list.length;
 };
 
-const pushNotification = async (userId, payload) => {
-    await User.findByIdAndUpdate(userId, { $push: { notifications: payload } });
-};
+// pushNotification imported from notification.controller.js
 
 const RIOT_GAMES = new Set([
     'Valorant',
@@ -269,15 +271,8 @@ export const joinTeam = async (req, res) => {
 
         await team.save();
         await User.updateOne({ _id: req.userId }, { $addToSet: { teams: team._id } });
-        await pushNotification(team.captain, {
-            type: 'team',
-            category: 'team',
-            title: 'Nuevo miembro',
-            source: team.name,
-            message: `${playerPayload.nickname} se unió a tu equipo.`,
-            status: 'unread',
-            visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
-        });
+        await pushNotification(team.captain, NOTIF.teamJoined(team.name, playerPayload.nickname));
+        await pushNotification(req.userId, NOTIF.teamJoinedConfirm(team.name));
         res.status(200).json({ message: "Te has unido al equipo", team });
     } catch (error) {
         res.status(500).json({ message: "Error al unirse al equipo" });
@@ -368,15 +363,7 @@ export const removeMemberFromRoster = async (req, res) => {
 
         if (userId) {
             await User.updateOne({ _id: userId }, { $pull: { teams: teamId } });
-            await pushNotification(userId, {
-                type: 'team',
-                category: 'team',
-                title: 'Fuiste removido del equipo',
-                source: team.name,
-                message: `Has sido removido del equipo ${team.name}.`,
-                status: 'unread',
-                visuals: { icon: 'bx-error-circle', color: '#ff6b6b', glow: false }
-            });
+            await pushNotification(userId, NOTIF.teamRemoved(team.name));
         }
 
         return res.status(200).json({ message: "Jugador removido", team });
@@ -418,15 +405,7 @@ export const requestJoinTeam = async (req, res) => {
             status: 'pending'
         });
         await team.save();
-        await pushNotification(team.captain, {
-            type: 'team',
-            category: 'team',
-            title: 'Nueva solicitud',
-            source: team.name,
-            message: `${player?.nickname || 'Un jugador'} solicitó unirse al equipo.`,
-            status: 'unread',
-            visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
-        });
+        await pushNotification(team.captain, NOTIF.teamJoinRequest(team.name, player?.nickname));
         res.status(200).json({ message: "Solicitud enviada" });
     } catch (error) {
         res.status(500).json({ message: "Error al solicitar ingreso" });
@@ -478,27 +457,11 @@ export const handleJoinRequest = async (req, res) => {
             }
             await User.updateOne({ _id: reqDoc.user }, { $addToSet: { teams: team._id } });
             team.joinRequests = team.joinRequests.filter(r => String(r._id) !== String(requestId));
-            await pushNotification(reqDoc.user, {
-                type: 'team',
-                category: 'team',
-                title: 'Solicitud aprobada',
-                source: team.name,
-                message: `Tu solicitud para unirte a ${team.name} fue aprobada.`,
-                status: 'unread',
-                visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
-            });
+            await pushNotification(reqDoc.user, NOTIF.teamRequestApproved(team.name));
         } else if (action === 'reject') {
             // En rechazo solo eliminamos la solicitud
             team.joinRequests = team.joinRequests.filter(r => String(r._id) !== String(requestId));
-            await pushNotification(reqDoc.user, {
-                type: 'team',
-                category: 'team',
-                title: 'Solicitud rechazada',
-                source: team.name,
-                message: `Tu solicitud para unirte a ${team.name} fue rechazada.`,
-                status: 'unread',
-                visuals: { icon: 'bx-error-circle', color: '#ff6b6b', glow: false }
-            });
+            await pushNotification(reqDoc.user, NOTIF.teamRequestRejected(team.name));
         } else {
             return res.status(400).json({ message: "Acción inválida" });
         }
@@ -558,6 +521,11 @@ export const leaveTeam = async (req, res) => {
 
         await team.save();
         await User.updateOne({ _id: userId }, { $pull: { teams: teamId } });
+
+        // Notificar al capitán que alguien abandonó
+        const leaver = await User.findById(userId).select('userName fullName');
+        await pushNotification(team.captain, NOTIF.teamLeft(team.name, leaver?.userName || leaver?.fullName));
+
         res.status(200).json({ message: "Has abandonado el equipo correctamente", team });
     } catch (error) {
         res.status(500).json({ message: "Error al abandonar el equipo", error: error.message });
@@ -626,6 +594,16 @@ export const deleteTeam = async (req, res) => {
         const isAdmin = user?.isAdmin === true;
         if (!isCaptain && !isAdmin) {
             return res.status(403).json({ message: "No tienes permisos para eliminar este equipo" });
+        }
+
+        // Notify all roster members before deletion
+        const allMembers = [
+            ...(Array.isArray(team.roster?.starters) ? team.roster.starters : []),
+            ...(Array.isArray(team.roster?.subs) ? team.roster.subs : []),
+            team.roster?.coach
+        ].filter(p => p?.user && String(p.user) !== String(req.userId));
+        for (const member of allMembers) {
+            await pushNotification(member.user, NOTIF.teamDeleted(team.name));
         }
 
         await Team.deleteOne({ _id: teamId });

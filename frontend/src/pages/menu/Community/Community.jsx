@@ -12,6 +12,7 @@ import {
 import { US, DO, MX, AR, CO, ES, CL, PE, VE, BR } from 'country-flag-icons/react/3x2';
 
 import './Community.css';
+import PageHud from '../../../components/PageHud/PageHud';
 
 // --- TUS IMPORTS DE IMÁGENES ---
 import FortniteImg from '../../../assets/comunidad/Fortnite.jpg';
@@ -1399,6 +1400,7 @@ const Community = () => {
 
     return (
         <div className="dashboard-wrapper">
+            <PageHud page="COMUNIDAD" />
             <div className="dashboard-container">
                 <header className="dashboard-header">
                     <div className="header-text">

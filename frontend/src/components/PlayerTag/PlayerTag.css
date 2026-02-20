@@ -1,71 +1,986 @@
-/* --- BASE DEL TAG --- */
-.player-tag-container {
-    position: relative;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    
-    /* Ajustes para la imagen de fondo */
-    background-size: cover;      /* Cubre todo el espacio */
-    background-position: center; /* Centra la imagen */
-    background-repeat: no-repeat;
-    
-    border-radius: 12px; 
-    font-family: 'Inter', sans-serif; /* O tu fuente principal */
-    font-weight: 900; /* Texto muy grueso */
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: white; /* Color del texto blanco */
-    
-    /* --- CAMBIO: SOMBRA NEGRA FUERTE PARA CONTRASTE --- */
-    /* Varias capas de sombra para un efecto de borde negro */
-    text-shadow: 
-        0px 2px 4px rgba(0,0,0,1),
-        0px 4px 8px rgba(0,0,0,0.8),
-        -2px 0px 4px rgba(0,0,0,0.6),
-        2px 0px 4px rgba(0,0,0,0.6);
+/* ═══════════════════════════════════════════════════════════
+   PLAYER TAG — Premium CSS-Only Nameplate System v2
+   20 unique designs · Gradient text · Animated hover effects
+   ═══════════════════════════════════════════════════════════ */
 
-    /* Sombra suave de la caja */
-    box-shadow: 0 6px 15px rgba(0,0,0,0.3); 
-    overflow: hidden;
-    transition: transform 0.2s, filter 0.2s;
-    user-select: none;
-    
-    /* --- CAMBIO: SIN BORDE BLANCO --- */
-    border: none; 
+
+/* ─────────────────────────────────────────────────────────
+   1 · BASE STRUCTURE
+   ───────────────────────────────────────────────────────── */
+.player-tag {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1),
+              box-shadow 0.35s ease,
+              filter 0.35s ease,
+              border-radius 0.35s ease;
+  isolation: isolate;
 }
 
-.player-tag-container:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.5); 
-    filter: brightness(1.05); 
+/* Background layer */
+.player-tag .tag-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  transition: transform 0.35s ease, filter 0.35s ease;
 }
 
-/* Efecto de brillo superior (sutil) */
-.tag-shine {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 50%;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
-    pointer-events: none;
+/* Accent decoration layer */
+.player-tag .tag-accent {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
 }
 
-/* --- TAMAÑOS --- */
-.size-small { 
-    font-size: 0.75rem; 
-    padding: 6px 16px; 
-    border-radius: 8px; 
-    min-width: 100px;
+/* Glass shine layer */
+.player-tag .tag-shine {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 45%;
+  z-index: 2;
+  border-radius: inherit;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
+  pointer-events: none;
+  transition: opacity 0.35s ease, height 0.35s ease;
 }
 
-.size-normal { 
-    font-size: 1.2rem; /* Letra un poco más grande */
-    padding: 12px 30px; 
-    min-width: 150px;
+/* Player name text — base */
+.player-tag .tag-name {
+  position: relative;
+  z-index: 3;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  transition: letter-spacing 0.35s ease,
+              transform 0.35s cubic-bezier(.4,0,.2,1),
+              filter 0.35s ease,
+              text-shadow 0.35s ease;
 }
 
-.size-large { 
-    font-size: 1.8rem; 
-    padding: 16px 40px; 
-    border-radius: 18px; 
-    min-width: 220px;
+
+/* ─────────────────────────────────────────────────────────
+   2 · SIZES
+   ───────────────────────────────────────────────────────── */
+.player-tag.size-small {
+  padding: 5px 14px;
+  border-radius: 7px;
+  min-width: 90px;
+}
+.player-tag.size-small .tag-name {
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+}
+
+.player-tag.size-normal {
+  padding: 10px 28px;
+  min-width: 140px;
+}
+.player-tag.size-normal .tag-name {
+  font-size: 1.1rem;
+}
+
+.player-tag.size-large {
+  padding: 14px 38px;
+  border-radius: 14px;
+  min-width: 200px;
+}
+.player-tag.size-large .tag-name {
+  font-size: 1.6rem;
+  letter-spacing: 2px;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   3 · TAG DESIGNS — Gradient Text + Hover FX
+   ───────────────────────────────────────────────────────── */
+
+
+/* ═══════ 1 · OBSIDIAN ═══════
+   Silver chrome gradient text — hover: spread letters + lift */
+.tag-obsidian .tag-bg {
+  background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #0d0d0d, #1a1a2e);
+  background-size: 200% 200%;
+  animation: tagShift 6s ease infinite;
+}
+.tag-obsidian .tag-accent {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.04), transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(255,255,255,0.03), transparent 40%);
+}
+.tag-obsidian .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent 45%);
+}
+.tag-obsidian {
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.tag-obsidian .tag-name {
+  background: linear-gradient(135deg, #666, #e0e0e0, #999, #f0f0f0, #888);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextShimmer 4s ease infinite;
+  text-shadow: none;
+}
+.tag-obsidian:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.7), 0 0 20px rgba(180,180,200,0.08);
+}
+.tag-obsidian:hover .tag-name {
+  letter-spacing: 3px;
+  filter: drop-shadow(0 0 6px rgba(200,200,220,0.3));
+}
+
+
+/* ═══════ 2 · NEON PULSE ═══════
+   Cyan-purple gradient text — hover: neon glow surge + skew */
+.tag-neon-pulse .tag-bg {
+  background: linear-gradient(110deg, #0d0221, #150535, #0d0221);
+}
+.tag-neon-pulse .tag-accent {
+  border: 1px solid rgba(0,242,255,0.5);
+  box-shadow: inset 0 0 15px rgba(0,242,255,0.1), inset 0 0 30px rgba(188,19,254,0.05);
+}
+.tag-neon-pulse .tag-accent::before {
+  content: "";
+  position: absolute;
+  top: 50%; left: -20%;
+  width: 140%; height: 1px;
+  background: linear-gradient(90deg, transparent, #00f2ff, #bc13fe, transparent);
+  opacity: 0.6;
+  animation: tagScanH 3s ease-in-out infinite;
+}
+.tag-neon-pulse {
+  box-shadow: 0 0 12px rgba(0,242,255,0.3), 0 0 30px rgba(188,19,254,0.15);
+}
+.tag-neon-pulse .tag-name {
+  background: linear-gradient(90deg, #00f2ff, #bc13fe, #ff0055, #00f2ff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 3s linear infinite;
+  text-shadow: none;
+}
+.tag-neon-pulse:hover {
+  transform: translateY(-2px) skewX(-2deg);
+  box-shadow: 0 0 22px rgba(0,242,255,0.6), 0 0 50px rgba(188,19,254,0.3);
+}
+.tag-neon-pulse:hover .tag-name {
+  filter: drop-shadow(0 0 10px rgba(0,242,255,0.7)) drop-shadow(0 0 20px rgba(188,19,254,0.4));
+}
+
+
+/* ═══════ 3 · GOLDEN ELITE ═══════
+   Animated gold shimmer text — hover: glow + expand */
+.tag-golden-elite .tag-bg {
+  background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C, #FCF6BA);
+  background-size: 300% 300%;
+  animation: tagShift 5s ease infinite;
+}
+.tag-golden-elite .tag-accent {
+  background: repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(184,135,40,0.15) 18px, rgba(184,135,40,0.15) 19px);
+}
+.tag-golden-elite .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.35), transparent 50%);
+}
+.tag-golden-elite {
+  border: 1px solid rgba(170,119,28,0.5);
+  box-shadow: 0 4px 14px rgba(170,119,28,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.tag-golden-elite .tag-name {
+  background: linear-gradient(135deg, #3a2a00, #1a1000, #4a3200, #2a1800, #3a2a00);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextShimmer 5s ease infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 1px rgba(184,135,40,0.3));
+}
+.tag-golden-elite:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 6px 22px rgba(170,119,28,0.5), 0 0 30px rgba(255,215,0,0.15);
+}
+.tag-golden-elite:hover .tag-name {
+  letter-spacing: 2.5px;
+  filter: drop-shadow(0 0 6px rgba(255,215,0,0.6));
+}
+
+
+/* ═══════ 4 · CRIMSON FURY ═══════
+   Fire-red gradient text — hover: shake + intense glow */
+.tag-crimson-fury .tag-bg {
+  background: linear-gradient(135deg, #1a0000, #4a0000, #8b0000, #4a0000, #1a0000);
+  background-size: 250% 100%;
+  animation: tagShift 4s ease infinite;
+}
+.tag-crimson-fury .tag-accent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,0,0,0.08) 50%, transparent 70%),
+              linear-gradient(-45deg, transparent 30%, rgba(255,0,0,0.06) 50%, transparent 70%);
+  animation: tagShift 3s ease infinite reverse;
+}
+.tag-crimson-fury {
+  border: 1px solid rgba(139,0,0,0.6);
+  box-shadow: 0 4px 16px rgba(139,0,0,0.4), 0 0 25px rgba(255,0,0,0.1);
+}
+.tag-crimson-fury .tag-name {
+  background: linear-gradient(90deg, #ff4444, #ff8800, #ffcc00, #ff4444, #ff0000);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 2.5s linear infinite;
+  text-shadow: none;
+}
+.tag-crimson-fury:hover {
+  transform: translateY(-2px);
+  animation: tagMicroShake 0.3s ease-in-out 2;
+  box-shadow: 0 6px 25px rgba(139,0,0,0.6), 0 0 45px rgba(255,0,0,0.2);
+}
+.tag-crimson-fury:hover .tag-name {
+  filter: drop-shadow(0 0 8px rgba(255,0,0,0.6)) drop-shadow(0 0 18px rgba(255,100,0,0.3));
+}
+
+
+/* ═══════ 5 · ARCTIC FROST ═══════
+   Icy blue gradient text — hover: frost blur + expand */
+.tag-arctic-frost .tag-bg {
+  background: linear-gradient(135deg, #e0f7fa, #b2ebf2, #e0f7fa, #fff, #b2ebf2);
+  background-size: 300% 300%;
+  animation: tagShift 8s ease infinite;
+}
+.tag-arctic-frost .tag-accent {
+  background: radial-gradient(ellipse at 15% 40%, rgba(165,242,243,0.3), transparent 50%),
+              radial-gradient(ellipse at 85% 60%, rgba(200,240,255,0.25), transparent 50%);
+}
+.tag-arctic-frost .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.5), transparent 55%);
+}
+.tag-arctic-frost {
+  border: 1px solid rgba(165,242,243,0.6);
+  box-shadow: 0 4px 14px rgba(165,242,243,0.3), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.tag-arctic-frost .tag-name {
+  background: linear-gradient(135deg, #0a4a5e, #1a7a8e, #0a3a4e, #2a8a9e, #0a4a5e);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextShimmer 6s ease infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(165,242,243,0.4));
+}
+.tag-arctic-frost:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 22px rgba(165,242,243,0.4), 0 0 30px rgba(200,240,255,0.2);
+}
+.tag-arctic-frost:hover .tag-name {
+  letter-spacing: 3px;
+  filter: drop-shadow(0 0 8px rgba(165,242,243,0.5)) drop-shadow(0 0 16px rgba(200,240,255,0.3));
+}
+
+
+/* ═══════ 6 · TOXIC VENOM ═══════
+   Acid green gradient text — hover: toxic pulse + letter warp */
+.tag-toxic-venom .tag-bg {
+  background: linear-gradient(135deg, #0a1a0a, #0d2b0d, #1a3a1a, #0d2b0d);
+}
+.tag-toxic-venom .tag-accent {
+  border: 1px solid rgba(57,255,20,0.4);
+  box-shadow: inset 0 0 18px rgba(57,255,20,0.08);
+}
+.tag-toxic-venom .tag-accent::before {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #39ff14, transparent);
+  animation: tagPulseGlow 2s ease-in-out infinite;
+}
+.tag-toxic-venom {
+  box-shadow: 0 4px 14px rgba(57,255,20,0.2), 0 0 20px rgba(57,255,20,0.08);
+}
+.tag-toxic-venom .tag-name {
+  background: linear-gradient(90deg, #39ff14, #7fff00, #00ff88, #39ff14);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 3s linear infinite;
+  text-shadow: none;
+}
+.tag-toxic-venom:hover {
+  transform: translateY(-2px) scaleX(1.04);
+  box-shadow: 0 6px 24px rgba(57,255,20,0.35), 0 0 40px rgba(57,255,20,0.15);
+}
+.tag-toxic-venom:hover .tag-name {
+  filter: drop-shadow(0 0 8px rgba(57,255,20,0.7)) drop-shadow(0 0 18px rgba(57,255,20,0.3));
+  letter-spacing: 2.5px;
+}
+
+
+/* ═══════ 7 · VIOLET DREAM ═══════
+   Purple-pink gradient text — hover: dreamy float + soft glow */
+.tag-violet-dream .tag-bg {
+  background: linear-gradient(135deg, #2d1b4e, #4a2d7a, #6b3fa0, #4a2d7a, #2d1b4e);
+  background-size: 250% 100%;
+  animation: tagShift 7s ease infinite;
+}
+.tag-violet-dream .tag-accent {
+  background: radial-gradient(ellipse at 20% 30%, rgba(230,230,250,0.1), transparent 60%),
+              radial-gradient(ellipse at 80% 70%, rgba(186,85,211,0.08), transparent 60%);
+}
+.tag-violet-dream .tag-shine {
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(230,230,250,0.15), transparent);
+}
+.tag-violet-dream {
+  border: 1px solid rgba(186,85,211,0.3);
+  box-shadow: 0 4px 18px rgba(75,0,130,0.3), 0 0 25px rgba(186,85,211,0.1);
+}
+.tag-violet-dream .tag-name {
+  background: linear-gradient(135deg, #e6b0ff, #ff69b4, #c084fc, #e6b0ff, #dda0dd);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextShimmer 5s ease infinite;
+  text-shadow: none;
+}
+.tag-violet-dream:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(75,0,130,0.4), 0 0 40px rgba(186,85,211,0.15);
+}
+.tag-violet-dream:hover .tag-name {
+  filter: drop-shadow(0 0 10px rgba(186,85,211,0.5));
+}
+
+
+/* ═══════ 8 · SUNSET BLAZE ═══════
+   Rainbow sunset text — hover: warm glow + drift */
+.tag-sunset-blaze .tag-bg {
+  background: linear-gradient(135deg, #ff5f6d, #ffc371, #ff9a56, #ffc371);
+  background-size: 300% 300%;
+  animation: tagShift 5s ease infinite;
+}
+.tag-sunset-blaze .tag-accent {
+  background: radial-gradient(ellipse at 30% 40%, rgba(255,255,255,0.12), transparent 50%);
+}
+.tag-sunset-blaze .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent 50%);
+}
+.tag-sunset-blaze {
+  border: 1px solid rgba(255,160,80,0.4);
+  box-shadow: 0 4px 16px rgba(255,95,109,0.3), 0 0 20px rgba(255,195,113,0.15);
+}
+.tag-sunset-blaze .tag-name {
+  background: linear-gradient(90deg, #fff, #fff5e0, #fffaf0, #fff);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextShimmer 4s ease infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 3px rgba(200,80,40,0.4));
+}
+.tag-sunset-blaze:hover {
+  transform: translateY(-3px) translateX(2px);
+  box-shadow: 0 6px 22px rgba(255,95,109,0.4), 0 0 35px rgba(255,195,113,0.2);
+}
+.tag-sunset-blaze:hover .tag-name {
+  letter-spacing: 2px;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.6)) drop-shadow(0 2px 4px rgba(200,80,40,0.5));
+}
+
+
+/* ═══════ 9 · OCEAN DEPTHS ═══════
+   Bioluminescent text — hover: wave motion */
+.tag-ocean-depths .tag-bg {
+  background: linear-gradient(135deg, #001a33, #003366, #004d80, #003366);
+  background-size: 200% 200%;
+  animation: tagShift 8s ease infinite;
+}
+.tag-ocean-depths .tag-accent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 25% 60%, rgba(0,180,220,0.1), transparent 50%),
+              radial-gradient(ellipse at 75% 40%, rgba(0,120,200,0.08), transparent 50%);
+  animation: tagPulseGlow 5s ease-in-out infinite;
+}
+.tag-ocean-depths {
+  border: 1px solid rgba(0,120,200,0.3);
+  box-shadow: 0 4px 18px rgba(0,50,100,0.5), 0 0 20px rgba(0,120,200,0.1);
+}
+.tag-ocean-depths .tag-name {
+  background: linear-gradient(90deg, #00e5ff, #80d4ff, #00b8d4, #80d4ff, #00e5ff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 4s linear infinite;
+  text-shadow: none;
+}
+.tag-ocean-depths:hover {
+  transform: translateY(-2px) skewX(1deg);
+  box-shadow: 0 6px 22px rgba(0,50,100,0.6), 0 0 35px rgba(0,180,220,0.15);
+}
+.tag-ocean-depths:hover .tag-name {
+  filter: drop-shadow(0 0 8px rgba(0,229,255,0.5)) drop-shadow(0 0 18px rgba(0,184,212,0.3));
+  animation: tagTextFlow 1.5s linear infinite;
+}
+
+
+/* ═══════ 10 · PHANTOM ═══════
+   Ghost fade text — hover: materialize + glow */
+.tag-phantom .tag-bg {
+  background: linear-gradient(135deg, #18181b, #27272a, #3f3f46, #27272a, #18181b);
+  background-size: 300% 100%;
+  animation: tagShift 10s ease infinite;
+}
+.tag-phantom .tag-accent {
+  border: 1px solid rgba(255,255,255,0.05);
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  background-size: 400% 100%;
+  animation: tagPhantomSweep 4s ease-in-out infinite;
+}
+.tag-phantom {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+.tag-phantom .tag-name {
+  background: linear-gradient(90deg, rgba(180,180,190,0.4), rgba(220,220,225,0.7), rgba(180,180,190,0.4));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextShimmer 5s ease infinite, tagPhantomText 4s ease-in-out infinite;
+  text-shadow: none;
+}
+.tag-phantom:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6), 0 0 20px rgba(200,200,220,0.06);
+}
+.tag-phantom:hover .tag-name {
+  background: linear-gradient(90deg, #d0d0d5, #ffffff, #d0d0d5);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextShimmer 2s ease infinite;
+  filter: drop-shadow(0 0 6px rgba(200,200,220,0.4));
+}
+
+
+/* ═══════ 11 · DRAGON BLOOD ═══════
+   Red-gold gradient text — hover: flame burst */
+.tag-dragon-blood .tag-bg {
+  background: linear-gradient(135deg, #2a0a0a, #5a1010, #3a0808);
+}
+.tag-dragon-blood .tag-accent {
+  border: 1px solid rgba(255,215,0,0.3);
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.04), transparent),
+              linear-gradient(0deg, rgba(255,215,0,0.06) 0%, transparent 30%);
+}
+.tag-dragon-blood .tag-accent::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, #ffd700 50%, transparent 90%);
+  opacity: 0.7;
+}
+.tag-dragon-blood .tag-accent::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, #ffd700 50%, transparent 90%);
+  opacity: 0.5;
+}
+.tag-dragon-blood {
+  box-shadow: 0 4px 16px rgba(139,0,0,0.4), 0 0 20px rgba(255,215,0,0.08);
+}
+.tag-dragon-blood .tag-name {
+  background: linear-gradient(90deg, #ffd700, #ff6600, #ff0000, #ffd700, #ff8800);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 3s linear infinite;
+  text-shadow: none;
+}
+.tag-dragon-blood:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 22px rgba(139,0,0,0.5), 0 0 35px rgba(255,215,0,0.15);
+}
+.tag-dragon-blood:hover .tag-name {
+  filter: drop-shadow(0 0 8px rgba(255,215,0,0.6)) drop-shadow(0 0 18px rgba(255,100,0,0.3));
+  letter-spacing: 2px;
+}
+
+
+/* ═══════ 12 · EMERALD CROWN ═══════
+   Green-white gradient text — hover: regrow + crown glow */
+.tag-emerald-crown .tag-bg {
+  background: linear-gradient(135deg, #064e3b, #059669, #10b981, #059669, #064e3b);
+  background-size: 250% 100%;
+  animation: tagShift 6s ease infinite;
+}
+.tag-emerald-crown .tag-accent {
+  border-top: 2px solid rgba(255,215,0,0.5);
+  border-bottom: 1px solid rgba(255,215,0,0.25);
+}
+.tag-emerald-crown .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent 50%);
+}
+.tag-emerald-crown {
+  box-shadow: 0 4px 16px rgba(5,150,105,0.35), 0 0 20px rgba(16,185,129,0.1);
+}
+.tag-emerald-crown .tag-name {
+  background: linear-gradient(90deg, #ffffff, #a7f3d0, #ffffff, #6ee7b7, #ffffff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 4s linear infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(0,80,40,0.4));
+}
+.tag-emerald-crown:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 24px rgba(5,150,105,0.45), 0 0 35px rgba(16,185,129,0.15);
+}
+.tag-emerald-crown:hover .tag-name {
+  filter: drop-shadow(0 0 8px rgba(16,185,129,0.5)) drop-shadow(0 0 16px rgba(255,215,0,0.2));
+  letter-spacing: 2.5px;
+}
+
+
+/* ═══════ 13 · CYBER PUNK ═══════
+   Rainbow chromatic text — hover: glitch shift + hard shadow */
+.tag-cyber-punk .tag-bg {
+  background: linear-gradient(110deg, #ff00ff, #ffff00, #ff00ff, #00ffff);
+  background-size: 300% 100%;
+  animation: tagShift 3s linear infinite;
+}
+.tag-cyber-punk .tag-accent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+}
+.tag-cyber-punk .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent 40%);
+}
+.tag-cyber-punk {
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000, 0 0 20px rgba(255,0,255,0.3);
+}
+.tag-cyber-punk .tag-name {
+  background: linear-gradient(90deg, #000, #1a1a1a, #000);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  font-weight: 900;
+  filter: drop-shadow(2px 2px 0 rgba(255,0,255,0.4)) drop-shadow(-1px -1px 0 rgba(0,255,255,0.4));
+}
+.tag-cyber-punk:hover {
+  transform: translateY(-2px) skewX(-3deg);
+  box-shadow: 5px 5px 0 #000, 0 0 30px rgba(255,0,255,0.4);
+}
+.tag-cyber-punk:hover .tag-name {
+  filter: drop-shadow(3px 0 0 rgba(255,0,0,0.5)) drop-shadow(-3px 0 0 rgba(0,255,255,0.5));
+  letter-spacing: 3px;
+}
+
+
+/* ═══════ 14 · GALAXY DRIFT ═══════
+   Starfield gradient text — hover: cosmic expand */
+.tag-galaxy-drift .tag-bg {
+  background: linear-gradient(135deg, #0c0020, #1a0040, #2d1060, #0f0030);
+}
+.tag-galaxy-drift .tag-accent {
+  background:
+    radial-gradient(1px 1px at 15% 30%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 45% 70%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 75% 20%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 25% 80%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 85% 55%, rgba(200,200,255,0.5), transparent),
+    radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 65% 90%, rgba(255,200,255,0.4), transparent),
+    radial-gradient(ellipse at 50% 50%, rgba(148,0,211,0.08), transparent 60%);
+  animation: tagPulseGlow 6s ease-in-out infinite;
+}
+.tag-galaxy-drift {
+  border: 1px solid rgba(148,0,211,0.2);
+  box-shadow: 0 4px 18px rgba(15,0,50,0.6), 0 0 25px rgba(148,0,211,0.1);
+}
+.tag-galaxy-drift .tag-name {
+  background: linear-gradient(90deg, #c084fc, #f0abfc, #fff, #c084fc, #a855f7);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 5s linear infinite;
+  text-shadow: none;
+}
+.tag-galaxy-drift:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 8px 30px rgba(15,0,50,0.7), 0 0 40px rgba(148,0,211,0.2);
+}
+.tag-galaxy-drift:hover .tag-name {
+  filter: drop-shadow(0 0 10px rgba(192,132,252,0.6)) drop-shadow(0 0 20px rgba(168,85,247,0.3));
+  letter-spacing: 3px;
+}
+
+
+/* ═══════ 15 · SAKURA ═══════
+   Cherry blossom gradient text — hover: petal scatter float */
+.tag-sakura .tag-bg {
+  background: linear-gradient(135deg, #fff0f5, #ffc0cb, #ffb7c5, #ffd1dc, #fff0f5);
+  background-size: 300% 300%;
+  animation: tagShift 8s ease infinite;
+}
+.tag-sakura .tag-accent {
+  background:
+    radial-gradient(3px 3px at 12% 35%, rgba(255,105,180,0.3), transparent),
+    radial-gradient(2px 2px at 40% 80%, rgba(255,105,180,0.2), transparent),
+    radial-gradient(2px 2px at 75% 25%, rgba(255,183,197,0.25), transparent),
+    radial-gradient(3px 3px at 88% 68%, rgba(255,105,180,0.2), transparent);
+}
+.tag-sakura .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.35), transparent 50%);
+}
+.tag-sakura {
+  border: 1px solid rgba(255,183,197,0.5);
+  box-shadow: 0 4px 14px rgba(255,105,180,0.2), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+.tag-sakura .tag-name {
+  background: linear-gradient(90deg, #9e1b5a, #d4366e, #9e1b5a, #7a1445, #d4366e);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 6s linear infinite;
+  text-shadow: none;
+}
+.tag-sakura:hover {
+  transform: translateY(-4px) rotate(-1deg);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(255,105,180,0.3), 0 0 30px rgba(255,183,197,0.15);
+}
+.tag-sakura:hover .tag-name {
+  filter: drop-shadow(0 0 6px rgba(255,105,180,0.4));
+  letter-spacing: 2.5px;
+}
+
+
+/* ═══════ 16 · STEEL KNIGHT ═══════
+   Engraved metallic text — hover: specular flash */
+.tag-steel-knight .tag-bg {
+  background: linear-gradient(135deg, #7f8c8d, #bdc3c7, #ecf0f1, #bdc3c7, #95a5a6, #bdc3c7, #ecf0f1);
+  background-size: 300% 300%;
+  animation: tagShift 6s ease infinite;
+}
+.tag-steel-knight .tag-accent {
+  border-top: 2px solid rgba(236,240,241,0.8);
+  border-bottom: 2px solid rgba(44,62,80,0.4);
+  background: repeating-linear-gradient(90deg, transparent, transparent 5px, rgba(0,0,0,0.02) 5px, rgba(0,0,0,0.02) 6px);
+}
+.tag-steel-knight .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.4), transparent 45%);
+}
+.tag-steel-knight {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.1);
+}
+.tag-steel-knight .tag-name {
+  background: linear-gradient(180deg, #1a1a2e, #2c3e50, #1a1a2e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.5));
+}
+.tag-steel-knight:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.tag-steel-knight:hover .tag-name {
+  background: linear-gradient(180deg, #0a0a1e, #34495e, #1c2e3f, #0a0a1e);
+  background-size: 100% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextVertShift 2s ease infinite;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.6)) drop-shadow(0 0 4px rgba(200,200,220,0.15));
+}
+
+
+/* ═══════ 17 · INFERNO ═══════
+   Living fire gradient text — hover: blaze intensify */
+.tag-inferno .tag-bg {
+  background: linear-gradient(135deg, #4a0000, #8b0000, #ff4500, #ff8c00, #ff4500, #8b0000);
+  background-size: 300% 300%;
+  animation: tagShift 3s ease infinite;
+}
+.tag-inferno .tag-accent::before {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(255,140,0,0.15), transparent);
+  animation: tagPulseGlow 2s ease-in-out infinite;
+}
+.tag-inferno .tag-shine {
+  height: 40%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+}
+.tag-inferno {
+  border: 1px solid rgba(255,140,0,0.4);
+  box-shadow: 0 4px 16px rgba(255,69,0,0.4), 0 0 25px rgba(255,140,0,0.15);
+}
+.tag-inferno .tag-name {
+  background: linear-gradient(90deg, #fff, #ffeb3b, #ff8c00, #ffeb3b, #fff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 2s linear infinite;
+  text-shadow: none;
+}
+.tag-inferno:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 25px rgba(255,69,0,0.5), 0 0 40px rgba(255,140,0,0.2);
+}
+.tag-inferno:hover .tag-name {
+  filter: drop-shadow(0 0 10px rgba(255,200,0,0.7)) drop-shadow(0 0 22px rgba(255,140,0,0.4));
+  letter-spacing: 2px;
+}
+
+
+/* ═══════ 18 · DIAMOND ICE ═══════
+   Prismatic iridescent text — hover: rainbow flash */
+.tag-diamond-ice .tag-bg {
+  background: linear-gradient(135deg, #e8f4f8, #d4eef6, #f0f8ff, #c8e6f0, #f0f8ff, #d4eef6);
+  background-size: 300% 300%;
+  animation: tagShift 6s ease infinite;
+}
+.tag-diamond-ice .tag-accent {
+  background:
+    radial-gradient(2px 2px at 20% 40%, rgba(255,255,255,0.8), transparent),
+    radial-gradient(2px 2px at 60% 25%, rgba(200,230,240,0.6), transparent),
+    radial-gradient(1px 1px at 80% 65%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 35% 75%, rgba(200,230,240,0.5), transparent);
+  animation: tagPulseGlow 4s ease-in-out infinite;
+}
+.tag-diamond-ice .tag-shine {
+  background: linear-gradient(135deg, rgba(255,255,255,0.5), transparent 50%);
+}
+.tag-diamond-ice {
+  border: 1px solid rgba(200,230,240,0.7);
+  box-shadow: 0 4px 14px rgba(100,180,220,0.2), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.tag-diamond-ice .tag-name {
+  background: linear-gradient(90deg, #2a6080, #1a4a60, #00b8d4, #1a4a60, #2a6080);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 5s linear infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(100,180,220,0.3));
+}
+.tag-diamond-ice:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 22px rgba(100,180,220,0.3), 0 0 30px rgba(200,230,240,0.15);
+}
+.tag-diamond-ice:hover .tag-name {
+  background: linear-gradient(90deg, #ff6b9d, #c084fc, #00b8d4, #22d3ee, #fbbf24, #ff6b9d);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 2s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(192,132,252,0.4));
+}
+
+
+/* ═══════ 19 · MIDNIGHT KING ═══════
+   Liquid gold text — hover: royal reveal */
+.tag-midnight-king .tag-bg {
+  background: linear-gradient(135deg, #0a0a2e, #10104a, #1a1a6e, #10104a, #0a0a2e);
+  background-size: 250% 100%;
+  animation: tagShift 6s ease infinite;
+}
+.tag-midnight-king .tag-accent {
+  border: 1px solid rgba(255,215,0,0.25);
+}
+.tag-midnight-king .tag-accent::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 5%, #ffd700 20%, #fff8dc 50%, #ffd700 80%, transparent 95%);
+  opacity: 0.7;
+}
+.tag-midnight-king .tag-accent::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 15%, #ffd700 40%, #fff8dc 50%, #ffd700 60%, transparent 85%);
+  opacity: 0.4;
+}
+.tag-midnight-king {
+  box-shadow: 0 4px 18px rgba(10,10,46,0.6), 0 0 20px rgba(255,215,0,0.08);
+}
+.tag-midnight-king .tag-name {
+  background: linear-gradient(90deg, #ffd700, #fff8dc, #ffd700, #b8860b, #ffd700);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 4s linear infinite;
+  text-shadow: none;
+}
+.tag-midnight-king:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 24px rgba(10,10,46,0.7), 0 0 35px rgba(255,215,0,0.15);
+}
+.tag-midnight-king:hover .tag-name {
+  filter: drop-shadow(0 0 8px rgba(255,215,0,0.5)) drop-shadow(0 0 18px rgba(255,215,0,0.25));
+  letter-spacing: 3px;
+}
+
+
+/* ═══════ 20 · BLOOD MOON ═══════
+   Flickering crimson text — hover: eclipse reveal */
+.tag-blood-moon .tag-bg {
+  background: linear-gradient(135deg, #0a0a0a, #1a0a0a, #0a0a0a);
+}
+.tag-blood-moon .tag-accent {
+  background: radial-gradient(circle at 75% 40%, rgba(139,0,0,0.2), transparent 50%);
+}
+.tag-blood-moon .tag-accent::before {
+  content: "";
+  position: absolute;
+  top: 50%; right: 12%;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle, #8b0000 30%, #4a0000 60%, transparent 70%);
+  box-shadow: 0 0 12px rgba(139,0,0,0.4), 0 0 25px rgba(139,0,0,0.15);
+  animation: tagPulseGlow 3s ease-in-out infinite;
+}
+.tag-blood-moon {
+  border: 1px solid rgba(139,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 0 20px rgba(139,0,0,0.1);
+}
+.tag-blood-moon .tag-name {
+  background: linear-gradient(90deg, #ff0000, #cc0000, #ff4444, #8b0000, #ff0000);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tagTextFlow 3s linear infinite, tagBloodPulse 2s ease-in-out infinite;
+  text-shadow: none;
+}
+.tag-blood-moon:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.7), 0 0 35px rgba(139,0,0,0.2);
+}
+.tag-blood-moon:hover .tag-name {
+  filter: drop-shadow(0 0 8px rgba(255,0,0,0.5)) drop-shadow(0 0 18px rgba(139,0,0,0.3));
+  animation: tagTextFlow 1.5s linear infinite;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   4 · ANIMATIONS
+   ───────────────────────────────────────────────────────── */
+
+/* Shifting gradient background */
+@keyframes tagShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Pulsing opacity */
+@keyframes tagPulseGlow {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+/* Horizontal scan line */
+@keyframes tagScanH {
+  0%   { transform: translateY(-50%) translateX(-100%); }
+  100% { transform: translateY(-50%) translateX(100%); }
+}
+
+/* Phantom sweep */
+@keyframes tagPhantomSweep {
+  0%, 100% { background-position: -200% 0; }
+  50%      { background-position: 200% 0; }
+}
+
+/* Phantom text flicker */
+@keyframes tagPhantomText {
+  0%, 20%, 40%, 60%, 80%, 100% { opacity: 0.85; }
+  10%, 30%, 70%                { opacity: 0.55; }
+  50%                          { opacity: 0.95; }
+}
+
+/* === TEXT GRADIENT ANIMATIONS === */
+
+/* Horizontal flow — fast moving gradient */
+@keyframes tagTextFlow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* Shimmer — back-and-forth sweep */
+@keyframes tagTextShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Vertical shift for steel knight hover */
+@keyframes tagTextVertShift {
+  0%   { background-position: 50% 0%; }
+  50%  { background-position: 50% 100%; }
+  100% { background-position: 50% 0%; }
+}
+
+/* Blood pulse — breathing opacity */
+@keyframes tagBloodPulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+/* Micro shake for crimson fury hover */
+@keyframes tagMicroShake {
+  0%, 100% { transform: translateX(0) translateY(-2px); }
+  25%      { transform: translateX(-2px) translateY(-2px); }
+  75%      { transform: translateX(2px) translateY(-2px); }
 }

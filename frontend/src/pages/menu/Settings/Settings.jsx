@@ -8,7 +8,9 @@ import {
     FaApple, FaAndroid, FaWindows, FaLinux
 } from 'react-icons/fa';
 import './Settings.css';
+import PageHud from '../../../components/PageHud/PageHud';
 import axios from "axios";
+import { API_URL } from '../../../config/api';
 import { useEffect } from "react";
 
 
@@ -48,7 +50,7 @@ export default function Settings() {
     const updatePrivacy = async (newPrivacy) => {
         try {
             await axios.put(
-                "http://localhost:4000/api/settings/privacy",
+                `${API_URL}/api/settings/privacy`,
                 { privacy: newPrivacy },
                 {
                     headers: { Authorization: `Bearer ${token}` }
@@ -68,7 +70,7 @@ export default function Settings() {
     const fetchSettings = async () => {
         try {
             const res = await axios.get(
-                "http://localhost:4000/api/auth/profile",
+                `${API_URL}/api/auth/profile`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -92,7 +94,7 @@ export default function Settings() {
     const unlinkDiscord = async () => {
         try {
             await axios.delete(
-                'http://localhost:4000/api/auth/discord',
+                `${API_URL}/api/auth/discord`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -120,7 +122,7 @@ export default function Settings() {
             setRiotMsg('');
 
             await axios.post(
-                'http://localhost:4000/api/auth/riot/link/init',
+                `${API_URL}/api/auth/riot/link/init`,
                 { riotId: `${riotGameName}#${riotTagLine}` },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -145,7 +147,7 @@ export default function Settings() {
             setRiotMsg('');
 
             await axios.post(
-                'http://localhost:4000/api/auth/riot/link/confirm',
+                `${API_URL}/api/auth/riot/link/confirm`,
                 { otp: riotOtp },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -173,7 +175,7 @@ export default function Settings() {
             const token = localStorage.getItem('token');
 
             await axios.delete(
-                'http://localhost:4000/api/auth/riot',
+                `${API_URL}/api/auth/riot`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -347,7 +349,7 @@ export default function Settings() {
                                         className="btn-connect"
                                         onClick={() => {
                                             window.location.href =
-                                                `http://localhost:4000/api/auth/discord?token=${token}`;
+                                                `${API_URL}/api/auth/discord?token=${token}`;
                                         }}
                                     >
                                         Conectar
@@ -818,6 +820,7 @@ export default function Settings() {
 
     return (
         <div className="settings-page">
+            <PageHud page="AJUSTES" />
             <div className="settings-layout">
                 {/* SIDEBAR DE NAVEGACIÓN */}
                 <aside className="settings-sidebar">

@@ -2,64 +2,55 @@ import React, { createContext, useState, useContext, useCallback } from 'react';
 
 const NotificationContext = createContext();
 
+// ── Formato relativo de tiempo ──
+const formatRelativeTime = (dateStr) => {
+  if (!dateStr) return 'Ahora mismo';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Ahora mismo';
+  if (mins < 60) return `Hace ${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `Hace ${days}d`;
+  return new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+};
+
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [toasts, setToasts] = useState([]);
 
-  // --- 1. ALERTAS FLOTANTES (TOASTS) ---
+  // --- ALERTAS FLOTANTES (TOASTS) ---
   const addToast = useCallback((message, type = 'info') => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
   }, []);
 
-  // --- 2. EL GENERADOR MAESTRO DE NOTIFICACIONES ---
+  // --- NOTIFY (para uso local) ---
   const notify = (type, title, message) => {
-    
-    // Configuración automática de estilos según el tipo
-    let config = { icon: 'bx-bell', color: '#fff', category: 'system' };
-    
-    switch(type) {
-        case 'team':
-            config = { icon: 'bx-group', color: '#4facfe', category: 'team' };
-            break;
-        case 'success': // Logros, subidas de nivel
-            config = { icon: 'bx-medal', color: '#FFD700', category: 'social' };
-            break;
-        case 'danger': // Salidas, expulsiones
-            config = { icon: 'bx-error-circle', color: '#ff6b6b', category: 'system' };
-            break;
-        case 'info': // Sistema general
-            config = { icon: 'bx-info-circle', color: '#f093fb', category: 'system' };
-            break;
-        default:
-            config = { icon: 'bx-bell', color: '#8EDB15', category: 'system' };
-    }
+    let config = { icon: 'bx-bell', color: '#8EDB15', category: 'system' };
+    const configMap = {
+      team: { icon: 'bx-group', color: '#4facfe', category: 'team' },
+      tournament: { icon: 'bx-trophy', color: '#FFD700', category: 'tournament' },
+      success: { icon: 'bx-medal', color: '#FFD700', category: 'social' },
+      danger: { icon: 'bx-error-circle', color: '#ff6b6b', category: 'system' },
+      info: { icon: 'bx-info-circle', color: '#f093fb', category: 'system' },
+      social: { icon: 'bx-user-plus', color: '#f093fb', category: 'social' },
+    };
+    config = configMap[type] || config;
 
-    // Objeto de notificación
     const newNote = {
       id: Date.now(),
       category: config.category,
-      type: type, 
-      title: title,
+      type, title, message,
       source: 'Sistema',
-      message: message,
       time: 'Ahora mismo',
       status: 'unread',
-      isSaved: false,
-      isArchived: false,
-      // Visuales
-      icon: config.icon,
-      color: config.color,
-      visuals: {
-        glow: type === 'success', // Brillar si es un logro
-      }
+      visuals: { icon: config.icon, color: config.color, glow: type === 'success' }
     };
 
-    // A) Guardar en Buzón
     setNotifications((prev) => [newNote, ...prev]);
-    
-    // B) Mostrar Alerta Flotante inmediata
     addToast(title, type === 'danger' ? 'error' : 'success');
   };
 
@@ -71,47 +62,26 @@ export const NotificationProvider = ({ children }) => {
     if (!Array.isArray(list)) return;
     setNotifications(list.map((n) => ({
       id: n._id || n.id,
+      _id: n._id || n.id,
       category: n.category || 'system',
       type: n.type || 'info',
       title: n.title || 'Notificación',
       source: n.source || 'Sistema',
       message: n.message || '',
-      time: n.createdAt ? 'Ahora mismo' : 'Ahora mismo',
+      time: formatRelativeTime(n.createdAt),
+      createdAt: n.createdAt,
       status: n.status || 'unread',
-      isSaved: false,
-      isArchived: false,
-      visuals: n.visuals || { icon: 'bx-bell', color: '#8EDB15', glow: false }
+      visuals: n.visuals || { icon: 'bx-bell', color: '#8EDB15', glow: false },
+      isArchived: n.isArchived || false
     })));
   };
 
-  // --- SECUENCIA DE BIENVENIDA (Usando nuestra nueva función notify) ---
-  const triggerWelcomeSequence = () => {
-     // Usamos la función genérica pero con datos personalizados
-     const welcomeNote = {
-        id: 'welcome-init',
-        category: 'system',
-        type: 'welcome_reward',
-        title: '¡Bienvenido a la Grieta!',
-        source: 'Esportefy',
-        message: 'Tu perfil de JUGADOR ha sido creado. Comienza tu camino hacia el profesionalismo.',
-        time: 'Ahora mismo',
-        status: 'unread',
-        visuals: { icon: 'bx-medal', color: '#8EDB15', glow: true },
-        badges: [{ label: 'Nuevo Ingreso', color: 'green' }, { label: 'Rol: Jugador', color: 'blue' }]
-     };
-     setNotifications((prev) => [welcomeNote, ...prev]);
-     addToast('¡Cuenta de Jugador Verificada!', 'success');
-  };
+  const unreadCount = notifications.filter(n => n.status === 'unread').length;
 
   return (
-    <NotificationContext.Provider value={{ 
-      notifications, 
-      toasts, 
-      notify, // <--- ESTA ES LA FUNCIÓN QUE EXPORTAMOS PARA USAR FUERA
-      addToast,
-      removeNotification,
-      loadNotifications,
-      triggerWelcomeSequence 
+    <NotificationContext.Provider value={{
+      notifications, toasts, notify, addToast,
+      removeNotification, loadNotifications, unreadCount
     }}>
       {children}
     </NotificationContext.Provider>

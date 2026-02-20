@@ -1,17 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-// AÑADIDO: FaPaintBrush para el icono de personalización
-import { FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft, FaCamera, FaPaintBrush } from 'react-icons/fa';
+import { API_URL } from '../../../config/api';
+import {
+    FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft,
+    FaCamera, FaPaintBrush, FaCheck, FaExclamationTriangle,
+    FaLink, FaTwitch, FaYoutube, FaTwitter, FaInstagram, FaTiktok,
+    FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake
+} from 'react-icons/fa';
+import PlayerTag from '../../../components/PlayerTag/PlayerTag';
+import { PLAYER_TAGS } from '../../../data/playerTags';
+import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
+import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
+import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import './EditProfile.css';
-// ... tus otros imports ...
-import PlayerTag from '../../../components/PlayerTag/PlayerTag'; // <--- EL COMPONENTE NUEVO
-import { PLAYER_TAGS } from '../../../data/playerTags'; // <--- LOS DATOS DE LAS IMAGENES
-// --- NUEVAS IMPORTACIONES PARA PERSONALIZACIÓN ---
-import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions'; 
-import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle'; 
 
-// --- ACTIVOS DE JUEGOS ---
+// ─── Game assets ───
 import imgLol from '../../../assets/gameImages/lol.png';
 import imgMlbb from '../../../assets/gameImages/mlbb.png';
 import imgHok from '../../../assets/gameImages/hok.png';
@@ -36,7 +40,6 @@ const mobaGames = [
     { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart }
 ];
 
-
 const platformsList = [
     { id: 'pc', name: 'PC', icon: 'bx-laptop' },
     { id: 'mobile', name: 'Mobile', icon: 'bx-mobile' },
@@ -55,245 +58,565 @@ const experienceLevels = [
     { id: 'Pro', label: 'PRO', desc: 'Avanzado', icon: 'bx-trophy' }
 ];
 
+const genderOptions = [
+    { id: 'Masculino', label: 'Masculino' },
+    { id: 'Femenino', label: 'Femenino' },
+    { id: 'Otro', label: 'Otro' }
+];
+
+const countryList = [
+    'Argentina', 'Bolivia', 'Brasil', 'Chile', 'Colombia', 'Costa Rica',
+    'Cuba', 'Ecuador', 'El Salvador', 'España', 'Estados Unidos', 'Guatemala',
+    'Honduras', 'México', 'Nicaragua', 'Panamá', 'Paraguay', 'Perú',
+    'Puerto Rico', 'Rep. Dominicana', 'Uruguay', 'Venezuela'
+];
+
+const languagesList = [
+    { id: 'Español', label: 'Español', flag: '🇪🇸' },
+    { id: 'English', label: 'English', flag: '🇺🇸' },
+    { id: 'Português', label: 'Português', flag: '🇧🇷' },
+    { id: 'Français', label: 'Français', flag: '🇫🇷' },
+    { id: 'Deutsch', label: 'Deutsch', flag: '🇩🇪' },
+    { id: 'Italiano', label: 'Italiano', flag: '🇮🇹' }
+];
+
+const rolesList = [
+    { id: 'Top', label: 'Top', icon: 'bx-shield' },
+    { id: 'Jungle', label: 'Jungle', icon: 'bx-leaf' },
+    { id: 'Mid', label: 'Mid', icon: 'bx-target-lock' },
+    { id: 'ADC', label: 'ADC', icon: 'bx-crosshair' },
+    { id: 'Support', label: 'Support', icon: 'bx-heart' },
+    { id: 'Fill', label: 'Fill', icon: 'bx-shuffle' },
+    { id: 'IGL', label: 'IGL', icon: 'bx-microphone' },
+    { id: 'Fragger', label: 'Fragger', icon: 'bx-crosshair' },
+    { id: 'Lurker', label: 'Lurker', icon: 'bx-ghost' },
+    { id: 'Flex', label: 'Flex', icon: 'bx-transfer' }
+];
+
 const EditProfile = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('general');
-    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saveMsg, setSaveMsg] = useState(null); // { type: 'success'|'error', text }
     const [file, setFile] = useState(null);
-    const [preview, setPreview] = useState("");
+    const [preview, setPreview] = useState('');
+    const [hasChanges, setHasChanges] = useState(false);
 
     const [formData, setFormData] = useState({
         username: '',
         fullName: '',
-        email: '',
         country: '',
+        phone: '',
+        gender: 'Otro',
+        birthDate: '',
         avatar: '',
+        bio: '',
         selectedGames: [],
         platforms: [],
         goals: [],
-        experience: '',
-        goalsDescription: '',
+        experience: [],
+        languages: [],
+        preferredRoles: [],
+        lookingForTeam: false,
+        socialLinks: { twitch: '', youtube: '', twitter: '', instagram: '', tiktok: '' },
         isProfileHidden: false,
         selectedFrameId: 'none',
         selectedBgId: 'bg-1',
         status: 'online',
-        selectedTagId: 'tag1' // <--- AÑADE ESTA LÍNEA (Tag por defecto)
+        selectedTagId: 'tag-obsidian'
     });
 
-    // Helpers para la vista previa
+    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    // Helpers for live preview
     const currentFrame = FRAMES.find(f => f.id === formData.selectedFrameId) || FRAMES[0];
     const currentBg = BACKGROUNDS.find(b => b.id === formData.selectedBgId) || BACKGROUNDS[0];
 
-    useEffect(() => {
-        const storedUser = localStorage.getItem('esportefyUser');
-        if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            
-            setFormData({
-                ...parsedUser,
-                selectedGames: Array.isArray(parsedUser.selectedGames) ? parsedUser.selectedGames : [],
-                platforms: Array.isArray(parsedUser.platforms) ? parsedUser.platforms : [],
-                goals: Array.isArray(parsedUser.goals) ? parsedUser.goals : [],
-                goalsDescription: parsedUser.goalsDescription || parsedUser.goals || "",
-                isProfileHidden: parsedUser.isProfileHidden || false,
-                // Cargar personalización guardada o defaults
-                selectedFrameId: parsedUser.selectedFrameId || 'none',
-                selectedBgId: parsedUser.selectedBgId || 'bg-1'
+    // ─── Fetch profile from API (not stale localStorage) ───
+    const fetchProfile = useCallback(async () => {
+        try {
+            const token = getToken();
+            if (!token) { navigate('/login'); return; }
+            const res = await axios.get(`${API_URL}/api/auth/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
+            const u = res.data;
+            setFormData({
+                username: u.username || '',
+                fullName: u.fullName || '',
+                country: u.country || '',
+                phone: u.phone || '',
+                gender: u.gender || 'Otro',
+                birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
+                avatar: u.avatar || '',
+                bio: u.bio || '',
+                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : [],
+                platforms: Array.isArray(u.platforms) ? u.platforms : [],
+                goals: Array.isArray(u.goals) ? u.goals : [],
+                experience: Array.isArray(u.experience) ? u.experience : (u.experience ? [u.experience] : []),
+                languages: Array.isArray(u.languages) ? u.languages : [],
+                preferredRoles: Array.isArray(u.preferredRoles) ? u.preferredRoles : [],
+                lookingForTeam: u.lookingForTeam || false,
+                socialLinks: {
+                    twitch: u.socialLinks?.twitch || '',
+                    youtube: u.socialLinks?.youtube || '',
+                    twitter: u.socialLinks?.twitter || '',
+                    instagram: u.socialLinks?.instagram || '',
+                    tiktok: u.socialLinks?.tiktok || ''
+                },
+                isProfileHidden: u.isProfileHidden || false,
+                selectedFrameId: u.selectedFrameId || 'none',
+                selectedBgId: u.selectedBgId || 'bg-1',
+                status: u.status || 'online',
+                selectedTagId: u.selectedTagId || 'tag-obsidian'
+            });
+            setPreview(u.avatar || '');
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching profile:', err);
+            if (err.response?.status === 401) navigate('/login');
+            setLoading(false);
         }
-    }, []);
+    }, [navigate]);
+
+    useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+    // ─── Form handlers ───
+    const updateField = (name, value) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setHasChanges(true);
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        updateField(name, type === 'checkbox' ? checked : value);
     };
 
     const toggleSelection = (field, id) => {
         setFormData(prev => {
             const list = prev[field] || [];
-            const newList = list.includes(id)
-                ? list.filter(x => x !== id)
-                : [...list, id];
+            const newList = list.includes(id) ? list.filter(x => x !== id) : [...list, id];
             return { ...prev, [field]: newList };
         });
+        setHasChanges(true);
+    };
+
+    const selectExperience = (lvlId) => {
+        // Single-select stored as array with one element
+        setFormData(prev => ({ ...prev, experience: [lvlId] }));
+        setHasChanges(true);
     };
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
+            if (selectedFile.size > 5 * 1024 * 1024) {
+                setSaveMsg({ type: 'error', text: 'La imagen no puede superar 5MB.' });
+                return;
+            }
             setFile(selectedFile);
             setPreview(URL.createObjectURL(selectedFile));
+            setHasChanges(true);
         }
     };
 
+    const selectDefaultAvatar = (src) => {
+        setFormData(prev => ({ ...prev, avatar: src }));
+        setPreview(src);
+        setFile(null);
+        setHasChanges(true);
+    };
+
+    const handleSocialChange = (platform, value) => {
+        setFormData(prev => ({
+            ...prev,
+            socialLinks: { ...prev.socialLinks, [platform]: value }
+        }));
+        setHasChanges(true);
+    };
+
+    // ─── Save ───
     const handleSave = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        
-        const data = new FormData();
-        Object.keys(formData).forEach(key => {
-            if (key === 'teams') return;
-            if (Array.isArray(formData[key])) {
-                formData[key].forEach(val => data.append(`${key}[]`, val));
-            } else {
-                data.append(key, formData[key]);
-            }
-        });
-        
-        if (file) {
-            data.append('avatarFile', file);
+        if (saving) return;
+
+        // Basic validation
+        if (!formData.username.trim()) {
+            setSaveMsg({ type: 'error', text: 'El nickname es obligatorio.' });
+            return;
+        }
+        if (!formData.fullName.trim()) {
+            setSaveMsg({ type: 'error', text: 'El nombre completo es obligatorio.' });
+            return;
         }
 
-        try {
-            const response = await axios.put(
-                'http://localhost:4000/api/auth/update-profile', 
-                data,
-                { 
-                    headers: { 
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data' 
-                    } 
-                }
-            );
+        setSaving(true);
+        setSaveMsg(null);
+        const token = getToken();
 
-            localStorage.setItem('esportefyUser', JSON.stringify(response.data));
-            navigate('/profile'); 
+        // Whitelist only editable fields
+        const editableFields = [
+            'username', 'fullName', 'country', 'phone', 'gender', 'birthDate',
+            'avatar', 'bio', 'selectedGames', 'platforms', 'goals', 'experience',
+            'languages', 'preferredRoles', 'lookingForTeam',
+            'isProfileHidden', 'selectedFrameId', 'selectedBgId',
+            'status', 'selectedTagId'
+        ];
+
+        const data = new FormData();
+        editableFields.forEach(key => {
+            const val = formData[key];
+            if (Array.isArray(val)) {
+                val.forEach(v => data.append(`${key}[]`, v));
+            } else if (typeof val === 'boolean') {
+                data.append(key, val.toString());
+            } else if (val !== undefined && val !== null) {
+                data.append(key, val);
+            }
+        });
+        // Social links as dot-notation keys
+        Object.entries(formData.socialLinks).forEach(([key, val]) => {
+            data.append(`socialLinks.${key}`, val || '');
+        });
+        if (file) data.append('avatarFile', file);
+
+        try {
+            const res = await axios.put(`${API_URL}/api/auth/update-profile`, data, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            // Sync localStorage for other components
+            localStorage.setItem('esportefyUser', JSON.stringify(res.data));
+            setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
+            setHasChanges(false);
+            setFile(null);
+            // Refresh formData from response
+            const u = res.data;
+            setFormData(prev => ({
+                ...prev,
+                avatar: u.avatar || prev.avatar,
+                selectedFrameId: u.selectedFrameId || prev.selectedFrameId,
+                selectedBgId: u.selectedBgId || prev.selectedBgId,
+                selectedTagId: u.selectedTagId || prev.selectedTagId,
+                status: u.status || prev.status,
+            }));
+            if (u.avatar) setPreview(u.avatar);
         } catch (err) {
-            alert(err.response?.data?.message || 'Error al guardar');
+            const msg = err.response?.data?.message || 'Error al guardar los cambios.';
+            setSaveMsg({ type: 'error', text: msg });
+        } finally {
+            setSaving(false);
+            // Auto-clear success message
+            setTimeout(() => setSaveMsg(null), 4000);
         }
     };
 
-    if (!user) return <div className="loading">Cargando la arena...</div>;
+    if (loading) {
+        return (
+            <div className="ep__loading">
+                <div className="ep__spinner" />
+                <p>Cargando perfil...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="edit-profile-page fade-in">
-            <button className="btn-back" onClick={() => navigate('/profile')}>
-                <FaArrowLeft /> Volver al Perfil
-            </button>
+        <div className="ep fade-in">
+            {/* Top bar */}
+            <div className="ep__topbar">
+                <button className="ep__back" onClick={() => navigate('/profile')}>
+                    <FaArrowLeft /> Volver al Perfil
+                </button>
+                {hasChanges && <span className="ep__unsaved">Cambios sin guardar</span>}
+            </div>
 
-            <div className="settings-container">
-                <aside className="settings-sidebar">
-                    <h2>Configuración</h2>
+            <div className="ep__layout">
+                {/* Sidebar */}
+                <aside className="ep__sidebar">
+                    <h2>Editar Perfil</h2>
                     <nav>
-                        <button className={activeTab === 'general' ? 'active' : ''} onClick={() => setActiveTab('general')} type="button"><FaUser /> General</button>
-                        
-                        {/* NUEVA PESTAÑA PERSONALIZACIÓN */}
-                        <button className={activeTab === 'customization' ? 'active' : ''} onClick={() => setActiveTab('customization')} type="button"><FaPaintBrush /> Personalización</button>
-                        
-                        <button className={activeTab === 'gamer' ? 'active' : ''} onClick={() => setActiveTab('gamer')} type="button"><FaGamepad /> Perfil Gamer</button>
-                        <button className={activeTab === 'privacy' ? 'active' : ''} onClick={() => setActiveTab('privacy')} type="button"><FaLock /> Privacidad</button>
+                        {[
+                            { id: 'general', icon: <FaUser />, label: 'General' },
+                            { id: 'social', icon: <FaLink />, label: 'Social' },
+                            { id: 'customization', icon: <FaPaintBrush />, label: 'Personalización' },
+                            { id: 'gamer', icon: <FaGamepad />, label: 'Perfil Gamer' },
+                            { id: 'privacy', icon: <FaLock />, label: 'Privacidad' },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                className={activeTab === tab.id ? 'active' : ''}
+                                onClick={() => setActiveTab(tab.id)}
+                            >
+                                {tab.icon} {tab.label}
+                            </button>
+                        ))}
                     </nav>
                 </aside>
 
-                <main className="settings-content">
+                {/* Content */}
+                <main className="ep__content">
                     <form onSubmit={handleSave}>
-                        
-                        {/* PESTAÑA 1: GENERAL */}
+
+                        {/* ═══ TAB: GENERAL ═══ */}
                         {activeTab === 'general' && (
-                            <div className="tab-content fade-in">
+                            <div className="ep__tab fade-in">
                                 <h3>Información Personal</h3>
-                                <div className="avatar-edit-section">
-                                    {/* Muestra avatar normal aquí, la previsualización "gamer" está en la otra pestaña */}
-                                    <img src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`} alt="Preview" className="simple-avatar-preview"/>
-                                    <div className="avatar-inputs">
-                                        <label className="btn-upload-custom">
+
+                                {/* Avatar section */}
+                                <div className="ep__avatar-section">
+                                    <img
+                                        src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`}
+                                        alt="Avatar"
+                                        className="ep__avatar-preview"
+                                    />
+                                    <div className="ep__avatar-actions">
+                                        <label className="ep__upload-btn">
                                             <FaCamera /> Subir Foto
-                                            <input type="file" accept="image/*" onChange={handleFileChange} style={{display: 'none'}} />
+                                            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                                         </label>
-                                        <input type="text" name="avatar" value={formData.avatar} onChange={handleChange} placeholder="O pega una URL..." className="mt-2" />
+                                        <input
+                                            type="text"
+                                            name="avatar"
+                                            value={formData.avatar}
+                                            onChange={handleChange}
+                                            placeholder="O pega una URL de imagen..."
+                                            className="ep__url-input"
+                                        />
+                                        <span className="ep__file-hint">JPG, PNG o GIF. Máx 5MB.</span>
                                     </div>
                                 </div>
-                                <div className="form-group"><label>Nickname</label><input type="text" name="username" value={formData.username} onChange={handleChange} /></div>
-                                <div className="form-group"><label>Nombre Completo</label><input type="text" name="fullName" value={formData.fullName} onChange={handleChange} /></div>
-                                <div className="form-group"><label>País</label><input type="text" name="country" value={formData.country} onChange={handleChange} /></div>
+
+                                {/* Default avatars */}
+                                <label className="ep__label">Avatares Predeterminados</label>
+                                <div className="ep__default-avatars">
+                                    {DEFAULT_AVATARS.map(av => (
+                                        <button
+                                            key={av.id}
+                                            type="button"
+                                            className={`ep__default-av ${formData.avatar === av.src ? 'active' : ''}`}
+                                            onClick={() => selectDefaultAvatar(av.src)}
+                                            title={av.name}
+                                        >
+                                            <img src={av.src} alt={av.name} />
+                                            <span>{av.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Form fields */}
+                                <div className="ep__fields-grid">
+                                    <div className="ep__field">
+                                        <label>Nickname <span className="ep__req">*</span></label>
+                                        <input type="text" name="username" value={formData.username} onChange={handleChange} maxLength={20} />
+                                    </div>
+                                    <div className="ep__field">
+                                        <label>Nombre Completo <span className="ep__req">*</span></label>
+                                        <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} />
+                                    </div>
+                                    <div className="ep__field">
+                                        <label>País</label>
+                                        <select name="country" value={formData.country} onChange={handleChange}>
+                                            <option value="">Seleccionar...</option>
+                                            {countryList.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="ep__field">
+                                        <label>Teléfono</label>
+                                        <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="+1 234 567 890" />
+                                    </div>
+                                    <div className="ep__field">
+                                        <label>Fecha de Nacimiento</label>
+                                        <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} className="ep__date-input" />
+                                    </div>
+                                    <div className="ep__field">
+                                        <label>Género</label>
+                                        <div className="ep__gender-row">
+                                            {genderOptions.map(g => (
+                                                <button
+                                                    key={g.id}
+                                                    type="button"
+                                                    className={`ep__gender-btn ${formData.gender === g.id ? 'active' : ''}`}
+                                                    onClick={() => updateField('gender', g.id)}
+                                                >
+                                                    {g.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bio */}
+                                <div className="ep__field ep__field--full">
+                                    <label>Biografía</label>
+                                    <textarea
+                                        name="bio"
+                                        value={formData.bio}
+                                        onChange={handleChange}
+                                        placeholder="Cuéntanos sobre ti, tu estilo de juego, tus metas..."
+                                        rows={4}
+                                        maxLength={300}
+                                    />
+                                    <span className="ep__char-count">{formData.bio.length}/300</span>
+                                </div>
                             </div>
                         )}
 
-                        {/* PESTAÑA NUEVA: PERSONALIZACIÓN */}
+                        {/* ═══ TAB: SOCIAL & CONEXIONES ═══ */}
+                        {activeTab === 'social' && (
+                            <div className="ep__tab fade-in">
+                                <h3>Social & Conexiones</h3>
+
+                                {/* Social links */}
+                                <label className="ep__label">Redes Sociales</label>
+                                <p className="ep__label-desc">Agrega tus redes para que otros jugadores te encuentren.</p>
+                                <div className="ep__social-grid">
+                                    {[
+                                        { key: 'twitch', icon: <FaTwitch />, placeholder: 'tu_canal', color: '#9146FF', prefix: 'twitch.tv/' },
+                                        { key: 'youtube', icon: <FaYoutube />, placeholder: '@tu_canal', color: '#FF0000', prefix: 'youtube.com/' },
+                                        { key: 'twitter', icon: <FaTwitter />, placeholder: '@usuario', color: '#1DA1F2', prefix: 'x.com/' },
+                                        { key: 'instagram', icon: <FaInstagram />, placeholder: '@usuario', color: '#E4405F', prefix: 'instagram.com/' },
+                                        { key: 'tiktok', icon: <FaTiktok />, placeholder: '@usuario', color: '#00f2ea', prefix: 'tiktok.com/@' },
+                                    ].map(social => (
+                                        <div key={social.key} className="ep__social-item">
+                                            <div className="ep__social-icon" style={{ color: social.color }}>
+                                                {social.icon}
+                                            </div>
+                                            <div className="ep__social-input-wrap">
+                                                <span className="ep__social-prefix">{social.prefix}</span>
+                                                <input
+                                                    type="text"
+                                                    value={formData.socialLinks[social.key]}
+                                                    onChange={e => handleSocialChange(social.key, e.target.value)}
+                                                    placeholder={social.placeholder}
+                                                    className="ep__social-input"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Languages */}
+                                <label className="ep__label">Idiomas</label>
+                                <p className="ep__label-desc">¿En qué idiomas puedes comunicarte con tu equipo?</p>
+                                <div className="ep__chips-row">
+                                    {languagesList.map(lang => (
+                                        <div
+                                            key={lang.id}
+                                            className={`ep__chip ep__chip--lang ${formData.languages.includes(lang.id) ? 'selected' : ''}`}
+                                            onClick={() => toggleSelection('languages', lang.id)}
+                                        >
+                                            <span className="ep__chip-flag">{lang.flag}</span> {lang.label}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Looking for team */}
+                                <label className="ep__label">Búsqueda de Equipo</label>
+                                <div className="ep__lft-card">
+                                    <div className="ep__lft-info">
+                                        <FaUsers className="ep__lft-icon" />
+                                        <div>
+                                            <h4>Buscando Equipo / Duo</h4>
+                                            <p>Activa esto para que otros jugadores y organizadores sepan que estás disponible.</p>
+                                        </div>
+                                    </div>
+                                    <label className="ep__switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.lookingForTeam}
+                                            onChange={e => updateField('lookingForTeam', e.target.checked)}
+                                        />
+                                        <span className="ep__switch-slider" />
+                                    </label>
+                                    {formData.lookingForTeam && (
+                                        <div className="ep__lft-active">
+                                            <FaHandshake /> Visible para reclutadores
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ═══ TAB: CUSTOMIZATION ═══ */}
                         {activeTab === 'customization' && (
-                            <div className="tab-content fade-in">
+                            <div className="ep__tab fade-in">
                                 <h3>Estilo Visual</h3>
-                                
-                                {/* PREVISUALIZACIÓN EN VIVO */}
-                                <div className="live-preview-box" style={{ backgroundImage: `url(${currentBg.src})` }}>
-                                    <div className="preview-overlay-dark"></div>
-                                    <div className="preview-center-content">
-                                        <AvatarCircle 
+
+                                {/* Live preview */}
+                                <div className="ep__live-preview" style={{ backgroundImage: `url(${currentBg.src})` }}>
+                                    <div className="ep__preview-overlay" />
+                                    <div className="ep__preview-center">
+                                        <AvatarCircle
                                             src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`}
                                             frameConfig={currentFrame}
                                             size="120px"
-                                            status={formData.status} />
-                                        {/* --- AQUÍ ESTÁ EL CAMBIO: Usamos PlayerTag en lugar de texto plano --- */}
-        <div style={{ marginTop: '15px' }}>
-            <PlayerTag 
-                name={formData.username || "Player"} 
-                tagId={formData.selectedTagId} 
-                size="normal"                 
-            />
-        </div>
+                                            status={formData.status}
+                                        />
+                                        <div style={{ marginTop: '15px' }}>
+                                            <PlayerTag
+                                                name={formData.username || "Player"}
+                                                tagId={formData.selectedTagId}
+                                                size="normal"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                                {/* --- NUEVO: SELECTOR DE ESTADO --- */}
-        <div className="status-selector-container mt-4">
-            <label className="section-label">Tu Estado</label>
-            <div className="status-options-grid">
-                {[
-                    { id: 'online', label: 'En Línea', color: '#10b981' },
-                    { id: 'dnd', label: 'No Molestar', color: '#ef4444' },
-                    { id: 'tournament', label: 'En Torneo', color: '#fbbf24' },
-                    { id: 'offline', label: 'Invisible', color: '#6b7280' }
-                ].map(status => (
-                    <button
-                        key={status.id}
-                        type="button"
-                        className={`status-option-btn ${formData.status === status.id ? 'active' : ''}`}
-                        onClick={() => setFormData({...formData, status: status.id})}
-                        style={{ '--status-color': status.color }}
-                    >
-                        <span className="status-dot" style={{ backgroundColor: status.color }}></span>
-                        {status.label}
-                    </button>
-                ))}
-            </div>
-        </div>
-        {/* --- SECCIÓN NUEVA: ETIQUETAS DE JUGADOR --- */}
-<label className="section-label mt-4">Placa de Jugador</label>
-<div className="tags-selection-grid" style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}>
-    {PLAYER_TAGS.map(tag => (
-        <div 
-            key={tag.id}
-            onClick={() => setFormData({...formData, selectedTagId: tag.id})}
-            className={formData.selectedTagId === tag.id ? 'active-tag' : ''}
-            style={{ 
-                cursor: 'pointer', 
-                border: formData.selectedTagId === tag.id ? '2px solid #00f2ff' : '2px solid transparent', // Borde neón si está activo
-                borderRadius: '12px',
-                padding: '2px',
-                transition: 'all 0.2s'
-            }}
-        >
-            {/* Mostramos el Tag en pequeño para elegir */}
-            <PlayerTag name="Preview" tagId={tag.id} size="small" />
-        </div>
-    ))}
-</div>
-{/* ------------------------------------------- */}
-        {/* -------------------------------- */}
-                                {/* SELECTOR DE MARCOS */}
-                                <label className="section-label mt-4">Elige tu Marco</label>
-                                <div className="frames-selection-grid">
-                                    {FRAMES.map(frame => (
-                                        <div 
-                                            key={frame.id} 
-                                            className={`frame-option-card ${formData.selectedFrameId === frame.id ? 'active' : ''}`}
-                                            onClick={() => setFormData({...formData, selectedFrameId: frame.id})}
+
+                                {/* Status selector */}
+                                <label className="ep__label">Tu Estado</label>
+                                <div className="ep__status-grid">
+                                    {STATUS_LIST.map(status => (
+                                        <button
+                                            key={status.id}
+                                            type="button"
+                                            className={`ep__status-btn ${formData.status === status.id ? 'active' : ''}`}
+                                            onClick={() => updateField('status', status.id)}
+                                            style={{ '--status-color': status.color }}
                                         >
-                                            <div className="mini-frame-view">
+                                            <span className="ep__status-indicator">
+                                                <span className="ep__status-dot-bg" style={{ backgroundColor: status.color }} />
+                                                <i className={`bx ${status.icon}`} style={{ color: status.color }} />
+                                            </span>
+                                            <span className="ep__status-text">
+                                                <span className="ep__status-label">{status.label}</span>
+                                                <span className="ep__status-desc">{status.desc}</span>
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Player tags */}
+                                <label className="ep__label">Placa de Jugador</label>
+                                <div className="ep__tags-grid">
+                                    {PLAYER_TAGS.map(tag => (
+                                        <div
+                                            key={tag.id}
+                                            className={`ep__tag-option ${formData.selectedTagId === tag.id ? 'active' : ''}`}
+                                            onClick={() => updateField('selectedTagId', tag.id)}
+                                        >
+                                            <PlayerTag name="Preview" tagId={tag.id} size="small" />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Frame selector */}
+                                <label className="ep__label">Marco de Avatar</label>
+                                <div className="ep__frames-grid">
+                                    {FRAMES.map(frame => (
+                                        <div
+                                            key={frame.id}
+                                            className={`ep__frame-card ${formData.selectedFrameId === frame.id ? 'active' : ''}`}
+                                            onClick={() => updateField('selectedFrameId', frame.id)}
+                                        >
+                                            <div className="ep__frame-preview">
                                                 {frame.type === 'image' ? (
                                                     <img src={frame.src} alt={frame.name} />
                                                 ) : (
-                                                    <div className="css-dot-preview" style={{borderColor: frame.color || '#555'}}></div>
+                                                    <div className="ep__frame-dot" style={{ borderColor: frame.color || '#555' }} />
                                                 )}
                                             </div>
                                             <span>{frame.name}</span>
@@ -301,101 +624,145 @@ const EditProfile = () => {
                                     ))}
                                 </div>
 
-                                {/* SELECTOR DE FONDOS */}
-                                <label className="section-label mt-4">Fondo de Perfil</label>
-                                <div className="backgrounds-selection-grid">
+                                {/* Background selector */}
+                                <label className="ep__label">Fondo de Perfil</label>
+                                <div className="ep__bg-grid">
                                     {BACKGROUNDS.map(bg => (
-                                        <div 
-                                            key={bg.id} 
-                                            className={`bg-option-card ${formData.selectedBgId === bg.id ? 'active' : ''}`}
-                                            onClick={() => setFormData({...formData, selectedBgId: bg.id})}
+                                        <div
+                                            key={bg.id}
+                                            className={`ep__bg-card ${formData.selectedBgId === bg.id ? 'active' : ''}`}
+                                            onClick={() => updateField('selectedBgId', bg.id)}
                                         >
                                             <img src={bg.src} alt={bg.name} loading="lazy" />
-                                            {formData.selectedBgId === bg.id && <div className="check-mark">✔</div>}
+                                            {formData.selectedBgId === bg.id && <div className="ep__bg-check"><FaCheck /></div>}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* PESTAÑA 2: PERFIL GAMER (Sin cambios mayores) */}
+                        {/* ═══ TAB: GAMER ═══ */}
                         {activeTab === 'gamer' && (
-                            <div className="tab-content fade-in">
+                            <div className="ep__tab fade-in">
                                 <h3>Perfil de Jugador</h3>
-                                <label className="section-label">Nivel de Experiencia</label>
-                                <div className="levels-row mb-4">
-                                    {experienceLevels.map((lvl) => (
-                                        <div key={lvl.id} className={`level-card ${formData.experience === lvl.id ? 'selected' : ''}`} onClick={() => setFormData({...formData, experience: lvl.id})}>
-                                            <i className={`bx ${lvl.icon} level-icon`}></i>
-                                            <div className="level-info">
-                                                <span className="lvl-label">{lvl.label}</span>
-                                                <span className="lvl-desc">{lvl.desc}</span>
+
+                                {/* Experience level */}
+                                <label className="ep__label">Nivel de Experiencia</label>
+                                <div className="ep__levels-row">
+                                    {experienceLevels.map(lvl => (
+                                        <div
+                                            key={lvl.id}
+                                            className={`ep__level-card ${formData.experience.includes(lvl.id) ? 'selected' : ''}`}
+                                            onClick={() => selectExperience(lvl.id)}
+                                        >
+                                            <i className={`bx ${lvl.icon} ep__level-icon`} />
+                                            <div className="ep__level-info">
+                                                <span className="ep__level-label">{lvl.label}</span>
+                                                <span className="ep__level-desc">{lvl.desc}</span>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                <label className="section-label">Tus Juegos</label>
-                                <div className="games-grid mb-4">
+                                {/* Preferred Roles */}
+                                <label className="ep__label">Roles Preferidos</label>
+                                <p className="ep__label-desc">Selecciona los roles que sueles jugar.</p>
+                                <div className="ep__roles-grid">
+                                    {rolesList.map(role => (
+                                        <div
+                                            key={role.id}
+                                            className={`ep__role-chip ${formData.preferredRoles.includes(role.id) ? 'selected' : ''}`}
+                                            onClick={() => toggleSelection('preferredRoles', role.id)}
+                                        >
+                                            <i className={`bx ${role.icon}`} />
+                                            <span>{role.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Games */}
+                                <label className="ep__label">Tus Juegos</label>
+                                <div className="ep__games-grid">
                                     {mobaGames.map(game => (
-                                        <div key={game.id} className={`game-card-pro ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`} onClick={() => toggleSelection('selectedGames', game.id)}>
-                                            <div className="game-img-wrapper"><img src={game.img} alt={game.name} /></div>
+                                        <div
+                                            key={game.id}
+                                            className={`ep__game-card ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`}
+                                            onClick={() => toggleSelection('selectedGames', game.id)}
+                                        >
+                                            <div className="ep__game-img"><img src={game.img} alt={game.name} /></div>
                                             <span>{game.name}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                <label className="section-label">Plataformas</label>
-                                <div className="platforms-row mb-4">
+                                {/* Platforms */}
+                                <label className="ep__label">Plataformas</label>
+                                <div className="ep__chips-row">
                                     {platformsList.map(p => (
-                                        <div key={p.id} className={`platform-chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`} onClick={() => toggleSelection('platforms', p.id)}>
-                                            <i className={`bx ${p.icon}`}></i> {p.name}
+                                        <div
+                                            key={p.id}
+                                            className={`ep__chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`}
+                                            onClick={() => toggleSelection('platforms', p.id)}
+                                        >
+                                            <i className={`bx ${p.icon}`} /> {p.name}
                                         </div>
                                     ))}
                                 </div>
 
-                                <label className="section-label">¿Qué buscas?</label>
-                                <div className="goals-row mb-4">
-                                    {goalsList.map((goal) => (
-                                        <div key={goal.id} className={`goal-card ${formData.goals.includes(goal.id) ? 'selected' : ''}`} onClick={() => toggleSelection('goals', goal.id)}>
-                                            <i className={`bx ${goal.icon}`}></i>
-                                            <span>{goal.label}</span>
+                                {/* Goals */}
+                                <label className="ep__label">¿Qué buscas?</label>
+                                <div className="ep__chips-row">
+                                    {goalsList.map(goal => (
+                                        <div
+                                            key={goal.id}
+                                            className={`ep__chip ${formData.goals.includes(goal.id) ? 'selected' : ''}`}
+                                            onClick={() => toggleSelection('goals', goal.id)}
+                                        >
+                                            <i className={`bx ${goal.icon}`} /> {goal.label}
                                         </div>
                                     ))}
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Biografía / Metas</label>
-                                    <textarea rows="4" name="goalsDescription" value={formData.goalsDescription} onChange={handleChange} placeholder="Escribe tus objetivos..."></textarea>
                                 </div>
                             </div>
                         )}
 
-                        {/* PESTAÑA 3: PRIVACIDAD */}
+                        {/* ═══ TAB: PRIVACY ═══ */}
                         {activeTab === 'privacy' && (
-                            <div className="tab-content fade-in">
-                                <h3>Privacidad y Seguridad</h3>
-                                <div className="privacy-option">
-                                    <div className="privacy-text">
+                            <div className="ep__tab fade-in">
+                                <h3>Privacidad</h3>
+                                <div className="ep__privacy-option">
+                                    <div>
                                         <h4>Ocultar Perfil</h4>
-                                        <p>Si activas esto, nadie podrá ver tu perfil en las búsquedas globales.</p>
+                                        <p>Nadie podrá ver tu perfil en búsquedas globales.</p>
                                     </div>
-                                    <label className="switch">
+                                    <label className="ep__switch">
                                         <input type="checkbox" name="isProfileHidden" checked={formData.isProfileHidden} onChange={handleChange} />
-                                        <span className="slider round"></span>
+                                        <span className="ep__switch-slider" />
                                     </label>
                                 </div>
-                                <div className="privacy-alert">
+                                <div className="ep__privacy-alert">
                                     <h4>Zona de Seguridad</h4>
-                                    <p>Para cambiar contraseña, contacta a soporte o usa el flujo de recuperación.</p>
-                                    <button type="button" className="btn-danger" disabled>Eliminar Cuenta</button>
+                                    <p>Para cambiar contraseña o email, usa la sección de <strong>Configuración</strong>.</p>
+                                    <button type="button" className="ep__btn-link" onClick={() => navigate('/settings')}>
+                                        Ir a Configuración
+                                    </button>
                                 </div>
                             </div>
                         )}
 
-                        <div className="form-actions">
-                            <button type="submit" className="btn-save-primary">
-                                <FaSave /> Guardar Cambios
+                        {/* Save bar */}
+                        <div className="ep__save-bar">
+                            {saveMsg && (
+                                <div className={`ep__toast ep__toast--${saveMsg.type}`}>
+                                    {saveMsg.type === 'success' ? <FaCheck /> : <FaExclamationTriangle />}
+                                    {saveMsg.text}
+                                </div>
+                            )}
+                            <button type="submit" className="ep__save-btn" disabled={saving}>
+                                {saving ? (
+                                    <><div className="ep__save-spinner" /> Guardando...</>
+                                ) : (
+                                    <><FaSave /> Guardar Cambios</>
+                                )}
                             </button>
                         </div>
                     </form>

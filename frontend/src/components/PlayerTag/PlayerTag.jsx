@@ -1,29 +1,24 @@
 import React from 'react';
-import { PLAYER_TAGS } from '../../data/playerTags'; // Importamos para buscar la data
+import { PLAYER_TAGS } from '../../data/playerTags';
 import './PlayerTag.css';
 
-const PlayerTag = ({ name, tagId = 'tag1', size = 'normal', fontTag ="1.2 rem" }) => {
-    // Buscamos la configuración de la etiqueta activa
+const PlayerTag = ({ name, tagId = 'tag-obsidian', size = 'normal', fontTag }) => {
     const tagConfig = PLAYER_TAGS.find(t => t.id === tagId) || PLAYER_TAGS[0];
 
     return (
-        <div 
-            className={`player-tag-container size-${size}`}
-            style={{ 
-                backgroundImage: `url(${tagConfig.src})`,
-                color: tagConfig.textColor || 'white'
-            }}
-        >
-            {/* Texto con sombra para asegurar lectura sobre la imagen */}
+        <div className={`player-tag ${tagConfig.id} size-${size}`}>
+            {/* Decorative layers */}
+            <div className="tag-bg"></div>
+            <div className="tag-accent"></div>
+            <div className="tag-shine"></div>
+
+            {/* Player name */}
             <span 
-                className="player-name-text"
-                style={{ fontSize: fontTag }}
-                >
+                className="tag-name"
+                style={fontTag ? { fontSize: fontTag } : undefined}
+            >
                 {name || "Player"}
             </span>
-            
-            {/* Brillo opcional para efecto "vidrio" */}
-            <div className="tag-shine"></div>
         </div>
     );
 };

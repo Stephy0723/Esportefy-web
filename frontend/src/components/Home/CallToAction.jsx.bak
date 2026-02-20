@@ -1,0 +1,49 @@
+﻿import React from 'react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+
+const CallToAction = () => {
+  return (
+    <section className="relative py-28 px-6 bg-[var(--bg-page)] overflow-hidden">
+      {/* Glows decorativos */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[var(--primary)]/5 rounded-full blur-[200px]" />
+      
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="relative z-10 max-w-3xl mx-auto text-center"
+      >
+        <span className="text-[var(--primary)] uppercase tracking-[0.3em] text-sm font-bold">
+          Ãšnete hoy
+        </span>
+        <h2 className="text-4xl md:text-6xl font-bold text-[var(--text-main)] mt-4 mb-6 leading-tight">
+          Â¿Listo para competir <br />
+          <span className="text-[var(--primary)]">como profesional?</span>
+        </h2>
+        <p className="text-[var(--text-muted)] text-lg mb-10 max-w-lg mx-auto">
+          Crea tu cuenta gratis, arma tu equipo y demuestra que tienes 
+          lo que se necesita para llegar al top.
+        </p>
+
+        <div className="flex flex-wrap justify-center gap-5">
+          <Link
+            to="/register"
+            className="px-10 py-4 bg-[var(--primary)] text-[var(--text-inverted)] font-bold rounded-full uppercase tracking-widest text-sm hover:bg-[var(--primary-hover)] transition-all duration-300 hover:-translate-y-1 shadow-[0_0_25px_rgba(142,219,21,0.4)] hover:shadow-[0_0_40px_rgba(142,219,21,0.6)]"
+          >
+            Crear Cuenta Gratis
+          </Link>
+          <Link
+            to="/torneos"
+            className="px-10 py-4 border-2 border-white/20 text-[var(--text-main)] font-bold rounded-full uppercase tracking-widest text-sm hover:bg-white/5 hover:border-white/40 transition-all duration-300 hover:-translate-y-1"
+          >
+            Explorar Torneos
+          </Link>
+        </div>
+      </motion.div>
+    </section>
+  );
+};
+
+export default CallToAction;

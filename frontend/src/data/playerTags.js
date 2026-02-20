@@ -1,21 +1,27 @@
-// 1. IMPORTAMOS LAS IMÁGENES AL PRINCIPIO
-// (Asegúrate de que los nombres coincidan exactamente con tu carpeta: tags1.png y tags2.png)
-import tagImg1 from '../assets/tags/tags1.png';
-import tagImg2 from '../assets/tags/tags2.png';
+// ═══════════════════════════════════════════════════════════
+// PLAYER TAGS — CSS-Only Premium Nameplate System
+// 20 unique designs · Pure CSS gradient text + animations
+// ═══════════════════════════════════════════════════════════
 
 export const PLAYER_TAGS = [
-    { 
-        id: 'tag1', 
-        name: 'Midnight Cactus', 
-        type: 'image',
-        src: tagImg1, // 2. Usamos la variable importada aquí (sin comillas)
-        textColor: '#fff' 
-    },
-    { 
-        id: 'tag2', 
-        name: 'Aqua Bubbles', 
-        type: 'image',
-        src: tagImg2, // Usamos la variable importada
-        textColor: '#fff'
-    }
+    { id: 'tag-obsidian',       name: 'Obsidian'        },
+    { id: 'tag-neon-pulse',     name: 'Neon Pulse'      },
+    { id: 'tag-golden-elite',   name: 'Golden Elite'    },
+    { id: 'tag-crimson-fury',   name: 'Crimson Fury'    },
+    { id: 'tag-arctic-frost',   name: 'Arctic Frost'    },
+    { id: 'tag-toxic-venom',    name: 'Toxic Venom'     },
+    { id: 'tag-violet-dream',   name: 'Violet Dream'    },
+    { id: 'tag-sunset-blaze',   name: 'Sunset Blaze'    },
+    { id: 'tag-ocean-depths',   name: 'Ocean Depths'    },
+    { id: 'tag-phantom',        name: 'Phantom'         },
+    { id: 'tag-dragon-blood',   name: 'Dragon Blood'    },
+    { id: 'tag-emerald-crown',  name: 'Emerald Crown'   },
+    { id: 'tag-cyber-punk',     name: 'Cyber Punk'      },
+    { id: 'tag-galaxy-drift',   name: 'Galaxy Drift'    },
+    { id: 'tag-sakura',         name: 'Sakura'          },
+    { id: 'tag-steel-knight',   name: 'Steel Knight'    },
+    { id: 'tag-inferno',        name: 'Inferno'         },
+    { id: 'tag-diamond-ice',    name: 'Diamond Ice'     },
+    { id: 'tag-midnight-king',  name: 'Midnight King'   },
+    { id: 'tag-blood-moon',     name: 'Blood Moon'      },
 ];

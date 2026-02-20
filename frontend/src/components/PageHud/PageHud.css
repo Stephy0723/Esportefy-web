@@ -1,0 +1,52 @@
+/* ═══════════════════════════════════════
+   PAGE HUD STRIP — shared across menu pages
+   ═══════════════════════════════════════ */
+.ph__strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 28px;
+    background: color-mix(in srgb, var(--card-bg, #111) 85%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(142, 219, 21, 0.2);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--text-color, rgba(255, 255, 255, 0.7));
+    opacity: 0.85;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 0;
+}
+
+.ph__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary, #8EDB15);
+    box-shadow: 0 0 8px var(--primary, #8EDB15);
+    margin-right: 8px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.ph__sep {
+    opacity: 0.3;
+    margin: 0 6px;
+}
+
+.ph__left,
+.ph__right {
+    display: flex;
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .ph__strip {
+        padding: 8px 14px;
+        font-size: 0.6rem;
+        letter-spacing: 1px;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+}

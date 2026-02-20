@@ -21,7 +21,7 @@
     /* Propiedades base */
     width: 100%;
     min-height: 100vh;
-    padding-top: 120px; 
+    padding-top: 0; 
     padding-bottom: 50px;
     background-color: var(--bg-page);
     color: var(--text-main);
@@ -503,7 +503,7 @@ body.dark .dashboard-wrapper {
     .game-poster-card { height: 200px; }
     .community-pill { flex-direction: column; text-align: center; }
     .btn-join-mini { margin: 0; width: 100%; }
-    .dashboard-wrapper { padding-top: 140px; }
+    .dashboard-wrapper { padding-top: 0; }
 }
 /* ... (Mantén tus variables :root, .dashboard-wrapper, header, etc. igual que antes) ... */
 
@@ -1065,7 +1065,7 @@ body.dark .dashboard-wrapper {
     --bg-page: #ffffff; --bg-card: #ffffff; --bg-input: #f4f4f5;
     --text-main: #18181b; --text-muted: #71717a; --border-color: #e4e4e7;
     --brand-green: #8EDB15; --brand-cyan: #14b8a6;
-    width: 100%; min-height: 100vh; padding-top: 100px;
+    width: 100%; min-height: 100vh; padding-top: 0;
     background-color: var(--bg-page); color: var(--text-main);
 }
 

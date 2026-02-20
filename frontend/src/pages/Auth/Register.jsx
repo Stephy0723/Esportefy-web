@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../../config/api';
 import './Register.css';
 // 1. IMPORTAR EL CEREBRO DEL TEMA (IGUAL QUE EN SIDEBAR)
 import { useTheme } from '../../context/ThemeContext'; 
@@ -46,7 +47,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:4000/api/auth/register', formData);
+      const response = await axios.post(`${API_URL}/api/auth/register`, formData);
       console.log("Usuario registrado:", response.data);
       alert("¡Cuenta creada con éxito! Ahora puedes iniciar sesión.");
       navigate('/login');

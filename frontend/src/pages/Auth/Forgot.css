@@ -1,24 +1,6 @@
-/* =========================================
-   VARIABLES DE TEMA (Claro / Oscuro)
+﻿/* =========================================
+   FORGOT PASSWORD â€” Usa variables de index.css
    ========================================= */
-:root {
-    /* MODO OSCURO (Default) */
-    --bg-page: #000000;         /* Fondo Negro puro */
-    --text-main: #ffffff;       /* Texto Blanco */
-    --text-muted: #a1a1aa;      /* Gris */
-    --line-color: #3f3f46;      /* Color de la línea en reposo */
-    --line-focus: #8EDB15;      /* Color de la línea al hacer clic (Verde) */
-    --btn-primary: #8EDB15;     /* Botón Morado */
-}
-
-.light-mode {
-    /* MODO CLARO (Se activa con JS) */
-    --bg-page: #ffffff;
-    --text-main: #000000;
-    --text-muted: #52525b;
-    --line-color: #d4d4d8;
-    --line-focus: #8EDB15;      /* Color foco en blanco */
-}
 
 * { box-sizing: border-box; }
 
@@ -26,7 +8,7 @@
 .auth-container-split {
     display: flex;
     min-height: 100vh;
-    background-color: var(--bg-page); /* CAMBIA EL FONDO AQUÍ */
+    background-color: var(--bg-page);
     color: var(--text-main);
     font-family: sans-serif;
     transition: background-color 0.3s ease;
@@ -48,11 +30,11 @@
 .header-text h1 { font-size: 3rem; margin: 10px 0; line-height: 1.1; }
 
 /* =========================================
-   INPUTS: SOLO LÍNEA (NUCLEAR OPTION)
+   INPUTS: SOLO LÃNEA (NUCLEAR OPTION)
    ========================================= */
 .input-row {
     display: flex;
-    align-items: flex-end; /* Alinea el texto con la línea */
+    align-items: flex-end; /* Alinea el texto con la lÃ­nea */
     margin-bottom: 30px;
     gap: 20px;
 }
@@ -65,7 +47,7 @@
     color: var(--text-muted);
     text-transform: uppercase;
     text-align: left;
-    padding-bottom: 10px; /* Separación con la línea */
+    padding-bottom: 10px; /* SeparaciÃ³n con la lÃ­nea */
 }
 
 .input-wrapper {
@@ -73,12 +55,12 @@
     position: relative;
 }
 
-/* EL INPUT REAL - AQUÍ QUITAMOS LA CAJA */
+/* EL INPUT REAL - AQUÃ QUITAMOS LA CAJA */
 .input-wrapper input {
     width: 100%;
     background: transparent !important;   /* SIN FONDO */
     border: none !important;              /* SIN BORDE ALREDEDOR */
-    border-bottom: 1px solid var(--line-color) !important; /* SOLO LÍNEA ABAJO */
+    border-bottom: 1px solid var(--border-color) !important; /* SOLO LÃNEA ABAJO */
     border-radius: 0 !important;          /* SIN ESQUINAS REDONDAS */
     padding: 10px 35px 10px 0;            /* Espacio para escribir */
     
@@ -91,15 +73,15 @@
 /* AL HACER CLIC (FOCUS) */
 .input-wrapper input:focus {
     background: transparent !important;
-    border-bottom: 2px solid var(--line-focus) !important; /* La línea cambia de color */
+    border-bottom: 2px solid var(--primary) !important; /* La lÃ­nea cambia de color */
     box-shadow: none !important;
 }
 
-/* --- SOLUCIÓN PARA EL FONDO AZUL DEL AUTOCOMPLETADO --- */
+/* --- SOLUCIÃ“N PARA EL FONDO AZUL DEL AUTOCOMPLETADO --- */
 .input-wrapper input:-webkit-autofill,
 .input-wrapper input:-webkit-autofill:hover, 
 .input-wrapper input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 30px var(--bg-page) inset !important; /* "Pinta" el fondo del color de la página */
+    -webkit-box-shadow: 0 0 0 30px var(--bg-page) inset !important; /* "Pinta" el fondo del color de la pÃ¡gina */
     -webkit-text-fill-color: var(--text-main) !important;
     transition: background-color 5000s ease-in-out 0s;
 }
@@ -108,7 +90,7 @@
 .input-wrapper i {
     position: absolute;
     right: 0;
-    bottom: 10px; /* Pegado a la línea */
+    bottom: 10px; /* Pegado a la lÃ­nea */
     color: var(--text-muted);
     font-size: 1.2rem;
 }
@@ -123,7 +105,7 @@
     margin-bottom: 30px;
 }
 
-/* Alineación correcta del checkbox */
+/* AlineaciÃ³n correcta del checkbox */
 .remember-me {
     display: flex;
     align-items: center;
@@ -135,14 +117,14 @@
 
 /* Estilo simple del cuadrito */
 .remember-me input[type="checkbox"] {
-    accent-color: var(--line-focus);
+    accent-color: var(--primary);
     width: 16px;
     height: 16px;
     cursor: pointer;
 }
 
 /* =========================================
-   BOTONES DE ACCIÓN (LADO A LADO)
+   BOTONES DE ACCIÃ“N (LADO A LADO)
    ========================================= */
 
 .form-actions {
@@ -152,12 +134,12 @@
     align-items: stretch; /* Asegura que ambos tengan la misma altura */
 }
 
-/* 1. BOTÓN PRINCIPAL (El de color) */
+/* 1. BOTÃ“N PRINCIPAL (El de color) */
 .btn-primary {
     flex: 1; /* Ocupa todo el espacio posible */
     padding: 16px;
-    background: var(--btn-primary);
-    color: #ffffff;
+    background: var(--primary);
+    color: var(--text-main);
     border: none;
     border-radius: 4px; /* Bordes ligeramente redondeados (o 0 si prefieres cuadrados) */
     
@@ -179,15 +161,15 @@
     cursor: not-allowed;
 }
 
-/* 2. BOTÓN SECUNDARIO (ATRÁS) - ARREGLADO */
+/* 2. BOTÃ“N SECUNDARIO (ATRÃS) - ARREGLADO */
 .btn-secondary {
-    flex: 0 0 auto; /* No se estira, mantiene su ancho según el texto */
-    min-width: 100px; /* Ancho mínimo para que no se vea aplastado */
+    flex: 0 0 auto; /* No se estira, mantiene su ancho segÃºn el texto */
+    min-width: 100px; /* Ancho mÃ­nimo para que no se vea aplastado */
     padding: 0 20px;
     
     background: transparent; /* Fondo transparente */
-    border: 1px solid var(--line-color); /* Borde del color de la línea de inputs */
-    color: var(--text-muted); /* Texto grisáceo */
+    border: 1px solid var(--border-color); /* Borde del color de la lÃ­nea de inputs */
+    color: var(--text-muted); /* Texto grisÃ¡ceo */
     border-radius: 4px;
     
     font-size: 0.8rem;
@@ -202,13 +184,13 @@
     justify-content: center;
 }
 
-/* Efecto Hover para el botón Atrás */
+/* Efecto Hover para el botÃ³n AtrÃ¡s */
 .btn-secondary:hover {
     border-color: var(--text-main); /* El borde se pone del color del texto principal (Blanco/Negro) */
     color: var(--text-main);        /* El texto se ilumina */
     background: rgba(128, 128, 128, 0.1); /* Fondo sutil al pasar el mouse */
 }
-/* SECCIÓN DERECHA (IMAGEN) */
+/* SECCIÃ“N DERECHA (IMAGEN) */
 .auth-right {
     flex: 1.5;
     background-color: var(--bg-page);
@@ -223,7 +205,7 @@
     .input-row { flex-direction: column; align-items: flex-start; gap: 5px; } 
 }
 /* =========================================
-   BOTONES DE ACCIÓN (SOLUCIÓN DEFINITIVA)
+   BOTONES DE ACCIÃ“N (SOLUCIÃ“N DEFINITIVA)
    ========================================= */
 
 .form-actions {
@@ -233,12 +215,12 @@
     width: 100%;
 }
 
-/* 1. BOTÓN PRINCIPAL (Morado/Verde) */
+/* 1. BOTÃ“N PRINCIPAL (Morado/Verde) */
 .btn-primary {
-    flex: 2;               /* Ocupa el 66% del espacio (más grande) */
-    padding: 15px;         /* Altura cómoda */
-    background: var(--btn-primary);
-    color: #ffffff;
+    flex: 2;               /* Ocupa el 66% del espacio (mÃ¡s grande) */
+    padding: 15px;         /* Altura cÃ³moda */
+    background: var(--primary);
+    color: var(--text-main);
     border: none;
     border-radius: 4px;
     
@@ -255,9 +237,9 @@
     transform: translateY(-1px);
 }
 
-/* 2. BOTÓN ATRÁS (Borde gris, fondo transparente) */
+/* 2. BOTÃ“N ATRÃS (Borde gris, fondo transparente) */
 .btn-secondary {
-    flex: 1;               /* Ocupa el 33% del espacio (más pequeño pero visible) */
+    flex: 1;               /* Ocupa el 33% del espacio (mÃ¡s pequeÃ±o pero visible) */
     padding: 15px;         /* MISMA altura que el primario */
     
     background-color: transparent !important; /* Forzar transparencia */
@@ -278,7 +260,7 @@
     justify-content: center;
 }
 
-/* Hover del Botón Atrás */
+/* Hover del BotÃ³n AtrÃ¡s */
 .btn-secondary:hover {
     border-color: var(--text-main) !important; /* Borde se pone blanco/negro */
     color: var(--text-main) !important;        /* Texto se pone blanco/negro */

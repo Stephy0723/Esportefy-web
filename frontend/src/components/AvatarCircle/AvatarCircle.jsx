@@ -1,28 +1,33 @@
 import React from 'react';
 import './AvatarCircle.css';
 
+/* Status icon mapping (Boxicons classes) */
+const STATUS_ICONS = {
+  online:     null,               // simple dot, no icon
+  gaming:     'bx bx-joystick',
+  tournament: 'bx bx-trophy',
+  streaming:  'bx bx-broadcast',
+  searching:  'bx bx-radar',
+  afk:        'bx bx-moon',
+  dnd:        'bx bx-block',
+  offline:    null,
+};
+
 const AvatarCircle = ({ 
   src,           
   alt = "Avatar", 
   size = "160px", 
-  status = "offline", // Nuevo: online, dnd, tournament, offline
-  isActive = false,   // Mantenemos por compatibilidad (si es true forzará online)
+  status = "offline",
+  isActive = false,
   frameConfig = null 
 }) => {
   
-  // 1. Configuración del Marco (Tu lógica existente)
-  // Mapeamos el ID del marco a la clase CSS correspondiente
   const frameClass = frameConfig?.type === 'css' ? `frame-${frameConfig.id}` : '';
-  const themeClass = frameConfig?.id || ''; // Fallback para tus marcos antiguos
-
-  // 2. Lógica del Estado
-  // Si isActive es true, forzamos 'online', si no, usamos el prop 'status'
+  const themeClass = frameConfig?.id || '';
   const currentStatus = isActive ? 'online' : status;
 
-  const styles = {
-    width: size,
-    height: size,
-  };
+  const styles = { width: size, height: size };
+  const iconClass = STATUS_ICONS[currentStatus];
 
   return (
     <div className={`avatar-circle-container ${frameClass} ${themeClass} ${currentStatus}`} style={styles}>
@@ -32,7 +37,6 @@ const AvatarCircle = ({
         <div className="crystal-leaf pos-1"></div>
         <div className="crystal-leaf pos-2"></div>
         <div className="crystal-leaf pos-3"></div>
-        {/* Polvo mágico si no es tóxico */}
         {themeClass !== 'toxic' && <div className="magic-dust"></div>}
       </div>
 
@@ -41,10 +45,18 @@ const AvatarCircle = ({
         <img src={src} alt={alt} />
       </div>
 
-      {/* 3. INDICADOR DE ESTADO (Dinámico) */}
-      {/* Solo lo mostramos si NO es offline */}
+      {/* 3. INDICADOR DE ESTADO — Animated orbit/drop system */}
       {currentStatus !== 'offline' && (
-        <span className={`status-dot ${currentStatus}`} title={currentStatus}></span>
+        <div className={`status-indicator si--${currentStatus}`}>
+          <div className="si__orbit-track">
+            <div className="si__dot">
+              {iconClass && <i className={iconClass}></i>}
+            </div>
+          </div>
+          {/* Ripple rings for pulse effect */}
+          <div className="si__ripple si__ripple--1"></div>
+          <div className="si__ripple si__ripple--2"></div>
+        </div>
       )}
     </div>
   );

@@ -1,41 +1,10 @@
-/* =========================================
-   VARIABLES Y TEMAS (CORREGIDO)
+﻿/* =========================================
+   SETTINGS â€” Usa variables de index.css
    ========================================= */
-:root {
-    --neon-green: #8EDB15;
-    --neon-gold: #ffd700;
-    --danger-red: #ef4444;
-    
-    /* MODO OSCURO (Default) */
-    --bg-page: #000000;
-    --bg-card: #0a0a0a;
-    --bg-input: #121214;
-    --text-main: #ffffff;
-    --text-muted: #a1a1aa;
-    --border-color: #27272a;
-    --radius-28: 28px;
-}
 
-/* AQUÍ ESTABA EL ERROR: Se quitó la llave extra } */
-.theme-light {
-    --bg-page: #ffffff;
-    --bg-card: #f4f4f5;
-    --bg-input: #ffffff;   /* Ahora sí cargará el blanco para el select e inputs */
-    --text-main: #000000;  /* Ahora sí el texto será negro */
-    --text-muted: #71717a;
-    --border-color: #e4e4e7;
-}
-
-/* ASEGÚRATE DE QUE EL SELECT USE LA VARIABLE */
-select, input {
-    background-color: var(--bg-input) !important;
-    color: var(--text-main) !important;
-    border: 1px solid var(--border-color);
-}
-
-/* EL SWITCH: Verde cuando esté activo */
+/* EL SWITCH: Verde cuando estÃ© activo */
 input:checked + .slider {
-    background-color: var(--neon-green) !important;
+    background-color: var(--primary) !important;
 }
 /* =========================================
    LAYOUT PRINCIPAL
@@ -46,7 +15,7 @@ input:checked + .slider {
     color: var(--text-main);
     font-family: 'Rajdhani', sans-serif;
     padding: 2rem;
-    padding-top: 100px; /* Ajuste para Navbar */
+    padding-top: 0;
     transition: all 0.3s ease;
 }
 
@@ -59,12 +28,12 @@ input:checked + .slider {
 }
 
 /* =========================================
-   SIDEBAR (NAVEGACIÓN)
+   SIDEBAR (NAVEGACIÃ“N)
    ========================================= */
 .settings-sidebar {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-28);
+    border-radius: 28px;
     padding: 1.5rem;
     height: fit-content;
 }
@@ -84,7 +53,7 @@ input:checked + .slider {
 }
 
 /* =========================================
-   SIDEBAR (NAVEGACIÓN LIMPIA)
+   SIDEBAR (NAVEGACIÃ“N LIMPIA)
    ========================================= */
 .nav-item {
     display: flex;
@@ -95,7 +64,7 @@ input:checked + .slider {
     border: none;
     color: var(--text-muted);
     padding: 12px 20px;
-    border-radius: var(--radius-28);
+    border-radius: 28px;
     font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
@@ -107,11 +76,11 @@ input:checked + .slider {
 /* Solo se pone negro/gris oscuro en HOVER si estamos en modo OSCURO */
 .nav-item:hover {
    
-    color: var(--neon-green) !important; /* Texto verde al pasar el mouse */
+    color: var(--primary) !important; /* Texto verde al pasar el mouse */
 }
-/* REGLA DE ORO: El ítem activo SIEMPRE es verde neón */
+/* REGLA DE ORO: El Ã­tem activo SIEMPRE es verde neÃ³n */
 .nav-item.active {
-    background: var(--neon-green) !important;
+    background: var(--primary) !important;
     color: #000000 !important;
     box-shadow: 0 4px 15px rgba(142, 219, 21, 0.2);
 }
@@ -120,7 +89,7 @@ input:checked + .slider {
 .theme-light .nav-item:hover {
     background: #f0f0f0 !important; 
     color: #000000 !important;
-    border: 1px solid var(--neon-green); /* Opcional: borde verde al pasar el mouse */
+    border: 1px solid var(--primary); /* Opcional: borde verde al pasar el mouse */
 }
 /* =========================================
    PANEL DE CONTENIDO
@@ -128,7 +97,7 @@ input:checked + .slider {
 .settings-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-28);
+    border-radius: 28px;
     padding: 2.5rem;
     min-height: 600px;
 }
@@ -137,7 +106,7 @@ input:checked + .slider {
     margin-bottom: 2.5rem;
 }
 
-/* --- TÍTULOS Y SECCIONES --- */
+/* --- TÃTULOS Y SECCIONES --- */
 .panel-header h2 {
     font-size: 1.8rem;
     font-weight: 900;
@@ -167,7 +136,7 @@ input:checked + .slider {
 
 .section-icon {
     font-size: 1.4rem;
-    color: var(--neon-green);
+    color: var(--primary);
 }
 .section-title-box h3 {
     color: var(--text-main);
@@ -187,7 +156,7 @@ input:checked + .slider {
 .info-box-status {
     display: flex;
     align-items: center; /* CENTRADO VERTICAL TOTAL */
-    justify-content: space-between; /* Texto a la izquierda, Botón a la derecha */
+    justify-content: space-between; /* Texto a la izquierda, BotÃ³n a la derecha */
  
     padding: 20px 30px;
     border-radius: 28px;
@@ -195,7 +164,7 @@ input:checked + .slider {
     transition: transform 0.3s ease;
 }
 
-/* --- CONTENEDOR CON ALINEACIÓN TOTAL --- */
+/* --- CONTENEDOR CON ALINEACIÃ“N TOTAL --- */
 .input-with-action {
     display: flex;
     align-items: flex-start;
@@ -212,15 +181,15 @@ input:checked + .slider {
     color: rgba(255, 255, 255, 0.4) !important; /* Texto tenue para el correo */
     padding: 0 25px;
     height: 50px; /* Altura fija para que coincidan */
-    border-radius: 50px; /* Forma de cápsula completa */
+    border-radius: 50px; /* Forma de cÃ¡psula completa */
     font-family: 'Rajdhani', sans-serif;
     font-weight: 600;
     font-size: 1rem;
 }
 
-/* --- BOTÓN NEÓN ALINEADO --- */
+/* --- BOTÃ“N NEÃ“N ALINEADO --- */
 .input-with-action button {
-    background: var(--neon-green);
+    background: var(--primary);
     color: #000;
     border: none;
     padding: 0 30px;
@@ -251,19 +220,19 @@ input[type="password"] {
     border: 1px solid var(--border-color);
     color: var(--text-main);
     padding: 12px 20px;
-    border-radius: var(--radius-28);
+    border-radius: 28px;
     font-family: 'Rajdhani', sans-serif;
     font-size: 1rem;
 }
 .theme-light .input-with-action input:hover {
     background-color: #ffffff !important;
-    border-color: var(--neon-green) !important;
+    border-color: var(--primary) !important;
     color: #000000 !important;
 }
 
 .input-disabled {
     background-color: var(--bg-black) !important; /* Fondo negro profundo */
-    border: 2px dashed rgba(142, 219, 21, 0.2) !important; /* Borde neón sutil */
+    border: 2px dashed rgba(142, 219, 21, 0.2) !important; /* Borde neÃ³n sutil */
     color: var(--text-muted) !important;
     padding: 14px 22px;
     border-radius: 28px;
@@ -274,7 +243,7 @@ input[type="password"] {
     pointer-events: none;
 }
 
-/* Ajuste específico para modo claro: el texto debe ser un gris legible */
+/* Ajuste especÃ­fico para modo claro: el texto debe ser un gris legible */
 .theme-light .input-disabled {
     background-color: #f9f9f9 !important;
     color: #a1a1aa !important;
@@ -292,11 +261,11 @@ input[type="password"] {
    BOTONES
    ========================================= */
 .btn-save, .btn-banner-action, .btn-connect {
-    background: var(--neon-green);
+    background: var(--primary);
     color: #000;
     border: none;
     padding: 12px 30px;
-    border-radius: var(--radius-28);
+    border-radius: 28px;
     font-weight: 900;
     text-transform: uppercase;
     cursor: pointer;
@@ -310,8 +279,8 @@ input[type="password"] {
 
 .btn-small-neon {
     background: transparent;
-    border: 2px solid var(--neon-green);
-    color: var(--neon-green);
+    border: 2px solid var(--primary);
+    color: var(--primary);
     padding: 12px 24px;
     border-radius: 28px;
     font-weight: 800;
@@ -324,15 +293,15 @@ input[type="password"] {
 
 .btn-disconnect {
     background: transparent;
-    border: 1px solid var(--danger-red);
-    color: var(--danger-red);
+    border: 1px solid var(--danger);
+    color: var(--danger);
     padding: 10px 20px;
-    border-radius: var(--radius-28);
+    border-radius: 28px;
     font-weight: 800;
     cursor: pointer;
 }
 .btn-small-neon:hover {
-    background: var(--neon-green);
+    background: var(--primary);
     color: #000000 !important; /* Siempre negro sobre verde */
     box-shadow: 0 0 20px rgba(142, 219, 21, 0.4);
 }
@@ -359,9 +328,9 @@ input[type="password"] {
     gap: 25px;
     margin-top: 2rem;
 }
-/* --- TARJETA DE INTEGRACIÓN --- */
+/* --- TARJETA DE INTEGRACIÃ“N --- */
 .integration-card {
-    background-color: var(--bg-card); /* Cambia a #f4f4f5 en Light */
+    background-color: var(--bg-card); /* Cambia a var(--bg-card) en Light */
     border: 1px solid var(--border-color);
     border-radius: 28px;
     padding: 2.5rem 2rem;
@@ -375,7 +344,7 @@ input[type="password"] {
 }
 
 .integration-card.connected {
-    border-color: var(--neon-green);
+    border-color: var(--primary);
     box-shadow: 0 0 20px rgba(142, 219, 21, 0.05);
 }
 /* --- BADGE DE ESTADO (TOP RIGHT) --- */
@@ -391,9 +360,9 @@ input[type="password"] {
     background: var(--bg-input);
     color: var(--text-muted);
 }
-/* Cuando está conectado, el badge es verde */
+/* Cuando estÃ¡ conectado, el badge es verde */
 .integration-card.connected .int-status {
-    background: var(--neon-green);
+    background: var(--primary);
     color: #000;
 }
 .int-status.pending {
@@ -438,7 +407,7 @@ input[type="password"] {
     width: 50px;
     height: 50px;
     border-radius: 12px;
-    border: 2px solid var(--neon-green);
+    border: 2px solid var(--primary);
 }
 
 .riot-meta {
@@ -454,7 +423,7 @@ input[type="password"] {
 
 .riot-meta span {
     font-size: 0.75rem;
-    color: var(--neon-green);
+    color: var(--primary);
 }
 
 /* --- FORMULARIO RIOT (INPUTS INTERNOS) --- */
@@ -516,11 +485,11 @@ input[type="password"] {
     }
 }
 
-/* --- BOTONES DE CONEXIÓN --- */
+/* --- BOTONES DE CONEXIÃ“N --- */
 .btn-connect, .btn-disconnect {
-    margin-top: auto; /* Empuja el botón al final de la carta */
+    margin-top: auto; /* Empuja el botÃ³n al final de la carta */
     width: 100%;
-    height: 50px; /* Misma altura que el botón de seguridad */
+    height: 50px; /* Misma altura que el botÃ³n de seguridad */
     border-radius: 50px;
     font-weight: 900;
     text-transform: uppercase;
@@ -530,18 +499,18 @@ input[type="password"] {
 }
 
 .btn-connect {
-    background: var(--neon-green);
+    background: var(--primary);
     color: #000;
 }
 
 .btn-disconnect {
     background-color: transparent;
-    border: 2px solid var(--danger-red);
-    color: var(--danger-red);
+    border: 2px solid var(--danger);
+    color: var(--danger);
 }
 
 .btn-disconnect:hover {
-    background: var(--danger-red);
+    background: var(--danger);
     color: white;
 }
 
@@ -553,7 +522,7 @@ input[type="password"] {
 }
 
 .theme-light .riot-profile-box {
-    background: #f4f4f5;
+    background: var(--bg-card);
 }
 
 .theme-light .riot-form {
@@ -592,7 +561,7 @@ input[type="password"] {
 }
 
 .danger-content h4 {
-    color: var(--danger-red);
+    color: var(--danger);
     text-transform: uppercase;
     font-weight: 900;
     margin: 0 0 5px 0;
@@ -605,12 +574,12 @@ input[type="password"] {
     margin: 0;
 }
 
-/* --- BOTÓN ELIMINAR (ESTILO MINIMAL) --- */
+/* --- BOTÃ“N ELIMINAR (ESTILO MINIMAL) --- */
 
 .btn-danger-minimal {
     background: transparent;
-    border: 2px solid var(--danger-red);
-    color: var(--danger-red);
+    border: 2px solid var(--danger);
+    color: var(--danger);
     padding: 12px 24px;
     border-radius: 50px;
     font-weight: 800;
@@ -622,11 +591,11 @@ input[type="password"] {
     transition: all 0.3s ease;
 }
 .btn-danger-minimal:hover {
-    background: var(--danger-red);
+    background: var(--danger);
     color: white;
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
 }
-/* --- CUADRO DE CONFIRMACIÓN (EL FINAL) --- */
+/* --- CUADRO DE CONFIRMACIÃ“N (EL FINAL) --- */
 .delete-confirmation-box {
     text-align: center;
     padding: 10px;
@@ -634,7 +603,7 @@ input[type="password"] {
 
 .warning-icon-big {
     font-size: 3rem;
-    color: var(--danger-red);
+    color: var(--danger);
     margin-bottom: 1.5rem;
     filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.2));
 }
@@ -651,7 +620,7 @@ input[type="password"] {
     max-width: 600px;
     margin: 0 auto 2rem auto;
 }
-/* --- ACCIONES DE CONFIRMACIÓN --- */
+/* --- ACCIONES DE CONFIRMACIÃ“N --- */
 .confirm-actions {
     display: flex;
     justify-content: center;
@@ -659,7 +628,7 @@ input[type="password"] {
 }
 
 .btn-delete-final {
-    background: var(--danger-red);
+    background: var(--danger);
     color: white;
     border: none;
     padding: 15px 40px;
@@ -673,7 +642,7 @@ input[type="password"] {
     transform: scale(1.05);
     box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
 }
-/* El botón de cancelar usa el estilo de la página */
+/* El botÃ³n de cancelar usa el estilo de la pÃ¡gina */
 .btn-cancel {
     background: var(--bg-input);
     color: var(--text-main);
@@ -725,7 +694,7 @@ input[type="password"] {
     transition: .4s;
     border-radius: 50%;
 }
-/* --- DESCRIPCIÓN DE SECCIÓN --- */
+/* --- DESCRIPCIÃ“N DE SECCIÃ“N --- */
 .section-desc {
     color: var(--text-muted);
     font-size: 0.95rem;
@@ -749,7 +718,7 @@ input[type="password"] {
     transition: all 0.3s ease;
 }
 .platform-card:hover {
-    border-color: var(--neon-green);
+    border-color: var(--primary);
     transform: translateY(-3px);
 }
 .plat-info {
@@ -769,11 +738,11 @@ input[type="password"] {
     color: var(--text-main);
 }
 
-/* --- BOTÓN VINCULAR (ESTILO GHOST/NEÓN) --- */
+/* --- BOTÃ“N VINCULAR (ESTILO GHOST/NEÃ“N) --- */
 .btn-status-toggle {
     background: transparent;
-    border: 2px solid var(--neon-green);
-    color: var(--neon-green);
+    border: 2px solid var(--primary);
+    color: var(--primary);
     padding: 8px 20px;
     border-radius: 50px;
     font-weight: 800;
@@ -784,25 +753,25 @@ input[type="password"] {
 }
 
 .btn-status-toggle:hover {
-    background: var(--neon-green);
+    background: var(--primary);
     color: #000000 !important;
     box-shadow: 0 0 15px rgba(142, 219, 21, 0.3);
 }
 
-/* --- CONTENEDOR DE OPCIÓN (TOGGLE) --- */
+/* --- CONTENEDOR DE OPCIÃ“N (TOGGLE) --- */
 .toggle-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1.5rem 2rem;
-    background-color: var(--bg-input); /* Automático: negro en dark / blanco en light */
+    background-color: var(--bg-input); /* AutomÃ¡tico: negro en dark / blanco en light */
     border: 2px solid var(--border-color);
     border-radius: 28px; /* Manteniendo tus 28px */
     margin-bottom: 1.2rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Ajuste específico para cuando el fondo es BLANCO */
+/* Ajuste especÃ­fico para cuando el fondo es BLANCO */
 .theme-light .toggle-item {
     background-color: #ffffff !important;
     border-color: #f1f1f4 !important;
@@ -831,7 +800,7 @@ input[type="password"] {
 }
 
 .theme-option.active {
-    border-color: var(--neon-green);
+    border-color: var(--primary);
     background: rgba(142, 219, 21, 0.05); /* Toque de verde muy suave */
 }
 
@@ -843,21 +812,21 @@ input[type="password"] {
     border: 1px solid rgba(255,255,255,0.1);
 }
 
-.theme-preview.dark { background: #0a0a0a; }
+.theme-preview.dark { background: var(--bg-card); }
 .theme-preview.midnight { background: #000000; }
 .theme-preview.contrast { 
     background: #ffffff; 
     border: 1px solid #e4e4e7;
 }
 
-/* --- SWITCH (EL BOTÓN QUE DIJISTE QUE SEA VERDE) --- */
+/* --- SWITCH (EL BOTÃ“N QUE DIJISTE QUE SEA VERDE) --- */
 .slider {
     background-color: #3f3f46; /* Gris neutro apagado */
 }
 
-/* CUANDO ESTÁ ACTIVO: VERDE NEÓN */
+/* CUANDO ESTÃ ACTIVO: VERDE NEÃ“N */
 input:checked + .slider {
-    background-color: var(--neon-green) !important;
+    background-color: var(--primary) !important;
 }
 
 /* Switch especial PURPURA para el modo streamer */
@@ -866,14 +835,14 @@ input:checked + .purple-slider {
 }
 
 .slider:before {
-    background-color: #ffffff; /* El círculo siempre blanco */
+    background-color: #ffffff; /* El cÃ­rculo siempre blanco */
 }
 
-/* --- SECCIÓN PLAN ACTUAL --- */
+/* --- SECCIÃ“N PLAN ACTUAL --- */
 .current-plan-section h4 {
     font-size: 0.8rem;
     letter-spacing: 2px;
-    color: var(--neon-green);
+    color: var(--primary);
     margin-bottom: 1rem;
 }
 
@@ -892,10 +861,10 @@ input:checked + .purple-slider {
 
 .rookie-features { display: flex; gap: 20px; }
 .rookie-features span { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; }
-.rookie-features svg { color: var(--neon-green); }
+.rookie-features svg { color: var(--primary); }
 
 .rookie-status {
-    background: var(--neon-green);
+    background: var(--primary);
     color: #000;
     padding: 5px 15px;
     border-radius: 50px;
@@ -903,7 +872,7 @@ input:checked + .purple-slider {
     font-size: 0.8rem;
 }
 
-/* --- GRID DE COMPARACIÓN --- */
+/* --- GRID DE COMPARACIÃ“N --- */
 .billing-grid-comparison {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -934,13 +903,13 @@ input:checked + .purple-slider {
 
 .plan-features { list-style: none; padding: 0; margin: 2rem 0; flex-grow: 1; }
 .plan-features li { margin-bottom: 15px; display: flex; gap: 10px; font-weight: 600; line-height: 1.4; }
-.icon-check.neon { color: var(--neon-green); }
-.icon-check.gold { color: var(--neon-gold); }
+.icon-check.neon { color: var(--primary); }
+.icon-check.gold { color: var(--gold); }
 
 /* --- ESTILO ANUAL (LEGEND) --- */
 .plan-card.annual {
-    border: 2px solid var(--neon-gold);
-    transform: scale(1.03); /* Un poco más grande para resaltar */
+    border: 2px solid var(--gold);
+    transform: scale(1.03); /* Un poco mÃ¡s grande para resaltar */
 }
 
 .best-value-badge {
@@ -948,7 +917,7 @@ input:checked + .purple-slider {
     top: -15px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--neon-gold);
+    background: var(--gold);
     color: #000;
     padding: 5px 20px;
     border-radius: 50px;
@@ -976,13 +945,13 @@ input:checked + .purple-slider {
 
 .btn-upgrade-outline {
     background: transparent;
-    border: 2px solid var(--neon-green);
-    color: var(--neon-green);
+    border: 2px solid var(--primary);
+    color: var(--primary);
 }
-.btn-upgrade-outline:hover { background: var(--neon-green); color: #000; }
+.btn-upgrade-outline:hover { background: var(--primary); color: #000; }
 
 .btn-upgrade-full {
-    background: var(--neon-gold);
+    background: var(--gold);
     color: #000;
     border: none;
 }
@@ -1002,7 +971,7 @@ input:checked + .purple-slider {
 }
 
 .theme-light .support-hero-banner {
-    background: linear-gradient(135deg, #ffffff 0%, #f4f4f5 100%);
+    background: linear-gradient(135deg, #ffffff 0%, var(--bg-card) 100%);
     border-color: #e4e4e7;
 }
 
@@ -1016,7 +985,7 @@ input:checked + .purple-slider {
 
 .banner-icon {
     font-size: 3.5rem;
-    color: var(--neon-green);
+    color: var(--primary);
     filter: drop-shadow(0 0 15px rgba(142, 219, 21, 0.3));
 }
 
@@ -1034,17 +1003,17 @@ input:checked + .purple-slider {
     margin-bottom: 1.5rem;
 }
 
-/* --- ACCIONES DEL BANNER (ALINEACIÓN) --- */
+/* --- ACCIONES DEL BANNER (ALINEACIÃ“N) --- */
 .report-actions {
     display: flex;
     gap: 15px;
     align-items: center;
 }
 
-/* Select Estilo Cápsula */
+/* Select Estilo CÃ¡psula */
 .select-banner {
     flex: 1;
-    height: 50px; /* Misma altura que el botón */
+    height: 50px; /* Misma altura que el botÃ³n */
     background-color: var(--bg-page) !important;
     border: 2px solid var(--border-color) !important;
     color: var(--text-main) !important;
@@ -1060,11 +1029,11 @@ input:checked + .purple-slider {
     background-color: #ffffff !important;
 }
 
-/* Botón de Acción */
+/* BotÃ³n de AcciÃ³n */
 .btn-banner-action {
     height: 50px;
     padding: 0 35px;
-    background-color: var(--neon-green);
+    background-color: var(--primary);
     color: #000;
     border: none;
     border-radius: 50px;
@@ -1098,7 +1067,7 @@ input:checked + .purple-slider {
 
 .info-icon {
     font-size: 1.5rem;
-    color: var(--neon-green);
+    color: var(--primary);
 }
 
 .info-box strong {
@@ -1122,7 +1091,7 @@ input:checked + .purple-slider {
     margin-top: 1.5rem;
 }
 
-/* --- TARJETA DE SOPORTE (DINÁMICA) --- */
+/* --- TARJETA DE SOPORTE (DINÃMICA) --- */
 .support-card {
     background-color: var(--bg-card); /* Blanco en Light / Negro en Dark */
     border: 1px solid var(--border-color);
@@ -1143,7 +1112,7 @@ input:checked + .purple-slider {
 
 .support-icon {
     font-size: 3rem;
-    color: var(--neon-green);
+    color: var(--primary);
     margin-bottom: 1.2rem;
 }
 
@@ -1162,7 +1131,7 @@ input:checked + .purple-slider {
     line-height: 1.5;
 }
 
-/* --- BOTÓN GHOST (TRANSPARENTE) --- */
+/* --- BOTÃ“N GHOST (TRANSPARENTE) --- */
 .btn-ghost.small {
     margin-top: auto; /* Empuja al fondo */
     background: transparent !important;
@@ -1181,12 +1150,12 @@ input:checked + .purple-slider {
 }
 
 .btn-ghost.small:hover {
-    border-color: var(--neon-green);
-    color: var(--neon-green);
+    border-color: var(--primary);
+    color: var(--primary);
     transform: translateY(-3px);
 }
 
-/* --- VERSIÓN APP --- */
+/* --- VERSIÃ“N APP --- */
 .app-version {
     margin-top: 4rem;
     padding-top: 2rem;
@@ -1203,6 +1172,6 @@ input:checked + .purple-slider {
     opacity: 0.5;
 }
 
-input:checked + .slider { background-color: var(--neon-green); }
+input:checked + .slider { background-color: var(--primary); }
 input:checked + .purple-slider { background-color: #a55eea; }
 input:checked + .slider:before { transform: translateX(24px); }

@@ -13,6 +13,9 @@ import Navbar from './components/Navbar/Navbar';
 import Sidebar from './components/Sidebar/Sidebar'; 
 // Templates y layouts
 import CommunityTemplate from './pages/menu/Community/CommunityTemplate/CommunityTemplate';
+import CommunityAdminTemplate from './pages/menu/Community/CommunityAdminTemplate/CommunityAdminTemplate';
+// Componente de protección de rutas
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 
 // PÁGINAS
 import Home from './pages/Home/Home';
@@ -80,14 +83,8 @@ import RuneterraPage from './pages/Game/RuneteraPage.jsx';
 import Nba2k14Page from './pages/Game/Nba2k14Page.jsx';
 
 
-// --- COMPONENTE AUXILIAR: DETECTOR DE BIENVENIDA ---
+// --- COMPONENTE AUXILIAR: DETECTOR DE BIENVENIDA (ya se maneja desde el backend) ---
 const WelcomeTrigger = () => {
-  const { triggerWelcomeSequence } = useNotification();
-
-  useEffect(() => {
-    // triggerWelcomeSequence(); 
-  }, [triggerWelcomeSequence]);
-
   return null;
 };
 
@@ -148,7 +145,8 @@ function App() {
           {/* CREACIÓN DE EQUIPO (Pública o separada del layout principal según tu diseño actual) */}
           <Route path="/create-team" element={<CreateTeamPage />} />
           
-          {/* PRIVADAS (Con Sidebar + Navbar) */}
+          {/* PRIVADAS (Con Sidebar + Navbar + Protección de autenticación) */}
+          <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chats" element={<Chats />} />
@@ -187,9 +185,7 @@ function App() {
             <Route path="/game/pubgm" element={<PubgPage />} />
             <Route path="/game/r6" element={<RainbowSixPage />} />
             <Route path="/game/rocket" element={<RocketLeaguePage />} />
-            <Route path="/game/freefire" element={<FreeFirePage />} />
-            <Route path="/game/cs2" element={<CsgoPage />} />  
-            <Route path="/game/apex" element={<ApexPage />} />
+            <Route path="/game/cs2" element={<CsgoPage />} />
             <Route path="/game/tft" element={<TftPage />} />
             <Route path="/game/clashroyale" element={<ClashRoyalePage />} />
             <Route path="/game/sf6" element={<StreetFighter6Page />} />
@@ -197,15 +193,14 @@ function App() {
             <Route path="/game/starcraft" element={<StarcraftPage />} />
             <Route path="/game/lor" element={<RuneterraPage />} />  
             <Route path="/game/nba2k" element={<Nba2k14Page />} />
-            {/* Rankings */  }
-            <Route path="/rankings" element={<Rankings />} />
-
             {/* Ruta de Comunidad Genérica (Template) */}
-            <Route path="/template" element={<CommunityTemplate />} />
+            <Route path="/community/:slug" element={<CommunityTemplate />} />
+            <Route path="/community/:id/admin" element={<CommunityAdminTemplate />} />
 
             {/* Rutas dinámicas */  }
             <Route path="/group/:id" element={<GroupPage />} />
             <Route path="/organizer/:id" element={<OrganizerPage />} />
+          </Route>
           </Route>
         </Routes>
       </BrowserRouter>

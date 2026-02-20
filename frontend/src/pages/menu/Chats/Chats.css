@@ -14,7 +14,7 @@
 /* ========================================= */
 .hybrid-chat-container {
     display: flex;
-    padding-top: 80px; /* Navbar superior */
+    padding-top: 0;
     height: 100vh;
     background: var(--sidebar-bg);
     transition: var(--transition);

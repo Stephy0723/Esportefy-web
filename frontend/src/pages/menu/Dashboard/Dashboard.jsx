@@ -1,58 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Dashboard.css'; 
-import { gamesDetailedData } from '../../../data/gamesDetailedData'; 
-import defaultBanner from '../../../assets/images/login-black.png'; // Ajusta tu ruta
-// 1. IMPORTAMOS LOS NUEVOS ASSETS Y COMPONENTES
-
-import { backgroundList } from '../../../data/backgroundImages'; // Tu lista de fondos
-import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx'; // El nuevo componente
+import { API_URL } from '../../../config/api';
+import './Dashboard.css';
+import { gamesDetailedData } from '../../../data/gamesDetailedData';
+import defaultBanner from '../../../assets/images/login-black.png';
+import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
-import PlayerTag from '../../../components/PlayerTag/PlayerTag'; // <--- EL COMPONENTE NUEVO
-import { PLAYER_TAGS } from '../../../data/playerTags';
+import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeGameIndex, setActiveGameIndex] = useState(0);
     const [myTeams, setMyTeams] = useState([]);
     const [activeTeam, setActiveTeam] = useState(null);
+    const [hoveredGame, setHoveredGame] = useState(null);
+    const [now, setNow] = useState(new Date());
+    const [tournaments, setTournaments] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [featuredGameIdx, setFeaturedGameIdx] = useState(0);
 
-    // --- DATOS MOCK PARA LAS NUEVAS SECCIONES ---
-    const mockCalendar = [
-        { day: '24', month: 'OCT', title: 'Scrim vs Team Liquid', time: '20:00', type: 'scrim' },
-        { day: '28', month: 'OCT', title: 'Torneo Regional (Qualifiers)', time: '16:00', type: 'tourney' },
-        { day: '02', month: 'NOV', title: 'Entrenamiento Táctico', time: '18:00', type: 'training' },
-    ];
+    /* ── Reloj ── */
+    useEffect(() => {
+        const t = setInterval(() => setNow(new Date()), 60_000);
+        return () => clearInterval(t);
+    }, []);
 
-    const mockSocial = {
-        team: { name: 'SKT T1 ACADEMY', logo: 'https://i.pravatar.cc/150?u=team', role: 'Capitán' },
-        requests: [
-            { id: 1, name: 'Faker_Jr', img: 'https://i.pravatar.cc/150?u=1' },
-            { id: 2, name: 'ViperX', img: 'https://i.pravatar.cc/150?u=2' }
-        ],
-        tournaments: [
-            { name: 'Worlds 2024 Qualifiers', status: 'En Curso', rank: 'Top 32' },
-            { name: 'Red Bull Solo Q', status: 'Registrado', rank: '-' }
-        ]
-    };
-    const [selectedBgIndex, setSelectedBgIndex] = useState(2); 
-    const currentHeroBg = backgroundList[selectedBgIndex] || defaultBanner;
-    
-    
-    const scrollToSection = (id) => {
-        const element = document.getElementById(id);
-        if (element) element.scrollIntoView({ behavior: 'smooth' });
-    };
-
+    /* ══════════════════════════════════════════════
+       FETCH PROFILE  (DB — NO TOCAR)
+       ══════════════════════════════════════════════ */
     useEffect(() => {
         const fetchProfile = async () => {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             if (!token) { navigate('/login'); return; }
             try {
-                const response = await axios.get('http://localhost:4000/api/auth/profile', {
+                const response = await axios.get(`${API_URL}/api/auth/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 setUser(response.data);
@@ -66,11 +49,14 @@ const Dashboard = () => {
         fetchProfile();
     }, [navigate]);
 
+    /* ══════════════════════════════════════════════
+       FETCH TEAMS  (DB — NO TOCAR)
+       ══════════════════════════════════════════════ */
     useEffect(() => {
         const fetchTeams = async () => {
             if (!user?._id) return;
             try {
-                const res = await axios.get('http://localhost:4000/api/teams');
+                const res = await axios.get(`${API_URL}/api/teams`);
                 const allTeams = res.data || [];
                 const uid = String(user._id);
                 let list = [];
@@ -98,380 +84,488 @@ const Dashboard = () => {
         fetchTeams();
     }, [user?._id, user?.teams?.length]);
 
+    /* ══════════════════════════════════════════════
+       FETCH TOURNAMENTS  (DB — REAL)
+       ══════════════════════════════════════════════ */
+    useEffect(() => {
+        const fetchTournaments = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/api/tournaments`);
+                setTournaments(res.data || []);
+            } catch (err) {
+                console.error('Error cargando torneos:', err);
+            }
+        };
+        fetchTournaments();
+    }, []);
+
+    /* ══════════════════════════════════════════════
+       FETCH NOTIFICATIONS  (DB — REAL)
+       ══════════════════════════════════════════════ */
+    useEffect(() => {
+        const fetchNotifs = async () => {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await axios.get(`${API_URL}/api/notifications`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                setNotifications(res.data || []);
+            } catch (err) {
+                console.error('Error cargando notificaciones:', err);
+            }
+        };
+        if (user) fetchNotifs();
+    }, [user]);
+
+    /* ── Datos derivados ── */
     const userData = {
         username: user?.username || 'Jugador',
         games: user?.selectedGames || []
     };
 
-    const getActiveGameData = () => {
-        if (!userData.games.length) return null;
-        const gameId = userData.games[activeGameIndex];
-        return gamesDetailedData[gameId] || { name: gameId, banner: defaultBanner, tags: ['Juego'], history: '...', winRate: 'N/A' };
-    };
-    const activeGame = getActiveGameData();
-    const currentFrame = FRAMES.find(frame => frame.id === user?.selectedFrameId) || FRAMES[0];
-    const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0]; 
+    const currentFrame = FRAMES.find(f => f.id === user?.selectedFrameId) || FRAMES[0];
+    const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0];
+
     const riotLinked = user?.connections?.riot?.verified;
-    const riotProfileIconId = user?.gameProfiles?.lol?.profileIconId ?? 0;
-    const riotSummonerLevel = user?.gameProfiles?.lol?.summonerLevel;
-    const riotRank = user?.gameProfiles?.lol?.rank;
-    const riotName = user?.connections?.riot?.gameName;
-    const riotTagLine = user?.connections?.riot?.tagLine;
+    const riotIconId = user?.gameProfiles?.lol?.profileIconId ?? 0;
+    const riotLevel  = user?.gameProfiles?.lol?.summonerLevel;
+    const riotRank   = user?.gameProfiles?.lol?.rank;
+    const riotName   = user?.connections?.riot?.gameName;
+    const riotTag    = user?.connections?.riot?.tagLine;
 
     const resolveTeamRole = (team) => {
         if (!team || !user?._id) return '';
         const uid = String(user._id);
-        const captainId = team.captain?._id || team.captain;
-        if (String(captainId) === uid) return 'Capitán';
+        const cid = team.captain?._id || team.captain;
+        if (String(cid) === uid) return 'Capitán';
         const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
-        const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
-        const coach = team.roster?.coach;
+        const subs     = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+        const coach    = team.roster?.coach;
         if (coach && String(coach.user) === uid) return coach.role || 'Coach';
-        const starter = starters.find((p) => String(p?.user) === uid);
-        if (starter) return starter.role || 'Titular';
-        const sub = subs.find((p) => String(p?.user) === uid);
+        const s = starters.find(p => String(p?.user) === uid);
+        if (s) return s.role || 'Titular';
+        const sub = subs.find(p => String(p?.user) === uid);
         if (sub) return sub.role || 'Suplente';
         return 'Miembro';
     };
 
-    const renderTeamCard = () => {
-        if (!activeTeam) {
-            return (
-                <div className="panel-glass team-card">
-                    <div className="team-bg-blur"></div>
-                    <div className="team-content">
-                        <div className="team-avatar">
-                            <i className='bx bx-group'></i>
-                        </div>
-                        <h3>Sin equipo</h3>
-                        <span className="role-badge">Crea o únete</span>
-                        <div className="team-actions">
-                            <button className="btn-neon-outline" onClick={() => navigate('/create-team')}>CREAR EQUIPO</button>
-                            <button className="btn-neon-outline" onClick={() => navigate('/teams')}>BUSCAR EQUIPOS</button>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
+    const enrichedGames = useMemo(() =>
+        userData.games.map(id => gamesDetailedData[id]).filter(Boolean),
+    [userData.games]);
 
-        const role = resolveTeamRole(activeTeam);
+    const featuredGame = enrichedGames[featuredGameIdx] || null;
+
+    const greeting = useMemo(() => {
+        const h = now.getHours();
+        if (h < 6)  return 'Buenas noches';
+        if (h < 12) return 'Buenos días';
+        if (h < 19) return 'Buenas tardes';
+        return 'Buenas noches';
+    }, [now]);
+
+    const timeStr = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    // Active / upcoming tournaments  
+    const activeTournaments = useMemo(() =>
+        tournaments
+            .filter(t => t.status === 'open' || t.status === 'ongoing')
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .slice(0, 5),
+    [tournaments]);
+
+    // Pending join requests for captain
+    const pendingRequests = useMemo(() => {
+        if (!user?._id) return [];
+        const uid = String(user._id);
+        let reqs = [];
+        myTeams.forEach(team => {
+            if (String(team.captain?._id || team.captain) === uid) {
+                (team.joinRequests || []).forEach(r => {
+                    if (r.status === 'pending') {
+                        reqs.push({ ...r, teamName: team.name, teamId: team._id });
+                    }
+                });
+            }
+        });
+        return reqs;
+    }, [myTeams, user?._id]);
+
+    const unreadNotifs = notifications.filter(n => !n.read).length;
+
+    /* ── Loading ── */
+    if (loading) {
         return (
-            <div className="panel-glass team-card">
-                <div className="team-bg-blur" style={{backgroundImage: `url(${activeTeam.logo || mockSocial.team.logo})`}}></div>
-                <div className="team-content">
-                    <div className="team-avatar">
-                        <img src={activeTeam.logo || mockSocial.team.logo} alt="Team" />
-                    </div>
-                    <h3>{activeTeam.name}</h3>
-                    <span className="role-badge">{role}</span>
-                    <div className="team-actions">
-                        <button className="btn-neon-outline" onClick={() => navigate('/teams')}>VER ROSTER</button>
-                        <button className="btn-neon-outline" onClick={() => navigate('/tournaments')}>TORNEOS</button>
-                    </div>
-                </div>
+            <div className="db-loading">
+                <div className="db-loading__pulse"></div>
+                <p>Cargando tu hub...</p>
             </div>
         );
-    };
+    }
 
-    if (loading) return <div className="loading-screen">Cargando...</div>;
-
+    /* ══════════════════════════════════════════════
+       RENDER
+       ══════════════════════════════════════════════ */
     return (
-        <div className="dashboard-dashboard-container">        
-         
-
-           {/* --- SECCIÓN 1: HERO --- */}
-            <section id="sec-1" className="hero-profile-section">
-                
-                {/* 1. EL BANNER DE FONDO */}
-                <div 
-                    className="hero-banner-bg" 
-                    style={{ backgroundImage: `url(${currentBg.src})` }}
-                >
-                    <div className="banner-overlay"></div>
+        <div className="db">
+            {/* ═══════ HERO — BANNER + Profile  ═══════ */}
+            <header className="db__hero">
+                <div className="db__banner" style={{ backgroundImage: `url(${currentBg.src})` }}>
+                    <div className="db__banner-scanline" />
+                    <div className="db__banner-fade" />
                 </div>
 
-                {/* 2. LA TARJETA DE INFORMACIÓN */}
-                <div className="hero-profile-card">
-                    
-                    {/* --- AQUI ESTA EL CAMBIO PRINCIPAL --- */}
-                    <div className="profile-avatar-wrapper">
-                        <AvatarCircle 
-                                            src={ user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
-                                            frameConfig={currentFrame}
-                                            size="120px"
-                                            status={user.status}
-                         />
+                <div className="db__hud-strip">
+                    <div className="db__hud-left">
+                        <span className="db__hud-dot"></span>
+                        <span>DASHBOARD</span>
+                        <span className="db__hud-sep">/</span>
+                        <span>{userData.username.toUpperCase()}</span>
                     </div>
-                    {/* --- FIN DEL CAMBIO --- */}
-
-                    {/* CONTENIDO DE LA TARJETA */}
-                    <div className="profile-content">
-                        <span className="welcome-badge">BIENVENIDO AL HUB</span><br></br>
-                        <PlayerTag className="profile-username"
-                            name={userData.username.toUpperCase() || "Player"} 
-                            tagId={user.selectedTagId} 
-                            size="normal" 
-                            fontTag='3.2rem'
-                        />                       
-                        
-                        {/* ... (Resto del contenido de stats se queda IGUAL) ... */}
-                        <p className="profile-quote">"La victoria está reservada para aquellos que están dispuestos a pagar su precio."</p>
-                        <div className="profile-stats-row">
-                             {/* ... tus stats ... */}
-                            <div className="p-stat-item">
-                                <i className='bx bx-crosshair'></i>
-                                <div><span className="lbl">WIN RATE</span><span className="val highlight">68.4%</span></div>
-                            </div>
-                            <div className="p-stat-item">
-                                <i className='bx bx-trophy'></i>
-                                <div><span className="lbl">TORNEOS</span><span className="val">12</span></div>
-                            </div>
-                            <div className="p-stat-item">
-                                <i className='bx bx-bar-chart-alt-2'></i>
-                                <div><span className="lbl">NIVEL</span><span className="val">42</span></div>
-                            </div>
-                            <div className="p-stat-item">
-                                <i className='bx bx-medal'></i>
-                                <div><span className="lbl">RANGO</span><span className="val text-blue">DIAMANTE</span></div>
-                            </div>
-                        </div>
-
-                        {riotLinked && (
-                            <div className="riot-mini-card">
-                                <img
-                                    src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${riotProfileIconId}.png`}
-                                    alt="Riot Icon"
-                                    className="riot-mini-avatar"
-                                />
-                                <div className="riot-mini-meta">
-                                    <strong>{riotName}#{riotTagLine}</strong>
-                                    <span>Nivel {riotSummonerLevel ?? '-'}</span>
-                                    <span>
-                                        {riotRank
-                                            ? `${riotRank.tier} ${riotRank.division} (${riotRank.lp} LP)`
-                                            : 'Sin clasificar'}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className={`team-mini-card ${activeTeam ? '' : 'empty'}`}>
-                            <div className="team-mini-avatar">
-                                {activeTeam?.logo ? (
-                                    <img src={activeTeam.logo} alt={activeTeam.name} />
-                                ) : (
-                                    <i className='bx bx-group'></i>
-                                )}
-                            </div>
-                            <div className="team-mini-meta">
-                                <strong>{activeTeam?.name || 'Sin equipo'}</strong>
-                                <span>{activeTeam ? resolveTeamRole(activeTeam) : 'Crea o únete a uno'}</span>
-                            </div>
-                            <button
-                                className="team-mini-btn"
-                                onClick={() => navigate(activeTeam ? '/equipos' : '/create-team')}
-                            >
-                                {activeTeam ? 'Ver' : 'Crear'}
-                            </button>
-                        </div>
+                    <div className="db__hud-right">
+                        <span>{timeStr}</span>
+                        <span className="db__hud-sep">|</span>
+                        <span>{dateStr}</span>
                     </div>
                 </div>
 
-                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-2')}>
-                    <span>VER JUEGOS</span>
-                    <i className='bx bx-chevron-down animated-arrow'></i>
-                </div>
-            </section>
+                <div className="db__profile-panel">
+                    {/* HUD corners */}
+                    <div className="db__corner db__corner--tl"></div>
+                    <div className="db__corner db__corner--tr"></div>
+                    <div className="db__corner db__corner--bl"></div>
+                    <div className="db__corner db__corner--br"></div>
 
-            
-            {/* --- SECCIÓN 2: ARSENAL (Tus juegos) --- */}
-            <section id="sec-2" className="cinematic-section">
-                <div className="cinematic-bg" style={{ backgroundImage: `url(${activeGame?.banner || defaultBanner})` }}><div className="cinematic-overlay"></div></div>
-                <div className="cinematic-content-grid">
-                    {activeGame ? (
+                    <div className="db__profile-row">
+                        <div className="db__avatar-area">
+                            <AvatarCircle
+                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                frameConfig={currentFrame}
+                                size="110px"
+                                status={user.status}
+                            />
+                        </div>
+
+                        <div className="db__identity">
+                            <span className="db__greeting">{greeting},</span>
+                            <PlayerTag
+                                name={userData.username.toUpperCase()}
+                                tagId={user.selectedTagId}
+                                size="normal"
+                                fontTag="2.2rem"
+                            />
+                            {user.bio && <p className="db__bio">{user.bio}</p>}
+                            <div className="db__chips">
+                                {user.country && <span className="db__chip"><i className="bx bx-globe"></i>{user.country}</span>}
+                                <span className="db__chip"><i className="bx bx-game"></i>{userData.games.length} juego{userData.games.length !== 1 ? 's' : ''}</span>
+                                {myTeams.length > 0 && <span className="db__chip chip--green"><i className="bx bx-group"></i>{myTeams.length} equipo{myTeams.length !== 1 ? 's' : ''}</span>}
+                                {user.platforms?.length > 0 && <span className="db__chip"><i className="bx bx-desktop"></i>{user.platforms.join(', ')}</span>}
+                            </div>
+                        </div>
+
+                        <div className="db__hero-stats">
+                            <div className="db__stat-box">
+                                <i className="bx bx-game"></i>
+                                <strong>{userData.games.length}</strong>
+                                <span>Juegos</span>
+                            </div>
+                            <div className="db__stat-box">
+                                <i className="bx bx-group"></i>
+                                <strong>{myTeams.length}</strong>
+                                <span>Equipos</span>
+                            </div>
+                            <div className="db__stat-box">
+                                <i className="bx bx-trophy"></i>
+                                <strong>{activeTournaments.length}</strong>
+                                <span>Torneos</span>
+                            </div>
+                            <div className="db__stat-box">
+                                <i className="bx bx-bell"></i>
+                                <strong>{unreadNotifs}</strong>
+                                <span>Alertas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button className="db__edit-profile" onClick={() => navigate('/profile')}>
+                        <i className="bx bx-edit-alt"></i> Editar perfil
+                    </button>
+                </div>
+            </header>
+
+            {/* ═══════ MAIN BENTO GRID  ═══════ */}
+            <main className="db__bento">
+
+                {/* ─── PANEL: FEATURED GAME (large, cinematic) ─── */}
+                <section className="db__panel db__panel--featured">
+                    <div className="db__panel-hud">
+                        <span className="db__panel-label"><i className="bx bx-joystick"></i> JUEGO DESTACADO</span>
+                    </div>
+                    {featuredGame ? (
                         <>
-                            <div className="game-info-left">
-                                <span className="developer-label">{activeGame.developer}</span>
-                                <h2 className="game-big-title">{activeGame.name.toUpperCase()}</h2>
-                                <div className="tags-row">{activeGame.tags?.map((tag, i) => <span key={i} className="meta-tag">{tag}</span>)}</div>
-                                <p className="game-desc">{activeGame.history}</p>
-                            </div>
-                            <div className="game-analysis-right">
-                                <div className="analysis-card">
-                                    <div className="card-header"><h3><i className='bx bx-stats'></i> RENDIMIENTO</h3><span className="live-badge">EN VIVO</span></div>
-                                    <div className="stats-arithmetic">
-                                        <div className="stat-row"><span>WIN RATE</span><strong className="highlight">{activeGame.winRate || 'N/A'}</strong></div>
-                                        <div className="stat-row"><span>KDA / AVG</span><strong>{activeGame.kda || 'N/A'}</strong></div>
-                                    </div>
-                                    <div className="improvement-box">
-                                        <h4>A MEJORAR</h4>
-                                        <div className="imp-tags">{activeGame.toImprove?.map((imp, i) => <span key={i} className="imp-tag">{imp}</span>) || <span>Sin datos</span>}</div>
-                                    </div>
-                                    <button className="btn-analyze-full">VER COMO ANÁLISIS <i className='bx bx-right-arrow-alt'></i></button>
+                            <div className="db__feat-bg" style={{ backgroundImage: `url(${featuredGame.banner})` }}></div>
+                            <div className="db__feat-content">
+                                <span className="db__feat-dev">{featuredGame.developer}</span>
+                                <h2 className="db__feat-title">{featuredGame.name}</h2>
+                                <div className="db__feat-tags">
+                                    {featuredGame.tags?.slice(0, 4).map((tag, i) => (
+                                        <span key={i} className="db__feat-tag">{tag}</span>
+                                    ))}
                                 </div>
+                                <p className="db__feat-desc">{featuredGame.history?.substring(0, 140)}...</p>
                             </div>
+                            {/* Game carousel dots */}
+                            {enrichedGames.length > 1 && (
+                                <div className="db__feat-nav">
+                                    {enrichedGames.map((g, i) => (
+                                        <button
+                                            key={g.id}
+                                            className={`db__feat-dot ${i === featuredGameIdx ? 'active' : ''}`}
+                                            onClick={() => setFeaturedGameIdx(i)}
+                                            title={g.name}
+                                        >
+                                            <img src={g.banner} alt="" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </>
-                    ) : (<div className="empty-state"><h2>Selecciona tus juegos.</h2></div>)}
-                </div>
-                <div className="cards-carousel-wrapper">
-                    <div className="cards-track">
-                        {userData.games.map((gameId, index) => {
-                            const miniGame = gamesDetailedData[gameId];
-                            if(!miniGame) return null;
-                            return (
-                                <div key={index} className={`game-mini-card ${index === activeGameIndex ? 'active' : ''}`} onClick={() => setActiveGameIndex(index)}>
-                                    <img src={miniGame.banner} alt={gameId} />
-                                    {index === activeGameIndex && <div className="active-indicator"></div>}
+                    ) : (
+                        <div className="db__panel-empty">
+                            <i className="bx bx-joystick"></i>
+                            <p>No has seleccionado juegos</p>
+                            <button className="db__btn db__btn--primary" onClick={() => navigate('/profile')}>Agregar juegos</button>
+                        </div>
+                    )}
+                </section>
+
+                {/* ─── PANEL: RIOT CONNECTION ─── */}
+                <section className="db__panel db__panel--riot">
+                    <div className="db__panel-hud">
+                        <span className="db__panel-label"><i className="bx bx-link-alt"></i> CUENTA RIOT</span>
+                        {riotLinked && <span className="db__badge-live">LINKED</span>}
+                    </div>
+                    {riotLinked ? (
+                        <div className="db__riot-body">
+                            <img
+                                src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${riotIconId}.png`}
+                                alt="Riot"
+                                className="db__riot-icon"
+                            />
+                            <div className="db__riot-data">
+                                <strong className="db__riot-name">{riotName}<span>#{riotTag}</span></strong>
+                                <div className="db__riot-stats">
+                                    <div className="db__riot-stat">
+                                        <span>NIVEL</span>
+                                        <strong>{riotLevel ?? '-'}</strong>
+                                    </div>
+                                    <div className="db__riot-stat">
+                                        <span>RANGO</span>
+                                        <strong>{riotRank ? `${riotRank.tier} ${riotRank.division}` : 'N/A'}</strong>
+                                    </div>
+                                    {riotRank?.lp !== undefined && (
+                                        <div className="db__riot-stat">
+                                            <span>LP</span>
+                                            <strong>{riotRank.lp}</strong>
+                                        </div>
+                                    )}
                                 </div>
-                            )
-                        })}
-                    </div>
-                </div>
-                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-3')}><span>RENDIMIENTO Y CALENDARIO</span><i className='bx bx-chevron-down animated-arrow'></i></div>
-            </section>
-
-           {/* --- SECCIÓN 3: PERFORMANCE LAB (Analíticas y Calendario) --- */}
-            <section id="sec-3" className="page-section section-performance">
-                <div className="performance-grid">
-                    
-                    {/* Columna Izquierda: Gráficos y Métricas */}
-                    <div className="panel-glass chart-panel">
-                        <div className="panel-header">
-                            <h2><i className='bx bx-line-chart'></i> MÉTRICAS DE RENDIMIENTO</h2>
-                            <select className="neon-select">
-                                <option>Últimos 7 días</option>
-                                <option>Este Mes</option>
-                            </select>
-                        </div>
-                        
-                        <div className="chart-container-mock">
-                            {/* Barras animadas simuladas */}
-                            <div className="bar-chart">
-                                <div className="bar" style={{height: '40%'}} title="Lunes"></div>
-                                <div className="bar" style={{height: '70%'}} title="Martes"></div>
-                                <div className="bar active" style={{height: '90%'}} title="Miércoles"></div>
-                                <div className="bar" style={{height: '50%'}} title="Jueves"></div>
-                                <div className="bar" style={{height: '80%'}} title="Viernes"></div>
-                                <div className="bar" style={{height: '60%'}} title="Sábado"></div>
-                                <div className="bar" style={{height: '75%'}} title="Domingo"></div>
-                            </div>
-                            <div className="chart-legend">
-                                <span><span className="dot-l green"></span> Victorias</span>
-                                <span><span className="dot-l gray"></span> Derrotas</span>
                             </div>
                         </div>
-                        
-                        <div className="mini-stats-row">
-                            <div className="ms-item"><span>KDA</span><strong>4.2</strong></div>
-                            <div className="ms-item"><span>CS/MIN</span><strong>8.5</strong></div>
-                            <div className="ms-item"><span>DMG</span><strong>22%</strong></div>
+                    ) : (
+                        <div className="db__panel-empty">
+                            <i className="bx bx-link-alt"></i>
+                            <p>Vincula tu cuenta de Riot</p>
+                            <button className="db__btn db__btn--outline" onClick={() => navigate('/settings')}>Conectar</button>
                         </div>
+                    )}
+                </section>
+
+                {/* ─── PANEL: MIS EQUIPOS ─── */}
+                <section className="db__panel db__panel--teams">
+                    <div className="db__panel-hud">
+                        <span className="db__panel-label"><i className="bx bx-group"></i> MIS EQUIPOS</span>
+                        <button className="db__hud-btn" onClick={() => navigate('/teams')}>VER TODOS <i className="bx bx-right-arrow-alt"></i></button>
                     </div>
 
-                    {/* Columna Derecha: Calendario y Agenda */}
-                    <div className="panel-glass calendar-panel">
-                        <div className="panel-header">
-                            <h2><i className='bx bx-calendar'></i> AGENDA COMPETITIVA</h2>
-                            <button className="btn-icon-small"><i className='bx bx-plus'></i></button>
-                        </div>
-                        <div className="calendar-list">
-                            {mockCalendar.map((event, i) => (
-                                <div key={i} className={`calendar-item type-${event.type}`}>
-                                    <div className="cal-date">
-                                        <span className="cal-day">{event.day}</span>
-                                        <span className="cal-month">{event.month}</span>
+                    {myTeams.length > 0 ? (
+                        <div className="db__teams-list">
+                            {myTeams.map(team => (
+                                <div key={team._id} className="db__team-row" onClick={() => navigate('/teams')}>
+                                    <div className="db__team-logo">
+                                        {team.logo
+                                            ? <img src={team.logo} alt={team.name} />
+                                            : <div className="db__team-logo--ph"><i className="bx bx-group"></i></div>
+                                        }
                                     </div>
-                                    <div className="cal-info">
-                                        <h4>{event.title}</h4>
-                                        <span className="cal-time"><i className='bx bx-time'></i> {event.time}</span>
+                                    <div className="db__team-info">
+                                        <strong>{team.name}</strong>
+                                        <span>{team.game || 'Sin juego'}</span>
                                     </div>
-                                    <button className="btn-cal-action"><i className='bx bx-bell'></i></button>
+                                    <span className="db__team-role-badge">{resolveTeamRole(team)}</span>
+                                    <div className="db__team-members">
+                                        <i className="bx bx-user"></i>
+                                        <span>{(team.roster?.starters?.length || 0) + (team.roster?.subs?.length || 0)}</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
+                    ) : (
+                        <div className="db__panel-empty">
+                            <i className="bx bx-group"></i>
+                            <p>Sin equipos aún</p>
+                            <div className="db__empty-btns">
+                                <button className="db__btn db__btn--primary" onClick={() => navigate('/create-team')}>
+                                    <i className="bx bx-plus"></i> Crear
+                                </button>
+                                <button className="db__btn db__btn--outline" onClick={() => navigate('/teams')}>
+                                    <i className="bx bx-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pending join requests */}
+                    {pendingRequests.length > 0 && (
+                        <div className="db__pending-strip">
+                            <i className="bx bx-bell bx-tada"></i>
+                            <span>{pendingRequests.length} solicitud{pendingRequests.length > 1 ? 'es' : ''} pendiente{pendingRequests.length > 1 ? 's' : ''}</span>
+                            <button className="db__btn db__btn--sm" onClick={() => navigate('/teams')}>Revisar</button>
+                        </div>
+                    )}
+                </section>
+
+                {/* ─── PANEL: TORNEOS ─── */}
+                <section className="db__panel db__panel--tourneys">
+                    <div className="db__panel-hud">
+                        <span className="db__panel-label"><i className="bx bx-trophy"></i> TORNEOS ACTIVOS</span>
+                        <button className="db__hud-btn" onClick={() => navigate('/tournaments')}>VER TODOS <i className="bx bx-right-arrow-alt"></i></button>
                     </div>
-                </div>
-                
-                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-4')}>
-                    <span>SOCIAL Y EQUIPO</span>
-                    <i className='bx bx-chevron-down animated-arrow'></i>
-                </div>
-            </section>
 
-            {/* --- SECCIÓN 4: SOCIAL HQ (Equipo, Amigos, Torneos) --- */}
-            <section id="sec-4" className="page-section section-social">
-                <div className="social-grid-layout">
-                    
-                    {/* TARJETA DE EQUIPO */}
-                    {renderTeamCard()}
-
-                    {/* COLUMNA CENTRAL: TORNEOS */}
-                    <div className="panel-glass tournaments-list">
-                        <div className="panel-header-simple">TORNEOS ACTIVOS</div>
-                        {mockSocial.tournaments.map((t, i) => (
-                            <div key={i} className="tourney-item">
-                                <div className="t-icon"><i className='bx bx-trophy'></i></div>
-                                <div className="t-info">
-                                    <h4>{t.name}</h4>
-                                    <span className={`status-dot ${t.status === 'En Curso' ? 'live' : 'reg'}`}>{t.status}</span>
+                    {activeTournaments.length > 0 ? (
+                        <div className="db__tourney-list">
+                            {activeTournaments.map(t => (
+                                <div key={t._id || t.tournamentId} className="db__tourney-row" onClick={() => navigate(`/tournaments/${t.tournamentId}`)}>
+                                    <div className="db__tourney-icon">
+                                        {t.bannerImage
+                                            ? <img src={`${API_URL}/${t.bannerImage}`} alt="" />
+                                            : <i className="bx bx-trophy"></i>
+                                        }
+                                    </div>
+                                    <div className="db__tourney-info">
+                                        <strong>{t.title}</strong>
+                                        <div className="db__tourney-meta">
+                                            <span><i className="bx bx-game"></i> {t.game}</span>
+                                            <span><i className="bx bx-calendar"></i> {new Date(t.date).toLocaleDateString('es')}</span>
+                                        </div>
+                                    </div>
+                                    <div className="db__tourney-right">
+                                        <span className={`db__tourney-status ${t.status}`}>
+                                            {t.status === 'ongoing' ? 'EN CURSO' : t.status === 'open' ? 'ABIERTO' : t.status.toUpperCase()}
+                                        </span>
+                                        <span className="db__tourney-slots">
+                                            <i className="bx bx-user"></i> {t.currentSlots}/{t.maxSlots}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="t-rank">{t.rank}</div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="db__panel-empty">
+                            <i className="bx bx-trophy"></i>
+                            <p>No hay torneos activos</p>
+                            <button className="db__btn db__btn--outline" onClick={() => navigate('/tournaments')}>Explorar torneos</button>
+                        </div>
+                    )}
+                </section>
+
+                {/* ─── PANEL: GAME LIBRARY (Mini tiles) ─── */}
+                <section className="db__panel db__panel--library">
+                    <div className="db__panel-hud">
+                        <span className="db__panel-label"><i className="bx bx-collection"></i> BIBLIOTECA DE JUEGOS</span>
+                        <span className="db__panel-count">{enrichedGames.length}</span>
+                    </div>
+
+                    {enrichedGames.length > 0 ? (
+                        <div className="db__games-grid">
+                            {enrichedGames.map(game => (
+                                <div
+                                    key={game.id}
+                                    className={`db__game-card ${hoveredGame === game.id ? 'is-hover' : ''}`}
+                                    onMouseEnter={() => setHoveredGame(game.id)}
+                                    onMouseLeave={() => setHoveredGame(null)}
+                                    onClick={() => {
+                                        const idx = enrichedGames.findIndex(g => g.id === game.id);
+                                        setFeaturedGameIdx(idx);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                >
+                                    <img src={game.banner} alt={game.name} className="db__game-bg" />
+                                    <div className="db__game-info">
+                                        <strong>{game.name}</strong>
+                                        <span>{game.developer}</span>
+                                    </div>
+                                    <div className="db__game-glow"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="db__panel-empty">
+                            <i className="bx bx-joystick"></i>
+                            <p>Agrega juegos para ver tu biblioteca</p>
+                        </div>
+                    )}
+                </section>
+
+                {/* ─── PANEL: QUICK NAV / COMMAND CENTER ─── */}
+                <section className="db__panel db__panel--nav">
+                    <div className="db__panel-hud">
+                        <span className="db__panel-label"><i className="bx bx-grid-alt"></i> CENTRO DE MANDO</span>
+                    </div>
+                    <div className="db__nav-grid">
+                        {[
+                            { icon: 'bx bxs-user-detail', label: 'Perfil',      path: '/profile',     color: '#8EDB15' },
+                            { icon: 'bx bxs-group',       label: 'Equipos',     path: '/teams',       color: '#00d2ff' },
+                            { icon: 'bx bxs-trophy',      label: 'Torneos',     path: '/tournaments', color: '#ffd700' },
+                            { icon: 'bx bxs-graduation',  label: 'Universidad', path: '/university',  color: '#ff6b6b' },
+                            { icon: 'bx bxs-cog',         label: 'Ajustes',     path: '/settings',    color: '#a78bfa' },
+                            { icon: 'bx bxs-store',       label: 'Tienda',      path: '/marketplace', color: '#f97316' },
+                        ].map(item => (
+                            <button key={item.path} className="db__nav-btn" onClick={() => navigate(item.path)} style={{ '--nav-c': item.color }}>
+                                <i className={item.icon}></i>
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ─── PANEL: ACCOUNT / CONNECTIONS ─── */}
+                <section className="db__panel db__panel--account">
+                    <div className="db__panel-hud">
+                        <span className="db__panel-label"><i className="bx bx-id-card"></i> INFO DE CUENTA</span>
+                    </div>
+                    <div className="db__acct-grid">
+                        {[
+                            { icon: 'bx bx-envelope',    lbl: 'Email',       val: user.email },
+                            { icon: 'bx bx-user',        lbl: 'Nombre',      val: user.fullName },
+                            { icon: 'bx bx-map',         lbl: 'País',        val: user.country },
+                            { icon: 'bx bx-target-lock', lbl: 'Objetivos',   val: user.goals?.length ? user.goals.join(', ') : '—' },
+                            { icon: 'bx bx-star',        lbl: 'Experiencia', val: user.experience?.length ? user.experience.join(', ') : '—' },
+                            { icon: 'bx bxl-discord-alt',lbl: 'Discord',     val: user.connections?.discord?.verified ? user.connections.discord.username : 'No vinculado' },
+                        ].map(item => (
+                            <div key={item.lbl} className="db__acct-row">
+                                <i className={item.icon}></i>
+                                <div>
+                                    <span className="db__acct-lbl">{item.lbl}</span>
+                                    <span className="db__acct-val">{item.val}</span>
+                                </div>
                             </div>
                         ))}
                     </div>
+                </section>
 
-                    {/* COLUMNA DERECHA: SOLICITUDES */}
-                    <div className="panel-glass requests-panel">
-                        <div className="panel-header-simple">SOLICITUDES ({mockSocial.requests.length})</div>
-                        <div className="req-list">
-                            {mockSocial.requests.map((req) => (
-                                <div key={req.id} className="req-item">
-                                    <img src={req.img} alt={req.name} />
-                                    <div className="req-name">{req.name}</div>
-                                    <div className="req-actions">
-                                        <button className="btn-accept"><i className='bx bx-check'></i></button>
-                                        <button className="btn-deny"><i className='bx bx-x'></i></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                </div>
-                <div className="scroll-down-btn" onClick={() => scrollToSection('sec-5')}>
-                    <span>CENTRO DE MANDO</span>
-                    <i className='bx bx-chevron-down animated-arrow'></i>
-                </div>
-            </section>
-
-            {/* --- SECCIÓN 5: THE NEXUS (Botones Importantes) --- */}
-            <section id="sec-5" className="page-section section-nexus">
-                <h2 className="nexus-title">CENTRO DE MANDO</h2>
-                <div className="nexus-grid">
-                    <div className="nexus-card" onClick={() => navigate('/profile')}>
-                        <i className='bx bxs-user-detail'></i>
-                        <h3>EDITAR PERFIL</h3>
-                        <p>Ajusta tu avatar y biografía</p>
-                    </div>
-                    <div className="nexus-card" onClick={() => navigate('/settings')}>
-                        <i className='bx bxs-cog'></i>
-                        <h3>CONFIGURACIÓN</h3>
-                        <p>Privacidad y Conexiones</p>
-                    </div>
-                    <div className="nexus-card" onClick={() => navigate('/university')}>
-                        <i className='bx bxs-graduation'></i>
-                        <h3>UNIVERSIDAD</h3>
-                        <p>Becas y Scouting</p>
-                    </div>
-                    <div className="nexus-card" onClick={() => navigate('/marketplace')}>
-                        <i className='bx bxs-store'></i>
-                        <h3>MARKETPLACE</h3>
-                        <p>Tienda de recompensas</p>
-                    </div>
-
-                </div>
-            </section>
-
+            </main>
         </div>
     );
 };

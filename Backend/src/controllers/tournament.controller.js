@@ -1,6 +1,7 @@
 import Tournament from '../models/Tournament.js';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
+import { NOTIF, pushNotification } from './notification.controller.js';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -422,6 +423,9 @@ export const registerTeam = async (req, res) => {
         tournament.currentSlots = Math.min((tournament.currentSlots || 0) + 1, tournament.maxSlots);
         await tournament.save();
 
+        // Notify the captain
+        await pushNotification(req.userId, NOTIF.tournamentRegistered(tournament.name || tournament.tournamentId));
+
         return res.status(200).json({ message: 'Equipo registrado', tournamentId: tournament.tournamentId });
 
     } catch (error) {
@@ -457,10 +461,17 @@ export const updateRegistrationStatus = async (req, res) => {
         }
 
         if (status === 'rejected') {
+            // Notify captain before removing
+            if (reg.captain) {
+                await pushNotification(reg.captain, NOTIF.tournamentRejected(tournament.name || tournament.tournamentId));
+            }
             tournament.registrations = (tournament.registrations || []).filter(r => String(r._id) !== String(registrationId));
             tournament.currentSlots = Math.max((tournament.currentSlots || 0) - 1, 0);
         } else {
             reg.status = status;
+            if (reg.captain) {
+                await pushNotification(reg.captain, NOTIF.tournamentApproved(tournament.name || tournament.tournamentId));
+            }
         }
         await tournament.save();
 
@@ -488,9 +499,14 @@ export const removeRegistration = async (req, res) => {
         }
 
         const before = (tournament.registrations || []).length;
+        const removedReg = (tournament.registrations || []).find(r => String(r._id) === String(registrationId));
         tournament.registrations = (tournament.registrations || []).filter(r => String(r._id) !== String(registrationId));
         if (tournament.registrations.length === before) {
             return res.status(404).json({ message: 'Registro no encontrado' });
+        }
+        // Notify the removed team captain
+        if (removedReg?.captain) {
+            await pushNotification(removedReg.captain, NOTIF.tournamentRemoved(tournament.name || tournament.tournamentId));
         }
         tournament.currentSlots = Math.max((tournament.currentSlots || 0) - 1, 0);
         await tournament.save();
@@ -542,6 +558,17 @@ export const updateTournamentStatus = async (req, res) => {
         }
 
         await tournament.save();
+
+        // Notify all registered captains on key status changes
+        const tName = tournament.name || tournament.tournamentId;
+        const captains = (tournament.registrations || []).map(r => r.captain).filter(Boolean);
+        const notifMap = { start: NOTIF.tournamentStarting, cancel: NOTIF.tournamentCancelled, finish: NOTIF.tournamentFinished };
+        if (notifMap[action]) {
+            for (const captainId of captains) {
+                await pushNotification(captainId, notifMap[action](tName));
+            }
+        }
+
         return res.status(200).json({
             message: 'Estado actualizado',
             status: tournament.status,

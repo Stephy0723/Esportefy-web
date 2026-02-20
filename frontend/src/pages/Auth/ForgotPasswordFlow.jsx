@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../../config/api';
 import './Forgot.css';
 
 // SOLO importamos la imagen blanca, ya que será el único modo
@@ -30,7 +31,7 @@ const ForgotPasswordFlow = () => {
         setLoading(true);
 
         try {
-            await axios.post('http://localhost:4000/api/auth/forgot-password', { email });
+            await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
             setStep(2); 
         } catch (err) {
             setError(err.response?.data?.message || 'Error al enviar el correo.');
@@ -50,7 +51,7 @@ const ForgotPasswordFlow = () => {
 
         setLoading(true);
         try {
-            await axios.post(`http://localhost:4000/api/auth/reset-password/${formData.token}`, {
+            await axios.post(`${API_URL}/api/auth/reset-password/${formData.token}`, {
                 password: formData.password
             });
             alert("¡Contraseña actualizada con éxito!");

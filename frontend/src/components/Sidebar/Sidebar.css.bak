@@ -1,0 +1,455 @@
+﻿/* ========================================= */
+/* SIDEBAR â€” Usa variables globales de index.css */
+/* ========================================= */
+
+/* Neon colors para hover de items (decorativos) */
+:root {
+    --neon-blue: #00f2ff;
+    --neon-gold: #ffcc00;
+    --neon-purple: #bd00ff;
+    --neon-red: #ff0055;
+    --neon-orange: #ff5e00;
+}
+
+
+/* ========================================= */
+/* 2. ESTRUCTURA PRINCIPAL                   */
+/* ========================================= */
+
+.sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    width: 250px;
+    
+    /* CAMBIO AQUÃ: Aumentamos de 20px a 50px para bajar todo el contenido */
+    padding-top: 50px; 
+    
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    transition: all 0.5s ease;
+    
+    /* Z-INDEX: Siempre por encima de todo */
+    z-index: 1000; 
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Ancho al cerrar */
+.sidebar.close { width: 88px; }
+
+/* ========================================= */
+/* 3. HEADER (ESTILO FOTO)                   */
+/* ========================================= */
+.sidebar header {
+    position: relative;
+    /* Altura suficiente para que quepa el logo */
+    height: 80px;  
+    display: flex;
+    /* Centra verticalmente el contenido (logo y texto) */
+    align-items: center; 
+    padding: 0 20px;
+    background: transparent;
+    /* IMPORTANTE: Quitamos overflow: hidden para que no corte nada */
+    /* overflow: hidden;  <-- ELIMINADA O COMENTADA */
+    transition: all 0.5s ease;
+}
+
+/* CENTRADO DEL HEADER AL CERRAR */
+.sidebar.close header {
+    padding: 0; /* Al cerrar, quitamos padding lateral para centrar mejor */
+    justify-content: center; /* Centra horizontalmente el logo */
+}
+.sidebar .image-text-logo {
+    display: flex;
+    align-items: center;
+    /* Reserva espacio para el logo incluso cuando estÃ¡ cerrado */
+    min-width: 60px; 
+    height: 60px; /* Altura fija para el contenedor */
+    justify-content: center; /* Centra el contenido dentro de este contenedor */
+}
+/* Ajuste al cerrar para centrar logo */
+.sidebar.close .image-text-logo {
+    gap: 0; /* Elimina el espacio extra */
+    justify-content: center;
+    width: 100%;
+}
+
+/* Contenedor del Icono/Imagen */
+.sidebar .image {
+    min-width: 60px; /* Ancho fijo para alineaciÃ³n al cerrar */
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    /* Asegura que la imagen no se encoja */
+    flex-shrink: 0; 
+}
+
+/* OpciÃ³n A: Imagen PNG */
+.sidebar-logo {
+    width: 45px; /* Ancho fijo para el logo */
+    height: 45px; /* Alto fijo para el logo */
+    object-fit: contain; /* Mantiene la proporciÃ³n de la imagen */
+    display: block; /* Asegura que se comporte como un bloque */
+    margin-right: 10px; /* Espacio entre el logo y el texto */
+}
+
+/* OpciÃ³n B: Icono (Fallback) */
+.logo-icon {
+    font-size: 36px;
+    color: var(--primary); 
+    filter: drop-shadow(0 0 5px rgba(142, 219, 21, 0.4));
+}
+
+/* TEXTOS: ESPORTEFY + Pro Gaming */
+.sidebar .header-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    opacity: 1; /* Asegura que el texto sea visible */
+    transition: opacity 0.3s ease; /* TransiciÃ³n suave si se decide ocultar despuÃ©s */
+}
+
+.sidebar .name {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.sidebar .profession {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: -2px;
+}
+
+/* Ocultar textos al cerrar */
+.sidebar.close .header-info {
+    opacity: 0;
+    pointer-events: none;
+    display: none; /* Oculta completamente para no ocupar espacio */
+}
+
+/* TOGGLE (Flecha) */
+.sidebar .toggle {
+    position: absolute;
+    top: 50%;
+    right: -25px;
+    transform: translateY(-50%) rotate(180deg);
+    height: 25px; width: 25px;
+    background-color: var(--primary);
+    color: var(--text-inverted);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer;
+    transition: 0.3s ease;
+    /* display: none;  <-- COMENTADO: Si quieres ver la flecha para probar, descomÃ©ntalo o quÃ­talo */
+}
+.sidebar.close .toggle { transform: translateY(-50%) rotate(0deg); }
+
+
+/* ========================================= */
+/* 4. MENÃš Y LISTAS                          */
+/* ========================================= */
+.sidebar .menu-bar { 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column; 
+    overflow-y: auto; 
+    overflow-x: hidden; 
+}
+.menu-bar::-webkit-scrollbar { display: none; }
+
+.sidebar li { 
+    height: 50px; 
+    list-style: none; 
+    display: flex; 
+    align-items: center; 
+    margin-top: 10px; 
+}
+
+.sidebar li a { 
+    list-style: none; 
+    height: 100%; 
+    width: 100%; 
+    display: flex; 
+    align-items: center; 
+    text-decoration: none; 
+    border-radius: 6px; 
+    transition: 0.3s ease; 
+}
+
+/* CENTRADO DE ITEMS AL CERRAR */
+.sidebar.close li a {
+    justify-content: center; /* Centra el contenido del enlace */
+}
+
+.sidebar li .icon { 
+    min-width: 60px; /* Ancho fijo para el icono */
+    font-size: 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: var(--text-muted); 
+    transition: 0.3s ease; 
+}
+
+.sidebar li .text { 
+    font-size: 16px; 
+    font-weight: 500; 
+    color: var(--text-muted); 
+    white-space: nowrap; 
+    opacity: 1; 
+    transition: 0.3s; 
+}
+
+.sidebar.close .text { 
+    opacity: 0; 
+    display: none; /* Oculta el texto para centrar solo el icono */
+}
+
+.sidebar li:hover .icon, .sidebar li:hover .text { color: var(--text-main); }
+
+/* Colores Hover (Se mantienen igual) */
+.sidebar li:nth-child(1) a:hover { background: rgba(0, 242, 255, 0.1); } .sidebar li:nth-child(1) a:hover * { color: var(--neon-blue) !important; }
+.sidebar li:nth-child(2) a:hover { background: rgba(255, 204, 0, 0.1); } .sidebar li:nth-child(2) a:hover * { color: var(--neon-gold) !important; }
+.sidebar li:nth-child(3) a:hover { background: rgba(189, 0, 255, 0.1); } .sidebar li:nth-child(3) a:hover * { color: var(--neon-purple) !important; }
+.sidebar li:nth-child(4) a:hover { background: rgba(0, 242, 255, 0.1); } .sidebar li:nth-child(4) a:hover * { color: var(--neon-blue) !important; }
+.sidebar li:nth-child(5) a:hover { background: rgba(255, 0, 85, 0.1); } .sidebar li:nth-child(5) a:hover * { color: var(--neon-red) !important; }
+.sidebar li:nth-child(6) a:hover { background: rgba(255, 94, 0, 0.1); } .sidebar li:nth-child(6) a:hover * { color: var(--neon-orange) !important; }
+.sidebar li:nth-child(7) a:hover { background: rgba(142, 219, 21, 0.1); } .sidebar li:nth-child(7) a:hover * { color: var(--primary) !important; }
+
+/* ========================================= */
+/* 5. FOOTER (Redes, Salir, Modo)            */
+/* ========================================= */
+.bottom-content { margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 10px; }
+
+.social-media { display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; transition: 0.3s ease; }
+.social-trigger { display: none; font-size: 20px; color: var(--text-muted); cursor: pointer; margin-bottom: 5px; }
+.social-icons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; opacity: 1; transition: 0.3s; }
+.social-icons a { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--bg-input); color: var(--text-muted); font-size: 18px; transition: 0.3s; text-decoration: none; }
+.social-icons a:hover { background: var(--primary); color: var(--text-inverted); transform: translateY(-2px); }
+
+.sidebar.close .social-icons { display: none; }
+.sidebar.close .social-trigger { display: flex; justify-content: center; width: 100%; }
+.sidebar.close .social-trigger:hover { color: var(--primary); }
+
+.sidebar .mode { 
+    border-radius: 6px; 
+    background-color: var(--bg-input); 
+    position: relative; 
+    transition: 0.3s ease; 
+    margin-top: 10px; 
+    display: flex; 
+    align-items: center; 
+    padding: 0; 
+    cursor: pointer; 
+}
+.sidebar .mode .sun-moon { 
+    height: 50px; 
+    width: 60px; 
+    min-width: 60px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+/* CENTRADO MODO OSCURO AL CERRAR */
+.sidebar.close .mode {
+    background-color: transparent; /* Opcional: quita fondo al cerrar para ver solo icono */
+    justify-content: center;
+}
+
+.sidebar .mode .sun-moon i { position: absolute; transition: 0.3s; font-size: 20px; }
+.sidebar .mode .sun-moon i.sun { opacity: 1; transform: rotate(0deg); color: var(--text-muted); }
+.sidebar .mode .sun-moon i.moon { opacity: 0; transform: rotate(90deg); color: var(--text-muted); }
+body.dark .sidebar .mode .sun-moon i.sun { opacity: 0; transform: rotate(90deg); }
+body.dark .sidebar .mode .sun-moon i.moon { opacity: 1; transform: rotate(0deg); color: var(--primary); }
+
+.sidebar .mode .mode-text { font-size: 14px; font-weight: 500; color: var(--text-muted); }
+.sidebar .mode .toggle-switch { position: absolute; right: 0; height: 100%; min-width: 60px; display: flex; align-items: center; justify-content: center; }
+.sidebar .mode .switch { position: relative; height: 22px; width: 40px; border-radius: 25px; background-color: var(--border-color); transition: 0.3s; }
+.sidebar .mode .switch::before { content: ''; position: absolute; height: 15px; width: 15px; border-radius: 50%; top: 50%; left: 4px; transform: translateY(-50%); background-color: var(--bg-card); transition: 0.3s; }
+body.dark .sidebar .mode .switch { background-color: var(--primary); }
+body.dark .sidebar .mode .switch::before { left: 20px; background-color: var(--text-inverted); }/* ========================================= */
+/* CRÃ‰DITO DEL DESARROLLADOR (FOOTER)        */
+/* ========================================= */
+.sidebar-credit {
+    margin-top: 15px;       /* SeparaciÃ³n del botÃ³n de modo oscuro */
+    margin-bottom: 10px;    /* SeparaciÃ³n del borde final */
+    text-align: center;     /* Centrado */
+    font-size: 11px;        /* Letra pequeÃ±a y discreta */
+    color: var(--text-muted);
+    opacity: 0.5;           /* Un poco transparente para no distraer */
+    transition: 0.3s;
+    white-space: nowrap;    /* Que no se rompa la lÃ­nea */
+}
+
+/* El nombre de la empresa en negrita y quizÃ¡s con color al pasar el mouse */
+.sidebar-credit strong {
+    font-weight: 800;
+    color: var(--text-main); /* Se pone mÃ¡s oscuro/claro segÃºn el tema */
+    cursor: default;
+}
+
+/* Efecto hover sutil */
+.sidebar-credit:hover {
+    opacity: 1;
+}
+
+/* OCULTAR AL CERRAR LA BARRA */
+/* Como no cabe en 88px, lo ocultamos para mantener la limpieza */
+.sidebar.close .sidebar-credit {
+    display: none;
+}
+
+.sidebar.close .mode-text, .sidebar.close .toggle-switch { display: none; }
+
+/* ========================================= */
+/* TÃTULOS DE SECCIÃ“N (CategorÃ­as)           */
+/* ========================================= */
+.menu-header {
+    margin-top: 15px;
+    padding-left: 16px; 
+    margin-bottom: 5px;
+}
+body.dark .section-title {
+    color: var(--text-muted); /* Gris un poco mÃ¡s oscuro si el fondo es muy negro */
+}
+.section-title {
+    font-size: 10px;
+    font-weight: 700;
+    
+    /* CAMBIO AQUÃ: Color gris en lugar de verde/otro */
+    color: var(--text-muted); /* Un gris medio muy elegante */
+    
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+}
+.sidebar.close .section-title, 
+.sidebar.close .menu-header { display: none; }
+
+/* ========================================= */
+/* FILA DE REDES SOCIALES (NUEVO)            */
+/* ========================================= */
+.social-row {
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    background: rgba(0,0,0,0.02); /* Fondo sutil para separar */
+    border-radius: 8px;
+    margin: 10px 10px;
+}
+
+.icons-container {
+    display: flex;
+    justify-content: space-between; /* Distribuye los iconos */
+    gap: 10px;
+}
+
+.social-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    font-size: 20px;
+    text-decoration: none;
+    transition: transform 0.2s, background 0.2s;
+    background: var(--bg-input);
+    color: var(--text-muted);
+}
+
+.social-mini:hover {
+    transform: translateY(-3px);
+    color: var(--text-main);
+}
+
+/* Colores especÃ­ficos al pasar el mouse */
+.social-mini.twitch:hover { background: #9146FF; }
+.social-mini.youtube:hover { background: #FF0000; }
+.social-mini.facebook:hover { background: #1877F2; }
+.social-mini.discord:hover { background: #5865F2; }
+
+/* Ajuste del Header para que no se corte el logo (Del arreglo anterior) */
+.sidebar header { height: 80px; overflow: visible; } 
+.sidebar .image-text-logo { min-width: 60px; }
+.sidebar-logo { width: 45px; height: 45px; object-fit: contain; }
+
+/* ========================================= */
+/* LOGICA DEL ICONO COMPARTIR (SHARE)        */
+/* ========================================= */
+
+/* Por defecto (Barra Abierta): Ocultamos el icono solitario */
+.social-trigger-closed {
+    display: none; 
+}
+
+/* Cuando la barra estÃ¡ CERRADA (.close): */
+.sidebar.close .social-trigger-closed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;       /* Misma altura que los otros items */
+    margin-top: 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+/* Estilo del icono cuando aparece */
+.sidebar.close .social-trigger-closed .icon {
+    font-size: 20px;
+    min-width: 60px; /* Para que se alinee con los otros iconos */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+/* Efecto Hover al icono de compartir */
+.sidebar.close .social-trigger-closed:hover {
+    background: var(--bg-input);
+}
+.sidebar.close .social-trigger-closed:hover .icon {
+    color: var(--text-main);
+}
+/* ========================================= */
+/* BOTÃ“N TOGGLE "VER MÃS"                    */
+/* ========================================= */
+.toggle-more-btn {
+    cursor: pointer;
+    border-top: 1px dashed var(--border-color); /* Separador sutil */
+    margin-top: 5px;
+}
+
+.toggle-more-btn:hover {
+    background-color: rgba(0,0,0,0.03); /* Hover muy ligero */
+}
+
+/* AnimaciÃ³n de entrada suave */
+.expanded-menu-animation {
+    animation: slideDown 0.3s ease-out forwards;
+    transform-origin: top;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Si la barra estÃ¡ cerrada, el texto "Ver MÃ¡s" desaparece, 
+   pero queda el icono de flecha hacia abajo/arriba para expandir los iconos */

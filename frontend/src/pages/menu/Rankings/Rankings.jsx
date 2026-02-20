@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './Rankings.css';
+import PageHud from '../../../components/PageHud/PageHud';
 
 const Rankings = () => {
   const [game, setGame] = useState('lol');
@@ -31,6 +32,7 @@ const Rankings = () => {
 
   return (
     <div className="rankings-layout">
+      <PageHud page="RANKINGS" />
       
       <div className="main-content">
         <div className="rank-header">

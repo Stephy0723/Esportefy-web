@@ -1,60 +1,80 @@
-/* ========================================= */
-/* 1. CONFIGURACIÓN BASE (El Lienzo)         */
-/* ========================================= */
+/* ═══════════════════════════════════════════════════════════
+   AVATAR CIRCLE — PREMIUM AVATAR DECORATION SYSTEM v3
+   8 Layers: container, ::before, ::after, .avatar-core,
+   .fantasy-ring, .crystal-leaf ×3, .magic-dust
+   ═══════════════════════════════════════════════════════════ */
+
+
+/* ─────────────────────────────────────────────────────────
+   1 · BASE STYLES
+   ───────────────────────────────────────────────────────── */
 .avatar-circle-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%; /* Por defecto círculo */
-    transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* LA IMAGEN DEL USUARIO (Core) */
 .avatar-core {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 5;
-    background: #1a1a1a;
-    border-radius: 50%;
-    overflow: hidden;
-    position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  background: #1a1a1a;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
 }
 
 .avatar-core img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-/* ========================================= */
-/* 2. LOS 5 MARCOS NUEVOS                    */
-/* ========================================= */
+/* Decorative elements hidden by default */
+.fantasy-ring,
+.crystal-leaf,
+.magic-dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  display: none;
+}
 
-/* ⚡ NEON STORM — Electric Ring (PRO) */
+
+/* ─────────────────────────────────────────────────────────
+   2 · FRAME DESIGNS
+   ───────────────────────────────────────────────────────── */
+
+
+/* ═══════════════════════════════════════
+   ⚡ 1 · NEON STORM — Electric Surge
+   ═══════════════════════════════════════ */
 .frame-neon-storm {
   position: relative;
-  padding: 6px;
+  padding: 5px;
   border-radius: 50%;
   isolation: isolate;
 }
 
-/* Núcleo del avatar */
 .frame-neon-storm .avatar-core {
   position: relative;
   z-index: 2;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.9);
+  border: 2px solid rgba(0,242,255,0.7);
   box-shadow:
-    0 0 12px rgba(0,242,255,0.8),
-    0 0 30px rgba(188,19,254,0.4);
+    0 0 12px rgba(0,242,255,0.5),
+    0 0 30px rgba(188,19,254,0.25),
+    inset 0 0 6px rgba(0,242,255,0.1);
 }
 
-/* Rayo principal */
+/* Spinning gradient ring */
 .frame-neon-storm::before {
   content: "";
   position: absolute;
@@ -62,1181 +82,2270 @@
   border-radius: 50%;
   background: conic-gradient(
     from 0deg,
-    transparent 0deg,
-    #00f2ff 60deg,
-    #bc13fe 120deg,
-    transparent 180deg,
-    transparent 360deg
+    #00f2ff, #bc13fe, #00f2ff, #bc13fe, #00f2ff
   );
-  animation: spinStorm 2.2s linear infinite;
+  mask: radial-gradient(circle, transparent 68%, #000 70%);
+  -webkit-mask: radial-gradient(circle, transparent 68%, #000 70%);
+  animation: spin360 3s linear infinite;
   z-index: 0;
 }
 
-/* Halo eléctrico (glow difuso) */
+/* Outer glow halo */
 .frame-neon-storm::after {
   content: "";
   position: absolute;
   inset: -6px;
   border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent,
-    #00f2ff,
-    #bc13fe,
-    transparent
-  );
-  filter: blur(14px);
-  opacity: 0.7;
-  animation: spinStormReverse 3.5s linear infinite;
+  background: conic-gradient(from 180deg, transparent, #00f2ff, #bc13fe, transparent);
+  filter: blur(12px);
+  opacity: 0.4;
+  animation: spin360 5s linear infinite reverse;
   z-index: -1;
 }
 
-/* Animaciones */
-@keyframes spinStorm {
-  to { transform: rotate(360deg); }
+.frame-neon-storm .fantasy-ring { display: block; }
+.frame-neon-storm .crystal-leaf {
+  display: block;
+  position: absolute;
+  width: 4px; height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  z-index: 10;
+}
+.frame-neon-storm .crystal-leaf.pos-1 {
+  top: -4px; left: 50%; transform: translateX(-50%);
+  box-shadow: 0 0 5px 2px #00f2ff, 0 0 14px 4px rgba(0,242,255,0.4);
+  animation: neonFloat1 3s ease-in-out infinite;
+}
+.frame-neon-storm .crystal-leaf.pos-2 {
+  bottom: -2px; right: 12%;
+  box-shadow: 0 0 5px 2px #bc13fe, 0 0 14px 4px rgba(188,19,254,0.4);
+  animation: neonFloat2 3.5s ease-in-out infinite 0.5s;
+}
+.frame-neon-storm .crystal-leaf.pos-3 {
+  bottom: 15%; left: -2px;
+  width: 3px; height: 3px;
+  box-shadow: 0 0 4px 2px #00f2ff;
+  animation: neonFloat3 4s ease-in-out infinite 1s;
+}
+.frame-neon-storm .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background:
+    radial-gradient(1px 1px at 18% 12%, #00f2ff, transparent),
+    radial-gradient(1px 1px at 82% 18%, #bc13fe, transparent),
+    radial-gradient(1px 1px at 65% 88%, #00f2ff, transparent),
+    radial-gradient(1px 1px at 8% 72%, #bc13fe, transparent);
+  animation: dustPulse 4s ease-in-out infinite;
+  z-index: 8;
 }
 
-@keyframes spinStormReverse {
-  to { transform: rotate(-360deg); }
-}
 
-
-/* ☁️ CELESTIAL DREAM — Organic Aura */
+/* ═══════════════════════════════════════
+   ☁️ 2 · CELESTIAL DREAM — Astral Aura
+   ═══════════════════════════════════════ */
 .frame-celestial-dream {
   position: relative;
-  padding: 10px;
+  padding: 6px;
+  border-radius: 50%;
   isolation: isolate;
 }
 
-/* Núcleo del avatar (blob vivo) */
 .frame-celestial-dream .avatar-core {
   position: relative;
   z-index: 2;
-
-  border-radius:
-    60% 40% 30% 70% /
-    60% 30% 70% 40%;
-
-  border: 3px solid rgba(255,255,255,0.9);
-
+  border-radius: 50%;
+  border: 2px solid rgba(255,210,180,0.8);
   box-shadow:
-    0 10px 30px rgba(255,195,160,0.35),
-    inset 0 0 0 1px rgba(255,255,255,0.15);
-
-  animation:
-    floatBlob 7s ease-in-out infinite,
-    morphBlob 10s ease-in-out infinite;
-}
-
-/* Aura principal */
-.frame-celestial-dream::before {
-  content: "";
-  position: absolute;
-  inset: -8%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 30%,
-      rgba(255,195,160,0.55),
-      rgba(255,255,255,0) 65%
-    );
-  filter: blur(10px);
-  animation: pulseSoft 4s ease-in-out infinite;
-  z-index: 0;
-}
-
-/* Nube difusa externa */
-.frame-celestial-dream::after {
-  content: "";
-  position: absolute;
-  inset: -18%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 60% 70%,
-      rgba(255,220,200,0.35),
-      rgba(255,255,255,0) 70%
-    );
-  filter: blur(18px);
-  opacity: 0.7;
-  animation: dreamDrift 8s ease-in-out infinite;
-  z-index: -1;
-}
-
-/* Animaciones */
-@keyframes floatBlob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes morphBlob {
-  0%, 100% {
-    border-radius:
-      60% 40% 30% 70% /
-      60% 30% 70% 40%;
-  }
-  50% {
-    border-radius:
-      50% 60% 40% 50% /
-      40% 60% 50% 60%;
-  }
-}
-
-@keyframes pulseSoft {
-  0% { opacity: 0.5; }
-  100% { opacity: 0.9; }
-}
-
-@keyframes dreamDrift {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(6px, -4px); }
-}
-
-
-/* --- 🌙 3. MIDNIGHT GOLD (Doble Anillo Lujoso) --- */
-.frame-midnight-gold {
-    box-shadow: 0 0 20px rgba(0,0,0,0.8);
-}
-.frame-midnight-gold .avatar-core {
-    border: 2px solid #ffd700;
-    width: 88%; height: 88%;
-}
-/* Anillo Exterior */
-.frame-midnight-gold::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 2px dashed #b8860b;
-    animation: rotateSlow 20s linear infinite;
-}
-/* Destellos */
-.frame-midnight-gold::after {
-    content: '✦';
-    position: absolute;
-    top: -10px; right: 0;
-    color: #ffd700;
-    font-size: 20px;
-    animation: twinkle 1.5s infinite;
-    text-shadow: 0 0 5px #fff;
-}
-
-/* 🌿 NATURE BLOOM — Organic Leaf Crown */
-.frame-nature-bloom {
-  position: relative;
-  padding: 10px;
-  border-radius: 50%;
-  isolation: isolate;
-}
-
-/* Avatar core */
-.frame-nature-bloom .avatar-core {
-  position: relative;
-  z-index: 2;
-  border-radius: 50%;
-  border: 3px solid rgba(80,200,120,0.85);
-  box-shadow:
-    0 0 12px rgba(80,200,120,0.4),
+    0 0 18px rgba(255,195,160,0.35),
+    0 0 40px rgba(255,195,160,0.1),
     inset 0 0 0 1px rgba(255,255,255,0.1);
 }
 
-/* Corona principal (hojas estilizadas) */
+/* Warm gradient ring */
+.frame-celestial-dream::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ffc3a0, #ffd8c0, #fff5ee, #ffc3a0, #ffb090, #ffd8c0, #ffc3a0
+  );
+  mask: radial-gradient(circle, transparent 66%, #000 68%);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 68%);
+  animation: spin360 20s linear infinite;
+  z-index: 0;
+}
+
+/* Soft ambient glow */
+.frame-celestial-dream::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255,195,160,0.3), transparent 65%);
+  filter: blur(8px);
+  animation: gentlePulse 5s ease-in-out infinite;
+  z-index: -1;
+}
+
+.frame-celestial-dream .fantasy-ring { display: block; }
+.frame-celestial-dream .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+}
+.frame-celestial-dream .crystal-leaf.pos-1 {
+  top: -6px; left: 38%;
+  width: 10px; height: 10px;
+  background: #ffc3a0;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  filter: drop-shadow(0 0 4px rgba(255,195,160,0.8));
+  animation: floatSoft1 5s ease-in-out infinite;
+}
+.frame-celestial-dream .crystal-leaf.pos-2 {
+  bottom: -2px; right: -4px;
+  width: 8px; height: 8px;
+  background: #ffd8c0;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  filter: drop-shadow(0 0 3px rgba(255,216,192,0.7));
+  animation: floatSoft2 6s ease-in-out infinite 1s;
+}
+.frame-celestial-dream .crystal-leaf.pos-3 {
+  top: 48%; left: -6px;
+  width: 7px; height: 7px;
+  background: #fff;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  filter: drop-shadow(0 0 4px rgba(255,195,160,0.6));
+  animation: floatSoft3 7s ease-in-out infinite 0.5s;
+}
+.frame-celestial-dream .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 15% 20%, rgba(255,195,160,0.7), transparent),
+    radial-gradient(1px 1px at 75% 25%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 85% 75%, rgba(255,210,190,0.5), transparent),
+    radial-gradient(1px 1px at 25% 82%, rgba(255,255,255,0.5), transparent);
+  animation: dustPulse 6s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🌙 3 · MIDNIGHT GOLD — Imperial Ring
+   ═══════════════════════════════════════ */
+.frame-midnight-gold {
+  position: relative;
+  padding: 6px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-midnight-gold .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid #ffd700;
+  box-shadow:
+    0 0 10px rgba(255,215,0,0.5),
+    inset 0 0 12px rgba(0,0,0,0.5);
+}
+
+/* Ornate golden conic ring */
+.frame-midnight-gold::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #b8860b, #ffd700, #fff8dc, #ffd700,
+    #b8860b, #ffd700, #fff8dc, #ffd700,
+    #b8860b, #ffd700, #fff8dc, #ffd700,
+    #b8860b
+  );
+  mask: radial-gradient(circle, transparent 65%, #000 67%);
+  -webkit-mask: radial-gradient(circle, transparent 65%, #000 67%);
+  animation: spin360 25s linear infinite;
+  z-index: 0;
+}
+
+/* Gold ambient glow */
+.frame-midnight-gold::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.12), transparent 60%);
+  filter: blur(6px);
+  animation: gentlePulse 4s ease-in-out infinite;
+  z-index: -1;
+}
+
+.frame-midnight-gold .fantasy-ring { display: block; }
+.frame-midnight-gold .crystal-leaf {
+  display: block;
+  position: absolute;
+  background: #ffd700;
+  z-index: 10;
+}
+.frame-midnight-gold .crystal-leaf.pos-1 {
+  top: -8px; right: 10%;
+  width: 6px; height: 6px;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  filter: drop-shadow(0 0 5px #ffd700);
+  animation: twinkle1 3s ease-in-out infinite;
+}
+.frame-midnight-gold .crystal-leaf.pos-2 {
+  bottom: -5px; left: 18%;
+  width: 5px; height: 5px;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  filter: drop-shadow(0 0 4px #ffd700);
+  animation: twinkle2 3.5s ease-in-out infinite 0.8s;
+}
+.frame-midnight-gold .crystal-leaf.pos-3 {
+  top: 32%; left: -6px;
+  width: 4px; height: 4px;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  filter: drop-shadow(0 0 4px #fff8dc);
+  animation: twinkle3 4s ease-in-out infinite 1.5s;
+}
+.frame-midnight-gold .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background:
+    radial-gradient(1px 1px at 28% 10%, #ffd700, transparent),
+    radial-gradient(1px 1px at 72% 90%, #fff8dc, transparent),
+    radial-gradient(1px 1px at 90% 42%, #ffd700, transparent),
+    radial-gradient(1px 1px at 10% 58%, #b8860b, transparent);
+  animation: dustPulse 5s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🌿 4 · NATURE BLOOM — Living Vine Wreath
+   ══════════════════════════════════════= */
+.frame-nature-bloom {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-nature-bloom .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(80,200,120,0.7);
+  box-shadow:
+    0 0 10px rgba(80,200,120,0.3),
+    0 0 25px rgba(80,200,120,0.1),
+    inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+/* Organic vine ring — multi-green gradient */
 .frame-nature-bloom::before {
   content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #2d7a3a, #50c878, #90ee90, #50c878,
+    #228B22, #50c878, #a8e6a3, #50c878,
+    #2d7a3a, #50c878, #90ee90, #50c878,
+    #2d7a3a
+  );
+  mask: radial-gradient(circle, transparent 66%, #000 68%);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 68%);
+  animation: spin360 30s linear infinite;
+  z-index: 0;
+}
+
+/* Verdant ambient glow */
+.frame-nature-bloom::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(80,200,120,0.15), transparent 60%);
+  filter: blur(8px);
+  animation: gentlePulse 6s ease-in-out infinite;
+  z-index: -1;
+}
+
+/* Floating leaf particles */
+.frame-nature-bloom .fantasy-ring { display: block; }
+.frame-nature-bloom .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  font-size: 0;
+  width: 0; height: 0;
+}
+.frame-nature-bloom .crystal-leaf.pos-1 {
+  top: -8px; right: 8%;
+}
+.frame-nature-bloom .crystal-leaf.pos-1::before {
+  content: "🍃";
+  font-size: 12px;
+  display: block;
+  filter: drop-shadow(0 0 3px rgba(80,200,120,0.6));
+  animation: leafDrift1 5s ease-in-out infinite;
+}
+.frame-nature-bloom .crystal-leaf.pos-2 {
+  bottom: -6px; left: 22%;
+}
+.frame-nature-bloom .crystal-leaf.pos-2::before {
+  content: "🌱";
+  font-size: 10px;
+  display: block;
+  filter: drop-shadow(0 0 3px rgba(80,200,120,0.5));
+  animation: leafDrift2 6s ease-in-out infinite 1s;
+}
+.frame-nature-bloom .crystal-leaf.pos-3 {
+  top: 42%; left: -10px;
+}
+.frame-nature-bloom .crystal-leaf.pos-3::before {
+  content: "🍀";
+  font-size: 11px;
+  display: block;
+  filter: drop-shadow(0 0 3px rgba(80,200,120,0.5));
+  animation: leafDrift3 7s ease-in-out infinite 2s;
+}
+.frame-nature-bloom .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 20% 10%, rgba(80,200,120,0.6), transparent),
+    radial-gradient(1px 1px at 78% 18%, rgba(144,238,144,0.5), transparent),
+    radial-gradient(1px 1px at 85% 72%, rgba(80,200,120,0.4), transparent),
+    radial-gradient(1px 1px at 15% 80%, rgba(144,238,144,0.3), transparent);
+  animation: dustPulse 7s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🔺 5 · PRISM TECH — Holographic HUD
+   ═══════════════════════════════════════ */
+.frame-prism-tech {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-prism-tech .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(255,0,85,0.6);
+  box-shadow:
+    0 0 10px rgba(255,0,85,0.4),
+    0 0 25px rgba(188,19,254,0.15),
+    inset 0 0 8px rgba(0,0,0,0.4);
+}
+
+/* Animated prismatic gradient ring */
+.frame-prism-tech::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ff0055, #bc13fe, #0055ff, #00f2ff,
+    #ff0055, #bc13fe, #0055ff, #00f2ff,
+    #ff0055
+  );
+  mask: radial-gradient(circle, transparent 65%, #000 67%);
+  -webkit-mask: radial-gradient(circle, transparent 65%, #000 67%);
+  animation: spin360 4s linear infinite;
+  z-index: 0;
+}
+
+/* Soft holographic glow */
+.frame-prism-tech::after {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 90deg,
+    transparent, rgba(255,0,85,0.15), rgba(188,19,254,0.1), transparent
+  );
+  filter: blur(10px);
+  animation: spin360 6s linear infinite reverse;
+  z-index: -1;
+}
+
+/* Data nodes */
+.frame-prism-tech .fantasy-ring { display: block; }
+.frame-prism-tech .crystal-leaf {
+  display: block;
+  position: absolute;
+  width: 5px; height: 5px;
+  background: #fff;
+  border-radius: 50%;
+  z-index: 10;
+}
+.frame-prism-tech .crystal-leaf.pos-1 {
+  top: -3px; left: 50%; transform: translateX(-50%);
+  box-shadow: 0 0 4px #ff0055, 0 0 10px rgba(255,0,85,0.5);
+  animation: nodeGlow 2s ease-in-out infinite;
+}
+.frame-prism-tech .crystal-leaf.pos-2 {
+  bottom: -3px; left: 50%; transform: translateX(-50%);
+  box-shadow: 0 0 4px #0055ff, 0 0 10px rgba(0,85,255,0.5);
+  animation: nodeGlow 2s ease-in-out infinite 0.66s;
+}
+.frame-prism-tech .crystal-leaf.pos-3 {
+  top: 50%; right: -3px; transform: translateY(-50%);
+  box-shadow: 0 0 4px #bc13fe, 0 0 10px rgba(188,19,254,0.5);
+  animation: nodeGlow 2s ease-in-out infinite 1.33s;
+}
+.frame-prism-tech .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background:
+    radial-gradient(1px 1px at 30% 8%, rgba(255,0,85,0.5), transparent),
+    radial-gradient(1px 1px at 70% 92%, rgba(0,85,255,0.5), transparent),
+    radial-gradient(1px 1px at 92% 40%, rgba(188,19,254,0.4), transparent),
+    radial-gradient(1px 1px at 8% 60%, rgba(0,242,255,0.4), transparent);
+  animation: dustPulse 3s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🪐 6 · GALACTIC ORBIT — Deep Space
+   ═══════════════════════════════════════ */
+.frame-galactic-orbit {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-galactic-orbit .avatar-core {
+  position: relative;
+  z-index: 3;
+  border-radius: 50%;
+  border: 2px solid rgba(148,0,211,0.5);
+  box-shadow:
+    0 0 14px rgba(75,0,130,0.4),
+    inset 0 0 8px rgba(0,0,0,0.4);
+}
+
+/* Purple nebula ring */
+.frame-galactic-orbit::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #4b0082, #9400d3, #dda0dd, #9400d3,
+    #4b0082, #9400d3, #dda0dd, #9400d3,
+    #4b0082
+  );
+  mask: radial-gradient(circle, transparent 65%, #000 67%);
+  -webkit-mask: radial-gradient(circle, transparent 65%, #000 67%);
+  animation: spin360 8s linear infinite;
+  z-index: 0;
+}
+
+/* Cosmic glow */
+.frame-galactic-orbit::after {
+  content: "";
+  position: absolute;
+  inset: -15%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(148,0,211,0.12), transparent 60%);
+  filter: blur(8px);
+  animation: gentlePulse 5s ease-in-out infinite;
+  z-index: -1;
+}
+
+.frame-galactic-orbit .fantasy-ring { display: block; }
+.frame-galactic-orbit .crystal-leaf {
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  z-index: 10;
+}
+.frame-galactic-orbit .crystal-leaf.pos-1 {
+  top: -5px; left: 48%;
+  width: 6px; height: 6px;
+  background: radial-gradient(circle, #dda0dd, #9400d3);
+  box-shadow: 0 0 6px #9400d3;
+  animation: floatSoft1 4s ease-in-out infinite;
+}
+.frame-galactic-orbit .crystal-leaf.pos-2 {
+  bottom: 5%; right: -3px;
+  width: 4px; height: 4px;
+  background: #00f2ff;
+  box-shadow: 0 0 5px #00f2ff;
+  animation: floatSoft2 5s ease-in-out infinite 1s;
+}
+.frame-galactic-orbit .crystal-leaf.pos-3 {
+  bottom: -3px; left: 22%;
+  width: 3px; height: 3px;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(148,0,211,0.6);
+  animation: floatSoft3 6s ease-in-out infinite 2s;
+}
+.frame-galactic-orbit .magic-dust {
+  display: block;
   position: absolute;
   inset: -8%;
   border-radius: 50%;
   background:
-    conic-gradient(
-      from 0deg,
-      rgba(80,200,120,0.9) 0deg,
-      rgba(120,220,160,0.6) 30deg,
-      rgba(80,200,120,0.9) 60deg,
-      transparent 80deg,
-      rgba(80,200,120,0.9) 120deg,
-      rgba(120,220,160,0.6) 150deg,
-      rgba(80,200,120,0.9) 180deg,
-      transparent 200deg
-    );
-  mask:
-    radial-gradient(circle at center,
-      transparent 60%,
-      #000 62%
-    );
-  animation: growBloom 12s ease-in-out infinite;
-  filter: blur(0.6px);
-  z-index: 0;
+    radial-gradient(1px 1px at 20% 15%, rgba(148,0,211,0.6), transparent),
+    radial-gradient(1px 1px at 80% 22%, rgba(0,242,255,0.4), transparent),
+    radial-gradient(0.5px 0.5px at 65% 82%, #fff, transparent),
+    radial-gradient(0.5px 0.5px at 35% 72%, rgba(148,0,211,0.4), transparent),
+    radial-gradient(1px 1px at 10% 48%, rgba(0,242,255,0.3), transparent);
+  animation: dustPulse 8s ease-in-out infinite;
+  z-index: 7;
 }
 
-/* Aura natural suave */
-.frame-nature-bloom::after {
-  content: "";
-  position: absolute;
-  inset: -18%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle,
-      rgba(120,220,160,0.35),
-      rgba(255,255,255,0) 70%
-    );
-  filter: blur(14px);
-  opacity: 0.7;
-  animation: naturePulse 6s ease-in-out infinite;
-  z-index: -1;
-}
 
-/* Animaciones */
-@keyframes growBloom {
-  0%, 100% {
-    transform: rotate(0deg) scale(0.98);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.02);
-  }
-}
-
-@keyframes naturePulse {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.4; }
-}
-
-/* --- 🔺 5. PRISM TECH (Triángulo/Polígono) --- */
-.frame-prism-tech .avatar-core {
-    border-radius: 0; /* NO es círculo */
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); /* Hexágono */
-    background: #111;
-}
-.frame-prism-tech {
-    filter: drop-shadow(0 0 5px #ff0055);
-}
-.frame-prism-tech::before {
-    content: '';
-    position: absolute;
-    width: 106%; height: 106%;
-    background: linear-gradient(45deg, #ff0055, #0000ff);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    z-index: -1;
-}
-.frame-prism-tech::after {
-    content: '';
-    position: absolute;
-    width: 100%; height: 2px;
-    background: rgba(255,255,255,0.8);
-    top: 50%;
-    animation: scanline 2s linear infinite;
-    opacity: 0.5;
-}
-
-/* ========================================= */
-/* 3. ESTADOS (Online, etc) - NO TOCAR       */
-/* ========================================= */
-.status-dot {
-    position: absolute; bottom: 5%; right: 5%;
-    width: 20px; height: 20px;
-    border: 3px solid #1a1a1a; border-radius: 50%; z-index: 20;
-}
-.frame-prism-tech .status-dot { bottom: 0; right: 15%; border-color: #000; } /* Ajuste Hexágono */
-
-.status-dot.online { background: #10b981; box-shadow: 0 0 10px #10b981; }
-.status-dot.dnd { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
-.status-dot.tournament { background: radial-gradient(circle, #fbbf24, #d97706); border-color: #fff; animation: pulseSoft 1s infinite; }
-.status-dot.offline { background: #6b7280; }
-
-/* ========================================= */
-/* 4. ANIMACIONES                            */
-/* ========================================= */
-@keyframes spinStorm { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes floatBlob { 0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; } }
-@keyframes pulseSoft { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; } }
-@keyframes rotateSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.5); } }
-@keyframes scanline { 0% { top: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }/* ========================================= */
-/* 1. CONFIGURACIÓN BASE (El Lienzo)         */
-/* ========================================= */
-.avatar-circle-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%; /* Por defecto círculo */
-    transition: all 0.3s ease;
-}
-
-/* LA IMAGEN DEL USUARIO (Core) */
-.avatar-core {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 5;
-    background: #1a1a1a;
-    border-radius: 50%;
-    overflow: hidden;
-    position: relative;
-}
-
-.avatar-core img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-/* ========================================= */
-/* 2. LOS 5 MARCOS NUEVOS                    */
-/* ========================================= */
-
-/* --- ⚡ 1. NEON STORM (Círculo Eléctrico) --- */
-.frame-neon-storm {
-    padding: 5px; /* Espacio para el rayo */
-}
-.frame-neon-storm .avatar-core {
-    border: 2px solid #fff;
-    box-shadow: 0 0 15px #00f2ff;
-}
-.frame-neon-storm::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-    background: conic-gradient(transparent, #00f2ff, #bc13fe, transparent 30%);
-    animation: spinStorm 1.5s linear infinite;
-}
-.frame-neon-storm::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-    background: conic-gradient(transparent, #00f2ff, #bc13fe, transparent 30%);
-    animation: spinStorm 1.5s linear infinite;
-    filter: blur(10px); /* Efecto Glow */
-}
-
-/* --- ☁️ 2. CELESTIAL DREAM (Forma de Nube/Blob) --- */
-.frame-celestial-dream .avatar-core {
-    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; /* Forma orgánica */
-    border: 3px solid #fff;
-    animation: floatBlob 6s ease-in-out infinite;
-}
-.frame-celestial-dream::before {
-    content: '';
-    position: absolute;
-    width: 115%; height: 115%;
-    background: radial-gradient(circle, rgba(255,195,160,0.5) 0%, rgba(255,255,255,0) 70%);
-    border-radius: 50%;
-    animation: pulseSoft 3s infinite alternate;
-    z-index: 0;
-}
-
-/* --- 🌙 3. MIDNIGHT GOLD (Doble Anillo Lujoso) --- */
-.frame-midnight-gold {
-    box-shadow: 0 0 20px rgba(0,0,0,0.8);
-}
-.frame-midnight-gold .avatar-core {
-    border: 2px solid #ffd700;
-    width: 88%; height: 88%;
-}
-/* Anillo Exterior */
-.frame-midnight-gold::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 2px dashed #b8860b;
-    animation: rotateSlow 20s linear infinite;
-}
-/* Destellos */
-.frame-midnight-gold::after {
-    content: '✦';
-    position: absolute;
-    top: -10px; right: 0;
-    color: #ffd700;
-    font-size: 20px;
-    animation: twinkle 1.5s infinite;
-    text-shadow: 0 0 5px #fff;
-}
-
-/* --- 🌿 4. NATURE BLOOM (Corona de Hojas) --- */
-.frame-nature-bloom .avatar-core {
-    border: 3px solid #50c878;
-}
-.frame-nature-bloom::before {
-    content: '';
-    position: absolute;
-    width: 118%; height: 118%;
-    background-image: 
-        radial-gradient(circle at 50% 0, #50c878 10%, transparent 11%),
-        radial-gradient(circle at 100% 50%, #50c878 10%, transparent 11%),
-        radial-gradient(circle at 50% 100%, #50c878 10%, transparent 11%),
-        radial-gradient(circle at 0 50%, #50c878 10%, transparent 11%);
-    border-radius: 50%;
-    animation: rotateSlow 8s linear infinite;
-    opacity: 0.8;
-}
-
-/* --- 🔺 5. PRISM TECH (Triángulo/Polígono) --- */
-.frame-prism-tech .avatar-core {
-    border-radius: 0; /* NO es círculo */
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); /* Hexágono */
-    background: #111;
-}
-.frame-prism-tech {
-    filter: drop-shadow(0 0 5px #ff0055);
-}
-.frame-prism-tech::before {
-    content: '';
-    position: absolute;
-    width: 106%; height: 106%;
-    background: linear-gradient(45deg, #ff0055, #0000ff);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    z-index: -1;
-}
-.frame-prism-tech::after {
-    content: '';
-    position: absolute;
-    width: 100%; height: 2px;
-    background: rgba(255,255,255,0.8);
-    top: 50%;
-    animation: scanline 2s linear infinite;
-    opacity: 0.5;
-}
-
-/* ========================================= */
-/* 3. ESTADOS (Online, etc) - NO TOCAR       */
-/* ========================================= */
-.status-dot {
-    position: absolute; bottom: 5%; right: 5%;
-    width: 20px; height: 20px;
-    border: 3px solid #1a1a1a; border-radius: 50%; z-index: 20;
-}
-.frame-prism-tech .status-dot { bottom: 0; right: 15%; border-color: #000; } /* Ajuste Hexágono */
-
-.status-dot.online { background: #10b981; box-shadow: 0 0 10px #10b981; }
-.status-dot.dnd { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
-.status-dot.tournament { background: radial-gradient(circle, #fbbf24, #d97706); border-color: #fff; animation: pulseSoft 1s infinite; }
-.status-dot.offline { background: #6b7280; }
-
-/* ========================================= */
-/* 4. ANIMACIONES                            */
-/* ========================================= */
-@keyframes spinStorm { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes floatBlob { 0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; } 50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; } }
-@keyframes pulseSoft { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.1); opacity: 1; } }
-@keyframes rotateSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.5); } }
-@keyframes scanline { 0% { top: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-
-/* ========================================= */
-/* LOTE 2: NUEVOS MARCOS (AÑADIR AL FINAL)   */
-/* ========================================= */
-
-/* --- 🪐 6. GALACTIC ORBIT (Anillos 3D) --- */
-.frame-galactic-orbit {
-    perspective: 500px; /* Da profundidad 3D */
-    transform-style: preserve-3d;
-}
-.frame-galactic-orbit .avatar-core {
-    border: 2px solid rgba(148, 0, 211, 0.5);
-    box-shadow: 0 0 15px #4b0082;
-    transform: translateZ(0px); /* Mantiene la foto al frente */
-}
-/* Anillo 1 */
-.frame-galactic-orbit::before {
-    content: '';
-    position: absolute;
-    width: 140%; height: 140%;
-    border: 2px solid #9400d3;
-    border-radius: 50%;
-    transform: rotateX(70deg) rotateY(10deg);
-    animation: orbitSpin 4s linear infinite;
-}
-/* Anillo 2 */
-.frame-galactic-orbit::after {
-    content: '';
-    position: absolute;
-    width: 160%; height: 160%;
-    border: 1px dashed #00f2ff;
-    border-radius: 50%;
-    transform: rotateX(-70deg) rotateY(-10deg);
-    animation: orbitSpin 6s linear infinite reverse;
-}
-
-/* --- 📺 7. GLITCH HAZARD (Cuadrado Roto) --- */
+/* ═══════════════════════════════════════
+   📺 7 · GLITCH HAZARD — DO NOT MODIFY
+   ═══════════════════════════════════════ */
 .frame-glitch-hazard .avatar-core {
-    border-radius: 4px; /* Casi cuadrado */
-    border: 2px solid #39ff14;
-    filter: drop-shadow(2px 2px 0px #ff0055) drop-shadow(-2px -2px 0px #00f2ff);
-    animation: glitchShake 2s infinite steps(2); /* Movimiento robótico */
+  border-radius: 4px;
+  border: 2px solid #39ff14;
+  filter: drop-shadow(2px 2px 0px #ff0055) drop-shadow(-2px -2px 0px #00f2ff);
+  animation: glitchShake 2s infinite steps(2);
 }
 .frame-glitch-hazard::before {
-    content: 'ERR_01';
-    position: absolute;
-    bottom: -10px;
-    background: #000;
-    color: #39ff14;
-    font-size: 10px;
-    font-family: monospace;
-    padding: 2px;
-    border: 1px solid #39ff14;
-    z-index: 10;
+  content: 'ERR_01';
+  position: absolute;
+  bottom: -10px;
+  background: #000;
+  color: #39ff14;
+  font-size: 10px;
+  font-family: monospace;
+  padding: 2px;
+  border: 1px solid #39ff14;
+  z-index: 10;
 }
-/* ❄️ FROZEN SHARD — Cute Magic Ice */
+
+
+/* ═══════════════════════════════════════
+   ❄️ 8 · FROZEN SHARD — Cryo Crystal
+   ═══════════════════════════════════════ */
 .frame-frozen-shard {
   position: relative;
-  padding: 14px;
+  padding: 5px;
+  border-radius: 50%;
   isolation: isolate;
-  animation: iceFloat 6s ease-in-out infinite;
 }
 
-/* Núcleo del cristal */
 .frame-frozen-shard .avatar-core {
   position: relative;
-  z-index: 3;
-
-  border-radius: 0;
-  clip-path: polygon(
-    20% 0%,
-    88% 10%,
-    100% 78%,
-    82% 100%,
-    12% 92%,
-    0% 22%
-  );
-
-  background:
-    linear-gradient(
-      135deg,
-      #f2fcff,
-      #dff6fb,
-      #c6eef6
-    );
-
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(165,242,243,0.7);
   box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,0.6),
-    inset 0 0 14px rgba(255,255,255,0.45),
-    0 10px 25px rgba(160,220,255,0.35);
-
-  animation: iceWobble 4.5s ease-in-out infinite;
+    0 0 12px rgba(165,242,243,0.4),
+    0 0 30px rgba(165,242,243,0.15),
+    inset 0 0 8px rgba(200,240,255,0.15);
 }
 
-/* Marco cristal */
+/* Ice crystal conic ring */
 .frame-frozen-shard::before {
   content: "";
   position: absolute;
-  inset: -6%;
-
-  clip-path: polygon(
-    20% 0%,
-    88% 10%,
-    100% 78%,
-    82% 100%,
-    12% 92%,
-    0% 22%
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #a5f2f3, #e0f7fa, #fff, #b2ebf2,
+    #a5f2f3, #dff6fb, #fff, #c6eef6,
+    #a5f2f3
   );
-
-  background:
-    linear-gradient(
-      120deg,
-      rgba(255,255,255,0.9),
-      rgba(180,235,255,0.7),
-      rgba(255,255,255,0.9)
-    );
-
-  filter: blur(0.6px);
-  animation: iceGlowPulse 3.5s ease-in-out infinite;
-  z-index: 1;
-}
-
-/* Sparkles cute */
-.frame-frozen-shard::after {
-  content: "✦ ✧";
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-
-  color: rgba(255,255,255,0.8);
-  font-size: 14px;
-  letter-spacing: 24px;
-
-  animation: sparkleDrift 5s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* Animaciones */
-@keyframes iceFloat {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes iceWobble {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  50% {
-    transform: rotate(1.2deg);
-  }
-}
-
-@keyframes iceGlowPulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
-@keyframes sparkleDrift {
-  0%, 100% {
-    opacity: 0.4;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-6px);
-  }
-}
-
-
-/* --- 🔥 9. INFERNO RAGE (Fuego Vivo) --- */
-.frame-inferno-rage {
-    filter: drop-shadow(0 -5px 10px #ff4500);
-}
-.frame-inferno-rage .avatar-core {
-    border: 3px solid #ffae00;
-    box-shadow: inset 0 0 20px #8b0000;
-}
-.frame-inferno-rage::after {
-    content: '';
-    position: absolute;
-    bottom: -10%; left: -10%; width: 120%; height: 120%;
-    border-radius: 50%;
-    background: radial-gradient(circle at 50% 80%, rgba(255,69,0,0.8), transparent 70%);
-    mix-blend-mode: screen;
-    animation: firePulse 0.5s infinite alternate;
-}
-
-/* --- 👾 10. RETRO ARCADE (Pixel Art) --- */
-.frame-retro-arcade .avatar-core {
-    border-radius: 0;
-    border: 4px solid #ff00ff;
-    /* Sombra dura pixelada */
-    box-shadow: 
-        4px 0 0 #00ffff, 
-        -4px 0 0 #ffff00, 
-        0 4px 0 #000;
-    image-rendering: pixelated;
-}
-/* Esquinas pixeladas decorativas */
-.frame-retro-arcade::before {
-    content: '';
-    position: absolute;
-    top: -8px; left: -8px;
-    width: 10px; height: 10px;
-    background: #ff00ff;
-    box-shadow: 
-        4px 4px 0 #000,
-        100px 0 0 #ff00ff, /* Esquina derecha simulada */
-        100px 4px 0 #000,
-        0 100px 0 #ff00ff, /* Abajo izq */
-        4px 100px 0 #000;
-}
-
-/* AJUSTES DE STATUS DOTS PARA FORMAS RARAS */
-.frame-glitch-hazard .status-dot { bottom: -5px; right: -5px; border-radius: 0; }
-.frame-frozen-shard .status-dot { bottom: 0; right: 10%; }
-.frame-retro-arcade .status-dot { bottom: -10px; right: -10px; border-radius: 0; border: 2px solid #000; }
-
-/* ========================================= */
-/* NUEVAS ANIMACIONES                        */
-/* ========================================= */
-@keyframes orbitSpin { from { transform: rotateX(70deg) rotateY(10deg) rotateZ(0deg); } to { transform: rotateX(70deg) rotateY(10deg) rotateZ(360deg); } }
-@keyframes glitchShake { 
-    0% { transform: translate(0,0); } 
-    20% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); } 
-    40% { transform: translate(2px, -2px); } 
-    60% { transform: translate(-2px, 0); } 
-    80% { transform: translate(2px, 0); filter: hue-rotate(-90deg); } 
-    100% { transform: translate(0,0); } 
-}
-@keyframes iceSheen { 0% { background-position: 100% 100%; } 100% { background-position: 0% 0%; } }
-@keyframes firePulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.05) translateY(-5px); opacity: 1; } }
-
-/* ========================================= */
-/* LOTE 3: SOFT & FEMININE (AÑADIR AL FINAL) */
-/* ========================================= */
-
-/* --- ❄️ 11. SNOW ANGEL (Nieve Cayendo) --- */
-.frame-snow-angel {
-    border: 3px solid #e0f7fa;
-    box-shadow: 0 0 15px #a5f2f3;
-    background: #f0ffff; /* Fondo hielo muy suave */
-}
-.frame-snow-angel .avatar-core {
-    border: 2px solid white;
-}
-/* Capa de Nieve 1 */
-.frame-snow-angel::before {
-    content: '';
-    position: absolute;
-    width: 100%; height: 100%;
-    border-radius: 50%;
-    /* Simulamos copos con gradientes radiales pequeños */
-    background-image: 
-        radial-gradient(white 2px, transparent 3px),
-        radial-gradient(white 1.5px, transparent 2.5px);
-    background-size: 20px 20px, 15px 15px;
-    background-position: 0 0, 10px 10px;
-    z-index: 10;
-    pointer-events: none;
-    animation: snowFall 3s linear infinite;
-    mask: radial-gradient(circle, transparent 50%, black 100%); /* Solo se ve en los bordes */
-}
-/* Brillo helado */
-.frame-snow-angel::after {
-    content: '❄';
-    position: absolute;
-    top: -10px; right: 0;
-    color: #a5f2f3;
-    font-size: 18px;
-    text-shadow: 0 0 5px white;
-    animation: pulse 2s infinite;
-}
-
-
-/* --- 🌹 12. PETAL CASCADE (Pétalos Rosas) --- */
-.frame-petal-cascade {
-    border: 2px solid #ffb7c5;
-    box-shadow: 0 0 10px #ffc0cb;
-}
-.frame-petal-cascade .avatar-core {
-    border: 2px solid #fff;
-}
-/* Pétalos cayendo */
-.frame-petal-cascade::before {
-    content: '';
-    position: absolute;
-    width: 110%; height: 110%;
-    border-radius: 50%;
-    /* Manchas rosas que parecen pétalos */
-    background-image: 
-        radial-gradient(ellipse at center, #ff69b4 20%, transparent 25%),
-        radial-gradient(ellipse at center, #ffb7c5 20%, transparent 25%);
-    background-size: 30px 30px, 40px 40px;
-    z-index: 10;
-    animation: petalRain 4s linear infinite;
-    opacity: 0.7;
-}
-/* Decoración de Flor fija */
-.frame-petal-cascade::after {
-    content: '🌸';
-    position: absolute;
-    bottom: -5px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 20px;
-    filter: drop-shadow(0 0 5px #ff69b4);
-}
-/* ========================================= */
-/* ☁️ 13. CLOUD NINE — Clean Sky Ring        */
-/* ========================================= */
-
-.frame-cloud-nine {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-
-  /* Aro cielo */
-  border: 5px solid #89cff0;
-  background: transparent;
-
-  box-shadow:
-    0 8px 20px rgba(137, 207, 240, 0.35);
-
-  display: grid;
-  place-items: center;
-  isolation: isolate;
-}
-
-/* Avatar */
-.frame-cloud-nine .avatar-core {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: white;
-  border: 4px solid #ffffff;
-  z-index: 3;
-
-  box-shadow:
-    0 6px 14px rgba(0,0,0,0.15);
-}
-
-/* Nubes decorativas EXTERNAS */
-.frame-cloud-nine::before {
-  content: "";
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70px;
-  height: 28px;
-
-  background: white;
-  border-radius: 20px;
-  box-shadow:
-    -24px -6px 0 0 white,
-     24px -6px 0 0 white,
-     0  4px 10px rgba(137,207,240,0.4);
-
-  z-index: 2;
-}
-
-/* Halo suave (muy discreto) */
-.frame-cloud-nine::after {
-  content: "";
-  position: absolute;
-  inset: -12px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(255,255,255,0.4),
-    rgba(255,255,255,0) 70%
-  );
-  filter: blur(10px);
-  z-index: 1;
-}
-
-
-/* --- 🧚‍♀️ 14. FAIRY DUST (Lavanda Mágico) --- */
-.frame-fairy-dust-glam {
-    border: 2px solid #e6e6fa;
-    box-shadow: 0 0 15px #d8bfd8, inset 0 0 10px #d8bfd8;
-}
-.frame-fairy-dust-glam .avatar-core {
-    border: 1px solid #fff;
-}
-/* Destellos orbitando */
-.frame-fairy-dust-glam::before,
-.frame-fairy-dust-glam::after {
-    content: '';
-    position: absolute;
-    width: 6px; height: 6px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #fff, 0 0 15px #ff00ff;
-}
-.frame-fairy-dust-glam::before {
-    top: -5px; left: 50%;
-    animation: fairyOrbit 3s ease-in-out infinite;
-    transform-origin: 0 85px; /* Radio de giro */
-}
-.frame-fairy-dust-glam::after {
-    bottom: -5px; right: 50%;
-    animation: fairyOrbit 4s ease-in-out infinite reverse;
-    transform-origin: 0 -85px; /* Radio de giro inverso */
-    background: #ffd700; /* Polvo dorado */
-}
-
-
-/* --- 🍵 15. PORCELAIN DOLL (Patrón Floral) --- */
-.frame-porcelain-doll {
-    background: #fff;
-    padding: 4px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-.frame-porcelain-doll .avatar-core {
-    border: 2px solid #dcd0ff;
-}
-/* Patrón de puntitos delicados */
-.frame-porcelain-doll::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 2px dotted #ffb7c5; /* Puntos rosas */
-    animation: rotateSlow 30s linear infinite;
-}
-/* Lazo decorativo */
-.frame-porcelain-doll::after {
-    content: '🎀';
-    position: absolute;
-    top: -12px;
-    font-size: 20px;
-    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
-}
-
-
-/* ========================================= */
-/* NUEVAS ANIMACIONES (SOFT)                 */
-/* ========================================= */
-
-@keyframes snowFall {
-    0% { background-position: 0 0, 10px 10px; opacity: 0; }
-    20% { opacity: 1; }
-    100% { background-position: 0 50px, 10px 60px; opacity: 0; }
-}
-
-@keyframes petalRain {
-    0% { background-position: 0 0, 20px 0; opacity: 0; transform: rotate(0deg); }
-    20% { opacity: 1; }
-    100% { background-position: 20px 100px, 40px 80px; opacity: 0; transform: rotate(20deg); }
-}
-
-@keyframes cloudFloat {
-    0%, 100% { border-radius: 60% 40% 70% 30% / 60% 30% 70% 40%; transform: translateY(0); }
-    50% { border-radius: 70% 30% 60% 40% / 70% 40% 60% 30%; transform: translateY(-3px); }
-}
-
-@keyframes fairyOrbit {
-    0% { transform: rotate(0deg); opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { transform: rotate(360deg); opacity: 0; }
-}
-
-/* ========================================= */
-/* LOTE 4: WARRIOR ELITE (REDISEÑO TOTAL)    */
-/* ========================================= */
-
-/* --- 🛡️ 16. IRON GUARDIAN: Placa de Acero Pesada --- */
-.frame-iron-guardian {
-    /* Simulamos metal con gradientes duros */
-    background: conic-gradient(
-        from 0deg, 
-        #2c3e50, #95a5a6, #ecf0f1, #95a5a6, #2c3e50, #95a5a6, #ecf0f1, #95a5a6, #2c3e50
-    );
-    padding: 6px;
-    box-shadow: 
-        0 0 0 2px #000, /* Borde negro fino */
-        0 10px 20px rgba(0,0,0,0.8); /* Sombra 3D */
-    border-radius: 50%;
-}
-.frame-iron-guardian .avatar-core {
-    border: 4px solid #34495e;
-    box-shadow: inset 0 0 15px #000; /* Profundidad interior */
-}
-/* Remaches de acero */
-.frame-iron-guardian::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-    border: 2px dashed rgba(0, 0, 0, 0.6);
-    z-index: 10;
-    animation: rotateSlow 60s linear infinite;
-}
-/* Brillo metálico */
-.frame-iron-guardian::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%);
-    pointer-events: none;
-}
-
-
-/* --- 🐉 17. DRAGON SCALE: Ojo de Dragón Ardiente --- */
-.frame-dragon-scale {
-    /* Fondo de lava */
-    background: radial-gradient(circle, #ffeb3b 10%, #ff8c00 40%, #8b0000 100%);
-    padding: 4px;
-    box-shadow: 0 0 20px #ff4500;
-    animation: breathing 3s infinite ease-in-out;
-}
-.frame-dragon-scale .avatar-core {
-    /* Forma de ojo de dragón (Pupila vertical) */
-    clip-path: ellipse(45% 50% at 50% 50%); 
-    background: #000;
-    border: 2px solid #ffae00;
-    transition: clip-path 0.3s ease;
-}
-/* Púas/Escamas alrededor */
-.frame-dragon-scale::before {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    border-radius: 50%;
-    background: conic-gradient(
-        #8b0000 0deg 10deg, transparent 10deg 20deg,
-        #8b0000 20deg 30deg, transparent 30deg 40deg,
-        #8b0000 40deg 50deg, transparent 50deg 60deg,
-        #8b0000 60deg 70deg, transparent 70deg 80deg,
-        #8b0000 80deg 90deg, transparent 90deg 100deg,
-        #8b0000 100deg 110deg, transparent 110deg 120deg,
-        #8b0000 120deg 130deg, transparent 130deg 140deg,
-        #8b0000 140deg 150deg, transparent 150deg 160deg,
-        #8b0000 160deg 170deg, transparent 170deg 180deg,
-        #8b0000 180deg 190deg, transparent 190deg 200deg,
-        #8b0000 200deg 210deg, transparent 210deg 220deg,
-        #8b0000 220deg 230deg, transparent 230deg 240deg,
-        #8b0000 240deg 250deg, transparent 250deg 260deg,
-        #8b0000 260deg 270deg, transparent 270deg 280deg,
-        #8b0000 280deg 290deg, transparent 290deg 300deg,
-        #8b0000 300deg 310deg, transparent 310deg 320deg,
-        #8b0000 320deg 330deg, transparent 330deg 340deg,
-        #8b0000 340deg 350deg, transparent 350deg 360deg
-    );
-    animation: rotateSlow 20s linear infinite;
-    z-index: -1;
-}
-
-
-/* --- 👑 18. ROYAL CROWN: Oro, Gemas y Terciopelo --- */
-.frame-royal-crown {
-    /* Simulación de Oro realista */
-    background: linear-gradient(to bottom, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
-    padding: 6px;
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
-}
-.frame-royal-crown .avatar-core {
-    border: 3px solid #4b0082; /* Terciopelo Púrpura */
-}
-/* Gemas incrustadas (Pseudo-elementos simulando rubíes y zafiros) */
-.frame-royal-crown::before {
-    content: '';
-    position: absolute;
-    top: -5px; left: 50%; transform: translateX(-50%);
-    width: 12px; height: 12px;
-    background: #ff0000; /* Rubí */
-    border: 2px solid #ffd700;
-    transform: rotate(45deg);
-    box-shadow: 0 0 5px #ff0000;
-    z-index: 10;
-}
-.frame-royal-crown::after {
-    content: '';
-    position: absolute;
-    bottom: -5px; left: 50%; transform: translateX(-50%);
-    width: 12px; height: 12px;
-    background: #0000ff; /* Zafiro */
-    border: 2px solid #ffd700;
-    transform: rotate(45deg);
-    box-shadow: 0 0 5px #0000ff;
-    z-index: 10;
-}
-
-
-/* ========================================= */
-/* 🩸 19. BERSERKER RAGE — Controlled Fury   */
-/* ========================================= */
-
-.frame-berserker-rage {
-  position: relative;
-  border-radius: 50%;
-  isolation: isolate;
-}
-
-/* Avatar core */
-.frame-berserker-rage .avatar-core {
-  border-radius: 50%;
-  border: 3px solid #7a0000;
-
-  box-shadow:
-    inset 0 0 25px rgba(0,0,0,0.9),
-    0 0 12px rgba(120,0,0,0.6);
-}
-
-/* Aura principal (furia densa) */
-.frame-berserker-rage::before {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-
-  background:
-    conic-gradient(
-      from 0deg,
-      #8b0000 0deg 30deg,
-      transparent 30deg 60deg,
-      #8b0000 60deg 110deg,
-      transparent 110deg 150deg,
-      #8b0000 150deg 220deg,
-      transparent 220deg 260deg,
-      #8b0000 260deg 320deg,
-      transparent 320deg 360deg
-    );
-
-  filter: blur(1.5px);
-  opacity: 0.9;
-
-  animation: berserkerRotate 4s linear infinite;
-  z-index: 1;
-}
-
-/* Pulso interno (latido de ira) */
-.frame-berserker-rage::after {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(255,0,0,0.35),
-      rgba(255,0,0,0) 70%
-    );
-
-  animation: berserkerPulse 1.6s ease-in-out infinite;
+  mask: radial-gradient(circle, transparent 65%, #000 67%);
+  -webkit-mask: radial-gradient(circle, transparent 65%, #000 67%);
+  animation: spin360Reverse 18s linear infinite;
   z-index: 0;
 }
 
-/* ================== */
-/* Animaciones nuevas */
-/* ================== */
-
-@keyframes berserkerRotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Frost glow */
+.frame-frozen-shard::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(165,242,243,0.15), transparent 60%);
+  filter: blur(8px);
+  animation: gentlePulse 5s ease-in-out infinite;
+  z-index: -1;
 }
 
-@keyframes berserkerPulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(0.96);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.03);
-  }
+/* Floating ice crystal particles */
+.frame-frozen-shard .fantasy-ring { display: block; }
+.frame-frozen-shard .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  font-size: 0;
+  width: 0; height: 0;
+}
+.frame-frozen-shard .crystal-leaf.pos-1 {
+  top: -10px; right: 8%;
+}
+.frame-frozen-shard .crystal-leaf.pos-1::before {
+  content: "❄";
+  font-size: 12px;
+  color: #a5f2f3;
+  display: block;
+  text-shadow: 0 0 5px #fff, 0 0 10px rgba(165,242,243,0.6);
+  animation: iceDrift1 5s ease-in-out infinite;
+}
+.frame-frozen-shard .crystal-leaf.pos-2 {
+  bottom: -6px; left: 20%;
+}
+.frame-frozen-shard .crystal-leaf.pos-2::before {
+  content: "✧";
+  font-size: 10px;
+  color: #fff;
+  display: block;
+  text-shadow: 0 0 4px rgba(165,242,243,0.8);
+  animation: iceDrift2 6s ease-in-out infinite 1s;
+}
+.frame-frozen-shard .crystal-leaf.pos-3 {
+  top: 45%; left: -8px;
+}
+.frame-frozen-shard .crystal-leaf.pos-3::before {
+  content: "❄";
+  font-size: 10px;
+  color: #c6eef6;
+  display: block;
+  text-shadow: 0 0 4px #fff;
+  animation: iceDrift3 7s ease-in-out infinite 2s;
+}
+.frame-frozen-shard .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1px 1px at 18% 12%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 80% 18%, rgba(165,242,243,0.6), transparent),
+    radial-gradient(1px 1px at 85% 72%, #fff, transparent),
+    radial-gradient(1px 1px at 22% 80%, rgba(200,240,255,0.5), transparent),
+    radial-gradient(1px 1px at 52% 6%, rgba(165,242,243,0.4), transparent);
+  animation: dustPulse 7s ease-in-out infinite;
+  z-index: 8;
 }
 
-/* --- 🗿 20. ANCIENT RUNE: Piedra Flotante Mágica --- */
+
+/* ═══════════════════════════════════════
+   🔥 9 · INFERNO RAGE — Living Fire
+   ═══════════════════════════════════════ */
+.frame-inferno-rage {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-inferno-rage .avatar-core {
+  position: relative;
+  z-index: 3;
+  border-radius: 50%;
+  border: 2px solid #ffae00;
+  box-shadow:
+    0 0 12px rgba(255,69,0,0.5),
+    inset 0 0 12px rgba(139,0,0,0.3);
+}
+
+/* Flame gradient ring */
+.frame-inferno-rage::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ff4500, #ff8c00, #ffeb3b, #ff8c00,
+    #ff4500, #8b0000, #ff4500, #ffae00,
+    #ff4500
+  );
+  mask: radial-gradient(circle, transparent 64%, #000 66%);
+  -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%);
+  animation: spin360 4s linear infinite;
+  filter: blur(0.5px);
+  z-index: 1;
+}
+
+/* Ember glow */
+.frame-inferno-rage::after {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,69,0,0.2), transparent 60%);
+  animation: firePulse 2.5s ease-in-out infinite;
+  z-index: 0;
+}
+
+.frame-inferno-rage .fantasy-ring { display: block; }
+.frame-inferno-rage .crystal-leaf {
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  z-index: 10;
+}
+.frame-inferno-rage .crystal-leaf.pos-1 {
+  top: -6px; left: 32%;
+  width: 4px; height: 4px;
+  background: #ffae00;
+  box-shadow: 0 0 5px #ff4500, 0 0 12px rgba(255,69,0,0.4);
+  animation: emberRise1 2.5s ease-out infinite;
+}
+.frame-inferno-rage .crystal-leaf.pos-2 {
+  top: -3px; right: 18%;
+  width: 3px; height: 3px;
+  background: #ff8c00;
+  box-shadow: 0 0 4px #ff4500;
+  animation: emberRise2 3s ease-out infinite 0.8s;
+}
+.frame-inferno-rage .crystal-leaf.pos-3 {
+  top: -5px; left: 55%;
+  width: 3px; height: 3px;
+  background: #ffeb3b;
+  box-shadow: 0 0 4px #ffae00;
+  animation: emberRise3 3.5s ease-out infinite 1.5s;
+}
+.frame-inferno-rage .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 25% 8%, #ffae00, transparent),
+    radial-gradient(1px 1px at 72% 12%, #ff8c00, transparent),
+    radial-gradient(1px 1px at 50% 6%, #ffeb3b, transparent),
+    radial-gradient(1px 1px at 88% 45%, rgba(255,69,0,0.4), transparent);
+  animation: dustFirePulse 3s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   👾 10 · RETRO ARCADE — 8-Bit CRT
+   ═══════════════════════════════════════ */
+.frame-retro-arcade {
+  position: relative;
+  padding: 4px;
+  border-radius: 0;
+  isolation: isolate;
+}
+
+.frame-retro-arcade .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 0;
+  border: 3px solid #ff00ff;
+  box-shadow:
+    3px 3px 0 #000,
+    -2px -2px 0 #00ffff,
+    0 0 16px rgba(255,0,255,0.3);
+}
+
+/* Pixel corner brackets */
+.frame-retro-arcade::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  background:
+    linear-gradient(90deg, #ff00ff 8px, transparent 8px),
+    linear-gradient(180deg, #ff00ff 8px, transparent 8px),
+    linear-gradient(270deg, #00ffff 8px, transparent 8px),
+    linear-gradient(180deg, #00ffff 8px, transparent 8px),
+    linear-gradient(90deg, #00ffff 8px, transparent 8px),
+    linear-gradient(0deg, #00ffff 8px, transparent 8px),
+    linear-gradient(270deg, #ff00ff 8px, transparent 8px),
+    linear-gradient(0deg, #ff00ff 8px, transparent 8px);
+  background-size:
+    30% 3px, 3px 30%,
+    30% 3px, 3px 30%,
+    30% 3px, 3px 30%,
+    30% 3px, 3px 30%;
+  background-position:
+    top left, top left,
+    top right, top right,
+    bottom left, bottom left,
+    bottom right, bottom right;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* Subtle CRT overlay */
+.frame-retro-arcade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+  mix-blend-mode: multiply;
+}
+
+.frame-retro-arcade .fantasy-ring { display: block; }
+.frame-retro-arcade .crystal-leaf {
+  display: block;
+  position: absolute;
+  border-radius: 0;
+  z-index: 12;
+}
+.frame-retro-arcade .crystal-leaf.pos-1 {
+  top: -9px; left: -9px;
+  width: 7px; height: 7px;
+  background: #ff00ff;
+  box-shadow: 2px 2px 0 #000;
+  animation: pixelBlink 1.5s steps(1) infinite;
+}
+.frame-retro-arcade .crystal-leaf.pos-2 {
+  top: -9px; right: -9px;
+  width: 7px; height: 7px;
+  background: #00ffff;
+  box-shadow: -2px 2px 0 #000;
+  animation: pixelBlink 1.5s steps(1) infinite 0.75s;
+}
+.frame-retro-arcade .crystal-leaf.pos-3 {
+  bottom: -9px; left: 50%; transform: translateX(-50%);
+  width: 7px; height: 7px;
+  background: #ffff00;
+  box-shadow: 0 2px 0 #000;
+  animation: pixelBlink 2s steps(1) infinite 0.5s;
+}
+.frame-retro-arcade .magic-dust {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(2px 2px at 20% 20%, rgba(255,0,255,0.25), transparent),
+    radial-gradient(2px 2px at 80% 30%, rgba(0,255,255,0.25), transparent),
+    radial-gradient(2px 2px at 50% 85%, rgba(255,255,0,0.2), transparent);
+  z-index: 9;
+  opacity: 0.6;
+}
+
+
+/* ═══════════════════════════════════════
+   ❄️ 11 · SNOW ANGEL — Winter Frost
+   ═══════════════════════════════════════ */
+.frame-snow-angel {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-snow-angel .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.85);
+  box-shadow:
+    0 0 12px rgba(165,242,243,0.4),
+    inset 0 0 8px rgba(200,240,255,0.2);
+}
+
+.frame-snow-angel::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #e0f7fa, #fff, #b2ebf2, #fff,
+    #e0f7fa, #fff, #b2ebf2, #fff, #e0f7fa
+  );
+  mask: radial-gradient(circle, transparent 66%, #000 68%);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 68%);
+  animation: spin360Reverse 22s linear infinite;
+  z-index: 0;
+}
+
+.frame-snow-angel::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(165,242,243,0.15), transparent 60%);
+  filter: blur(6px);
+  animation: gentlePulse 5s ease-in-out infinite;
+  z-index: -1;
+}
+
+.frame-snow-angel .fantasy-ring { display: block; }
+.frame-snow-angel .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  font-size: 0;
+  width: 0; height: 0;
+}
+.frame-snow-angel .crystal-leaf.pos-1 {
+  top: -10px; right: 8%;
+}
+.frame-snow-angel .crystal-leaf.pos-1::before {
+  content: "❄";
+  font-size: 13px;
+  color: #a5f2f3;
+  display: block;
+  text-shadow: 0 0 5px #fff, 0 0 10px rgba(165,242,243,0.6);
+  animation: floatSoft1 5s ease-in-out infinite;
+}
+.frame-snow-angel .crystal-leaf.pos-2 {
+  bottom: -6px; left: 20%;
+}
+.frame-snow-angel .crystal-leaf.pos-2::before {
+  content: "✧";
+  font-size: 10px;
+  color: #fff;
+  display: block;
+  text-shadow: 0 0 4px rgba(165,242,243,0.7);
+  animation: floatSoft2 6s ease-in-out infinite 1s;
+}
+.frame-snow-angel .crystal-leaf.pos-3 {
+  top: 42%; left: -8px;
+}
+.frame-snow-angel .crystal-leaf.pos-3::before {
+  content: "❄";
+  font-size: 10px;
+  color: #c6eef6;
+  display: block;
+  text-shadow: 0 0 4px #fff;
+  animation: floatSoft3 7s ease-in-out infinite 2s;
+}
+.frame-snow-angel .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1px 1px at 15% 10%, #fff, transparent),
+    radial-gradient(1px 1px at 78% 15%, rgba(165,242,243,0.5), transparent),
+    radial-gradient(1px 1px at 85% 72%, #fff, transparent),
+    radial-gradient(1px 1px at 22% 80%, rgba(200,240,255,0.4), transparent);
+  animation: dustPulse 7s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🌹 12 · PETAL CASCADE — Rose Crown
+   ═══════════════════════════════════════ */
+.frame-petal-cascade {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-petal-cascade .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(255,183,197,0.8);
+  box-shadow:
+    0 0 12px rgba(255,183,197,0.4),
+    inset 0 0 0 1px rgba(255,255,255,0.1);
+}
+
+.frame-petal-cascade::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ffb7c5, #ffc0cb, #fff0f5, #ffb7c5,
+    #ff69b4, #ffb7c5, #fff0f5, #ffc0cb, #ffb7c5
+  );
+  mask: radial-gradient(circle, transparent 66%, #000 68%);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 68%);
+  animation: spin360 20s linear infinite;
+  z-index: 0;
+}
+
+.frame-petal-cascade::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,105,180,0.1), transparent 60%);
+  filter: blur(6px);
+  animation: gentlePulse 4s ease-in-out infinite;
+  z-index: -1;
+}
+
+.frame-petal-cascade .fantasy-ring { display: block; }
+.frame-petal-cascade .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  font-size: 0;
+  width: 0; height: 0;
+}
+.frame-petal-cascade .crystal-leaf.pos-1 {
+  bottom: -6px; left: 48%;
+}
+.frame-petal-cascade .crystal-leaf.pos-1::before {
+  content: "🌸";
+  font-size: 14px;
+  display: block;
+  filter: drop-shadow(0 0 3px rgba(255,105,180,0.5));
+  animation: floatSoft1 5s ease-in-out infinite;
+}
+.frame-petal-cascade .crystal-leaf.pos-2 {
+  top: -8px; right: 14%;
+}
+.frame-petal-cascade .crystal-leaf.pos-2::before {
+  content: "✿";
+  font-size: 11px;
+  color: #ff69b4;
+  display: block;
+  filter: drop-shadow(0 0 3px rgba(255,105,180,0.4));
+  animation: floatSoft2 6s ease-in-out infinite 1s;
+}
+.frame-petal-cascade .crystal-leaf.pos-3 {
+  top: 52%; left: -8px;
+}
+.frame-petal-cascade .crystal-leaf.pos-3::before {
+  content: "❀";
+  font-size: 10px;
+  color: #ffb7c5;
+  display: block;
+  filter: drop-shadow(0 0 3px rgba(255,183,197,0.5));
+  animation: floatSoft3 5.5s ease-in-out infinite 0.5s;
+}
+.frame-petal-cascade .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 20% 15%, rgba(255,183,197,0.5), transparent),
+    radial-gradient(1px 1px at 80% 22%, rgba(255,105,180,0.4), transparent),
+    radial-gradient(1px 1px at 70% 78%, rgba(255,192,203,0.4), transparent),
+    radial-gradient(1px 1px at 30% 82%, rgba(255,105,180,0.3), transparent);
+  animation: dustPulse 6s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   ☁️ 13 · CLOUD NINE — Serene Sky
+   ═══════════════════════════════════════ */
+.frame-cloud-nine {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-cloud-nine .avatar-core {
+  position: relative;
+  z-index: 3;
+  border-radius: 50%;
+  border: 2px solid rgba(137,207,240,0.7);
+  box-shadow:
+    0 0 12px rgba(137,207,240,0.3),
+    0 0 25px rgba(135,206,250,0.1);
+}
+
+/* Sky gradient ring */
+.frame-cloud-nine::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #89cff0, #b0e0f6, #fff, #a8d8ea,
+    #89cff0, #cce5ff, #fff, #89cff0
+  );
+  mask: radial-gradient(circle, transparent 66%, #000 68%);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 68%);
+  animation: spin360 25s linear infinite;
+  z-index: 1;
+}
+
+/* Soft sky glow */
+.frame-cloud-nine::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(137,207,240,0.12), transparent 60%);
+  filter: blur(8px);
+  animation: gentlePulse 6s ease-in-out infinite;
+  z-index: 0;
+}
+
+/* Floating cloud emoji particles */
+.frame-cloud-nine .fantasy-ring { display: block; }
+.frame-cloud-nine .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  font-size: 0;
+  width: 0; height: 0;
+}
+.frame-cloud-nine .crystal-leaf.pos-1 {
+  bottom: -8px; left: 38%;
+}
+.frame-cloud-nine .crystal-leaf.pos-1::before {
+  content: "☁️";
+  font-size: 14px;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(137,207,240,0.4));
+  animation: cloudFloat1 6s ease-in-out infinite;
+}
+.frame-cloud-nine .crystal-leaf.pos-2 {
+  top: -8px; right: 12%;
+}
+.frame-cloud-nine .crystal-leaf.pos-2::before {
+  content: "☁️";
+  font-size: 11px;
+  display: block;
+  opacity: 0.8;
+  filter: drop-shadow(0 1px 2px rgba(137,207,240,0.3));
+  animation: cloudFloat2 7s ease-in-out infinite 1.5s;
+}
+.frame-cloud-nine .crystal-leaf.pos-3 {
+  top: 48%; left: -10px;
+}
+.frame-cloud-nine .crystal-leaf.pos-3::before {
+  content: "✧";
+  font-size: 10px;
+  color: #89cff0;
+  display: block;
+  text-shadow: 0 0 4px rgba(137,207,240,0.6);
+  animation: floatSoft3 5s ease-in-out infinite 2s;
+}
+.frame-cloud-nine .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 15% 12%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 85% 25%, rgba(137,207,240,0.4), transparent),
+    radial-gradient(1px 1px at 70% 85%, rgba(255,255,255,0.4), transparent);
+  animation: dustPulse 8s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🧚 14 · FAIRY DUST GLAM — Enchanted
+   ═══════════════════════════════════════ */
+.frame-fairy-dust-glam {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-fairy-dust-glam .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(230,230,250,0.8);
+  box-shadow:
+    0 0 14px rgba(216,191,216,0.4),
+    inset 0 0 8px rgba(216,191,216,0.1);
+}
+
+.frame-fairy-dust-glam::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #e6e6fa, #dda0dd, #ffd700,
+    #e6e6fa, #ff69b4, #dda0dd, #e6e6fa
+  );
+  mask: radial-gradient(circle, transparent 66%, #000 68%);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 68%);
+  animation: spin360 10s linear infinite;
+  z-index: 0;
+}
+
+.frame-fairy-dust-glam::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(230,230,250,0.12), transparent 60%);
+  filter: blur(8px);
+  animation: gentlePulse 4s ease-in-out infinite;
+  z-index: -1;
+}
+
+.frame-fairy-dust-glam .fantasy-ring { display: block; }
+.frame-fairy-dust-glam .crystal-leaf {
+  display: block;
+  position: absolute;
+  width: 4px; height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  z-index: 10;
+}
+.frame-fairy-dust-glam .crystal-leaf.pos-1 {
+  top: -4px; left: 50%;
+  box-shadow: 0 0 5px 2px #ffd700, 0 0 14px 4px rgba(255,215,0,0.4);
+  animation: twinkle1 3s ease-in-out infinite;
+}
+.frame-fairy-dust-glam .crystal-leaf.pos-2 {
+  bottom: -3px; right: 15%;
+  width: 3px; height: 3px;
+  box-shadow: 0 0 4px 2px #ff69b4, 0 0 12px 4px rgba(255,105,180,0.4);
+  animation: twinkle2 3.5s ease-in-out infinite 0.7s;
+}
+.frame-fairy-dust-glam .crystal-leaf.pos-3 {
+  top: 45%; left: -4px;
+  width: 3px; height: 3px;
+  box-shadow: 0 0 4px 2px #dda0dd, 0 0 10px 4px rgba(221,160,221,0.4);
+  animation: twinkle3 4s ease-in-out infinite 1.4s;
+}
+.frame-fairy-dust-glam .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 25% 8%, #ffd700, transparent),
+    radial-gradient(1px 1px at 75% 12%, #ff69b4, transparent),
+    radial-gradient(1px 1px at 88% 55%, #e6e6fa, transparent),
+    radial-gradient(1px 1px at 12% 62%, #dda0dd, transparent),
+    radial-gradient(1px 1px at 55% 90%, #ffd700, transparent);
+  animation: dustPulse 4s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🍵 15 · PORCELAIN DOLL — DO NOT MODIFY
+   ═══════════════════════════════════════ */
+.frame-porcelain-doll {
+  background: #fff;
+  padding: 4px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.frame-porcelain-doll .avatar-core {
+  border: 2px solid #dcd0ff;
+}
+.frame-porcelain-doll::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dotted #ffb7c5;
+  animation: rotateSlow 30s linear infinite;
+}
+.frame-porcelain-doll::after {
+  content: '🎀';
+  position: absolute;
+  top: -12px;
+  font-size: 20px;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+
+
+/* ═══════════════════════════════════════
+   🛡️ 16 · IRON GUARDIAN — Armor Plate
+   ═══════════════════════════════════════ */
+.frame-iron-guardian {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+  background: conic-gradient(
+    from 0deg,
+    #2c3e50, #7f8c8d, #bdc3c7, #ecf0f1,
+    #bdc3c7, #7f8c8d, #2c3e50, #7f8c8d,
+    #bdc3c7, #ecf0f1, #bdc3c7, #7f8c8d, #2c3e50
+  );
+  box-shadow:
+    0 0 0 2px #1a1a2e,
+    0 6px 20px rgba(0,0,0,0.6);
+}
+
+.frame-iron-guardian .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 3px solid #34495e;
+  box-shadow:
+    inset 0 0 14px rgba(0,0,0,0.5),
+    0 0 4px rgba(0,0,0,0.3);
+}
+
+/* Rotating dashed bolts ring */
+.frame-iron-guardian::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px dashed rgba(0,0,0,0.35);
+  animation: spin360 50s linear infinite;
+  z-index: 3;
+}
+
+/* Specular highlight sheen */
+.frame-iron-guardian::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.3) 0%, transparent 30%,
+    transparent 70%, rgba(255,255,255,0.08) 100%
+  );
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Metal rivet bolts */
+.frame-iron-guardian .fantasy-ring { display: block; }
+.frame-iron-guardian .crystal-leaf {
+  display: block;
+  position: absolute;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  z-index: 10;
+  background: radial-gradient(circle, #ecf0f1 30%, #95a5a6 60%, #7f8c8d);
+  box-shadow: inset 0 -1px 1px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4);
+}
+.frame-iron-guardian .crystal-leaf.pos-1 {
+  top: -1px; left: 50%; transform: translateX(-50%);
+}
+.frame-iron-guardian .crystal-leaf.pos-2 {
+  bottom: -1px; left: 50%; transform: translateX(-50%);
+}
+.frame-iron-guardian .crystal-leaf.pos-3 {
+  top: 50%; right: -1px; transform: translateY(-50%);
+}
+.frame-iron-guardian .magic-dust {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.06) 0%, transparent 40%, rgba(0,0,0,0.06) 100%
+  );
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🐉 17 · DRAGON SCALE — Draconic Fire
+   ═══════════════════════════════════════ */
+.frame-dragon-scale {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-dragon-scale .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid #ffae00;
+  box-shadow:
+    0 0 12px rgba(220,20,60,0.4),
+    inset 0 0 10px rgba(0,0,0,0.4);
+}
+
+/* Dragon fire conic ring */
+.frame-dragon-scale::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #8b0000, #dc143c, #ff4500, #ffae00,
+    #dc143c, #8b0000, #dc143c, #ff4500,
+    #ffae00, #dc143c, #8b0000
+  );
+  mask: radial-gradient(circle, transparent 64%, #000 66%);
+  -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%);
+  animation: spin360 6s linear infinite;
+  z-index: 0;
+}
+
+/* Heat glow */
+.frame-dragon-scale::after {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220,20,60,0.15), transparent 60%);
+  filter: blur(6px);
+  animation: firePulse 3s ease-in-out infinite;
+  z-index: -1;
+}
+
+/* Dragon ember particles */
+.frame-dragon-scale .fantasy-ring { display: block; }
+.frame-dragon-scale .crystal-leaf {
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  z-index: 10;
+}
+.frame-dragon-scale .crystal-leaf.pos-1 {
+  top: -8px; left: 45%;
+  width: 4px; height: 4px;
+  background: #ffeb3b;
+  box-shadow: 0 0 5px #ff8c00, 0 0 12px rgba(255,69,0,0.4);
+  animation: emberRise1 2.5s ease-out infinite;
+}
+.frame-dragon-scale .crystal-leaf.pos-2 {
+  top: -4px; right: 18%;
+  width: 3px; height: 3px;
+  background: #ffae00;
+  box-shadow: 0 0 4px #ff4500;
+  animation: emberRise2 3s ease-out infinite 0.5s;
+}
+.frame-dragon-scale .crystal-leaf.pos-3 {
+  top: -6px; left: 28%;
+  width: 3px; height: 3px;
+  background: #ff8c00;
+  box-shadow: 0 0 4px #dc143c;
+  animation: emberRise3 3.5s ease-out infinite 1s;
+}
+.frame-dragon-scale .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 30% 6%, rgba(255,235,59,0.5), transparent),
+    radial-gradient(1px 1px at 70% 10%, rgba(255,140,0,0.4), transparent),
+    radial-gradient(1px 1px at 85% 48%, rgba(220,20,60,0.3), transparent),
+    radial-gradient(1px 1px at 15% 42%, rgba(255,69,0,0.3), transparent);
+  animation: dustFirePulse 3s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   👑 18 · ROYAL CROWN — King's Regalia
+   ═══════════════════════════════════════ */
+.frame-royal-crown {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-royal-crown .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 3px solid #ffd700;
+  box-shadow:
+    0 0 12px rgba(255,215,0,0.4),
+    0 0 30px rgba(255,215,0,0.12),
+    inset 0 0 8px rgba(75,0,130,0.2);
+}
+
+/* Luxurious gold ring */
+.frame-royal-crown::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #AA771C, #BF953F, #FCF6BA, #B38728,
+    #FBF5B7, #AA771C, #BF953F, #FCF6BA,
+    #B38728, #FBF5B7, #AA771C
+  );
+  mask: radial-gradient(circle, transparent 63%, #000 65%);
+  -webkit-mask: radial-gradient(circle, transparent 63%, #000 65%);
+  animation: spin360 18s linear infinite;
+  z-index: 0;
+}
+
+/* Regal ambient glow */
+.frame-royal-crown::after {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.12), transparent 60%);
+  filter: blur(8px);
+  animation: gentlePulse 4s ease-in-out infinite;
+  z-index: -1;
+}
+
+/* Crown emoji + jewel sparkles */
+.frame-royal-crown .fantasy-ring { display: block; }
+.frame-royal-crown .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  font-size: 0;
+  width: 0; height: 0;
+}
+.frame-royal-crown .crystal-leaf.pos-1 {
+  top: -14px; left: 50%; transform: translateX(-50%);
+}
+.frame-royal-crown .crystal-leaf.pos-1::before {
+  content: "👑";
+  font-size: 18px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(255,215,0,0.5));
+  animation: crownBob 3s ease-in-out infinite;
+}
+.frame-royal-crown .crystal-leaf.pos-2 {
+  top: 50%; left: -5px; transform: translateY(-50%);
+  width: 4px; height: 4px;
+  font-size: inherit;
+  background: #ffd700;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #ffd700, 0 0 12px rgba(255,215,0,0.4);
+  animation: twinkle2 3s ease-in-out infinite 0.5s;
+}
+.frame-royal-crown .crystal-leaf.pos-3 {
+  top: 50%; right: -5px; transform: translateY(-50%);
+  width: 4px; height: 4px;
+  font-size: inherit;
+  background: #ffd700;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #ffd700, 0 0 12px rgba(255,215,0,0.4);
+  animation: twinkle3 3s ease-in-out infinite 1s;
+}
+.frame-royal-crown .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 25% 8%, #ffd700, transparent),
+    radial-gradient(1px 1px at 75% 88%, #fff8dc, transparent),
+    radial-gradient(1px 1px at 90% 35%, #ffd700, transparent),
+    radial-gradient(1px 1px at 10% 62%, #b8860b, transparent);
+  animation: dustPulse 4s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🩸 19 · BERSERKER RAGE — Dark Fury
+   ═══════════════════════════════════════ */
+.frame-berserker-rage {
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.frame-berserker-rage .avatar-core {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(139,0,0,0.8);
+  box-shadow:
+    0 0 12px rgba(139,0,0,0.5),
+    inset 0 0 14px rgba(0,0,0,0.6);
+}
+
+/* Blood red conic ring */
+.frame-berserker-rage::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #3d0000, #8b0000, #cc0000, #8b0000,
+    #3d0000, #8b0000, #cc0000, #8b0000,
+    #3d0000
+  );
+  mask: radial-gradient(circle, transparent 64%, #000 66%);
+  -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%);
+  animation: spin360 5s linear infinite;
+  z-index: 0;
+}
+
+/* Rage pulse */
+.frame-berserker-rage::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,0,0,0.2), transparent 60%);
+  animation: ragePulse 1.8s ease-in-out infinite;
+  z-index: -1;
+}
+
+/* Blood particle effects */
+.frame-berserker-rage .fantasy-ring { display: block; }
+.frame-berserker-rage .crystal-leaf {
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  z-index: 10;
+}
+.frame-berserker-rage .crystal-leaf.pos-1 {
+  top: -5px; left: 30%;
+  width: 4px; height: 4px;
+  background: #ff0000;
+  box-shadow: 0 0 5px rgba(255,0,0,0.6), 0 0 12px rgba(139,0,0,0.3);
+  animation: bloodRise1 2.5s ease-out infinite;
+}
+.frame-berserker-rage .crystal-leaf.pos-2 {
+  top: -3px; right: 22%;
+  width: 3px; height: 3px;
+  background: #cc0000;
+  box-shadow: 0 0 4px rgba(204,0,0,0.5);
+  animation: bloodRise2 3s ease-out infinite 0.6s;
+}
+.frame-berserker-rage .crystal-leaf.pos-3 {
+  top: -4px; left: 55%;
+  width: 3px; height: 3px;
+  background: #ff0000;
+  box-shadow: 0 0 4px rgba(255,0,0,0.4);
+  animation: bloodRise3 3.5s ease-out infinite 1.2s;
+}
+.frame-berserker-rage .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 15% 10%, rgba(255,0,0,0.4), transparent),
+    radial-gradient(1px 1px at 82% 18%, rgba(139,0,0,0.35), transparent),
+    radial-gradient(1px 1px at 75% 78%, rgba(255,0,0,0.3), transparent),
+    radial-gradient(1px 1px at 20% 72%, rgba(139,0,0,0.25), transparent);
+  animation: dustFirePulse 2.5s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ═══════════════════════════════════════
+   🗿 20 · ANCIENT RUNE — Arcane Circle
+   ═══════════════════════════════════════ */
 .frame-ancient-rune {
-    /* Textura de piedra */
-    background: #2c3e50;
-    box-shadow: 0 0 0 4px #34495e, 0 0 20px #00ffff;
-    border-radius: 15% 15% 40% 40%; /* Forma de monolito redondeado */
-    padding: 5px;
+  position: relative;
+  padding: 5px;
+  border-radius: 50%;
+  isolation: isolate;
+  background: #1a2030;
+  box-shadow:
+    0 0 0 2px #2c3e50,
+    0 0 20px rgba(0,255,255,0.2);
 }
+
 .frame-ancient-rune .avatar-core {
-    border-radius: 12% 12% 35% 35%;
-    border: 2px solid #7f8c8d;
-    filter: sepia(0.5) hue-rotate(180deg); /* Tinte azulado espectral a la foto */
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  border: 2px solid rgba(0,255,255,0.35);
+  box-shadow:
+    inset 0 0 10px rgba(0,0,0,0.5),
+    0 0 8px rgba(0,255,255,0.25);
 }
-/* Círculo rúnico giratorio externo */
+
+/* Spinning arcane ring */
 .frame-ancient-rune::before {
-    content: '';
-    position: absolute;
-    inset: -15px;
-    border: 1px solid rgba(0, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 2px solid #00ffff;
-    border-bottom: 2px solid #00ffff;
-    animation: rotateRing 10s linear infinite;
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 1px solid rgba(0,255,255,0.2);
+  border-radius: 50%;
+  border-top: 2px solid rgba(0,255,255,0.7);
+  border-bottom: 2px solid rgba(0,255,255,0.7);
+  box-shadow: 0 0 6px rgba(0,255,255,0.2);
+  animation: spin360 12s linear infinite;
+  z-index: 1;
 }
-/* Energía interior */
+
+/* Arcane energy */
 .frame-ancient-rune::after {
-    content: '';
-    position: absolute;
-    width: 100%; height: 2px;
-    background: #00ffff;
-    bottom: 10px;
-    box-shadow: 0 0 10px #00ffff;
-    animation: scanline 2s infinite linear;
-    opacity: 0.5;
+  content: "";
+  position: absolute;
+  inset: -15%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,255,255,0.12), transparent 60%);
+  animation: gentlePulse 3s ease-in-out infinite;
+  z-index: 0;
 }
+
+/* Floating rune glyphs */
+.frame-ancient-rune .fantasy-ring { display: block; }
+.frame-ancient-rune .crystal-leaf {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  font-size: 0;
+  width: 0; height: 0;
+}
+.frame-ancient-rune .crystal-leaf.pos-1 {
+  top: -12px; left: 48%;
+}
+.frame-ancient-rune .crystal-leaf.pos-1::before {
+  content: "ᚱ";
+  font-size: 13px;
+  color: #00ffff;
+  display: block;
+  text-shadow: 0 0 6px #00ffff, 0 0 14px rgba(0,255,255,0.4);
+  animation: runeFloat1 5s ease-in-out infinite;
+}
+.frame-ancient-rune .crystal-leaf.pos-2 {
+  bottom: -10px; right: 22%;
+}
+.frame-ancient-rune .crystal-leaf.pos-2::before {
+  content: "ᛟ";
+  font-size: 11px;
+  color: #00e5ff;
+  display: block;
+  text-shadow: 0 0 5px #00ffff;
+  animation: runeFloat2 6s ease-in-out infinite 1s;
+}
+.frame-ancient-rune .crystal-leaf.pos-3 {
+  top: 42%; left: -12px;
+}
+.frame-ancient-rune .crystal-leaf.pos-3::before {
+  content: "ᚠ";
+  font-size: 10px;
+  color: #00ffff;
+  display: block;
+  text-shadow: 0 0 5px #00ffff;
+  animation: runeFloat3 5.5s ease-in-out infinite 2s;
+}
+.frame-ancient-rune .magic-dust {
+  display: block;
+  position: absolute;
+  inset: -8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.5px 1.5px at 20% 8%, rgba(0,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 80% 15%, rgba(0,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 85% 68%, rgba(0,229,255,0.3), transparent),
+    radial-gradient(1px 1px at 15% 72%, rgba(0,255,255,0.2), transparent);
+  animation: dustPulse 6s ease-in-out infinite;
+  z-index: 8;
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   3 · STATUS INDICATORS — Orbit / Drop / Unique FX
+   ───────────────────────────────────────────────────────── */
+
+/* === BASE INDICATOR === */
+.status-indicator {
+  position: absolute;
+  bottom: 2%;
+  right: 2%;
+  width: 24px;
+  height: 24px;
+  z-index: 20;
+  pointer-events: none;
+  /* Drop-in animation on mount */
+  animation: siDropIn 0.6s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.si__orbit-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.si__dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #1a1a1a;
+  font-size: 10px;
+  color: #fff;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.si__dot i {
+  font-size: 11px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));
+}
+
+/* Ripple rings (hidden by default, activated per status) */
+.si__ripple {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Drop-in entrance animation */
+@keyframes siDropIn {
+  0%   { transform: translateY(-40px) scale(0.3); opacity: 0; }
+  60%  { transform: translateY(4px) scale(1.1); opacity: 1; }
+  80%  { transform: translateY(-2px) scale(0.95); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Frame-specific adjustments */
+.frame-glitch-hazard .status-indicator { bottom: -4px; right: -4px; }
+.frame-glitch-hazard .si__dot { border-radius: 4px; }
+.frame-retro-arcade .status-indicator  { bottom: -6px; right: -6px; }
+.frame-retro-arcade .si__dot  { border-radius: 2px; border: 2px solid #000; }
+
+
+/* ══════════════════════════════════════════
+   ONLINE — Green pulsing orbit
+   ══════════════════════════════════════════ */
+.si--online .si__dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981, 0 0 16px rgba(16,185,129,0.3);
+}
+.si--online .si__ripple {
+  border-color: #10b981;
+  animation: siRippleOut 2s ease-out infinite;
+}
+.si--online .si__ripple--2 {
+  animation-delay: 1s;
+}
+
+/* ══════════════════════════════════════════
+   GAMING — Purple bouncing joystick orbit
+   ══════════════════════════════════════════ */
+.si--gaming .si__dot {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  box-shadow: 0 0 10px #8b5cf6, 0 0 20px rgba(139,92,246,0.3);
+}
+.si--gaming {
+  animation: siDropIn 0.6s cubic-bezier(.34,1.56,.64,1) both,
+             siOrbitBounce 3s ease-in-out infinite 0.6s;
+}
+.si--gaming .si__dot i {
+  animation: siBounceIcon 1.5s ease-in-out infinite;
+}
+.si--gaming .si__ripple {
+  border-color: #8b5cf6;
+  animation: siRippleOut 2.5s ease-out infinite;
+}
+.si--gaming .si__ripple--2 {
+  animation-delay: 1.25s;
+}
+
+/* ══════════════════════════════════════════
+   TOURNAMENT — Gold spinning trophy
+   ══════════════════════════════════════════ */
+.si--tournament .si__dot {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-color: #fff;
+  box-shadow: 0 0 12px #fbbf24, 0 0 24px rgba(251,191,36,0.3);
+}
+.si--tournament {
+  animation: siDropIn 0.6s cubic-bezier(.34,1.56,.64,1) both,
+             siOrbitSpin 4s linear infinite 0.6s;
+}
+.si--tournament .si__dot i {
+  animation: siSpinTrophy 2s ease-in-out infinite;
+}
+.si--tournament .si__ripple {
+  border-color: #fbbf24;
+  animation: siRippleGold 1.5s ease-out infinite;
+}
+.si--tournament .si__ripple--2 {
+  animation-delay: 0.75s;
+}
+
+/* ══════════════════════════════════════════
+   STREAMING — Red recording blink
+   ══════════════════════════════════════════ */
+.si--streaming .si__dot {
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444, 0 0 20px rgba(239,68,68,0.4);
+}
+.si--streaming .si__dot i {
+  animation: siRecBlink 1s step-end infinite;
+}
+.si--streaming .si__ripple {
+  border-color: #ef4444;
+  animation: siRippleOut 1.5s ease-out infinite;
+}
+.si--streaming .si__ripple--2 {
+  animation-delay: 0.75s;
+}
+
+/* ══════════════════════════════════════════
+   SEARCHING — Cyan radar sweep
+   ══════════════════════════════════════════ */
+.si--searching .si__dot {
+  background: linear-gradient(135deg, #06b6d4, #22d3ee);
+  box-shadow: 0 0 10px #06b6d4, 0 0 20px rgba(6,182,212,0.3);
+}
+.si--searching {
+  animation: siDropIn 0.6s cubic-bezier(.34,1.56,.64,1) both,
+             siRadarSweep 2s linear infinite 0.6s;
+}
+.si--searching .si__dot i {
+  animation: siRadarIcon 2s linear infinite;
+}
+.si--searching .si__ripple {
+  border-color: #06b6d4;
+  animation: siRippleSonar 2s ease-out infinite;
+}
+.si--searching .si__ripple--2 {
+  animation-delay: 1s;
+}
+
+/* ══════════════════════════════════════════
+   AFK — Orange moon float + zzz
+   ══════════════════════════════════════════ */
+.si--afk .si__dot {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  box-shadow: 0 0 8px #f97316, 0 0 16px rgba(249,115,22,0.3);
+}
+.si--afk {
+  animation: siDropIn 0.6s cubic-bezier(.34,1.56,.64,1) both,
+             siFloatZzz 3s ease-in-out infinite 0.6s;
+}
+.si--afk .si__dot i {
+  animation: siMoonRock 4s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════════
+   DND — Red block, shaking no
+   ══════════════════════════════════════════ */
+.si--dnd .si__dot {
+  background: #dc2626;
+  box-shadow: 0 0 8px #dc2626, 0 0 16px rgba(220,38,38,0.3);
+}
+.si--dnd .si__dot i {
+  animation: siShakeNo 3s ease-in-out infinite;
+}
+
+
+/* ─────────────────────────────────────────
+   STATUS ANIMATIONS
+   ───────────────────────────────────────── */
+
+/* Ripple expanding outward */
+@keyframes siRippleOut {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Gold ripple for tournament */
+@keyframes siRippleGold {
+  0%   { transform: scale(1); opacity: 0.7; border-color: #fbbf24; }
+  50%  { border-color: #ffd700; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Sonar pulse for searching */
+@keyframes siRippleSonar {
+  0%   { transform: scale(1); opacity: 0.5; border-width: 2px; }
+  100% { transform: scale(3); opacity: 0; border-width: 0.5px; }
+}
+
+/* Orbiting bounce (gaming) — moves around bottom-right corner */
+@keyframes siOrbitBounce {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-3px, -5px); }
+  50%      { transform: translate(0, -3px); }
+  75%      { transform: translate(3px, -5px); }
+}
+
+/* Orbiting spin path (tournament) */
+@keyframes siOrbitSpin {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  25%  { transform: translate(-4px, -6px) rotate(90deg); }
+  50%  { transform: translate(0, -4px) rotate(180deg); }
+  75%  { transform: translate(4px, -6px) rotate(270deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+/* Bouncing icon inside dot (gaming) */
+@keyframes siBounceIcon {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-2px) scale(1.15); }
+}
+
+/* Spinning trophy */
+@keyframes siSpinTrophy {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25%      { transform: rotate(-10deg) scale(1.1); }
+  50%      { transform: rotate(10deg) scale(1.05); }
+  75%      { transform: rotate(-5deg) scale(1.1); }
+}
+
+/* Recording blink (streaming) */
+@keyframes siRecBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* Radar rotation (searching) */
+@keyframes siRadarSweep {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-2px, -4px); }
+  50%      { transform: translate(2px, -2px); }
+  75%      { transform: translate(-1px, -5px); }
+}
+
+@keyframes siRadarIcon {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* AFK float zzz */
+@keyframes siFloatZzz {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* Moon rocking */
+@keyframes siMoonRock {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-15deg); }
+  75%      { transform: rotate(15deg); }
+}
+
+/* DND shake no */
+@keyframes siShakeNo {
+  0%, 90%, 100% { transform: translateX(0); }
+  92%           { transform: translateX(-2px); }
+  94%           { transform: translateX(2px); }
+  96%           { transform: translateX(-2px); }
+  98%           { transform: translateX(2px); }
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   4 · KEYFRAME ANIMATIONS
+   ───────────────────────────────────────────────────────── */
+
+/* === Universal Spins === */
+@keyframes spin360 {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes spin360Reverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+/* === Universal Pulses === */
+@keyframes gentlePulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.7; }
+}
+@keyframes firePulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.98); }
+  50%      { opacity: 0.6; transform: scale(1.02); }
+}
+@keyframes ragePulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.97); }
+  50%      { opacity: 0.6; transform: scale(1.04); }
+}
+
+/* === Universal Dust === */
+@keyframes dustPulse {
+  0%, 100% { opacity: 0.4; }
+  30%      { opacity: 0.7; }
+  60%      { opacity: 0.3; }
+  80%      { opacity: 0.6; }
+}
+@keyframes dustFirePulse {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50%      { opacity: 0.6; transform: translateY(-2px); }
+}
+
+/* === Soft Float — Stars / Leaves / Particles === */
+@keyframes floatSoft1 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.7; }
+  50%      { transform: translate(-2px, -4px); opacity: 1; }
+}
+@keyframes floatSoft2 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.6; }
+  50%      { transform: translate(3px, -3px); opacity: 1; }
+}
+@keyframes floatSoft3 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+  50%      { transform: translate(-3px, 2px); opacity: 0.9; }
+}
+
+/* === Neon Floats === */
+@keyframes neonFloat1 {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.8; }
+  50%      { transform: translateX(-50%) translateY(-3px); opacity: 1; }
+}
+@keyframes neonFloat2 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.7; }
+  50%      { transform: translate(-2px, 2px); opacity: 1; }
+}
+@keyframes neonFloat3 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.6; }
+  50%      { transform: translate(2px, -3px); opacity: 1; }
+}
+
+/* === Twinkle — Gold / Fairy === */
+@keyframes twinkle1 {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50%      { opacity: 0.3; transform: scale(0.6); }
+}
+@keyframes twinkle2 {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50%      { opacity: 0.2; transform: scale(0.5); }
+}
+@keyframes twinkle3 {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%      { opacity: 0.2; transform: scale(0.4); }
+}
+
+/* === Prism Tech === */
+@keyframes nodeGlow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px currentColor, 0 0 10px currentColor; }
+  50%      { opacity: 0.5; box-shadow: 0 0 8px currentColor, 0 0 18px currentColor; }
+}
+
+/* === Nature Bloom Leaves === */
+@keyframes leafDrift1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+  50%      { transform: translate(-2px, -4px) rotate(15deg); opacity: 1; }
+}
+@keyframes leafDrift2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
+  50%      { transform: translate(3px, 2px) rotate(-10deg); opacity: 1; }
+}
+@keyframes leafDrift3 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+  50%      { transform: translate(-2px, 3px) rotate(12deg); opacity: 1; }
+}
+
+/* === Frozen Shard Ice === */
+@keyframes iceDrift1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+  50%      { transform: translate(-2px, -3px) rotate(60deg); opacity: 1; }
+}
+@keyframes iceDrift2 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+  50%      { transform: translate(2px, -2px); opacity: 0.9; }
+}
+@keyframes iceDrift3 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
+  50%      { transform: translate(2px, 2px) rotate(-45deg); opacity: 1; }
+}
+
+/* === Ember / Blood Rise — Inferno, Dragon, Berserker === */
+@keyframes emberRise1 {
+  0%   { transform: translateY(0); opacity: 0.9; }
+  100% { transform: translateY(-25px) translateX(3px); opacity: 0; }
+}
+@keyframes emberRise2 {
+  0%   { transform: translateY(0); opacity: 0.7; }
+  100% { transform: translateY(-20px) translateX(-2px); opacity: 0; }
+}
+@keyframes emberRise3 {
+  0%   { transform: translateY(0); opacity: 0.8; }
+  100% { transform: translateY(-22px) translateX(2px); opacity: 0; }
+}
+@keyframes bloodRise1 {
+  0%   { transform: translateY(0); opacity: 0.8; }
+  100% { transform: translateY(-20px) translateX(2px); opacity: 0; }
+}
+@keyframes bloodRise2 {
+  0%   { transform: translateY(0); opacity: 0.6; }
+  100% { transform: translateY(-18px) translateX(-3px); opacity: 0; }
+}
+@keyframes bloodRise3 {
+  0%   { transform: translateY(0); opacity: 0.7; }
+  100% { transform: translateY(-15px) translateX(1px); opacity: 0; }
+}
+
+/* === Retro Arcade === */
+@keyframes pixelBlink {
+  0%, 49%  { opacity: 1; }
+  50%, 100% { opacity: 0.2; }
+}
+
+/* === Cloud Nine === */
+@keyframes cloudFloat1 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.8; }
+  50%      { transform: translate(3px, -2px); opacity: 1; }
+}
+@keyframes cloudFloat2 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.7; }
+  50%      { transform: translate(-3px, 2px); opacity: 0.9; }
+}
+
+/* === Royal Crown === */
+@keyframes crownBob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-3px); }
+}
+
+/* === Ancient Rune === */
+@keyframes runeFloat1 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+  50%      { transform: translate(1px, -4px); opacity: 1; }
+}
+@keyframes runeFloat2 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50%      { transform: translate(-2px, 3px); opacity: 0.9; }
+}
+@keyframes runeFloat3 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+  50%      { transform: translate(2px, 2px); opacity: 1; }
+}
+
+/* === Glitch Hazard (DO NOT MODIFY) === */
+@keyframes glitchShake {
+  0%   { transform: translate(0,0); }
+  20%  { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
+  40%  { transform: translate(2px, -2px); }
+  60%  { transform: translate(-2px, 0); }
+  80%  { transform: translate(2px, 0); filter: hue-rotate(-90deg); }
+  100% { transform: translate(0,0); }
+}
+
+/* === Porcelain Doll (DO NOT MODIFY) === */
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* (statusPulse replaced by new si* animations above) */

@@ -10,6 +10,8 @@ import {
   updateProfile,
   applyOrganizer,
   verifyOrganizerAction,
+  followUser,
+  getUserCard,
   upload
 } from '../controllers/auth.controller.js';
 
@@ -49,6 +51,12 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 router.post('/apply-organizer', verifyToken, upload.single('document'), applyOrganizer);
 router.get('/verify-organizer/:userId/:action', verifyOrganizerAction);
+
+/* =========================
+   SOCIAL — Follow System
+========================= */
+router.post('/follow/:targetId', verifyToken, followUser);
+router.get('/user-card/:userId', verifyToken, getUserCard);
 
 /* =========================
    RIOT

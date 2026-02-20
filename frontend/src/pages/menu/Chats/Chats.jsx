@@ -8,6 +8,7 @@ import {
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import './Chats.css';
+import PageHud from '../../../components/PageHud/PageHud';
 
 const CHAT_SERVER_URL = "http://localhost:5000";
 const socket = io(CHAT_SERVER_URL);
@@ -82,6 +83,7 @@ export default function Chats() {
 
   return (
     <div className={`hybrid-chat-container ${isDarkMode ? 'dark' : 'light'}`}>
+      <PageHud page="CHATS" />
       <aside className="chat-sidebar">
         <div className="sidebar-header">
           <div className="search-bar"><FaSearch /><input type="text" placeholder="Buscar..." /></div>

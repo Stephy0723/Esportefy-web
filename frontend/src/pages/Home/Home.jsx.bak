@@ -1,0 +1,111 @@
+import React, { useState } from 'react';
+
+// COMPONENTES
+import Navbar from '../../components/Navbar/Navbar';
+import Sidebar from '../../components/Sidebar/Sidebar';
+import ImmersiveSection from '../../components/ImmersiveSection/ImmersiveSection';
+
+// NUEVAS SECCIONES DEL HOME
+import GamesCatalog from '../../components/Home/GamesCatalog';
+import StatsCounter from '../../components/Home/StatsCounter';
+import FeaturesShowcase from '../../components/Home/FeaturesShowcase';
+import CallToAction from '../../components/Home/CallToAction';
+import Footer from '../../components/Home/Footer';
+import ScrollToTop from '../../components/Home/ScrollToTop';
+
+// VIDEOS
+import videoInicio from '../../assets/video/inicio.mp4';
+import videoQuienes from '../../assets/video/quienes.mp4';
+import videoVision from '../../assets/video/vision.mp4'; 
+import videoMision from '../../assets/video/.vision.mp4';
+
+const Home = () => {
+  const [isSidebarClosed, setIsSidebarClosed] = useState(true);
+  
+  const sidebarWidth = isSidebarClosed ? '88px' : '250px';
+
+  return (
+    <div className="home-container bg-[#0a0a0a]">
+      
+      {/* SIDEBAR */}
+      <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
+
+      {/* CONTENIDO PRINCIPAL */}
+      <div 
+        className="main-content"
+        style={{ 
+          marginLeft: sidebarWidth, 
+          transition: 'all 0.5s ease', 
+          width: `calc(100% - ${sidebarWidth})` 
+        }}
+      >
+        {/* NAVBAR */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 90 }}>
+           <Navbar />
+        </div>
+
+        {/* === HERO === */}
+        <ImmersiveSection 
+          id="inicio"
+          videoSrc={videoInicio}
+          title="ESPORTEFY"
+          subtitle="Bienvenido a la Revolución"
+          text="La plataforma definitiva para gestionar tu carrera eSports. Únete a torneos, encuentra equipos y demuestra tu nivel."
+          showAuthButtons={true}
+          nextSection="quienes"
+        />
+
+        {/* === QUIÉNES SOMOS === */}
+        <ImmersiveSection 
+          id="quienes"
+          videoSrc={videoQuienes}
+          title="Quiénes Somos"
+          subtitle="Nuestra Identidad"
+          text="Somos una organización nacida de la pasión por el gaming competitivo. Transformamos jugadores casuales en leyendas profesionales."
+          align="right"
+          nextSection="valores"
+        />
+
+        {/* === VALORES === */}
+        <ImmersiveSection 
+          id="valores"
+          videoSrc={videoVision} 
+          title="Nuestros Valores"
+          subtitle="Lo que nos define"
+          text="Disciplina, Respeto y Competitividad. Creemos en el juego limpio y en construir una comunidad sana donde el talento brille."
+          nextSection="mision"
+        />
+
+        {/* === MISIÓN === */}
+        <ImmersiveSection 
+          id="mision"
+          videoSrc={videoMision}
+          title="Nuestra Misión"
+          subtitle="El Objetivo"
+          text="Proveer la infraestructura tecnológica necesaria para que cualquier gamer, en cualquier lugar, pueda alcanzar el profesionalismo."
+          align="right"
+        />
+
+        {/* === STATS EN VIVO (Contadores animados) === */}
+        <StatsCounter />
+
+        {/* === CATÁLOGO DE JUEGOS === */}
+        <GamesCatalog />
+
+        {/* === ¿POR QUÉ ESPORTEFY? (Features) === */}
+        <FeaturesShowcase />
+
+        {/* === CTA FINAL === */}
+        <CallToAction />
+
+        {/* === FOOTER === */}
+        <Footer />
+      </div>
+
+      {/* BOTÓN SCROLL-TO-TOP */}
+      <ScrollToTop />
+    </div>
+  );
+};
+
+export default Home;

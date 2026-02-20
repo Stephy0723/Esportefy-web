@@ -5,6 +5,7 @@ import {
 } from 'react-icons/md';
 import { FaBroadcastTower } from 'react-icons/fa';
 import './Tv.css';
+import PageHud from '../../../components/PageHud/PageHud';
 
 export default function Tv() {
   // ESTADO DEL TEMA: 'light' (blanco) o 'dark' (negro)
@@ -21,6 +22,7 @@ export default function Tv() {
   return (
     // APLICAMOS EL ATRIBUTO DATA-THEME AQUÍ PARA QUE EL CSS SEPA QUÉ COLORES USAR
     <div className="yt-layout" data-theme={theme}>
+      <PageHud page="ESPORTEFY TV" />
       
       {/* --- BARRA IZQUIERDA (Navegación + BOTÓN DE TEMA) --- */}
       <aside className="left-icon-bar">
