@@ -10,8 +10,22 @@ import {
 
 // --- BANDERAS SVG ---
 import { US, DO, MX, AR, CO, ES, CL, PE, VE, BR } from 'country-flag-icons/react/3x2';
+import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 
 import './Community.css';
+import {
+    fetchCommunityPosts,
+    publishCommunityPost,
+    toggleCommunityPostLike,
+    publishCommunityComment,
+    toggleCommunityCommentLike,
+    reportCommunityPost,
+    hideCommunityPost,
+    deleteCommunityPost,
+    fetchMyCommunities,
+    createCommunitySpace
+} from './community.service';
 
 // --- TUS IMPORTS DE IMÁGENES ---
 import FortniteImg from '../../../assets/comunidad/Fortnite.jpg';
@@ -120,9 +134,13 @@ const GameCarouselSection = () => {
 // 3. FEED SECTION (BOTONES FUNCIONALES)
 // ==========================================
 const FeedSection = () => {
+    const { user } = useAuth();
+    const { addToast } = useNotification();
     const [inputText, setInputText] = useState("");
     const [attachment, setAttachment] = useState(null);
     const [showEmoji, setShowEmoji] = useState(false);
+    const [loadingPosts, setLoadingPosts] = useState(true);
+    const [publishingPost, setPublishingPost] = useState(false);
     
     // ESTADO PARA COMENTARIOS (Guarda lo que escribes en cada post)
     const [commentInputs, setCommentInputs] = useState({}); 
@@ -131,7 +149,6 @@ const FeedSection = () => {
     
     const [showReportModal, setShowReportModal] = useState(false); // Modal reporte
     const [reportingPostId, setReportingPostId] = useState(null); // ID del post a reportar
-    // --- AQUÍ ESTABA EL ERROR: FALTABA ESTE ESTADO ---
     const [replyingTo, setReplyingTo] = useState({}); 
     
 
@@ -153,18 +170,32 @@ const FeedSection = () => {
     };
 
     // 1. OCULTAR / DESHACER (Alterna la propiedad hidden)
-    const toggleHidePost = (id) => {
-        setPosts(posts.map(p => {
-            if (p.id === id) return { ...p, hidden: !p.hidden };
-            return p;
-        }));
-        setActiveMenuId(null);
+    const toggleHidePost = async (id) => {
+        try {
+            const hidden = await hideCommunityPost(id);
+            if (hidden) {
+                setPosts((prev) => prev.filter((p) => p.id !== id));
+                addToast('Publicación ocultada', 'success');
+            } else {
+                addToast('La publicación ya no está oculta', 'info');
+            }
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo ocultar la publicación', 'error');
+        } finally {
+            setActiveMenuId(null);
+        }
     };
 
     // 2. ELIMINAR (Borra permanentemente)
-    const handleDeletePost = (id) => {
+    const handleDeletePost = async (id) => {
         if (window.confirm("¿Eliminar post permanentemente?")) {
-            setPosts(posts.filter(p => p.id !== id));
+            try {
+                await deleteCommunityPost(id);
+                setPosts((prev) => prev.filter((p) => p.id !== id));
+                addToast('Publicación eliminada', 'success');
+            } catch (error) {
+                addToast(error?.response?.data?.message || 'No se pudo eliminar la publicación', 'error');
+            }
         }
         setActiveMenuId(null);
     };
@@ -177,41 +208,22 @@ const FeedSection = () => {
     };
 
     // 4. CONFIRMAR REPORTE (Viene del Modal)
-    const handleConfirmReport = (data) => {
-        console.log(`Reporte enviado para post ${reportingPostId}:`, data);
-        
-        // Opcional: Ocultar el post automáticamente después de reportar
-        toggleHidePost(reportingPostId); 
-        
-        alert("Gracias. Hemos recibido tu reporte.");
-        setShowReportModal(false);
-        setReportingPostId(null);
+    const handleConfirmReport = async (data) => {
+        if (!reportingPostId) return;
+        try {
+            await reportCommunityPost(reportingPostId, data);
+            addToast('Reporte enviado. Gracias por ayudar a moderar la comunidad.', 'success');
+            setShowReportModal(false);
+            setReportingPostId(null);
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo enviar el reporte', 'error');
+        }
     };
 
-    const [posts, setPosts] = useState([
-        {
-            id: 1, 
-            user: "AlexGamer", 
-            avatar: LoLImg, 
-            time: "2h",
-            text: "Necesito un Sage main para subir a Ascendente. ¡Juego serio! 🔥",
-            likes: 12, 
-            liked: false,
-            // NUEVO: Array de comentarios iniciales
-            comments: [
-                {
-                    id: 101, 
-                    user: "JettMain", 
-                    avatar: ValorantImg, 
-                    text: "Yo soy Ascendente 2, agrégame.", 
-                    likes: 3, 
-                    liked: false, 
-                    image: null
-                }
-            ],
-            showComments: false // Controla si se ve la caja de comentarios
-        }
-    ]);
+    const [posts, setPosts] = useState([]);
+
+    const currentUserName = user?.username || user?.userName || user?.fullName || 'Tú';
+    const currentUserAvatar = user?.avatar || ValorantImg;
 
     // 1. MAPA DE BANDERAS (Texto -> Componente)
     const FLAG_MAP = {
@@ -254,27 +266,44 @@ const FeedSection = () => {
             icons: ["🚀", "💎", "💩", "💀", "👻", "👽", "🤖", "🍕", "🍺", "🚗"]
         }
     ];
+
+    const loadFeed = async () => {
+        try {
+            setLoadingPosts(true);
+            const postsList = await fetchCommunityPosts();
+            setPosts(postsList);
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo cargar el feed de comunidad', 'error');
+        } finally {
+            setLoadingPosts(false);
+        }
+    };
+
+    useEffect(() => {
+        loadFeed();
+    }, []);
+
     // --- NUEVAS FUNCIONES DE LOS BOTONES ---
 
     // 1. ABRIR/CERRAR COMENTARIOS
     // 1. Alternar caja de comentarios
     const toggleComments = (postId) => {
-        setPosts(posts.map(p => p.id === postId ? { ...p, showComments: !p.showComments } : p));
+        setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, showComments: !p.showComments } : p)));
     };
 
    // 2. Manejar Inputs de Comentarios (Texto)
     const handleCommentChange = (postId, value) => {
-        setCommentInputs({ ...commentInputs, [postId]: value });
+        setCommentInputs((prev) => ({ ...prev, [postId]: value }));
     };
     // 3. Manejar Archivos en Comentarios
     const handleCommentFile = (postId, e, type) => {
         const file = e.target.files[0];
         if (file) {
             const previewUrl = URL.createObjectURL(file);
-            setCommentAttachments({ 
-                ...commentAttachments, 
-                [postId]: { type, name: file.name, url: previewUrl, file } 
-            });
+            setCommentAttachments((prev) => ({
+                ...prev,
+                [postId]: { type, name: file.name, url: previewUrl, file }
+            }));
         }
         e.target.value = null;
     };
@@ -286,76 +315,80 @@ const FeedSection = () => {
         }));
     };
     // 5. ENVIAR COMENTARIO
-    const submitComment = (postId) => {
+    const submitComment = async (postId) => {
         const text = commentInputs[postId];
         const attach = commentAttachments[postId];
 
         if ((!text || !text.trim()) && !attach) return;
+        try {
+            const createdComment = await publishCommunityComment(postId, {
+                text,
+                attachmentFile: attach?.file,
+                attachmentType: attach?.type
+            });
 
-        const newComment = {
-            id: Date.now(),
-            user: "Tú",
-            avatar: ValorantImg,
-            text: text || "",
-            image: attach?.type === 'media' ? attach.url : null,
-            file: attach?.type === 'file' ? attach : null,
-            likes: 0,
-            liked: false
-        };
-       setPosts(posts.map(p => {
-            if (p.id === postId) {
-                return { ...p, comments: [...(p.comments || []), newComment] };
-            }
-            return p;
-        }));
+            setPosts((prev) =>
+                prev.map((p) => {
+                    if (p.id !== postId) return p;
+                    return { ...p, comments: [...(p.comments || []), createdComment] };
+                })
+            );
 
-        // Limpiar inputs
-        setCommentInputs({ ...commentInputs, [postId]: "" });
-        setCommentAttachments({ ...commentAttachments, [postId]: null });
-        setActiveEmojiPost(null);
-
-        // Limpiamos el estado de respuesta
-        const newReplies = { ...replyingTo };
-        delete newReplies[postId];
-        setReplyingTo(newReplies);
-        
-        setActiveEmojiPost(null);
+            setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+            setCommentAttachments((prev) => ({ ...prev, [postId]: null }));
+            setReplyingTo((prev) => {
+                const next = { ...prev };
+                delete next[postId];
+                return next;
+            });
+            setActiveEmojiPost(null);
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo enviar el comentario', 'error');
+        }
     };
     // 6. DAR LIKE A UN COMENTARIO
-    const toggleCommentLike = (postId, commentId) => {
-        setPosts(posts.map(p => {
-            if (p.id === postId) {
-                const updatedComments = p.comments.map(c => {
-                    if (c.id === commentId) {
-                        return { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 };
-                    }
-                    return c;
-                });
-                return { ...p, comments: updatedComments };
-            }
-            return p;
-        }));
+    const toggleCommentLike = async (postId, commentId) => {
+        try {
+            const result = await toggleCommunityCommentLike(postId, commentId);
+            setPosts((prev) =>
+                prev.map((p) => {
+                    if (p.id !== postId) return p;
+                    const updatedComments = (p.comments || []).map((c) => {
+                        if (c.id !== commentId) return c;
+                        return { ...c, liked: result.likedByMe, likes: result.likesCount };
+                    });
+                    return { ...p, comments: updatedComments };
+                })
+            );
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo reaccionar al comentario', 'error');
+        }
     };
 
     // 7. RESPONDER (Mencionar)
     const handleReplyTo = (postId, username) => {
         const currentText = commentInputs[postId] || "";
-        setCommentInputs({ ...commentInputs, [postId]: `@${username} ` + currentText });
-        setReplyingTo({ ...replyingTo, [postId]: username });
-        // Faltaría hacer focus, pero React es reactivo, al cambiar el value el usuario ya puede escribir.
+        setCommentInputs((prev) => ({ ...prev, [postId]: `@${username} ${currentText}` }));
+        setReplyingTo((prev) => ({ ...prev, [postId]: username }));
     };
-// 8. CANCELAR RESPUESTA
+
     const cancelReply = (postId) => {
-        const newReplies = { ...replyingTo };
-        delete newReplies[postId]; // Borramos la respuesta de este post
-        setReplyingTo(newReplies);
+        setReplyingTo((prev) => {
+            const next = { ...prev };
+            delete next[postId];
+            return next;
+        });
     };
 
 
-    // 4. COMPARTIR (Simulación)
-    const handleShare = (post) => {
-        // En una app real, esto usaría navigator.share o copiaría al portapapeles
-        alert(`Enlace del post de ${post.user} copiado al portapapeles! 🔗`);
+    const handleShare = async (post) => {
+        const permalink = `${window.location.origin}/comunidad?post=${post.id}`;
+        try {
+            await navigator.clipboard.writeText(permalink);
+            addToast('Enlace copiado al portapapeles', 'success');
+        } catch (_) {
+            addToast('No se pudo copiar el enlace', 'error');
+        }
     };
 
     // 3. RENDERIZADO "MAGICO" (Dibuja la bandera SVG sobre el texto)
@@ -421,25 +454,44 @@ const FeedSection = () => {
     };
     
 
-    const handlePublish = () => {
+    const handlePublish = async () => {
         if (!inputText.trim() && !attachment) return;
 
-        const newPost = {
-            id: Date.now(), user: "Tú", avatar: ValorantImg, time: "Just now",
-            text: inputText,
-            image: attachment?.type === 'media' ? attachment.url : null,
-            file: attachment?.type === 'file' ? attachment : null, 
-            likes: 0, liked: false
-        };
-        setPosts([newPost, ...posts]);
-        setInputText(""); setAttachment(null); setShowEmoji(false);
+        try {
+            setPublishingPost(true);
+            const createdPost = await publishCommunityPost({
+                text: inputText,
+                privacy,
+                attachmentFile: attachment?.file,
+                attachmentType: attachment?.type
+            });
+            setPosts((prev) => [createdPost, ...prev]);
+            setInputText('');
+            setAttachment(null);
+            setShowEmoji(false);
+            addToast('Publicación creada', 'success');
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo crear la publicación', 'error');
+        } finally {
+            setPublishingPost(false);
+        }
     };
 
-    const toggleLike = (id) => {
-        setPosts(posts.map(p => p.id === id ? { ...p, likes: p.liked ? p.likes - 1 : p.likes + 1, liked: !p.liked } : p));
+    const toggleLike = async (id) => {
+        try {
+            const result = await toggleCommunityPostLike(id);
+            setPosts((prev) =>
+                prev.map((p) =>
+                    p.id === id ? { ...p, likes: result.likesCount, liked: result.likedByMe } : p
+                )
+            );
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo reaccionar la publicación', 'error');
+        }
     };
 
     return (
+        <>
         <section className="feed-section-container">
             <div className="feed-title" style={{marginBottom: '15px', color: '#65676b', fontWeight: '600'}}><FaGlobeAmericas /> <span>Feed Global</span></div>
 
@@ -448,7 +500,7 @@ const FeedSection = () => {
 
             <div className="clean-post-card">
                 <div className="clean-top-row">
-                    <img src={ValorantImg} alt="User" className="clean-avatar" />
+                    <img src={currentUserAvatar || ValorantImg} alt={currentUserName} className="clean-avatar" />
                     
                     <div className="clean-input-wrapper">
                         {/* CAPA DE FONDO: Dibuja las banderas bonitas */}
@@ -506,9 +558,9 @@ const FeedSection = () => {
                     <button 
                         className={`clean-publish-btn ${inputText || attachment ? 'active' : ''}`}
                         onClick={handlePublish}
-                        disabled={!inputText && !attachment}
+                        disabled={publishingPost || (!inputText && !attachment)}
                     >
-                        Share Post
+                        {publishingPost ? 'Publicando...' : 'Share Post'}
                     </button>
                 </div>
 
@@ -553,11 +605,19 @@ const FeedSection = () => {
             </div>
 
             <div className="posts-feed-wrapper">
-                {posts.map((post) => (
+                {loadingPosts ? (
+                    <div className="ui-post-card">
+                        <p className="ui-post-text">Cargando feed de comunidad...</p>
+                    </div>
+                ) : posts.length === 0 ? (
+                    <div className="ui-post-card">
+                        <p className="ui-post-text">Aún no hay publicaciones. Sé el primero en compartir algo.</p>
+                    </div>
+                ) : posts.map((post) => (
                     <div className="ui-post-card" key={post.id}>
                         {/* HEADER DEL POST (Igual) */}
                         <div className="ui-post-header">
-                            <img src={post.avatar} alt="avatar" className="ui-avatar" />
+                            <img src={post.avatar || ValorantImg} alt="avatar" className="ui-avatar" />
                             <div className="ui-user-details">
                                 <div className="ui-user-name">{post.user}</div>
                                 <div className="ui-post-time">{post.time}</div>
@@ -585,10 +645,12 @@ const FeedSection = () => {
         <FaFlag /> <span>Reportar</span>
     </button>
                 
-                {/* Opción 4: Eliminar (Solo si el post es tuyo, aquí simulamos que todos lo son) */}
-                <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
-                    <FaTrash /> <span>Eliminar</span>
-                </button>
+                {/* Opción 4: Eliminar (Solo si el post es tuyo) */}
+                {post.isOwner && (
+                    <button className="menu-item danger" onClick={() => handleDeletePost(post.id)}>
+                        <FaTrash /> <span>Eliminar</span>
+                    </button>
+                )}
             </div>
         )}
     </div>
@@ -643,7 +705,7 @@ const FeedSection = () => {
                                 <div className="comments-list">
                                     {post.comments && post.comments.map(comment => (
                                         <div className="single-comment" key={comment.id}>
-                                            <img src={comment.avatar} alt="u" className="comment-avatar" />
+                                            <img src={comment.avatar || ValorantImg} alt="u" className="comment-avatar" />
                                             <div className="comment-content-block">
                                                 <div className="comment-bubble">
                                                     <div className="comment-user">{comment.user}</div>
@@ -670,7 +732,11 @@ const FeedSection = () => {
                                                     <button className="action-link" onClick={() => handleReplyTo(post.id, comment.user)}>
                                                         Reply
                                                     </button>
-                                                    <span style={{color:'#aaa'}}>{new Date(comment.id).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                                    <span style={{color:'#aaa'}}>
+                                                        {comment.createdAt
+                                                            ? new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                            : 'Ahora'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -679,7 +745,7 @@ const FeedSection = () => {
 
                                 {/* 2. Input de Comentarios (CORREGIDO Y LIMPIO) */}
                                 <div className="comment-input-area">
-                                    <img src={ValorantImg} alt="me" className="comment-avatar" />
+                                    <img src={currentUserAvatar || ValorantImg} alt={currentUserName} className="comment-avatar" />
                                     
                                     {/* INICIO DE LA PÍLDORA (WRAPPER) */}
                                     <div className="comment-input-wrapper">
@@ -703,7 +769,12 @@ const FeedSection = () => {
                                                     {commentAttachments[post.id].type === 'media' ? <FaImage/> : <FaLink/>}
                                                     {commentAttachments[post.id].name}
                                                 </span>
-                                                <FaTimes style={{cursor:'pointer'}} onClick={() => setCommentAttachments({...commentAttachments, [post.id]: null})} />
+                                                <FaTimes
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() =>
+                                                        setCommentAttachments((prev) => ({ ...prev, [post.id]: null }))
+                                                    }
+                                                />
                                             </div>
                                         )}
 
@@ -766,6 +837,15 @@ const FeedSection = () => {
                 ))}
             </div>
         </section>
+        <ReportModal
+            isOpen={showReportModal}
+            onClose={() => {
+                setShowReportModal(false);
+                setReportingPostId(null);
+            }}
+            onSubmit={handleConfirmReport}
+        />
+        </>
     );
 };
 // ==========================================
@@ -843,7 +923,7 @@ const ReportModal = ({ isOpen, onClose, onSubmit }) => {
 // ==========================================
 // 4. SIDEBAR
 // ==========================================
-const SidebarSection = ({ onOpenModal }) => {
+const SidebarSection = ({ onOpenModal, myCommunities = [], communitiesLoading = false }) => {
     const navigate = useNavigate();
     const [adIndex, setAdIndex] = useState(0);
 
@@ -891,17 +971,37 @@ const SidebarSection = ({ onOpenModal }) => {
             <div className="creators-box communities-sidebar-v3">
                 <div className="box-header"><h3><FaUserFriends /> Mis Comunidades</h3></div>
                 <div className="sidebar-communities-list">
-                    <div className="community-sidebar-item">
-                        <div className="comm-avatar-frame">
-                            <img src={ValorantImg} alt="comm" className="creator-img" />
-                            <span className="status-indicator-online"></span>
+                    {communitiesLoading ? (
+                        <div className="community-sidebar-item">
+                            <div className="creator-info">
+                                <h5>Cargando comunidades...</h5>
+                                <span>Sincronizando panel</span>
+                            </div>
                         </div>
-                        <div className="creator-info">
-                            <h5>Valorant LATAM</h5>
-                            <span>15k Miembros</span>
+                    ) : myCommunities.length > 0 ? (
+                        myCommunities.map((community) => (
+                            <div className="community-sidebar-item" key={community.id}>
+                                <div className="comm-avatar-frame">
+                                    <img src={community.avatarUrl || ValorantImg} alt={community.name} className="creator-img" />
+                                    <span className="status-indicator-online"></span>
+                                </div>
+                                <div className="creator-info">
+                                    <h5>{community.name}</h5>
+                                    <span>{community.membersCount || 0} Miembros</span>
+                                </div>
+                                <button className="btn-enter-community" onClick={() => navigate(`/comunidad/${community.shortUrl}`)}>
+                                    Entrar
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="community-sidebar-item">
+                            <div className="creator-info">
+                                <h5>Aún no tienes comunidades</h5>
+                                <span>Crea la primera desde aquí</span>
+                            </div>
                         </div>
-                        <button className="btn-enter-community">Entrar</button>
-                    </div>
+                    )}
                 </div>
                 <button className="btn-create-community-sidebar" onClick={onOpenModal}>
                     <FaPlusCircle /> <span>Crear Comunidad</span>
@@ -916,10 +1016,10 @@ const SidebarSection = ({ onOpenModal }) => {
 // 5. MODAL (MEJORADO Y RESTRINGIDO)
 // ==========================================
 
-// SIMULACIÓN DE ROL
-const CURRENT_USER_ROLE = 'organizer'; 
-
-const CreateCommunityModal = ({ isOpen, onClose }) => {
+const CreateCommunityModal = ({ isOpen, onClose, onCommunityCreated }) => {
+    const { user } = useAuth();
+    const { addToast } = useNotification();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
     // --- NAVEGACIÓN ---
     const [activeTab, setActiveTab] = useState('identity'); 
@@ -973,8 +1073,10 @@ const CreateCommunityModal = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
+    const canCreateCommunity = Boolean(user?.isOrganizer || user?.isAdmin);
+
     // --- BLOQUEO DE SEGURIDAD ---
-    if (CURRENT_USER_ROLE !== 'organizer') {
+    if (!canCreateCommunity) {
         return (
             <div className="modal-overlay" onClick={onClose}>
                 <div className="modal-content restricted-modal fade-in-up">
@@ -1041,6 +1143,32 @@ const CreateCommunityModal = ({ isOpen, onClose }) => {
             case 'team': return "🛡️ No estás solo. Recluta a tus fieles guardianes.";
             case 'settings': return "⚙️ Los detalles técnicos que marcan la diferencia profesional.";
             default: return "";
+        }
+    };
+
+    const handleCreateCommunity = async () => {
+        if (!formData.name?.trim()) {
+            setActiveTab('identity');
+            addToast('El nombre público es obligatorio', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const created = await createCommunitySpace({
+                formData,
+                media,
+                admins
+            });
+            addToast('Comunidad creada correctamente', 'success');
+            if (typeof onCommunityCreated === 'function') {
+                onCommunityCreated(created);
+            }
+            onClose();
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo crear la comunidad', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -1342,8 +1470,8 @@ const CreateCommunityModal = ({ isOpen, onClose }) => {
                             Siguiente <FaChevronRight />
                         </button>
                     ) : (
-                        <button className="btn-confirm-v3" onClick={() => console.log(formData)}>
-                            Lanzar Comunidad <FaRocket />
+                        <button className="btn-confirm-v3" onClick={handleCreateCommunity} disabled={isSubmitting}>
+                            {isSubmitting ? 'Creando...' : 'Lanzar Comunidad'} <FaRocket />
                         </button>
                     )}
                 </div>
@@ -1357,7 +1485,35 @@ const CreateCommunityModal = ({ isOpen, onClose }) => {
 // ==========================================
 
 const Community = () => {
+    const { addToast } = useNotification();
     const [showModal, setShowModal] = useState(false);
+    const [myCommunities, setMyCommunities] = useState([]);
+    const [communitiesLoading, setCommunitiesLoading] = useState(true);
+
+    const loadCommunities = async () => {
+        try {
+            setCommunitiesLoading(true);
+            const list = await fetchMyCommunities();
+            setMyCommunities(list);
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudieron cargar tus comunidades', 'error');
+        } finally {
+            setCommunitiesLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadCommunities();
+    }, []);
+
+    const handleCommunityCreated = (community) => {
+        if (community?.id) {
+            setMyCommunities((prev) => [community, ...prev.filter((item) => item.id !== community.id)]);
+        } else {
+            loadCommunities();
+        }
+        setShowModal(false);
+    };
 
     return (
         <div className="dashboard-wrapper">
@@ -1375,7 +1531,11 @@ const Community = () => {
                         <FeedSection />
                     </div>
 
-                    <SidebarSection onOpenModal={() => setShowModal(true)} />
+                    <SidebarSection
+                        onOpenModal={() => setShowModal(true)}
+                        myCommunities={myCommunities}
+                        communitiesLoading={communitiesLoading}
+                    />
                 </div>
             </div>
 
@@ -1383,7 +1543,8 @@ const Community = () => {
             {/* Antes decía <CreateModal ... /> */}
             <CreateCommunityModal 
                 isOpen={showModal} 
-                onClose={() => setShowModal(false)} 
+                onClose={() => setShowModal(false)}
+                onCommunityCreated={handleCommunityCreated}
             />
         </div>
     );

@@ -11,9 +11,11 @@ import './Settings.css';
 import axios from "axios";
 import { useEffect } from "react";
 import { withCsrfHeaders } from '../../../utils/csrf';
+import { useTheme } from '../../../context/ThemeContext';
 
 
 export default function Settings() {
+    const { isDarkMode, setThemeMode, toggleTheme } = useTheme();
 
     const location = useLocation();
 
@@ -538,29 +540,37 @@ export default function Settings() {
 
                             <h3>Tema de Interfaz</h3>
                             <div className="theme-selector">
-                                <div className="theme-option active">
+                                <button
+                                    type="button"
+                                    className={`theme-option ${isDarkMode ? 'active' : ''}`}
+                                    onClick={() => setThemeMode(true)}
+                                >
                                     <div className="theme-preview dark"></div>
                                     <span>Esportefy Dark</span>
-                                </div>
-                                <div className="theme-option">
-                                    <div className="theme-preview midnight"></div>
-                                    <span>OLED Black</span>
-                                </div>
-                                <div className="theme-option">
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`theme-option ${!isDarkMode ? 'active' : ''}`}
+                                    onClick={() => setThemeMode(false)}
+                                >
                                     <div className="theme-preview contrast"></div>
-                                    <span>Alto Contraste</span>
-                                </div>
+                                    <span>Esportefy Light</span>
+                                </button>
                             </div>
 
                             <div className="divider"></div>
 
                             <div className="toggle-item">
                                 <div className="toggle-info">
-                                    <h4>Reducir Movimiento</h4>
-                                    <p>Desactiva animaciones complejas (Mejora rendimiento).</p>
+                                    <h4>Cambiar Tema Rápido</h4>
+                                    <p>Alterna entre modo oscuro y claro.</p>
                                 </div>
                                 <label className="switch">
-                                    <input type="checkbox" />
+                                    <input
+                                        type="checkbox"
+                                        checked={isDarkMode}
+                                        onChange={toggleTheme}
+                                    />
                                     <span className="slider round"></span>
                                 </label>
                             </div>
@@ -810,7 +820,7 @@ export default function Settings() {
     };
 
     return (
-        <div className="settings-page">
+        <div className={`settings-page ${!isDarkMode ? 'theme-light' : ''}`}>
             <div className="settings-layout">
                 {/* SIDEBAR DE NAVEGACIÓN */}
                 <aside className="settings-sidebar">

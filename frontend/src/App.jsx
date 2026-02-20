@@ -51,6 +51,7 @@ import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
 //Comunidad
 import GamesPage from './pages/menu/Community/games/GamesPage';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
+import CommunitySpacePage from './pages/menu/Community/groups/CommunitySpacePage';
 import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
 //Juegos (comunidad)
 import ValorantPage from './pages/Game/ValorantPage';
@@ -180,6 +181,7 @@ function App() {
               <Route path="/create-tournament" element={<CreateTournament />} />
               {/* Rutas de Comunidad */}
               <Route path="/games/:id" element={<GamesPage />} />
+              <Route path="/comunidad/:shortUrl" element={<CommunitySpacePage />} />
               <Route path="/university" element={<UniversityPage />} />
 
               {/* Rutas con nombre propio */}

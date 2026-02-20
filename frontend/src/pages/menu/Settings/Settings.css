@@ -1,7 +1,7 @@
 /* =========================================
    VARIABLES Y TEMAS (CORREGIDO)
    ========================================= */
-:root {
+.settings-page {
     --neon-green: #8EDB15;
     --neon-gold: #ffd700;
     --danger-red: #ef4444;
@@ -16,8 +16,8 @@
     --radius-28: 28px;
 }
 
-/* AQUÍ ESTABA EL ERROR: Se quitó la llave extra } */
-.theme-light {
+/* Modo claro derivado del estado global del body */
+body:not(.dark) .settings-page {
     --bg-page: #ffffff;
     --bg-card: #f4f4f5;
     --bg-input: #ffffff;   /* Ahora sí cargará el blanco para el select e inputs */
@@ -26,8 +26,14 @@
     --border-color: #e4e4e7;
 }
 
-/* ASEGÚRATE DE QUE EL SELECT USE LA VARIABLE */
-select, input {
+/* ASEGÚRATE DE QUE LOS CAMPOS DE TEXTO USEN LA VARIABLE */
+select,
+textarea,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="search"] {
     background-color: var(--bg-input) !important;
     color: var(--text-main) !important;
     border: 1px solid var(--border-color);
@@ -117,7 +123,7 @@ input:checked + .slider {
 }
 
 /* En modo CLARO, el hover no debe ser negro */
-.theme-light .nav-item:hover {
+body:not(.dark) .settings-page .nav-item:hover {
     background: #f0f0f0 !important; 
     color: #000000 !important;
     border: 1px solid var(--neon-green); /* Opcional: borde verde al pasar el mouse */
@@ -218,6 +224,16 @@ input:checked + .slider {
     font-size: 1rem;
 }
 
+body:not(.dark) .settings-page .input-with-action input {
+    background-color: #ffffff !important;
+    border-color: #d1d5db !important;
+    color: #111827 !important;
+}
+
+body:not(.dark) .settings-page .input-with-action input::placeholder {
+    color: #9ca3af !important;
+}
+
 /* --- BOTÓN NEÓN ALINEADO --- */
 .input-with-action button {
     background: var(--neon-green);
@@ -255,14 +271,14 @@ input[type="password"] {
     font-family: 'Rajdhani', sans-serif;
     font-size: 1rem;
 }
-.theme-light .input-with-action input:hover {
+body:not(.dark) .settings-page .input-with-action input:hover {
     background-color: #ffffff !important;
     border-color: var(--neon-green) !important;
     color: #000000 !important;
 }
 
 .input-disabled {
-    background-color: var(--bg-black) !important; /* Fondo negro profundo */
+    background-color: var(--bg-input) !important;
     border: 2px dashed rgba(142, 219, 21, 0.2) !important; /* Borde neón sutil */
     color: var(--text-muted) !important;
     padding: 14px 22px;
@@ -275,7 +291,7 @@ input[type="password"] {
 }
 
 /* Ajuste específico para modo claro: el texto debe ser un gris legible */
-.theme-light .input-disabled {
+body:not(.dark) .settings-page .input-disabled {
     background-color: #f9f9f9 !important;
     color: #a1a1aa !important;
     border-color: #e4e4e7 !important;
@@ -286,6 +302,10 @@ input[type="password"] {
     border-radius: 28px;
     padding: 2.5rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+body:not(.dark) .settings-page .settings-panel {
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
 /* =========================================
@@ -546,21 +566,21 @@ input[type="password"] {
 }
 
 /* --- MODO CLARO (THEME-LIGHT) --- */
-.theme-light .integration-card {
+body:not(.dark) .settings-page .integration-card {
     background-color: #ffffff !important;
     box-shadow: 0 10px 30px rgba(0,0,0,0.05);
     border: 1px solid #e4e4e7;
 }
 
-.theme-light .riot-profile-box {
+body:not(.dark) .settings-page .riot-profile-box {
     background: #f4f4f5;
 }
 
-.theme-light .riot-form {
+body:not(.dark) .settings-page .riot-form {
     background: #f8fafc;
 }
 
-.theme-light .riot-meta strong {
+body:not(.dark) .settings-page .riot-meta strong {
     color: #000;
 }
 .discord { color: #5865F2; }
@@ -578,7 +598,7 @@ input[type="password"] {
     border-radius: 28px;
     transition: all 0.3s ease;
 }
-.theme-light .danger-zone-v2 {
+body:not(.dark) .settings-page .danger-zone-v2 {
     background-color: #fff5f5; /* Rojo muy suave en modo claro */
     border-color: #feb2b2;
 }
@@ -803,13 +823,13 @@ input[type="password"] {
 }
 
 /* Ajuste específico para cuando el fondo es BLANCO */
-.theme-light .toggle-item {
+body:not(.dark) .settings-page .toggle-item {
     background-color: #ffffff !important;
     border-color: #f1f1f4 !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); /* Sombra suave para despegar del fondo */
 }
 
-.theme-light .toggle-info h4 {
+body:not(.dark) .settings-page .toggle-info h4 {
     color: #000000;
 }
 
@@ -828,6 +848,11 @@ input[type="password"] {
     border: 2px solid var(--border-color);
     cursor: pointer;
     transition: 0.3s;
+    width: 100%;
+    color: inherit;
+    text-align: left;
+    font: inherit;
+    appearance: none;
 }
 
 .theme-option.active {
@@ -926,7 +951,7 @@ input:checked + .purple-slider {
     transition: transform 0.3s ease;
 }
 
-.theme-light .plan-card { background: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+body:not(.dark) .settings-page .plan-card { background: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
 
 .plan-header h3 { font-size: 1.6rem; font-weight: 900; margin: 0; text-transform: uppercase; }
 .plan-header .price { font-size: 2.2rem; font-weight: 900; margin: 15px 0; color: var(--text-main); }
@@ -1001,7 +1026,7 @@ input:checked + .purple-slider {
     overflow: hidden;
 }
 
-.theme-light .support-hero-banner {
+body:not(.dark) .settings-page .support-hero-banner {
     background: linear-gradient(135deg, #ffffff 0%, #f4f4f5 100%);
     border-color: #e4e4e7;
 }
@@ -1056,7 +1081,7 @@ input:checked + .purple-slider {
     outline: none;
 }
 
-.theme-light .select-banner {
+body:not(.dark) .settings-page .select-banner {
     background-color: #ffffff !important;
 }
 
@@ -1091,7 +1116,7 @@ input:checked + .purple-slider {
     border-radius: 20px;
 }
 
-.theme-light .info-box {
+body:not(.dark) .settings-page .info-box {
     background: #f0fdf4;
     border-color: #bbf7d0;
 }
@@ -1136,7 +1161,7 @@ input:checked + .purple-slider {
 }
 
 /* Si el fondo es blanco, la carta es blanca pura con sombra sutil */
-.theme-light .support-card {
+body:not(.dark) .settings-page .support-card {
     background-color: #ffffff !important;
     box-shadow: 0 10px 25px rgba(0,0,0,0.04);
 }

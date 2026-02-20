@@ -8,6 +8,7 @@ import {
 import './Teams.css';
 import ViewTeamModal from './ViewTeamModal'; 
 import { useNotification } from '../../../context/NotificationContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -23,6 +24,7 @@ const Team = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { addToast } = useNotification();
+    const { isDarkMode } = useTheme();
     
     // --- ESTADOS ---
     const [teams, setTeams] = useState([]);
@@ -151,7 +153,7 @@ const filteredTeams = teams.filter(team => {
 });
 
     return (
-        <div className="teams-dashboard-layout">
+        <div className={`teams-dashboard-layout ${!isDarkMode ? 'theme-light' : ''}`}>
             <main className="dashboard-content">
                 <header className="content-header">
                     <div>

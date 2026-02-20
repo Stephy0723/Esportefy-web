@@ -227,6 +227,104 @@
 }
 .btn-view-mini:hover { background: white; color: black; }
 
+/* =========================================
+   TEMA CLARO (OVERRIDES)
+   ========================================= */
+.teams-dashboard-layout.theme-light {
+    background-color: #f5f7fb;
+    color: #111827;
+}
+
+.teams-dashboard-layout.theme-light .content-header p {
+    color: #6b7280;
+}
+
+.teams-dashboard-layout.theme-light .search-container input {
+    background: #ffffff;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.teams-dashboard-layout.theme-light .search-icon {
+    color: #6b7280;
+}
+
+.teams-dashboard-layout.theme-light .category-pills button {
+    background: #ffffff;
+    border-color: #d1d5db;
+    color: #4b5563;
+}
+
+.teams-dashboard-layout.theme-light .category-pills button:hover,
+.teams-dashboard-layout.theme-light .category-pills button.active {
+    border-color: #8edb15;
+    color: #111827;
+    background: rgba(142, 219, 21, 0.15);
+}
+
+.teams-dashboard-layout.theme-light .dashboard-sidebar-right {
+    background: #ffffff;
+    border-left-color: #e5e7eb;
+}
+
+.teams-dashboard-layout.theme-light .sidebar-widget h3,
+.teams-dashboard-layout.theme-light .mini-event .details small {
+    color: #6b7280;
+}
+
+.teams-dashboard-layout.theme-light .mini-event {
+    background: #ffffff;
+    border-left-color: #22c55e;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.teams-dashboard-layout.theme-light .mini-event .time,
+.teams-dashboard-layout.theme-light .mini-event .details strong {
+    color: #111827;
+}
+
+.teams-dashboard-layout.theme-light .modal-overlay {
+    background: rgba(17, 24, 39, 0.35);
+}
+
+.teams-dashboard-layout.theme-light .modal-content-dark {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.22);
+    color: #111827;
+}
+
+.teams-dashboard-layout.theme-light .btn-close-x {
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.teams-dashboard-layout.theme-light .info-section,
+.teams-dashboard-layout.theme-light .member-row-item,
+.teams-dashboard-layout.theme-light .form-hint {
+    background: #f8fafc;
+    border-color: #e5e7eb;
+}
+
+.teams-dashboard-layout.theme-light .info-section label,
+.teams-dashboard-layout.theme-light .member-meta,
+.teams-dashboard-layout.theme-light .form-hint {
+    color: #6b7280;
+}
+
+.teams-dashboard-layout.theme-light .preview-input,
+.teams-dashboard-layout.theme-light .team-join-form input,
+.teams-dashboard-layout.theme-light .team-join-form select {
+    background: #ffffff;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.teams-dashboard-layout.theme-light .btn-secondary-small {
+    border-color: #d1d5db;
+    color: #374151;
+}
+
 /* Responsive */
 @media (max-width: 1000px) {
     .teams-dashboard-layout { grid-template-columns: 1fr; }
