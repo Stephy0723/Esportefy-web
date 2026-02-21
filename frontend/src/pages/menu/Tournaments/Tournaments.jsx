@@ -55,7 +55,9 @@ const PROMO_SLIDES = [
         cta: 'Explorar Torneos',
         ctaIcon: 'bx-right-arrow-alt',
         ctaAction: 'scroll',
-        particles: ['bx-game', 'bx-joystick', 'bx-trophy', 'bx-medal']
+        particles: ['bx-game', 'bx-joystick', 'bx-trophy', 'bx-medal', 'bx-target-lock', 'bx-bolt-circle'],
+        hudTag: 'ARENA::ACTIVE',
+        hudSignal: 'LIVE',
     },
     {
         id: 2,
@@ -68,7 +70,9 @@ const PROMO_SLIDES = [
         cta: 'Crear Torneo',
         ctaIcon: 'bx-plus',
         ctaAction: 'create',
-        particles: ['bx-crown', 'bx-star', 'bx-shield', 'bx-diamond']
+        particles: ['bx-crown', 'bx-star', 'bx-shield', 'bx-diamond', 'bx-analyse', 'bx-world'],
+        hudTag: 'ORG::DEPLOY',
+        hudSignal: 'READY',
     },
     {
         id: 3,
@@ -81,8 +85,69 @@ const PROMO_SLIDES = [
         cta: 'Armar Equipo',
         ctaIcon: 'bx-group',
         ctaAction: 'team',
-        particles: ['bx-user', 'bx-group', 'bx-rocket', 'bx-world']
+        particles: ['bx-user', 'bx-group', 'bx-rocket', 'bx-world', 'bx-run', 'bx-user-plus'],
+        hudTag: 'SQUAD::SYNC',
+        hudSignal: 'SCAN',
+    },
+    {
+        id: 4,
+        gradient: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b69 50%, #11001c 100%)',
+        accent: '#bf5af2',
+        icon: 'bx-calendar-event',
+        badge: 'TEMPORADA 2026',
+        title: 'LA NUEVA ERA COMPETITIVA',
+        subtitle: 'Nuevas reglas, nuevos premios, nuevas leyendas. La temporada más grande de Esportefy.',
+        cta: 'Ver Calendario',
+        ctaIcon: 'bx-calendar',
+        ctaAction: 'scroll',
+        particles: ['bx-calendar', 'bx-star', 'bx-flame', 'bx-trophy', 'bx-rocket', 'bx-crown'],
+        hudTag: 'SEASON::2026',
+        hudSignal: 'NEW',
+    },
+    {
+        id: 5,
+        gradient: 'linear-gradient(135deg, #0a1628 0%, #0c2445 50%, #071a30 100%)',
+        accent: '#00d4ff',
+        icon: 'bx-broadcast',
+        badge: 'ESPORTEFY LIVE',
+        title: 'TRANSMITE TU TORNEO',
+        subtitle: 'Conecta tu stream, comparte tu gameplay y haz crecer tu audiencia en cada competencia.',
+        cta: 'Ir a TV',
+        ctaIcon: 'bx-play-circle',
+        ctaAction: 'tv',
+        particles: ['bx-broadcast', 'bx-camera', 'bx-play', 'bx-microphone', 'bx-video', 'bx-tv'],
+        hudTag: 'STREAM::RELAY',
+        hudSignal: 'AIR',
+    },
+    {
+        id: 6,
+        gradient: 'linear-gradient(135deg, #1c1107 0%, #3d2400 50%, #1a1000 100%)',
+        accent: '#ffc107',
+        icon: 'bx-diamond',
+        badge: 'PREMIO MAYOR',
+        title: 'GANA PREMIOS REALES',
+        subtitle: 'Cash prizes, skins exclusivos y reconocimiento global. Tu habilidad tiene valor.',
+        cta: 'Ver Premios',
+        ctaIcon: 'bx-gift',
+        ctaAction: 'scroll',
+        particles: ['bx-diamond', 'bx-dollar', 'bx-gift', 'bx-coin', 'bx-medal', 'bx-crown'],
+        hudTag: 'LOOT::VAULT',
+        hudSignal: 'DROP',
     }
+];
+
+/* ═══════════════════════════════════════
+   SPONSORS — branding partners
+   ═══════════════════════════════════════ */
+const SPONSORS = [
+    { name: 'Razer', icon: 'bx-mouse', color: '#00ff00', url: '#' },
+    { name: 'HyperX', icon: 'bx-headphone', color: '#ff0000', url: '#' },
+    { name: 'Red Bull', icon: 'bx-bolt-circle', color: '#dc0032', url: '#' },
+    { name: 'Discord', icon: 'bxl-discord-alt', color: '#5865F2', url: '#' },
+    { name: 'Logitech', icon: 'bx-game', color: '#00b8fc', url: '#' },
+    { name: 'NVIDIA', icon: 'bx-chip', color: '#76b900', url: '#' },
+    { name: 'SteelSeries', icon: 'bx-joystick', color: '#ff5200', url: '#' },
+    { name: 'MSI', icon: 'bx-desktop', color: '#ff0000', url: '#' },
 ];
 
 const STATUS_CONFIG = {
@@ -174,6 +239,12 @@ const Tournaments = () => {
   const [rosterTeamIds, setRosterTeamIds] = useState([]);
   const [search, setSearch] = useState('');
   const [activeStatus, setActiveStatus] = useState('all');
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [searchFilters, setSearchFilters] = useState({
+      freeOnly: false,
+      hasSlots: false,
+      sortBy: 'newest' // newest, prize, slots
+  });
 
   const userTeamIds = Array.isArray(user?.teams)
     ? user.teams.map((t) => String(t?._id || t))
@@ -326,14 +397,46 @@ useEffect(() => {
         t.title?.toLowerCase().includes(q) ||
         t.game?.toLowerCase().includes(q) ||
         t.organizer?.toLowerCase().includes(q) ||
-        t.tournamentId?.toLowerCase().includes(q)
+        t.tournamentId?.toLowerCase().includes(q) ||
+        t.format?.toLowerCase().includes(q) ||
+        t.platform?.toLowerCase().includes(q)
       );
     }
     if (activeStatus !== 'all') {
       list = list.filter(t => t.status === activeStatus);
     }
+    // Advanced filters
+    if (searchFilters.freeOnly) {
+      list = list.filter(t => !t.entryFee || t.entryFee === 'Gratis' || t.entryFee === '0');
+    }
+    if (searchFilters.hasSlots) {
+      list = list.filter(t => {
+        const [occ, max] = (t.slots || '0/0').split('/').map(Number);
+        return occ < max;
+      });
+    }
+    // Sorting
+    if (searchFilters.sortBy === 'prize') {
+      list = [...list].sort((a, b) => {
+        const pa = parseFloat(String(a.prize || '0').replace(/[^0-9.]/g, '')) || 0;
+        const pb = parseFloat(String(b.prize || '0').replace(/[^0-9.]/g, '')) || 0;
+        return pb - pa;
+      });
+    } else if (searchFilters.sortBy === 'slots') {
+      list = [...list].sort((a, b) => {
+        const [aO, aM] = (a.slots || '0/0').split('/').map(Number);
+        const [bO, bM] = (b.slots || '0/0').split('/').map(Number);
+        return (bM - bO) - (aM - aO); // more available first
+      });
+    } else {
+      list = [...list].sort((a, b) => {
+        const da = new Date(a.dateRaw || 0).getTime();
+        const db = new Date(b.dateRaw || 0).getTime();
+        return db - da;
+      });
+    }
     return list;
-  }, [filteredTournaments, search, activeStatus]);
+  }, [filteredTournaments, search, activeStatus, searchFilters]);
 
   // --- STATS ---
   const stats = useMemo(() => {
@@ -852,31 +955,71 @@ useEffect(() => {
                 <div className="tournaments-page">
                     
                     {/* ═══ HERO / PROMO CAROUSEL ═══ */}
-                    <div className="tn__hero" style={{ background: activeSlide.gradient }}>
-                        {/* Animated particles */}
+                    <div className="tn__hero" style={{ background: activeSlide.gradient, '--accent': activeSlide.accent }}>
+                        {/* Animated neon border */}
+                        <div className="tn__hero-neon-border" />
+
+                        {/* Scanline overlay */}
+                        <div className="tn__hero-scanlines" />
+
+                        {/* Grid overlay */}
+                        <div className="tn__hero-grid-overlay" />
+
+                        {/* Animated particles (more, with glow) */}
                         <div className="tn__hero-particles">
                             {activeSlide.particles.map((p, i) => (
-                                <i key={`${current}-${i}`} className={`bx ${p} tn__particle`} style={{ '--delay': `${i * 0.4}s`, '--x': `${20 + i * 22}%`, color: activeSlide.accent }} />
+                                <i 
+                                    key={`${current}-${i}`} 
+                                    className={`bx ${p} tn__particle`} 
+                                    style={{ 
+                                        '--delay': `${i * 0.7}s`, 
+                                        '--x': `${10 + i * 15}%`,
+                                        '--size': `${1.2 + (i % 3) * 0.8}rem`,
+                                        color: activeSlide.accent,
+                                        filter: `drop-shadow(0 0 ${6 + i * 2}px ${activeSlide.accent})`
+                                    }} 
+                                />
                             ))}
                         </div>
-                        <div className="tn__hero-glow" style={{ background: `radial-gradient(ellipse at 30% 80%, ${activeSlide.accent}15 0%, transparent 60%)` }} />
-                        
-                        <div className="tn__hero-content">
-                            <span className="tn__hero-badge" style={{ background: `${activeSlide.accent}20`, color: activeSlide.accent, borderColor: `${activeSlide.accent}40` }}>
+
+                        {/* Ambient glow */}
+                        <div className="tn__hero-glow" style={{ background: `radial-gradient(ellipse at 20% 80%, ${activeSlide.accent}22 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, ${activeSlide.accent}11 0%, transparent 50%)` }} />
+
+                        {/* HUD overlay — top-left data readout */}
+                        <div className="tn__hero-hud">
+                            <span className="tn__hud-signal" style={{ color: activeSlide.accent }}>
+                                <span className="tn__hud-dot-pulse" style={{ background: activeSlide.accent }} />
+                                {activeSlide.hudSignal}
+                            </span>
+                            <span className="tn__hud-tag">{activeSlide.hudTag}</span>
+                        </div>
+
+                        {/* Main content with staggered entrance */}
+                        <div className="tn__hero-content" key={current}>
+                            <span className="tn__hero-badge" style={{ background: `${activeSlide.accent}15`, color: activeSlide.accent, borderColor: `${activeSlide.accent}35` }}>
                                 <i className={`bx ${activeSlide.icon}`}></i> {activeSlide.badge}
                             </span>
-                            <h1 className="tn__hero-title">{activeSlide.title}</h1>
+
+                            {/* Glitch title */}
+                            <h1 className="tn__hero-title" data-text={activeSlide.title}>
+                                {activeSlide.title}
+                            </h1>
+
                             <p className="tn__hero-subtitle">{activeSlide.subtitle}</p>
+
                             <div className="tn__hero-actions">
                                 <button 
                                     className="tn__hero-btn tn__hero-btn--primary" 
-                                    style={{ background: activeSlide.accent, boxShadow: `0 8px 25px ${activeSlide.accent}40` }}
+                                    style={{ background: activeSlide.accent, boxShadow: `0 0 30px ${activeSlide.accent}50, 0 8px 25px ${activeSlide.accent}30` }}
                                     onClick={() => {
                                         if (activeSlide.ctaAction === 'create') handleCreateClick();
                                         else if (activeSlide.ctaAction === 'team') navigate('/create-team');
+                                        else if (activeSlide.ctaAction === 'tv') navigate('/tv');
                                     }}
                                 >
-                                    {activeSlide.cta} <i className={`bx ${activeSlide.ctaIcon}`}></i>
+                                    <span className="tn__btn-text">{activeSlide.cta}</span>
+                                    <i className={`bx ${activeSlide.ctaIcon}`}></i>
+                                    <span className="tn__btn-shine" />
                                 </button>
                                 <button className="tn__hero-btn tn__hero-btn--ghost" onClick={() => setShowInfoModal(true)}>
                                     Más Info <i className='bx bx-info-circle'></i>
@@ -884,10 +1027,23 @@ useEffect(() => {
                             </div>
                         </div>
 
-                        {/* Indicator dots */}
+                        {/* Large decorative icon (background watermark) */}
+                        <div className="tn__hero-watermark">
+                            <i className={`bx ${activeSlide.icon}`} style={{ color: activeSlide.accent }}></i>
+                        </div>
+
+                        {/* Navigation dots — redesigned as bars */}
                         <div className="tn__hero-dots">
-                            {PROMO_SLIDES.map((_, index) => (
-                                <button key={index} className={`tn__hero-dot ${index === current ? 'active' : ''}`} onClick={() => handleDotClick(index)} style={index === current ? { background: activeSlide.accent, boxShadow: `0 0 8px ${activeSlide.accent}` } : {}} />
+                            {PROMO_SLIDES.map((s, index) => (
+                                <button 
+                                    key={index} 
+                                    className={`tn__hero-dot ${index === current ? 'active' : ''}`} 
+                                    onClick={() => handleDotClick(index)} 
+                                    style={index === current ? { '--dot-accent': activeSlide.accent } : {}}
+                                >
+                                    <span className="tn__dot-fill" />
+                                    {index === current && <span className="tn__dot-label">{s.badge}</span>}
+                                </button>
                             ))}
                         </div>
                         
@@ -935,33 +1091,79 @@ useEffect(() => {
                     </div>
 
                                         {/* ═══ HEADER + ACTIONS + SEARCH ═══ */}
-                    <div className="header-actions">
-                        <div className="tn__header-left">
-                            <h1><i className='bx bx-trophy'></i> Torneos</h1>
-                            <p>Explora, compite y gana premios.</p>
+                    <div className="tn__command-bar">
+                        <div className="tn__cmd-search">
+                            <i className='bx bx-search'></i>
+                            <input 
+                                type="text" 
+                                placeholder="Buscar torneo, juego, organizador, formato..." 
+                                value={search} 
+                                onChange={(e) => setSearch(e.target.value)} 
+                            />
+                            {search && (
+                                <button className="tn__cmd-clear" onClick={() => setSearch('')}>
+                                    <i className='bx bx-x'></i>
+                                </button>
+                            )}
+                            <div className="tn__cmd-divider" />
+                            <button 
+                                className={`tn__cmd-filter-btn ${showAdvancedSearch ? 'active' : ''}`} 
+                                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                                title="Filtros avanzados"
+                            >
+                                <i className='bx bx-slider-alt'></i>
+                                <span>Filtros</span>
+                            </button>
                         </div>
-                        <div className="tn__header-right">
-                            <div className="tn__search-box">
-                                <i className='bx bx-search'></i>
-                                <input 
-                                    type="text" 
-                                    placeholder="Buscar torneo, juego, organizador..." 
-                                    value={search} 
-                                    onChange={(e) => setSearch(e.target.value)} 
-                                />
-                                {search && (
-                                    <button className="tn__search-clear" onClick={() => setSearch('')}>
-                                        <i className='bx bx-x'></i>
-                                    </button>
-                                )}
-                            </div>
-                            <div className="action-group">
-                                <button className="create-btn toggle-right-sidebar-btn mobile-only" onClick={(e) => { e.stopPropagation(); setIsRightPanelOpen(!isRightPanelOpen); }}><i className='bx bx-layout'></i> Info</button>
-                                <button className="info-btn" onClick={() => setShowInfoModal(true)} title="¿Cómo ser organizador?"><i className='bx bx-question-mark'></i></button>
-                                <button className="create-btn" onClick={handleCreateClick}><i className='bx bx-plus'></i> Crear Torneo</button>
-                            </div>
+                        <div className="tn__cmd-actions">
+                            <button className="tn__cmd-icon-btn toggle-right-sidebar-btn mobile-only" onClick={(e) => { e.stopPropagation(); setIsRightPanelOpen(!isRightPanelOpen); }}>
+                                <i className='bx bx-layout'></i>
+                            </button>
+                            <button className="tn__cmd-icon-btn" onClick={() => setShowInfoModal(true)} title="¿Cómo ser organizador?">
+                                <i className='bx bx-info-circle'></i>
+                            </button>
+                            <button className="tn__cmd-create" onClick={handleCreateClick}>
+                                <i className='bx bx-plus'></i> <span>Crear Torneo</span>
+                            </button>
                         </div>
                     </div>
+
+                    {/* ═══ ADVANCED FILTERS PANEL ═══ */}
+                    {showAdvancedSearch && (
+                        <div className="tn__filters-panel">
+                            <div className="tn__fp-group">
+                                <label className="tn__fp-toggle">
+                                    <input type="checkbox" checked={searchFilters.freeOnly} onChange={(e) => setSearchFilters(p => ({...p, freeOnly: e.target.checked}))} />
+                                    <span className="tn__fp-toggle-track"><span className="tn__fp-toggle-thumb" /></span>
+                                    <span className="tn__fp-toggle-label"><i className='bx bx-gift'></i> Solo gratuitos</span>
+                                </label>
+                                <label className="tn__fp-toggle">
+                                    <input type="checkbox" checked={searchFilters.hasSlots} onChange={(e) => setSearchFilters(p => ({...p, hasSlots: e.target.checked}))} />
+                                    <span className="tn__fp-toggle-track"><span className="tn__fp-toggle-thumb" /></span>
+                                    <span className="tn__fp-toggle-label"><i className='bx bx-door-open'></i> Con cupos disponibles</span>
+                                </label>
+                            </div>
+                            <div className="tn__fp-divider" />
+                            <div className="tn__fp-group">
+                                <span className="tn__fp-group-label">Ordenar</span>
+                                <div className="tn__fp-pills">
+                                    {[
+                                        { key: 'newest', label: 'Recientes', icon: 'bx-time-five' },
+                                        { key: 'prize', label: 'Mayor premio', icon: 'bx-trophy' },
+                                        { key: 'slots', label: 'Más cupos', icon: 'bx-group' },
+                                    ].map(s => (
+                                        <button 
+                                            key={s.key}
+                                            className={`tn__fp-pill ${searchFilters.sortBy === s.key ? 'active' : ''}`}
+                                            onClick={() => setSearchFilters(p => ({...p, sortBy: s.key}))}
+                                        >
+                                            <i className={`bx ${s.icon}`}></i> {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ═══ STATUS FILTERS ═══ */}
                     <div className="tn__status-filters">
@@ -1009,6 +1211,34 @@ useEffect(() => {
                             )}
                         </div>
                     )}
+
+                    {/* ═══ SPONSORS SHOWCASE ═══ */}
+                    <div className="tn__sponsors-showcase">
+                        <div className="tn__spn-header">
+                            <div className="tn__spn-badge">
+                                <i className='bx bx-diamond'></i>
+                                <span>POWERED BY</span>
+                            </div>
+                        </div>
+                        <div className="tn__spn-grid">
+                            {SPONSORS.map((sp, i) => (
+                                <a 
+                                    key={`sp-${i}`} 
+                                    className="tn__spn-card" 
+                                    href={sp.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ '--sp-color': sp.color }}
+                                >
+                                    <div className="tn__spn-icon-wrap">
+                                        <i className={`bx ${sp.icon}`}></i>
+                                    </div>
+                                    <span className="tn__spn-name">{sp.name}</span>
+                                    <span className="tn__spn-tag">Partner</span>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
 
                     {/* ═══ TOURNAMENTS GRID ═══ */}
                     <div className="tournaments-grid">
@@ -1150,38 +1380,110 @@ useEffect(() => {
             <div className={`sidebar-area right-sidebar ${isRightPanelOpen ? 'open' : ''}`} ref={rightPanelRef}>
                 <aside className="right-info-sidebar">
                     
-                    {/* Botón cerrar para móvil */}
                     <button className="close-right-sidebar mobile-only" onClick={() => setIsRightPanelOpen(false)}>
                         <i className='bx bx-x'></i>
                     </button>
-                    
-                    {/* WIDGET 1: ACCIONES RÁPIDAS (Lo mantenemos) */}
-                    <div className="sidebar-widget">
-                        <h3><i className='bx bx-bolt-circle'></i> Acciones Rápidas</h3>
-                        <div className="quick-actions-grid">
-                            <button className="qa-btn" onClick={() => navigate('/create-team')}>
-                                <i className='bx bx-group'></i> Crear Equipo
-                            </button>
-                            <button className="qa-btn" onClick={() => navigate('/premium')}>
-                                <i className='bx bx-star'></i> Premium
-                            </button>
+
+                    {/* WIDGET: RESUMEN RÁPIDO */}
+                    <div className="tn__sw tn__sw--summary">
+                        <div className="tn__sw-header">
+                            <i className='bx bx-pulse'></i>
+                            <span>Estado en Vivo</span>
+                        </div>
+                        <div className="tn__sw-live-stats">
+                            <div className="tn__sw-live-item">
+                                <span className="tn__sw-live-val" style={{ color: '#00ff88' }}>{stats.active}</span>
+                                <span className="tn__sw-live-label">Torneos activos</span>
+                            </div>
+                            <div className="tn__sw-live-item">
+                                <span className="tn__sw-live-val" style={{ color: '#ffd700' }}>{stats.total}</span>
+                                <span className="tn__sw-live-label">Total torneos</span>
+                            </div>
+                            <div className="tn__sw-live-item">
+                                <span className="tn__sw-live-val" style={{ color: '#4facfe' }}>${stats.totalPrize.toLocaleString()}</span>
+                                <span className="tn__sw-live-label">En premios</span>
+                            </div>
+                            <div className="tn__sw-live-item">
+                                <span className="tn__sw-live-val" style={{ color: '#f093fb' }}>{stats.uniqueGames}</span>
+                                <span className="tn__sw-live-label">Juegos únicos</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* WIDGET 2: CALENDARIO */}
-                    <div className="sidebar-widget">
-                        {/* Puedes pasarle datos reales en el futuro con: <MatchCalendar matches={misDatos} /> */}
+                    {/* WIDGET: CALENDARIO */}
+                    <div className="tn__sw">
+                        <div className="tn__sw-header">
+                            <i className='bx bx-calendar'></i>
+                            <span>Calendario</span>
+                        </div>
                         <MatchCalendar />
                     </div>
 
-                    {/* WIDGET 3: (Opcional) BANNER PUBLICIDAD O INFO EXTRA */}
-                    <div className="sidebar-widget tn__promo-widget">
-                        <div className="tn__promo-icon"><i className='bx bx-search-alt-2'></i></div>
-                        <h4>¿Buscas Scrims?</h4>
-                        <p>Encuentra rivales de tu nivel ahora mismo.</p>
-                        <button className="tn__promo-btn" onClick={() => navigate('/teams')}>
-                            <i className='bx bx-target-lock'></i> Buscar Scrim
-                        </button>
+                    {/* WIDGET: TOP JUEGOS */}
+                    <div className="tn__sw">
+                        <div className="tn__sw-header">
+                            <i className='bx bx-trending-up'></i>
+                            <span>Top Juegos</span>
+                        </div>
+                        <div className="tn__sw-top-games">
+                            {(() => {
+                                const gameCounts = {};
+                                tournaments.forEach(t => {
+                                    gameCounts[t.game] = (gameCounts[t.game] || 0) + 1;
+                                });
+                                return Object.entries(gameCounts)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 5)
+                                    .map(([game, count], idx) => (
+                                        <div key={game} className="tn__sw-game-row" onClick={() => setActiveFilter(game)}>
+                                            <span className="tn__sw-game-rank">#{idx + 1}</span>
+                                            <i className={`bx ${GAME_CONFIG[game]?.icon || 'bx-game'}`} style={{ color: GAME_CONFIG[game]?.color || '#fff' }}></i>
+                                            <span className="tn__sw-game-name">{game}</span>
+                                            <span className="tn__sw-game-count">{count}</span>
+                                        </div>
+                                    ));
+                            })()}
+                            {tournaments.length === 0 && (
+                                <div className="tn__sw-empty-mini">
+                                    <i className='bx bx-ghost'></i>
+                                    <span>Sin datos aún</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* WIDGET: ACCIONES */}
+                    <div className="tn__sw">
+                        <div className="tn__sw-header">
+                            <i className='bx bx-bolt-circle'></i>
+                            <span>Acciones</span>
+                        </div>
+                        <div className="tn__sw-actions">
+                            <button className="tn__sw-action-btn" onClick={() => navigate('/create-team')}>
+                                <i className='bx bx-group'></i>
+                                <div>
+                                    <strong>Crear Equipo</strong>
+                                    <span>Arma tu squad</span>
+                                </div>
+                                <i className='bx bx-chevron-right tn__sw-action-arrow'></i>
+                            </button>
+                            <button className="tn__sw-action-btn" onClick={handleCreateClick}>
+                                <i className='bx bx-trophy'></i>
+                                <div>
+                                    <strong>Crear Torneo</strong>
+                                    <span>Organiza tu evento</span>
+                                </div>
+                                <i className='bx bx-chevron-right tn__sw-action-arrow'></i>
+                            </button>
+                            <button className="tn__sw-action-btn" onClick={() => navigate('/teams')}>
+                                <i className='bx bx-target-lock'></i>
+                                <div>
+                                    <strong>Buscar Scrim</strong>
+                                    <span>Encuentra rivales</span>
+                                </div>
+                                <i className='bx bx-chevron-right tn__sw-action-arrow'></i>
+                            </button>
+                        </div>
                     </div>
 
                 </aside>

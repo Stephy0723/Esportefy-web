@@ -39,7 +39,7 @@ const UserSchema = new mongoose.Schema({
     // -- Datos visuales ---
     status: {
             type: String,
-            enum: ['online', 'dnd', 'tournament', 'offline'],
+            enum: ['online', 'gaming', 'tournament', 'streaming', 'searching', 'afk', 'dnd', 'offline'],
             default: 'online'
             },
 

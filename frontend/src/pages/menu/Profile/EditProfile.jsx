@@ -255,39 +255,39 @@ const EditProfile = () => {
         setSaveMsg(null);
         const token = getToken();
 
-        // Whitelist only editable fields
-        const editableFields = [
-            'username', 'fullName', 'country', 'phone', 'gender', 'birthDate',
-            'avatar', 'bio', 'selectedGames', 'platforms', 'goals', 'experience',
-            'languages', 'preferredRoles', 'lookingForTeam',
-            'isProfileHidden', 'selectedFrameId', 'selectedBgId',
-            'status', 'selectedTagId'
-        ];
-
+        // Only send fields that the backend allowedFields supports
         const data = new FormData();
-        editableFields.forEach(key => {
+
+        // String fields
+        const stringFields = [
+            'username', 'fullName', 'country', 'phone', 'gender',
+            'avatar', 'bio', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'
+        ];
+        stringFields.forEach(key => {
             const val = formData[key];
-            if (Array.isArray(val)) {
-                val.forEach(v => data.append(`${key}[]`, v));
-            } else if (typeof val === 'boolean') {
-                data.append(key, val.toString());
-            } else if (val !== undefined && val !== null) {
+            if (val !== undefined && val !== null && val !== '') {
                 data.append(key, val);
             }
         });
-        // Social links as dot-notation keys
-        Object.entries(formData.socialLinks).forEach(([key, val]) => {
-            data.append(`socialLinks.${key}`, val || '');
+
+        // Date fields — only send if valid (not empty)
+        if (formData.birthDate) {
+            data.append('birthDate', formData.birthDate);
+        }
+
+        // Array fields — send as comma-separated (backend splits on comma)
+        const arrayFields = ['selectedGames', 'platforms', 'goals', 'experience'];
+        arrayFields.forEach(key => {
+            const val = formData[key];
+            if (Array.isArray(val) && val.length > 0) {
+                data.append(key, val.join(','));
+            }
         });
+
         if (file) data.append('avatarFile', file);
 
         try {
-            const res = await axios.put(`${API_URL}/api/auth/update-profile`, data, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            const res = await axios.put(`${API_URL}/api/auth/update-profile`, data);
             // Sync localStorage for other components
             localStorage.setItem('esportefyUser', JSON.stringify(res.data));
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });

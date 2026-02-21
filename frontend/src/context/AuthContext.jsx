@@ -1,5 +1,6 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 import { API_URL } from '../config/api';
 
 const AuthContext = createContext();
@@ -10,7 +11,6 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const checkAuth = async () => {
-            const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('esportefyUser');
 
             // 1. Carga inicial rápida desde LocalStorage para no mostrar la App vacía
@@ -22,31 +22,23 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-            // 2. Si hay un token, vamos a la Base de Datos por los datos reales (isOrganizer, etc)
-            if (token) {
-                try {
-                    // AJUSTA ESTA URL A TU ENDPOINT DE PERFIL REAL
-                    const response = await fetch(`${API_URL}/api/auth/profile`, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        const freshUserData = await response.json();
-                        // Actualizamos tanto el estado como el LocalStorage con los datos de la DB
-                        setUser(freshUserData);
-                        localStorage.setItem('esportefyUser', JSON.stringify(freshUserData));
-                    } else if (response.status === 401) {
-                        // Si el token expiró, cerramos sesión
-                        logout();
-                    }
-                } catch (error) {
-                    console.error("Error al sincronizar con la base de datos:", error);
+            // 2. Sincronizar con la BD usando cookies (HttpOnly auth_token)
+            try {
+                const response = await axios.get(`${API_URL}/api/auth/profile`);
+                const freshUserData = response.data;
+                setUser(freshUserData);
+                localStorage.setItem('esportefyUser', JSON.stringify(freshUserData));
+            } catch (error) {
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    // Cookie expirada o no existe — limpiar sesión sin redirect loop
+                    localStorage.removeItem('esportefyUser');
+                    setUser(null);
+                } else {
+                    // Error de red — mantener datos cacheados si existen
+                    console.error("Error al sincronizar con la base de datos:", error.message);
                 }
             }
+
             setLoading(false);
         };
 
@@ -63,22 +55,22 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
-    const login = (userData, token) => {
+    const login = (userData) => {
         localStorage.setItem('esportefyUser', JSON.stringify(userData));
-        localStorage.setItem('token', token);
         setUser(userData);
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await axios.post(`${API_URL}/api/auth/logout`);
+        } catch (_) { /* ignore */ }
         localStorage.removeItem('esportefyUser');
         localStorage.removeItem('token');
         setUser(null);
-        // Usar navegación de React Router es mejor, pero esto funciona como reset total
         window.location.href = '/'; 
     };
 
     return (
-        // Se añade una validación para no retornar undefined si se usa fuera del Provider
         <AuthContext.Provider value={{ user, login, logout, loading }}>
             {children}
         </AuthContext.Provider>

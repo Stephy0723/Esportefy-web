@@ -12,17 +12,17 @@ import './Teams.css';
    ═══════════════════════════════════════ */
 const LEVEL_CONFIG = {
     casual:        { icon: 'bx-game',        color: '#8EDB15', label: 'Casual' },
-    amateur:       { icon: 'bx-joystick',    color: '#4facfe', label: 'Amateur' },
-    'semi-pro':    { icon: 'bx-target-lock', color: '#f093fb', label: 'Semi-Pro' },
-    universitario: { icon: 'bx-book-reader', color: '#3b82f6', label: 'Universitario' },
-    profesional:   { icon: 'bx-medal',       color: '#ef4444', label: 'Profesional' },
+    amateur:       { icon: 'bx-joystick',    color: '#00d4ff', label: 'Amateur' },
+    'semi-pro':    { icon: 'bx-target-lock', color: '#bf5af2', label: 'Semi-Pro' },
+    universitario: { icon: 'bx-book-reader', color: '#6366f1', label: 'Universitario' },
+    profesional:   { icon: 'bx-medal',       color: '#ff3b30', label: 'Profesional' },
     leyenda:       { icon: 'bx-crown',       color: '#ffd700', label: 'Leyenda' },
 };
 
 const GENDER_CONFIG = {
-    mixto:     { icon: 'bx-group',       color: '#8EDB15', label: 'Mixto' },
-    femenino:  { icon: 'bx-female-sign', color: '#ff007f', label: 'Femenino' },
-    masculino: { icon: 'bx-male-sign',   color: '#4facfe', label: 'Masculino' },
+    mixto:     { icon: 'bx-group',       color: '#06d6a0', label: 'Mixto' },
+    femenino:  { icon: 'bx-female-sign', color: '#ff2d78', label: 'Femenino' },
+    masculino: { icon: 'bx-male-sign',   color: '#ff4d2a', label: 'Masculino' },
 };
 
 const getTeamVisuals = (team) => {
@@ -51,17 +51,17 @@ const isNewTeam = (team) => {
 const TABS = [
     { key: 'all',            label: 'Todos',         icon: 'bx-grid-alt' },
     { key: 'myteams',        label: 'Mis Equipos',   icon: 'bx-star' },
-    { key: 'nuevo',          label: 'Nuevos',        icon: 'bx-bolt-circle', dot: '#00e676' },
+    { key: 'nuevo',          label: 'Nuevos',        icon: 'bx-bolt-circle', dot: '#39ff14' },
     { key: 'divider-1' },
-    { key: 'mixto',          label: 'Mixto',         icon: 'bx-group',        dot: '#8EDB15' },
-    { key: 'femenino',       label: 'Femenino',      icon: 'bx-female-sign',  dot: '#ff007f' },
-    { key: 'masculino',      label: 'Masculino',     icon: 'bx-male-sign',    dot: '#4facfe' },
+    { key: 'mixto',          label: 'Mixto',         icon: 'bx-group',        dot: '#06d6a0' },
+    { key: 'femenino',       label: 'Femenino',      icon: 'bx-female-sign',  dot: '#ff2d78' },
+    { key: 'masculino',      label: 'Masculino',     icon: 'bx-male-sign',    dot: '#ff4d2a' },
     { key: 'divider-2' },
     { key: 'casual',         label: 'Casual',        icon: 'bx-game',         dot: '#8EDB15' },
-    { key: 'amateur',        label: 'Amateur',       icon: 'bx-joystick',     dot: '#4facfe' },
-    { key: 'universitario',  label: 'Universitario', icon: 'bx-book-reader',  dot: '#3b82f6' },
-    { key: 'semi-pro',       label: 'Semi-Pro',      icon: 'bx-target-lock',  dot: '#f093fb' },
-    { key: 'profesional',    label: 'Pro',           icon: 'bx-medal',        dot: '#ef4444' },
+    { key: 'amateur',        label: 'Amateur',       icon: 'bx-joystick',     dot: '#00d4ff' },
+    { key: 'universitario',  label: 'Universitario', icon: 'bx-book-reader',  dot: '#6366f1' },
+    { key: 'semi-pro',       label: 'Semi-Pro',      icon: 'bx-target-lock',  dot: '#bf5af2' },
+    { key: 'profesional',    label: 'Pro',           icon: 'bx-medal',        dot: '#ff3b30' },
     { key: 'leyenda',        label: 'Leyenda',       icon: 'bx-crown',        dot: '#ffd700' },
 ];
 
@@ -80,10 +80,17 @@ const Team = () => {
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [isPreviewEditing, setIsPreviewEditing] = useState(false);
-    const [previewForm, setPreviewForm] = useState({});
-    const [logoFile, setLogoFile] = useState(null);
-    const [logoPreview, setLogoPreview] = useState(null);
+
+    // Join flow state
+    const [joinInviteCode, setJoinInviteCode] = useState('');
+    const [joinFormOpen, setJoinFormOpen] = useState(false);
+    const [joinSlotType, setJoinSlotType] = useState('starters');
+    const [joinSlotIndex, setJoinSlotIndex] = useState(0);
+    const [joinPlayer, setJoinPlayer] = useState({ nickname: '', gameId: '', region: '', email: '', role: '' });
+    const [joinSubmitting, setJoinSubmitting] = useState(false);
+    const [joinPhoto, setJoinPhoto] = useState(null);
+    const [joinPhotoPreview, setJoinPhotoPreview] = useState('');
+    const [joinSuccess, setJoinSuccess] = useState(false);
 
     const storedUser = localStorage.getItem('esportefyUser');
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -106,6 +113,81 @@ const Team = () => {
         return (team.joinRequests || []).filter(r => r.status === 'pending');
     };
 
+    const ROLE_NAMES_JOIN = {
+        "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
+        "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
+        "Wild Rift": ["Baron", "Jungle", "Mid", "Dragon", "Supp"],
+        "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
+        "CS2": ["Entry", "AWPer", "Lurker", "Support", "IGL"],
+        "Overwatch 2": ["Tank", "DPS", "DPS", "Support", "Support"],
+        "Rainbow Six Siege": ["Entry", "Support", "Flex", "Hard Breach", "Anchor"],
+        "Free Fire": ["Rusher", "Support", "Sniper", "IGL"],
+        "Fortnite": ["Fragger", "IGL", "Support", "Builder"],
+        "PUBG": ["Fragger", "IGL", "Support", "Scout"],
+        "Apex Legends": ["Fragger", "IGL", "Support"],
+        "Call of Duty": ["Slayer", "OBJ", "Support", "Flex"],
+        "Dota 2": ["Carry", "Mid", "Offlane", "Soft Supp", "Hard Supp"],
+        "Rocket League": ["Striker", "Midfielder", "Defender"],
+    };
+    const REGION_OPTIONS_JOIN = ["LAN", "LAS", "NA", "BR", "EUW", "EUNE", "TR", "RU", "OCE", "KR", "JP", "LATAM", "GLOBAL"];
+
+    const handleJoinPhotoChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) return addToast('La imagen no puede superar 5MB', 'error');
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return addToast('Solo JPG, PNG o WEBP', 'error');
+        setJoinPhoto(file);
+        setJoinPhotoPreview(URL.createObjectURL(file));
+    };
+
+    const handleJoinTeam = async (e, team) => {
+        e.preventDefault();
+        if (!joinPlayer.nickname.trim()) return addToast('Nickname requerido', 'error');
+        if (!joinInviteCode.trim()) return addToast('Código de invitación requerido', 'error');
+        try {
+            setJoinSubmitting(true);
+            const token = localStorage.getItem('token');
+            if (!token) return addToast('Debes iniciar sesión', 'error');
+
+            // Convert photo to base64 if provided
+            let photoData = '';
+            if (joinPhoto) {
+                photoData = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(joinPhoto);
+                });
+            }
+
+            await axios.post(
+                `${API_URL}/api/teams/${team._id}/requests`,
+                {
+                    inviteCode: joinInviteCode.trim(),
+                    slotType: joinSlotType,
+                    slotIndex: joinSlotIndex,
+                    player: { ...joinPlayer, photo: photoData }
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setJoinSuccess(true);
+        } catch (err) {
+            addToast(err.response?.data?.message || 'Error al enviar solicitud', 'error');
+        } finally {
+            setJoinSubmitting(false);
+        }
+    };
+
+    const resetJoinForm = () => {
+        setJoinFormOpen(false);
+        setJoinInviteCode('');
+        setJoinPlayer({ nickname: '', gameId: '', region: '', email: '', role: '' });
+        setJoinSlotType('starters');
+        setJoinSlotIndex(0);
+        setJoinPhoto(null);
+        setJoinPhotoPreview('');
+        setJoinSuccess(false);
+    };
+
     const handleRequestAction = async (teamId, requestId, action) => {
         try {
             const token = localStorage.getItem('token');
@@ -124,14 +206,7 @@ const Team = () => {
         }
     };
 
-    const handleLogoChange = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setLogoFile(file);
-        const reader = new FileReader();
-        reader.onloadend = () => setLogoPreview(reader.result);
-        reader.readAsDataURL(file);
-    };
+
 
     /* ── fetch ── */
     useEffect(() => {
@@ -224,6 +299,46 @@ const Team = () => {
                     <button className="th__btn-create" onClick={() => navigate('/create-team')}>
                         <i className='bx bx-plus'></i> Crear Equipo
                     </button>
+                    {currentUser && (
+                        <button
+                            className="th__btn-create th__btn-create--demo"
+                            onClick={async () => {
+                                try {
+                                    const token = localStorage.getItem('token');
+                                    const res = await axios.post(`${API_URL}/api/teams/seed-demo`, {}, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    addToast(res.data.message || 'Equipos demo creados', 'success');
+                                    const teamsRes = await axios.get(`${API_URL}/api/teams`);
+                                    setTeams(teamsRes.data);
+                                } catch (err) {
+                                    addToast(err.response?.data?.message || 'Error al crear equipos demo', 'error');
+                                }
+                            }}
+                        >
+                            <i className='bx bx-bot'></i> Demo Teams
+                        </button>
+                    )}
+                    {currentUser && (
+                        <button
+                            className="th__btn-create th__btn-create--third"
+                            onClick={async () => {
+                                try {
+                                    const token = localStorage.getItem('token');
+                                    const res = await axios.post(`${API_URL}/api/teams/seed-third-party`, {}, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    addToast(res.data.message || 'Equipos de terceros creados', 'success');
+                                    const teamsRes = await axios.get(`${API_URL}/api/teams`);
+                                    setTeams(teamsRes.data);
+                                } catch (err) {
+                                    addToast(err.response?.data?.message || 'Error al crear equipos de terceros', 'error');
+                                }
+                            }}
+                        >
+                            <i className='bx bx-group'></i> Equipos Ajenos
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -411,17 +526,19 @@ const Team = () => {
                                                 <i className='bx bx-user-voice'></i> {team.roster.coach.nickname}
                                             </span>
                                         )}
-                                        <button
-                                            className="th__card-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedTeam(team);
-                                                setIsViewModalOpen(true);
-                                            }}
-                                        >
-                                            {isMember ? 'Gestionar' : 'Unirse'}
-                                            <i className={`bx ${isMember ? 'bx-cog' : 'bx-log-in'}`}></i>
-                                        </button>
+                                        {(isCaptain || currentUser?.isAdmin) && (
+                                            <button
+                                                className="th__card-btn th__card-btn--manage"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedTeam(team);
+                                                    setIsViewModalOpen(true);
+                                                }}
+                                            >
+                                                Gestionar
+                                                <i className='bx bx-cog'></i>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -465,16 +582,20 @@ const Team = () => {
             {selectedTeam && isPreviewOpen && (() => {
                 const previewVis = getTeamVisuals(selectedTeam);
                 const previewStarters = Array.isArray(selectedTeam.roster?.starters) ? selectedTeam.roster.starters : [];
+                const previewSubs = Array.isArray(selectedTeam.roster?.subs) ? selectedTeam.roster.subs : [];
+                const previewCoach = selectedTeam.roster?.coach;
                 const previewFilled = previewStarters.filter(p => p?.nickname).length;
                 const previewTotal = selectedTeam.maxMembers || previewStarters.length || 0;
                 const previewIsCaptain = currentUser?._id && String(selectedTeam.captain?._id || selectedTeam.captain) === String(currentUser._id);
+                const previewIsAdmin = currentUser?.isAdmin;
+                const previewCanManage = previewIsCaptain || previewIsAdmin;
                 return (
-                <div className="modal-overlay" onClick={() => setIsPreviewOpen(false)}>
+                <div className="modal-overlay" onClick={() => { setIsPreviewOpen(false); resetJoinForm(); }}>
                     <div className="th__modal" onClick={(e) => e.stopPropagation()} style={{ '--modal-accent': previewVis.color }}>
                         {/* Themed banner header */}
                         <div className="th__modal-banner">
                             <div className="th__modal-banner-bg" />
-                            <button className="th__modal-close" onClick={() => setIsPreviewOpen(false)}>
+                            <button className="th__modal-close" onClick={() => { setIsPreviewOpen(false); resetJoinForm(); }}>
                                 <i className='bx bx-x'></i>
                             </button>
                             <div className="th__modal-hero">
@@ -511,33 +632,21 @@ const Team = () => {
                                     <i className='bx bx-category'></i>
                                     <div>
                                         <label>Categoría</label>
-                                        {isPreviewEditing ? (
-                                            <input className="preview-input" value={previewForm.category || ''} onChange={(e) => setPreviewForm({ ...previewForm, category: e.target.value })} />
-                                        ) : (
-                                            <p>{selectedTeam.category || 'Sin categoría'}</p>
-                                        )}
+                                        <p>{selectedTeam.category || 'Sin categoría'}</p>
                                     </div>
                                 </div>
                                 <div className="th__modal-info-item">
                                     <i className='bx bx-map'></i>
                                     <div>
                                         <label>País / Región</label>
-                                        {isPreviewEditing ? (
-                                            <input className="preview-input" value={previewForm.teamCountry || ''} onChange={(e) => setPreviewForm({ ...previewForm, teamCountry: e.target.value })} />
-                                        ) : (
-                                            <p>{selectedTeam.teamCountry || 'No definido'}</p>
-                                        )}
+                                        <p>{selectedTeam.teamCountry || 'No definido'}</p>
                                     </div>
                                 </div>
                                 <div className="th__modal-info-item">
                                     <i className='bx bx-trophy'></i>
                                     <div>
                                         <label>Nivel</label>
-                                        {isPreviewEditing ? (
-                                            <input className="preview-input" value={previewForm.teamLevel || ''} onChange={(e) => setPreviewForm({ ...previewForm, teamLevel: e.target.value })} />
-                                        ) : (
-                                            <p>{selectedTeam.teamLevel || 'No definido'}</p>
-                                        )}
+                                        <p>{selectedTeam.teamLevel || 'No definido'}</p>
                                     </div>
                                 </div>
                                 <div className="th__modal-info-item">
@@ -556,7 +665,7 @@ const Team = () => {
                                         </div>
                                     </div>
                                 )}
-                                {previewIsCaptain && selectedTeam.inviteCode && (
+                                {previewCanManage && selectedTeam.inviteCode && (
                                     <div className="th__modal-info-item th__modal-info-item--code">
                                         <i className='bx bx-key'></i>
                                         <div>
@@ -566,80 +675,264 @@ const Team = () => {
                                     </div>
                                 )}
                             </div>
-                            {isPreviewEditing && (
+                            {/* ── ROSTER TITULARES ── */}
+                            <div className="th__modal-section">
+                                <h4><i className='bx bx-group'></i> Titulares ({previewFilled}/{previewTotal})</h4>
+                                <div className="th__modal-roster-grid">
+                                    {previewStarters.map((p, i) => {
+                                        const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
+                                        const isCap = p?.user && String(p.user) === String(captainId);
+                                        return (
+                                            <div key={`st-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
+                                                <div className="th__modal-player-avatar">
+                                                    {p?.photo
+                                                        ? <img src={p.photo} alt="" />
+                                                        : p?.nickname
+                                                            ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
+                                                            : <i className='bx bx-user-plus'></i>
+                                                    }
+                                                    {isCap && <span className="th__modal-captain-crown"><i className='bx bxs-crown'></i></span>}
+                                                </div>
+                                                <div className="th__modal-player-info">
+                                                    <span className="th__modal-player-name">{p?.nickname || 'Vacante'}</span>
+                                                    {p?.role && <span className="th__modal-player-role">{p.role}</span>}
+                                                    {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {p.gameId}</span>}
+                                                    {p?.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {p.region}</span>}
+                                                    {previewCanManage && p?.email && <span className="th__modal-player-detail"><i className='bx bx-envelope'></i> {p.email}</span>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {previewStarters.length === 0 && (
+                                        <p className="th__modal-empty-text">Sin titulares registrados</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* ── ROSTER SUPLENTES ── */}
+                            {(previewSubs.length > 0 || selectedTeam.maxSubstitutes > 0) && (
                                 <div className="th__modal-section">
-                                    <h4><i className='bx bx-image'></i> Logo del Equipo</h4>
-                                    <div className="logo-upload-row">
-                                        <div className="logo-preview-box">
-                                            {logoPreview || selectedTeam.logo
-                                                ? <img src={logoPreview || selectedTeam.logo} alt="Logo equipo" />
-                                                : <span>Sin logo</span>
-                                            }
-                                        </div>
-                                        <input type="file" accept="image/*" onChange={handleLogoChange} />
+                                    <h4><i className='bx bx-transfer-alt'></i> Suplentes ({previewSubs.filter(p => p?.nickname).length}/{selectedTeam.maxSubstitutes || previewSubs.length})</h4>
+                                    <div className="th__modal-roster-grid">
+                                        {previewSubs.map((p, i) => (
+                                            <div key={`sub-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
+                                                <div className="th__modal-player-avatar">
+                                                    {p?.photo
+                                                        ? <img src={p.photo} alt="" />
+                                                        : p?.nickname
+                                                            ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
+                                                            : <i className='bx bx-user-plus'></i>
+                                                    }
+                                                </div>
+                                                <div className="th__modal-player-info">
+                                                    <span className="th__modal-player-name">{p?.nickname || 'Vacante'}</span>
+                                                    {p?.role && <span className="th__modal-player-role">{p.role}</span>}
+                                                    {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {p.gameId}</span>}
+                                                    {p?.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {p.region}</span>}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Roster section */}
+                            {/* ── COACH ── */}
                             <div className="th__modal-section">
-                                <h4><i className='bx bx-group'></i> Roster</h4>
-                                <div className="members-scroll-list">
-                                    {(() => {
-                                        const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
-                                        const captainFromRoster = (selectedTeam?.roster?.starters || []).find(p => String(p?.user) === String(captainId));
-                                        const captainName = selectedTeam?.captain?.fullName || captainFromRoster?.nickname || 'No definido';
-                                        const captainRole = captainFromRoster?.role || 'Capitan';
-                                        const captainRegion = captainFromRoster?.region || '';
-                                        return (
-                                            <div className="member-row-item">
-                                                <div className="member-avatar"><i className='bx bxs-crown'></i></div>
-                                                <div className="member-info">
-                                                    <span className="member-name">{captainName}</span>
-                                                    <span className="role-badge">{captainRole}</span>
-                                                    {captainRegion && <span className="member-meta">Region: {captainRegion}</span>}
+                                <h4><i className='bx bx-user-voice'></i> Coach / Staff</h4>
+                                {previewCoach && previewCoach.nickname ? (
+                                    <div className="th__modal-player th__modal-player--coach">
+                                        <div className="th__modal-player-avatar">
+                                            {previewCoach.photo
+                                                ? <img src={previewCoach.photo} alt="" />
+                                                : <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${previewCoach.nickname}`} alt="" />
+                                            }
+                                        </div>
+                                        <div className="th__modal-player-info">
+                                            <span className="th__modal-player-name">{previewCoach.nickname}</span>
+                                            <span className="th__modal-player-role">{previewCoach.role || 'Coach'}</span>
+                                            {previewCoach.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {previewCoach.gameId}</span>}
+                                            {previewCoach.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {previewCoach.region}</span>}
+                                            {previewCanManage && previewCoach.email && <span className="th__modal-player-detail"><i className='bx bx-envelope'></i> {previewCoach.email}</span>}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="th__modal-player th__modal-player--empty">
+                                        <div className="th__modal-player-avatar"><i className='bx bx-user-voice'></i></div>
+                                        <div className="th__modal-player-info">
+                                            <span className="th__modal-player-name">Sin coach asignado</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                        {/* ── JOIN SECTION — for all logged-in users ── */}
+                        {currentUser && (() => {
+                            const alreadyMember = isUserMember(selectedTeam);
+                            const st = selectedTeam;
+                            const maxS = st.maxMembers || st.roster?.starters?.length || 5;
+                            const maxSb = st.maxSubstitutes || st.roster?.subs?.length || 0;
+                            const roles = ROLE_NAMES_JOIN[st.game] || [];
+                            return (
+                                <div className="th__modal-section th__modal-join-section">
+                                    <h4><i className='bx bx-log-in-circle'></i> Unirse al Equipo</h4>
+                                    {alreadyMember ? (
+                                        <div className="th__join-gate" style={{ textAlign: 'center' }}>
+                                            <p className="th__join-gate-desc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--primary, #8EDB15)' }}>
+                                                <i className='bx bx-check-circle' style={{ fontSize: '1.3rem' }}></i>
+                                                Ya eres miembro de este equipo
+                                            </p>
+                                        </div>
+                                    ) : joinSuccess ? (
+                                        <div className="th__join-success">
+                                            <div className="th__join-success-icon">
+                                                <i className='bx bx-check-circle'></i>
+                                            </div>
+                                            <h5 className="th__join-success-title">¡Bien hecho!</h5>
+                                            <p className="th__join-success-desc">
+                                                Tu solicitud fue enviada correctamente.<br />
+                                                La confirmación está <strong>en espera</strong> — el líder del equipo recibirá tus datos para aceptar o rechazar tu ingreso.
+                                            </p>
+                                            <button className="th__join-success-btn" onClick={resetJoinForm}>
+                                                <i className='bx bx-check'></i> Entendido
+                                            </button>
+                                        </div>
+                                    ) : !joinFormOpen ? (
+                                        <div className="th__join-gate">
+                                            <p className="th__join-gate-desc">Ingresa el código de invitación para unirte a este equipo</p>
+                                            <div className="th__join-gate-row">
+                                                <div className="th__join-gate-input">
+                                                    <i className='bx bx-key'></i>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Código de invitación"
+                                                        value={joinInviteCode}
+                                                        onChange={e => setJoinInviteCode(e.target.value.toUpperCase())}
+                                                        onKeyDown={e => { if (e.key === 'Enter' && joinInviteCode.trim()) setJoinFormOpen(true); }}
+                                                    />
+                                                </div>
+                                                <button
+                                                    className="th__join-gate-btn"
+                                                    disabled={!joinInviteCode.trim()}
+                                                    onClick={() => setJoinFormOpen(true)}
+                                                >
+                                                    <i className='bx bx-right-arrow-alt'></i> Continuar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <form className="th__join-form" onSubmit={(e) => handleJoinTeam(e, selectedTeam)}>
+                                            <div className="th__join-form-code">
+                                                <i className='bx bx-check-shield'></i>
+                                                <span>Código: <strong>{joinInviteCode}</strong></span>
+                                                <button type="button" className="th__join-form-change" onClick={() => setJoinFormOpen(false)}>
+                                                    Cambiar
+                                                </button>
+                                            </div>
+
+                                            {/* Photo upload */}
+                                            <div className="th__join-photo-upload">
+                                                <label className="th__join-photo-label">
+                                                    {joinPhotoPreview ? (
+                                                        <img src={joinPhotoPreview} alt="Preview" className="th__join-photo-preview" />
+                                                    ) : (
+                                                        <div className="th__join-photo-placeholder">
+                                                            <i className='bx bx-camera'></i>
+                                                            <span>Subir foto</span>
+                                                        </div>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/jpeg,image/png,image/webp"
+                                                        onChange={handleJoinPhotoChange}
+                                                        hidden
+                                                    />
+                                                </label>
+                                                {joinPhotoPreview && (
+                                                    <button type="button" className="th__join-photo-remove" onClick={() => { setJoinPhoto(null); setJoinPhotoPreview(''); }}>
+                                                        <i className='bx bx-x'></i>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="th__join-form-grid">
+                                                <div className="th__join-field">
+                                                    <label>Nickname *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Tu nickname"
+                                                        value={joinPlayer.nickname}
+                                                        onChange={e => setJoinPlayer({ ...joinPlayer, nickname: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="th__join-field">
+                                                    <label>Game ID</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Riot ID / Tag"
+                                                        value={joinPlayer.gameId}
+                                                        onChange={e => setJoinPlayer({ ...joinPlayer, gameId: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="th__join-field">
+                                                    <label>Región</label>
+                                                    <select value={joinPlayer.region} onChange={e => setJoinPlayer({ ...joinPlayer, region: e.target.value })}>
+                                                        <option value="">Seleccionar...</option>
+                                                        {REGION_OPTIONS_JOIN.map(r => <option key={r} value={r}>{r}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="th__join-field">
+                                                    <label>Rol</label>
+                                                    <select value={joinPlayer.role} onChange={e => setJoinPlayer({ ...joinPlayer, role: e.target.value })}>
+                                                        <option value="">Seleccionar...</option>
+                                                        {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                                                        <option value="Suplente">Suplente</option>
+                                                        <option value="Coach">Coach</option>
+                                                    </select>
+                                                </div>
+                                                <div className="th__join-field">
+                                                    <label>Posición</label>
+                                                    <select value={joinSlotType} onChange={e => { setJoinSlotType(e.target.value); setJoinSlotIndex(0); }}>
+                                                        <option value="starters">Titular</option>
+                                                        {maxSb > 0 && <option value="subs">Suplente</option>}
+                                                        <option value="coach">Coach</option>
+                                                    </select>
+                                                </div>
+                                                {joinSlotType !== 'coach' && (
+                                                    <div className="th__join-field">
+                                                        <label>Slot</label>
+                                                        <select value={joinSlotIndex} onChange={e => setJoinSlotIndex(Number(e.target.value))}>
+                                                            {Array.from({ length: joinSlotType === 'starters' ? maxS : maxSb }).map((_, i) => {
+                                                                const current = joinSlotType === 'starters' ? st.roster?.starters?.[i] : st.roster?.subs?.[i];
+                                                                const label = current?.nickname || current?.role || `Slot ${i + 1}`;
+                                                                return <option key={i} value={i} disabled={Boolean(current?.nickname)}>{label}{current?.nickname ? ' ✓' : ''}</option>;
+                                                            })}
+                                                        </select>
+                                                    </div>
+                                                )}
+                                                <div className="th__join-field th__join-field--full">
+                                                    <label>Email (opcional)</label>
+                                                    <input
+                                                        type="email"
+                                                        placeholder="tu@email.com"
+                                                        value={joinPlayer.email}
+                                                        onChange={e => setJoinPlayer({ ...joinPlayer, email: e.target.value })}
+                                                    />
                                                 </div>
                                             </div>
-                                        );
-                                    })()}
-                                    {(selectedTeam.roster?.starters || []).map((p, i) => (
-                                        <div key={`p-${i}`} className="member-row-item">
-                                            <div className="member-avatar"><i className='bx bxs-user-circle'></i></div>
-                                            <div className="member-info">
-                                                <span className="member-name">{p?.nickname || 'Vacante'}</span>
-                                                {p?.role && <span className="role-badge">{p.role}</span>}
-                                                {p?.region && <span className="member-meta">Region: {p.region}</span>}
+                                            <div className="th__join-form-actions">
+                                                <button type="button" className="th__join-btn-cancel" onClick={resetJoinForm}>Cancelar</button>
+                                                <button type="submit" className="th__join-btn-submit" disabled={joinSubmitting}>
+                                                    {joinSubmitting ? <><i className='bx bx-loader-alt bx-spin'></i> Enviando...</> : <><i className='bx bx-send'></i> Enviar Solicitud</>}
+                                                </button>
                                             </div>
-                                            <span className="member-meta">Titular</span>
-                                        </div>
-                                    ))}
-                                    {(selectedTeam.roster?.subs || []).map((p, i) => (
-                                        <div key={`s-${i}`} className="member-row-item">
-                                            <div className="member-avatar"><i className='bx bxs-user-voice'></i></div>
-                                            <div className="member-info">
-                                                <span className="member-name">{p?.nickname || 'Vacante'}</span>
-                                                {p?.role && <span className="role-badge">{p.role}</span>}
-                                                {p?.region && <span className="member-meta">Region: {p.region}</span>}
-                                            </div>
-                                            <span className="member-meta">Suplente</span>
-                                        </div>
-                                    ))}
-                                    {selectedTeam.roster?.coach && (
-                                        <div className="member-row-item">
-                                            <div className="member-avatar"><i className='bx bxs-user-badge'></i></div>
-                                            <div className="member-info">
-                                                <span className="member-name">{selectedTeam.roster.coach?.nickname || 'Coach'}</span>
-                                                <span className="role-badge">{selectedTeam.roster.coach?.role || 'Coach'}</span>
-                                                {selectedTeam.roster.coach?.region && <span className="member-meta">Region: {selectedTeam.roster.coach.region}</span>}
-                                            </div>
-                                            <span className="member-meta">Coach</span>
-                                        </div>
+                                        </form>
                                     )}
                                 </div>
-                            </div>
-                        </div>
+                            );
+                        })()}
 
-                        {/* Pending requests */}
+                        {/* Pending requests — admin only */}
                         {(() => {
                             const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
                             const isCaptain = currentUser?._id && String(captainId) === String(currentUser._id);
@@ -665,80 +958,8 @@ const Team = () => {
                                 </div>
                             );
                         })()}
-
-                        <div className="th__modal-actions">
-                            <button className="th__modal-btn th__modal-btn--secondary" onClick={() => setIsPreviewOpen(false)}>
-                                <i className='bx bx-x'></i> Cerrar
-                            </button>
-                            {(currentUser?.isAdmin || String(selectedTeam.captain?._id || selectedTeam.captain) === String(currentUser?._id)) && (
-                                <>
-                                    <button
-                                        className="th__modal-btn th__modal-btn--primary"
-                                        onClick={async () => {
-                                            if (!isPreviewEditing) {
-                                                setPreviewForm({
-                                                    category: selectedTeam.category || '',
-                                                    teamCountry: selectedTeam.teamCountry || '',
-                                                    teamLevel: selectedTeam.teamLevel || ''
-                                                });
-                                                setLogoFile(null);
-                                                setLogoPreview(null);
-                                                setIsPreviewEditing(true);
-                                                return;
-                                            }
-                                            try {
-                                                const token = localStorage.getItem('token');
-                                                let updated = selectedTeam;
-                                                const res = await axios.patch(
-                                                    `${API_URL}/api/teams/${selectedTeam._id}`,
-                                                    previewForm,
-                                                    { headers: { Authorization: `Bearer ${token}` } }
-                                                );
-                                                updated = res.data.team || updated;
-                                                if (logoFile) {
-                                                    const data = new FormData();
-                                                    data.append('logo', logoFile);
-                                                    const resLogo = await axios.patch(
-                                                        `${API_URL}/api/teams/${selectedTeam._id}/logo`,
-                                                        data,
-                                                        { headers: { Authorization: `Bearer ${token}` } }
-                                                    );
-                                                    updated = resLogo.data.team || updated;
-                                                }
-                                                setSelectedTeam(updated);
-                                                setTeams(prev => prev.map(t => String(t._id) === String(updated._id) ? updated : t));
-                                                setIsPreviewEditing(false);
-                                                setLogoFile(null);
-                                                setLogoPreview(null);
-                                            } catch (err) {
-                                                addToast('No se pudo guardar el equipo', 'error');
-                                            }
-                                        }}
-                                    >
-                                        {isPreviewEditing ? 'Guardar' : 'Editar'}
-                                    </button>
-                                    <button
-                                        className="th__modal-btn th__modal-btn--danger"
-                                        onClick={async () => {
-                                            const ok = window.confirm('Eliminar este equipo?');
-                                            if (!ok) return;
-                                            try {
-                                                const token = localStorage.getItem('token');
-                                                await axios.delete(`${API_URL}/api/teams/${selectedTeam._id}`, {
-                                                    headers: { Authorization: `Bearer ${token}` }
-                                                });
-                                                setTeams(prev => prev.filter(t => String(t._id) !== String(selectedTeam._id)));
-                                                setIsPreviewOpen(false);
-                                            } catch (err) {
-                                                addToast('No se pudo eliminar el equipo', 'error');
-                                            }
-                                        }}
-                                    >
-                                        Eliminar
-                                    </button>
-                                </>
-                            )}
                         </div>
+
                     </div>
                 </div>
                 );

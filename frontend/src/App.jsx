@@ -54,6 +54,7 @@ import TermsConditions from './pages/menu/Legal/TermsConditions';
 import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
 //Comunidad
 import GamesPage from './pages/menu/Community/games/GamesPage';
+import GamesFilterTemplate from './pages/menu/Community/games/GamesFilterTemplate';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
 import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
 //Juegos (comunidad)
@@ -166,6 +167,7 @@ function App() {
             <Route path="/create-tournament" element={<CreateTournament />} />
             {/* Rutas de Comunidad */}
             <Route path="/games/:id" element={<GamesPage />} />
+            <Route path="/games/filter/:type/:value" element={<GamesFilterTemplate />} />
             <Route path="/university" element={<UniversityPage />} />
 
             {/* Rutas con nombre propio */}

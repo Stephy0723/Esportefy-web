@@ -9,17 +9,39 @@ import {
     FaFacebook, FaPaperPlane, FaGamepad, FaUpload 
 } from 'react-icons/fa';
 import { withCsrfHeaders } from '../../../../utils/csrf';
+import { useNotification } from '../../../../context/NotificationContext';
+import { API_URL } from '../../../../config/api';
 import './CreateTeamPage.css';
 
 // Configuración de Roles Visuales
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
     "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
+    "Wild Rift": ["Baron", "Jungle", "Mid", "Dragon", "Supp"],
     "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
+    "CS2": ["Entry", "AWPer", "Lurker", "Support", "IGL"],
     "Overwatch 2": ["Tank", "DPS", "DPS", "Support", "Support"],
+    "Rainbow Six Siege": ["Entry", "Support", "Flex", "Hard Breach", "Anchor"],
     "TFT": ["Tactician"],
     "FIFA / EA FC": ["Player"],
-    "Free Fire": ["Rusher", "Support", "Sniper", "IGL"]
+    "NBA 2K": ["Player"],
+    "F1 2024": ["Driver"],
+    "Rocket League": ["Striker", "Midfielder", "Defender"],
+    "Free Fire": ["Rusher", "Support", "Sniper", "IGL"],
+    "Fortnite": ["Fragger", "IGL", "Support", "Builder"],
+    "PUBG": ["Fragger", "IGL", "Support", "Scout"],
+    "Apex Legends": ["Fragger", "IGL", "Support"],
+    "Warzone": ["Slayer", "IGL", "Scout", "Support"],
+    "Call of Duty": ["Slayer", "OBJ", "Support", "Flex"],
+    "Dota 2": ["Carry", "Mid", "Offlane", "Soft Supp", "Hard Supp"],
+    "Smite 2": ["Carry", "Mid", "Solo", "Jungle", "Support"],
+    "Street Fighter 6": ["Fighter"],
+    "Tekken 8": ["Fighter"],
+    "Super Smash Bros": ["Fighter"],
+    "Mortal Kombat 1": ["Fighter"],
+    "Clash Royale": ["Player"],
+    "Hearthstone": ["Player"],
+    "Legends of Runeterra": ["Player"]
 };
 
 const RIOT_GAMES = new Set([
@@ -32,6 +54,7 @@ const RIOT_GAMES = new Set([
 
 const CreateTeamPage = () => {
     const navigate = useNavigate();
+    const { addToast } = useNotification();
     
     // --- ESTADOS Y DATOS ---
     const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
@@ -97,6 +120,9 @@ const CreateTeamPage = () => {
         if (cat === 'FPS (Shooters)') return 'theme-fps';
         if (cat === 'MOBA') return 'theme-moba';
         if (cat === 'Fighting') return 'theme-fighting';
+        if (cat === 'Battle Royale') return 'theme-fps';
+        if (cat === 'Sports & Racing') return 'theme-default';
+        if (cat === 'Estrategia / Táctico') return 'theme-moba';
         return 'theme-default';
     };
 
@@ -240,7 +266,7 @@ const CreateTeamPage = () => {
         data.append('roster', JSON.stringify(roster));
 
         // 3. Petición al servidor
-        const res = await fetch('http://localhost:4000/api/teams/create', {
+        const res = await fetch(`${API_URL}/api/teams/create`, {
             method: 'POST',
             credentials: 'include',
             headers: withCsrfHeaders(),
@@ -252,12 +278,14 @@ const CreateTeamPage = () => {
         if (res.ok) {
             setInviteLink(result.inviteLink); 
             setStep(3);
+            addToast('Equipo creado exitosamente', 'success');
         } else {
-            alert(result.message || "Error al guardar equipo");
+            addToast(result.message || 'Error al guardar equipo', 'error');
+            console.warn('[CreateTeam] Server error:', res.status, result.message);
         }
     } catch (error) {
-        console.error("Error de red:", error);
-        alert("No se pudo conectar con el servidor.");
+        console.error('Error de red:', error);
+        addToast('No se pudo conectar con el servidor', 'error');
     } finally {
         setSubmitting(false);
     }
@@ -303,6 +331,24 @@ const CreateTeamPage = () => {
                     <h1>{step === 3 ? "¡Misión Cumplida!" : "Registro de Escuadra"}</h1>
                 </div>
 
+                {/* Step Indicator */}
+                <div className="ct-stepper">
+                    <div className={`ct-step ${step >= 1 ? (step > 1 ? 'done' : 'active') : ''}`}>
+                        <div className="ct-step-dot">{step > 1 ? <FaCheck /> : '1'}</div>
+                        <span className="ct-step-label">Identidad</span>
+                    </div>
+                    <div className={`ct-step-line ${step > 1 ? 'done' : ''}`} />
+                    <div className={`ct-step ${step >= 2 ? (step > 2 ? 'done' : 'active') : ''}`}>
+                        <div className="ct-step-dot">{step > 2 ? <FaCheck /> : '2'}</div>
+                        <span className="ct-step-label">Roster</span>
+                    </div>
+                    <div className={`ct-step-line ${step > 2 ? 'done' : ''}`} />
+                    <div className={`ct-step ${step >= 3 ? 'active' : ''}`}>
+                        <div className="ct-step-dot">3</div>
+                        <span className="ct-step-label">Compartir</span>
+                    </div>
+                </div>
+
                 {/* PASO 1: DATOS GENERALES Y CAPITÁN */}
                 {step === 1 && (
                     <div className="fade-in">
@@ -319,7 +365,7 @@ const CreateTeamPage = () => {
                                 <input 
                                     type="text" 
                                     className="input-hero" 
-                                    placeholder="Nombre Oficial del Equipo" 
+                                    placeholder="Nombre del Equipo" 
                                     value={formData.name} 
                                     onChange={e => setFormData({...formData, name: e.target.value})} 
                                 />
@@ -366,9 +412,10 @@ const CreateTeamPage = () => {
                                     <select className="select-modern" value={formData.teamLevel} onChange={e => setFormData({...formData, teamLevel: e.target.value})}>
                                         <option value="Casual">Casual / Fun</option>
                                         <option value="Amateur">Amateur (Torneos Menores)</option>
-                                        <option value="Universitario">Universitario (Institucional)</option> {/* AQUÍ ESTÁ */}
+                                        <option value="Universitario">Universitario (Institucional)</option>
                                         <option value="Semi-Pro">Semi-Pro (Ligas)</option>
                                         <option value="Profesional">Profesional (Tier 1)</option>
+                                        <option value="Leyenda">Leyenda (Elite)</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
@@ -661,7 +708,7 @@ const CreateTeamPage = () => {
                                     ))}
                                 </div>
 
-                                <label className="column-header-label" style={{marginTop: '2rem'}}>Comunidades</label>
+                                <label className="column-header-label" style={{marginTop: '1.5rem'}}>Comunidades</label>
                                 <div className="community-actions-pro">
                                     <button className="btn-community-pro">
                                         <div className="icon-box"><FaPaperPlane /></div>
@@ -678,7 +725,7 @@ const CreateTeamPage = () => {
                         {/* BOTÓN FINAL */}
                         <div className="footer-actions-pro">
                             <button className="btn-primary-glow finish-btn-mega" onClick={() => navigate('/equipos')}>
-                                <FaCheck /> MISIÓN CUMPLIDA (IR AL DASHBOARD)
+                                <FaCheck /> IR AL DASHBOARD
                             </button>
                         </div>
                     </div>
@@ -687,7 +734,7 @@ const CreateTeamPage = () => {
 
             {/* MODAL CON SUBIDA DE FOTO */}
             {modalOpen && (
-                <div className="modal-overlay">
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}>
                     <div className="mini-form">
                         <h3 style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
                             <span>Registro: <span className="highlight">{slotData.role || "Jugador"}</span></span>

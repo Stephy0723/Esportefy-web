@@ -6,17 +6,32 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 28px;
-    background: color-mix(in srgb, var(--card-bg, #111) 85%, transparent);
-    backdrop-filter: blur(6px);
-    border-bottom: 1px solid rgba(142, 219, 21, 0.2);
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--bg-card, #181818) 92%, transparent) 0%,
+        color-mix(in srgb, var(--bg-card, #181818) 85%, transparent) 50%,
+        color-mix(in srgb, var(--bg-card, #181818) 92%, transparent) 100%
+    );
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid color-mix(in srgb, var(--primary, #8EDB15) 15%, transparent);
     font-size: 0.7rem;
     font-weight: 800;
     letter-spacing: 2px;
-    color: var(--text-color, rgba(255, 255, 255, 0.7));
-    opacity: 0.85;
+    color: var(--text-muted, rgba(255, 255, 255, 0.7));
     text-transform: uppercase;
     font-family: 'Courier New', monospace;
     margin-bottom: 0;
+    position: relative;
+}
+
+.ph__strip::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--primary, #8EDB15), transparent);
 }
 
 .ph__dot {
@@ -24,10 +39,16 @@
     height: 8px;
     border-radius: 50%;
     background: var(--primary, #8EDB15);
-    box-shadow: 0 0 8px var(--primary, #8EDB15);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--primary, #8EDB15) 60%, transparent);
     margin-right: 8px;
     display: inline-block;
     flex-shrink: 0;
+    animation: ph__dot-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes ph__dot-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px color-mix(in srgb, var(--primary, #8EDB15) 60%, transparent); }
+    50% { opacity: 0.7; box-shadow: 0 0 4px color-mix(in srgb, var(--primary, #8EDB15) 30%, transparent); }
 }
 
 .ph__sep {

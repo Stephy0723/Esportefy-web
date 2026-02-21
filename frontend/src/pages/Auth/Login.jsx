@@ -36,13 +36,11 @@ const Login = () => {
 
             const { user } = response.data;
             
-            if (rememberMe) {
-                localStorage.setItem('esportefyUser', JSON.stringify(user));
-                sessionStorage.removeItem('esportefyUser');
-            } else {
-                sessionStorage.setItem('esportefyUser', JSON.stringify(user));
-                localStorage.removeItem('esportefyUser');
-            }
+            // Guardar datos iniciales en localStorage para carga rápida
+            // AuthContext sincronizará los datos completos desde /profile vía cookies
+            localStorage.setItem('esportefyUser', JSON.stringify(user));
+            // Flag de sesión — la auth real va por HttpOnly cookies
+            localStorage.setItem('token', 'cookie-session');
             
             window.dispatchEvent(new Event('user-update'));
 

@@ -394,7 +394,7 @@ export const updateProfile = async (req, res) => {
         const allowedFields = [
             'avatar', 'bio', 'fullName', 'phone', 'gender', 'country', 'birthDate',
             'selectedGames', 'platforms', 'experience', 'goals',
-            'username', 'email', 'status', 'selectedFrameId', 'selectedBgId'
+            'username', 'email', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'
         ];
         let updateData = {};
         allowedFields.forEach((field) => {

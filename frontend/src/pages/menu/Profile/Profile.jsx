@@ -417,7 +417,7 @@ const Profile = () => {
                 {user.teams?.length > 0 ? (
                     <div className="gp__teams-grid">
                         {user.teams.map(team => {
-                            const defaultLogo = "https://i.ibb.co/VWV0YmP/default-esports-team.png";
+                            const defaultLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(team.name || 'Team')}&background=1a1a2e&color=8EDB15&size=128&bold=true`;
                             const starters = team.roster?.starters?.filter(p => p?.user || p?.nickname)?.length || 0;
                             const subs = team.roster?.subs?.filter(p => p?.user || p?.nickname)?.length || 0;
                             const coach = team.roster?.coach?.nickname || null;

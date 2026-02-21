@@ -1,0 +1,311 @@
+.gft-page {
+  --gft-accent: #22c55e;
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #f4f8ff;
+  isolation: isolate;
+}
+
+.gft-bg {
+  position: absolute;
+  inset: -6%;
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.2) brightness(0.34) contrast(1.08);
+  transform: scale(1.08);
+  animation: gftZoom 18s ease-in-out infinite alternate;
+}
+
+.gft-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--gft-accent) 45%, transparent), transparent 48%),
+    linear-gradient(120deg, #03060d 8%, color-mix(in srgb, var(--gft-accent) 20%, #061018) 48%, #04070e 100%);
+}
+
+.gft-gridfx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background:
+    linear-gradient(transparent 97%, color-mix(in srgb, var(--gft-accent) 48%, transparent) 100%),
+    linear-gradient(90deg, transparent 97%, color-mix(in srgb, var(--gft-accent) 36%, transparent) 100%);
+  background-size: 50px 50px;
+  mask-image: linear-gradient(to bottom, transparent, black 26%, black 74%, transparent);
+}
+
+.gft-corner-tag {
+  position: absolute;
+  top: -28px;
+  right: -54px;
+  z-index: 4;
+  transform: rotate(22deg);
+  padding: 0.65rem 3.4rem;
+  font-size: clamp(0.95rem, 2.1vw, 1.45rem);
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(90deg, #ff3b3b, #ff9f1c, #ffe66d, #2ec4b6, #3a86ff, #c77dff, #ff3b3b);
+  background-size: 220% 100%;
+  animation: gftRainbow 8s linear infinite;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+
+.gft-topbar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.1rem 0;
+}
+
+.gft-back {
+  border: 1px solid color-mix(in srgb, var(--gft-accent) 62%, transparent);
+  background: color-mix(in srgb, var(--gft-accent) 18%, transparent);
+  color: #eaf4ff;
+  border-radius: 12px;
+  padding: 0.52rem 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gft-back:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px color-mix(in srgb, var(--gft-accent) 30%, transparent);
+}
+
+.gft-counter {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--gft-accent) 70%, #f1f6ff);
+}
+
+.gft-main {
+  position: relative;
+  z-index: 3;
+  padding: 1rem 1rem 1.4rem;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.gft-intro {
+  max-width: 760px;
+  margin-bottom: 1rem;
+}
+
+.gft-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--gft-accent) 70%, #d9e7ff);
+  font-weight: 800;
+}
+
+.gft-intro h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 4.6rem);
+  line-height: 0.92;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-shadow: 0 0 34px color-mix(in srgb, var(--gft-accent) 40%, transparent);
+}
+
+.gft-intro p {
+  margin: 0.65rem 0 0;
+  color: #dce9fb;
+  max-width: 670px;
+}
+
+.gft-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  padding-top: 0.6rem;
+}
+
+.gft-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  min-height: 540px;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--card-accent) 10%, #080c15);
+  backdrop-filter: blur(6px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--card-accent) 42%, transparent),
+    0 16px 40px rgba(0, 0, 0, 0.45);
+  transform: translateY(0) scale(1);
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.gft-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  border-color: color-mix(in srgb, var(--card-accent) 78%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--card-accent) 58%, transparent),
+    0 20px 54px color-mix(in srgb, var(--card-accent) 26%, transparent);
+}
+
+.gft-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--card-accent) 32%, transparent), transparent 36%);
+  pointer-events: none;
+}
+
+.gft-card-media {
+  position: relative;
+  height: 46%;
+}
+
+.gft-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gft-card-media-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, #070a12 5%, transparent 45%),
+    linear-gradient(120deg, color-mix(in srgb, var(--card-accent) 26%, transparent), transparent 40%);
+}
+
+.gft-card-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.95rem;
+}
+
+.gft-card-body h3 {
+  margin: 0;
+  font-size: 1.36rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.gft-card-body p {
+  margin: 0;
+  color: #d6e4f8;
+  font-size: 0.93rem;
+}
+
+.gft-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.gft-card-meta span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 60%, transparent);
+  border-radius: 999px;
+  padding: 0.25rem 0.56rem;
+  background: color-mix(in srgb, var(--card-accent) 16%, transparent);
+}
+
+.gft-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.gft-tag {
+  border: 1px solid color-mix(in srgb, var(--card-accent) 64%, transparent);
+  border-radius: 999px;
+  padding: 0.3rem 0.62rem;
+  background: color-mix(in srgb, var(--card-accent) 14%, transparent);
+  color: color-mix(in srgb, var(--card-accent) 92%, #fff);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.gft-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--card-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--card-accent) 24%, transparent);
+}
+
+.gft-tag-company {
+  background: linear-gradient(130deg, color-mix(in srgb, var(--card-accent) 36%, transparent), color-mix(in srgb, var(--card-accent) 14%, transparent));
+}
+
+.gft-detail {
+  margin-top: auto;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 80%, transparent);
+  border-radius: 12px;
+  padding: 0.58rem 0.8rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.74rem;
+  font-weight: 900;
+  cursor: pointer;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 86%, white), color-mix(in srgb, var(--card-accent) 38%, #0d2117));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gft-detail:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 11px 24px color-mix(in srgb, var(--card-accent) 36%, transparent);
+}
+
+.gft-empty {
+  --gft-accent: #22c55e;
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 0.8rem;
+  background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--gft-accent) 35%, #04070d), #03050a);
+  color: #f4f8ff;
+  text-align: center;
+}
+
+@keyframes gftZoom {
+  from { transform: scale(1.06); }
+  to { transform: scale(1.13); }
+}
+
+@keyframes gftRainbow {
+  from { background-position: 0% 50%; }
+  to { background-position: 220% 50%; }
+}
+
+@media (max-width: 880px) {
+  .gft-corner-tag {
+    top: 4px;
+    right: -76px;
+    font-size: 0.78rem;
+    padding: 0.46rem 2.8rem;
+  }
+
+  .gft-main {
+    padding-top: 0.6rem;
+  }
+
+  .gft-card {
+    min-height: 500px;
+  }
+}

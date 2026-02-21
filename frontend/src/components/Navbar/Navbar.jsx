@@ -80,11 +80,11 @@ const Navbar = () => {
 
   /* ── Check notifications ── */
   const checkNotifications = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) { setHasUnread(false); setUnreadCount(0); return; }
+    const storedUser = localStorage.getItem('esportefyUser');
+    if (!storedUser) { setHasUnread(false); setUnreadCount(0); return; }
     try {
       const res = await fetch(`${API_URL}/api/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
       if (!res.ok) return;
       const data = await res.json();
