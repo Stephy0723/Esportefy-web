@@ -1175,3 +1175,104 @@ input:checked + .purple-slider {
 input:checked + .slider { background-color: var(--primary); }
 input:checked + .purple-slider { background-color: #a55eea; }
 input:checked + .slider:before { transform: translateX(24px); }
+
+/* =========================================
+   SETTINGS POLISH OVERRIDES
+   ========================================= */
+.settings-page {
+    padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.settings-layout {
+    gap: 1.25rem;
+    max-width: 1280px;
+}
+
+.settings-sidebar {
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent);
+    background: color-mix(in srgb, var(--bg-card) 88%, var(--bg-elevated));
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 6%, transparent);
+    padding: 1.2rem;
+}
+
+.settings-content {
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    background: color-mix(in srgb, var(--bg-card) 94%, var(--bg-page));
+    box-shadow: 0 16px 36px color-mix(in srgb, var(--text-main) 10%, transparent);
+    padding: 1.5rem 1.65rem 1.7rem;
+}
+
+.panel-header {
+    margin-bottom: 1.5rem;
+}
+
+.panel-header h2 {
+    font-size: 1.55rem;
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+    margin: 0;
+}
+
+.panel-header p {
+    margin-top: 0.45rem;
+    line-height: 1.5;
+}
+
+.sidebar-header h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.18rem;
+    letter-spacing: 0.02em;
+}
+
+.settings-nav {
+    gap: 0.4rem;
+}
+
+.nav-item {
+    border-radius: 12px;
+    padding: 0.65rem 0.8rem;
+    font-size: 0.96rem;
+    font-weight: 700;
+    transition: background 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.nav-item:hover {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: color-mix(in srgb, var(--text-main) 86%, var(--primary)) !important;
+    transform: translateX(2px);
+}
+
+.nav-item.active {
+    background: color-mix(in srgb, var(--primary) 20%, var(--bg-elevated)) !important;
+    color: var(--text-main) !important;
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.theme-light .nav-item:hover {
+    background: color-mix(in srgb, var(--primary) 10%, var(--bg-elevated)) !important;
+    color: var(--text-main) !important;
+    border: none;
+}
+
+.settings-page button:focus-visible,
+.settings-page input:focus-visible,
+.settings-page select:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--primary) 62%, var(--border-color));
+    outline-offset: 2px;
+}
+
+@media (max-width: 1040px) {
+    .settings-page {
+        padding: 1rem;
+    }
+
+    .settings-layout {
+        gap: 1rem;
+    }
+
+    .settings-content {
+        padding: 1.2rem;
+    }
+}
