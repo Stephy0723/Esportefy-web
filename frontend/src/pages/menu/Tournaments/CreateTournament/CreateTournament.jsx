@@ -41,6 +41,24 @@ const GAME_CONFIG = {
   "StarCraft II": { color: "#00a8ff", icon: "bx-planet" }
 };
 
+const FORMAT_OPTIONS = [
+  { value: 'single_elimination', label: 'Eliminación Directa' },
+  { value: 'double_elimination', label: 'Doble Eliminación' },
+  { value: 'swiss', label: 'Suizo (Swiss)' },
+  { value: 'round_robin', label: 'Round Robin' }
+];
+
+const normalizeFormatValue = (value) => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'single_elimination';
+  if (['single_elimination', 'double_elimination', 'swiss', 'round_robin'].includes(raw)) return raw;
+  if (raw.includes('doble')) return 'double_elimination';
+  if (raw.includes('swiss') || raw.includes('suizo')) return 'swiss';
+  if (raw.includes('round robin') || raw.includes('round_robin')) return 'round_robin';
+  if (raw.includes('elim')) return 'single_elimination';
+  return 'single_elimination';
+};
+
 const CreateTournament = () => {
   // --- 1. HOOKS (Navegación y Autenticación) ---
   const navigate = useNavigate();
@@ -62,7 +80,7 @@ const CreateTournament = () => {
     prizesByRank: { first: '', second: '', third: '' },
     entryFee: 'Gratis',
     maxSlots: '',
-    format: 'Eliminación Directa',
+    format: 'single_elimination',
     server: '',
     platform: 'PC',
     bannerFile: null,
@@ -94,7 +112,7 @@ const CreateTournament = () => {
       prizesByRank: editTournament.prizesByRank || prev.prizesByRank,
       entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
       maxSlots: editTournament.maxSlots || prev.maxSlots,
-      format: editTournament.format || prev.format,
+      format: normalizeFormatValue(editTournament.format || prev.format),
       server: editTournament.server || '',
       platform: editTournament.platform || prev.platform,
       organizerName: editTournament.organizer || prev.organizerName,
@@ -423,10 +441,9 @@ const CreateTournament = () => {
       <div className="custom-input-box">
         <label>Formato de Eliminación</label>
         <select value={tournament.format} onChange={(e) => setTournament({...tournament, format: e.target.value})}>
-          <option>Eliminación Directa</option>
-          <option>Doble Eliminación</option>
-          <option>Suizo (Swiss)</option>
-          <option>Round Robin</option>
+          {FORMAT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
         <p className="file-help-text"><FaSitemap /> Estructura de las llaves</p>
       </div>

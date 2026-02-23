@@ -496,6 +496,29 @@ export const getTeams = async (req, res) => {
     }
 };
 
+export const getTeamByInviteCode = async (req, res) => {
+    try {
+        const inviteCode = String(req.params.code || '').trim().toUpperCase();
+        if (!inviteCode) {
+            return res.status(400).json({ message: "Código de invitación inválido" });
+        }
+
+        const team = await Team.findOne({ inviteCode })
+            .populate('captain', 'fullName avatar');
+
+        if (!team) {
+            return res.status(404).json({ message: "Equipo no encontrado" });
+        }
+
+        return res.status(200).json(team);
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error al obtener equipo por invitación",
+            error: error.message
+        });
+    }
+};
+
 export const leaveTeam = async (req, res) => {
     try {
         const { teamId } = req.params;

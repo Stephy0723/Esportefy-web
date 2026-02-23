@@ -154,10 +154,14 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/torneos" element={<Tournaments />} />
+            <Route path="/torneos/:tournamentId" element={<Tournaments />} />
             <Route path="/comunidad" element={<Community />} />
             <Route path="/equipos" element={<Teams />} />
+            <Route path="/teams" element={<Teams />} />
             <Route path="/tournaments" element={<Tournaments />} />
+            <Route path="/tournaments/:tournamentId" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/perfil" element={<Profile />} />
             <Route path="/rankings" element={<Rankings />} />
             
             {/* Rutas de Gestión de Torneos */}

@@ -10,6 +10,29 @@ import path from 'path';
 import fs from 'fs';
 import { NOTIF, pushNotification } from './notification.controller.js';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
+const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || 'csrf_token';
+const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+const baseCookieOptions = {
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/'
+};
+
+const getAuthCookieOptions = () => ({
+    ...baseCookieOptions,
+    httpOnly: true,
+    maxAge: SESSION_MAX_AGE_MS
+});
+
+const getCsrfCookieOptions = () => ({
+    ...baseCookieOptions,
+    httpOnly: false,
+    maxAge: SESSION_MAX_AGE_MS
+});
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = './uploads/avatars/';
@@ -105,6 +128,11 @@ export const login = async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        // Compatibilidad: cookie-based + token en respuesta para frontend legacy.
+        const csrfToken = crypto.randomBytes(24).toString('hex');
+        res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
+        res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
+
         res.status(200).json({ 
             token, 
             user: { id: user._id, userName: user.userName } 
@@ -116,6 +144,22 @@ export const login = async (req, res) => {
             message: 'Error en el servidor', 
             error: error.message 
         });
+    }
+};
+
+export const logout = async (req, res) => {
+    try {
+        res.clearCookie(AUTH_COOKIE_NAME, {
+            ...baseCookieOptions,
+            httpOnly: true
+        });
+        res.clearCookie(CSRF_COOKIE_NAME, {
+            ...baseCookieOptions,
+            httpOnly: false
+        });
+        return res.status(200).json({ message: 'Sesión cerrada correctamente' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error al cerrar sesión' });
     }
 };
 

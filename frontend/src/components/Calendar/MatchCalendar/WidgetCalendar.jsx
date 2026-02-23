@@ -48,8 +48,8 @@ export default function WidgetCalendar() {
 
       {/* WEEKDAYS */}
       <div className="calendar-weekdays">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-          <span key={d}>{d}</span>
+        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          <span key={`${d}-${i}`}>{d}</span>
         ))}
       </div>
 

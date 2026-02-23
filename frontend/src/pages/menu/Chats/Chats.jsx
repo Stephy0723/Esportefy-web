@@ -9,9 +9,9 @@ import { io } from 'socket.io-client';
 import axios from 'axios';
 import './Chats.css';
 import PageHud from '../../../components/PageHud/PageHud';
+import { CHAT_URL } from '../../../config/api';
 
-const CHAT_SERVER_URL = "http://localhost:5000";
-const socket = io(CHAT_SERVER_URL);
+const CHAT_SERVER_URL = CHAT_URL;
 
 export default function Chats() {
   const { isDarkMode } = useTheme();
@@ -21,9 +21,29 @@ export default function Chats() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
+  const socketRef = useRef(null);
 
   const myUserId = localStorage.getItem('userId'); 
   const myUserName = localStorage.getItem('userName');
+
+  useEffect(() => {
+    const socket = io(CHAT_SERVER_URL, {
+      reconnectionAttempts: 3,
+      timeout: 5000
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect_error', (error) => {
+      console.error('No se pudo conectar al chat-service:', error?.message || error);
+    });
+
+    return () => {
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, []);
 
   // 1. Cargar lista de chats
   useEffect(() => {
@@ -44,7 +64,8 @@ export default function Chats() {
 
   // 2. Manejo de mensajes y socket
   useEffect(() => {
-    if (!activeChat) return;
+    const socket = socketRef.current;
+    if (!activeChat || !socket) return;
 
     const fetchHistory = async () => {
       try {
@@ -61,17 +82,19 @@ export default function Chats() {
 
     fetchHistory();
     socket.emit('join_chat', activeChat._id);
-    socket.on('receive_message', (data) => {
+    const onReceiveMessage = (data) => {
       setMessages((prev) => [...prev, { ...data, own: data.ownId === myUserId }]);
-    });
+    };
+    socket.on('receive_message', onReceiveMessage);
 
-    return () => socket.off('receive_message');
+    return () => socket.off('receive_message', onReceiveMessage);
   }, [activeChat, myUserId]);
 
   // 3. Envío
   const handleSend = (e) => {
     e.preventDefault();
-    if (!input.trim() || !activeChat) return;
+    const socket = socketRef.current;
+    if (!input.trim() || !activeChat || !socket) return;
     socket.emit('send_message', {
       conversationId: activeChat._id,
       senderId: myUserId,

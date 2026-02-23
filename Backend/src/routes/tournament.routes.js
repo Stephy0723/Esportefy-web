@@ -1,5 +1,19 @@
 import { Router } from 'express';
-import { createTournament, getTournaments, getTournamentByCode, updateTournament, deleteTournament, registerTeam, updateRegistrationStatus, updateTournamentStatus, removeRegistration } from '../controllers/tournament.controller.js';
+import {
+  createTournament,
+  getTournaments,
+  getTournamentByCode,
+  getTournamentBracket,
+  generateTournamentBracket,
+  submitTournamentMatchResult,
+  resolveTournamentMatchResult,
+  updateTournament,
+  deleteTournament,
+  registerTeam,
+  updateRegistrationStatus,
+  updateTournamentStatus,
+  removeRegistration
+} from '../controllers/tournament.controller.js';
 import { uploadTournamentFiles } from '../middlewares/multer.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import { createRateLimiter } from '../middlewares/rateLimit.js';
@@ -13,6 +27,10 @@ const rlCreate = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix
 router.get('/', getTournaments); // Público
 router.post('/', verifyToken, rlCreate, uploadTournamentFiles, createTournament); // Protegido
 router.get('/:code', getTournamentByCode); // Público
+router.get('/:code/bracket', getTournamentBracket); // Público
+router.post('/:code/bracket/generate', verifyToken, rlManage, generateTournamentBracket); // Protegido (owner/admin)
+router.post('/:code/bracket/matches/:matchId/submit', verifyToken, rlManage, submitTournamentMatchResult); // Capitanes reportan
+router.patch('/:code/bracket/matches/:matchId/resolve', verifyToken, rlManage, resolveTournamentMatchResult); // Owner/Admin resuelven
 router.put('/:code', verifyToken, rlManage, uploadTournamentFiles, updateTournament); // Protegido (owner/admin)
 router.delete('/:code', verifyToken, rlManage, deleteTournament); // Protegido (owner/admin)
 router.post('/:code/register', verifyToken, rlRegister, registerTeam); // Inscripción de equipos

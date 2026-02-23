@@ -9,4 +9,4 @@
 //   VITE_CHAT_URL=https://tu-chat-service.com
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-export const CHAT_URL = import.meta.env.VITE_CHAT_URL || 'http://localhost:5000';
+export const CHAT_URL = import.meta.env.VITE_CHAT_URL || 'http://localhost:5001';

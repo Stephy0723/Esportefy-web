@@ -34,14 +34,22 @@ const Login = () => {
                 password
             });
 
-            const { user } = response.data;
+            const { user, token } = response.data;
+
+            if (!token || !user) {
+                throw new Error('Respuesta de login inválida');
+            }
             
             if (rememberMe) {
                 localStorage.setItem('esportefyUser', JSON.stringify(user));
+                localStorage.setItem('token', token);
                 sessionStorage.removeItem('esportefyUser');
+                sessionStorage.removeItem('token');
             } else {
                 sessionStorage.setItem('esportefyUser', JSON.stringify(user));
+                sessionStorage.setItem('token', token);
                 localStorage.removeItem('esportefyUser');
+                localStorage.removeItem('token');
             }
             
             window.dispatchEvent(new Event('user-update'));
