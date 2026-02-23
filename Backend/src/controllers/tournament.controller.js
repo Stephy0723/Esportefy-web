@@ -23,6 +23,94 @@ import fs from 'fs';
 
 const ACTIVE_DAYS = 30;
 
+const canManageTournament = async (tournament, userId) => {
+    if (!tournament || !userId) return false;
+    const isOwner = String(tournament.organizer) === String(userId);
+    if (isOwner) return true;
+    const user = await User.findById(userId).select('isAdmin');
+    return user?.isAdmin === true;
+};
+
+const toPublicTournament = (tournamentDoc) => {
+    const t = tournamentDoc?.toObject ? tournamentDoc.toObject() : tournamentDoc;
+    if (!t) return null;
+    const ps = t.publicSettings || {};
+
+    const out = {
+        tournamentId: t.tournamentId,
+        title: t.title,
+        game: t.game,
+        status: t.status,
+        bannerImage: t.bannerImage || '',
+        description: t.description || '',
+        modality: t.modality || '',
+        format: t.format || '',
+        date: t.date || null,
+        time: t.time || '',
+        timezone: t.timezone || '',
+        slots: {
+            current: Number(t.currentSlots || 0),
+            max: Number(t.maxSlots || 0)
+        },
+        customMessage: ps.customMessage || '',
+        visibility: ps.visibility || 'public',
+        publicSettings: {
+            showPrize: ps.showPrize !== false,
+            showSponsors: ps.showSponsors !== false,
+            showRules: ps.showRules !== false,
+            showSchedule: ps.showSchedule !== false,
+            showContact: ps.showContact !== false,
+            showTeams: ps.showTeams === true,
+            showBracket: ps.showBracket !== false
+        }
+    };
+
+    if (ps.showPrize !== false) {
+        out.prizeMode = t.prizeMode || 'none';
+        out.prizeDetails = t.prizeDetails || '';
+        out.prizePool = t.prizePool || '';
+        out.currency = t.currency || 'USD';
+        out.prizesByRank = t.prizesByRank || {};
+    }
+    if (ps.showSchedule !== false) {
+        out.registrationWindow = t.registrationWindow || {};
+        out.checkInWindow = t.checkInWindow || {};
+    }
+    if (ps.showSponsors !== false) {
+        out.sponsors = Array.isArray(t.sponsors)
+            ? t.sponsors.map((s) => ({
+                name: s?.name || '',
+                link: s?.link || '',
+                tier: s?.tier || '',
+                logoUrl: s?.logoUrl || ''
+            }))
+            : [];
+    }
+    if (ps.showContact !== false) {
+        out.contact = t.contact || {};
+        out.broadcast = t.broadcast || {};
+    }
+    if (ps.showRules !== false) {
+        out.rulesPdf = t.rulesPdf || '';
+    }
+    if (ps.showTeams === true) {
+        out.registrations = Array.isArray(t.registrations)
+            ? t.registrations.map((r) => ({
+                _id: r?._id,
+                teamName: r?.teamName || '',
+                logoUrl: r?.logoUrl || '',
+                status: r?.status || 'approved',
+                registeredAt: r?.registeredAt || null
+            }))
+            : [];
+    }
+    if (ps.showBracket !== false) {
+        out.bracket = t.bracket || null;
+    }
+
+    return out;
+};
+
 const pushNotificationMany = async (userIds, payload) => {
     const ids = Array.isArray(userIds) ? [...new Set(userIds.filter(Boolean).map(String))] : [];
     if (!ids.length) return;
@@ -87,6 +175,29 @@ export const createTournament = async (req, res) => {
 
         const rawSponsors = data.sponsors ?? data.sponsorsData;
         const sponsors = parseField(rawSponsors) || [];
+        const parsedPrizesByRank = parseField(data.prizesByRank) || {};
+        const parsedStaff = parseField(data.staff) || {};
+        const parsedRegistrationWindow = parseField(data.registrationWindow) || {};
+        const parsedCheckInWindow = parseField(data.checkInWindow) || {};
+        const parsedEligibility = parseField(data.eligibility) || {};
+        const parsedContact = parseField(data.contact) || {};
+        const parsedBroadcast = parseField(data.broadcast) || {};
+        const parsedMatchConfig = parseField(data.matchConfig) || {};
+        const parsedLegalCompliance = parseField(data.legalCompliance) || {};
+
+        const normalizeDateValue = (value) => {
+            if (!value) return null;
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const normalizeStringArray = (value) => {
+            if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
+            if (typeof value === 'string') {
+                return value.split(',').map((v) => v.trim()).filter(Boolean);
+            }
+            return [];
+        };
         const sponsorsWithLogos = Array.isArray(sponsors)
             ? sponsors.map((s, idx) => {
                 const fileIndex = Number.isInteger(s?.logoIndex) ? s.logoIndex : idx;
@@ -100,9 +211,45 @@ export const createTournament = async (req, res) => {
         const newTournament = new Tournament({
             ...data,
             tournamentId,
-            prizesByRank: parseField(data.prizesByRank),
+            prizesByRank: parsedPrizesByRank,
             sponsors: sponsorsWithLogos,
-            staff: parseField(data.staff),
+            staff: parsedStaff,
+            timezone: data.timezone || 'America/Santo_Domingo',
+            registrationWindow: {
+                start: normalizeDateValue(parsedRegistrationWindow.start),
+                end: normalizeDateValue(parsedRegistrationWindow.end)
+            },
+            checkInWindow: {
+                start: normalizeDateValue(parsedCheckInWindow.start),
+                end: normalizeDateValue(parsedCheckInWindow.end)
+            },
+            eligibility: {
+                minAge: Number(parsedEligibility.minAge) > 0 ? Number(parsedEligibility.minAge) : 13,
+                allowedCountries: normalizeStringArray(parsedEligibility.allowedCountries),
+                notes: parsedEligibility.notes || ''
+            },
+            contact: {
+                email: parsedContact.email || '',
+                phone: parsedContact.phone || '',
+                discordInvite: parsedContact.discordInvite || ''
+            },
+            broadcast: {
+                streamUrl: parsedBroadcast.streamUrl || '',
+                streamLanguage: parsedBroadcast.streamLanguage || 'es'
+            },
+            matchConfig: {
+                seriesType: parsedMatchConfig.seriesType || 'BO3',
+                mapPool: normalizeStringArray(parsedMatchConfig.mapPool),
+                patchVersion: parsedMatchConfig.patchVersion || ''
+            },
+            legalCompliance: {
+                jurisdiction: parsedLegalCompliance.jurisdiction || '',
+                governingLaw: parsedLegalCompliance.governingLaw || '',
+                claimsContact: parsedLegalCompliance.claimsContact || '',
+                rulesAccepted: parsedLegalCompliance.rulesAccepted === true,
+                privacyAccepted: parsedLegalCompliance.privacyAccepted === true,
+                organizerDeclaration: parsedLegalCompliance.organizerDeclaration === true
+            },
             bannerImage: bannerPath,
             rulesPdf: pdfPath,
             organizer: req.userId,
@@ -125,13 +272,38 @@ export const createTournament = async (req, res) => {
         }
 
         const prizeValues = [
-            data?.prizesByRank?.first,
-            data?.prizesByRank?.second,
-            data?.prizesByRank?.third
+            parsedPrizesByRank?.first,
+            parsedPrizesByRank?.second,
+            parsedPrizesByRank?.third
         ];
         const hasNegative = prizeValues.some(v => Number(v) < 0);
         if (hasNegative) {
             return res.status(400).json({ message: 'Los premios no pueden ser negativos' });
+        }
+
+        const eventDate = data.date ? new Date(data.date) : null;
+        const regStart = normalizeDateValue(parsedRegistrationWindow.start);
+        const regEnd = normalizeDateValue(parsedRegistrationWindow.end);
+        const checkStart = normalizeDateValue(parsedCheckInWindow.start);
+        const checkEnd = normalizeDateValue(parsedCheckInWindow.end);
+
+        if (regStart && regEnd && regEnd < regStart) {
+            return res.status(400).json({ message: 'La ventana de inscripción es inválida' });
+        }
+        if (regEnd && eventDate && regEnd > eventDate) {
+            return res.status(400).json({ message: 'El cierre de inscripción no puede superar la fecha del torneo' });
+        }
+        if (checkStart && checkEnd && checkEnd < checkStart) {
+            return res.status(400).json({ message: 'La ventana de check-in es inválida' });
+        }
+        if (checkStart && eventDate && checkStart > eventDate) {
+            return res.status(400).json({ message: 'El check-in debe iniciar antes del torneo' });
+        }
+        if (!String(parsedLegalCompliance.jurisdiction || '').trim() || !String(parsedLegalCompliance.governingLaw || '').trim()) {
+            return res.status(400).json({ message: 'Debes definir jurisdicción y normativa aplicable del torneo' });
+        }
+        if (!parsedLegalCompliance.rulesAccepted || !parsedLegalCompliance.privacyAccepted || !parsedLegalCompliance.organizerDeclaration) {
+            return res.status(400).json({ message: 'Debes aceptar los términos, privacidad y declaración de organizador' });
         }
 
 
@@ -192,6 +364,29 @@ export const updateTournament = async (req, res) => {
 
         const rawSponsors = data.sponsors ?? data.sponsorsData;
         const sponsors = parseField(rawSponsors) || [];
+        const parsedPrizesByRank = parseField(data.prizesByRank);
+        const parsedStaff = parseField(data.staff);
+        const parsedRegistrationWindow = parseField(data.registrationWindow);
+        const parsedCheckInWindow = parseField(data.checkInWindow);
+        const parsedEligibility = parseField(data.eligibility);
+        const parsedContact = parseField(data.contact);
+        const parsedBroadcast = parseField(data.broadcast);
+        const parsedMatchConfig = parseField(data.matchConfig);
+        const parsedLegalCompliance = parseField(data.legalCompliance);
+
+        const normalizeDateValue = (value) => {
+            if (!value) return null;
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const normalizeStringArray = (value) => {
+            if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
+            if (typeof value === 'string') {
+                return value.split(',').map((v) => v.trim()).filter(Boolean);
+            }
+            return [];
+        };
         const sponsorsWithLogos = Array.isArray(sponsors)
             ? sponsors.map((s, idx) => {
                 const fileIndex = Number.isInteger(s?.logoIndex) ? s.logoIndex : idx;
@@ -216,9 +411,87 @@ export const updateTournament = async (req, res) => {
 
         const update = {
             ...data,
-            prizesByRank: parseField(data.prizesByRank),
-            staff: parseField(data.staff)
+            prizesByRank: parsedPrizesByRank,
+            staff: parsedStaff
         };
+
+        if (data.timezone) {
+            update.timezone = data.timezone;
+        }
+        if (parsedRegistrationWindow) {
+            update.registrationWindow = {
+                start: normalizeDateValue(parsedRegistrationWindow.start),
+                end: normalizeDateValue(parsedRegistrationWindow.end)
+            };
+        }
+        if (parsedCheckInWindow) {
+            update.checkInWindow = {
+                start: normalizeDateValue(parsedCheckInWindow.start),
+                end: normalizeDateValue(parsedCheckInWindow.end)
+            };
+        }
+        if (parsedEligibility) {
+            update.eligibility = {
+                minAge: Number(parsedEligibility.minAge) > 0 ? Number(parsedEligibility.minAge) : 13,
+                allowedCountries: normalizeStringArray(parsedEligibility.allowedCountries),
+                notes: parsedEligibility.notes || ''
+            };
+        }
+        if (parsedContact) {
+            update.contact = {
+                email: parsedContact.email || '',
+                phone: parsedContact.phone || '',
+                discordInvite: parsedContact.discordInvite || ''
+            };
+        }
+        if (parsedBroadcast) {
+            update.broadcast = {
+                streamUrl: parsedBroadcast.streamUrl || '',
+                streamLanguage: parsedBroadcast.streamLanguage || 'es'
+            };
+        }
+        if (parsedMatchConfig) {
+            update.matchConfig = {
+                seriesType: parsedMatchConfig.seriesType || 'BO3',
+                mapPool: normalizeStringArray(parsedMatchConfig.mapPool),
+                patchVersion: parsedMatchConfig.patchVersion || ''
+            };
+        }
+        if (parsedLegalCompliance) {
+            update.legalCompliance = {
+                jurisdiction: parsedLegalCompliance.jurisdiction || '',
+                governingLaw: parsedLegalCompliance.governingLaw || '',
+                claimsContact: parsedLegalCompliance.claimsContact || '',
+                rulesAccepted: parsedLegalCompliance.rulesAccepted === true,
+                privacyAccepted: parsedLegalCompliance.privacyAccepted === true,
+                organizerDeclaration: parsedLegalCompliance.organizerDeclaration === true
+            };
+        }
+
+        const targetDate = data.date ? new Date(data.date) : tournament.date;
+        const targetRegWindow = update.registrationWindow || tournament.registrationWindow || {};
+        const targetCheckWindow = update.checkInWindow || tournament.checkInWindow || {};
+        const regStart = normalizeDateValue(targetRegWindow.start);
+        const regEnd = normalizeDateValue(targetRegWindow.end);
+        const checkStart = normalizeDateValue(targetCheckWindow.start);
+        const checkEnd = normalizeDateValue(targetCheckWindow.end);
+
+        if (regStart && regEnd && regEnd < regStart) {
+            return res.status(400).json({ message: 'La ventana de inscripción es inválida' });
+        }
+        if (regEnd && targetDate && regEnd > targetDate) {
+            return res.status(400).json({ message: 'El cierre de inscripción no puede superar la fecha del torneo' });
+        }
+        if (checkStart && checkEnd && checkEnd < checkStart) {
+            return res.status(400).json({ message: 'La ventana de check-in es inválida' });
+        }
+        if (checkStart && targetDate && checkStart > targetDate) {
+            return res.status(400).json({ message: 'El check-in debe iniciar antes del torneo' });
+        }
+        const targetLegalCompliance = update.legalCompliance || tournament.legalCompliance || {};
+        if (!String(targetLegalCompliance.jurisdiction || '').trim() || !String(targetLegalCompliance.governingLaw || '').trim()) {
+            return res.status(400).json({ message: 'Debes definir jurisdicción y normativa aplicable del torneo' });
+        }
 
         if (sponsorsWithLogos !== undefined) update.sponsors = sponsorsWithLogos;
         if (bannerPath) update.bannerImage = bannerPath;
@@ -265,6 +538,149 @@ export const getTournamentByCode = async (req, res) => {
         res.status(200).json(tournament);
     } catch (error) {
         res.status(500).json({ message: "Error en la búsqueda", error: error.message });
+    }
+};
+
+export const getManageableTournaments = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('isAdmin');
+        const filter = user?.isAdmin
+            ? {}
+            : { organizer: req.userId };
+
+        const tournaments = await Tournament.find(filter)
+            .sort({ createdAt: -1 })
+            .select('tournamentId title game status date organizer publicSettings');
+
+        return res.status(200).json(tournaments);
+    } catch (error) {
+        console.error('Error al obtener torneos gestionables:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const searchPublicTournaments = async (req, res) => {
+    try {
+        const q = String(req.query?.q || '').trim();
+        const baseQuery = {
+            status: { $ne: 'draft' },
+            'publicSettings.visibility': { $in: ['public', null] }
+        };
+
+        if (q) {
+            baseQuery.$or = [
+                { tournamentId: { $regex: q, $options: 'i' } },
+                { title: { $regex: q, $options: 'i' } }
+            ];
+        }
+
+        const docs = await Tournament.find(baseQuery)
+            .sort({ date: 1, createdAt: -1 })
+            .limit(50);
+
+        const items = docs.map((t) => {
+            const pub = toPublicTournament(t);
+            return {
+                tournamentId: pub.tournamentId,
+                title: pub.title,
+                game: pub.game,
+                status: pub.status,
+                date: pub.date,
+                time: pub.time,
+                bannerImage: pub.bannerImage
+            };
+        });
+
+        return res.status(200).json(items);
+    } catch (error) {
+        console.error('Error en búsqueda pública de torneos:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const getPublicTournamentByCode = async (req, res) => {
+    try {
+        const { code } = req.params;
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+
+        const visibility = tournament?.publicSettings?.visibility || 'public';
+        if (visibility === 'private') {
+            return res.status(403).json({ message: 'Este torneo no es público' });
+        }
+
+        return res.status(200).json(toPublicTournament(tournament));
+    } catch (error) {
+        console.error('Error obteniendo torneo público:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const updateTournamentPublicSettings = async (req, res) => {
+    try {
+        const { code } = req.params;
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) {
+            return res.status(403).json({ message: 'No tienes permisos para editar este torneo' });
+        }
+
+        const body = req.body || {};
+        const incoming = body.publicSettings || body;
+        const visibility = ['public', 'unlisted', 'private'].includes(incoming.visibility)
+            ? incoming.visibility
+            : (tournament.publicSettings?.visibility || 'public');
+
+        tournament.publicSettings = {
+            visibility,
+            showPrize: incoming.showPrize !== undefined ? incoming.showPrize === true : (tournament.publicSettings?.showPrize !== false),
+            showSponsors: incoming.showSponsors !== undefined ? incoming.showSponsors === true : (tournament.publicSettings?.showSponsors !== false),
+            showRules: incoming.showRules !== undefined ? incoming.showRules === true : (tournament.publicSettings?.showRules !== false),
+            showSchedule: incoming.showSchedule !== undefined ? incoming.showSchedule === true : (tournament.publicSettings?.showSchedule !== false),
+            showContact: incoming.showContact !== undefined ? incoming.showContact === true : (tournament.publicSettings?.showContact !== false),
+            showTeams: incoming.showTeams !== undefined ? incoming.showTeams === true : (tournament.publicSettings?.showTeams === true),
+            showBracket: incoming.showBracket !== undefined ? incoming.showBracket === true : (tournament.publicSettings?.showBracket !== false),
+            customMessage: String(incoming.customMessage || '').trim()
+        };
+
+        await tournament.save();
+        return res.status(200).json({ message: 'Configuración pública actualizada', publicSettings: tournament.publicSettings });
+    } catch (error) {
+        console.error('Error actualizando configuración pública:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const updateTournamentBracket = async (req, res) => {
+    try {
+        const { code } = req.params;
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) {
+            return res.status(403).json({ message: 'No tienes permisos para editar este torneo' });
+        }
+
+        const bracket = req.body?.bracket ?? req.body;
+        if (!bracket || typeof bracket !== 'object') {
+            return res.status(400).json({ message: 'Bracket inválido' });
+        }
+
+        tournament.bracket = bracket;
+        await tournament.save();
+        return res.status(200).json({ message: 'Bracket actualizado', bracket: tournament.bracket });
+    } catch (error) {
+        console.error('Error actualizando bracket:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
     }
 };
 

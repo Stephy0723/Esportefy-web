@@ -401,11 +401,10 @@ export default function Settings() {
                                 ) : (
                                     <button
                                         className="btn-connect"
-                                        onClick={() =>
-                                            connectProvider('steam', {
-                                                steamId: '76561198000000000'
-                                            })
-                                        }
+                                        onClick={() => {
+                                            window.location.href =
+                                                `${API_URL}/api/auth/steam?token=${token}`;
+                                        }}
                                     >
                                         Conectar
                                     </button>

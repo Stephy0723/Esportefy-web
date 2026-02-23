@@ -26,11 +26,10 @@ const LINKS = {
 };
 
 const SOCIALS = [
-  { icon: 'bxl-discord-alt', href: '#', label: 'Discord' },
-  { icon: 'bxl-twitch', href: 'https://twitch.tv', label: 'Twitch' },
-  { icon: 'bxl-youtube', href: 'https://youtube.com', label: 'YouTube' },
-  { icon: 'bxl-twitter', href: '#', label: 'Twitter / X' },
-  { icon: 'bxl-instagram', href: '#', label: 'Instagram' },
+  { icon: 'bxl-discord-alt', href: 'https://discord.gg/ExCguE8e', label: 'Discord' },
+  { icon: 'bxl-twitch', href: 'https://www.twitch.tv/esportefy', label: 'Twitch' },
+  { icon: 'bxl-youtube', href: 'https://www.youtube.com/channel/UCAwKJv2zibYYEKJOgWW6F9w', label: 'YouTube' },
+  { icon: 'bxl-facebook-circle', href: 'https://www.facebook.com/profile.php?id=61585628084470', label: 'Facebook' },
 ];
 
 const Footer = () => {
@@ -148,7 +147,7 @@ const Footer = () => {
             Desarrollado por <span className="font-semibold text-[var(--text-main)]">Steliant</span>.
           </p>
           <p className="text-[var(--text-muted)] text-xs">
-            Hecho con <span className="text-[var(--primary)]">&hearts;</span> para la comunidad gamer latinos
+            Hecho con <span className="text-[var(--primary)]">&hearts;</span> para la comunidad gamer latina
           </p>
         </div>
       </div>

@@ -14,10 +14,26 @@ import {
   FaShieldAlt,
   FaCrown,
   FaFire,
-  FaBullhorn,
   FaCalendarAlt,
   FaUserFriends,
   FaNewspaper,
+  FaImage,
+  FaPaperPlane,
+  FaCommentDots,
+  FaShareAlt,
+  FaBookmark,
+  FaFlag,
+  FaClock,
+  FaChartLine,
+  FaBolt,
+  FaHeart,
+  FaEllipsisH,
+  FaPlay,
+  FaEye,
+  FaThumbsUp,
+  FaSignInAlt,
+  FaBell,
+  FaLink,
 } from 'react-icons/fa';
 import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY } from '../../data/communityData';
 import { gamesDetailedData } from '../../data/gamesDetailedData';
@@ -30,6 +46,13 @@ const toTitle = (v) =>
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
+const parseMembers = (value) => {
+  const raw = String(value || '0').toLowerCase().replace(/\s+/g, '');
+  const base = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
+  if (raw.includes('m')) return base * 1000000;
+  if (raw.includes('k')) return base * 1000;
+  return base;
+};
 
 const DATA_ALIASES = {
   cs2: 'csgo', warzone: 'cod', rocket: 'rl', overwatch: 'ow2',
@@ -67,6 +90,10 @@ const CommunityGamePageTemplate = () => {
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [activeSection, setActiveSection] = useState(0);
   const [revealed, setRevealed] = useState(new Set([0]));
+  const [postDraft, setPostDraft] = useState('');
+  const [activeTab, setActiveTab] = useState('feed');
+  const [likedCards, setLikedCards] = useState(new Set());
+  const [savedCards, setSavedCards] = useState(new Set());
   const sectionRefs = useRef([]);
 
   const id = String(rawId || '').toLowerCase().trim();
@@ -91,6 +118,25 @@ const CommunityGamePageTemplate = () => {
   const tournaments = fallbackArray(data?.activeTournaments || data?.tournaments, [
     { title: `${name} Open Series`, prize: 'TBD', date: 'Proximamente' },
   ]);
+  const featuredTournament = tournaments[0] || null;
+  const communityPanels = useMemo(() => {
+    const safeCommunities = userCommunities.map((c) => ({
+      ...c,
+      membersLabel: c.members || '0',
+      membersCount: parseMembers(c.members),
+    }));
+    const newest = safeCommunities.slice(0, 4);
+    const active = [...safeCommunities].sort((a, b) => b.membersCount - a.membersCount).slice(0, 4);
+    const trending = [...safeCommunities]
+      .map((c, idx) => ({ ...c, score: c.membersCount + (idx + 1) * 10 }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+    return [
+      { id: 'new', title: 'Nuevos', icon: <FaClock />, items: newest },
+      { id: 'active', title: 'Mas activos', icon: <FaChartLine />, items: active },
+      { id: 'trending', title: 'Trending', icon: <FaBolt />, items: trending },
+    ];
+  }, [userCommunities]);
 
   const tags = useMemo(() => {
     const raw = [
@@ -125,16 +171,81 @@ const CommunityGamePageTemplate = () => {
   const feedItems = useMemo(() => {
     const items = [];
     tournaments.forEach((t) => {
-      items.push({ type: 'torneo', icon: <FaTrophy />, title: t.title, sub: t.date || 'Proximamente', badge: t.prize || 'TBD' });
+      items.push({
+        type: 'torneo',
+        icon: <FaTrophy />,
+        title: t.title,
+        sub: t.date || 'Proximamente',
+        badge: t.prize || 'TBD',
+        cover: t.banner || banner || communityGame?.img || '',
+        logo: String(t.title || name)
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((w) => w[0]?.toUpperCase())
+          .join(''),
+        viewers: Math.floor(Math.random() * 500 + 100),
+        likes: Math.floor(Math.random() * 200 + 30),
+        comments: Math.floor(Math.random() * 50 + 5),
+      });
     });
     userCommunities.forEach((c) => {
-      items.push({ type: 'comunidad', icon: <FaUserFriends />, title: c.name, sub: `${c.members || '0'} miembros`, badge: 'ACTIVA' });
+      items.push({
+        type: 'comunidad',
+        icon: <FaUserFriends />,
+        title: c.name,
+        sub: `${c.members || '0'} miembros`,
+        badge: 'ACTIVA',
+        cover: communityGame?.img || banner || '',
+        logo: String(c.name || name)
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((w) => w[0]?.toUpperCase())
+          .join(''),
+        viewers: Math.floor(Math.random() * 300 + 50),
+        likes: Math.floor(Math.random() * 150 + 20),
+        comments: Math.floor(Math.random() * 40 + 3),
+      });
     });
     sponsors.forEach((s) => {
-      items.push({ type: 'sponsor', icon: <FaCrown />, title: s.name, sub: 'Patrocinador oficial', badge: 'PARTNER' });
+      items.push({
+        type: 'sponsor',
+        icon: <FaCrown />,
+        title: s.name,
+        sub: 'Patrocinador oficial',
+        badge: 'PARTNER',
+        cover: banner || communityGame?.img || '',
+        logo: String(s.name || 'SP').slice(0, 2).toUpperCase(),
+        viewers: Math.floor(Math.random() * 800 + 200),
+        likes: Math.floor(Math.random() * 300 + 50),
+        comments: Math.floor(Math.random() * 80 + 10),
+      });
     });
     return items.slice(0, 6);
-  }, [tournaments, userCommunities, sponsors]);
+  }, [tournaments, userCommunities, sponsors, banner, communityGame, name]);
+
+  const handlePublish = useCallback(() => {
+    const content = postDraft.trim();
+    if (!content) return;
+    setPostDraft('');
+  }, [postDraft]);
+
+  const toggleLike = (idx) => {
+    setLikedCards((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  };
+
+  const toggleSave = (idx) => {
+    setSavedCards((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  };
 
   /* ── Parallax ── */
   const onHeroMove = (e) => {
@@ -181,12 +292,21 @@ const CommunityGamePageTemplate = () => {
   const sectionCount = relatedGames.length > 0 ? 5 : 4;
 
   const particles = useMemo(() =>
-    Array.from({ length: 14 }, (_, i) => ({
+    Array.from({ length: 20 }, (_, i) => ({
       id: i,
       left: `${Math.random() * 100}%`,
       delay: `${Math.random() * 8}s`,
       duration: `${6 + Math.random() * 8}s`,
-      size: `${2 + Math.random() * 3}px`,
+      size: `${2 + Math.random() * 4}px`,
+    })),
+  []);
+
+  const orbits = useMemo(() =>
+    Array.from({ length: 3 }, (_, i) => ({
+      id: i,
+      size: 200 + i * 180,
+      duration: `${20 + i * 10}s`,
+      delay: `${i * 2}s`,
     })),
   []);
 
@@ -196,7 +316,9 @@ const CommunityGamePageTemplate = () => {
       {/* Side dots */}
       <nav className="ghp-nav">
         {Array.from({ length: sectionCount }, (_, i) => (
-          <button key={i} type="button" className={`ghp-nav__dot ${activeSection === i ? 'ghp-nav__dot--on' : ''}`} onClick={() => scrollTo(i)} />
+          <button key={i} type="button" className={`ghp-nav__dot ${activeSection === i ? 'ghp-nav__dot--on' : ''}`} onClick={() => scrollTo(i)}>
+            <span className="ghp-nav__pulse" />
+          </button>
         ))}
       </nav>
 
@@ -205,14 +327,24 @@ const CommunityGamePageTemplate = () => {
         <div className="ghp-hero__bg" style={{ backgroundImage: banner ? `url(${banner})` : 'none', transform: `translate3d(${parallax.x * 16}px, ${parallax.y * 12}px, 0) scale(1.1)` }} />
         <div className="ghp-hero__fade" />
         <div className="ghp-hero__vignette" />
+        <div className="ghp-hero__mesh" />
         <div className="ghp-particles">{particles.map((p) => <span key={p.id} className="ghp-particle" style={{ left: p.left, animationDelay: p.delay, animationDuration: p.duration, width: p.size, height: p.size }} />)}</div>
+
+        {/* Orbital rings */}
+        <div className="ghp-orbits">
+          {orbits.map((o) => (
+            <div key={o.id} className="ghp-orbit" style={{ width: `${o.size}px`, height: `${o.size}px`, animationDuration: o.duration, animationDelay: o.delay }} />
+          ))}
+        </div>
 
         <button className="ghp-back" type="button" onClick={() => navigate(-1)}><FaArrowLeft /> <span>VOLVER</span></button>
 
         <div className="ghp-hero__center">
           <span className="ghp-hero__kicker"><FaFire /> GAME HUB</span>
           <h1 className="ghp-hero__title">{name}</h1>
-          <div className="ghp-hero__line" />
+          <div className="ghp-hero__line">
+            <span className="ghp-hero__line-glow" />
+          </div>
           <p className="ghp-hero__desc">{history.length <= 200 ? history : `${history.slice(0, 200)}...`}</p>
 
           <div className="ghp-hero__tags">
@@ -234,6 +366,19 @@ const CommunityGamePageTemplate = () => {
               </div>
             ))}
           </div>
+
+          {/* Hero action buttons */}
+          <div className="ghp-hero__actions">
+            <button type="button" className="ghp-btn ghp-btn--primary ghp-btn--lg">
+              <FaSignInAlt /> Unirme al Hub
+            </button>
+            <button type="button" className="ghp-btn ghp-btn--glass ghp-btn--lg">
+              <FaBell /> Seguir
+            </button>
+            <button type="button" className="ghp-btn ghp-btn--glass ghp-btn--lg">
+              <FaShareAlt /> Compartir
+            </button>
+          </div>
         </div>
 
         <button className="ghp-scroll" type="button" onClick={() => scrollTo(1)}><span>EXPLORAR</span> <FaChevronDown /></button>
@@ -241,21 +386,205 @@ const CommunityGamePageTemplate = () => {
 
       {/* ═══════ SECTION 2 — PUBLICATION HUB ═══════ */}
       <section className={`ghp-s ghp-sec ${revealed.has(1) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[1] = el)}>
+        <div className="ghp-sec__bg-accent" />
         <div className="ghp-sec__inner">
           <SectionTitle icon={<FaNewspaper />} title="Hub de Novedades" subtitle={`Torneos, comunidades y alianzas de ${name}`} />
 
-          <div className="ghp-feed">
-            {feedItems.map((item, i) => (
-              <article key={`${item.title}-${i}`} className="ghp-feed__card">
-                <div className="ghp-feed__card-top">
-                  <span className={`ghp-feed__type ghp-feed__type--${item.type}`}>{item.icon} {item.type}</span>
-                  <span className="ghp-feed__badge">{item.badge}</span>
-                </div>
-                <h3 className="ghp-feed__card-title">{item.title}</h3>
-                <p className="ghp-feed__card-sub">{item.sub}</p>
-                <div className="ghp-feed__card-line" />
-              </article>
+          {/* Tab navigation */}
+          <div className="ghp-tabs">
+            {[
+              { id: 'feed', label: 'Feed', icon: <FaNewspaper /> },
+              { id: 'tournaments', label: 'Torneos', icon: <FaTrophy /> },
+              { id: 'communities', label: 'Comunidades', icon: <FaUsers /> },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`ghp-tab ${activeTab === tab.id ? 'ghp-tab--active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.icon} {tab.label}
+              </button>
             ))}
+          </div>
+
+          <div className="ghp-news-grid">
+            <div className="ghp-news-main">
+              {/* Composer */}
+              <article className="ghp-composer">
+                <div className="ghp-composer__identity">
+                  <div className="ghp-composer__avatar">{String(name).slice(0, 2).toUpperCase()}</div>
+                  <div className="ghp-composer__copy">
+                    <h3>Publicar Novedad</h3>
+                    <p>Comparte anuncios, reclutamiento o highlights con la comunidad de {name}.</p>
+                  </div>
+                </div>
+
+                {featuredTournament && (
+                  <div className="ghp-composer__featured">
+                    <div
+                      className="ghp-composer__featured-bg"
+                      style={{ backgroundImage: featuredTournament?.banner || banner ? `url(${featuredTournament?.banner || banner})` : 'none' }}
+                    />
+                    <div className="ghp-composer__featured-overlay" />
+                    <div className="ghp-composer__featured-content">
+                      <div className="ghp-composer__featured-top">
+                        <span className="ghp-composer__pill"><FaTrophy /> Torneo activo</span>
+                        <span className="ghp-composer__live-dot"><span /> EN VIVO</span>
+                      </div>
+                      <strong>{featuredTournament.title}</strong>
+                      <small><FaCalendarAlt /> {featuredTournament.date || 'Proximamente'} &bull; Prize: {featuredTournament.prize || 'TBD'}</small>
+                      <div className="ghp-composer__featured-actions">
+                        <button type="button" className="ghp-btn ghp-btn--join">
+                          <FaHandshake /> Unirme
+                        </button>
+                        <button type="button" className="ghp-btn ghp-btn--glass">
+                          <FaEye /> Ver detalles
+                        </button>
+                        <button type="button" className="ghp-btn ghp-btn--glass">
+                          <FaShareAlt /> Compartir
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <textarea
+                  className="ghp-composer__input"
+                  rows={4}
+                  maxLength={320}
+                  value={postDraft}
+                  onChange={(e) => setPostDraft(e.target.value)}
+                  placeholder={`Escribe tu publicacion para ${name}. Ejemplo: "Busco jungla para scrims hoy 8PM".`}
+                />
+
+                <div className="ghp-composer__footer">
+                  <div className="ghp-composer__tools">
+                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaImage /> Imagen</button>
+                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaPlay /> Clip</button>
+                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaCalendarAlt /> Evento</button>
+                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaLink /> Enlace</button>
+                  </div>
+                  <div className="ghp-composer__submit">
+                    <span className="ghp-composer__counter">{postDraft.length}/320</span>
+                    <button type="button" className="ghp-btn ghp-btn--primary" onClick={handlePublish} disabled={!postDraft.trim()}>
+                      <FaPaperPlane /> Publicar
+                    </button>
+                  </div>
+                </div>
+              </article>
+
+              {/* Feed cards */}
+              <div className="ghp-feed">
+                {feedItems.map((item, i) => (
+                  <article key={`${item.title}-${i}`} className="ghp-feed__card">
+                    <div className="ghp-feed__media" style={{ backgroundImage: item.cover ? `url(${item.cover})` : 'none' }}>
+                      <div className="ghp-feed__media-fade" />
+                      <div className="ghp-feed__logo">{item.logo || 'EF'}</div>
+                      <div className="ghp-feed__media-badge">
+                        <span className={`ghp-feed__type ghp-feed__type--${item.type}`}>{item.icon} {item.type}</span>
+                      </div>
+                      {item.type === 'torneo' && (
+                        <div className="ghp-feed__media-live">
+                          <FaEye /> {item.viewers}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ghp-feed__card-body">
+                      <div className="ghp-feed__card-top">
+                        <span className="ghp-feed__badge">{item.badge}</span>
+                        <button type="button" className="ghp-feed__more"><FaEllipsisH /></button>
+                      </div>
+                      <h3 className="ghp-feed__card-title">{item.title}</h3>
+                      <p className="ghp-feed__card-sub">{item.sub}</p>
+                      <p className="ghp-feed__message">
+                        {item.type === 'torneo' && `Nuevo anuncio del torneo ${item.title}. Cupos limitados para squads competitivos.`}
+                        {item.type === 'comunidad' && `La comunidad ${item.title} esta activa. Comparte tus clips y recluta jugadores.`}
+                        {item.type === 'sponsor' && `${item.title} confirma apoyo oficial para eventos y dinamicas semanales.`}
+                      </p>
+
+                      {/* Engagement stats */}
+                      <div className="ghp-feed__stats">
+                        <span><FaThumbsUp /> {item.likes + (likedCards.has(i) ? 1 : 0)}</span>
+                        <span><FaCommentDots /> {item.comments}</span>
+                        <span><FaEye /> {item.viewers}</span>
+                      </div>
+
+                      <div className="ghp-feed__divider" />
+
+                      <div className="ghp-feed__actions">
+                        <button type="button" className={`ghp-btn ghp-btn--action ${likedCards.has(i) ? 'ghp-btn--liked' : ''}`} onClick={() => toggleLike(i)}>
+                          <FaHeart /> {likedCards.has(i) ? 'Liked' : 'Like'}
+                        </button>
+                        <button type="button" className="ghp-btn ghp-btn--action"><FaCommentDots /> Comentar</button>
+                        <button type="button" className="ghp-btn ghp-btn--action"><FaShareAlt /> Compartir</button>
+                        <button type="button" className={`ghp-btn ghp-btn--action ${savedCards.has(i) ? 'ghp-btn--saved' : ''}`} onClick={() => toggleSave(i)}>
+                          <FaBookmark /> {savedCards.has(i) ? 'Guardado' : 'Guardar'}
+                        </button>
+                      </div>
+
+                      <div className="ghp-feed__card-cta">
+                        <button type="button" className="ghp-btn ghp-btn--join ghp-btn--wide">
+                          <FaHandshake /> {item.type === 'torneo' ? 'Inscribirme al torneo' : item.type === 'comunidad' ? 'Unirme a la comunidad' : 'Explorar alianza'}
+                        </button>
+                        <button type="button" className="ghp-btn ghp-btn--danger-sm"><FaFlag /> Reportar</button>
+                      </div>
+                    </div>
+                    <div className="ghp-feed__card-line" />
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <aside className="ghp-news-side">
+              {/* Quick stats panel */}
+              <article className="ghp-side-stats">
+                <header className="ghp-side-stats__head">
+                  <FaChartLine /> <h4>Actividad del Hub</h4>
+                </header>
+                <div className="ghp-side-stats__grid">
+                  <div className="ghp-side-stats__item">
+                    <strong>{tournaments.length}</strong>
+                    <span>Torneos</span>
+                  </div>
+                  <div className="ghp-side-stats__item">
+                    <strong>{userCommunities.length}</strong>
+                    <span>Comunidades</span>
+                  </div>
+                  <div className="ghp-side-stats__item">
+                    <strong>{sponsors.length}</strong>
+                    <span>Sponsors</span>
+                  </div>
+                  <div className="ghp-side-stats__item">
+                    <strong>{organizers.length}</strong>
+                    <span>Organizers</span>
+                  </div>
+                </div>
+              </article>
+
+              {communityPanels.map((panel) => (
+                <article key={panel.id} className="ghp-side-panel">
+                  <header className="ghp-side-panel__head">
+                    <span>{panel.icon}</span>
+                    <h4>{panel.title}</h4>
+                    <FaChevronRight className="ghp-side-panel__arrow" />
+                  </header>
+                  <div className="ghp-side-panel__list">
+                    {panel.items.map((c, i) => (
+                      <button type="button" key={`${panel.id}-${c.name}-${i}`} className="ghp-side-item">
+                        <div className="ghp-side-item__icon"><FaUsers /></div>
+                        <div className="ghp-side-item__text">
+                          <strong>{c.name}</strong>
+                          <span>{c.membersLabel} miembros</span>
+                        </div>
+                        <div className="ghp-side-item__join"><FaSignInAlt /></div>
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </aside>
           </div>
         </div>
         <button className="ghp-scroll ghp-scroll--sec" type="button" onClick={() => scrollTo(2)}><FaChevronDown /></button>
@@ -263,16 +592,22 @@ const CommunityGamePageTemplate = () => {
 
       {/* ═══════ SECTION 3 — HISTORIA & COMUNIDAD ═══════ */}
       <section className={`ghp-s ghp-sec ${revealed.has(2) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[2] = el)}>
+        <div className="ghp-sec__bg-accent ghp-sec__bg-accent--alt" />
         <div className="ghp-sec__inner">
           <SectionTitle icon={<FaStar />} title="Historia & Comunidad" subtitle={`Conoce la historia y comunidades de ${name}`} />
 
           <div className="ghp-duo">
-            <article className="ghp-block">
+            <article className="ghp-block ghp-block--story">
               <div className="ghp-block__head"><FaStar /> <h3>Historia</h3></div>
+              <div className="ghp-block__accent-line" />
               <p className="ghp-block__text">{history}</p>
+              <div className="ghp-block__footer">
+                <span className="ghp-block__dev"><FaBuilding /> {developer}</span>
+              </div>
             </article>
             <article className="ghp-block">
               <div className="ghp-block__head"><FaUsers /> <h3>Comunidades</h3></div>
+              <div className="ghp-block__accent-line" />
               <div className="ghp-comm-list">
                 {userCommunities.map((c, i) => (
                   <div key={`${c.name}-${i}`} className="ghp-comm">
@@ -280,7 +615,10 @@ const CommunityGamePageTemplate = () => {
                       <div className="ghp-comm__avatar"><FaUsers /></div>
                       <div><strong>{c.name}</strong><span>{c.members || '0'} miembros</span></div>
                     </div>
-                    <FaChevronRight className="ghp-comm__arrow" />
+                    <div className="ghp-comm__right">
+                      <button type="button" className="ghp-btn ghp-btn--join ghp-btn--sm"><FaSignInAlt /> Unirme</button>
+                      <FaChevronRight className="ghp-comm__arrow" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -292,12 +630,14 @@ const CommunityGamePageTemplate = () => {
 
       {/* ═══════ SECTION 4 — SPONSORS & ORGANIZERS ═══════ */}
       <section className={`ghp-s ghp-sec ${revealed.has(3) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[3] = el)}>
+        <div className="ghp-sec__bg-accent" />
         <div className="ghp-sec__inner">
           <SectionTitle icon={<FaHandshake />} title="Patrocinadores & Organizadores" subtitle="Alianzas oficiales y organizadores verificados" />
 
           <div className="ghp-duo">
             <article className="ghp-block">
               <div className="ghp-block__head"><FaCrown /> <h3>Patrocinadores</h3></div>
+              <div className="ghp-block__accent-line" />
               <div className="ghp-sponsors-grid">
                 {sponsors.map((s, i) => (
                   <div key={`${s.name}-${i}`} className="ghp-sponsor-item">
@@ -306,12 +646,14 @@ const CommunityGamePageTemplate = () => {
                       <strong>{s.name}</strong>
                       <span>Partner oficial</span>
                     </div>
+                    <div className="ghp-sponsor-item__badge">PARTNER</div>
                   </div>
                 ))}
               </div>
             </article>
             <article className="ghp-block">
               <div className="ghp-block__head"><FaShieldAlt /> <h3>Organizadores</h3></div>
+              <div className="ghp-block__accent-line" />
               <div className="ghp-org-list">
                 {organizers.map((o, i) => (
                   <div key={`${o.name}-${i}`} className="ghp-org-item">
@@ -321,6 +663,7 @@ const CommunityGamePageTemplate = () => {
                       <span>{o.motto || 'Official organizer'}</span>
                       {o.region && <small>{o.region}</small>}
                     </div>
+                    <div className="ghp-org-item__verified"><FaShieldAlt /> Verificado</div>
                   </div>
                 ))}
               </div>
@@ -333,6 +676,7 @@ const CommunityGamePageTemplate = () => {
       {/* ═══════ SECTION 5 — RELATED GAMES ═══════ */}
       {relatedGames.length > 0 && (
         <section className={`ghp-s ghp-sec ${revealed.has(4) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[4] = el)}>
+          <div className="ghp-sec__bg-accent ghp-sec__bg-accent--alt" />
           <div className="ghp-sec__inner">
             <SectionTitle icon={<FaGamepad />} title={`Mas de ${developer}`} subtitle="Explora otros juegos del mismo estudio" />
 
@@ -343,6 +687,7 @@ const CommunityGamePageTemplate = () => {
                   <div className="ghp-rcard__body">
                     <span className="ghp-rcard__cat">{g.cat}</span>
                     <h4>{g.name}</h4>
+                    <span className="ghp-rcard__players"><FaUsers /> {g.players || '—'}</span>
                     <span className="ghp-rcard__cta">VER HUB <FaChevronRight /></span>
                   </div>
                 </button>
@@ -360,7 +705,11 @@ const SectionTitle = ({ icon, title, subtitle }) => (
   <div className="ghp-stitle">
     <div className="ghp-stitle__icon">{icon}</div>
     <h2>{title}</h2>
-    <div className="ghp-stitle__line" />
+    <div className="ghp-stitle__line">
+      <span className="ghp-stitle__line-dot" />
+      <span className="ghp-stitle__line-bar" />
+      <span className="ghp-stitle__line-dot" />
+    </div>
     <p>{subtitle}</p>
   </div>
 );

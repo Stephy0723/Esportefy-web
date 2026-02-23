@@ -1,96 +1,110 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Navbar from '../../../../components/Navbar/Navbar';
-import Sidebar from '../../../../components/Sidebar/Sidebar';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
-import axios from 'axios'; // Importamos Axios
-import { 
-    FaPlus, FaGamepad, FaUsers, FaMicrophone, FaAward, 
-    FaCalendarAlt, FaSitemap, FaTicketAlt, FaFileUpload, FaFilePdf,
-    FaServer, FaTrash, FaCheckCircle, FaStar, FaGift, FaTag, FaLink, FaImage, FaCheck
+import axios from 'axios';
+import {
+  FaBullhorn,
+  FaCheckCircle,
+  FaDiscord,
+  FaFilePdf,
+  FaFileUpload,
+  FaGamepad,
+  FaGlobeAmericas,
+  FaHandshake,
+  FaMoneyBillWave,
+  FaPlus,
+  FaShieldAlt,
+  FaSitemap,
+  FaTrash,
+  FaUsers
 } from 'react-icons/fa';
 import './CreateTournament.css';
 
-const GAME_CONFIG = {
-  "All": { color: "#ffffff", icon: "bx-grid-alt" },
-  "Valorant": { color: "#ff4655", icon: "bx-crosshair" },
-  "CS:GO 2": { color: "#de9b35", icon: "bx-target-lock" },
-  "Call of Duty": { color: "#54b946", icon: "bx-run" },
-  "Warzone": { color: "#54b946", icon: "bx-radar" },
-  "Fortnite": { color: "#a349a4", icon: "bx-building" },
-  "Free Fire": { color: "#f39c12", icon: "bx-flame" },
-  "PUBG": { color: "#f1c40f", icon: "bx-target-lock" },
-  "Apex Legends": { color: "#e74c3c", icon: "bx-shield-quarter" },
-  "Overwatch 2": { color: "#f39c12", icon: "bx-shield" },
-  "Rainbow Six Siege": { color: "#3498db", icon: "bx-window" },
-  "League of Legends": { color: "#c1a05e", icon: "bx-world" },
-  "Dota 2": { color: "#e74c3c", icon: "bx-map-alt" },
-  "Mobile Legends": { color: "#ffbf00", icon: "bx-mobile-landscape" },
-  "Honor of Kings": { color: "#e6b333", icon: "bx-crown" },
-  "Smite": { color: "#f1c40f", icon: "bx-bolt-circle" },
-  "Wild Rift": { color: "#00a8ff", icon: "bx-mobile" },
-  "FIFA 24": { color: "#2ecc71", icon: "bx-football" },
-  "NBA 2K24": { color: "#e67e22", icon: "bx-basketball" },
-  "Rocket League": { color: "#0088ff", icon: "bx-car" },
-  "Street Fighter 6": { color: "#f39c12", icon: "bx-walk" },
-  "Tekken 8": { color: "#c0392b", icon: "bx-angry" },
-  "Clash Royale": { color: "#3498db", icon: "bx-crown" },
-  "Teamfight Tactics": { color: "#f1c40f", icon: "bx-grid" },
-  "Hearthstone": { color: "#f39c12", icon: "bx-book" },
-  "Legends of Runeterra": { color: "#3498db", icon: "bx-book-open" },
-  "StarCraft II": { color: "#00a8ff", icon: "bx-planet" }
-};
+const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
+
+const GAMES = [
+  'Valorant', 'CS:GO 2', 'Fortnite', 'Free Fire', 'League of Legends',
+  'Dota 2', 'Mobile Legends', 'FIFA 24', 'Rocket League'
+];
+
+const baseState = (name) => ({
+  title: '',
+  description: '',
+  game: '',
+  gender: 'Mixto',
+  modality: '',
+  date: '',
+  time: '',
+  timezone: 'UTC',
+  prizePool: '',
+  currency: 'DOP',
+  prizeMode: 'none',
+  prizeDetails: '',
+  prizesByRank: { first: '', second: '', third: '' },
+  entryFee: 'Gratis',
+  maxSlots: '',
+  format: 'Eliminacion Directa',
+  server: '',
+  platform: 'PC',
+  bannerFile: null,
+  rulesPdf: null,
+  organizerName: name,
+  registrationWindow: { start: '', end: '' },
+  checkInWindow: { start: '', end: '' },
+  eligibility: { minAge: 13, allowedCountries: 'Global', notes: '' },
+  contact: { email: '', phone: '', discordInvite: '' },
+  broadcast: { streamUrl: '', streamLanguage: 'es' },
+  matchConfig: { seriesType: 'BO3', mapPool: '', patchVersion: '' },
+  legalCompliance: {
+    jurisdiction: '',
+    governingLaw: '',
+    claimsContact: '',
+    rulesAccepted: false,
+    privacyAccepted: false,
+    organizerDeclaration: false
+  },
+  sponsors: [{ name: '', link: '', tier: 'Partner', logoFile: null }],
+  staff: { moderators: [''], casters: [''] }
+});
 
 const CreateTournament = () => {
-  // --- 1. HOOKS (Navegación y Autenticación) ---
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-
-  // --- 2. ESTADOS (States) ---
   const [isPublished, setIsPublished] = useState(false);
-  const [tournament, setTournament] = useState({
-    title: '',
-    description: '',
-    game: '',
-    gender: '',
-    modality: '',
-    date: '',
-    time: '',
-    prizePool: '',
-    currency: 'USD',
-    prizesByRank: { first: '', second: '', third: '' },
-    entryFee: 'Gratis',
-    maxSlots: '',
-    format: 'Eliminación Directa',
-    server: '',
-    platform: 'PC',
-    bannerFile: null,
-    rulesPdf: null,
-    organizerName: user?.username || 'Organizador Oficial',
-    sponsors: [{ name: '', link: '', tier: 'Partner', logoFile: null }],
-    staff: { moderators: [''], casters: [''] },
-    incentives: [] 
-  });
+  const [tournament, setTournament] = useState(baseState(user?.username || 'Organizador Oficial'));
   const editTournament = location.state?.editTournament;
   const isEditMode = Boolean(editTournament?.tournamentId);
+  const formatInputDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+  const todayInput = formatInputDate(new Date());
+  const datePlus = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return formatInputDate(d);
+  };
 
   useEffect(() => {
     if (!isEditMode) return;
-    const dateValue = editTournament?.dateRaw ? new Date(editTournament.dateRaw) : null;
-    const dateIso = dateValue ? dateValue.toISOString().slice(0, 10) : '';
-
+    const toDate = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
     setTournament((prev) => ({
       ...prev,
       title: editTournament.title || '',
       description: editTournament.desc || editTournament.description || '',
       game: editTournament.game || '',
-      gender: editTournament.gender || '',
+      gender: editTournament.gender || 'Mixto',
       modality: editTournament.modality || '',
-      date: dateIso || '',
+      date: toDate(editTournament.dateRaw || editTournament.date),
       time: editTournament.time || '',
+      timezone: editTournament.timezone || prev.timezone,
       prizePool: editTournament.prize || editTournament.prizePool || '',
       currency: editTournament.currency || prev.currency,
+      prizeMode: editTournament.prizeMode || prev.prizeMode,
+      prizeDetails: editTournament.prizeDetails || '',
       prizesByRank: editTournament.prizesByRank || prev.prizesByRank,
       entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
       maxSlots: editTournament.maxSlots || prev.maxSlots,
@@ -98,6 +112,38 @@ const CreateTournament = () => {
       server: editTournament.server || '',
       platform: editTournament.platform || prev.platform,
       organizerName: editTournament.organizer || prev.organizerName,
+      registrationWindow: {
+        start: toDate(editTournament.registrationWindow?.start),
+        end: toDate(editTournament.registrationWindow?.end)
+      },
+      checkInWindow: {
+        start: toDate(editTournament.checkInWindow?.start),
+        end: toDate(editTournament.checkInWindow?.end)
+      },
+      eligibility: {
+        minAge: editTournament.eligibility?.minAge || prev.eligibility.minAge,
+        allowedCountries: Array.isArray(editTournament.eligibility?.allowedCountries)
+          ? editTournament.eligibility.allowedCountries.join(', ')
+          : prev.eligibility.allowedCountries,
+        notes: editTournament.eligibility?.notes || ''
+      },
+      contact: editTournament.contact || prev.contact,
+      broadcast: editTournament.broadcast || prev.broadcast,
+      matchConfig: {
+        seriesType: editTournament.matchConfig?.seriesType || prev.matchConfig.seriesType,
+        mapPool: Array.isArray(editTournament.matchConfig?.mapPool)
+          ? editTournament.matchConfig.mapPool.join(', ')
+          : '',
+        patchVersion: editTournament.matchConfig?.patchVersion || ''
+      },
+      legalCompliance: {
+        jurisdiction: editTournament.legalCompliance?.jurisdiction || '',
+        governingLaw: editTournament.legalCompliance?.governingLaw || '',
+        claimsContact: editTournament.legalCompliance?.claimsContact || '',
+        rulesAccepted: editTournament.legalCompliance?.rulesAccepted ?? true,
+        privacyAccepted: editTournament.legalCompliance?.privacyAccepted ?? true,
+        organizerDeclaration: editTournament.legalCompliance?.organizerDeclaration ?? true
+      },
       sponsors: Array.isArray(editTournament.sponsors) && editTournament.sponsors.length
         ? editTournament.sponsors.map((s) => ({ name: s.name || '', link: s.link || '', tier: s.tier || 'Partner', logoFile: null }))
         : prev.sponsors,
@@ -105,537 +151,524 @@ const CreateTournament = () => {
     }));
   }, [isEditMode, editTournament]);
 
-  // --- 3. HANDLERS DE FORMULARIO Y ARCHIVOS ---
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Preparar FormData para Multer
-    const data = new FormData();
+  const completion = useMemo(() => {
+    const checks = [
+      tournament.title, tournament.game, tournament.description, tournament.date, tournament.time,
+      tournament.maxSlots, tournament.modality,
+      tournament.legalCompliance.jurisdiction, tournament.legalCompliance.governingLaw,
+      tournament.legalCompliance.rulesAccepted, tournament.legalCompliance.privacyAccepted, tournament.legalCompliance.organizerDeclaration
+    ];
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  }, [tournament]);
 
-    // Campos básicos
-    data.append('title', tournament.title);
-    data.append('description', tournament.description);
-    data.append('game', tournament.game);
-    data.append('modality', tournament.modality);
-    data.append('date', tournament.date);
-    data.append('time', tournament.time);
-    data.append('prizePool', tournament.prizePool);
-    data.append('currency', tournament.currency);
-    data.append('entryFee', tournament.entryFee);
-    data.append('maxSlots', tournament.maxSlots);
-    data.append('format', tournament.format);
-    data.append('server', tournament.server);
-    data.append('platform', tournament.platform);
-    data.append('gender', tournament.gender);
+  const identityReady = Boolean(tournament.title?.trim() && tournament.game && tournament.description?.trim() && tournament.date && tournament.time);
+  const formatReady = Boolean(tournament.maxSlots && tournament.modality && tournament.format);
+  const hasMoneyPrize = Boolean(
+    String(tournament.prizePool || '').trim()
+    || String(tournament.prizesByRank.first || '').trim()
+    || String(tournament.prizesByRank.second || '').trim()
+    || String(tournament.prizesByRank.third || '').trim()
+  );
+  const hasItemPrize = Boolean(String(tournament.prizeDetails || '').trim());
+  const paymentsReady = (
+    tournament.prizeMode === 'none'
+    || (tournament.prizeMode === 'money' && hasMoneyPrize)
+    || (tournament.prizeMode === 'items' && hasItemPrize)
+    || (tournament.prizeMode === 'mixed' && (hasMoneyPrize || hasItemPrize))
+  );
+  const contactReady = Boolean(tournament.contact.email?.trim() && (tournament.contact.discordInvite?.trim() || tournament.broadcast.streamUrl?.trim()));
 
-    // Objetos complejos (se envían como JSON string para parsear en el backend)
-    data.append('prizesByRank', JSON.stringify(tournament.prizesByRank));
-    data.append('staff', JSON.stringify(tournament.staff));
+  const unlockFormat = identityReady;
+  const unlockPayments = unlockFormat && formatReady;
+  const unlockBroadcast = unlockPayments && paymentsReady;
+  const unlockSponsors = unlockBroadcast && contactReady;
+  const unlockLegal = unlockBroadcast;
+  const canSubmit = unlockLegal
+    && Boolean(tournament.legalCompliance.jurisdiction?.trim())
+    && Boolean(tournament.legalCompliance.governingLaw?.trim())
+    && tournament.legalCompliance.rulesAccepted
+    && tournament.legalCompliance.privacyAccepted
+    && tournament.legalCompliance.organizerDeclaration;
 
-    const sponsorsPayload = [];
-    let logoIndex = 0;
-    tournament.sponsors.forEach((s) => {
-        const payload = { name: s.name, link: s.link, tier: s.tier };
-        if (s.logoFile) {
-            payload.logoIndex = logoIndex;
-            data.append('sponsorLogos', s.logoFile);
-            logoIndex += 1;
-        }
-        sponsorsPayload.push(payload);
+  const setField = (field, value) => setTournament((p) => ({ ...p, [field]: value }));
+  const setNested = (group, key, value) => setTournament((p) => ({ ...p, [group]: { ...p[group], [key]: value } }));
+  const setPrize = (key, value) => setTournament((p) => ({ ...p, prizesByRank: { ...p.prizesByRank, [key]: value } }));
+  const setSponsor = (index, key, value) =>
+    setTournament((p) => {
+      const sponsors = [...p.sponsors];
+      sponsors[index][key] = value;
+      return { ...p, sponsors };
     });
-    data.append('sponsors', JSON.stringify(sponsorsPayload));
-
-    // Archivos principales
-    if (tournament.bannerFile) data.append('bannerFile', tournament.bannerFile);
-    if (tournament.rulesPdf) data.append('rulesPdf', tournament.rulesPdf);
-
-    // Archivos de Sponsors (Logos individuales)
-    // sponsorLogos ya agregados en el bloque de sponsors
-
-    try {
-        const url = isEditMode
-          ? `http://localhost:4000/api/tournaments/${editTournament.tournamentId}`
-          : 'http://localhost:4000/api/tournaments';
-        const method = isEditMode ? 'put' : 'post';
-
-        await axios({
-            url,
-            method,
-            data,
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
-
-        setIsPublished(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-        console.error("Error al publicar:", err.response?.data || err.message);
-        alert("Hubo un error al publicar el torneo. Revisa la consola.");
-    }
-  };
-
-  const handleFileChange = (e, field, index = null) => {
+  const addSponsor = () => setTournament((p) => ({ ...p, sponsors: [...p.sponsors, { name: '', link: '', tier: 'Partner', logoFile: null }] }));
+  const delSponsor = (index) => setTournament((p) => ({ ...p, sponsors: p.sponsors.filter((_, i) => i !== index) }));
+  const setFile = (e, key, sponsorIndex = null) => {
     const file = e.target.files[0];
-    if (index !== null) {
-      const newSponsors = [...tournament.sponsors];
-      newSponsors[index].logoFile = file;
-      setTournament({ ...tournament, sponsors: newSponsors });
-    } else {
-      setTournament({ ...tournament, [field]: file });
-    }
-  };
-
-  // --- 4. FUNCIONES DE GESTIÓN (Añadir/Eliminar/Actualizar) ---
-  const addSponsor = () => setTournament({ 
-    ...tournament, 
-    sponsors: [...tournament.sponsors, { name: '', link: '', tier: 'Partner', logoFile: null }] 
-  });
-
-  const addStaffField = (type) => setTournament({ 
-    ...tournament, 
-    staff: { ...tournament.staff, [type]: [...tournament.staff[type], ''] } 
-  });
-
-  const addIncentive = () => {
-    setTournament({
-      ...tournament,
-      incentives: [...(tournament.incentives || []), { title: '', prize: '' }]
+    if (sponsorIndex === null) return setField(key, file);
+    setTournament((p) => {
+      const sponsors = [...p.sponsors];
+      sponsors[sponsorIndex].logoFile = file;
+      return { ...p, sponsors };
     });
   };
 
-  const goToDashboard = () => {
+  const buildMlbbDemoTournament = () => ({
+      title: 'MLBB Caribbean Clash 2026',
+      description: 'Torneo profesional de Mobile Legends con fase suiza, playoffs y transmision oficial.',
+      game: 'Mobile Legends',
+      gender: 'Mixto',
+      modality: '5v5',
+      date: datePlus(21),
+      time: '19:00',
+      timezone: 'America/Santo_Domingo',
+      prizePool: '250000',
+      currency: 'DOP',
+      prizeMode: 'mixed',
+      prizeDetails: 'Medallas oficiales, jerseys gamer y perifericos para top 8.',
+      prizesByRank: { first: '150000', second: '70000', third: '30000' },
+      entryFee: 'Gratis',
+      maxSlots: '32',
+      format: 'Doble Eliminacion',
+      server: 'LATAM',
+      platform: 'Mobile',
+      bannerFile: null,
+      rulesPdf: null,
+      organizerName: user?.username || 'Organizador Oficial',
+      registrationWindow: { start: datePlus(1), end: datePlus(14) },
+      checkInWindow: { start: datePlus(20), end: datePlus(21) },
+      eligibility: {
+        minAge: 16,
+        allowedCountries: 'Republica Dominicana, Puerto Rico, Mexico, Colombia',
+        notes: 'Se requiere cuenta activa en el servidor LATAM y disponibilidad para horarios nocturnos.'
+      },
+      contact: {
+        email: 'tournaments@esportefy.com',
+        phone: '+1 809-555-0199',
+        discordInvite: 'https://discord.gg/ExCguE8e'
+      },
+      broadcast: {
+        streamUrl: 'https://www.twitch.tv/esportefy',
+        streamLanguage: 'es'
+      },
+      matchConfig: {
+        seriesType: 'BO3',
+        mapPool: 'Land of Dawn (ranked pool)',
+        patchVersion: 'MLBB v1.8.90'
+      },
+      legalCompliance: {
+        jurisdiction: 'Republica Dominicana',
+        governingLaw: 'Normativa local de comercio electronico, consumidor y datos personales aplicable al evento',
+        claimsContact: 'legal@esportefy.com',
+        rulesAccepted: true,
+        privacyAccepted: true,
+        organizerDeclaration: true
+      },
+      sponsors: [
+        { name: 'Razer Caribe', link: 'https://www.razer.com', tier: 'Principal', logoFile: null },
+        { name: 'Red Bull Gaming', link: 'https://www.redbull.com', tier: 'Partner', logoFile: null }
+      ],
+      staff: {
+        moderators: ['Mod_Karina', 'Mod_Rafy'],
+        casters: ['Caster_Axel', 'Caster_Luna']
+      }
+  });
+
+  const loadMlbbDemo = () => {
+    setTournament(buildMlbbDemoTournament());
+  };
+
+  const saveTournamentToLocal = (source) => {
+    const now = Date.now();
+    const localTournament = {
+      _id: `local_${now}`,
+      tournamentId: `TOR-LOCAL-${String(now).slice(-6)}`,
+      title: source.title,
+      description: source.description,
+      game: source.game,
+      gender: source.gender,
+      modality: source.modality,
+      date: source.date,
+      time: source.time,
+      timezone: source.timezone,
+      prizePool: source.prizePool,
+      currency: source.currency,
+      prizeMode: source.prizeMode,
+      prizeDetails: source.prizeDetails,
+      prizesByRank: source.prizesByRank,
+      entryFee: source.entryFee,
+      maxSlots: Number(source.maxSlots) || 0,
+      currentSlots: 0,
+      format: source.format,
+      server: source.server,
+      platform: source.platform,
+      bannerImage: '',
+      rulesPdf: '',
+      eligibility: source.eligibility,
+      registrationWindow: source.registrationWindow,
+      checkInWindow: source.checkInWindow,
+      contact: source.contact,
+      broadcast: source.broadcast,
+      matchConfig: source.matchConfig,
+      legalCompliance: source.legalCompliance,
+      sponsors: (source.sponsors || []).filter((s) => s?.name || s?.link).map((s) => ({
+        name: s.name || '',
+        link: s.link || '',
+        tier: s.tier || 'Partner',
+        logoUrl: ''
+      })),
+      staff: source.staff || { moderators: [], casters: [] },
+      organizer: {
+        _id: user?._id || 'local-organizer',
+        username: user?.username || source.organizerName || 'Organizador Local'
+      },
+      status: 'open',
+      registrationClosed: false,
+      registrations: [],
+      publicSettings: {
+        visibility: 'public',
+        showPrize: true,
+        showSponsors: true,
+        showRules: true,
+        showSchedule: true,
+        showContact: true,
+        showTeams: false,
+        showBracket: true,
+        customMessage: 'Torneo demo local para pruebas.'
+      },
+      bracket: {
+        rounds: [
+          {
+            name: 'Ronda 1',
+            matches: [
+              { teamA: 'Team Aurora', scoreA: 0, teamB: 'Team Nova', scoreB: 0 },
+              { teamA: 'Team Caribe', scoreA: 0, teamB: 'Team Storm', scoreB: 0 }
+            ]
+          }
+        ]
+      },
+      __local: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const current = JSON.parse(localStorage.getItem(LOCAL_TOURNAMENTS_KEY) || '[]');
+    current.unshift(localTournament);
+    localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(current));
+    return localTournament;
+  };
+
+  const buildFormData = (source) => {
+    const data = new FormData();
+    [
+      'title', 'description', 'game', 'modality', 'date', 'time', 'timezone',
+      'prizePool', 'currency', 'prizeMode', 'prizeDetails', 'entryFee', 'maxSlots', 'format', 'server', 'platform', 'gender'
+    ].forEach((k) => data.append(k, source[k]));
+    data.append('prizesByRank', JSON.stringify(source.prizesByRank));
+    data.append('staff', JSON.stringify(source.staff));
+    data.append('registrationWindow', JSON.stringify(source.registrationWindow));
+    data.append('checkInWindow', JSON.stringify(source.checkInWindow));
+    data.append('eligibility', JSON.stringify(source.eligibility));
+    data.append('contact', JSON.stringify(source.contact));
+    data.append('broadcast', JSON.stringify(source.broadcast));
+    data.append('matchConfig', JSON.stringify(source.matchConfig));
+    data.append('legalCompliance', JSON.stringify(source.legalCompliance));
+
+    const sponsors = [];
+    let logoIndex = 0;
+    source.sponsors.forEach((s) => {
+      const item = { name: s.name, link: s.link, tier: s.tier };
+      if (s.logoFile) {
+        item.logoIndex = logoIndex;
+        data.append('sponsorLogos', s.logoFile);
+        logoIndex += 1;
+      }
+      sponsors.push(item);
+    });
+
+    data.append('sponsors', JSON.stringify(sponsors));
+    if (source.bannerFile) data.append('bannerFile', source.bannerFile);
+    if (source.rulesPdf) data.append('rulesPdf', source.rulesPdf);
+    return data;
+  };
+
+  const createTournamentRequest = async (source, forceCreate = false) => {
+    const data = buildFormData(source);
+    const url = forceCreate
+      ? 'http://localhost:4000/api/tournaments'
+      : (isEditMode
+        ? `http://localhost:4000/api/tournaments/${editTournament.tournamentId}`
+        : 'http://localhost:4000/api/tournaments');
+    await axios({
+      url,
+      method: forceCreate ? 'post' : (isEditMode ? 'put' : 'post'),
+      data,
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  };
+
+  const createMlbbDemoNow = async () => {
+    const demo = buildMlbbDemoTournament();
     try {
-      navigate('/dashboard', { replace: true });
-    } finally {
-      // Fallback duro por si el router no navega por algún motivo
-      setTimeout(() => {
-        if (window.location.pathname !== '/dashboard') {
-          window.location.assign('/dashboard');
-        }
-      }, 0);
+      saveTournamentToLocal(demo);
+      setTournament(demo);
+      setIsPublished(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      alert(error?.message || 'No fue posible crear el torneo demo local.');
     }
   };
 
-  const updateIncentive = (index, field, value) => {
-    const newIncentives = [...tournament.incentives];
-    newIncentives[index][field] = value;
-    setTournament({ ...tournament, incentives: newIncentives });
+  const saveTournament = async (e) => {
+    e.preventDefault();
+    if (tournament.registrationWindow.start && tournament.registrationWindow.end
+      && tournament.registrationWindow.end < tournament.registrationWindow.start) {
+      alert('La fecha "Registro hasta" no puede ser menor que "Registro desde".');
+      return;
+    }
+    if (tournament.registrationWindow.end && tournament.date
+      && tournament.registrationWindow.end > tournament.date) {
+      alert('La fecha "Registro hasta" no puede superar la fecha de inicio del torneo.');
+      return;
+    }
+    if (tournament.checkInWindow.start && tournament.checkInWindow.end
+      && tournament.checkInWindow.end < tournament.checkInWindow.start) {
+      alert('La fecha "Check-in hasta" no puede ser menor que "Check-in desde".');
+      return;
+    }
+    if (tournament.checkInWindow.start && tournament.date
+      && tournament.checkInWindow.start > tournament.date) {
+      alert('La fecha "Check-in desde" debe ser antes del inicio del torneo.');
+      return;
+    }
+
+    try {
+      await createTournamentRequest(tournament, false);
+      setIsPublished(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      alert(error.response?.data?.message || 'No fue posible guardar el torneo.');
+    }
   };
 
-  const removeIncentive = (index) => {
-    const newIncentives = tournament.incentives.filter((_, i) => i !== index);
-    setTournament({ ...tournament, incentives: newIncentives });
-  };
-
+  if (isPublished) {
+    return (
+      <div className="ct-success">
+        <div className="ct-success-card">
+          <FaCheckCircle className="ct-success-icon" />
+          <h2>{isEditMode ? 'Torneo actualizado' : 'Torneo publicado'}</h2>
+          <p>El torneo <strong>{tournament.title}</strong> fue guardado correctamente.</p>
+          <div className="ct-actions">
+            {!isEditMode && (
+              <button className="ct-btn ct-btn-outline" onClick={() => setIsPublished(false)}>
+                <FaPlus /> Crear otro
+              </button>
+            )}
+            <button className="ct-btn ct-btn-main" onClick={() => navigate('/dashboard')}>Ir al dashboard</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="profile-page">
-    {!isPublished ? (        
-        <form className="create-tournament-form" onSubmit={handleSubmit}>
-          <header className="form-header-premium">
-            <h1>{isEditMode ? 'Editar' : 'Configurar'} <span className="highlight">Torneo Profesional</span></h1>
-            <p>Panel de Administración de: <strong>{tournament.organizerName}</strong></p>
-          </header>
+    <div className="ct-page">
+      <form className="ct-form" onSubmit={saveTournament}>
+        <header className="ct-hero">
+          <div>
+            <p className="ct-badge"><FaShieldAlt /> Panel profesional</p>
+            <h1>{isEditMode ? 'Editar' : 'Configurar'} <span>Torneo Profesional</span></h1>
+            <p className="ct-subtitle">Organizador responsable: <strong>{tournament.organizerName}</strong></p>
+            <div className="ct-hero-actions">
+              <button type="button" className="ct-btn ct-btn-outline" onClick={loadMlbbDemo}>
+                Cargar demo MLBB
+              </button>
+              <button type="button" className="ct-btn ct-btn-main" onClick={createMlbbDemoNow}>
+                Crear demo MLBB local
+              </button>
+            </div>
+          </div>
+          <div className="ct-progress-card">
+            <p>Progreso</p>
+            <strong>{completion}%</strong>
+            <div className="ct-progress-bar"><span style={{ width: `${completion}%` }} /></div>
+          </div>
+        </header>
 
-          <div className="profile-grid">
-            
-            {/* 1. IDENTIDAD Y REGLAS */}
-            <div className="profile-card full-span-card">
-  <div className="card-title"><FaAward /> <h3>Información General</h3></div>
-  
-  <div className="input-row-group">
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Título del Torneo</label>
-        <input 
-            type="text" 
-            placeholder="Nombre oficial del evento" 
-            required 
-            value={tournament.title}
-            onChange={(e) => setTournament({...tournament, title: e.target.value})}
-        />
-      </div>
-    </div>
-    <div className="form-column">
-  <div className="custom-input-box">
-    <label>Seleccionar Juego</label>
-    <select 
-      required 
-      value={tournament.game}
-      onChange={(e) => setTournament({...tournament, game: e.target.value})}
-    >
-      <option value="">-- Elige un juego --</option>
-      {/* Generamos las opciones dinámicamente desde GAME_CONFIG */}
-      {Object.keys(GAME_CONFIG).map((game) => (
-        game !== "All" && (
-          <option key={game} value={game}>
-            {game}
-          </option>
-        )
-      ))}
-    </select>
-    <p className="file-help-text">
-      <FaGamepad /> 
-      {tournament.game ? `Compitiendo en ${tournament.game}` : "Título competitivo"}
-    </p>
-  </div>
-</div>
+        <section className="ct-card">
+          <div className="ct-card-title"><span className="ct-step">01</span><FaGamepad /><h3>Identidad del torneo</h3></div>
+          <p className="ct-lead">Datos base visibles para jugadores: nombre, juego, fecha y reglamento.</p>
+          <fieldset className="ct-fieldset">
+            <div className="ct-grid three">
+              <label className="ct-field"><span>Titulo oficial</span><input required value={tournament.title} onChange={(e) => setField('title', e.target.value)} /></label>
+              <label className="ct-field"><span>Juego</span><select required value={tournament.game} onChange={(e) => setField('game', e.target.value)}><option value="">Seleccionar</option>{GAMES.map((g) => <option key={g} value={g}>{g}</option>)}</select></label>
+              <label className="ct-field"><span>Servidor</span><input placeholder="LATAM Norte" value={tournament.server} onChange={(e) => setField('server', e.target.value)} /></label>
+            </div>
+            <div className="ct-grid four">
+              <label className="ct-field"><span>Plataforma</span><select value={tournament.platform} onChange={(e) => setField('platform', e.target.value)}><option>PC</option><option>Mobile</option><option>Consola</option><option>Crossplay</option></select></label>
+              <label className="ct-field"><span>Zona horaria</span><select value={tournament.timezone} onChange={(e) => setField('timezone', e.target.value)}><option value="UTC">UTC</option><option value="America/Santo_Domingo">America/Santo_Domingo</option><option value="America/New_York">America/New_York</option><option value="America/Mexico_City">America/Mexico_City</option><option value="America/Bogota">America/Bogota</option><option value="Europe/Madrid">Europe/Madrid</option><option value="Europe/London">Europe/London</option><option value="Asia/Tokyo">Asia/Tokyo</option></select></label>
+              <label className="ct-field"><span>Fecha inicio</span><input type="date" min={todayInput} required value={tournament.date} onChange={(e) => setField('date', e.target.value)} /></label>
+              <label className="ct-field"><span>Hora inicio</span><input type="time" required value={tournament.time} onChange={(e) => setField('time', e.target.value)} /></label>
+            </div>
+            <label className="ct-field"><span>Descripcion</span><textarea rows="3" value={tournament.description} onChange={(e) => setField('description', e.target.value)} /></label>
+            <div className="ct-grid two">
+              <label className="ct-field ct-file"><span>Banner</span><input type="file" accept="image/*" onChange={(e) => setFile(e, 'bannerFile')} /><small><FaFileUpload /> Imagen del torneo</small></label>
+              <label className="ct-field ct-file"><span>Reglamento PDF</span><input type="file" accept=".pdf" onChange={(e) => setFile(e, 'rulesPdf')} /><small><FaFilePdf /> Recomendado para validez legal</small></label>
+            </div>
+          </fieldset>
+        </section>
 
-  </div>
+        <section className={`ct-card ${!unlockFormat ? 'is-locked' : ''}`}>
+          <div className="ct-card-title"><span className="ct-step">02</span><FaSitemap /><h3>Formato y elegibilidad</h3></div>
+          <p className="ct-lead">Define estructura competitiva, ventanas de registro y requisitos de participacion.</p>
+          {!unlockFormat && <p className="ct-locked-note">Completa el Paso 01 para desbloquear este bloque.</p>}
+          <fieldset className="ct-fieldset" disabled={!unlockFormat}>
+            <div className="ct-grid four">
+              <label className="ct-field"><span>Cupos</span><input type="number" min="2" required value={tournament.maxSlots} onChange={(e) => setField('maxSlots', e.target.value)} /></label>
+              <label className="ct-field"><span>Genero</span><select value={tournament.gender} onChange={(e) => setField('gender', e.target.value)}><option>Masculino</option><option>Femenino</option><option>Mixto</option></select></label>
+              <label className="ct-field"><span>Equipo</span><select value={tournament.modality} onChange={(e) => setField('modality', e.target.value)}><option value="">Seleccionar</option><option>1v1</option><option>2v2</option><option>3v3</option><option>5v5</option></select></label>
+              <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}><option>Eliminacion Directa</option><option>Doble Eliminacion</option><option>Swiss</option><option>Round Robin</option></select></label>
+            </div>
+            <div className="ct-grid three">
+              <label className="ct-field"><span>Serie</span><select value={tournament.matchConfig.seriesType} onChange={(e) => setNested('matchConfig', 'seriesType', e.target.value)}><option>BO1</option><option>BO3</option><option>BO5</option><option>FT2</option></select></label>
+              <label className="ct-field"><span>Patch</span><input placeholder="Ej: 15.4" value={tournament.matchConfig.patchVersion} onChange={(e) => setNested('matchConfig', 'patchVersion', e.target.value)} /></label>
+              <label className="ct-field"><span>Map pool</span><input placeholder="Ascent, Bind, Haven" value={tournament.matchConfig.mapPool} onChange={(e) => setNested('matchConfig', 'mapPool', e.target.value)} /></label>
+            </div>
+            <div className="ct-grid four">
+              <label className="ct-field"><span>Registro desde</span><input type="date" max={tournament.registrationWindow.end || tournament.date || undefined} value={tournament.registrationWindow.start} onChange={(e) => setNested('registrationWindow', 'start', e.target.value)} /></label>
+              <label className="ct-field"><span>Registro hasta</span><input type="date" min={tournament.registrationWindow.start || undefined} max={tournament.date || undefined} value={tournament.registrationWindow.end} onChange={(e) => setNested('registrationWindow', 'end', e.target.value)} /></label>
+              <label className="ct-field"><span>Check-in desde</span><input type="date" min={tournament.registrationWindow.end || undefined} max={tournament.checkInWindow.end || tournament.date || undefined} value={tournament.checkInWindow.start} onChange={(e) => setNested('checkInWindow', 'start', e.target.value)} /></label>
+              <label className="ct-field"><span>Check-in hasta</span><input type="date" min={tournament.checkInWindow.start || undefined} max={tournament.date || undefined} value={tournament.checkInWindow.end} onChange={(e) => setNested('checkInWindow', 'end', e.target.value)} /></label>
+            </div>
+            <div className="ct-grid three">
+              <label className="ct-field"><span>Edad minima</span><input type="number" min="13" value={tournament.eligibility.minAge} onChange={(e) => setNested('eligibility', 'minAge', e.target.value)} /></label>
+              <label className="ct-field"><span>Paises permitidos</span><input placeholder="Global, Republica Dominicana, Mexico, Espana" value={tournament.eligibility.allowedCountries} onChange={(e) => setNested('eligibility', 'allowedCountries', e.target.value)} /></label>
+              <label className="ct-field"><span>Tipo de registro</span><select value={tournament.entryFee} onChange={(e) => setField('entryFee', e.target.value)}><option>Gratis</option><option>Invitacion</option><option>Password</option><option>Pago</option></select></label>
+            </div>
+            <label className="ct-field"><span>Notas de elegibilidad</span><textarea rows="2" value={tournament.eligibility.notes} onChange={(e) => setNested('eligibility', 'notes', e.target.value)} /></label>
+          </fieldset>
+        </section>
 
-  <div className="input-row-group" style={{marginTop: '20px'}}>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Plataforma</label>
-        <select value={tournament.platform} onChange={(e) => setTournament({...tournament, platform: e.target.value})}>
-          <option value="pc">PC</option>
-          <option value="mobile">Mobile</option>
-          <option value="console">Consola</option>
-          <option value="crossplay">Crossplay</option>
-        </select>
-        <p className="file-help-text"><FaServer /> Hardware requerido</p>
-      </div>
-    </div>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Región / Servidor</label>
-        <input 
-            type="text" 
-            placeholder="Ej: Latam Norte / NA / EUW" 
-            value={tournament.server}
-            onChange={(e) => setTournament({...tournament, server: e.target.value})}
-        />
-        <p className="file-help-text"><FaServer /> Ubicación del servidor</p>
-      </div>
-    </div>
-  </div>
+        <section className={`ct-card ct-card--payments ${!unlockPayments ? 'is-locked' : ''}`}>
+          <div className="ct-card-title"><span className="ct-step">03</span><FaMoneyBillWave /><h3>Pagos y premios</h3></div>
+          <p className="ct-lead">Define si el evento tendra premios en dinero, en objetos, mixto o sin premio.</p>
+          {!unlockPayments && <p className="ct-locked-note">Completa el Paso 02 para desbloquear este bloque.</p>}
+          <fieldset className="ct-fieldset" disabled={!unlockPayments}>
+            <div className="ct-grid four">
+              <label className="ct-field"><span>Tipo de premio</span><select value={tournament.prizeMode} onChange={(e) => setField('prizeMode', e.target.value)}><option value="none">Sin premio</option><option value="money">Solo dinero</option><option value="items">Solo objetos</option><option value="mixed">Mixto</option></select></label>
+              <label className="ct-field"><span>Prize pool</span><input type="number" min="0" placeholder="0 si no aplica" value={tournament.prizePool} onChange={(e) => setField('prizePool', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'items'} /></label>
+              <label className="ct-field"><span>Moneda</span><select value={tournament.currency} onChange={(e) => setField('currency', e.target.value)}><option value="DOP">DOP</option><option value="USD">USD</option><option value="EUR">EUR</option></select></label>
+              <label className="ct-field"><span>1er</span><input type="number" min="0" placeholder="0 si no aplica" value={tournament.prizesByRank.first} onChange={(e) => setPrize('first', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'items'} /></label>
+              <label className="ct-field"><span>2do / 3ro</span><div className="ct-inline-pair"><input type="number" min="0" placeholder="0" value={tournament.prizesByRank.second} onChange={(e) => setPrize('second', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'items'} /><input type="number" min="0" placeholder="0" value={tournament.prizesByRank.third} onChange={(e) => setPrize('third', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'items'} /></div></label>
+            </div>
+            <label className="ct-field"><span>Premios en objetos / beneficios</span><textarea rows="2" placeholder="Ej: medallas, trofeos, periféricos, becas, gift cards" value={tournament.prizeDetails} onChange={(e) => setField('prizeDetails', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'money'} /></label>
+          </fieldset>
+        </section>
 
-  <div className="input-row-group" style={{marginTop: '20px'}}>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Descripción Breve</label>
-        <textarea 
-            placeholder="Resumen rápido del torneo..." 
-            rows="5"
-            value={tournament.description}
-            onChange={(e) => setTournament({...tournament, description: e.target.value})}
-        ></textarea>
-      </div>
-    </div>
+        <section className={`ct-card ct-card--broadcast ${!unlockBroadcast ? 'is-locked' : ''}`}>
+          <div className="ct-card-title"><span className="ct-step">04</span><FaBullhorn /><h3>Contacto y difusion</h3></div>
+          <p className="ct-lead">Canales para soporte, comunicacion y transmision del torneo.</p>
+          {!unlockBroadcast && <p className="ct-locked-note">Completa el Paso 03 para desbloquear este bloque.</p>}
+          <fieldset className="ct-fieldset" disabled={!unlockBroadcast}>
+            <div className="ct-grid three">
+              <label className="ct-field"><span>Email</span><input type="email" value={tournament.contact.email} onChange={(e) => setNested('contact', 'email', e.target.value)} /></label>
+              <label className="ct-field"><span>Telefono</span><input value={tournament.contact.phone} onChange={(e) => setNested('contact', 'phone', e.target.value)} /></label>
+              <label className="ct-field"><span>Discord</span><input type="url" value={tournament.contact.discordInvite} onChange={(e) => setNested('contact', 'discordInvite', e.target.value)} /><small><FaDiscord /> Soporte oficial</small></label>
+            </div>
+            <div className="ct-grid two">
+              <label className="ct-field"><span>Stream oficial</span><input type="url" placeholder="https://www.twitch.tv/..." value={tournament.broadcast.streamUrl} onChange={(e) => setNested('broadcast', 'streamUrl', e.target.value)} /></label>
+              <label className="ct-field"><span>Idioma stream</span><select value={tournament.broadcast.streamLanguage} onChange={(e) => setNested('broadcast', 'streamLanguage', e.target.value)}><option value="es">Espanol</option><option value="en">Ingles</option><option value="pt">Portugues</option><option value="fr">Frances</option></select></label>
+            </div>
+          </fieldset>
+        </section>
 
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Subir Banner del Torneo</label>
-        <div className="file-upload-wrapper">
-          <input type="file" id="banner" accept="image/*" onChange={(e) => handleFileChange(e, 'bannerFile')} />
-          <label htmlFor="banner" className={`file-label ${tournament.bannerFile ? 'active-file' : ''}`}>
-             {tournament.bannerFile ? tournament.bannerFile.name : 'ELEGIR ARCHIVO'}
-          </label>
-        </div>
-        <p className="file-help-text"><FaFileUpload /> Seleccionar Imagen</p>
-      </div>
-      <div className="custom-input-box" style={{marginTop: '15px'}}>
-        <label>Reglamento Oficial (PDF)</label>
-        <div className="file-upload-wrapper pdf-style">
-          <input type="file" id="rules" accept=".pdf" onChange={(e) => handleFileChange(e, 'rulesPdf')} />
-          <label htmlFor="rules" className={`file-label ${tournament.rulesPdf ? 'active-file' : ''}`}>
-             {tournament.rulesPdf ? tournament.rulesPdf.name : 'ELEGIR ARCHIVO'}
-          </label>
-        </div>
-        <p className="file-help-text"><FaFilePdf /> Subir Normas en PDF</p>
-      </div>
-    </div>
-  </div>
-</div>
+        <section className={`ct-card ct-card--sponsors ${!unlockSponsors ? 'is-locked' : ''}`}>
+          <div className="ct-card-title"><span className="ct-step">05</span><FaHandshake /><h3>Sponsors</h3></div>
+          <p className="ct-lead">Opcional: registra marcas patrocinadoras con enlace y categoria.</p>
+          {!unlockSponsors && <p className="ct-locked-note">Completa el Paso 04 para desbloquear este bloque.</p>}
+          <fieldset className="ct-fieldset" disabled={!unlockSponsors}>
+            <div className="ct-inline-title sponsor-title"><FaUsers /><h4>Patrocinadores del torneo</h4><button type="button" onClick={addSponsor}><FaPlus /></button></div>
+            <div className="ct-sponsor-list">
+              {tournament.sponsors.map((s, i) => (
+                <div className="ct-sponsor-row" key={i}>
+                  <input placeholder="Marca" value={s.name} onChange={(e) => setSponsor(i, 'name', e.target.value)} />
+                  <input placeholder="https://marca.com" value={s.link} onChange={(e) => setSponsor(i, 'link', e.target.value)} />
+                  <select value={s.tier} onChange={(e) => setSponsor(i, 'tier', e.target.value)}><option>Principal</option><option>Partner</option><option>Colaborador</option></select>
+                  <label className="ct-mini-upload"><input type="file" onChange={(e) => setFile(e, 'logo', i)} />{s.logoFile ? 'OK' : <FaFileUpload />}</label>
+                  <button type="button" className="ct-remove" onClick={() => delSponsor(i)}><FaTrash /></button>
+                </div>
+              ))}
+            </div>
+          </fieldset>
+        </section>
 
-            {/* 2. FORMATO Y CUPOS */}
-<div className="profile-card full-span-card" style={{ marginTop: '20px' }}>
-  <div className="card-title"><FaSitemap /> <h3>Formato y Cupos</h3></div>
-
-  <div className="input-row-group">
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Cupos Máximos</label>
-        <input 
-            type="number" 
-            placeholder="Ej: 32" 
-            required 
-            value={tournament.maxSlots}
-            onChange={(e) => setTournament({...tournament, maxSlots: e.target.value})}
-        />
-        <p className="file-help-text"><FaUsers /> Capacidad total de equipos</p>
-      </div>
-      {/* COLUMNA DE GÉNERO */}
-    <div className="form-column">
-        <div className="custom-input-box">
-            <label>Categoría de Género</label>
-            <select 
-                required 
-                value={tournament.gender}
-                onChange={(e) => setTournament({...tournament, gender: e.target.value})}
-            >
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
-                <option value="Mixto">Mixto</option>
-            </select>
-            <p className="file-help-text"><FaUsers /> Restricción de participantes</p>
-        </div>
-    </div>
-
-      <div className="custom-input-box" style={{ marginTop: '20px' }}>
-        <label>Tamaño del Equipo</label>
-        <select value={tournament.modality} onChange={(e) => setTournament({...tournament, modality: e.target.value})}>
-          <option value="">Seleccionar</option>
-          <option value="1v1">1v1 (Solo)</option>
-          <option value="2v2">2v2 (Duos)</option>
-          <option value="4v4">4v4 (Squad)</option>
-          <option value="5v5">5v5 (Full Team)</option>
-        </select>
-        <p className="file-help-text"><FaUsers /> Jugadores por escuadra</p>
-      </div>
-    </div>
-
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Tipo de Registro</label>
-        <select value={tournament.entryFee} onChange={(e) => setTournament({...tournament, entryFee: e.target.value})}>
-          <option value="Gratis">Abierto (Todo público)</option>
-          <option value="Invitación">Por Invitación</option>
-          <option value="Password">Con Contraseña</option>
-          <option value="Pago">Premium / Pago</option>
-        </select>
-        <p className="file-help-text"><FaTicketAlt /> Método de inscripción</p>
-      </div>
-
-      <div className="custom-input-box" style={{ marginTop: '20px' }}>
-        <label>Fecha y Hora de Inicio</label>
-        <div style={{display: 'flex', gap: '10px'}}>
-             <input type="date" min={new Date().toISOString().split('T')[0]} value={tournament.date} onChange={(e) => setTournament({...tournament, date: e.target.value})} />
-            <input type="time" required value={tournament.time} onChange={(e) => setTournament({...tournament, time: e.target.value})} />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div className="input-row-group" style={{ marginTop: '20px' }}>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Formato de Eliminación</label>
-        <select value={tournament.format} onChange={(e) => setTournament({...tournament, format: e.target.value})}>
-          <option>Eliminación Directa</option>
-          <option>Doble Eliminación</option>
-          <option>Suizo (Swiss)</option>
-          <option>Round Robin</option>
-        </select>
-        <p className="file-help-text"><FaSitemap /> Estructura de las llaves</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-            {/* 3. MARCAS */}
-            <div className="profile-card">
-  <div className="card-title">
-    <h3>Marcas / Sponsors</h3> 
-    <button type="button" className="add-btn-circle" onClick={addSponsor}><FaPlus /></button>
-  </div>
-  
-  <div className="sponsors-list">
-    {tournament.sponsors.map((s, i) => (
-      <div key={i} className="sponsor-upload-row-premium">
-        <input 
-          type="text" 
-          placeholder="Nombre Marca" 
-          className="mini-input"
-          value={s.name || ''}
-          onChange={(e) => {
-            const newSponsors = [...tournament.sponsors];
-            newSponsors[i].name = e.target.value;
-            setTournament({ ...tournament, sponsors: newSponsors });
-          }}
-        />
-
-        <input 
-          type="url" 
-          placeholder="Link Web" 
-          className="mini-input"
-          value={s.link || ''}
-          onChange={(e) => {
-            const newSponsors = [...tournament.sponsors];
-            newSponsors[i].link = e.target.value;
-            setTournament({ ...tournament, sponsors: newSponsors });
-          }}
-        />
-
-        <select 
-          className="mini-select"
-          value={s.tier || 'Partner'}
-          onChange={(e) => {
-            const newSponsors = [...tournament.sponsors];
-            newSponsors[i].tier = e.target.value;
-            setTournament({ ...tournament, sponsors: newSponsors });
-          }}
-        >
-          <option value="Principal">Principal</option>
-          <option value="Partner">Partner</option>
-          <option value="Colaborador">Colaborador</option>
-        </select>
-
-        <div className="file-upload-wrapper small">
-            <input 
-              type="file" 
-              id={`logo-${i}`} 
-              hidden 
-              onChange={(e) => handleFileChange(e, 'logoFile', i)} 
-            />
-            <label htmlFor={`logo-${i}`} className={`file-label-small ${s.logoFile ? 'active' : ''}`}>
-                {s.logoFile ? <FaCheck /> : <FaFileUpload />}
+        <section className={`ct-card ct-legal ${!unlockLegal ? 'is-locked' : ''}`}>
+          <div className="ct-card-title"><span className="ct-step">06</span><FaShieldAlt /><h3>Cumplimiento legal internacional</h3></div>
+          <p className="ct-lead">Define la jurisdiccion legal del torneo y confirma los requisitos minimos antes de publicar.</p>
+          {!unlockLegal && <p className="ct-locked-note">Completa el Paso 05 para desbloquear este bloque.</p>}
+          <fieldset className="ct-fieldset" disabled={!unlockLegal}>
+            <div className="ct-legal-help">
+              <strong>Que debes hacer aqui:</strong>
+              <span>Marca las 3 casillas de declaracion legal. Sin esas 3 confirmaciones no se puede publicar.</span>
+            </div>
+            <div className="ct-grid three">
+              <label className="ct-field">
+                <span>Jurisdiccion principal</span>
+                <input
+                  placeholder="Ej: Republica Dominicana"
+                  value={tournament.legalCompliance.jurisdiction}
+                  onChange={(e) => setNested('legalCompliance', 'jurisdiction', e.target.value)}
+                  required={unlockLegal}
+                />
+              </label>
+              <label className="ct-field">
+                <span>Normativa aplicable</span>
+                <input
+                  placeholder="Ej: Ley local de comercio y consumidor"
+                  value={tournament.legalCompliance.governingLaw}
+                  onChange={(e) => setNested('legalCompliance', 'governingLaw', e.target.value)}
+                  required={unlockLegal}
+                />
+              </label>
+              <label className="ct-field">
+                <span>Canal de reclamos</span>
+                <input
+                  placeholder="Email o enlace de soporte legal"
+                  value={tournament.legalCompliance.claimsContact}
+                  onChange={(e) => setNested('legalCompliance', 'claimsContact', e.target.value)}
+                />
+              </label>
+            </div>
+            <p className="ct-legal-intro"><FaGlobeAmericas /> Estas confirmaciones aplican al pais o region que definiste para el evento.</p>
+            <label className="ct-check ct-check--legal">
+              <input type="checkbox" checked={tournament.legalCompliance.rulesAccepted} onChange={(e) => setNested('legalCompliance', 'rulesAccepted', e.target.checked)} />
+              <span>
+                <strong>1) Reglas oficiales publicas (marcar casilla)</strong>
+                <small>Todos los participantes pueden leer reglas, formato, criterios de desempate y sanciones.</small>
+              </span>
             </label>
-        </div>
+            <label className="ct-check ct-check--legal">
+              <input type="checkbox" checked={tournament.legalCompliance.privacyAccepted} onChange={(e) => setNested('legalCompliance', 'privacyAccepted', e.target.checked)} />
+              <span>
+                <strong>2) Tratamiento legal de datos (marcar casilla)</strong>
+                <small>Solo se recolectan datos necesarios del torneo y con base legal valida en la jurisdiccion.</small>
+              </span>
+            </label>
+            <label className="ct-check ct-check--legal">
+              <input type="checkbox" checked={tournament.legalCompliance.organizerDeclaration} onChange={(e) => setNested('legalCompliance', 'organizerDeclaration', e.target.checked)} />
+              <span>
+                <strong>3) Derechos sobre premios y marcas (marcar casilla)</strong>
+                <small>Cuentas con autorizacion para premios, logos, patrocinios y difusion del evento.</small>
+              </span>
+            </label>
+          </fieldset>
+        </section>
 
-        <button 
-          type="button" 
-          className="btn-del-mini"
-          onClick={() => {
-            const newSponsors = tournament.sponsors.filter((_, index) => index !== i);
-            setTournament({ ...tournament, sponsors: newSponsors });
-          }}
-        >
-          <FaTrash />
-        </button>
-      </div>
-    ))}
-  </div>
-</div>
-
-            {/* 4. PREMIOS */}
-            <div className="profile-card full-span-card premium-prize-card">
-  <div className="card-title">
-    <div className="title-with-icon">
-      <FaTicketAlt className="title-icon-gold" />
-      <h3>Premios Desglosados</h3>
-    </div>
-    <div className="prize-pool-badge">
-        Prize Pool: <span>{tournament.prizePool || '0.00'}</span>
-    </div>
-  </div>
-
-  <div className="input-row-group" style={{ marginBottom: '25px' }}>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Monto Total del Torneo</label>
-        <input 
-          type="number"
-          min="0" 
-          placeholder="Ej: 1000" 
-          value={tournament.prizePool}
-          onChange={(e) => setTournament({...tournament, prizePool: e.target.value})}
-        />
-      </div>
-    </div>
-    <div className="form-column">
-      <div className="custom-input-box">
-        <label>Divisa / Moneda</label>
-        <select 
-          value={tournament.currency}
-          onChange={(e) => setTournament({...tournament, currency: e.target.value})}
-        >
-          <option value="DO">DO - Peso Dominicano</option>
-          <option value="USD">USD - Dólares</option>
-          <option value="EUR">EUR - Euros</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div className="prize-distribution-grid">
-    <div className="prize-item gold">
-      <label>🥇 1er Lugar</label>
-      <input 
-        type="number"
-        min="0"
-        placeholder="Monto" 
-        value={tournament.prizesByRank.first}
-        onChange={(e) => setTournament({
-            ...tournament, 
-            prizesByRank: {...tournament.prizesByRank, first: e.target.value}
-        })}
-      />
-    </div>
-    <div className="prize-item silver">
-      <label>🥈 2do Lugar</label>
-      <input 
-        type="number"
-        min="0"
-        placeholder="Monto" 
-        value={tournament.prizesByRank.second}
-        onChange={(e) => setTournament({
-            ...tournament, 
-            prizesByRank: {...tournament.prizesByRank, second: e.target.value}
-        })}
-      />
-    </div>
-    <div className="prize-item bronze">
-      <label>🥉 3er Lugar</label>
-      <input 
-        type="number"
-        min="0"
-        placeholder="Monto" 
-        value={tournament.prizesByRank.third}
-        onChange={(e) => setTournament({
-            ...tournament, 
-            prizesByRank: {...tournament.prizesByRank, third: e.target.value}
-        })}
-      />
-    </div>
-  </div>  
-</div>
-</div>
-
-         <div className="submit-container">
-          {isEditMode && (
-            <button type="button" className="btn-success-outline" onClick={() => navigate('/tournaments')}>
-              Cancelar edición
-            </button>
-          )}
-          <button type="submit" className="btn-main-publish">
-            {isEditMode ? ' GUARDAR CAMBIOS' : ' PUBLICAR TORNEO'}
-          </button>
+        <div className="ct-actions">
+          {isEditMode && <button type="button" className="ct-btn ct-btn-outline" onClick={() => navigate('/tournaments')}>Cancelar</button>}
+          <button type="submit" className="ct-btn ct-btn-main" disabled={!canSubmit}>{isEditMode ? 'Guardar cambios' : 'Publicar torneo'}</button>
         </div>
       </form>
-    ) : (
-      <div className="success-overlay animate-in">
-    <div className="success-glass-card">
-      <div className="success-check-wrapper">
-        <FaCheckCircle className="success-pulse-icon" />
-      </div>
-      
-      <h2 className="success-title">{isEditMode ? '¡Torneo Actualizado!' : '¡Torneo Registrado!'}</h2>
-      <p className="success-text">
-        El torneo <span className="highlight-text">"{tournament.title}"</span> {isEditMode ? 'ha sido actualizado con éxito.' : 'ha sido publicado con éxito.'}
-      </p>
-
-      <div className="success-button-group">
-        {!isEditMode && (
-          <button className="btn-success-outline" onClick={() => setIsPublished(false)}>
-            <FaPlus /> Crear otro torneo
-          </button>
-        )}
-        {isEditMode && (
-          <button className="btn-success-outline" onClick={() => navigate('/tournaments')}>
-            <FaPlus /> Volver a torneos
-          </button>
-        )}
-        <button type="button" className="btn-success-solid" onClick={goToDashboard}>
-          <FaSitemap /> Ir al Dashboard
-        </button>
-      </div>
-        </div>
-      </div>
-    )}
-  </div>
-);
+    </div>
+  );
 };
 
 export default CreateTournament;
