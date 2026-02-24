@@ -42,7 +42,7 @@ lol: {
         ],
         organizers: [
             { name: 'LVP', motto: 'Liga de Videojuegos Profesional', region: 'España/Latam' },
-            { name: 'Riot Games Official', motto: 'Desarrollador y Organizador Global', region: 'Global' },
+            { name: 'Circuito Global del Juego', motto: 'Escena competitiva internacional', region: 'Global' },
             { name: 'Tu Nombre Aquí', motto: 'Nueva Organizadora Independiente', region: 'Dominicana' } // Ejemplo de lo que pides
         ],
         sponsors: [
@@ -432,6 +432,5 @@ nba2k14: {
 
 
 };
-
 
 

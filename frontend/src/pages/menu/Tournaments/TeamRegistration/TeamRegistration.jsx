@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './TeamRegistration.css';
 import axios from 'axios';
+import { API_URL } from '../../../../config/api';
 
 const TeamRegistration = () => {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ const TeamRegistration = () => {
         setLoadingTeams(true);
         const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
         const user = storedUser ? JSON.parse(storedUser) : null;
-        const response = await axios.get('http://localhost:4000/api/teams');
+        const response = await axios.get(`${API_URL}/api/teams`);
         const allTeams = response.data || [];
         const mine = user?._id
           ? allTeams.filter(t => String(t.captain?._id || t.captain) === String(user._id))
@@ -105,10 +106,18 @@ const TeamRegistration = () => {
     }
     try {
       setSubmitting(true);
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        alert('Debes iniciar sesión para registrar tu equipo.');
+        return;
+      }
       await axios.post(
-        `http://localhost:4000/api/tournaments/${tournament.tournamentId}/register`,
+        `${API_URL}/api/tournaments/${tournament.tournamentId}/register`,
         {
           teamId: selectedTeamId
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
       alert("¡Equipo Registrado! GL HF.");

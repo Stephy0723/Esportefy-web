@@ -22,6 +22,10 @@ const RIOT_GAMES = new Set([
 ]);
 import fs from 'fs';
 
+const isFreeEntryMode = (value = '') => String(value || '').trim().toLowerCase() === 'gratis';
+const isRiotReviewMode = () => String(process.env.RIOT_REVIEW_MODE || '').trim().toLowerCase() === 'true';
+const DEFAULT_RIOT_MIN_ACTIVE_PARTICIPANTS = 20;
+
 const DIGITS_ONLY_REGEX = /^\d+$/;
 const BRACKET_SEEDING_MODES = new Set(['random', 'custom']);
 const BRACKET_FORMATS = new Set(['single_elimination', 'double_elimination', 'swiss', 'round_robin']);
@@ -52,6 +56,70 @@ const BRACKET_FORMAT_ALIASES = new Map([
     ['round_robin', 'round_robin']
 ]);
 
+const getRiotMinActiveParticipants = () => {
+    const raw = Number(process.env.RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS);
+    if (Number.isFinite(raw) && raw > 0) return Math.floor(raw);
+    return DEFAULT_RIOT_MIN_ACTIVE_PARTICIPANTS;
+};
+
+const parseTeamSizeFromModality = (modality = '') => {
+    const raw = String(modality || '').trim().toLowerCase();
+    const match = raw.match(/^(\d+)\s*v\s*(\d+)$/i);
+    if (!match) return 1;
+
+    const left = Number.parseInt(match[1], 10);
+    const right = Number.parseInt(match[2], 10);
+    if (!Number.isFinite(left) || left <= 0) return 1;
+    if (!Number.isFinite(right) || right <= 0) return left;
+    return Math.max(left, right);
+};
+
+const isRiotTournamentPolicyScope = (source = {}) => {
+    const game = String(source?.game || '').trim();
+    return RIOT_GAMES.has(game) || source?.riotRequirements?.required === true;
+};
+
+const requiresFreeEntryByPolicy = (source = {}) => isRiotReviewMode() || isRiotTournamentPolicyScope(source);
+
+const getParticipantCapacityBySettings = ({ modality = '', maxSlots = 0 } = {}) => {
+    const slots = Number(maxSlots) || 0;
+    const teamSize = parseTeamSizeFromModality(modality);
+    return Math.max(0, slots) * Math.max(1, teamSize);
+};
+
+const hasPlayerIdentity = (player = {}) => {
+    return Boolean(
+        String(player?.nickname || '').trim()
+        || String(player?.riotId || '').trim()
+        || String(player?.gameId || '').trim()
+    );
+};
+
+const countActiveParticipantsInRegistration = (registration = {}, teamSize = 1) => {
+    const starters = Array.isArray(registration?.roster?.starters) ? registration.roster.starters : [];
+    const validStarters = starters.filter(hasPlayerIdentity);
+    if (validStarters.length > 0) {
+        return Math.min(validStarters.length, Math.max(1, teamSize));
+    }
+    return Math.max(1, teamSize);
+};
+
+const countTournamentActiveParticipants = (tournament = {}) => {
+    const teamSize = parseTeamSizeFromModality(tournament?.modality);
+    const approved = (tournament?.registrations || []).filter(isApprovedRegistration);
+    return approved.reduce((sum, registration) => (
+        sum + countActiveParticipantsInRegistration(registration, teamSize)
+    ), 0);
+};
+
+const hasTraditionalTournamentBracket = (bracket = {}) => {
+    const format = normalizeTournamentFormat(bracket?.format);
+    if (!BRACKET_FORMATS.has(format)) return false;
+    const rounds = Array.isArray(bracket?.rounds) ? bracket.rounds : [];
+    if (!rounds.length) return false;
+    return rounds.some((round) => Array.isArray(round?.matches) && round.matches.length > 0);
+};
+
 const isTournamentOwner = (tournament, userId) => {
     return String(tournament?.organizer?._id || tournament?.organizer || '') === String(userId || '');
 };
@@ -68,6 +136,39 @@ const normalizeTournamentFormat = (value) => {
     if (raw.includes('elim') || raw.includes('single')) return 'single_elimination';
 
     return 'single_elimination';
+};
+
+const normalizeRiotId = (value = '') => String(value || '').trim().toLowerCase();
+
+const getRegistrationRiotIds = (registration = {}) => {
+    const starters = Array.isArray(registration?.roster?.starters) ? registration.roster.starters : [];
+    const subs = Array.isArray(registration?.roster?.subs) ? registration.roster.subs : [];
+    return [...starters, ...subs]
+        .map((player) => normalizeRiotId(player?.riotId))
+        .filter(Boolean);
+};
+
+const collectTournamentRiotIds = (registrations = []) => {
+    const riotIds = new Set();
+    for (const registration of registrations || []) {
+        const status = String(registration?.status || 'approved').toLowerCase();
+        if (status === 'rejected') continue;
+        for (const riotId of getRegistrationRiotIds(registration)) {
+            riotIds.add(riotId);
+        }
+    }
+    return riotIds;
+};
+
+const findDuplicate = (values = []) => {
+    const seen = new Set();
+    for (const value of values || []) {
+        const normalized = String(value || '');
+        if (!normalized) continue;
+        if (seen.has(normalized)) return normalized;
+        seen.add(normalized);
+    }
+    return '';
 };
 
 const nextPowerOfTwo = (value) => {
@@ -1269,6 +1370,32 @@ export const createTournament = async (req, res) => {
             return res.status(400).json({ message: 'El torneo debe tener al menos 2 cupos' });
         }
 
+        const tournamentScope = {
+            game: data.game,
+            riotRequirements: data.riotRequirements
+        };
+        const requiresRiotPolicies = isRiotTournamentPolicyScope(tournamentScope);
+        const requiresFreeEntry = requiresFreeEntryByPolicy(tournamentScope);
+        if (requiresFreeEntry && !isFreeEntryMode(data.entryFee)) {
+            return res.status(400).json({
+                message: isRiotReviewMode()
+                    ? 'RIOT_REVIEW_MODE activo: todos los torneos deben usar registro gratuito'
+                    : 'Para torneos de Riot el registro debe ser gratuito (sin pago, invitación o contraseña)'
+            });
+        }
+        if (requiresRiotPolicies) {
+            const participantCapacity = getParticipantCapacityBySettings({
+                modality: data.modality,
+                maxSlots: data.maxSlots
+            });
+            const minParticipants = getRiotMinActiveParticipants();
+            if (participantCapacity < minParticipants) {
+                return res.status(400).json({
+                    message: `Torneos Riot requieren capacidad mínima para ${minParticipants} participantes activos. Ajusta modalidad/cupos.`
+                });
+            }
+        }
+
         const prizeValues = [
             data?.prizesByRank?.first,
             data?.prizesByRank?.second,
@@ -1343,6 +1470,39 @@ export const updateTournament = async (req, res) => {
 
         if (data.maxSlots && Number(data.maxSlots) < Number(tournament.currentSlots)) {
             return res.status(400).json({ message: 'Los cupos no pueden ser menores a los inscritos' });
+        }
+
+        const effectiveGame = String(data.game || tournament.game || '').trim();
+        const effectiveEntryFee = data.entryFee !== undefined ? data.entryFee : tournament.entryFee;
+        const effectiveRiotRequirements = data.riotRequirements !== undefined
+            ? data.riotRequirements
+            : tournament.riotRequirements;
+        const tournamentScope = {
+            game: effectiveGame,
+            riotRequirements: effectiveRiotRequirements
+        };
+        const requiresRiotPolicies = isRiotTournamentPolicyScope(tournamentScope);
+        const requiresFreeEntry = requiresFreeEntryByPolicy(tournamentScope);
+        if (requiresFreeEntry && !isFreeEntryMode(effectiveEntryFee)) {
+            return res.status(400).json({
+                message: isRiotReviewMode()
+                    ? 'RIOT_REVIEW_MODE activo: todos los torneos deben usar registro gratuito'
+                    : 'Para torneos de Riot el registro debe ser gratuito (sin pago, invitación o contraseña)'
+            });
+        }
+        if (requiresRiotPolicies) {
+            const effectiveModality = data.modality !== undefined ? data.modality : tournament.modality;
+            const effectiveMaxSlots = data.maxSlots !== undefined ? data.maxSlots : tournament.maxSlots;
+            const participantCapacity = getParticipantCapacityBySettings({
+                modality: effectiveModality,
+                maxSlots: effectiveMaxSlots
+            });
+            const minParticipants = getRiotMinActiveParticipants();
+            if (participantCapacity < minParticipants) {
+                return res.status(400).json({
+                    message: `Torneos Riot requieren capacidad mínima para ${minParticipants} participantes activos. Ajusta modalidad/cupos.`
+                });
+            }
         }
 
         const update = {
@@ -1448,7 +1608,18 @@ export const generateTournamentBracket = async (req, res) => {
         }
 
         const allowPartial = tournament.status === 'open' && tournament.registrationClosed !== true;
+        const requiresRiotPolicies = isRiotTournamentPolicyScope(tournament);
+        if (requiresRiotPolicies && allowPartial && String(seedingMode).toLowerCase() === 'custom') {
+            return res.status(400).json({
+                message: 'Para torneos Riot con inscripciones abiertas, el seeding debe ser aleatorio hasta cerrar registros'
+            });
+        }
         const bracket = buildBracketFromTournament(tournament, { seedingMode, customOrder, allowPartial });
+        if (requiresRiotPolicies && !hasTraditionalTournamentBracket(bracket)) {
+            return res.status(400).json({
+                message: 'El bracket del torneo Riot debe ser tradicional (eliminación, suizo o round robin) con cruces directos'
+            });
+        }
         if (shouldPreviewOnly) {
             return res.status(200).json({
                 message: 'Vista previa de bracket generada',
@@ -1694,6 +1865,14 @@ export const registerTeam = async (req, res) => {
         }
 
         const requiresRiot = tournament.riotRequirements?.required === true || RIOT_GAMES.has(tournament.game);
+        const requiresFreeEntry = isRiotReviewMode() || requiresRiot;
+        if (requiresFreeEntry && !isFreeEntryMode(tournament.entryFee)) {
+            return res.status(400).json({
+                message: isRiotReviewMode()
+                    ? 'RIOT_REVIEW_MODE activo: solo se permiten torneos con inscripción gratuita'
+                    : 'Este torneo Riot no es elegible: las inscripciones deben ser gratuitas'
+            });
+        }
         // Requisitos Riot (si aplica)
         if (requiresRiot) {
             const user = await User.findById(req.userId).select('connections.riot gameProfiles.lol');
@@ -1724,14 +1903,34 @@ export const registerTeam = async (req, res) => {
             }
         }
 
-        const alreadyRegistered = (tournament.registrations || []).some(r => String(r.captain) === String(req.userId));
+        const registrations = Array.isArray(tournament.registrations) ? tournament.registrations : [];
+        const alreadyRegistered = registrations.some((registration) => (
+            String(registration?.captain || '') === String(req.userId)
+            && String(registration?.status || 'approved').toLowerCase() !== 'rejected'
+        ));
         if (alreadyRegistered) {
             return res.status(400).json({ message: 'Ya registraste un equipo en este torneo' });
         }
+        const incomingTeamId = String(teamId || '').trim();
+        if (incomingTeamId) {
+            const teamAlreadyRegistered = registrations.some((registration) => (
+                String(registration?.teamId || '') === incomingTeamId
+                && String(registration?.status || 'approved').toLowerCase() !== 'rejected'
+            ));
+            if (teamAlreadyRegistered) {
+                return res.status(400).json({ message: 'Ese equipo ya está inscrito en este torneo' });
+            }
+        }
+
+        if (requiresRiot && !incomingTeamId) {
+            return res.status(400).json({
+                message: 'Para torneos con requisito Riot debes inscribir un equipo oficial de la plataforma'
+            });
+        }
 
         let registrationPayload = null;
-        if (teamId) {
-            const team = await Team.findById(teamId);
+        if (incomingTeamId) {
+            const team = await Team.findById(incomingTeamId);
             if (!team) return res.status(404).json({ message: 'Equipo no encontrado' });
             if (String(team.captain) !== String(req.userId)) {
                 return res.status(403).json({ message: 'Solo el capitán puede inscribir al equipo' });
@@ -1740,26 +1939,37 @@ export const registerTeam = async (req, res) => {
                 return res.status(400).json({ message: 'El juego del equipo no coincide con el torneo' });
             }
             const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+            const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
+            const coach = team?.roster?.coach && typeof team.roster.coach === 'object' ? [team.roster.coach] : [];
             const expected = team.maxMembers || starters.length;
             const complete = expected > 0 && starters.length >= expected && starters.slice(0, expected).every(p => p && p.nickname);
             if (!complete) {
                 return res.status(400).json({ message: 'El equipo no está completo' });
             }
+            const startersForTournament = starters.slice(0, expected);
 
             // Validar roles según juego (solo titulares)
             const allowedRoles = ROLE_NAMES[tournament.game] || ROLE_NAMES[team.game] || [];
             if (allowedRoles.length > 0) {
-                const invalidRole = starters.slice(0, expected).find(p => p?.role && !allowedRoles.includes(p.role));
+                const invalidRole = startersForTournament.find(p => p?.role && !allowedRoles.includes(p.role));
                 if (invalidRole) {
                     return res.status(400).json({ message: `Rol inválido para ${tournament.game}: ${invalidRole.role}` });
                 }
-                const missingRole = starters.slice(0, expected).find(p => !p?.role);
+                const missingRole = startersForTournament.find(p => !p?.role);
                 if (missingRole) {
                     return res.status(400).json({ message: `Todos los titulares deben tener rol para ${tournament.game}` });
                 }
             }
 
-            const users = starters.concat(team.roster?.subs || []).filter(p => p?.user).map(p => p.user);
+            const rosterUsers = [...startersForTournament, ...subs, ...coach]
+                .filter((player) => player?.user)
+                .map((player) => String(player.user));
+            const duplicateRosterUser = findDuplicate(rosterUsers);
+            if (duplicateRosterUser) {
+                return res.status(400).json({ message: 'Hay jugadores repetidos en el roster del equipo' });
+            }
+
+            const users = [...new Set(rosterUsers)];
             const riotUsers = users.length
                 ? await User.find({ _id: { $in: users } }).select('connections.riot')
                 : [];
@@ -1767,9 +1977,18 @@ export const registerTeam = async (req, res) => {
                 riotUsers.map(u => [String(u._id), u.connections?.riot?.verified ? `${u.connections.riot.gameName}#${u.connections.riot.tagLine}` : ''])
             );
             if (requiresRiot) {
-                const missing = starters.slice(0, expected).find(p => p?.user && !riotMap.get(String(p.user)));
+                const missing = startersForTournament.find((player) => (
+                    !player?.user || !riotMap.get(String(player.user))
+                ));
                 if (missing) {
                     return res.status(400).json({ message: 'Todos los titulares deben tener Riot vinculado' });
+                }
+                const starterRiotIds = startersForTournament
+                    .map((player) => normalizeRiotId(riotMap.get(String(player?.user || ''))))
+                    .filter(Boolean);
+                const duplicateStarterRiot = findDuplicate(starterRiotIds);
+                if (duplicateStarterRiot) {
+                    return res.status(400).json({ message: 'Hay Riot IDs repetidos en los titulares del equipo' });
                 }
             }
 
@@ -1785,20 +2004,20 @@ export const registerTeam = async (req, res) => {
                     coach: team.roster?.coach?.nickname || ''
                 },
                 roster: {
-                    starters: starters.map(p => ({
+                    starters: startersForTournament.map(p => ({
                         nickname: p?.nickname || '',
                         gameId: p?.gameId || '',
                         region: p?.region || '',
                         role: p?.role || '',
                         riotId: p?.user ? (riotMap.get(String(p.user)) || '') : ''
                     })),
-                    subs: Array.isArray(team.roster?.subs) ? team.roster.subs.map(p => ({
+                    subs: subs.map(p => ({
                         nickname: p?.nickname || '',
                         gameId: p?.gameId || '',
                         region: p?.region || '',
                         role: p?.role || '',
                         riotId: p?.user ? (riotMap.get(String(p.user)) || '') : ''
-                    })) : []
+                    }))
                 },
                 status: 'approved'
             };
@@ -1818,6 +2037,22 @@ export const registerTeam = async (req, res) => {
                 },
                 status: 'approved'
             };
+        }
+
+        if (requiresRiot) {
+            const incomingRiotIds = getRegistrationRiotIds(registrationPayload);
+            const duplicateInPayload = findDuplicate(incomingRiotIds);
+            if (duplicateInPayload) {
+                return res.status(400).json({ message: 'Hay Riot IDs repetidos en la inscripción del equipo' });
+            }
+
+            const existingRiotIds = collectTournamentRiotIds(registrations);
+            const conflictRiotId = incomingRiotIds.find((riotId) => existingRiotIds.has(riotId));
+            if (conflictRiotId) {
+                return res.status(400).json({
+                    message: 'Uno o más Riot IDs de este equipo ya están inscritos en el torneo'
+                });
+            }
         }
 
         tournament.registrations = tournament.registrations || [];
@@ -1986,10 +2221,24 @@ export const updateTournamentStatus = async (req, res) => {
                 if (!Array.isArray(tournament?.bracket?.rounds) || tournament.bracket.rounds.length === 0) {
                     return res.status(400).json({ message: 'Debes generar el bracket antes de iniciar el torneo' });
                 }
+                if (isRiotTournamentPolicyScope(tournament) && !hasTraditionalTournamentBracket(tournament.bracket)) {
+                    return res.status(400).json({
+                        message: 'Torneos Riot deben avanzar por cruces directos en bracket tradicional'
+                    });
+                }
                 {
                     const approvedCount = (tournament.registrations || []).filter(isApprovedRegistration).length;
                     if (approvedCount < 2) {
                         return res.status(400).json({ message: 'Se requieren al menos 2 equipos aprobados para iniciar el torneo' });
+                    }
+                }
+                if (isRiotTournamentPolicyScope(tournament)) {
+                    const activeParticipants = countTournamentActiveParticipants(tournament);
+                    const minParticipants = getRiotMinActiveParticipants();
+                    if (activeParticipants < minParticipants) {
+                        return res.status(400).json({
+                            message: `Torneos Riot requieren mínimo ${minParticipants} participantes activos para iniciar (actual: ${activeParticipants}).`
+                        });
                     }
                 }
                 if (

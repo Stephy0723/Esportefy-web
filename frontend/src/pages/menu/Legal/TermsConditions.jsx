@@ -30,6 +30,16 @@ const TermsConditions = () => {
 
             <h2>4. Premios y Pagos</h2>
             <p>Los premios se distribuirán únicamente al Capitán del equipo o a través de la plataforma segura de Esportefy. Es responsabilidad del equipo repartir el premio internamente.</p>
+
+            <h2>5. Integraciones de Terceros (Riot API)</h2>
+            <p>
+              Esportefy no está afiliado, asociado ni respaldado por Riot Games. Riot Games, VALORANT y League of Legends
+              son marcas de sus respectivos propietarios.
+            </p>
+            <p>
+              El uso de Riot ID se limita a verificación de identidad competitiva y organización de torneos. No publicamos
+              herramientas para avergonzar jugadores, ni sistemas alternativos de ranking oficiales.
+            </p>
         </div>
       </div>
     </div>

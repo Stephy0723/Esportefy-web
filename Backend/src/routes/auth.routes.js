@@ -3,6 +3,7 @@
 import { Router } from 'express';
 import {
   register,
+  checkPhoneAvailability,
   login,
   logout,
   getProfile,
@@ -30,13 +31,15 @@ import {
   confirmRiotLink,
   unlinkRiotAccount,
   syncRiotNow,
-  validateRiotId
+  validateRiotId,
+  riotStatus
 } from '../controllers/riot.controller.js';
 
 const router = Router();
 
 const rlLogin = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: 'login' });
 const rlRegister = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'register' });
+const rlCheckPhone = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'check-phone' });
 const rlForgot = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'forgot' });
 const rlReset = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'reset' });
 const rlRiot = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 6, keyPrefix: 'riot' });
@@ -53,6 +56,7 @@ router.delete('/discord', verifyToken, unlinkDiscord);
    AUTH
 ========================= */
 router.post('/register', rlRegister, register);
+router.get('/check-phone', rlCheckPhone, checkPhoneAvailability);
 router.post('/login', rlLogin, login);
 router.post('/logout', logout);
 router.get('/profile', verifyToken, getProfile);
@@ -74,6 +78,7 @@ router.get('/user-card/:userId', verifyToken, getUserCard);
 router.post('/riot/link/init', verifyToken, rlRiot, initRiotLink);
 router.post('/riot/link/confirm', verifyToken, rlRiot, confirmRiotLink);
 router.delete('/riot', verifyToken, unlinkRiotAccount);
+router.get('/riot/status', verifyToken, rlRiot, riotStatus);
 
 // (Opcional) sync manual
 router.post('/riot/sync', verifyToken, rlRiot, syncRiotNow);

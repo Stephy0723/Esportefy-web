@@ -36,6 +36,12 @@ const PaymentPolicy = () => {
                 <li><strong>Retiros:</strong> Pueden aplicar tarifas bancarias estándar según tu país.</li>
             </ul>
 
+            <h2><i className='bx bx-shield'></i> 2.1 Restricción para torneos Riot</h2>
+            <p>
+              Para juegos de Riot, las inscripciones se mantienen gratuitas y sin acceso exclusivo para cumplir con las
+              políticas del Riot Developer Portal.
+            </p>
+
             <h2><i className='bx bx-time-five'></i> 3. Distribución de Premios</h2>
             <p>Una vez finalizado el torneo y validados los resultados:</p>
             <p>Los premios se liberan automáticamente a las billeteras de los ganadores en un plazo de <strong>24 a 48 horas</strong>. Esto permite un periodo de gracia para resolver disputas de última hora.</p>

@@ -43,6 +43,15 @@ const OrganizerTerms = () => {
 
             <h2><i className='bx bx-copyright'></i> 5. Propiedad Intelectual</h2>
             <p>Tú mantienes los derechos sobre tu marca y torneo. Sin embargo, otorgas a Esportefy una licencia para transmitir, promocionar y mostrar tu torneo en nuestra sección "En Vivo" y materiales de marketing.</p>
+
+            <h2><i className='bx bx-shield-quarter'></i> 6. Integración con Riot API</h2>
+            <p>
+              Esportefy no está afiliado ni respaldado por Riot Games. Los organizadores deben evitar cualquier texto o diseño
+              que sugiera aprobación oficial de Riot.
+            </p>
+            <p>
+              En torneos de juegos Riot, el acceso debe ser abierto y gratuito; no se permiten inscripciones pagas ni acceso exclusivo.
+            </p>
         </div>
 
       </div>

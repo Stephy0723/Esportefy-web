@@ -93,7 +93,9 @@ const UserSchema = new mongoose.Schema({
                 expiresAt: Date,
                 puuid: String,
                 gameName: String,
-                tagLine: String
+                tagLine: String,
+                attempts: { type: Number, default: 0 },
+                lastSentAt: Date
             }
         }
     },

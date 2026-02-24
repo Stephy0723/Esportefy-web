@@ -36,6 +36,9 @@ export default function Settings() {
     const [riotGameName, setRiotGameName] = useState('');
     const [riotTagLine, setRiotTagLine] = useState('');
     const [riotLoading, setRiotLoading] = useState(false);
+    const [riotValidating, setRiotValidating] = useState(false);
+    const [riotSyncing, setRiotSyncing] = useState(false);
+    const [riotStatus, setRiotStatus] = useState(null);
 
     // ===== RIOT OTP FLOW =====
     const [riotStep, setRiotStep] = useState('idle'); // idle | otpSent
@@ -84,6 +87,18 @@ export default function Settings() {
             setLoading(false);
         } catch (error) {
             console.error("Error cargando settings", error.response?.data || error.message);
+        }
+    };
+
+    const fetchRiotStatus = async () => {
+        try {
+            const res = await axios.get(
+                `${API_URL}/api/auth/riot/status`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setRiotStatus(res.data);
+        } catch (error) {
+            setRiotStatus(null);
         }
     };
 
@@ -136,6 +151,28 @@ export default function Settings() {
         }
     };
 
+    const validateRiotDraft = async () => {
+        if (!riotGameName.trim() || !riotTagLine.trim()) {
+            setRiotMsg('Debes completar GameName y TagLine');
+            return;
+        }
+
+        try {
+            setRiotValidating(true);
+            setRiotMsg('');
+            const res = await axios.post(
+                `${API_URL}/api/auth/riot/validate`,
+                { riotId: `${riotGameName}#${riotTagLine}` },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setRiotMsg(res.data?.message || 'Riot ID válido');
+        } catch (error) {
+            setRiotMsg(error.response?.data?.message || 'Riot ID no válido');
+        } finally {
+            setRiotValidating(false);
+        }
+    };
+
     const confirmRiotLink = async () => {
         if (!riotOtp.trim()) {
             setRiotMsg('Escribe el código que te llegó al correo');
@@ -153,6 +190,7 @@ export default function Settings() {
             );
 
             await fetchSettings();
+            await fetchRiotStatus();
 
             setRiotMsg('Riot vinculado y sincronizado ✅');
             setRiotStep('idle');
@@ -167,7 +205,10 @@ export default function Settings() {
     };
 
     useEffect(() => {
-        if (token) fetchSettings();
+        if (token) {
+            fetchSettings();
+            fetchRiotStatus();
+        }
     }, [token]);
 
     const unlinkRiot = async () => {
@@ -186,12 +227,33 @@ export default function Settings() {
 
             // 🔥 refrescar estado real desde backend
             fetchSettings();
+            fetchRiotStatus();
 
         } catch (error) {
             console.error(
                 'Error al desvincular Riot',
                 error.response?.data || error.message
             );
+        }
+    };
+
+    const syncRiot = async () => {
+        try {
+            setRiotSyncing(true);
+            setRiotMsg('');
+            const res = await axios.post(
+                `${API_URL}/api/auth/riot/sync`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const syncNote = res.data?.result?.lol?.note || 'Sync completado';
+            setRiotMsg(`Sincronización completada: ${syncNote}`);
+            await fetchSettings();
+            await fetchRiotStatus();
+        } catch (error) {
+            setRiotMsg(error.response?.data?.message || 'No se pudo sincronizar Riot');
+        } finally {
+            setRiotSyncing(false);
         }
     };
 
@@ -368,11 +430,22 @@ export default function Settings() {
                                 </div>
 
                                 <div className="int-icon riot">
-                                    <img src="/riot-icon.svg" alt="Riot Games" />
+                                    <img src="/riot-icon.svg" alt="Cuenta Riot" />
                                 </div>
 
                                 <div className="int-details">
-                                    <h4>Riot Games</h4>
+                                    <h4>Cuenta Riot</h4>
+                                    {riotStatus?.api?.message && (
+                                        <small className="riot-msg">
+                                            {riotStatus.api.message}
+                                        </small>
+                                    )}
+                                    <small className="riot-msg">
+                                        Esportefy no está afiliado, asociado ni respaldado por Riot Games.
+                                    </small>
+                                    <small className="riot-msg">
+                                        Riot Games, VALORANT y League of Legends son marcas de sus respectivos propietarios.
+                                    </small>
 
                                     {connections?.riot?.verified ? (
                                         <div className="riot-profile-box">
@@ -431,13 +504,22 @@ export default function Settings() {
 
                                             <div className="riot-actions">
                                                 {riotStep !== 'otpSent' ? (
-                                                    <button
-                                                        className="btn-connect"
-                                                        onClick={initRiotLink}
-                                                        disabled={riotLoading}
-                                                    >
-                                                        {riotLoading ? 'Enviando código...' : 'Enviar código'}
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            className="btn-connect"
+                                                            onClick={validateRiotDraft}
+                                                            disabled={riotLoading || riotValidating}
+                                                        >
+                                                            {riotValidating ? 'Validando...' : 'Validar Riot ID'}
+                                                        </button>
+                                                        <button
+                                                            className="btn-connect"
+                                                            onClick={initRiotLink}
+                                                            disabled={riotLoading || riotValidating}
+                                                        >
+                                                            {riotLoading ? 'Enviando código...' : 'Enviar código'}
+                                                        </button>
+                                                    </>
                                                 ) : (
                                                     <>
                                                         <button
@@ -470,9 +552,18 @@ export default function Settings() {
                                 </div>
 
                                 {connections?.riot?.verified ? (
-                                    <button className="btn-disconnect" onClick={unlinkRiot}>
-                                        Desvincular
-                                    </button>
+                                    <div className="riot-actions">
+                                        <button
+                                            className="btn-connect"
+                                            onClick={syncRiot}
+                                            disabled={riotSyncing}
+                                        >
+                                            {riotSyncing ? 'Sincronizando...' : 'Sync ahora'}
+                                        </button>
+                                        <button className="btn-disconnect" onClick={unlinkRiot}>
+                                            Desvincular
+                                        </button>
+                                    </div>
                                 ) : null}
                             </div>
 

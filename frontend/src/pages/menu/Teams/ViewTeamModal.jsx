@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { esportsCatalog } from '../../../data/esportsCatalog.jsx';
+import { API_URL } from '../../../config/api';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -289,9 +290,12 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
             setRiotCheck({ status: 'loading', message: 'Validando...' });
             if (!currentUser?._id) return setRiotCheck({ status: 'error', message: 'Debes iniciar sesión.' });
             const riotId = `${player.nickname}#${player.gameId}`;
+            const token = localStorage.getItem('token');
+            if (!token) return setRiotCheck({ status: 'error', message: 'Debes iniciar sesión.' });
             const res = await axios.post(
-                'http://localhost:4000/api/auth/riot/validate',
-                { riotId }
+                `${API_URL}/api/auth/riot/validate`,
+                { riotId },
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             if (res.data?.ok) {
                 setRiotCheck({ status: 'ok', message: 'Riot ID válido.' });

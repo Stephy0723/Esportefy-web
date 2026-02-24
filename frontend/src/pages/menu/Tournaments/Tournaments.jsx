@@ -51,7 +51,7 @@ const PROMO_SLIDES = [
         icon: 'bx-trophy',
         badge: 'ESPORTEFY ARENA',
         title: 'COMPITE AL MÁXIMO NIVEL',
-        subtitle: 'Inscríbete en torneos oficiales, demuestra tu skill y gana premios reales.',
+        subtitle: 'Inscríbete en torneos competitivos, demuestra tu skill y gana premios reales.',
         cta: 'Explorar Torneos',
         ctaIcon: 'bx-right-arrow-alt',
         ctaAction: 'scroll',

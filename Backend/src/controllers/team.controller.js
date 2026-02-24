@@ -52,7 +52,7 @@ export const createTeam = async (req, res) => {
             ? `${req.protocol}://${req.get('host')}/uploads/teams/${req.file.filename}`
             : '/uploads/teams/default.png';
 
-        const rosterData = parsedRoster || { starters: [], subs: [], coach: null };
+        const rosterData = sanitizeCreateRoster(parsedRoster || { starters: [], subs: [], coach: null });
         // Asegura que el capitán quede en el roster si no está lleno
         if (parsedFormData?.leaderIgn) {
             const captainPlayer = {
@@ -69,12 +69,44 @@ export const createTeam = async (req, res) => {
         }
 
         if (RIOT_GAMES.has(parsedFormData.game)) {
-            const riotCheck = await validateRiotAccount(parsedFormData.leaderIgn, parsedFormData.leaderGameId);
+            const linkedRiot = await getLinkedRiotForUser(req.userId);
+            if (!linkedRiot.ok) {
+                return res.status(400).json({ message: linkedRiot.message });
+            }
+            if (!riotIdMatches(parsedFormData?.leaderIgn, parsedFormData?.leaderGameId, linkedRiot.riot.gameName, linkedRiot.riot.tagLine)) {
+                return res.status(400).json({
+                    message: `El Riot ID del capitán debe coincidir con tu cuenta vinculada (${linkedRiot.riot.riotId})`
+                });
+            }
+
+            parsedFormData.leaderIgn = linkedRiot.riot.gameName;
+            parsedFormData.leaderGameId = linkedRiot.riot.tagLine;
+            if (Array.isArray(rosterData.starters)) {
+                const currentCaptainSlot = rosterData.starters[0] || {};
+                rosterData.starters[0] = {
+                    ...currentCaptainSlot,
+                    user: req.userId,
+                    nickname: linkedRiot.riot.gameName,
+                    gameId: linkedRiot.riot.tagLine
+                };
+            }
+
+            const riotCheck = await validateRiotAccount(linkedRiot.riot.gameName, linkedRiot.riot.tagLine);
             if (!riotCheck.ok) {
                 return res.status(400).json({ message: riotCheck.message });
             }
-            const riotUnique = await ensureRiotIdNotInOtherTeam(parsedFormData.game, parsedFormData.leaderIgn, parsedFormData.leaderGameId, null);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(parsedFormData.game, linkedRiot.riot.gameName, linkedRiot.riot.tagLine, null);
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
+
+            const duplicateRiot = findDuplicateRiotInRoster(rosterData);
+            if (duplicateRiot) {
+                return res.status(400).json({ message: 'Hay Riot IDs repetidos dentro del roster del equipo' });
+            }
+        }
+
+        const duplicateRosterUser = findDuplicateUserInRoster(rosterData);
+        if (duplicateRosterUser) {
+            return res.status(400).json({ message: 'Hay usuarios repetidos dentro del roster del equipo' });
         }
 
         const uniqueCheck = await ensureUserNotInOtherTeam(parsedFormData.game, req.userId, null);
@@ -108,6 +140,7 @@ export const createTeam = async (req, res) => {
 };
 
 const userInRoster = (team, userId) => {
+    if (String(team?.captain || '') === String(userId || '')) return true;
     const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
     const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
     const coach = team.roster?.coach;
@@ -133,6 +166,10 @@ const applyRosterSlot = (team, slotType, slotIndex, player) => {
     const list = Array.isArray(team.roster[slotType]) ? team.roster[slotType] : [];
     const idx = Number(slotIndex);
     if (Number.isNaN(idx) || idx < 0) return { ok: false, message: 'Índice inválido' };
+    const max = slotType === 'starters' ? Number(team.maxMembers) : Number(team.maxSubstitutes);
+    if (Number.isFinite(max) && max > 0 && idx >= max) {
+        return { ok: false, message: `Slot fuera del límite de ${slotType === 'starters' ? 'titulares' : 'suplentes'}` };
+    }
     if (isSlotFilled(list[idx])) return { ok: false, message: 'Ese slot ya está ocupado' };
     list[idx] = { ...(list[idx] || {}), ...player };
     team.roster[slotType] = list;
@@ -145,6 +182,7 @@ const ensureUserNotInOtherTeam = async (game, userId, currentTeamId) => {
         game,
         _id: { $ne: currentTeamId },
         $or: [
+            { captain: userId },
             { 'roster.starters.user': userId },
             { 'roster.subs.user': userId },
             { 'roster.coach.user': userId }
@@ -196,6 +234,59 @@ const findFirstEmptySlot = (team, slotType) => {
 
 // pushNotification imported from notification.controller.js
 
+const toPlayerList = (roster = {}) => {
+    const starters = Array.isArray(roster?.starters) ? roster.starters : [];
+    const subs = Array.isArray(roster?.subs) ? roster.subs : [];
+    const coach = roster?.coach;
+    return [...starters, ...subs, coach].filter(Boolean);
+};
+
+const findDuplicateValue = (values = []) => {
+    const seen = new Set();
+    for (const value of values || []) {
+        const normalized = String(value || '').trim();
+        if (!normalized) continue;
+        if (seen.has(normalized)) return normalized;
+        seen.add(normalized);
+    }
+    return '';
+};
+
+const findDuplicateUserInRoster = (roster = {}) => {
+    const users = toPlayerList(roster)
+        .map((player) => String(player?.user || '').trim())
+        .filter(Boolean);
+    return findDuplicateValue(users);
+};
+
+const sanitizeCreateRoster = (roster = {}) => {
+    const sanitizePlayer = (player) => {
+        if (!player || typeof player !== 'object') return null;
+        return { ...player, user: null };
+    };
+    return {
+        starters: Array.isArray(roster?.starters) ? roster.starters.map(sanitizePlayer) : [],
+        subs: Array.isArray(roster?.subs) ? roster.subs.map(sanitizePlayer) : [],
+        coach: sanitizePlayer(roster?.coach)
+    };
+};
+
+const validateRequestedSlot = (team, slotType, slotIndex) => {
+    if (slotType === 'coach') return { ok: true, slotIndex: 0 };
+    if (!['starters', 'subs'].includes(slotType)) {
+        return { ok: false, message: 'Slot inválido' };
+    }
+    const idx = Number(slotIndex);
+    if (Number.isNaN(idx) || idx < 0) {
+        return { ok: false, message: 'Índice inválido' };
+    }
+    const max = slotType === 'starters' ? Number(team.maxMembers) : Number(team.maxSubstitutes);
+    if (Number.isFinite(max) && max > 0 && idx >= max) {
+        return { ok: false, message: `Slot fuera del límite de ${slotType === 'starters' ? 'titulares' : 'suplentes'}` };
+    }
+    return { ok: true, slotIndex: idx };
+};
+
 const RIOT_GAMES = new Set([
     'Valorant',
     'League of Legends',
@@ -204,9 +295,98 @@ const RIOT_GAMES = new Set([
     'Legends of Runeterra'
 ]);
 
-const requireRiotLinked = async (userId) => {
+const normalizeRiotPart = (value = '') => String(value || '').trim().toLowerCase();
+
+const riotIdMatches = (leftName, leftTag, rightName, rightTag) => (
+    normalizeRiotPart(leftName) === normalizeRiotPart(rightName)
+    && normalizeRiotPart(leftTag) === normalizeRiotPart(rightTag)
+);
+
+const buildRiotKey = (nickname, gameId) => {
+    const gn = normalizeRiotPart(nickname);
+    const tl = normalizeRiotPart(gameId);
+    if (!gn || !tl) return '';
+    return `${gn}#${tl}`;
+};
+
+const findDuplicateRiotInRoster = (roster = {}) => {
+    const riotKeys = toPlayerList(roster)
+        .map((player) => buildRiotKey(player?.nickname, player?.gameId))
+        .filter(Boolean);
+    return findDuplicateValue(riotKeys);
+};
+
+const findRiotInRoster = (team) => {
+    const starters = Array.isArray(team?.roster?.starters) ? team.roster.starters : [];
+    const subs = Array.isArray(team?.roster?.subs) ? team.roster.subs : [];
+    const coach = team?.roster?.coach;
+    return [...starters, ...subs, coach].filter(Boolean);
+};
+
+const riotIdExistsInTeamRoster = (team, nickname, gameId) => {
+    const gn = String(nickname || '').trim();
+    const tl = String(gameId || '').trim();
+    if (!gn || !tl) return false;
+
+    return findRiotInRoster(team).some((player) => (
+        riotIdMatches(player?.nickname, player?.gameId, gn, tl)
+    ));
+};
+
+const riotIdExistsInPendingRequests = (team, nickname, gameId, ignoredRequestId = '') => {
+    const gn = String(nickname || '').trim();
+    const tl = String(gameId || '').trim();
+    if (!gn || !tl) return false;
+    const ignore = String(ignoredRequestId || '');
+
+    const requests = Array.isArray(team?.joinRequests) ? team.joinRequests : [];
+    return requests.some((request) => {
+        if (ignore && String(request?._id || '') === ignore) return false;
+        if (String(request?.status || 'pending').toLowerCase() !== 'pending') return false;
+        return riotIdMatches(request?.player?.nickname, request?.player?.gameId, gn, tl);
+    });
+};
+
+const getLinkedRiotForUser = async (userId) => {
     const user = await User.findById(userId).select('connections.riot');
-    return Boolean(user?.connections?.riot?.verified);
+    if (!user?.connections?.riot?.verified) {
+        return { ok: false, message: 'Debes vincular tu cuenta Riot para continuar' };
+    }
+
+    const gameName = String(user?.connections?.riot?.gameName || '').trim();
+    const tagLine = String(user?.connections?.riot?.tagLine || '').trim();
+    if (!gameName || !tagLine) {
+        return { ok: false, message: 'Tu cuenta Riot vinculada está incompleta. Vuelve a vincularla.' };
+    }
+
+    return {
+        ok: true,
+        riot: {
+            gameName,
+            tagLine,
+            riotId: `${gameName}#${tagLine}`
+        }
+    };
+};
+
+const ensurePlayerMatchesLinkedRiot = async (userId, player = {}) => {
+    const linked = await getLinkedRiotForUser(userId);
+    if (!linked.ok) return linked;
+
+    const nickname = String(player?.nickname || '').trim();
+    const gameId = String(player?.gameId || '').trim();
+    if (!nickname || !gameId) {
+        return { ok: false, message: 'Debes indicar tu Riot ID completo (GameName y TagLine)' };
+    }
+
+    if (!riotIdMatches(nickname, gameId, linked.riot.gameName, linked.riot.tagLine)) {
+        return {
+            ok: false,
+            message: `El Riot ID debe coincidir con tu cuenta vinculada (${linked.riot.riotId})`
+        };
+    }
+
+    return linked;
 };
 
 const canJoinByGender = async (team, userId) => {
@@ -219,8 +399,37 @@ const canJoinByGender = async (team, userId) => {
     return { ok: true };
 };
 const validateRiotAccount = async (gameName, tagLine) => {
+    const isLocalOrPrivateHost = (hostname = '') => {
+        const host = String(hostname || '').trim().toLowerCase();
+        if (!host) return false;
+        if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return true;
+        if (host.startsWith('10.')) return true;
+        if (host.startsWith('192.168.')) return true;
+        if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
+        return false;
+    };
+
     if (!process.env.RIOT_API_KEY) {
-        throw new Error('RIOT_API_KEY no configurada');
+        return { ok: false, message: 'Riot API no configurada en el servidor' };
+    }
+    const keyMode = String(process.env.RIOT_KEY_MODE || 'development').trim().toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV || 'development').trim().toLowerCase();
+    const allowDevKeyInProd = String(process.env.ALLOW_RIOT_DEV_KEY_IN_PROD || '').trim().toLowerCase() === 'true';
+    if (keyMode !== 'production' && nodeEnv === 'production' && !allowDevKeyInProd) {
+        return { ok: false, message: 'La key Riot en modo development/interim no puede usarse en este entorno' };
+    }
+    if (keyMode !== 'production') {
+        const frontendUrl = String(process.env.FRONTEND_URL || '').trim();
+        if (frontendUrl) {
+            try {
+                const frontendHost = new URL(frontendUrl).hostname;
+                if (!isLocalOrPrivateHost(frontendHost) && !allowDevKeyInProd) {
+                    return { ok: false, message: 'La key Riot en modo development/interim requiere entorno local/privado' };
+                }
+            } catch (_) {
+                return { ok: false, message: 'FRONTEND_URL inválida para RIOT_KEY_MODE=development' };
+            }
+        }
     }
     const gn = String(gameName || '').trim();
     const tl = String(tagLine || '').trim();
@@ -234,7 +443,11 @@ const validateRiotAccount = async (gameName, tagLine) => {
         );
         return { ok: true };
     } catch (e) {
-        return { ok: false, message: 'Riot ID no válido' };
+        const status = e?.response?.status;
+        if (status === 404) return { ok: false, message: 'Riot ID no válido' };
+        if (status === 429) return { ok: false, message: 'Riot API rate limit alcanzado. Intenta más tarde.' };
+        if (status === 401 || status === 403) return { ok: false, message: 'Riot API key inválida o sin permisos' };
+        return { ok: false, message: 'No se pudo validar Riot ID en este momento' };
     }
 };
 
@@ -242,6 +455,7 @@ export const joinTeam = async (req, res) => {
     try {
         const { teamId, inviteCode, slotType, slotIndex, player } = req.body;
         const team = await Team.findById(teamId);
+        let normalizedPlayer = { ...(player || {}) };
 
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
         const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id);
@@ -249,11 +463,18 @@ export const joinTeam = async (req, res) => {
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
         if (RIOT_GAMES.has(team.game)) {
-            const ok = await requireRiotLinked(req.userId);
-            if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para unirte a este equipo" });
-            const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
+            const linked = await ensurePlayerMatchesLinkedRiot(req.userId, normalizedPlayer);
+            if (!linked.ok) return res.status(400).json({ message: linked.message });
+            normalizedPlayer.nickname = linked.riot.gameName;
+            normalizedPlayer.gameId = linked.riot.tagLine;
+
+            if (riotIdExistsInTeamRoster(team, normalizedPlayer.nickname, normalizedPlayer.gameId)) {
+                return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
+            }
+
+            const riotCheck = await validateRiotAccount(normalizedPlayer.nickname, normalizedPlayer.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, normalizedPlayer.nickname, normalizedPlayer.gameId, team._id);
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
         }
         if (!inviteCode || inviteCode !== team.inviteCode) {
@@ -262,10 +483,10 @@ export const joinTeam = async (req, res) => {
         if (userInRoster(team, req.userId)) {
             return res.status(400).json({ message: "Ya estás en este equipo" });
         }
-        if (!player?.nickname) {
+        if (!normalizedPlayer?.nickname) {
             return res.status(400).json({ message: "Nickname requerido" });
         }
-        const playerPayload = { ...player, user: req.userId };
+        const playerPayload = { ...normalizedPlayer, user: req.userId };
         const applied = applyRosterSlot(team, slotType, slotIndex, playerPayload);
         if (!applied.ok) return res.status(400).json({ message: applied.message });
 
@@ -293,28 +514,53 @@ export const addMemberDirect = async (req, res) => {
             return res.status(403).json({ message: "No tienes permisos para gestionar este equipo" });
         }
 
-        if (!player?.nickname) {
-            return res.status(400).json({ message: "Nickname requerido" });
+        const slotValidation = validateRequestedSlot(team, slotType, slotIndex);
+        if (!slotValidation.ok) return res.status(400).json({ message: slotValidation.message });
+
+        const incomingUserId = String(player?.user || '').trim();
+        if (incomingUserId) {
+            if (userInRoster(team, incomingUserId)) {
+                return res.status(400).json({ message: "Ese usuario ya está en este equipo" });
+            }
+            const uniqueCheck = await ensureUserNotInOtherTeam(team.game, incomingUserId, team._id);
+            if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
+            const genderCheck = await canJoinByGender(team, incomingUserId);
+            if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
         }
 
-        if (slotType === 'starters' && Number.isFinite(team.maxMembers) && Number(slotIndex) >= Number(team.maxMembers)) {
-            return res.status(400).json({ message: "Slot fuera del límite de titulares" });
-        }
-        if (slotType === 'subs' && Number.isFinite(team.maxSubstitutes) && Number(slotIndex) >= Number(team.maxSubstitutes)) {
-            return res.status(400).json({ message: "Slot fuera del límite de suplentes" });
-        }
+        const normalizedPlayer = { ...(player || {}) };
+        const persistedUser = incomingUserId || null;
 
         if (RIOT_GAMES.has(team.game)) {
-            const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
+            if (incomingUserId) {
+                const linked = await ensurePlayerMatchesLinkedRiot(incomingUserId, normalizedPlayer);
+                if (!linked.ok) return res.status(400).json({ message: linked.message });
+                normalizedPlayer.nickname = linked.riot.gameName;
+                normalizedPlayer.gameId = linked.riot.tagLine;
+            }
+            if (!normalizedPlayer?.nickname || !normalizedPlayer?.gameId) {
+                return res.status(400).json({ message: "Riot ID requerido (GameName y TagLine)" });
+            }
+            if (riotIdExistsInTeamRoster(team, normalizedPlayer?.nickname, normalizedPlayer?.gameId)) {
+                return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
+            }
+            const riotCheck = await validateRiotAccount(normalizedPlayer?.nickname, normalizedPlayer?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, normalizedPlayer?.nickname, normalizedPlayer?.gameId, team._id);
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
         }
 
-        const applied = applyRosterSlot(team, slotType, slotIndex, { ...player, user: null });
+        if (!normalizedPlayer?.nickname) {
+            return res.status(400).json({ message: "Nickname requerido" });
+        }
+
+        const applied = applyRosterSlot(team, slotType, slotValidation.slotIndex, { ...normalizedPlayer, user: persistedUser });
         if (!applied.ok) return res.status(400).json({ message: applied.message });
 
         await team.save();
+        if (persistedUser) {
+            await User.updateOne({ _id: persistedUser }, { $addToSet: { teams: team._id } });
+        }
         return res.status(200).json({ message: "Jugador agregado", team });
     } catch (error) {
         return res.status(500).json({ message: "Error al agregar jugador", error: error.message });
@@ -377,31 +623,51 @@ export const requestJoinTeam = async (req, res) => {
         const { teamId } = req.params;
         const { slotType, slotIndex, player } = req.body;
         const team = await Team.findById(teamId);
+        let normalizedPlayer = { ...(player || {}) };
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
+        const slotValidation = validateRequestedSlot(team, slotType, slotIndex);
+        if (!slotValidation.ok) return res.status(400).json({ message: slotValidation.message });
+        const hasPendingByUser = (team.joinRequests || []).some((request) => (
+            String(request?.user || '') === String(req.userId)
+            && String(request?.status || 'pending').toLowerCase() === 'pending'
+        ));
+        if (hasPendingByUser) {
+            return res.status(400).json({ message: "Ya tienes una solicitud pendiente para este equipo" });
+        }
         const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id);
         if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
         if (RIOT_GAMES.has(team.game)) {
-            const ok = await requireRiotLinked(req.userId);
-            if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para solicitar ingreso" });
-            const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
+            const linked = await ensurePlayerMatchesLinkedRiot(req.userId, normalizedPlayer);
+            if (!linked.ok) return res.status(400).json({ message: linked.message });
+            normalizedPlayer.nickname = linked.riot.gameName;
+            normalizedPlayer.gameId = linked.riot.tagLine;
+
+            if (riotIdExistsInTeamRoster(team, normalizedPlayer.nickname, normalizedPlayer.gameId)) {
+                return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
+            }
+            if (riotIdExistsInPendingRequests(team, normalizedPlayer.nickname, normalizedPlayer.gameId)) {
+                return res.status(400).json({ message: "Ya existe una solicitud pendiente con ese Riot ID" });
+            }
+
+            const riotCheck = await validateRiotAccount(normalizedPlayer.nickname, normalizedPlayer.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, normalizedPlayer.nickname, normalizedPlayer.gameId, team._id);
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
         }
         if (userInRoster(team, req.userId)) {
             return res.status(400).json({ message: "Ya estás en este equipo" });
         }
-        if (!player?.nickname) {
+        if (!normalizedPlayer?.nickname) {
             return res.status(400).json({ message: "Nickname requerido" });
         }
         team.joinRequests = team.joinRequests || [];
         team.joinRequests.push({
             user: req.userId,
             slotType,
-            slotIndex: Number(slotIndex) || 0,
-            player: { ...player, user: req.userId },
+            slotIndex: slotValidation.slotIndex,
+            player: { ...normalizedPlayer, user: req.userId },
             status: 'pending'
         });
         await team.save();
@@ -424,16 +690,30 @@ export const handleJoinRequest = async (req, res) => {
         if (!Array.isArray(team.joinRequests)) team.joinRequests = [];
         const reqDoc = team.joinRequests.id(requestId);
         if (!reqDoc) return res.status(404).json({ message: "Solicitud no encontrada" });
+        if (String(reqDoc.status || 'pending').toLowerCase() !== 'pending') {
+            return res.status(400).json({ message: "La solicitud ya fue gestionada" });
+        }
 
         if (action === 'approve') {
             const uniqueCheck = await ensureUserNotInOtherTeam(team.game, reqDoc.user, team._id);
             if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
+            let requestPlayer = { ...(reqDoc.player || {}) };
             if (RIOT_GAMES.has(team.game)) {
-                const ok = await requireRiotLinked(reqDoc.user);
-                if (!ok) return res.status(400).json({ message: "El jugador debe vincular su cuenta Riot" });
-                const riotCheck = await validateRiotAccount(reqDoc.player?.nickname, reqDoc.player?.gameId);
+                const linked = await ensurePlayerMatchesLinkedRiot(reqDoc.user, requestPlayer);
+                if (!linked.ok) return res.status(400).json({ message: linked.message });
+                requestPlayer.nickname = linked.riot.gameName;
+                requestPlayer.gameId = linked.riot.tagLine;
+
+                if (riotIdExistsInTeamRoster(team, requestPlayer.nickname, requestPlayer.gameId)) {
+                    return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
+                }
+                if (riotIdExistsInPendingRequests(team, requestPlayer.nickname, requestPlayer.gameId, requestId)) {
+                    return res.status(400).json({ message: "Ya existe otra solicitud pendiente con ese Riot ID" });
+                }
+
+                const riotCheck = await validateRiotAccount(requestPlayer.nickname, requestPlayer.gameId);
                 if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-                const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, reqDoc.player?.nickname, reqDoc.player?.gameId, team._id);
+                const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, requestPlayer.nickname, requestPlayer.gameId, team._id);
                 if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
             }
             const genderCheck = await canJoinByGender(team, reqDoc.user);
@@ -443,7 +723,7 @@ export const handleJoinRequest = async (req, res) => {
                 await team.save();
                 return res.status(400).json({ message: "El jugador ya está en el equipo" });
             }
-            let applied = applyRosterSlot(team, reqDoc.slotType, reqDoc.slotIndex, reqDoc.player || {});
+            let applied = applyRosterSlot(team, reqDoc.slotType, reqDoc.slotIndex, requestPlayer || {});
             if (!applied.ok) {
                 // Si el slot solicitado está ocupado, intenta el primero disponible
                 if (applied.message === 'Ese slot ya está ocupado' && ['starters', 'subs'].includes(reqDoc.slotType)) {
@@ -451,12 +731,15 @@ export const handleJoinRequest = async (req, res) => {
                     if (firstEmpty === -1) {
                         return res.status(400).json({ message: 'No hay slots disponibles' });
                     }
-                    applied = applyRosterSlot(team, reqDoc.slotType, firstEmpty, reqDoc.player || {});
+                    applied = applyRosterSlot(team, reqDoc.slotType, firstEmpty, requestPlayer || {});
                 }
                 if (!applied.ok) return res.status(400).json({ message: applied.message });
             }
             await User.updateOne({ _id: reqDoc.user }, { $addToSet: { teams: team._id } });
-            team.joinRequests = team.joinRequests.filter(r => String(r._id) !== String(requestId));
+            team.joinRequests = team.joinRequests.filter((request) => (
+                String(request?._id || '') !== String(requestId)
+                && String(request?.user || '') !== String(reqDoc.user)
+            ));
             await pushNotification(reqDoc.user, NOTIF.teamRequestApproved(team.name));
         } else if (action === 'reject') {
             // En rechazo solo eliminamos la solicitud

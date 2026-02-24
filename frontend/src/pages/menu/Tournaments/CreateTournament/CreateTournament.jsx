@@ -4,6 +4,7 @@ import Sidebar from '../../../../components/Sidebar/Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios'; // Importamos Axios
+import { API_URL, RIOT_MIN_ACTIVE_PARTICIPANTS, RIOT_REVIEW_MODE } from '../../../../config/api';
 import { 
     FaPlus, FaGamepad, FaUsers, FaMicrophone, FaAward, 
     FaCalendarAlt, FaSitemap, FaTicketAlt, FaFileUpload, FaFilePdf,
@@ -47,6 +48,25 @@ const FORMAT_OPTIONS = [
   { value: 'swiss', label: 'Suizo (Swiss)' },
   { value: 'round_robin', label: 'Round Robin' }
 ];
+
+const RIOT_TITLES = new Set([
+  'Valorant',
+  'League of Legends',
+  'Wild Rift',
+  'Teamfight Tactics',
+  'Legends of Runeterra'
+]);
+
+const parseTeamSizeFromModality = (modality = '') => {
+  const raw = String(modality || '').trim().toLowerCase();
+  const match = raw.match(/^(\d+)\s*v\s*(\d+)$/i);
+  if (!match) return 1;
+  const left = Number.parseInt(match[1], 10);
+  const right = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(left) || left <= 0) return 1;
+  if (!Number.isFinite(right) || right <= 0) return left;
+  return Math.max(left, right);
+};
 
 const normalizeFormatValue = (value) => {
   const raw = String(value || '').trim().toLowerCase();
@@ -92,6 +112,22 @@ const CreateTournament = () => {
   });
   const editTournament = location.state?.editTournament;
   const isEditMode = Boolean(editTournament?.tournamentId);
+  const isRiotTournament = RIOT_TITLES.has(String(tournament.game || '').trim());
+  const requiresFreeEntryMode = RIOT_REVIEW_MODE || isRiotTournament;
+  const tournamentTeamSize = parseTeamSizeFromModality(tournament.modality);
+  const participantCapacity = Math.max(0, Number(tournament.maxSlots) || 0) * Math.max(1, tournamentTeamSize);
+
+  const handleGameChange = (gameValue) => {
+    const nextGame = String(gameValue || '').trim();
+    const nextIsRiot = RIOT_TITLES.has(nextGame);
+    const nextRequiresFreeEntry = RIOT_REVIEW_MODE || nextIsRiot;
+    setTournament((prev) => ({
+      ...prev,
+      game: nextGame,
+      // En review mode de Riot (o juegos Riot), forzamos registro gratuito.
+      entryFee: nextRequiresFreeEntry ? 'Gratis' : prev.entryFee
+    }));
+  };
 
   useEffect(() => {
     if (!isEditMode) return;
@@ -123,9 +159,19 @@ const CreateTournament = () => {
     }));
   }, [isEditMode, editTournament]);
 
+  useEffect(() => {
+    if (!requiresFreeEntryMode) return;
+    if (String(tournament.entryFee || '').trim().toLowerCase() === 'gratis') return;
+    setTournament((prev) => ({ ...prev, entryFee: 'Gratis' }));
+  }, [requiresFreeEntryMode, tournament.entryFee]);
+
   // --- 3. HANDLERS DE FORMULARIO Y ARCHIVOS ---
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isRiotTournament && participantCapacity < RIOT_MIN_ACTIVE_PARTICIPANTS) {
+      alert(`Torneos Riot requieren capacidad mínima para ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos. Ajusta modalidad o cupos.`);
+      return;
+    }
     
     // Preparar FormData para Multer
     const data = new FormData();
@@ -172,8 +218,8 @@ const CreateTournament = () => {
 
     try {
         const url = isEditMode
-          ? `http://localhost:4000/api/tournaments/${editTournament.tournamentId}`
-          : 'http://localhost:4000/api/tournaments';
+          ? `${API_URL}/api/tournaments/${editTournament.tournamentId}`
+          : `${API_URL}/api/tournaments`;
         const method = isEditMode ? 'put' : 'post';
 
         await axios({
@@ -281,7 +327,7 @@ const CreateTournament = () => {
     <select 
       required 
       value={tournament.game}
-      onChange={(e) => setTournament({...tournament, game: e.target.value})}
+      onChange={(e) => handleGameChange(e.target.value)}
     >
       <option value="">-- Elige un juego --</option>
       {/* Generamos las opciones dinámicamente desde GAME_CONFIG */}
@@ -383,6 +429,11 @@ const CreateTournament = () => {
             onChange={(e) => setTournament({...tournament, maxSlots: e.target.value})}
         />
         <p className="file-help-text"><FaUsers /> Capacidad total de equipos</p>
+        {isRiotTournament && participantCapacity > 0 && participantCapacity < RIOT_MIN_ACTIVE_PARTICIPANTS && (
+          <p className="file-help-text" style={{ color: '#f39c12' }}>
+            Capacidad actual: {participantCapacity} participantes. Para Riot necesitas mínimo {RIOT_MIN_ACTIVE_PARTICIPANTS}.
+          </p>
+        )}
       </div>
       {/* COLUMNA DE GÉNERO */}
     <div className="form-column">
@@ -417,13 +468,23 @@ const CreateTournament = () => {
     <div className="form-column">
       <div className="custom-input-box">
         <label>Tipo de Registro</label>
-        <select value={tournament.entryFee} onChange={(e) => setTournament({...tournament, entryFee: e.target.value})}>
+        <select
+          value={tournament.entryFee}
+          onChange={(e) => setTournament({...tournament, entryFee: e.target.value})}
+        >
           <option value="Gratis">Abierto (Todo público)</option>
-          <option value="Invitación">Por Invitación</option>
-          <option value="Password">Con Contraseña</option>
-          <option value="Pago">Premium / Pago</option>
+          <option value="Invitación" disabled={requiresFreeEntryMode}>Por Invitación</option>
+          <option value="Password" disabled={requiresFreeEntryMode}>Con Contraseña</option>
+          <option value="Pago" disabled={requiresFreeEntryMode}>Premium / Pago</option>
         </select>
         <p className="file-help-text"><FaTicketAlt /> Método de inscripción</p>
+        {requiresFreeEntryMode && (
+          <p className="file-help-text" style={{ color: '#f39c12' }}>
+            {RIOT_REVIEW_MODE
+              ? 'RIOT_REVIEW_MODE activo: solo se permite registro gratuito para el prototipo.'
+              : 'Torneos Riot: solo registro gratuito para cumplir políticas del Developer Portal.'}
+          </p>
+        )}
       </div>
 
       <div className="custom-input-box" style={{ marginTop: '20px' }}>

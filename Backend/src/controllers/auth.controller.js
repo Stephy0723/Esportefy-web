@@ -63,18 +63,198 @@ export const upload = multer({
    
 });
 
-export const register = async (req, res) => {
-    try {
-        const { email, password, confirmPassword } = req.body;
+const normalizeForCompare = (value = '') =>
+    String(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
 
-        // 1. Validaciones básicas antes de tocar la DB
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ message: 'El correo ya está registrado' });
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isValidNonNegativeNumberString = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
+const isValidEmail = (value = '') => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+const WEAK_PASSWORDS = new Set([
+    '12345678',
+    '123456789',
+    '123123123',
+    '11111111',
+    'password',
+    'password123',
+    'qwerty123',
+    'qwertyui',
+    'admin123',
+    'abc12345',
+    'letmein',
+    'esportefy',
+    'contrasena',
+    'contraseña'
+].map(normalizeForCompare));
+
+const hasNumericSequence = (value = '') => {
+    const lower = String(value).toLowerCase();
+    const patterns = [
+        '0123', '1234', '2345', '3456', '4567', '5678', '6789', '7890',
+        '9876', '8765', '7654', '6543', '5432', '4321', '3210'
+    ];
+    return patterns.some((p) => lower.includes(p));
+};
+
+const getPasswordPolicyError = (password, { username, userName, fullName, email } = {}) => {
+    if (!password) return 'La contraseña es obligatoria';
+    if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
+    if (/\s/.test(password)) return 'La contraseña no puede contener espacios';
+    if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return 'La contraseña debe incluir letras y números';
+
+    const personalTerms = new Set();
+    const addTerm = (raw) => {
+        const term = normalizeForCompare(raw);
+        if (term.length >= 3) personalTerms.add(term);
+    };
+
+    addTerm(username || userName);
+    String(fullName || '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach(addTerm);
+    String(email || '')
+        .split('@')[0]
+        ?.split(/[._-]+/)
+        .filter(Boolean)
+        .forEach(addTerm);
+
+    const normalizedPassword = normalizeForCompare(password);
+    const containsPersonalTerm = [...personalTerms].some((term) => normalizedPassword.includes(term));
+    if (containsPersonalTerm) {
+        return 'La contraseña no puede incluir tu nombre, usuario o partes del correo';
+    }
+    if (WEAK_PASSWORDS.has(normalizedPassword)) {
+        return 'Esa contraseña es demasiado común o insegura';
+    }
+    if (/(.)\1{3,}/.test(password)) {
+        return 'La contraseña no puede tener 4 caracteres repetidos seguidos';
+    }
+    if (hasNumericSequence(password)) {
+        return 'La contraseña no puede contener secuencias numéricas (ej: 1234)';
+    }
+
+    return '';
+};
+
+export const checkPhoneAvailability = async (req, res) => {
+    try {
+        const rawPhone = String(req.query.phone || '').trim();
+
+        if (!rawPhone) {
+            return res.status(400).json({ available: false, message: 'El teléfono es obligatorio' });
         }
 
+        if (!isValidNonNegativeNumberString(rawPhone)) {
+            return res.status(400).json({ available: false, message: 'El teléfono debe contener solo números y no puede ser negativo' });
+        }
+
+        const existingUser = await User.findOne({ phone: rawPhone }).select('_id');
+        return res.status(200).json({ available: !existingUser });
+    } catch (error) {
+        console.error('Error verificando teléfono:', error);
+        return res.status(500).json({ available: false, message: 'Error verificando disponibilidad del teléfono' });
+    }
+};
+
+export const register = async (req, res) => {
+    try {
+        const {
+            email,
+            password,
+            confirmPassword,
+            username,
+            userName,
+            fullName,
+            phone,
+            country,
+            birthDate,
+            selectedGames,
+            checkTerms
+        } = req.body;
+
+        const normalizedUsername = String(username || userName || '').trim();
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const normalizedPhone = String(phone || '').trim();
+        const normalizedFullName = String(fullName || '').trim();
+        const normalizedCountry = String(country || '').trim();
+
+        // 1. Validaciones básicas antes de tocar la DB
         if (password !== confirmPassword) {
             return res.status(400).json({ message: 'Las contraseñas no coinciden' });
+        }
+
+        if (!normalizedFullName) {
+            return res.status(400).json({ message: 'El nombre completo es obligatorio' });
+        }
+        if (!normalizedPhone) {
+            return res.status(400).json({ message: 'El teléfono es obligatorio' });
+        }
+        if (!isValidNonNegativeNumberString(normalizedPhone)) {
+            return res.status(400).json({ message: 'El teléfono debe contener solo números y no puede ser negativo' });
+        }
+        if (!normalizedCountry) {
+            return res.status(400).json({ message: 'El país es obligatorio' });
+        }
+        if (!birthDate) {
+            return res.status(400).json({ message: 'La fecha de nacimiento es obligatoria' });
+        }
+        const parsedBirthDate = new Date(birthDate);
+        if (Number.isNaN(parsedBirthDate.getTime())) {
+            return res.status(400).json({ message: 'La fecha de nacimiento no es válida' });
+        }
+        if (parsedBirthDate > new Date()) {
+            return res.status(400).json({ message: 'La fecha de nacimiento no puede ser futura' });
+        }
+        if (!Array.isArray(selectedGames) || selectedGames.length === 0) {
+            return res.status(400).json({ message: 'Debes seleccionar al menos un juego' });
+        }
+        if (!normalizedUsername) {
+            return res.status(400).json({ message: 'El nombre de usuario es obligatorio' });
+        }
+        if (!normalizedEmail) {
+            return res.status(400).json({ message: 'El correo es obligatorio' });
+        }
+        if (!isValidEmail(normalizedEmail)) {
+            return res.status(400).json({ message: 'El formato del correo no es válido' });
+        }
+        if (!password) {
+            return res.status(400).json({ message: 'La contraseña es obligatoria' });
+        }
+        if (checkTerms !== true) {
+            return res.status(400).json({ message: 'Debes aceptar los términos para continuar' });
+        }
+
+        const passwordPolicyError = getPasswordPolicyError(password, {
+            username: normalizedUsername,
+            fullName: normalizedFullName,
+            email: normalizedEmail
+        });
+        if (passwordPolicyError) {
+            return res.status(400).json({ message: passwordPolicyError });
+        }
+
+        const [emailExists, usernameExists, phoneExists] = await Promise.all([
+            User.findOne({
+                email: { $regex: new RegExp(`^${escapeRegex(normalizedEmail)}$`, 'i') }
+            }).select('_id'),
+            User.findOne({
+                username: { $regex: new RegExp(`^${escapeRegex(normalizedUsername)}$`, 'i') }
+            }).select('_id'),
+            User.findOne({ phone: normalizedPhone }).select('_id')
+        ]);
+
+        if (emailExists) {
+            return res.status(400).json({ message: 'El correo ya está registrado' });
+        }
+        if (usernameExists) {
+            return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
+        }
+        if (phoneExists) {
+            return res.status(400).json({ message: 'El teléfono ya está registrado' });
         }
 
         // 2. Hashear contraseña
@@ -82,8 +262,16 @@ export const register = async (req, res) => {
 
         // 3. Crear usuario con todos los campos del body
         // Usamos el spread operator (...) para capturar todos los campos de las Etapas 1-4
+        const payload = { ...req.body };
+        payload.fullName = normalizedFullName;
+        payload.phone = normalizedPhone;
+        payload.country = normalizedCountry;
+        payload.birthDate = parsedBirthDate;
+        payload.email = normalizedEmail;
+        payload.username = normalizedUsername;
+
         const user = await User.create({
-            ...req.body,
+            ...payload,
             password: hashedPassword
         });
 
@@ -98,6 +286,18 @@ export const register = async (req, res) => {
 
     } catch (error) {
         console.error("Error en Registro:", error);
+        if (error?.code === 11000) {
+            if (error?.keyPattern?.email) {
+                return res.status(400).json({ message: 'El correo ya está registrado' });
+            }
+            if (error?.keyPattern?.username) {
+                return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
+            }
+            if (error?.keyPattern?.phone) {
+                return res.status(400).json({ message: 'El teléfono ya está registrado' });
+            }
+            return res.status(400).json({ message: 'Ya existe un usuario con esos datos' });
+        }
         res.status(500).json({ 
             message: 'Error al registrar el usuario', 
             error: error.message 
@@ -108,9 +308,16 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+
+        if (!normalizedEmail || !password) {
+            return res.status(400).json({ message: 'Correo y contraseña son obligatorios' });
+        }
 
         // 1. Buscar usuario
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            email: { $regex: new RegExp(`^${escapeRegex(normalizedEmail)}$`, 'i') }
+        });
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
@@ -271,6 +478,15 @@ export const resetPassword = async (req, res) => {
 
         if (!user) {
             return res.status(400).json({ message: "El token es inválido o ha expirado." });
+        }
+
+        const passwordPolicyError = getPasswordPolicyError(password, {
+            username: user.username || user.userName,
+            fullName: user.fullName,
+            email: user.email
+        });
+        if (passwordPolicyError) {
+            return res.status(400).json({ message: passwordPolicyError });
         }
 
         // Hashear la nueva contraseña
