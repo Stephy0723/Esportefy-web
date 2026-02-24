@@ -4,44 +4,64 @@ const ThemeContext = createContext();
 
 export const useTheme = () => useContext(ThemeContext);
 
+// Los 4 temas disponibles
+export const THEMES = {
+  DARK: 'dark',
+  LIGHT: 'light',
+  AMOLED: 'amoled',
+  GRAY: 'gray',
+};
+
+const VALID_THEMES = Object.values(THEMES);
+
 export const ThemeProvider = ({ children }) => {
-  // 1. AQUÍ ESTÁ LA SOLUCIÓN:
-  // En lugar de poner "useState(true)", usamos una función para leer la memoria
-  // ANTES de que la página decida qué color pintar.
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Preguntamos al navegador: "¿Hay un tema guardado?"
-    const savedTheme = localStorage.getItem('esportefyTheme');
-    
-    // Si existe (es "true" o "false"), lo usamos.
-    if (savedTheme !== null) {
-      return JSON.parse(savedTheme);
-    }
-    
-    // Si es la primera vez que entra, por defecto ponemos Oscuro (true)
-    return true; 
+  const [theme, setThemeState] = useState(() => {
+    const saved = localStorage.getItem('esportefyTheme');
+
+    // Migrar el valor viejo (true/false) al nuevo sistema
+    if (saved === 'true') return THEMES.DARK;
+    if (saved === 'false') return THEMES.LIGHT;
+
+    // Si ya es un string válido, úsalo
+    if (VALID_THEMES.includes(saved)) return saved;
+
+    // Primera visita → oscuro por defecto
+    return THEMES.DARK;
   });
 
-  // 2. Este efecto aplica la clase CSS y guarda la elección cada vez que cambias
+  // Aplicar clase al body y guardar en localStorage
   useEffect(() => {
     const body = document.body;
-    
-    if (isDarkMode) {
-      body.classList.add('dark'); // Activa las variables oscuras de tu App.css
-    } else {
-      body.classList.remove('dark'); // Activa las variables claras (:root) de tu App.css
+
+    // Limpiar todas las clases de tema
+    VALID_THEMES.forEach((t) => body.classList.remove(`theme-${t}`));
+
+    // Clase legacy "dark" para compatibilidad con componentes que la usan
+    body.classList.remove('dark');
+    if (theme === THEMES.DARK || theme === THEMES.AMOLED) {
+      body.classList.add('dark');
     }
 
-    // Guardamos en la "caja fuerte" del navegador
-    localStorage.setItem('esportefyTheme', JSON.stringify(isDarkMode));
-    
-  }, [isDarkMode]);
+    // Clase específica del tema activo
+    body.classList.add(`theme-${theme}`);
 
+    localStorage.setItem('esportefyTheme', theme);
+  }, [theme]);
+
+  const setTheme = (newTheme) => {
+    if (VALID_THEMES.includes(newTheme)) {
+      setThemeState(newTheme);
+    }
+  };
+
+  // Compatibilidad con código existente que usa isDarkMode / toggleTheme
+  const isDarkMode = theme === THEMES.DARK || theme === THEMES.AMOLED;
   const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
+    setThemeState((prev) => (prev === THEMES.LIGHT ? THEMES.DARK : THEMES.LIGHT));
   };
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, isDarkMode, toggleTheme, THEMES }}>
       {children}
     </ThemeContext.Provider>
   );

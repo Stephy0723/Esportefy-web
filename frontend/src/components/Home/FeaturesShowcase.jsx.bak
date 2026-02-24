@@ -1,0 +1,117 @@
+﻿import React from 'react';
+import { motion } from 'framer-motion';
+
+const FEATURES = [
+  {
+    icon: 'bx-trophy',
+    title: 'Torneos Automatizados',
+    desc: 'Crea y gestiona torneos con brackets, registros y resultados en tiempo real. Desde locales hasta regionales.',
+    color: '#FFD700',
+  },
+  {
+    icon: 'bx-group',
+    title: 'GestiÃ³n de Equipos',
+    desc: 'Forma tu roster, asigna roles, acepta solicitudes y coordina con tu equipo desde un solo lugar.',
+    color: '#4FACFE',
+  },
+  {
+    icon: 'bx-bar-chart-alt-2',
+    title: 'Rankings en Vivo',
+    desc: 'Compite por el top. Sistema de clasificaciÃ³n por juego, individual y por equipo con estadÃ­sticas verificadas.',
+    color: '#8EDB15',
+  },
+  {
+    icon: 'bx-world',
+    title: 'Comunidades por Juego',
+    desc: 'Ãšnete a comunidades de tu juego favorito. Publica, comenta, encuentra scrims y haz networking.',
+    color: '#F093FB',
+  },
+  {
+    icon: 'bx-chat',
+    title: 'Chat en Tiempo Real',
+    desc: 'MensajerÃ­a directa y grupal integrada. Coordina estrategias con tu equipo sin salir de la plataforma.',
+    color: '#FF6B6B',
+  },
+  {
+    icon: 'bx-medal',
+    title: 'Perfil Competitivo',
+    desc: 'Tu tarjeta de presentaciÃ³n como gamer. Vincula cuentas de Riot, Discord y muestra tu historial.',
+    color: '#FFA500',
+  },
+];
+
+const FeaturesShowcase = () => {
+  return (
+    <section className="relative py-24 px-6 md:px-16 bg-[var(--bg-page)] overflow-hidden">
+      {/* DecoraciÃ³n */}
+      <div className="absolute top-1/2 left-0 w-72 h-72 bg-[var(--primary)]/5 rounded-full blur-[120px] -translate-y-1/2" />
+      <div className="absolute top-1/2 right-0 w-72 h-72 bg-[#4FACFE]/5 rounded-full blur-[120px] -translate-y-1/2" />
+
+      <div className="relative z-10 max-w-6xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <span className="text-[var(--primary)] uppercase tracking-[0.3em] text-sm font-bold">
+            Todo en un solo lugar
+          </span>
+          <h2 className="text-4xl md:text-6xl font-bold text-[var(--text-main)] mt-4 mb-6">
+            Â¿Por quÃ© Esportefy?
+          </h2>
+          <p className="text-[var(--text-muted)] text-lg max-w-xl mx-auto">
+            Herramientas diseÃ±adas por gamers, para gamers. 
+            Todo lo que necesitas para pasar de casual a profesional.
+          </p>
+        </motion.div>
+
+        {/* Grid de features */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {FEATURES.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, duration: 0.5 }}
+              className="group relative bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-500 cursor-default"
+            >
+              {/* Glow en hover */}
+              <div 
+                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl -z-10"
+                style={{ background: `radial-gradient(circle at center, ${feature.color}08 0%, transparent 70%)` }}
+              />
+
+              {/* Icon */}
+              <div 
+                className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
+                style={{ 
+                  background: `${feature.color}15`,
+                  border: `1px solid ${feature.color}30`
+                }}
+              >
+                <i 
+                  className={`bx ${feature.icon} text-2xl`} 
+                  style={{ color: feature.color }}
+                ></i>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-[var(--text-main)] text-xl font-bold mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-[var(--text-muted)] text-sm leading-relaxed">
+                {feature.desc}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default FeaturesShowcase;

@@ -1,0 +1,338 @@
+/* =========================================
+   LAYOUT SOPORTE
+   ========================================= */
+.support-page {
+    padding: 2rem;
+    color: var(--text-main);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    background-color: var(--bg-page);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.support-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.support-header h1 {
+    font-size: 3rem;
+    text-transform: uppercase;
+    margin: 0;
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.support-header p {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+/* GRID PRINCIPAL */
+.support-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* =========================================
+   SECCIÓN FAQ (IZQUIERDA)
+   ========================================= */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 1.5rem;
+    color: var(--neon-green);
+}
+.section-title h2 { margin: 0; text-transform: uppercase; color: var(--text-main); }
+.icon-title { font-size: 1.8rem; }
+
+/* CONTENEDOR PARA CENTRAR */
+.search-faq {
+    position: relative;
+    max-width: 100%; /* Ocupa el ancho del grid */
+    margin: 0 auto 2.5rem auto; /* Centra horizontalmente */
+    display: flex;
+    align-items: center;
+}
+
+/* LA LUPA */
+.search-icon {
+    position: absolute;
+    left: 20px;
+    color: var(--text-muted); /* Cambia de color según el tema */
+    font-size: 1.1rem;
+    pointer-events: none;
+    z-index: 5;
+    transition: color 0.3s ease;
+}
+
+/* EL INPUT DINÁMICO */
+.search-faq input {
+    width: 100%;
+    height: 55px;
+    /* USAMOS VARIABLE AQUÍ PARA EL CAMBIO DE COLOR */
+    background-color: var(--search-bg) !important; 
+    border: 1.5px solid var(--border-color);
+    border-radius: 50px; /* Estilo cápsula de tu imagen image_52f0a8.png */
+    padding: 0 25px 0 55px;
+    color: var(--text-main); /* Texto negro en light / blanco en dark */
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* EFECTO AL ESCRIBIR */
+.search-faq input:focus {
+    border-color: var(--neon-green);
+    background-color: var(--search-bg);
+    box-shadow: 0 0 15px rgba(142, 219, 21, 0.1);
+}
+
+/* Ilumina la lupa cuando el usuario hace clic */
+.search-faq input:focus + .search-icon,
+.search-faq:focus-within .search-icon {
+    color: var(--neon-green);
+}
+
+/* COLOR DEL TEXTO "Buscar pregunta..." */
+.search-faq input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Lista Acordeón */
+.faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.faq-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.faq-item:hover {
+    border-color: var(--neon-green);
+}
+
+.faq-item.active {
+    border-color: var(--neon-green);
+    /* Se usa el fondo dinámico que definimos en root */
+    background: var(--faq-answer-bg);
+}
+
+.faq-question {
+    padding: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.faq-item.active .faq-question {
+    color: var(--neon-green);
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    background: transparent;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.faq-item.active .faq-answer {
+    max-height: 500px;
+    padding: 1.2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* =========================================
+   TARJETA DE CONTACTO (DERECHA)
+   ========================================= */
+.inquiry-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-main);
+}
+
+body:not(.dark) .inquiry-card {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.sticky-card {
+    position: sticky;
+    top: 20px;
+}
+
+.inquiry-icon-wrapper {
+    font-size: 3rem;
+    color: var(--neon-green);
+    margin-bottom: 1rem;
+}
+
+.btn-open-modal {
+    background: var(--neon-green);
+    color: #000000; /* Texto oscuro sobre neón para legibilidad */
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 1rem;
+    transition: transform 0.2s;
+}
+
+.btn-open-modal:hover {
+    transform: scale(1.05);
+}
+
+/* --- ESTILOS DEL MODAL --- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-overlay);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--neon-green);
+    padding: 3rem;
+    border-radius: 28px; /* Coherente con tus 28px de las cartas */
+    width: 95%;
+    max-width: 550px;
+    position: relative;
+    color: var(--text-main);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* --- CABECERA ORGANIZADA --- */
+.modal-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 2rem;
+    padding-right: 30px; /* Espacio para la X */
+}
+
+.modal-header h3 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0;
+    color: var(--text-main);
+    letter-spacing: 1px;
+}
+
+.modal-header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* --- ELEMENTOS DE FORMULARIO --- */
+.btn-close-modal {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-close-modal:hover {
+    color: var(--neon-green);
+    transform: rotate(90deg);
+}
+
+.modal-content textarea {
+    width: 100%;
+    min-height: 160px;
+    background: var(--bg-input) !important;
+    border: 2px solid var(--border-color);
+    border-radius: 18px;
+    padding: 20px;
+    color: var(--text-main);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    resize: none;
+    margin-bottom: 2rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.modal-content textarea:focus {
+    border-color: var(--neon-green);
+}
+
+/* --- BOTÓN DINÁMICO --- */
+.btn-submit-inquiry {
+    width: 100%;
+    height: 55px;
+    background: var(--neon-green);
+    color: #000 !important; /* Texto oscuro sobre neón para legibilidad */
+    border: none;
+    padding: 0;
+    font-weight: 900;
+    font-size: 1rem;
+    border-radius: 50px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: 0.3s;
+}
+
+.btn-submit-inquiry:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(142, 219, 21, 0.4);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 900px) {
+    .support-grid { grid-template-columns: 1fr; }
+    .btn-back-support { position: static; margin-bottom: 2rem; }
+}

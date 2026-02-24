@@ -1,76 +1,68 @@
 /* ========================================= */
 /* ADN DEL PROYECTO (PALETA & TIPOGRAFÍA)    */
+/* Las variables CSS se definen en index.css  */
+/* Aquí solo helpers SCSS + valores estáticos */
 /* ========================================= */
 
-// --- PALETA DE COLORES (VERDE NEÓN & B/N) ---
-// Actualizado al verde que usas en el Sidebar (#8EDB15)
-$primary:       #8EDB15;  
-$primary-hover: #7ac40f;  // Un poco más oscuro para hover
-$primary-dim:   rgba(142, 219, 21, 0.15); // Verde transparente para fondos sutiles
-
-// --- ESCALA DE GRISES (MECANISMO) ---
-$bg-page:       #000000;  // Negro Absoluto (OLED)
-$bg-card:       #121212;  // Gris Casi Negro (Para tarjetas/modales)
-$bg-input:      #1E1E1E;  // Gris Oscuro (Para inputs)
-$border-color:  #333333;  // Bordes sutiles
-
-// --- TEXTOS ---
-$text-main:     #FFFFFF;
-$text-muted:    #888888;
+// --- COLOR PRIMARIO (para cálculos SCSS) ---
+$primary:       #8EDB15;
+$primary-hover: #7ac40f;
+$primary-dim:   rgba(142, 219, 21, 0.15);
+$primary-rgb:   142, 219, 21;
 
 // --- TIPOGRAFÍA ---
-$font-stack:    'Poppins', sans-serif;
+$font-stack: 'Poppins', sans-serif;
 
 // =========================================
 // MIXINS (ATAJOS DE CÓDIGO)
 // =========================================
 
-// 1. Efecto Vidrio Oscuro (Glassmorphism)
+// 1. Efecto Vidrio — usa variables CSS del tema activo
 @mixin glass-panel {
-    background: rgba(18, 18, 18, 0.95); // Base oscura semitransparente
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 30px var(--shadow-color);
     backdrop-filter: blur(10px);
 }
 
-// 2. Input estilo línea (Cyberpunk)
+// 2. Input estilo línea
 @mixin input-line {
     background: transparent;
     border: none;
-    border-bottom: 2px solid $border-color;
-    color: $text-main;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-main);
     padding: 10px 0;
     transition: all 0.3s ease;
     outline: none;
     font-family: $font-stack;
 
     &:focus {
-        border-bottom-color: $primary;
-        box-shadow: 0 10px 10px -10px $primary-dim;
+        border-bottom-color: var(--primary);
+        box-shadow: 0 10px 10px -10px var(--primary-dim);
     }
-    
+
     &::placeholder {
-        color: $text-muted;
+        color: var(--text-muted);
     }
 }
 
 // 3. Botón Neón Principal
 @mixin btn-neon {
-    background: $primary;
-    color: #000000; // Texto negro para máximo contraste
+    background: var(--primary);
+    color: var(--text-inverted);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
     border: none;
     padding: 12px 24px;
-    border-radius: 50px; // Redondo estilo cápsula
+    border-radius: 50px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 0 10px rgba(142, 219, 21, 0.2);
-    
+    box-shadow: 0 0 10px rgba($primary-rgb, 0.2);
+
     &:hover {
-        background: lighten($primary, 10%); // Se ilumina al pasar el mouse
-        box-shadow: 0 0 20px rgba(142, 219, 21, 0.6); // Resplandor fuerte
+        background: var(--primary-hover);
+        box-shadow: 0 0 20px rgba($primary-rgb, 0.6);
         transform: translateY(-2px);
     }
 }

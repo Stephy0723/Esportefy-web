@@ -1,48 +1,145 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Navbar from '../../../../components/Navbar/Navbar';
-import Sidebar from '../../../../components/Sidebar/Sidebar';
 import './TeamRegistration.css';
+import axios from 'axios';
+import { API_URL } from '../../../../config/api';
 
 const TeamRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // ESTADO PARA EL SIDEBAR (Vital para que el botón funcione)
-  const [isSidebarClosed, setIsSidebarClosed] = useState(true);
-  
-  // Cálculo del margen: Si está cerrado 88px, si está abierto 250px
-  const sidebarWidth = isSidebarClosed ? '88px' : '250px';
+  // URL de imagen Genérica de Alta Calidad (Cyberpunk/Esports Arena)
+  const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop";
 
-  const tournament = location.state?.tournament || { 
-    title: "Torneo", 
-    image: "https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt55979c3b06db2369/63d8650e75a31a57c4df974e/VALORANT_Jett_1920x1080.jpg" 
+  // LÓGICA BLINDADA:
+  // 1. Intentamos leer del estado.
+  // 2. Si existe el estado pero NO tiene imagen, usamos la DEFAULT.
+  // 3. Si no existe el estado, usamos todo DEFAULT.
+  const incomingTournament = location.state?.tournament;
+  
+  const tournament = {
+    title: incomingTournament?.title || "Torneo Global",
+    // Aquí está el truco: Si no hay banner, usa DEFAULT_IMAGE
+    image: incomingTournament?.bannerImage || incomingTournament?.image || DEFAULT_IMAGE,
+    tournamentId: incomingTournament?.tournamentId || '',
+    game: incomingTournament?.game || '',
+    riotRequirements: incomingTournament?.riotRequirements || {}
   };
 
-  const handleRegister = (e) => {
+  const [teamName, setTeamName] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [userTeams, setUserTeams] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [loadingTeams, setLoadingTeams] = useState(true);
+  const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+
+  const selectedTeam = userTeams.find(t => String(t._id) === String(selectedTeamId));
+  const starters = Array.isArray(selectedTeam?.roster?.starters) ? selectedTeam.roster.starters : [];
+  const expectedStarters = Number.isFinite(Number(selectedTeam?.maxMembers)) && Number(selectedTeam?.maxMembers) > 0
+    ? Number(selectedTeam.maxMembers)
+    : starters.length;
+  const filledStarters = starters.slice(0, expectedStarters).filter(p => p && (p.nickname || p.user)).length;
+  const teamComplete = expectedStarters > 0 && filledStarters >= expectedStarters;
+  const gameMatches = !tournament.game || !selectedTeam?.game || String(selectedTeam.game) === String(tournament.game);
+  const requiresRiot = Boolean(tournament.riotRequirements?.required) || ['Valorant','League of Legends','Wild Rift','Teamfight Tactics','Legends of Runeterra'].includes(tournament.game);
+  const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
+  const startersMissingRiotId = requiresRiot
+    ? starters.slice(0, expectedStarters).some(p => p && !p.gameId)
+    : false;
+  const canSubmit = Boolean(selectedTeamId) && teamComplete && gameMatches && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId));
+
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        setLoadingTeams(true);
+        const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
+        const user = storedUser ? JSON.parse(storedUser) : null;
+        const response = await axios.get(`${API_URL}/api/teams`);
+        const allTeams = response.data || [];
+        const mine = user?._id
+          ? allTeams.filter(t => String(t.captain?._id || t.captain) === String(user._id))
+          : allTeams;
+        setUserTeams(mine);
+      } catch (err) {
+        console.error('Error cargando equipos:', err);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+    loadTeams();
+  }, []);
+
+  useEffect(() => {
+    const team = userTeams.find(t => String(t._id) === String(selectedTeamId));
+    if (!team) return;
+    setTeamName(team.name || '');
+    setLogoUrl(team.logo || '');
+  }, [selectedTeamId, userTeams]);
+
+  const handleRegister = async (e) => {
     e.preventDefault();
-    alert("¡Equipo Registrado! GL HF.");
-    navigate('/tournaments');
+    if (!tournament.tournamentId) {
+      alert('No se pudo identificar el torneo.');
+      return;
+    }
+    if (!selectedTeamId) {
+      alert('Selecciona un equipo.');
+      return;
+    }
+    if (!gameMatches) {
+      alert('El juego del equipo no coincide con el torneo.');
+      return;
+    }
+    if (!teamComplete) {
+      alert('El equipo no está completo.');
+      return;
+    }
+    if (requiresRiot && !hasRiotLinked) {
+      alert('Debes vincular tu cuenta Riot para inscribirte.');
+      return;
+    }
+    if (requiresRiot && startersMissingRiotId) {
+      alert('Todos los titulares deben tener Riot ID.');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        alert('Debes iniciar sesión para registrar tu equipo.');
+        return;
+      }
+      await axios.post(
+        `${API_URL}/api/tournaments/${tournament.tournamentId}/register`,
+        {
+          teamId: selectedTeamId
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      alert("¡Equipo Registrado! GL HF.");
+      navigate('/tournaments');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'No se pudo registrar el equipo';
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Función de respaldo por si la URL falla al cargar (404, bloqueo, etc)
+  const handleImageError = (e) => {
+    e.target.src = "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=2070&auto=format&fit=crop"; // Imagen de backup (Gaming Setup)
   };
 
   return (
-    <div className="reg-page-wrapper">
-      {/* Pasamos los estados al Sidebar para que el botón funcione */}
-      <Sidebar isClosed={isSidebarClosed} setIsClosed={setIsSidebarClosed} />
-      
-      <div 
-        className="main-content-area"
-        style={{ 
-            marginLeft: sidebarWidth, 
-            width: `calc(100% - ${sidebarWidth})`
-        }}
-      >
-        <Navbar />
-        
-        {/* CONTENEDOR CENTRALIZADO */}
+    <div className="registration-content">
+       
         <div className="center-stage">
             
-            {/* LA TARJETA FLOTANTE DE CRISTAL */}
             <div className="glass-card">
                 
                 {/* IZQUIERDA: FORMULARIO */}
@@ -54,64 +151,58 @@ const TeamRegistration = () => {
                     </div>
 
                     <form onSubmit={handleRegister}>
-                        {/* Input Estilo Línea Neon */}
                         <div className="neon-input-group">
-                            <input type="text" required placeholder=" " />
-                            <label>Nombre del Equipo</label>
+                            <select
+                              className="select-modern"
+                              value={selectedTeamId}
+                              onChange={(e) => setSelectedTeamId(e.target.value)}
+                              disabled={loadingTeams}
+                              required
+                            >
+                              <option value="">Selecciona tu equipo</option>
+                              {userTeams.map(team => (
+                                <option key={team._id} value={team._id}>{team.name}</option>
+                              ))}
+                            </select>
+                            <label>Equipo</label>
+                            
                             <span className="bar"></span>
                         </div>
-
-                        <div className="neon-input-group">
-                            <input type="text" required placeholder=" " />
-                            <label>Logo URL (Opcional)</label>
-                            <span className="bar"></span>
-                        </div>
-
-                        <h3 className="roster-title">Alineación (Roster)</h3>
-                        
-                        <div className="roster-grid">
-                            <div className="neon-input-group compact">
-                                <input type="text" defaultValue="GamerPro_99" readOnly />
-                                <label className="fixed-label">Capitán</label>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 2</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 3</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 4</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" required placeholder=" " />
-                                <label>Jugador 5</label>
-                                <span className="bar"></span>
-                            </div>
-                            <div className="neon-input-group compact">
-                                <input type="text" placeholder=" " />
-                                <label>Suplente</label>
-                                <span className="bar"></span>
-                            </div>
-                        </div>
+                        {(!loadingTeams && userTeams.length === 0) && (
+                          <div className="neon-input-group">
+                            <button type="button" className="btn-confirm" onClick={() => navigate('/create-team')}>
+                              Crear equipo
+                            </button>
+                          </div>
+                        )}
+                        {selectedTeam && (
+                          <div className="neon-input-group">
+                            {!gameMatches && <p style={{color:'#ff6b6b'}}>El juego del equipo no coincide con el torneo.</p>}
+                            {!teamComplete && <p style={{color:'#ff6b6b'}}>El equipo no está completo ({filledStarters}/{expectedStarters}).</p>}
+                            {requiresRiot && !hasRiotLinked && <p style={{color:'#ff6b6b'}}>Debes vincular tu cuenta Riot en Settings.</p>}
+                            {requiresRiot && startersMissingRiotId && <p style={{color:'#ff6b6b'}}>Faltan Riot ID en titulares.</p>}
+                          </div>
+                        )}
 
                         <div className="actions">
                             <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>Cancelar</button>
-                            <button type="submit" className="btn-confirm">Confirmar Registro</button>
+                            <button type="submit" className="btn-confirm" disabled={submitting || !canSubmit}>
+                              {submitting ? 'Registrando...' : 'Confirmar Registro'}
+                            </button>
                         </div>
                     </form>
                 </div>
 
-                {/* DERECHA: IMAGEN CINEMÁTICA */}
+                {/* DERECHA: IMAGEN */}
                 <div className="image-section">
                     <div className="overlay-gradient"></div>
-                    <img src={tournament.image} alt="Game Art" className="cinematic-bg" />
+                    {/* AÑADIDO: onError para manejar fallos de carga */}
+                    <img 
+                        src={tournament.image} 
+                        alt="Game Art" 
+                        className="cinematic-bg"
+                        onError={handleImageError} 
+                    />
                     <div className="image-text">
                         <h2>Domina el Juego</h2>
                         <p>La competencia empieza aquí.</p>
@@ -120,7 +211,6 @@ const TeamRegistration = () => {
 
             </div>
         </div>
-      </div>
     </div>
   );
 };

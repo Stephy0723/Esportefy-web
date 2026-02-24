@@ -1,0 +1,173 @@
+/* ========================================= */
+/* NAVBAR — Usa variables globales de index.css */
+/* ========================================= */
+
+/* ========================================= */
+/* 2. NAVBAR MAESTRO (GRID LAYOUT)           */
+/* ========================================= */
+.navbar {
+  position: sticky; 
+  top: 0;
+  width: 100%;
+  z-index: 900; 
+  margin-bottom: -90px; 
+  background-color: transparent; 
+  transition: all 0.3s ease;
+  padding: 10px 0;
+}
+
+/* ESTADO SCROLL (Fondo Sólido) */
+.navbar.scrolled {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px var(--shadow-color);
+  padding: 8px 0;
+}
+
+.navbar-container {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 0 25px;
+  display: grid; 
+  grid-template-columns: 1fr auto 1fr; 
+  align-items: center;
+  height: 60px;
+}
+
+/* LOGO */
+.navbar-logo {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; font-size: 1.5rem; font-weight: 800;
+  color: var(--text-main); 
+  justify-self: start;
+}
+.navbar-logo i { font-size: 1.8rem; color: var(--primary); }
+.highlight { color: var(--primary); }
+
+
+/* ========================================= */
+/* 3. BUSCADOR                               */
+/* ========================================= */
+.search-box {
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+  width: 380px;
+  height: 42px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 50px;
+  padding: 0 15px;
+  transition: all 0.3s ease;
+}
+
+.search-box:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-dim);
+  background-color: var(--bg-card);
+}
+
+.search-box i { 
+  color: var(--text-muted); 
+  font-size: 1.1rem;
+  margin-right: 12px;
+  display: flex;
+}
+
+.search-box input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.search-box input::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+
+/* ========================================= */
+/* 4. DERECHA (ACCIONES)                     */
+/* ========================================= */
+.navbar-actions {
+  display: flex; 
+  align-items: center; 
+  gap: 15px;
+  justify-self: end;
+}
+
+.notify-btn {
+  background: var(--bg-input);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: none;
+  color: var(--text-main); 
+  font-size: 1.2rem;
+  cursor: pointer;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.notify-btn:hover { color: var(--primary); background: var(--bg-card-hover); }
+
+.dot {
+  position: absolute; top: 10px; right: 10px;
+  width: 8px; height: 8px; background: var(--danger); 
+  border-radius: 50%; border: 2px solid var(--bg-card);
+}
+
+/* Perfil */
+.user-profile.container-unified {
+  display: flex; align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 50px;
+  padding: 4px 8px 4px 4px;
+  gap: 5px;
+}
+.user-profile.container-unified:hover { border-color: var(--primary); }
+
+.profile-link-part {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--text-main);
+  padding-right: 8px;
+}
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%; 
+  object-fit: cover; border: 2px solid var(--primary);
+}
+.username { font-weight: 600; font-size: 0.9rem; }
+
+.separator-vertical {
+  height: 20px; width: 1px; background-color: var(--border-color); margin: 0 5px;
+}
+
+.logout-btn-integrated {
+  background: transparent; border: none; color: var(--text-muted);
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; cursor: pointer;
+}
+.logout-btn-integrated:hover { color: var(--danger); }
+
+/* Botón Ingresar */
+.login-btn {
+  background-color: var(--primary);
+  color: var(--text-inverted) !important; 
+  padding: 0 24px; 
+  height: 42px;
+  border-radius: 50px;
+  text-decoration: none; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s ease;
+}
+.login-btn:hover { transform: scale(1.05); }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .search-box { display: none; }
+  .navbar-container { display: flex; justify-content: space-between; }
+}

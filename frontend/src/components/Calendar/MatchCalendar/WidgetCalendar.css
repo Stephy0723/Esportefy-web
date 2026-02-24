@@ -1,0 +1,142 @@
+/* ===== ROOT VARIABLES ===== */
+:root {
+  --accent: #8edb15;
+  --bg-hover-light: rgba(0, 0, 0, 0.05);
+  --bg-hover-dark: rgba(255, 255, 255, 0.08);
+
+  --dot-tournament: #a855f7;
+  --dot-vs: #38bdf8;
+  --dot-event: #22c55e;
+}
+
+/* ===== CONTAINER ===== */
+.widget-calendar {
+  width: 100%;
+  max-width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+/* ===== HEADER ===== */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.month-title {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* ===== BUTTONS ===== */
+.nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(145deg, #1f2937, #111827);
+  color: white;
+  font-size: 16px;
+}
+
+.light .nav-btn {
+  background: linear-gradient(145deg, #e5e7eb, #d1d5db);
+  color: #0f172a;
+}
+
+.nav-btn:hover {
+  transform: scale(1.08);
+}
+
+/* ===== WEEKDAYS ===== */
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: 11px;
+  opacity: 0.6;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* ===== GRID ===== */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+/* ===== DAY ===== */
+.calendar-day {
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.light .calendar-day:hover {
+  background: var(--bg-hover-light);
+}
+
+.dark .calendar-day:hover {
+  background: var(--bg-hover-dark);
+}
+
+.day-number {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ===== TODAY ===== */
+.calendar-day.today {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ===== EVENT DOTS ===== */
+.event-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.dot.tournament {
+  background: var(--dot-tournament);
+}
+
+.dot.vs {
+  background: var(--dot-vs);
+}
+
+.dot.event {
+  background: var(--dot-event);
+}
+
+/* ===== FOOTER ===== */
+.view-more {
+  display: block;
+  margin-top: 10px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.view-more:hover {
+  text-decoration: underline;
+}
