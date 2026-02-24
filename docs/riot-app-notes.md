@@ -1,53 +1,42 @@
-# Riot Developer Portal - App Notes (Prototype Submission)
+# Riot App Notes (Prototype)
 
-## Project Summary
-Esportefy is a tournament platform prototype focused on community competition. In this stage, Riot-powered features are limited to account verification and eligibility checks for Riot titles.
+## What this product is
+Esportefy is a community tournament platform. In this prototype we use Riot APIs for identity and eligibility checks, plus tournament integrity controls.
 
-## Compliance Scope
-- The prototype does not use official Riot logos.
-- The project does not claim partnership or official Riot approval.
-- Riot API key is stored server-side only (never exposed in frontend code).
-- Development/Interim key usage is restricted to controlled environments.
-- The platform does not provide alternate ranking systems (MMR/ELO alternatives).
-- The platform does not include player-shaming features or negative public scoring.
-- Riot data is consumed only from documented Riot API endpoints.
-- No in-game chat integrations or undocumented Riot systems are used.
-- Riot tournaments are enforced as free registration (no paid access).
+This build is for review, not for monetized public rollout.
 
-## Security and Key Handling
-- Backend environment-based key mode:
-  - `RIOT_KEY_MODE=development|production`
-  - `ALLOW_RIOT_DEV_KEY_IN_PROD=false` by default
-- Additional prototype safeguard:
-  - `RIOT_REVIEW_MODE=true` can be enabled to force free registration globally during review.
-- Production/public mode blocks development/interim key usage unless explicitly overridden in controlled tests.
+## What we do with Riot data
+- Validate Riot ID format (`GameName#TagLine`).
+- Verify accounts through official Riot endpoints.
+- Link one Riot account to one Esportefy user.
+- Validate team/tournament eligibility where Riot requirements apply.
 
-## Riot ID and Integrity Validations
-- Riot ID format validation (`GameName#TagLine`).
-- Verification against Riot Account endpoint before protected actions.
-- Linked Riot account uniqueness (one Riot account cannot be verified by multiple users).
-- Team integrity checks:
-  - no duplicate Riot IDs inside the same roster,
-  - no duplicate Riot IDs across teams (same game scope where applicable).
-- Tournament integrity checks:
-  - no duplicate Riot IDs across registered teams in Riot-restricted tournaments,
-  - captain/team ownership and game consistency validations.
+## What we do not do
+- We do not claim Riot partnership or official endorsement.
+- We do not use undocumented Riot endpoints.
+- We do not build alternate ranking systems (MMR/ELO clones).
+- We do not expose features to shame players.
+- We do not create non-tournament single-match lobby workflows.
 
-## Product Behavior During Review
-- Riot titles only allow free/open registration modes.
-- In frontend prototype mode (`VITE_RIOT_REVIEW_MODE=true`), paid/invite/password entry modes are disabled.
-- In backend prototype mode (`RIOT_REVIEW_MODE=true`), non-free entry is rejected at API level.
-- Riot tournament start is blocked if active participants are below policy minimum (default: 20).
-- Riot bracket generation enforces traditional competitive formats and direct opponent structures.
-- While Riot registrations remain open, custom seeding is blocked to preserve balanced/fair matchmaking.
+## Key/security handling
+- Riot API key is server-side only.
+- Dev/interim key usage is restricted by environment rules.
+- Public/prod misuse of dev keys is blocked by default.
 
-## Intended Player Experience
-- Help players organize and join fair community tournaments.
-- Encourage self-improvement and team coordination.
-- Avoid toxic comparison mechanics and non-official ranking systems.
+## Tournament behavior in review mode
+- Riot-scoped tournaments are free entry only.
+- Paid/invite/password modes are blocked in review mode.
+- Riot tournaments must meet minimum active participants (default: 20) before start.
+- Brackets must be traditional competitive formats (single, double, swiss, round robin).
+- While registration is still open, custom seeding is blocked for Riot tournaments.
 
-## Notes for Riot Review Team
-If you want, we can provide:
+## Integrity checks already implemented
+- No duplicate Riot IDs within one team roster.
+- No duplicate Riot IDs across teams in the same Riot tournament.
+- Captain/team ownership checks on registration and management actions.
+
+## If the review team needs more detail
+We can provide:
 - test accounts,
-- a short walkthrough video,
-- a minimal endpoint list of Riot API calls used in the prototype.
+- short walkthrough video,
+- endpoint-by-endpoint mapping with request/response examples.
