@@ -8,7 +8,7 @@ import {
     FaTrophy, FaCalendarAlt, FaClipboardList, FaChessBoard,
     FaFilePdf, FaExclamationTriangle
 } from 'react-icons/fa';
-import './CommunityTemplate.css';
+import './communityTemplate.css';
 
 // --- DATOS MOCK ---
 const TOURNAMENTS_DATA = [

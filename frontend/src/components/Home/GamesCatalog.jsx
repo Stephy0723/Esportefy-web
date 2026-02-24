@@ -11,7 +11,7 @@ import fortniteImg from '../../assets/games/fornite.jpg';
 import freeFireImg from '../../assets/games/freefire.jpg';
 import hokImg from '../../assets/games/hok.jpg';
 import dota2Img from '../../assets/games/dota2.jpg';
-import apexImg from '../../assets/games/Apex.jpg';
+import apexImg from '../../assets/games/apex.jpg';
 import overwatchImg from '../../assets/games/Overwhat2.jpg';
 import rocketImg from '../../assets/games/rocket.jpg';
 import tekkenImg from '../../assets/games/tekken8.jpg';
