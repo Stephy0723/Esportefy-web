@@ -7,7 +7,7 @@ import valorantImg from '../../../assets/games/valorant.jpg';
 import lolImg from '../../../assets/games/lol.jpg';
 import cs2Img from '../../../assets/games/cs2.jpg';
 import fortniteImg from '../../../assets/games/fornite.jpg';
-import apexImg from '../../../assets/games/Apex.jpg';
+import apexImg from '../../../assets/games/apex.jpg';
 
 const GAME_BANNERS = {
   valorant: valorantImg,

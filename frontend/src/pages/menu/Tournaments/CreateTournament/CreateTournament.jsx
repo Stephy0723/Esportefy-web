@@ -384,29 +384,43 @@ const CreateTournament = () => {
       }
       sponsors.push(item);
     });
-    data.append('sponsors', JSON.stringify(sponsorsPayload));
+    data.append('sponsors', JSON.stringify(sponsors));
 
     // Archivos principales
-    if (tournament.bannerFile) data.append('bannerFile', tournament.bannerFile);
-    if (tournament.rulesPdf) data.append('rulesPdf', tournament.rulesPdf);
+    if (source.bannerFile) data.append('bannerFile', source.bannerFile);
+    if (source.rulesPdf) data.append('rulesPdf', source.rulesPdf);
 
     // Archivos de Sponsors (Logos individuales)
     // sponsorLogos ya agregados en el bloque de sponsors
 
-    try {
-        const url = isEditMode
-          ? `http://localhost:4000/api/tournaments/${editTournament.tournamentId}`
-          : 'http://localhost:4000/api/tournaments';
-        const method = isEditMode ? 'put' : 'post';
+    return data;
+  };
 
-        await axios({
-            url,
-            method,
-            data,
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
+  const createTournamentRequest = async (source, isLocal) => {
+    if (isLocal) {
+      saveTournamentToLocal(source);
+      return;
+    }
+
+    try {
+      const data = buildFormData(source);
+      const url = isEditMode
+        ? `${API_URL}/tournaments/${editTournament.tournamentId}`
+        : `${API_URL}/tournaments`;
+      const method = isEditMode ? 'put' : 'post';
+
+      await axios({
+        url,
+        method,
+        data,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
 
   const createMlbbDemoNow = async () => {
     const demo = buildMlbbDemoTournament();
