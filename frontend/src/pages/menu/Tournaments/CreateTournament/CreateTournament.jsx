@@ -4,6 +4,7 @@ import Sidebar from '../../../../components/Sidebar/Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios'; // Importamos Axios
+import { API_URL } from '../../../../config/api';
 import { 
     FaPlus, FaGamepad, FaUsers, FaMicrophone, FaAward, 
     FaCalendarAlt, FaSitemap, FaTicketAlt, FaFileUpload, FaFilePdf,
@@ -154,8 +155,8 @@ const CreateTournament = () => {
 
     try {
         const url = isEditMode
-          ? `http://localhost:4000/api/tournaments/${editTournament.tournamentId}`
-          : 'http://localhost:4000/api/tournaments';
+          ? `${API_URL}/api/tournaments/${editTournament.tournamentId}`
+          : `${API_URL}/api/tournaments`;
         const method = isEditMode ? 'put' : 'post';
 
         await axios({
