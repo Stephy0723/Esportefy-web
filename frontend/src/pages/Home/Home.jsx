@@ -50,8 +50,8 @@ const MARQUEE_GAMES = [
 const ABOUT_CARDS = [
   {
     icon: 'bx-world',
-    title: 'Quiénes Somos',
-    text: 'Una organización nacida de la pasión por el gaming competitivo. Transformamos jugadores casuales en leyendas profesionales.',
+    title: 'Quienes Somos',
+    text: 'Una organizacion nacida de la pasion por el gaming competitivo. Transformamos jugadores casuales en leyendas profesionales.',
     accent: '#8EDB15',
   },
   {
@@ -62,8 +62,8 @@ const ABOUT_CARDS = [
   },
   {
     icon: 'bx-rocket',
-    title: 'Nuestra Misión',
-    text: 'Proveer la infraestructura tecnológica para que cualquier gamer, en cualquier lugar, pueda alcanzar el profesionalismo.',
+    title: 'Nuestra Mision',
+    text: 'Proveer la infraestructura tecnologica para que cualquier gamer, en cualquier lugar, pueda alcanzar el profesionalismo.',
     accent: '#F093FB',
   },
 ];
@@ -138,7 +138,7 @@ const Home = () => {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="hero__subtitle"
             >
-              Tu carrera eSports comienza aquí. Torneos, equipos, rankings
+              Tu carrera eSports comienza aqui. Torneos, equipos, rankings
               y comunidad &mdash; todo en una sola plataforma.
             </motion.p>
 
@@ -154,7 +154,7 @@ const Home = () => {
               </Link>
               <Link to="/login" className="hero__btn hero__btn--outline">
                 <i className="bx bx-log-in"></i>
-                Iniciar Sesión
+                Iniciar Sesion
               </Link>
             </motion.div>
 
@@ -248,3 +248,4 @@ const Home = () => {
 };
 
 export default Home;
+

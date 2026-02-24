@@ -1,311 +1,670 @@
 .gft-page {
-  --gft-accent: #22c55e;
+  --gft-accent: var(--primary);
+  --gft-hover-accent: var(--primary);
   position: relative;
-  min-height: 100vh;
-  overflow: hidden;
-  color: #f4f8ff;
-  isolation: isolate;
+  min-height: calc(100vh - 1rem);
+  color: var(--text-main);
 }
 
-.gft-bg {
-  position: absolute;
-  inset: -6%;
-  background-size: cover;
-  background-position: center;
-  filter: saturate(1.2) brightness(0.34) contrast(1.08);
-  transform: scale(1.08);
-  animation: gftZoom 18s ease-in-out infinite alternate;
-}
-
-.gft-overlay {
-  position: absolute;
+.gft-ambient {
+  position: fixed;
   inset: 0;
-  background:
-    radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--gft-accent) 45%, transparent), transparent 48%),
-    linear-gradient(120deg, #03060d 8%, color-mix(in srgb, var(--gft-accent) 20%, #061018) 48%, #04070e 100%);
-}
-
-.gft-gridfx {
-  position: absolute;
-  inset: 0;
+  z-index: 0;
   pointer-events: none;
-  opacity: 0.22;
   background:
-    linear-gradient(transparent 97%, color-mix(in srgb, var(--gft-accent) 48%, transparent) 100%),
-    linear-gradient(90deg, transparent 97%, color-mix(in srgb, var(--gft-accent) 36%, transparent) 100%);
-  background-size: 50px 50px;
-  mask-image: linear-gradient(to bottom, transparent, black 26%, black 74%, transparent);
+    radial-gradient(ellipse 52rem 28rem at 12% 20%, color-mix(in srgb, var(--gft-accent) 12%, transparent), transparent 72%),
+    radial-gradient(ellipse 40rem 22rem at 86% 18%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 72%),
+    radial-gradient(ellipse 44rem 26rem at 50% 85%, color-mix(in srgb, var(--gft-accent) 8%, transparent), transparent 74%),
+    radial-gradient(ellipse 34rem 18rem at 52% 46%, color-mix(in srgb, var(--gft-hover-accent) 9%, transparent), transparent 72%);
+  animation: gftAmbientDrift 16s ease-in-out infinite alternate;
 }
 
-.gft-corner-tag {
-  position: absolute;
-  top: -28px;
-  right: -54px;
-  z-index: 4;
-  transform: rotate(22deg);
-  padding: 0.65rem 3.4rem;
-  font-size: clamp(0.95rem, 2.1vw, 1.45rem);
-  font-weight: 900;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: #fff;
-  background: linear-gradient(90deg, #ff3b3b, #ff9f1c, #ffe66d, #2ec4b6, #3a86ff, #c77dff, #ff3b3b);
-  background-size: 220% 100%;
-  animation: gftRainbow 8s linear infinite;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+.gft-ambient-art {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+  opacity: .12;
+  filter: blur(24px) saturate(1.06);
+  transform: scale(1.06);
 }
 
-.gft-topbar {
+.gft-shell {
   position: relative;
-  z-index: 5;
+  z-index: 1;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 1.1rem 2.5rem 2.2rem;
+}
+
+.gft-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.1rem 0;
+  justify-content: space-between;
+  gap: .9rem;
+  margin-bottom: .95rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 .35rem 1.4rem color-mix(in srgb, var(--shadow-color) 56%, transparent);
+}
+
+.gft-head-left {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-width: 0;
 }
 
 .gft-back {
-  border: 1px solid color-mix(in srgb, var(--gft-accent) 62%, transparent);
-  background: color-mix(in srgb, var(--gft-accent) 18%, transparent);
-  color: #eaf4ff;
-  border-radius: 12px;
-  padding: 0.52rem 0.95rem;
-  font-weight: 800;
+  border: 1px solid var(--border-color);
+  border-radius: .7rem;
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  padding: .5rem .86rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 
 .gft-back:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px color-mix(in srgb, var(--gft-accent) 30%, transparent);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--gft-accent) 40%, var(--border-color));
+  box-shadow: 0 .5rem 1.1rem color-mix(in srgb, var(--gft-accent) 16%, transparent);
+}
+
+.gft-back:focus-visible,
+.gft-tag:focus-visible,
+.gft-detail:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--gft-accent) 70%, var(--primary));
+  outline-offset: 2px;
+}
+
+.gft-titles {
+  min-width: 0;
+}
+
+.gft-kicker {
+  margin: 0;
+  font-size: .68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .11em;
+  font-weight: 700;
+}
+
+.gft-titles h1 {
+  margin: .06rem 0 0;
+  font-size: clamp(1.18rem, 2.7vw, 1.8rem);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 900;
+  color: var(--text-main);
+  text-shadow: 0 0 1.1rem color-mix(in srgb, var(--gft-accent) 16%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .gft-counter {
   margin: 0;
-  font-weight: 800;
-  font-size: 0.74rem;
-  letter-spacing: 0.12em;
+  font-size: .72rem;
+  letter-spacing: .09em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--gft-accent) 70%, #f1f6ff);
+  color: var(--text-muted);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.gft-main {
+.gft-hero-tag {
   position: relative;
-  z-index: 3;
-  padding: 1rem 1rem 1.4rem;
-  max-width: 1500px;
-  margin: 0 auto;
-}
-
-.gft-intro {
-  max-width: 760px;
+  border: 1px solid color-mix(in srgb, var(--gft-accent) 24%, var(--border-color));
+  border-radius: 16px;
+  overflow: hidden;
   margin-bottom: 1rem;
+  min-height: 220px;
+  box-shadow:
+    0 .95rem 2.2rem color-mix(in srgb, var(--shadow-color) 64%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-main) 8%, transparent);
+  animation: gftFadeIn .35s ease-out;
 }
 
-.gft-kicker {
-  margin: 0 0 0.2rem;
-  font-size: 0.72rem;
+.gft-hero-tag__bg {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(2px) saturate(1.08);
+  transform: scale(1.08);
+  opacity: .34;
+}
+
+.gft-hero-tag__overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--hero-accent) 22%, transparent), transparent 52%),
+    linear-gradient(132deg, color-mix(in srgb, var(--bg-card) 74%, transparent), color-mix(in srgb, var(--bg-card) 92%, transparent) 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--gft-accent) 7%, transparent), transparent 60%);
+}
+
+.gft-hero-tag__content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr minmax(200px, 280px);
+  gap: .9rem 2rem;
+  padding: 1.2rem 1.4rem 1.1rem;
+  align-items: start;
+}
+
+.gft-hero-tag__col-main {
+  display: grid;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.gft-hero-tag__col-side {
+  display: grid;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.gft-hero-tag__kicker {
+  margin: 0;
+  font-size: .67rem;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: color-mix(in srgb, var(--gft-accent) 70%, #d9e7ff);
+  color: var(--text-muted);
   font-weight: 800;
 }
 
-.gft-intro h1 {
+.gft-hero-tag h2 {
   margin: 0;
-  font-size: clamp(2rem, 6vw, 4.6rem);
-  line-height: 0.92;
-  font-weight: 900;
-  letter-spacing: 0.03em;
+  font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+  line-height: 1.05;
   text-transform: uppercase;
-  text-shadow: 0 0 34px color-mix(in srgb, var(--gft-accent) 40%, transparent);
+  letter-spacing: .05em;
+  text-shadow: 0 0 1rem color-mix(in srgb, var(--hero-accent) 22%, transparent);
 }
 
-.gft-intro p {
-  margin: 0.65rem 0 0;
-  color: #dce9fb;
-  max-width: 670px;
+.gft-hero-tag__desc {
+  margin: 0;
+  color: var(--text-muted);
+  max-width: 74ch;
+  font-size: .84rem;
+  line-height: 1.45;
 }
 
-.gft-cards {
+.gft-hero-tag__chips,
+.gft-hero-tag__companies-row {
+  display: flex;
+  gap: .46rem;
+  flex-wrap: wrap;
+}
+
+.gft-hero-tag__chip {
+  border: 1px solid color-mix(in srgb, var(--hero-accent) 45%, var(--border-color));
+  border-radius: 5px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--hero-accent) 18%, var(--bg-elevated)),
+    color-mix(in srgb, var(--hero-accent) 6%, var(--bg-elevated)) 100%
+  );
+  color: color-mix(in srgb, var(--hero-accent) 90%, var(--text-main));
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: .26rem .58rem;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-main) 8%, transparent);
+}
+
+.gft-hero-tag__company {
+  border: 1px solid color-mix(in srgb, var(--hero-accent) 32%, var(--border-color));
+  border-radius: 5px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--hero-accent) 12%, var(--bg-elevated)),
+    color-mix(in srgb, var(--bg-elevated) 95%, transparent)
+  );
+  color: var(--text-main);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: .26rem .54rem;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .2s ease;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-main) 6%, transparent);
+}
+
+.gft-hero-tag__company:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--hero-accent) 58%, var(--border-color));
+  box-shadow: 0 .35rem .8rem color-mix(in srgb, var(--hero-accent) 22%, transparent);
+}
+
+.gft-hero-tag__company:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--hero-accent) 70%, var(--primary));
+  outline-offset: 2px;
+}
+
+.gft-hero-tag__facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr 1fr;
+  gap: .46rem;
+}
+
+.gft-hero-tag__fact {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--hero-accent) 22%, var(--border-color));
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--hero-accent) 12%, var(--glass-bg)),
+    color-mix(in srgb, var(--glass-bg) 90%, transparent)
+  );
+  padding: .62rem .72rem .52rem;
+  display: flex;
+  flex-direction: column;
+  gap: .18rem;
+}
+
+.gft-hero-tag__fact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--hero-accent) 80%, transparent),
+    transparent 80%
+  );
+}
+
+.gft-hero-tag__fact span {
+  display: block;
+  color: var(--text-muted);
+  font-size: .59rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.gft-hero-tag__fact strong {
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: color-mix(in srgb, var(--hero-accent) 82%, var(--text-main));
+  letter-spacing: -.01em;
+  line-height: 1;
+}
+
+.gft-hero-tag__companies {
+  display: grid;
+  gap: .42rem;
+  padding-top: .56rem;
+  border-top: 1px solid color-mix(in srgb, var(--hero-accent) 14%, var(--border-color));
+}
+
+.gft-hero-tag__companies p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: .59rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.gft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 320px));
+  justify-content: start;
   gap: 1rem;
-  padding-top: 0.6rem;
+  perspective: 1000px;
 }
 
 .gft-card {
+  --card-accent: var(--gft-accent);
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 50%;
   position: relative;
-  border-radius: 20px;
+  border-radius: 18px 10px 24px 12px;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 32%, var(--border-color));
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
   overflow: hidden;
-  min-height: 540px;
-  border: 1px solid color-mix(in srgb, var(--card-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--card-accent) 10%, #080c15);
-  backdrop-filter: blur(6px);
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateY(var(--ry)) translateY(0);
+  transition: transform .16s ease-out, box-shadow .28s ease, border-color .28s ease;
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--card-accent) 42%, transparent),
-    0 16px 40px rgba(0, 0, 0, 0.45);
-  transform: translateY(0) scale(1);
-  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    0 1rem 2rem color-mix(in srgb, var(--shadow-color) 62%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-main) 12%, transparent);
+  animation: gftCardIdle 5.5s ease-in-out infinite;
 }
 
-.gft-card:hover {
-  transform: translateY(-8px) scale(1.01);
-  border-color: color-mix(in srgb, var(--card-accent) 78%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--card-accent) 58%, transparent),
-    0 20px 54px color-mix(in srgb, var(--card-accent) 26%, transparent);
+.gft-card-bevel {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--text-main) 8%, transparent), transparent 18%),
+    linear-gradient(330deg, color-mix(in srgb, var(--text-main) 5%, transparent), transparent 26%);
 }
 
-.gft-card::before {
+.gft-card::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--card-accent) 32%, transparent), transparent 36%);
   pointer-events: none;
+  background: radial-gradient(16rem circle at var(--mx) var(--my), color-mix(in srgb, var(--card-accent) 14%, transparent), transparent 66%);
+  opacity: .75;
+}
+
+.gft-card:hover {
+  transform: rotateX(var(--rx)) rotateY(var(--ry)) translateY(-4px);
+  border-color: color-mix(in srgb, var(--card-accent) 55%, var(--border-color));
+  box-shadow:
+    0 1.3rem 2.6rem color-mix(in srgb, var(--shadow-color) 72%, transparent),
+    0 0 1.8rem color-mix(in srgb, var(--card-accent) 22%, transparent);
+}
+
+.gft-card-neon {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--card-accent) 62%, var(--primary)),
+    transparent 25%,
+    transparent 62%,
+    color-mix(in srgb, var(--card-accent) 50%, var(--text-main))
+  );
+  background-size: 180% 180%;
+  animation: gftNeonFlow 8s linear infinite;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: .85;
 }
 
 .gft-card-media {
   position: relative;
   height: 46%;
+  overflow: hidden;
 }
 
 .gft-card-media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+  transform: scale(1.04);
+  transition: transform .88s cubic-bezier(.22, 1, .36, 1);
+}
+
+.gft-card:hover .gft-card-media img {
+  transform: scale(1.12);
 }
 
 .gft-card-media-overlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to top, #070a12 5%, transparent 45%),
-    linear-gradient(120deg, color-mix(in srgb, var(--card-accent) 26%, transparent), transparent 40%);
+    linear-gradient(to top, color-mix(in srgb, var(--bg-card) 96%, transparent) 8%, transparent 48%),
+    linear-gradient(120deg, color-mix(in srgb, var(--card-accent) 18%, transparent), transparent 46%),
+    linear-gradient(0deg, transparent 0 65%, color-mix(in srgb, var(--text-main) 6%, transparent));
+}
+
+.gft-card-glass {
+  position: absolute;
+  left: .7rem;
+  right: .7rem;
+  bottom: .7rem;
+  z-index: 5;
+  border-radius: 14px 10px 18px 12px;
+  background: color-mix(in srgb, var(--glass-bg) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 24%, var(--glass-border));
+  backdrop-filter: blur(12px) saturate(1.05);
+  box-shadow: 0 .8rem 1.7rem color-mix(in srgb, var(--shadow-color) 66%, transparent);
+  overflow: hidden;
 }
 
 .gft-card-body {
   position: relative;
-  z-index: 1;
+  z-index: 6;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  padding: 0.95rem;
+  gap: .68rem;
+  padding: .78rem .78rem .62rem;
 }
 
 .gft-card-body h3 {
   margin: 0;
-  font-size: 1.36rem;
-  line-height: 1.05;
+  font-size: 1.17rem;
+  line-height: 1.04;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: .04em;
 }
 
 .gft-card-body p {
   margin: 0;
-  color: #d6e4f8;
-  font-size: 0.93rem;
+  color: var(--text-muted);
+  font-size: .82rem;
 }
 
 .gft-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: .42rem;
 }
 
 .gft-card-meta span {
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid color-mix(in srgb, var(--card-accent) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--bg-elevated) 86%, transparent);
   border-radius: 999px;
-  padding: 0.25rem 0.56rem;
-  background: color-mix(in srgb, var(--card-accent) 16%, transparent);
+  padding: .2rem .55rem;
+  font-size: .69rem;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .gft-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.42rem;
+  gap: .42rem;
+}
+
+.gft-card-footer {
+  position: relative;
+  z-index: 6;
+  padding: .68rem .78rem .78rem;
+  border-top: 1px solid color-mix(in srgb, var(--card-accent) 18%, var(--border-color));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 20%, transparent), color-mix(in srgb, var(--bg-card) 46%, transparent));
 }
 
 .gft-tag {
-  border: 1px solid color-mix(in srgb, var(--card-accent) 64%, transparent);
-  border-radius: 999px;
-  padding: 0.3rem 0.62rem;
-  background: color-mix(in srgb, var(--card-accent) 14%, transparent);
-  color: color-mix(in srgb, var(--card-accent) 92%, #fff);
-  font-size: 0.72rem;
-  font-weight: 800;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 38%, var(--border-color));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--card-accent) 16%, var(--bg-elevated)),
+    color-mix(in srgb, var(--card-accent) 5%, var(--bg-elevated)) 100%
+  );
+  color: color-mix(in srgb, var(--card-accent) 92%, var(--text-main));
+  border-radius: 4px;
+  padding: .24rem .56rem;
+  font-size: .63rem;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: transform .16s ease, box-shadow .2s ease, border-color .16s ease, background .16s ease;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-main) 8%, transparent);
 }
 
 .gft-tag:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--card-accent) 30%, transparent);
-  background: color-mix(in srgb, var(--card-accent) 24%, transparent);
+  border-color: color-mix(in srgb, var(--card-accent) 65%, var(--border-color));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--card-accent) 28%, var(--bg-elevated)),
+    color-mix(in srgb, var(--card-accent) 12%, var(--bg-elevated)) 100%
+  );
+  box-shadow:
+    0 .4rem .9rem color-mix(in srgb, var(--card-accent) 28%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--text-main) 12%, transparent);
 }
 
 .gft-tag-company {
-  background: linear-gradient(130deg, color-mix(in srgb, var(--card-accent) 36%, transparent), color-mix(in srgb, var(--card-accent) 14%, transparent));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--text-main) 14%, var(--bg-elevated)),
+    color-mix(in srgb, var(--text-main) 5%, var(--bg-elevated)) 100%
+  );
+  border-color: color-mix(in srgb, var(--text-main) 26%, var(--border-color));
+  color: var(--text-main);
+  border-radius: 4px;
+}
+
+.gft-tag-company:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--text-main) 20%, var(--bg-elevated)),
+    color-mix(in srgb, var(--text-main) 8%, var(--bg-elevated)) 100%
+  );
+  border-color: color-mix(in srgb, var(--text-main) 40%, var(--border-color));
+  box-shadow: 0 .4rem .9rem color-mix(in srgb, var(--shadow-color) 28%, transparent);
 }
 
 .gft-detail {
-  margin-top: auto;
+  margin-top: .56rem;
   width: 100%;
-  border: 1px solid color-mix(in srgb, var(--card-accent) 80%, transparent);
-  border-radius: 12px;
-  padding: 0.58rem 0.8rem;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.74rem;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 48%, var(--border-color));
+  border-radius: .7rem;
+  background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+  color: var(--text-main);
+  padding: .56rem .78rem;
+  font-size: .72rem;
   font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
   cursor: pointer;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 86%, white), color-mix(in srgb, var(--card-accent) 38%, #0d2117));
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 
 .gft-detail:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 11px 24px color-mix(in srgb, var(--card-accent) 36%, transparent);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--card-accent) 62%, var(--border-color));
+  box-shadow: 0 .55rem 1.15rem color-mix(in srgb, var(--card-accent) 20%, transparent);
 }
 
-.gft-empty {
-  --gft-accent: #22c55e;
-  min-height: 100vh;
-  display: grid;
-  place-content: center;
-  gap: 0.8rem;
-  background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--gft-accent) 35%, #04070d), #03050a);
-  color: #f4f8ff;
+.gft-empty-panel {
+  max-width: 560px;
+  margin: 2rem auto;
+  border: 1px solid color-mix(in srgb, var(--gft-accent) 30%, var(--border-color));
+  border-radius: 14px;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1rem 2.2rem color-mix(in srgb, var(--shadow-color) 60%, transparent);
+  animation: gftFadeIn .35s ease-out;
   text-align: center;
 }
 
-@keyframes gftZoom {
-  from { transform: scale(1.06); }
-  to { transform: scale(1.13); }
+.gft-empty-ill {
+  height: 7rem;
+  border-radius: .8rem;
+  border: 1px solid var(--border-color);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--gft-accent) 16%, transparent), transparent 54%),
+    repeating-linear-gradient(90deg, transparent 0 .85rem, color-mix(in srgb, var(--text-main) 8%, transparent) .85rem .9rem);
+  margin-bottom: .7rem;
 }
 
-@keyframes gftRainbow {
-  from { background-position: 0% 50%; }
-  to { background-position: 220% 50%; }
+.gft-empty-panel h2 {
+  margin: 0 0 .45rem;
+  color: var(--text-main);
+  font-size: 1rem;
 }
 
-@media (max-width: 880px) {
-  .gft-corner-tag {
-    top: 4px;
-    right: -76px;
-    font-size: 0.78rem;
-    padding: 0.46rem 2.8rem;
+.gft-empty-panel p {
+  margin: 0 0 .9rem;
+  color: var(--text-muted);
+  font-size: .85rem;
+}
+
+@keyframes gftAmbientDrift {
+  0% { opacity: .7; transform: translateY(0); }
+  100% { opacity: 1; transform: translateY(-1.2%); }
+}
+
+@keyframes gftCardIdle {
+  0%, 100% { transform: rotateX(var(--rx)) rotateY(var(--ry)) translateY(0); }
+  50% { transform: rotateX(var(--rx)) rotateY(var(--ry)) translateY(-2px); }
+}
+
+@keyframes gftNeonFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 180% 50%; }
+}
+
+@keyframes gftFadeIn {
+  from { opacity: 0; transform: translateY(.8rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1200px) {
+  .gft-shell {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .gft-head {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .gft-main {
-    padding-top: 0.6rem;
+  .gft-head-left {
+    width: 100%;
+  }
+
+  .gft-grid {
+    grid-template-columns: 1fr;
   }
 
   .gft-card {
-    min-height: 500px;
+    max-width: 450px;
+  }
+
+  .gft-card-glass {
+    left: .55rem;
+    right: .55rem;
+    bottom: .55rem;
+  }
+
+  .gft-hero-tag__content {
+    grid-template-columns: 1fr;
+  }
+
+  .gft-hero-tag__facts {
+    grid-template-columns: 1fr 1fr;
   }
 }

@@ -9,6 +9,7 @@ import { GAME_IMAGES } from '../../../data/gameImages';
 import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
 import PageHud from '../../../components/PageHud/PageHud';
 
+const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
@@ -164,6 +165,66 @@ const toAssetUrl = (path) => {
   return `${API_URL}/${path.replace(/^\//, '')}`;
 };
 
+const getLocalTournaments = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_TOURNAMENTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const seedLocalDemoTournament = () => {
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  return {
+    _id: `local_${now}`,
+    tournamentId: `TOR-LOCAL-${String(now).slice(-6)}`,
+    title: 'MLBB Caribbean Clash 2026',
+    description: 'Torneo demo local para probar flujo completo.',
+    game: 'Mobile Legends',
+    gender: 'Mixto',
+    modality: '5v5',
+    date: new Date(now + 21 * day).toISOString(),
+    time: '19:00',
+    timezone: 'America/Santo_Domingo',
+    prizeMode: 'mixed',
+    prizePool: '250000',
+    currency: 'DOP',
+    prizeDetails: 'Medallas, trofeos y perifericos gamer.',
+    prizesByRank: { first: '150000', second: '70000', third: '30000' },
+    entryFee: 'Gratis',
+    maxSlots: 32,
+    currentSlots: 0,
+    format: 'Doble Eliminacion',
+    server: 'LATAM',
+    platform: 'Mobile',
+    eligibility: { minAge: 16, allowedCountries: ['Republica Dominicana', 'Puerto Rico', 'Mexico', 'Colombia'], notes: 'Demo local' },
+    registrationWindow: { start: new Date(now + day).toISOString(), end: new Date(now + 14 * day).toISOString() },
+    checkInWindow: { start: new Date(now + 20 * day).toISOString(), end: new Date(now + 21 * day).toISOString() },
+    contact: { email: 'tournaments@esportefy.com', phone: '+1 809-555-0199', discordInvite: 'https://discord.gg/ExCguE8e' },
+    broadcast: { streamUrl: 'https://www.twitch.tv/esportefy', streamLanguage: 'es' },
+    matchConfig: { seriesType: 'BO3', mapPool: ['Land of Dawn'], patchVersion: 'MLBB v1.8.90' },
+    legalCompliance: { jurisdiction: 'Republica Dominicana', governingLaw: 'Normativa aplicable al evento', claimsContact: 'legal@esportefy.com', rulesAccepted: true, privacyAccepted: true, organizerDeclaration: true },
+    sponsors: [{ name: 'Razer Caribe', link: 'https://www.razer.com', tier: 'Principal' }, { name: 'Red Bull Gaming', link: 'https://www.redbull.com', tier: 'Partner' }],
+    staff: { moderators: ['Mod_Karina', 'Mod_Rafy'], casters: ['Caster_Axel', 'Caster_Luna'] },
+    organizer: { _id: 'local-organizer', username: 'Organizador Local' },
+    status: 'open',
+    registrationClosed: false,
+    registrations: [],
+    __local: true
+  };
+};
+
+const ensureLocalDemoTournament = () => {
+  const current = getLocalTournaments();
+  if (current.length > 0) return current;
+  const demo = seedLocalDemoTournament();
+  localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify([demo]));
+  return [demo];
+};
+
 const getInitials = (name) => {
   const parts = String(name || '').trim().split(' ').filter(Boolean);
   if (!parts.length) return 'EQ';
@@ -178,6 +239,8 @@ const formatTournamentFromApi = (t) => ({
   dateRaw: t.date || '',
   prize: t.prizePool || t.prize,
   prizePool: t.prizePool || '',
+  prizeMode: t.prizeMode || 'none',
+  prizeDetails: t.prizeDetails || '',
   currency: t.currency || 'USD',
   slots: `${t.currentSlots}/${t.maxSlots}`,
   maxSlots: t.maxSlots,
@@ -202,7 +265,8 @@ const formatTournamentFromApi = (t) => ({
   registrationClosed: t.registrationClosed,
   riotRequirements: t.riotRequirements,
   bannerImage: toAssetUrl(t.bannerImage),
-  rulesPdf: toAssetUrl(t.rulesPdf)
+  rulesPdf: toAssetUrl(t.rulesPdf),
+  __local: t.__local === true
 });
 
 const RIOT_GAMES = new Set([
@@ -322,6 +386,7 @@ const Tournaments = () => {
   // --- CARGA DINÁMICA DE TORNEOS ---
 useEffect(() => {
     const fetchTournaments = async () => {
+        const localFormatted = ensureLocalDemoTournament().map(formatTournamentFromApi);
         try {
             setLoadingTournaments(true);
             const response = await axios.get(`${API_URL}/api/tournaments`);
@@ -329,10 +394,13 @@ useEffect(() => {
             // Adaptamos los datos de la base de datos al formato que usa tu diseño
             const formattedTournaments = response.data.map(formatTournamentFromApi);
 
-            setTournaments(formattedTournaments);
+            setTournaments([...localFormatted, ...formattedTournaments]);
         } catch (err) {
             console.error("Error cargando torneos:", err);
-            notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
+            setTournaments(localFormatted);
+            if (!localFormatted.length) {
+              notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
+            }
         } finally {
             setLoadingTournaments(false);
         }
@@ -369,6 +437,10 @@ useEffect(() => {
   const openTournamentDetails = async (torneo) => {
     setDetailLoading(true);
     setSelectedTournament({ ...torneo });
+    if (torneo?.__local) {
+      setDetailLoading(false);
+      return;
+    }
     try {
       const response = await axios.get(`${API_URL}/api/tournaments/${torneo.tournamentId}`);
       const formatted = formatTournamentFromApi(response.data);
@@ -472,6 +544,7 @@ useEffect(() => {
   };
 
   const canSeeTeamIds = (torneo) => canManageTournament(torneo);
+  const canAccessTournamentAdmin = Boolean(user?.isOrganizer === true || user?.isAdmin === true);
 
   const goToEditTournament = (torneo) => {
     navigate('/create-tournament', { state: { editTournament: torneo } });
@@ -552,6 +625,14 @@ useEffect(() => {
   const deleteTournament = async (torneo) => {
     const ok = window.confirm(`¿Eliminar el torneo "${torneo.title}"? Esta acción no se puede deshacer.`);
     if (!ok) return;
+    if (torneo?.__local) {
+      const local = getLocalTournaments().filter((t) => String(t._id) !== String(torneo.id));
+      localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(local));
+      setSelectedTournament(null);
+      setTournaments((prev) => prev.filter((t) => t.id !== torneo.id));
+      notify('success', 'Torneo local eliminado', 'El torneo demo fue eliminado del almacenamiento local.');
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API_URL}/api/tournaments/${torneo.tournamentId}`, {
@@ -582,6 +663,14 @@ useEffect(() => {
             
         }
     };
+
+  const goToTournamentAdmin = () => {
+    if (!canAccessTournamentAdmin) {
+      notify('danger', 'Acceso Restringido', 'Solo organizadores o administradores pueden usar este panel.');
+      return;
+    }
+    navigate('/tournaments/admin');
+  };
 
   const handleBecomeOrganizer = () => {
     setShowInfoModal(false);
@@ -687,7 +776,7 @@ useEffect(() => {
                         </div>
 
                         {Array.isArray(selectedTournament.registrations) && selectedTournament.registrations.length > 0 && (
-                            <div className="info-section" style={{ marginTop: 18 }}>
+                            <div className="info-section registrations-section" style={{ marginTop: 18 }}>
                                 <h4><i className='bx bx-group'></i> Equipos inscritos</h4>
                                 <div className="tournament-registrations">
                                     {selectedTournament.registrations.map((r, idx) => (
@@ -704,7 +793,7 @@ useEffect(() => {
                                                         <strong>{r.teamName}</strong>
                                                         {(r.teamMeta?.category || r.teamMeta?.teamLevel) && (
                                                             <span className="team-sub">
-                                                                {r.teamMeta?.category || 'Sin categoría'} â€¢ {r.teamMeta?.teamLevel || 'Nivel N/A'}
+                                                                {r.teamMeta?.category || 'Sin categoría'} | {r.teamMeta?.teamLevel || 'Nivel N/A'}
                                                             </span>
                                                         )}
                                                     </div>
@@ -714,7 +803,7 @@ useEffect(() => {
                                             
                                             {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
                                                 <div className="registration-roster">
-                                                    {r.roster.starters.map(p => p.nickname || '').filter(Boolean).join(' â€¢ ')}
+                                                    {r.roster.starters.map(p => p.nickname || '').filter(Boolean).join(' | ')}
                                                 </div>
                                             )}
                                             {/* {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
@@ -729,13 +818,32 @@ useEffect(() => {
                                             
                                             {(r.teamMeta || r.teamId) && (
                                                 <div className="registration-meta">
-                                                    {r.teamMeta?.category && <span>Categoría: {r.teamMeta.category}</span>}
-                                                    <br />
-                                                    {r.teamMeta?.teamCountry && <span>País: {r.teamMeta.teamCountry}</span>}
-                                                    <br />
-                                                    {r.teamMeta?.teamLevel && <span>Nivel: {r.teamMeta.teamLevel}</span>}
-                                                    <br />
-                                                    {r.teamMeta?.coach && <span>Coach: {r.teamMeta.coach}</span>}
+                                                    <div className="registration-meta-grid">
+                                                        {r.teamMeta?.category && (
+                                                            <div className="registration-meta-item">
+                                                                <span className="registration-meta-label">Categoría</span>
+                                                                <span className="registration-meta-value">{r.teamMeta.category}</span>
+                                                            </div>
+                                                        )}
+                                                        {r.teamMeta?.teamCountry && (
+                                                            <div className="registration-meta-item">
+                                                                <span className="registration-meta-label">País</span>
+                                                                <span className="registration-meta-value">{r.teamMeta.teamCountry}</span>
+                                                            </div>
+                                                        )}
+                                                        {r.teamMeta?.teamLevel && (
+                                                            <div className="registration-meta-item">
+                                                                <span className="registration-meta-label">Nivel</span>
+                                                                <span className="registration-meta-value">{r.teamMeta.teamLevel}</span>
+                                                            </div>
+                                                        )}
+                                                        {r.teamMeta?.coach && (
+                                                            <div className="registration-meta-item">
+                                                                <span className="registration-meta-label">Coach</span>
+                                                                <span className="registration-meta-value">{r.teamMeta.coach}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                             {(canManageTournament(selectedTournament) || r.teamId) && (
@@ -931,8 +1039,8 @@ useEffect(() => {
                                         </div>
                                         <div className="registration-roster">
                                             {canSeeTeamIds(selectedTournament)
-                                                ? `${p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} â€¢ ${p?.region || 'Región: N/A'}${p?.riotId ? ` â€¢ Riot: ${p.riotId}` : ''}`
-                                                : `ID: Oculto â€¢ ${p?.region || 'Región: N/A'}`
+                                                ? `${p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} | ${p?.region || 'Región: N/A'}${p?.riotId ? ` | Riot: ${p.riotId}` : ''}`
+                                                : `ID: Oculto | ${p?.region || 'Región: N/A'}`
                                             }
                                         </div>
                                     </div>
@@ -1125,6 +1233,11 @@ useEffect(() => {
                             <button className="tn__cmd-create" onClick={handleCreateClick}>
                                 <i className='bx bx-plus'></i> <span>Crear Torneo</span>
                             </button>
+                            {canAccessTournamentAdmin && (
+                                <button className="tn__cmd-create" onClick={goToTournamentAdmin}>
+                                    <i className='bx bx-shield-quarter'></i> <span>Panel Admin</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -1475,6 +1588,16 @@ useEffect(() => {
                                 </div>
                                 <i className='bx bx-chevron-right tn__sw-action-arrow'></i>
                             </button>
+                            {canAccessTournamentAdmin && (
+                                <button className="tn__sw-action-btn" onClick={goToTournamentAdmin}>
+                                    <i className='bx bx-shield-quarter'></i>
+                                    <div>
+                                        <strong>Administrar Torneos</strong>
+                                        <span>Acepta equipos y arma bracket</span>
+                                    </div>
+                                    <i className='bx bx-chevron-right tn__sw-action-arrow'></i>
+                                </button>
+                            )}
                             <button className="tn__sw-action-btn" onClick={() => navigate('/teams')}>
                                 <i className='bx bx-target-lock'></i>
                                 <div>

@@ -25,6 +25,12 @@ const tournamentSchema = new mongoose.Schema({
     // Premios y Economía
     prizePool: String,
     currency: { type: String, default: 'USD' },
+    prizeMode: {
+        type: String,
+        enum: ['none', 'money', 'items', 'mixed'],
+        default: 'none'
+    },
+    prizeDetails: { type: String, default: '' },
     prizesByRank: {
         first: String,
         second: String,
@@ -36,6 +42,61 @@ const tournamentSchema = new mongoose.Schema({
     maxSlots: { type: Number, required: true },
     currentSlots: { type: Number, default: 0 },
     checkInTime: Number,
+    timezone: { type: String, default: 'America/Santo_Domingo' },
+    registrationWindow: {
+        start: { type: Date, default: null },
+        end: { type: Date, default: null }
+    },
+    checkInWindow: {
+        start: { type: Date, default: null },
+        end: { type: Date, default: null }
+    },
+    eligibility: {
+        minAge: { type: Number, default: 13 },
+        allowedCountries: { type: [String], default: ['Global'] },
+        notes: { type: String, default: '' }
+    },
+    contact: {
+        email: { type: String, default: '' },
+        phone: { type: String, default: '' },
+        discordInvite: { type: String, default: '' }
+    },
+    broadcast: {
+        streamUrl: { type: String, default: '' },
+        streamLanguage: { type: String, default: 'es' }
+    },
+    matchConfig: {
+        seriesType: { type: String, default: 'BO3' },
+        mapPool: { type: [String], default: [] },
+        patchVersion: { type: String, default: '' }
+    },
+    legalCompliance: {
+        jurisdiction: { type: String, default: '' },
+        governingLaw: { type: String, default: '' },
+        claimsContact: { type: String, default: '' },
+        rulesAccepted: { type: Boolean, default: false },
+        privacyAccepted: { type: Boolean, default: false },
+        organizerDeclaration: { type: Boolean, default: false }
+    },
+    publicSettings: {
+        visibility: {
+            type: String,
+            enum: ['public', 'unlisted', 'private'],
+            default: 'public'
+        },
+        showPrize: { type: Boolean, default: true },
+        showSponsors: { type: Boolean, default: true },
+        showRules: { type: Boolean, default: true },
+        showSchedule: { type: Boolean, default: true },
+        showContact: { type: Boolean, default: true },
+        showTeams: { type: Boolean, default: false },
+        showBracket: { type: Boolean, default: true },
+        customMessage: { type: String, default: '' }
+    },
+    bracket: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    },
 
     // Archivos (Rutas guardadas por Multer)
     bannerImage: { type: String, default: '' },

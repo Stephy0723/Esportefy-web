@@ -12,6 +12,7 @@ import PageHud from '../../../components/PageHud/PageHud';
 import axios from "axios";
 import { API_URL } from '../../../config/api';
 import { useEffect } from "react";
+import SecurityCenterUI from './SecurityCenterUI';
 
 
 export default function Settings() {
@@ -198,119 +199,15 @@ export default function Settings() {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'security':
+                        case 'security':
                 if (loading || !privacy) return null;
 
                 return (
                     <div className="settings-panel fade-in">
-                        <div className="panel-header">
-                            <h2>Seguridad de la Cuenta</h2>
-                            <p>Protege tu acceso y gestiona tus credenciales de jugador profesional.</p>
-                        </div>
-
-                        <div className="settings-form">
-                            {/* --- CAMBIO DE CORREO --- */}
-                            <div className="security-section">
-                                <div className="section-title-box">
-                                    <FaEnvelope className="section-icon" />
-                                    <h3>ID Principal y Contacto</h3>
-                                </div>
-                                <div className="form-group">
-                                    <label>Correo Electrónico Actual</label>
-                                    <div className="input-with-action">
-                                        <input type="email" defaultValue="usuario@esportefy.com" disabled className="input-disabled" />
-                                        <button type="button" className="btn-small-neon" onClick={() => alert("Iniciando proceso de cambio de correo...")}>
-                                            Cambiar Correo
-                                        </button>
-                                    </div>
-                                    <p className="input-helper">Usa esta opción en caso de pérdida de acceso o para actualizar tu identidad principal.</p>
-                                </div>
-                            </div>
-
-                            <div className="divider"></div>
-
-                            {/* --- CONTRASEÑA ESTILO FORGOT PASSWORD --- */}
-                            <div className="security-section">
-                                <div className="section-title-box">
-                                    <FaKey className="section-icon" />
-                                    <h3>Credenciales de Acceso</h3>
-                                </div>
-                                <div className="info-box-status">
-                                    <div className="info-text">
-                                        <strong>Cambiar Contraseña</strong>
-                                        <p>Te enviaremos un código de seguridad al correo para validar que eres tú antes de permitir el cambio.</p>
-                                    </div>
-                                    <button type="button" className="btn-save" onClick={() => alert("Código enviado al correo vinculado.")}>
-                                        Enviar Código
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="divider"></div>
-
-                            {/* --- 2FA MULTIPLATAFORMA --- */}
-                            <div className="security-section">
-                                <div className="section-title-box">
-                                    <FaShieldAlt className="section-icon" />
-                                    <h3>Autenticación en Dos Pasos (2FA)</h3>
-                                </div>
-                                <p className="section-desc">Vincula tus dispositivos para una protección total:</p>
-
-                                <div className="platform-auth-grid">
-                                    <div className="platform-card">
-                                        <div className="plat-info">
-                                            <FaAndroid /> <FaApple />
-                                            <span>Móvil (Android / iOS)</span>
-                                        </div>
-                                        <button type="button" className="btn-status-toggle">Vincular</button>
-                                    </div>
-                                    <div className="platform-card">
-                                        <div className="plat-info">
-                                            <FaWindows /> <FaLinux />
-                                            <span>Desktop (PC)</span>
-                                        </div>
-                                        <button type="button" className="btn-status-toggle">Vincular</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* --- ELIMINAR CUENTA CON DESPEDIDA --- */}
-                            <div className="danger-zone-v2">
-                                {!showDeleteConfirm ? (
-                                    <div className="danger-flex">
-                                        <div className="danger-content">
-                                            <h4>Zona de Peligro</h4>
-                                            <p>Esta acción es definitiva. Tu cuenta y estadísticas desaparecerán.</p>
-                                        </div>
-                                        <button type="button" className="btn-danger-minimal" onClick={() => setShowDeleteConfirm(true)}>
-                                            <FaTrash /> Eliminar Cuenta
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="delete-confirmation-box fade-in">
-                                        <FaExclamationTriangle className="warning-icon-big" />
-                                        <h3>¿Es este el final de la partida?</h3>
-                                        <p className="farewell-text">
-                                            Nos duele verte partir. Tu legado en Esportefy, tus victorias acumuladas y tus equipos
-                                            se desvanecerán en el vacío digital para siempre. Ha sido un honor tenerte en nuestra comunidad. <br />
-                                            <strong>¿Confirmas que deseas eliminar tu cuenta permanentemente?</strong>
-                                        </p>
-                                        <div className="confirm-actions">
-                                            <button type="button" className="btn-cancel" onClick={() => setShowDeleteConfirm(false)}>Me quedo a jugar</button>
-                                            <button type="button" className="btn-delete-final" onClick={() => {
-                                                localStorage.removeItem('esportefyUser');
-                                                navigate('/');
-                                            }}>Adiós, Esportefy</button>
-                                        </div>
-                                    </div>
-                                )}
-
-                            </div>
-                        </div>
-
-
+                        <SecurityCenterUI email={connections?.email || 'usuario@esportefy.com'} />
                     </div>
                 );
+
             case 'connections':
                 return (
                     <div className="settings-panel fade-in">
@@ -504,11 +401,10 @@ export default function Settings() {
                                 ) : (
                                     <button
                                         className="btn-connect"
-                                        onClick={() =>
-                                            connectProvider('steam', {
-                                                steamId: '76561198000000000'
-                                            })
-                                        }
+                                        onClick={() => {
+                                            window.location.href =
+                                                `${API_URL}/api/auth/steam?token=${token}`;
+                                        }}
                                     >
                                         Conectar
                                     </button>
@@ -866,3 +762,4 @@ export default function Settings() {
         </div>
     );
 }
+

@@ -191,7 +191,7 @@ const GamesPage = () => {
                         </button>
                         {normalizedTags.slice(0, 6).map((tag, idx) => (
                             <button key={tag} className="gp-tag gp-tag-btn" onClick={() => goToFilter('tag', tag)}>
-                                {idx === 0 ? <FaGamepad /> : <FaGlobe />} #{tag}
+                                {idx === 0 ? <FaGamepad /> : <FaGlobe />} {tag}
                             </button>
                         ))}
                     </div>

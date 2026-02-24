@@ -225,21 +225,29 @@
 }
 
 /* Tags */
-.gp-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.gp-tags { display: flex; flex-wrap: wrap; gap: .38rem; }
 .gp-tag {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 14px;
-    border-radius: 10px;
-    font-size: 0.72rem; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: .28rem .62rem;
+    border-radius: 5px;
+    font-size: .66rem; font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    background: rgba(255,255,255,0.04);
-    color: var(--text-muted, #aaa);
-    border: 1px solid var(--border-color, #333);
-    transition: all 0.25s;
+    letter-spacing: .07em;
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--gc) 14%, var(--bg-elevated, #1e1e30)),
+        color-mix(in srgb, var(--gc) 4%, var(--bg-elevated, #1e1e30)) 100%
+    );
+    color: color-mix(in srgb, var(--gc) 80%, var(--text-muted, #aaa));
+    border: 1px solid color-mix(in srgb, var(--gc) 28%, var(--border-color, #333));
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-main, #fff) 6%, transparent);
+    transition: transform .16s ease, box-shadow .2s ease, border-color .16s ease;
 }
 .gp-tag:hover {
-    border-color: color-mix(in srgb, var(--gc) 40%, transparent);
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--gc) 55%, var(--border-color, #333));
+    box-shadow: 0 .3rem .7rem color-mix(in srgb, var(--gc) 22%, transparent),
+        inset 0 1px 0 color-mix(in srgb, var(--text-main, #fff) 8%, transparent);
     color: var(--text-main, #fff);
 }
 .gp-tag-btn {
@@ -247,9 +255,14 @@
     font: inherit;
 }
 .gp-tag--primary {
-    background: color-mix(in srgb, var(--gc) 12%, transparent);
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--gc) 22%, var(--bg-elevated, #1e1e30)),
+        color-mix(in srgb, var(--gc) 8%, var(--bg-elevated, #1e1e30)) 100%
+    );
     color: var(--gc);
-    border-color: color-mix(in srgb, var(--gc) 25%, transparent);
+    border-color: color-mix(in srgb, var(--gc) 40%, var(--border-color, #333));
+    font-weight: 900;
 }
 
 /* Stats bar */

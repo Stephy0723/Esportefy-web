@@ -1,5 +1,20 @@
 import { Router } from 'express';
-import { createTournament, getTournaments, getTournamentByCode, updateTournament, deleteTournament, registerTeam, updateRegistrationStatus, updateTournamentStatus, removeRegistration } from '../controllers/tournament.controller.js';
+import {
+  createTournament,
+  getTournaments,
+  getTournamentByCode,
+  updateTournament,
+  deleteTournament,
+  registerTeam,
+  updateRegistrationStatus,
+  updateTournamentStatus,
+  removeRegistration,
+  getManageableTournaments,
+  searchPublicTournaments,
+  getPublicTournamentByCode,
+  updateTournamentPublicSettings,
+  updateTournamentBracket
+} from '../controllers/tournament.controller.js';
 import { uploadTournamentFiles } from '../middlewares/multer.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import { createRateLimiter } from '../middlewares/rateLimit.js';
@@ -10,13 +25,20 @@ const rlRegister = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPre
 const rlManage = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'tournament-manage' });
 const rlCreate = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'tournament-create' });
 
-router.get('/', getTournaments); // Público
-router.post('/', verifyToken, rlCreate, uploadTournamentFiles, createTournament); // Protegido
-router.get('/:code', getTournamentByCode); // Público
-router.put('/:code', verifyToken, rlManage, uploadTournamentFiles, updateTournament); // Protegido (owner/admin)
-router.delete('/:code', verifyToken, rlManage, deleteTournament); // Protegido (owner/admin)
-router.post('/:code/register', verifyToken, rlRegister, registerTeam); // Inscripción de equipos
-router.patch('/:code/registrations/:registrationId', verifyToken, rlManage, updateRegistrationStatus); // Aprobar/Rechazar
-router.delete('/:code/registrations/:registrationId', verifyToken, rlManage, removeRegistration); // Quitar equipo inscrito
-router.patch('/:code/status', verifyToken, rlManage, updateTournamentStatus); // Estado del torneo
+router.get('/', getTournaments);
+router.get('/public/search', searchPublicTournaments);
+router.get('/public/:code', getPublicTournamentByCode);
+
+router.get('/manage/mine', verifyToken, rlManage, getManageableTournaments);
+router.post('/', verifyToken, rlCreate, uploadTournamentFiles, createTournament);
+router.get('/:code', getTournamentByCode);
+router.put('/:code', verifyToken, rlManage, uploadTournamentFiles, updateTournament);
+router.patch('/:code/public-settings', verifyToken, rlManage, updateTournamentPublicSettings);
+router.patch('/:code/bracket', verifyToken, rlManage, updateTournamentBracket);
+router.delete('/:code', verifyToken, rlManage, deleteTournament);
+router.post('/:code/register', verifyToken, rlRegister, registerTeam);
+router.patch('/:code/registrations/:registrationId', verifyToken, rlManage, updateRegistrationStatus);
+router.delete('/:code/registrations/:registrationId', verifyToken, rlManage, removeRegistration);
+router.patch('/:code/status', verifyToken, rlManage, updateTournamentStatus);
+
 export default router;
