@@ -102,6 +102,14 @@ const EditProfile = () => {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState('');
     const [hasChanges, setHasChanges] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState('');
+    const [phoneAvailability, setPhoneAvailability] = useState({
+        loading: false,
+        checked: false,
+        available: true,
+        message: '',
+        warning: false
+    });
 
     const [formData, setFormData] = useState({
         username: '',
@@ -128,6 +136,8 @@ const EditProfile = () => {
     });
 
     const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+    const normalizePhone = (value = '') => String(value).replace(/[^\d]/g, '');
+    const isValidPhone = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
 
     // Helpers for live preview
     const currentFrame = FRAMES.find(f => f.id === formData.selectedFrameId) || FRAMES[0];
@@ -142,6 +152,7 @@ const EditProfile = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const u = res.data;
+            setCurrentUserId(u?._id || u?.id || '');
             setFormData({
                 username: u.username || '',
                 fullName: u.fullName || '',
@@ -190,7 +201,23 @@ const EditProfile = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        updateField(name, type === 'checkbox' ? checked : value);
+        const nextValue = type === 'checkbox'
+            ? checked
+            : name === 'phone'
+                ? normalizePhone(value)
+                : value;
+
+        if (name === 'phone') {
+            setPhoneAvailability({
+                loading: false,
+                checked: false,
+                available: true,
+                message: '',
+                warning: false
+            });
+        }
+
+        updateField(name, nextValue);
     };
 
     const toggleSelection = (field, id) => {
@@ -236,6 +263,94 @@ const EditProfile = () => {
         setHasChanges(true);
     };
 
+    const checkPhoneAvailability = useCallback(async (phoneValue) => {
+        const normalized = normalizePhone(phoneValue);
+        if (!normalized) {
+            const message = 'El teléfono es obligatorio.';
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available: false,
+                message,
+                warning: false
+            });
+            return { available: false, message, warning: false };
+        }
+        if (!isValidPhone(normalized)) {
+            const message = 'El teléfono debe contener solo números y no puede ser negativo.';
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available: false,
+                message,
+                warning: false
+            });
+            return { available: false, message, warning: false };
+        }
+
+        setPhoneAvailability({
+            loading: true,
+            checked: false,
+            available: true,
+            message: '',
+            warning: false
+        });
+
+        try {
+            const token = getToken();
+            const endpoints = [
+                `${API_URL}/api/auth/check-phone`,
+                `${API_URL}/auth/check-phone`,
+                `${API_URL}/check-phone`
+            ];
+
+            let response = null;
+            let lastError = null;
+            for (const endpoint of endpoints) {
+                try {
+                    response = await axios.get(endpoint, {
+                        params: {
+                            phone: normalized,
+                            excludeUserId: currentUserId || undefined
+                        },
+                        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+                    });
+                    break;
+                } catch (error) {
+                    if (error?.response?.status === 404 || error?.response?.status === 405) {
+                        lastError = error;
+                        continue;
+                    }
+                    throw error;
+                }
+            }
+
+            if (!response) throw lastError || new Error('No se encontró endpoint de verificación de teléfono');
+
+            const available = Boolean(response.data?.available);
+            const message = available ? '' : 'Este teléfono ya está registrado.';
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available,
+                message,
+                warning: false
+            });
+            return { available, message, warning: false };
+        } catch (error) {
+            const message = 'No se pudo verificar el teléfono ahora. Se validará al guardar.';
+            console.warn('No se pudo verificar teléfono en edición:', error?.response?.status || error?.message || error);
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available: true,
+                message,
+                warning: true
+            });
+            return { available: true, message, warning: true };
+        }
+    }, [API_URL, currentUserId]);
+
     // ─── Save ───
     const handleSave = async (e) => {
         e.preventDefault();
@@ -250,10 +365,26 @@ const EditProfile = () => {
             setSaveMsg({ type: 'error', text: 'El nombre completo es obligatorio.' });
             return;
         }
+        const normalizedPhone = normalizePhone(formData.phone);
+        if (!normalizedPhone) {
+            setSaveMsg({ type: 'error', text: 'El teléfono es obligatorio.' });
+            return;
+        }
+        if (!isValidPhone(normalizedPhone)) {
+            setSaveMsg({ type: 'error', text: 'El teléfono debe contener solo números y no puede ser negativo.' });
+            return;
+        }
+
+        const phoneValidation = await checkPhoneAvailability(normalizedPhone);
+        if (!phoneValidation.available) {
+            setSaveMsg({ type: 'error', text: phoneValidation.message || 'Este teléfono ya está registrado.' });
+            return;
+        }
 
         setSaving(true);
         setSaveMsg(null);
         const token = getToken();
+        const normalizedData = { ...formData, phone: normalizedPhone };
 
         // Whitelist only editable fields
         const editableFields = [
@@ -266,7 +397,7 @@ const EditProfile = () => {
 
         const data = new FormData();
         editableFields.forEach(key => {
-            const val = formData[key];
+            const val = normalizedData[key];
             if (Array.isArray(val)) {
                 val.forEach(v => data.append(`${key}[]`, v));
             } else if (typeof val === 'boolean') {
@@ -276,7 +407,7 @@ const EditProfile = () => {
             }
         });
         // Social links as dot-notation keys
-        Object.entries(formData.socialLinks).forEach(([key, val]) => {
+        Object.entries(normalizedData.socialLinks).forEach(([key, val]) => {
             data.append(`socialLinks.${key}`, val || '');
         });
         if (file) data.append('avatarFile', file);
@@ -426,7 +557,24 @@ const EditProfile = () => {
                                     </div>
                                     <div className="ep__field">
                                         <label>Teléfono</label>
-                                        <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="+1 234 567 890" />
+                                        <input
+                                            type="text"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            onBlur={() => checkPhoneAvailability(formData.phone)}
+                                            placeholder="Solo números (sin + ni espacios)"
+                                            className={phoneAvailability.checked && !phoneAvailability.available ? 'ep__input-error' : ''}
+                                        />
+                                        {phoneAvailability.loading && (
+                                            <span className="ep__helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
+                                        )}
+                                        {phoneAvailability.checked && !phoneAvailability.available && (
+                                            <span className="ep__error-text"><i className='bx bx-error-circle'></i> {phoneAvailability.message}</span>
+                                        )}
+                                        {phoneAvailability.warning && (
+                                            <span className="ep__helper-text"><i className='bx bx-info-circle'></i> {phoneAvailability.message}</span>
+                                        )}
                                     </div>
                                     <div className="ep__field">
                                         <label>Fecha de Nacimiento</label>

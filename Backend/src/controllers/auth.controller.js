@@ -1,6 +1,7 @@
 // Backend/src/controllers/auth.controller.js
 
 import User from "../models/User.js";
+import mongoose from "mongoose";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from "crypto";
@@ -143,6 +144,7 @@ const getPasswordPolicyError = (password, { username, userName, fullName, email 
 export const checkPhoneAvailability = async (req, res) => {
     try {
         const rawPhone = String(req.query.phone || '').trim();
+        const excludeUserId = String(req.query.excludeUserId || '').trim();
 
         if (!rawPhone) {
             return res.status(400).json({ available: false, message: 'El teléfono es obligatorio' });
@@ -152,7 +154,15 @@ export const checkPhoneAvailability = async (req, res) => {
             return res.status(400).json({ available: false, message: 'El teléfono debe contener solo números y no puede ser negativo' });
         }
 
-        const existingUser = await User.findOne({ phone: rawPhone }).select('_id');
+        const query = { phone: rawPhone };
+        if (excludeUserId) {
+            if (!mongoose.Types.ObjectId.isValid(excludeUserId)) {
+                return res.status(400).json({ available: false, message: 'ID de usuario inválido para exclusión' });
+            }
+            query._id = { $ne: excludeUserId };
+        }
+
+        const existingUser = await User.findOne(query).select('_id');
         return res.status(200).json({ available: !existingUser });
     } catch (error) {
         console.error('Error verificando teléfono:', error);
@@ -549,6 +559,40 @@ export const updateProfile = async (req, res) => {
             updateData.lookingForTeam = updateData.lookingForTeam === 'true' || updateData.lookingForTeam === true;
         }
 
+        // 2.8 Validaciones de unicidad y formato en edición
+        if (updateData.phone !== undefined) {
+            const normalizedPhone = String(updateData.phone || '').trim();
+            if (!normalizedPhone) {
+                return res.status(400).json({ message: 'El teléfono es obligatorio' });
+            }
+            if (!isValidNonNegativeNumberString(normalizedPhone)) {
+                return res.status(400).json({ message: 'El teléfono debe contener solo números y no puede ser negativo' });
+            }
+            const phoneExists = await User.findOne({
+                phone: normalizedPhone,
+                _id: { $ne: req.userId }
+            }).select('_id');
+            if (phoneExists) {
+                return res.status(400).json({ message: 'El teléfono ya está registrado' });
+            }
+            updateData.phone = normalizedPhone;
+        }
+
+        if (updateData.username !== undefined) {
+            const normalizedUsername = String(updateData.username || '').trim();
+            if (!normalizedUsername) {
+                return res.status(400).json({ message: 'El nombre de usuario es obligatorio' });
+            }
+            const usernameExists = await User.findOne({
+                _id: { $ne: req.userId },
+                username: { $regex: new RegExp(`^${escapeRegex(normalizedUsername)}$`, 'i') }
+            }).select('_id');
+            if (usernameExists) {
+                return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
+            }
+            updateData.username = normalizedUsername;
+        }
+
         // 2.7 Normalización de campos simples
         const allowedSimpleFields = ['status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'];
 
@@ -590,6 +634,19 @@ export const updateProfile = async (req, res) => {
 
     } catch (error) {
         console.error("DETALLE DEL ERROR:", error);
+        if (error?.code === 11000) {
+            if (error?.keyPattern?.username) {
+                return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
+            }
+            if (error?.keyPattern?.phone) {
+                return res.status(400).json({ message: 'El teléfono ya está registrado' });
+            }
+            return res.status(400).json({ message: 'Ya existe un registro con esos datos' });
+        }
+        if (error?.name === 'ValidationError') {
+            const firstError = Object.values(error.errors || {})[0];
+            return res.status(400).json({ message: firstError?.message || 'Datos inválidos para actualizar perfil' });
+        }
         res.status(500).json({ message: "Error al actualizar el perfil" });
     }
 };

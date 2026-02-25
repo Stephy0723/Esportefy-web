@@ -12,6 +12,14 @@ export const AuthProvider = ({ children }) => {
         const checkAuth = async () => {
             const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('esportefyUser');
+            const currentPath = window.location.pathname || '/';
+            const isPublicAuthRoute = (
+                currentPath === '/'
+                || currentPath === '/login'
+                || currentPath === '/register'
+                || currentPath === '/reset-password'
+                || currentPath.startsWith('/legal/')
+            );
 
             // 1. Carga inicial rápida desde LocalStorage para no mostrar la App vacía
             if (storedUser) {
@@ -22,8 +30,9 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-            // 2. Si hay un token, vamos a la Base de Datos por los datos reales (isOrganizer, etc)
-            if (token) {
+            // 2. Si hay token y estamos en ruta privada, sincronizamos con DB.
+            // En rutas públicas (login/register/home) evitamos ruido de 401/403 por tokens viejos.
+            if (token && !isPublicAuthRoute) {
                 try {
                     // AJUSTA ESTA URL A TU ENDPOINT DE PERFIL REAL
                     const response = await fetch(`${API_URL}/api/auth/profile`, {
@@ -39,9 +48,13 @@ export const AuthProvider = ({ children }) => {
                         // Actualizamos tanto el estado como el LocalStorage con los datos de la DB
                         setUser(freshUserData);
                         localStorage.setItem('esportefyUser', JSON.stringify(freshUserData));
-                    } else if (response.status === 401) {
-                        // Si el token expiró, cerramos sesión
-                        logout();
+                    } else if (response.status === 401 || response.status === 403) {
+                        // Token inválido/expirado o sesión no autorizada: limpiar sin ruido de error.
+                        localStorage.removeItem('esportefyUser');
+                        localStorage.removeItem('token');
+                        sessionStorage.removeItem('esportefyUser');
+                        sessionStorage.removeItem('token');
+                        setUser(null);
                     }
                 } catch (error) {
                     console.error("Error al sincronizar con la base de datos:", error);

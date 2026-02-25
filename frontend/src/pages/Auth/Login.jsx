@@ -29,10 +29,30 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-            const response = await axios.post(`${API_URL}/api/auth/login`, {
-                email,
-                password
-            });
+            const endpointCandidates = [
+                `${API_URL}/api/auth/login`,
+                `${API_URL}/auth/login`,
+                `${API_URL}/login`
+            ];
+
+            let response = null;
+            let lastError = null;
+            for (const endpoint of endpointCandidates) {
+                try {
+                    response = await axios.post(endpoint, {
+                        email,
+                        password
+                    });
+                    break;
+                } catch (candidateError) {
+                    const status = Number(candidateError?.response?.status || 0);
+                    lastError = candidateError;
+                    if (status === 404) continue;
+                    throw candidateError;
+                }
+            }
+
+            if (!response) throw lastError || new Error('No se encontró endpoint de login');
 
             const { user, token } = response.data;
 

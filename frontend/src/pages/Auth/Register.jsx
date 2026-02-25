@@ -148,6 +148,15 @@ const getSubmitError = (formData, passwordError) => {
   return '';
 };
 
+const getStep1Error = (formData) => {
+  if (!String(formData.fullName || '').trim()) return 'El nombre completo es obligatorio.';
+  if (!String(formData.phone || '').trim()) return 'El teléfono es obligatorio.';
+  if (!isValidNonNegativeNumberString(formData.phone)) return 'El teléfono debe tener solo números (sin +, espacios ni guiones).';
+  if (!String(formData.country || '').trim()) return 'Selecciona tu país.';
+  if (!String(formData.birthDate || '').trim()) return 'La fecha de nacimiento es obligatoria.';
+  return '';
+};
+
 const Register = () => {
   const navigate = useNavigate();
   
@@ -157,10 +166,12 @@ const Register = () => {
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); 
+  const [step1Attempted, setStep1Attempted] = useState(false);
   const [phoneAvailability, setPhoneAvailability] = useState({
     loading: false,
     checked: false,
     available: true,
+    warning: false,
     message: ''
   });
 
@@ -202,7 +213,7 @@ const Register = () => {
     const { name, value, checked, type } = e.target;
     const nextValue = name === 'phone' && type !== 'checkbox' ? normalizePhone(value) : value;
     if (name === 'phone') {
-      setPhoneAvailability({ loading: false, checked: false, available: true, message: '' });
+      setPhoneAvailability({ loading: false, checked: false, available: true, warning: false, message: '' });
     }
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : nextValue }));
   };
@@ -217,26 +228,52 @@ const Register = () => {
   const checkPhoneAvailability = async (phoneValue) => {
     const normalized = normalizePhone(phoneValue);
     if (!normalized || !isValidNonNegativeNumberString(normalized)) {
-      setPhoneAvailability({ loading: false, checked: false, available: true, message: '' });
+      setPhoneAvailability({ loading: false, checked: false, available: true, warning: false, message: '' });
       return { available: true, checked: false };
     }
 
-    setPhoneAvailability({ loading: true, checked: false, available: true, message: '' });
+    setPhoneAvailability({ loading: true, checked: false, available: true, warning: false, message: '' });
     try {
-      const response = await axios.get(`${API_URL}/api/auth/check-phone`, { params: { phone: normalized } });
+      const endpointCandidates = [
+        `${API_URL}/api/auth/check-phone`,
+        `${API_URL}/auth/check-phone`,
+        `${API_URL}/check-phone`
+      ];
+
+      let response = null;
+      let lastError = null;
+      for (const endpoint of endpointCandidates) {
+        try {
+          response = await axios.get(endpoint, { params: { phone: normalized } });
+          break;
+        } catch (candidateError) {
+          const status = Number(candidateError?.response?.status || 0);
+          lastError = candidateError;
+          if (status === 404) continue;
+          throw candidateError;
+        }
+      }
+
+      if (!response) throw lastError || new Error('No se encontró endpoint de verificación de teléfono');
+
       const available = Boolean(response?.data?.available);
       const message = available ? '' : 'Este teléfono ya está registrado.';
-      setPhoneAvailability({ loading: false, checked: true, available, message });
+      setPhoneAvailability({ loading: false, checked: true, available, warning: false, message });
       return { available, checked: true, message };
     } catch (err) {
-      const message = err.response?.data?.message || 'No se pudo verificar el teléfono.';
-      setPhoneAvailability({ loading: false, checked: true, available: false, message });
-      return { available: false, checked: true, message };
+      const status = Number(err?.response?.status || 0);
+      const message = status === 429
+        ? 'Demasiadas verificaciones seguidas. Intenta de nuevo en unos minutos.'
+        : 'No se pudo verificar el teléfono ahora. Puedes continuar y se validará al registrar.';
+      // Fail-open: solo bloqueamos cuando sabemos que está repetido.
+      setPhoneAvailability({ loading: false, checked: false, available: true, warning: true, message });
+      return { available: true, checked: false, warning: true, message };
     }
   };
 
   const handleStep1Next = async () => {
     setError('');
+    setStep1Attempted(true);
 
     if (!step1Valid) {
       setError('Completa nombre, teléfono, país y fecha de nacimiento con datos válidos.');
@@ -249,6 +286,7 @@ const Register = () => {
       return;
     }
 
+    setStep1Attempted(false);
     setStep(2);
   };
 
@@ -260,6 +298,7 @@ const Register = () => {
     String(formData.country || '').trim() &&
     String(formData.birthDate || '').trim()
   );
+  const step1ErrorHint = getStep1Error(formData);
   const step2Valid = Array.isArray(formData.selectedGames) && formData.selectedGames.length > 0;
   const step3Valid = Boolean(
     String(formData.experience || '').trim() &&
@@ -328,7 +367,7 @@ const Register = () => {
                     <input
                       type="tel"
                       name="phone"
-                      placeholder="+57 ..."
+                      placeholder="Solo números. Ej: 573001234567"
                       value={formData.phone}
                       onChange={handleChange}
                       onBlur={() => checkPhoneAvailability(formData.phone)}
@@ -336,11 +375,15 @@ const Register = () => {
                     <i className='bx bxl-whatsapp'></i>
                   </div>
                 </div>
+                <span className="helper-text"><i className='bx bx-info-circle'></i> Usa solo números, sin + ni espacios.</span>
                 {phoneAvailability.loading && (
-                  <span className="error-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
+                  <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
                 )}
                 {phoneAvailability.checked && !phoneAvailability.available && (
                   <span className="error-text"><i className='bx bx-error-circle'></i> {phoneAvailability.message}</span>
+                )}
+                {phoneAvailability.warning && (
+                  <span className="helper-text"><i className='bx bx-info-circle'></i> {phoneAvailability.message}</span>
                 )}
                 <div className="input-row split">
                   <div className="input-wrapper">
@@ -376,6 +419,9 @@ const Register = () => {
                 >
                   Siguiente
                 </button>
+                {step1Attempted && !step1Valid && (
+                  <span className="error-text"><i className='bx bx-error-circle'></i> {step1ErrorHint}</span>
+                )}
               </div>
             )}
 

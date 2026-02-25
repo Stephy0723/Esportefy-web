@@ -297,6 +297,29 @@
     box-shadow: 0 0 0 2px rgba(142,219,21,.1);
 }
 .ep__field textarea { resize: vertical; }
+.ep__field input.ep__input-error,
+.ep__field input.ep__input-error:focus {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 2px rgba(231, 76, 60, .12);
+}
+
+.ep__helper-text,
+.ep__error-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .72rem;
+    font-weight: 600;
+    margin-top: 3px;
+}
+
+.ep__helper-text {
+    color: var(--text-muted);
+}
+
+.ep__error-text {
+    color: #e74c3c;
+}
 
 .ep__char-count {
     font-size: .68rem;
