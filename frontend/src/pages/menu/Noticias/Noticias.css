@@ -1,0 +1,32 @@
+.noticias-page {
+  padding: 2rem;
+  background: #f8fafc;
+}
+.noticias-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.noticia-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 1rem 1.5rem;
+  min-width: 260px;
+  max-width: 350px;
+}
+.noticia-fecha {
+  display: block;
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+.noticia-categoria {
+  display: inline-block;
+  background: #38bdf8;
+  color: #fff;
+  border-radius: 4px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}

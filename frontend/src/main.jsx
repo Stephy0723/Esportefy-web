@@ -13,6 +13,13 @@ import { AuthProvider } from './context/AuthContext'
 axios.defaults.withCredentials = true;
 
 axios.interceptors.request.use((config) => {
+  // Auth is handled via HttpOnly cookies — remove Bearer headers
+  // that would trigger CORS preflight failures
+  if (config.headers) {
+    delete config.headers['Authorization'];
+    delete config.headers['authorization'];
+  }
+
   const method = String(config.method || 'get').toLowerCase();
   const isMutating = ['post', 'put', 'patch', 'delete'].includes(method);
   if (isMutating) {

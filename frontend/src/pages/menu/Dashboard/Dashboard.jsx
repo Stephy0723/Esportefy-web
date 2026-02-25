@@ -204,6 +204,15 @@ const Dashboard = () => {
         );
     }
 
+    /* ── No user (server down / not authenticated) ── */
+    if (!user) {
+        return (
+            <div className="db-loading">
+                <p>No se pudo cargar tu perfil. Verifica tu conexión.</p>
+            </div>
+        );
+    }
+
     /* ══════════════════════════════════════════════
        RENDER
        ══════════════════════════════════════════════ */

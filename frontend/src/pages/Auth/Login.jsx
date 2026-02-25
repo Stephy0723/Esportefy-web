@@ -60,17 +60,11 @@ const Login = () => {
                 throw new Error('Respuesta de login inválida');
             }
             
-            if (rememberMe) {
-                localStorage.setItem('esportefyUser', JSON.stringify(user));
-                localStorage.setItem('token', token);
-                sessionStorage.removeItem('esportefyUser');
-                sessionStorage.removeItem('token');
-            } else {
-                sessionStorage.setItem('esportefyUser', JSON.stringify(user));
-                sessionStorage.setItem('token', token);
-                localStorage.removeItem('esportefyUser');
-                localStorage.removeItem('token');
-            }
+            // Guardar datos iniciales en localStorage para carga rápida
+            // AuthContext sincronizará los datos completos desde /profile vía cookies
+            localStorage.setItem('esportefyUser', JSON.stringify(user));
+            // Flag de sesión — la auth real va por HttpOnly cookies
+            localStorage.setItem('token', 'cookie-session');
             
             window.dispatchEvent(new Event('user-update'));
 

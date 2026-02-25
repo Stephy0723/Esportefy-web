@@ -25,18 +25,6 @@ const UserSchema = new mongoose.Schema({
     experience: { type: [String], default: [] },
     platforms: { type: [String], default: [] },
     goals: { type: [String], default: [] },
-    languages: { type: [String], default: [] },
-    preferredRoles: { type: [String], default: [] },
-    lookingForTeam: { type: Boolean, default: false },
-
-    // --- Redes Sociales ---
-    socialLinks: {
-        twitch: { type: String, default: '' },
-        youtube: { type: String, default: '' },
-        twitter: { type: String, default: '' },
-        instagram: { type: String, default: '' },
-        tiktok: { type: String, default: '' }
-    },
 
     // --- Etapa 4: Credenciales ---
     username: { type: String, required: true, unique: true }, // unique para que no se repitan gamertags
@@ -130,10 +118,6 @@ const UserSchema = new mongoose.Schema({
         }
     },
     
-    // --- Social: Follow System ---
-    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-
     privacy: {
         allowTeamInvites: { type: Boolean, default: true },
         showOnlineStatus: { type: Boolean, default: true },

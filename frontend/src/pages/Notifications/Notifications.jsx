@@ -57,11 +57,21 @@ const Notifications = () => {
     addToast('Notificación eliminada', 'success');
   };
 
-  const handleArchive = (id) => {
+  const handleArchive = async (id) => {
+    const note = notifications.find(n => n.id === id || n._id === id);
+    const newArchived = !note?.isArchived;
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await axios.patch(`${API_URL}/api/notifications/${id}/archive`, { archived: newArchived }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+    } catch (_) { }
     loadNotifications(notifications.map(n =>
-      (n.id === id || n._id === id) ? { ...n, isArchived: !n.isArchived } : n
+      (n.id === id || n._id === id) ? { ...n, isArchived: newArchived } : n
     ));
-    addToast('Notificación archivada', 'success');
+    addToast(newArchived ? 'Notificación archivada' : 'Notificación restaurada', 'info');
   };
 
   const handleMarkRead = async (id) => {

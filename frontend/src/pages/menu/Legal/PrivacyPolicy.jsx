@@ -1,43 +1,117 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './LegalPages.css';
 
 const PrivacyPolicy = () => {
-  const navigate = useNavigate();
-
   return (
-    <div className="legal-page-wrapper">
-      <div className="legal-card">
-        
-     
+    <section className="legal-page privacy-page">
+        <div className="legal-wrap">
+          <nav className="legal-topbar" aria-label="Paginas legales">
+            <Link className="legal-link" to="/legal/terms">Terminos y Condiciones</Link>
+            <Link className="legal-link is-active" to="/legal/privacy">Politica de Privacidad</Link>
+            <Link className="legal-link" to="/legal/payment-policy">Pagos</Link>
+            <Link className="legal-link" to="/legal/organizer-terms">Organizadores</Link>
+          </nav>
 
-        <div className="legal-header">
-            <h1>Política de <span className="highlight">Privacidad</span></h1>
-            <p className="legal-meta">Protegiendo tus datos y tu juego.</p>
-        </div>
+        <header className="legal-box privacy-hero">
+          <div className="legal-hero-row">
+            <div>
+              <p className="legal-mini">Tratamiento de datos personales</p>
+              <h1 className="legal-hero-title">Politica de <span className="legal-accent">Privacidad</span></h1>
+              <p className="legal-hero-lead">
+                Explica que datos usamos, por que los tratamos y como puedes ejercer tus derechos en Republica Dominicana.
+              </p>
+              <p className="legal-mini">Ultima actualizacion: 23 de febrero de 2026</p>
+              <p className="legal-mini">Version legal RD: v1.0 | Fecha efectiva: 23 de febrero de 2026</p>
+            </div>
+            <div className="legal-hero-icon" aria-hidden="true">
+              <i className="bx bx-shield"></i>
+            </div>
+          </div>
+        </header>
 
-        <div className="legal-content">
-            <p>En Esportefy, tu privacidad es tan importante como tu rendimiento en el juego. Esta política explica qué datos recopilamos.</p>
+          <div className="privacy-layout">
+            <div className="privacy-stack">
+            <section className="legal-box privacy-card">
+              <h2 className="legal-h"><i className="bx bx-data"></i>1. Que informacion tratamos</h2>
+              <p className="legal-section-mini">Solo solicitamos datos necesarios para operar y proteger la plataforma.</p>
+              <ul>
+                <li>Datos de registro: usuario, correo, pais y datos de perfil.</li>
+                <li>Datos de actividad: torneos, interacciones y reportes moderados.</li>
+                <li>Datos tecnicos: IP, tipo de dispositivo, logs de seguridad y diagnostico.</li>
+              </ul>
+              <p>
+                Respetamos el derecho fundamental a la intimidad y proteccion de datos reconocido en el
+                <span className="legal-key"> Articulo 44 de la Constitucion dominicana</span>.
+              </p>
+            </section>
 
-            <h2>1. Datos que Recopilamos</h2>
-            <p>Recopilamos información necesaria para la gestión de torneos: Nombre de usuario, ID de juego (Riot ID, Steam ID, etc.), correo electrónico y registros de partidas.</p>
+            <section className="legal-box privacy-card">
+              <h2 className="legal-h"><i className="bx bx-file-find"></i>2. Finalidades y base legal</h2>
+              <p className="legal-section-mini">El tratamiento se apoya en contrato, cumplimiento legal y seguridad.</p>
+              <p>
+                Tratamos datos para ejecutar la relacion contractual de la plataforma, cumplir
+                obligaciones legales, prevenir fraude y mantener seguridad operativa. Para acciones
+                no esenciales, como comunicaciones promocionales, usamos <span className="legal-key">consentimiento</span> cuando aplica.
+              </p>
+              <p>
+                El tratamiento se ajusta a principios de calidad, finalidad y proporcionalidad de la
+                <span className="legal-key"> Ley 172-13</span>.
+              </p>
+            </section>
 
-            <h2>2. Uso de la Información</h2>
-            <p>Utilizamos tus datos para:</p>
+            <section className="legal-box privacy-card">
+              <h2 className="legal-h"><i className="bx bx-transfer-alt"></i>3. Retencion, transferencias y terceros</h2>
+              <p className="legal-section-mini">Aplicamos controles de seguridad en proveedores y almacenamiento.</p>
+              <p>
+                Conservamos informacion durante el tiempo necesario para operacion, auditoria,
+                defensa legal y cumplimiento fiscal/regulatorio. Podemos usar proveedores de
+                infraestructura y pagos bajo clausulas de <span className="legal-key">confidencialidad</span> y seguridad razonables.
+              </p>
+              <p>
+                Si hay transferencias internacionales de datos, aplicamos salvaguardas contractuales
+                y controles tecnicos acordes a la normativa dominicana aplicable.
+              </p>
+            </section>
+
+            <section className="legal-box privacy-card">
+              <h2 className="legal-h"><i className="bx bx-cookie"></i>4. Cookies y tecnologias similares</h2>
+              <p className="legal-section-mini">Puedes gestionar cookies en navegador, con impacto funcional parcial.</p>
+              <p>
+                Utilizamos cookies tecnicas y de sesion para autenticacion, seguridad y mejora de
+                experiencia. Puedes gestionar cookies desde tu navegador, aunque algunas funciones
+                podrian quedar limitadas.
+              </p>
+            </section>
+            </div>
+
+            <aside className="legal-box privacy-rights">
+            <h2 className="legal-h"><i className="bx bx-user-check"></i>Derechos de titulares</h2>
+            <p className="legal-section-mini">Puedes ejercer tus derechos en cualquier momento por canal oficial.</p>
             <ul>
-                <li>Verificar tu identidad y propiedad de la cuenta de juego.</li>
-                <li>Procesar los pagos de premios y entradas.</li>
-                <li>Contactarte en caso de disputas de partidas.</li>
+              <li><span className="legal-key">Acceso</span> a datos personales y origen del tratamiento.</li>
+              <li><span className="legal-key">Rectificacion</span> o actualizacion de datos inexactos.</li>
+              <li><span className="legal-key">Eliminacion</span> cuando no exista obligacion de conservacion.</li>
+              <li>Oposicion a usos no esenciales o marketing.</li>
+              <li>Portabilidad cuando la ley local lo habilite.</li>
             </ul>
+            <p>
+              Tambien puedes ejercer acciones de defensa de derechos fundamentales como
+              <span className="legal-key"> habeas data</span> conforme a la legislacion vigente.
+            </p>
 
-            <h2>3. Terceros</h2>
-            <p>No vendemos tus datos a terceros. Compartimos información mínima necesaria con procesadores de pago (como PayPal) únicamente para ejecutar transacciones financieras.</p>
+            <h2 className="legal-h"><i className="bx bx-child"></i>Menores de edad</h2>
+            <p>
+              Si la normativa de tu pais exige autorizacion parental para usuarios menores,
+              debes contar con ella antes de crear cuenta y participar en servicios de pago.
+            </p>
 
-            <h2>4. Seguridad</h2>
-            <p>Tus datos están encriptados y almacenados en servidores seguros. Mantenemos copias de seguridad para prevenir pérdida de información crítica del torneo.</p>
+            <h2 className="legal-h"><i className="bx bx-envelope"></i>Contacto de privacidad</h2>
+            <p>Solicitudes de privacidad: privacidad@esportefy.com.</p>
+            </aside>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
   );
 };
 

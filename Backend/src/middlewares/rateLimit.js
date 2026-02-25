@@ -43,7 +43,12 @@ export const createRateLimiter = ({ windowMs = 15 * 60 * 1000, max = 100, keyPre
                 : incrementMemoryBucket(key, now, windowMs);
 
             if (count > max) {
-                return res.status(429).json({ message: 'Demasiadas solicitudes. Intenta más tarde.' });
+                const retryMs = Math.ceil(windowMs / 1000);
+                res.set('Retry-After', String(retryMs));
+                return res.status(429).json({
+                    message: 'Has alcanzado el límite de solicitudes. Espera un momento.',
+                    retryAfter: retryMs
+                });
             }
             return next();
         } catch (error) {

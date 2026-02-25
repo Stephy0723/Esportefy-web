@@ -24,7 +24,15 @@ export const NotificationProvider = ({ children }) => {
   const addToast = useCallback((message, type = 'info') => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
+    setTimeout(() => {
+      setToasts((prev) => prev.map((t) => t.id === id ? { ...t, exiting: true } : t));
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 400);
+    }, 4600);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.map((t) => t.id === id ? { ...t, exiting: true } : t));
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 400);
   }, []);
 
   // --- NOTIFY (para uso local) ---
@@ -80,7 +88,7 @@ export const NotificationProvider = ({ children }) => {
 
   return (
     <NotificationContext.Provider value={{
-      notifications, toasts, notify, addToast,
+      notifications, toasts, notify, addToast, removeToast,
       removeNotification, loadNotifications, unreadCount
     }}>
       {children}
