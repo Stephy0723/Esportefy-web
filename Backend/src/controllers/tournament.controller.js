@@ -171,6 +171,28 @@ const findDuplicate = (values = []) => {
     return '';
 };
 
+const normalizePositiveInteger = (value) => {
+    const raw = String(value ?? '').trim();
+    if (!raw || !DIGITS_ONLY_REGEX.test(raw)) return null;
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return parsed;
+};
+
+const normalizeNonNegativeNumber = (value) => {
+    const raw = String(value ?? '').trim().replace(',', '.');
+    if (!raw) return null;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return parsed;
+};
+
+const normalizeMoneyString = (value) => {
+    const parsed = normalizeNonNegativeNumber(value);
+    if (parsed === null) return '';
+    return String(parsed);
+};
+
 const nextPowerOfTwo = (value) => {
     const n = Number(value) || 0;
     let p = 1;
@@ -1307,7 +1329,7 @@ const generateUniqueTournamentId = async () => {
 
 export const createTournament = async (req, res) => {
     try {
-        const data = req.body;
+        const data = req.body || {};
         const normalizedTournamentFormat = normalizeTournamentFormat(data?.format);
         const organizer = await User.findById(req.userId).select('isOrganizer');
         if (!organizer || organizer.isOrganizer !== true) {
@@ -1332,51 +1354,95 @@ export const createTournament = async (req, res) => {
 
         const rawSponsors = data.sponsors ?? data.sponsorsData;
         const sponsors = parseField(rawSponsors) || [];
+        const parsedPrizesByRankRaw = parseField(data.prizesByRank) || {};
+        const parsedStaffRaw = parseField(data.staff) || {};
+        const normalizedTitle = String(data.title || '').trim();
+        const normalizedDescription = String(data.description || '').trim();
+        const normalizedGame = String(data.game || '').trim();
+        const normalizedGender = String(data.gender || '').trim();
+        const normalizedModality = String(data.modality || '').trim();
+        const normalizedDate = String(data.date || '').trim();
+        const normalizedTime = String(data.time || '').trim();
+        const normalizedEntryFee = String(data.entryFee || '').trim() || 'Gratis';
+        const normalizedCurrency = String(data.currency || 'USD').trim() || 'USD';
+        const normalizedServer = String(data.server || '').trim();
+        const normalizedPlatform = String(data.platform || 'PC').trim() || 'PC';
+        const normalizedMaxSlots = normalizePositiveInteger(data.maxSlots);
+        const normalizedPrizePoolRaw = String(data.prizePool ?? '').trim();
+        const normalizedPrizePool = normalizeMoneyString(data.prizePool);
+
+        const normalizedPrizesByRank = {
+            first: normalizeMoneyString(parsedPrizesByRankRaw?.first),
+            second: normalizeMoneyString(parsedPrizesByRankRaw?.second),
+            third: normalizeMoneyString(parsedPrizesByRankRaw?.third)
+        };
+
+        const normalizedStaff = {
+            moderators: Array.isArray(parsedStaffRaw?.moderators)
+                ? parsedStaffRaw.moderators.map((v) => String(v || '').trim()).filter(Boolean)
+                : [],
+            casters: Array.isArray(parsedStaffRaw?.casters)
+                ? parsedStaffRaw.casters.map((v) => String(v || '').trim()).filter(Boolean)
+                : []
+        };
+
+        if (!normalizedTitle || !normalizedDescription || !normalizedGame || !normalizedGender || !normalizedModality || !normalizedServer) {
+            return res.status(400).json({ message: 'Faltan campos obligatorios del torneo' });
+        }
+
+        const tournamentDate = new Date(`${normalizedDate}T00:00:00`);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (!normalizedDate || Number.isNaN(tournamentDate.getTime()) || tournamentDate < today) {
+            return res.status(400).json({ message: 'La fecha del torneo no es válida' });
+        }
+
+        if (!normalizedTime) {
+            return res.status(400).json({ message: 'La hora del torneo es requerida' });
+        }
+
+        if (!Number.isFinite(normalizedMaxSlots) || normalizedMaxSlots < 2) {
+            return res.status(400).json({ message: 'El torneo debe tener al menos 2 cupos' });
+        }
+
+        if (normalizedPrizePoolRaw && normalizeNonNegativeNumber(data.prizePool) === null) {
+            return res.status(400).json({ message: 'El monto total del torneo debe ser un número válido no negativo' });
+        }
+
+        const prizeFields = ['first', 'second', 'third'];
+        for (const field of prizeFields) {
+            const rawValue = String(parsedPrizesByRankRaw?.[field] ?? '').trim();
+            if (rawValue && normalizeNonNegativeNumber(parsedPrizesByRankRaw?.[field]) === null) {
+                return res.status(400).json({ message: `El premio de ${field} lugar debe ser un número válido no negativo` });
+            }
+        }
+
+        const distributedPrizeTotal = [normalizedPrizesByRank.first, normalizedPrizesByRank.second, normalizedPrizesByRank.third]
+            .reduce((acc, current) => acc + (Number(current) || 0), 0);
+        if (normalizedPrizePool !== '' && distributedPrizeTotal > Number(normalizedPrizePool)) {
+            return res.status(400).json({ message: 'La suma de premios por ranking no puede superar el monto total del torneo' });
+        }
+
         const sponsorsWithLogos = Array.isArray(sponsors)
             ? sponsors.map((s, idx) => {
                 const fileIndex = Number.isInteger(s?.logoIndex) ? s.logoIndex : idx;
                 return {
                     ...s,
+                    name: String(s?.name || '').trim(),
+                    link: String(s?.link || '').trim(),
+                    tier: String(s?.tier || 'Partner').trim() || 'Partner',
                     logoUrl: sponsorLogoFiles[fileIndex]?.path || s.logoUrl || ''
                 };
             })
             : [];
 
-        const newTournament = new Tournament({
-            ...data,
-            format: normalizedTournamentFormat,
-            tournamentId,
-            prizesByRank: parseField(data.prizesByRank),
-            sponsors: sponsorsWithLogos,
-            staff: parseField(data.staff),
-            bannerImage: bannerPath,
-            rulesPdf: pdfPath,
-            organizer: req.userId,
-
-            status: 'open',
-            registrationClosed: false,
-            currentSlots: 0
-        });
-
-        if (!data.date || new Date(data.date) < new Date()) {
-            return res.status(400).json({ message: 'La fecha del torneo no es válida' });
-        }
-
-        if (!data.time || !String(data.time).trim()) {
-            return res.status(400).json({ message: 'La hora del torneo es requerida' });
-        }
-
-        if (!data.maxSlots || data.maxSlots < 2) {
-            return res.status(400).json({ message: 'El torneo debe tener al menos 2 cupos' });
-        }
-
         const tournamentScope = {
-            game: data.game,
+            game: normalizedGame,
             riotRequirements: data.riotRequirements
         };
         const requiresRiotPolicies = isRiotTournamentPolicyScope(tournamentScope);
         const requiresFreeEntry = requiresFreeEntryByPolicy(tournamentScope);
-        if (requiresFreeEntry && !isFreeEntryMode(data.entryFee)) {
+        if (requiresFreeEntry && !isFreeEntryMode(normalizedEntryFee)) {
             return res.status(400).json({
                 message: isRiotReviewMode()
                     ? 'RIOT_REVIEW_MODE activo: todos los torneos deben usar registro gratuito'
@@ -1385,8 +1451,8 @@ export const createTournament = async (req, res) => {
         }
         if (requiresRiotPolicies) {
             const participantCapacity = getParticipantCapacityBySettings({
-                modality: data.modality,
-                maxSlots: data.maxSlots
+                modality: normalizedModality,
+                maxSlots: normalizedMaxSlots
             });
             const minParticipants = getRiotMinActiveParticipants();
             if (participantCapacity < minParticipants) {
@@ -1396,16 +1462,34 @@ export const createTournament = async (req, res) => {
             }
         }
 
-        const prizeValues = [
-            data?.prizesByRank?.first,
-            data?.prizesByRank?.second,
-            data?.prizesByRank?.third
-        ];
-        const hasNegative = prizeValues.some(v => Number(v) < 0);
-        if (hasNegative) {
-            return res.status(400).json({ message: 'Los premios no pueden ser negativos' });
-        }
+        const newTournament = new Tournament({
+            ...data,
+            title: normalizedTitle,
+            description: normalizedDescription,
+            game: normalizedGame,
+            gender: normalizedGender,
+            modality: normalizedModality,
+            date: tournamentDate,
+            time: normalizedTime,
+            entryFee: normalizedEntryFee,
+            maxSlots: normalizedMaxSlots,
+            prizePool: normalizedPrizePool,
+            prizesByRank: normalizedPrizesByRank,
+            currency: normalizedCurrency,
+            server: normalizedServer,
+            platform: normalizedPlatform,
+            format: normalizedTournamentFormat,
+            tournamentId,
+            sponsors: sponsorsWithLogos,
+            staff: normalizedStaff,
+            bannerImage: bannerPath,
+            rulesPdf: pdfPath,
+            organizer: req.userId,
 
+            status: 'open',
+            registrationClosed: false,
+            currentSlots: 0
+        });
 
         const savedTournament = await newTournament.save();
         res.status(201).json(savedTournament);
@@ -1450,30 +1534,117 @@ export const updateTournament = async (req, res) => {
 
         const rawSponsors = data.sponsors ?? data.sponsorsData;
         const sponsors = parseField(rawSponsors) || [];
+        const parsedPrizesByRankRaw = parseField(data.prizesByRank);
+        const parsedStaffRaw = parseField(data.staff);
         const sponsorsWithLogos = Array.isArray(sponsors)
             ? sponsors.map((s, idx) => {
                 const fileIndex = Number.isInteger(s?.logoIndex) ? s.logoIndex : idx;
                 return {
                     ...s,
+                    name: String(s?.name || '').trim(),
+                    link: String(s?.link || '').trim(),
+                    tier: String(s?.tier || 'Partner').trim() || 'Partner',
                     logoUrl: sponsorLogoFiles[fileIndex]?.path || s.logoUrl || ''
                 };
             })
             : undefined;
 
-        if (data.date && new Date(data.date) < new Date()) {
-            return res.status(400).json({ message: 'La fecha del torneo no es válida' });
+        let normalizedDateForUpdate = null;
+        if (data.date !== undefined) {
+            const normalizedDate = String(data.date || '').trim();
+            const requestedDate = new Date(`${normalizedDate}T00:00:00`);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (!normalizedDate || Number.isNaN(requestedDate.getTime()) || requestedDate < today) {
+                return res.status(400).json({ message: 'La fecha del torneo no es válida' });
+            }
+            normalizedDateForUpdate = requestedDate;
         }
 
-        if (data.time !== undefined && !String(data.time).trim()) {
-            return res.status(400).json({ message: 'La hora del torneo es requerida' });
+        if (data.time !== undefined) {
+            const normalizedTime = String(data.time || '').trim();
+            if (!normalizedTime) {
+                return res.status(400).json({ message: 'La hora del torneo es requerida' });
+            }
+        }
+        if (data.title !== undefined && !String(data.title || '').trim()) {
+            return res.status(400).json({ message: 'El título del torneo es requerido' });
+        }
+        if (data.game !== undefined && !String(data.game || '').trim()) {
+            return res.status(400).json({ message: 'El juego del torneo es requerido' });
+        }
+        if (data.gender !== undefined && !String(data.gender || '').trim()) {
+            return res.status(400).json({ message: 'La categoría de género es requerida' });
+        }
+        if (data.modality !== undefined && !String(data.modality || '').trim()) {
+            return res.status(400).json({ message: 'La modalidad del torneo es requerida' });
+        }
+        if (data.description !== undefined && !String(data.description || '').trim()) {
+            return res.status(400).json({ message: 'La descripcion del torneo es requerida' });
+        }
+        if (data.server !== undefined && !String(data.server || '').trim()) {
+            return res.status(400).json({ message: 'La region/servidor es requerida' });
         }
 
-        if (data.maxSlots && Number(data.maxSlots) < Number(tournament.currentSlots)) {
-            return res.status(400).json({ message: 'Los cupos no pueden ser menores a los inscritos' });
+        let normalizedMaxSlotsForUpdate = null;
+        if (data.maxSlots !== undefined) {
+            normalizedMaxSlotsForUpdate = normalizePositiveInteger(data.maxSlots);
+            if (!Number.isFinite(normalizedMaxSlotsForUpdate) || normalizedMaxSlotsForUpdate < 2) {
+                return res.status(400).json({ message: 'El torneo debe tener al menos 2 cupos' });
+            }
+            if (normalizedMaxSlotsForUpdate < Number(tournament.currentSlots)) {
+                return res.status(400).json({ message: 'Los cupos no pueden ser menores a los inscritos' });
+            }
         }
 
-        const effectiveGame = String(data.game || tournament.game || '').trim();
-        const effectiveEntryFee = data.entryFee !== undefined ? data.entryFee : tournament.entryFee;
+        if (data.prizePool !== undefined) {
+            const rawPrizePool = String(data.prizePool ?? '').trim();
+            if (rawPrizePool && normalizeNonNegativeNumber(data.prizePool) === null) {
+                return res.status(400).json({ message: 'El monto total del torneo debe ser un número válido no negativo' });
+            }
+        }
+
+        let normalizedPrizesByRankForUpdate = null;
+        if (data.prizesByRank !== undefined) {
+            const source = parsedPrizesByRankRaw && typeof parsedPrizesByRankRaw === 'object'
+                ? parsedPrizesByRankRaw
+                : {};
+            const prizeFields = ['first', 'second', 'third'];
+            for (const field of prizeFields) {
+                const rawValue = String(source?.[field] ?? '').trim();
+                if (rawValue && normalizeNonNegativeNumber(source?.[field]) === null) {
+                    return res.status(400).json({ message: `El premio de ${field} lugar debe ser un número válido no negativo` });
+                }
+            }
+
+            normalizedPrizesByRankForUpdate = {
+                first: normalizeMoneyString(source?.first),
+                second: normalizeMoneyString(source?.second),
+                third: normalizeMoneyString(source?.third)
+            };
+        }
+
+        const effectivePrizePool = data.prizePool !== undefined
+            ? normalizeMoneyString(data.prizePool)
+            : normalizeMoneyString(tournament.prizePool);
+        const effectivePrizesByRank = normalizedPrizesByRankForUpdate || {
+            first: normalizeMoneyString(tournament?.prizesByRank?.first),
+            second: normalizeMoneyString(tournament?.prizesByRank?.second),
+            third: normalizeMoneyString(tournament?.prizesByRank?.third)
+        };
+        const distributedPrizeTotal = [
+            effectivePrizesByRank.first,
+            effectivePrizesByRank.second,
+            effectivePrizesByRank.third
+        ].reduce((acc, current) => acc + (Number(current) || 0), 0);
+        if (effectivePrizePool !== '' && distributedPrizeTotal > Number(effectivePrizePool)) {
+            return res.status(400).json({ message: 'La suma de premios por ranking no puede superar el monto total del torneo' });
+        }
+
+        const effectiveGame = String(data.game !== undefined ? data.game : tournament.game || '').trim();
+        const effectiveEntryFee = data.entryFee !== undefined
+            ? (String(data.entryFee || '').trim() || 'Gratis')
+            : (String(tournament.entryFee || '').trim() || 'Gratis');
         const effectiveRiotRequirements = data.riotRequirements !== undefined
             ? data.riotRequirements
             : tournament.riotRequirements;
@@ -1491,8 +1662,12 @@ export const updateTournament = async (req, res) => {
             });
         }
         if (requiresRiotPolicies) {
-            const effectiveModality = data.modality !== undefined ? data.modality : tournament.modality;
-            const effectiveMaxSlots = data.maxSlots !== undefined ? data.maxSlots : tournament.maxSlots;
+            const effectiveModality = data.modality !== undefined
+                ? String(data.modality || '').trim()
+                : String(tournament.modality || '').trim();
+            const effectiveMaxSlots = data.maxSlots !== undefined
+                ? normalizedMaxSlotsForUpdate
+                : tournament.maxSlots;
             const participantCapacity = getParticipantCapacityBySettings({
                 modality: effectiveModality,
                 maxSlots: effectiveMaxSlots
@@ -1512,6 +1687,31 @@ export const updateTournament = async (req, res) => {
         };
         if (Object.prototype.hasOwnProperty.call(data, 'format')) {
             update.format = normalizeTournamentFormat(data?.format);
+        }
+        if (data.title !== undefined) update.title = String(data.title || '').trim();
+        if (data.description !== undefined) update.description = String(data.description || '').trim();
+        if (data.game !== undefined) update.game = effectiveGame;
+        if (data.gender !== undefined) update.gender = String(data.gender || '').trim();
+        if (data.modality !== undefined) update.modality = String(data.modality || '').trim();
+        if (data.entryFee !== undefined) update.entryFee = effectiveEntryFee;
+        if (data.currency !== undefined) update.currency = String(data.currency || 'USD').trim() || 'USD';
+        if (data.server !== undefined) update.server = String(data.server || '').trim();
+        if (data.platform !== undefined) update.platform = String(data.platform || 'PC').trim() || 'PC';
+        if (data.prizePool !== undefined) update.prizePool = normalizeMoneyString(data.prizePool);
+        if (normalizedPrizesByRankForUpdate !== null) update.prizesByRank = normalizedPrizesByRankForUpdate;
+        if (normalizedMaxSlotsForUpdate !== null) update.maxSlots = normalizedMaxSlotsForUpdate;
+        if (normalizedDateForUpdate !== null) update.date = normalizedDateForUpdate;
+        if (data.time !== undefined) update.time = String(data.time || '').trim();
+        if (data.staff !== undefined) {
+            const source = parsedStaffRaw && typeof parsedStaffRaw === 'object' ? parsedStaffRaw : {};
+            update.staff = {
+                moderators: Array.isArray(source?.moderators)
+                    ? source.moderators.map((v) => String(v || '').trim()).filter(Boolean)
+                    : [],
+                casters: Array.isArray(source?.casters)
+                    ? source.casters.map((v) => String(v || '').trim()).filter(Boolean)
+                    : []
+            };
         }
 
         if (sponsorsWithLogos !== undefined) update.sponsors = sponsorsWithLogos;

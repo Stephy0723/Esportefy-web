@@ -49,6 +49,28 @@ const FORMAT_OPTIONS = [
   { value: 'round_robin', label: 'Round Robin' }
 ];
 
+const PLATFORM_OPTIONS = [
+  { value: 'PC', label: 'PC' },
+  { value: 'Mobile', label: 'Mobile' },
+  { value: 'Console', label: 'Consola' },
+  { value: 'Crossplay', label: 'Crossplay' }
+];
+const REGION_OPTIONS = [
+  { value: 'LAN', label: 'LATAM Norte (LAN)' },
+  { value: 'LAS', label: 'LATAM Sur (LAS)' },
+  { value: 'NA', label: 'Norteamerica (NA)' },
+  { value: 'EUW', label: 'Europa Oeste (EUW)' },
+  { value: 'EUNE', label: 'Europa Noreste (EUNE)' },
+  { value: 'BR', label: 'Brasil (BR)' },
+  { value: 'KR', label: 'Corea (KR)' },
+  { value: 'JP', label: 'Japon (JP)' },
+  { value: 'OCE', label: 'Oceania (OCE)' },
+  { value: 'GLOBAL', label: 'Global / Internacional' }
+];
+const BRACKET_SLOT_PRESETS = ['4', '8', '16', '32', '64'];
+const INTEGER_INPUT_REGEX = /^\d*$/;
+const MONEY_INPUT_REGEX = /^\d*(?:[.,]\d{0,2})?$/;
+
 const RIOT_TITLES = new Set([
   'Valorant',
   'League of Legends',
@@ -77,6 +99,37 @@ const normalizeFormatValue = (value) => {
   if (raw.includes('round robin') || raw.includes('round_robin')) return 'round_robin';
   if (raw.includes('elim')) return 'single_elimination';
   return 'single_elimination';
+};
+
+const normalizePlatformValue = (value) => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'PC';
+  if (raw === 'pc') return 'PC';
+  if (raw === 'mobile') return 'Mobile';
+  if (raw === 'console' || raw === 'consola') return 'Console';
+  if (raw === 'crossplay') return 'Crossplay';
+  return 'PC';
+};
+
+const parsePositiveInt = (value, fallback = 0) => {
+  const parsed = Number.parseInt(String(value ?? '').trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+};
+
+const normalizeMoneyValue = (value) => {
+  const raw = String(value ?? '').trim().replace(',', '.');
+  if (!raw) return '';
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) return '';
+  return parsed.toString();
+};
+
+const resolveMaxSlotsSelection = (value = '') => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return '';
+  if (BRACKET_SLOT_PRESETS.includes(normalized)) return normalized;
+  return 'custom';
 };
 
 const CreateTournament = () => {
@@ -110,6 +163,7 @@ const CreateTournament = () => {
     staff: { moderators: [''], casters: [''] },
     incentives: [] 
   });
+  const [maxSlotsSelection, setMaxSlotsSelection] = useState('');
   const editTournament = location.state?.editTournament;
   const isEditMode = Boolean(editTournament?.tournamentId);
   const isRiotTournament = RIOT_TITLES.has(String(tournament.game || '').trim());
@@ -129,10 +183,38 @@ const CreateTournament = () => {
     }));
   };
 
+  const handleMaxSlotsSelectionChange = (selectionValue) => {
+    const normalizedSelection = String(selectionValue || '').trim();
+    setMaxSlotsSelection(normalizedSelection);
+
+    if (!normalizedSelection) {
+      setTournament((prev) => ({ ...prev, maxSlots: '' }));
+      return;
+    }
+
+    if (normalizedSelection === 'custom') {
+      setTournament((prev) => ({
+        ...prev,
+        maxSlots: resolveMaxSlotsSelection(prev.maxSlots) === 'custom' ? prev.maxSlots : ''
+      }));
+      return;
+    }
+
+    setTournament((prev) => ({ ...prev, maxSlots: normalizedSelection }));
+  };
+
+  const handleCustomMaxSlotsChange = (rawValue) => {
+    if (!INTEGER_INPUT_REGEX.test(rawValue)) return;
+    setMaxSlotsSelection('custom');
+    setTournament((prev) => ({ ...prev, maxSlots: rawValue }));
+  };
+
   useEffect(() => {
     if (!isEditMode) return;
     const dateValue = editTournament?.dateRaw ? new Date(editTournament.dateRaw) : null;
     const dateIso = dateValue ? dateValue.toISOString().slice(0, 10) : '';
+    const editMaxSlots = editTournament?.maxSlots ? String(editTournament.maxSlots) : '';
+    setMaxSlotsSelection(resolveMaxSlotsSelection(editMaxSlots));
 
     setTournament((prev) => ({
       ...prev,
@@ -147,10 +229,10 @@ const CreateTournament = () => {
       currency: editTournament.currency || prev.currency,
       prizesByRank: editTournament.prizesByRank || prev.prizesByRank,
       entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
-      maxSlots: editTournament.maxSlots || prev.maxSlots,
+      maxSlots: editMaxSlots || prev.maxSlots,
       format: normalizeFormatValue(editTournament.format || prev.format),
       server: editTournament.server || '',
-      platform: editTournament.platform || prev.platform,
+      platform: normalizePlatformValue(editTournament.platform || prev.platform),
       organizerName: editTournament.organizer || prev.organizerName,
       sponsors: Array.isArray(editTournament.sponsors) && editTournament.sponsors.length
         ? editTournament.sponsors.map((s) => ({ name: s.name || '', link: s.link || '', tier: s.tier || 'Partner', logoFile: null }))
@@ -168,7 +250,48 @@ const CreateTournament = () => {
   // --- 3. HANDLERS DE FORMULARIO Y ARCHIVOS ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isRiotTournament && participantCapacity < RIOT_MIN_ACTIVE_PARTICIPANTS) {
+    const normalizedTitle = String(tournament.title || '').trim();
+    const normalizedDescription = String(tournament.description || '').trim();
+    const normalizedGame = String(tournament.game || '').trim();
+    const normalizedGender = String(tournament.gender || '').trim();
+    const normalizedModality = String(tournament.modality || '').trim();
+    const normalizedDate = String(tournament.date || '').trim();
+    const normalizedTime = String(tournament.time || '').trim();
+    const normalizedMaxSlots = parsePositiveInt(tournament.maxSlots, 0);
+    const normalizedFormat = normalizeFormatValue(tournament.format);
+    const normalizedServer = String(tournament.server || '').trim();
+    const normalizedPlatform = normalizePlatformValue(tournament.platform);
+    const normalizedCurrency = String(tournament.currency || 'USD').trim() || 'USD';
+    const normalizedEntryFee = requiresFreeEntryMode
+      ? 'Gratis'
+      : (String(tournament.entryFee || '').trim() || 'Gratis');
+
+    const normalizedPrizePool = normalizeMoneyValue(tournament.prizePool);
+    const normalizedPrizesByRank = {
+      first: normalizeMoneyValue(tournament.prizesByRank?.first),
+      second: normalizeMoneyValue(tournament.prizesByRank?.second),
+      third: normalizeMoneyValue(tournament.prizesByRank?.third)
+    };
+
+    if (!normalizedTitle || !normalizedDescription || !normalizedGame || !normalizedGender || !normalizedModality || !normalizedDate || !normalizedTime || !normalizedServer) {
+      alert('Completa todos los campos obligatorios del torneo antes de continuar.');
+      return;
+    }
+
+    if (normalizedMaxSlots < 2) {
+      alert('El torneo debe tener al menos 2 cupos.');
+      return;
+    }
+
+    const distributedPrizeTotal = [normalizedPrizesByRank.first, normalizedPrizesByRank.second, normalizedPrizesByRank.third]
+      .reduce((acc, value) => acc + (Number(value) || 0), 0);
+    if (normalizedPrizePool !== '' && distributedPrizeTotal > Number(normalizedPrizePool)) {
+      alert('La suma de premios por ranking no puede superar el monto total del torneo.');
+      return;
+    }
+
+    const normalizedParticipantCapacity = normalizedMaxSlots * Math.max(1, parseTeamSizeFromModality(normalizedModality));
+    if (isRiotTournament && normalizedParticipantCapacity < RIOT_MIN_ACTIVE_PARTICIPANTS) {
       alert(`Torneos Riot requieren capacidad mínima para ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos. Ajusta modalidad o cupos.`);
       return;
     }
@@ -177,29 +300,33 @@ const CreateTournament = () => {
     const data = new FormData();
 
     // Campos básicos
-    data.append('title', tournament.title);
-    data.append('description', tournament.description);
-    data.append('game', tournament.game);
-    data.append('modality', tournament.modality);
-    data.append('date', tournament.date);
-    data.append('time', tournament.time);
-    data.append('prizePool', tournament.prizePool);
-    data.append('currency', tournament.currency);
-    data.append('entryFee', tournament.entryFee);
-    data.append('maxSlots', tournament.maxSlots);
-    data.append('format', tournament.format);
-    data.append('server', tournament.server);
-    data.append('platform', tournament.platform);
-    data.append('gender', tournament.gender);
+    data.append('title', normalizedTitle);
+    data.append('description', normalizedDescription);
+    data.append('game', normalizedGame);
+    data.append('modality', normalizedModality);
+    data.append('date', normalizedDate);
+    data.append('time', normalizedTime);
+    data.append('prizePool', normalizedPrizePool);
+    data.append('currency', normalizedCurrency);
+    data.append('entryFee', normalizedEntryFee);
+    data.append('maxSlots', String(normalizedMaxSlots));
+    data.append('format', normalizedFormat);
+    data.append('server', normalizedServer);
+    data.append('platform', normalizedPlatform);
+    data.append('gender', normalizedGender);
 
     // Objetos complejos (se envían como JSON string para parsear en el backend)
-    data.append('prizesByRank', JSON.stringify(tournament.prizesByRank));
+    data.append('prizesByRank', JSON.stringify(normalizedPrizesByRank));
     data.append('staff', JSON.stringify(tournament.staff));
 
     const sponsorsPayload = [];
     let logoIndex = 0;
     tournament.sponsors.forEach((s) => {
-        const payload = { name: s.name, link: s.link, tier: s.tier };
+        const payload = {
+          name: String(s.name || '').trim(),
+          link: String(s.link || '').trim(),
+          tier: String(s.tier || 'Partner').trim() || 'Partner'
+        };
         if (s.logoFile) {
             payload.logoIndex = logoIndex;
             data.append('sponsorLogos', s.logoFile);
@@ -352,11 +479,14 @@ const CreateTournament = () => {
     <div className="form-column">
       <div className="custom-input-box">
         <label>Plataforma</label>
-        <select value={tournament.platform} onChange={(e) => setTournament({...tournament, platform: e.target.value})}>
-          <option value="pc">PC</option>
-          <option value="mobile">Mobile</option>
-          <option value="console">Consola</option>
-          <option value="crossplay">Crossplay</option>
+        <select
+          required
+          value={tournament.platform}
+          onChange={(e) => setTournament({ ...tournament, platform: normalizePlatformValue(e.target.value) })}
+        >
+          {PLATFORM_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
         <p className="file-help-text"><FaServer /> Hardware requerido</p>
       </div>
@@ -364,12 +494,19 @@ const CreateTournament = () => {
     <div className="form-column">
       <div className="custom-input-box">
         <label>Región / Servidor</label>
-        <input 
-            type="text" 
-            placeholder="Ej: Latam Norte / NA / EUW" 
-            value={tournament.server}
-            onChange={(e) => setTournament({...tournament, server: e.target.value})}
-        />
+        <select
+          required
+          value={tournament.server}
+          onChange={(e) => setTournament({ ...tournament, server: e.target.value })}
+        >
+          <option value="">Seleccionar región</option>
+          {tournament.server && !REGION_OPTIONS.some((option) => option.value === tournament.server) && (
+            <option value={tournament.server}>{tournament.server}</option>
+          )}
+          {REGION_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
         <p className="file-help-text"><FaServer /> Ubicación del servidor</p>
       </div>
     </div>
@@ -380,6 +517,7 @@ const CreateTournament = () => {
       <div className="custom-input-box">
         <label>Descripción Breve</label>
         <textarea 
+            required
             placeholder="Resumen rápido del torneo..." 
             rows="5"
             value={tournament.description}
@@ -421,13 +559,28 @@ const CreateTournament = () => {
     <div className="form-column">
       <div className="custom-input-box">
         <label>Cupos Máximos</label>
-        <input 
-            type="number" 
-            placeholder="Ej: 32" 
-            required 
+        <select
+          required
+          value={maxSlotsSelection}
+          onChange={(e) => handleMaxSlotsSelectionChange(e.target.value)}
+        >
+          <option value="">Seleccionar cupos</option>
+          {BRACKET_SLOT_PRESETS.map((presetValue) => (
+            <option key={presetValue} value={presetValue}>{presetValue} equipos</option>
+          ))}
+          <option value="custom">Personalizado</option>
+        </select>
+        {maxSlotsSelection === 'custom' && (
+          <input
+            type="number"
+            placeholder="Escribe la cantidad"
+            min="2"
+            step="1"
+            required
             value={tournament.maxSlots}
-            onChange={(e) => setTournament({...tournament, maxSlots: e.target.value})}
-        />
+            onChange={(e) => handleCustomMaxSlotsChange(e.target.value)}
+          />
+        )}
         <p className="file-help-text"><FaUsers /> Capacidad total de equipos</p>
         {isRiotTournament && participantCapacity > 0 && participantCapacity < RIOT_MIN_ACTIVE_PARTICIPANTS && (
           <p className="file-help-text" style={{ color: '#f39c12' }}>
@@ -435,26 +588,25 @@ const CreateTournament = () => {
           </p>
         )}
       </div>
-      {/* COLUMNA DE GÉNERO */}
-    <div className="form-column">
-        <div className="custom-input-box">
-            <label>Categoría de Género</label>
-            <select 
-                required 
-                value={tournament.gender}
-                onChange={(e) => setTournament({...tournament, gender: e.target.value})}
-            >
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
-                <option value="Mixto">Mixto</option>
-            </select>
-            <p className="file-help-text"><FaUsers /> Restricción de participantes</p>
-        </div>
-    </div>
 
-      <div className="custom-input-box" style={{ marginTop: '20px' }}>
+      <div className="custom-input-box">
+        <label>Categoría de Género</label>
+        <select 
+          required 
+          value={tournament.gender}
+          onChange={(e) => setTournament({...tournament, gender: e.target.value})}
+        >
+          <option value="">Seleccionar</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Femenino">Femenino</option>
+          <option value="Mixto">Mixto</option>
+        </select>
+        <p className="file-help-text"><FaUsers /> Restricción de participantes</p>
+      </div>
+
+      <div className="custom-input-box">
         <label>Tamaño del Equipo</label>
-        <select value={tournament.modality} onChange={(e) => setTournament({...tournament, modality: e.target.value})}>
+        <select required value={tournament.modality} onChange={(e) => setTournament({...tournament, modality: e.target.value})}>
           <option value="">Seleccionar</option>
           <option value="1v1">1v1 (Solo)</option>
           <option value="2v2">2v2 (Duos)</option>
@@ -487,10 +639,10 @@ const CreateTournament = () => {
         )}
       </div>
 
-      <div className="custom-input-box" style={{ marginTop: '20px' }}>
+      <div className="custom-input-box">
         <label>Fecha y Hora de Inicio</label>
         <div style={{display: 'flex', gap: '10px'}}>
-             <input type="date" min={new Date().toISOString().split('T')[0]} value={tournament.date} onChange={(e) => setTournament({...tournament, date: e.target.value})} />
+             <input type="date" required min={new Date().toISOString().split('T')[0]} value={tournament.date} onChange={(e) => setTournament({...tournament, date: e.target.value})} />
             <input type="time" required value={tournament.time} onChange={(e) => setTournament({...tournament, time: e.target.value})} />
         </div>
       </div>
@@ -608,7 +760,12 @@ const CreateTournament = () => {
           min="0" 
           placeholder="Ej: 1000" 
           value={tournament.prizePool}
-          onChange={(e) => setTournament({...tournament, prizePool: e.target.value})}
+          onChange={(e) => {
+            const nextValue = e.target.value;
+            if (MONEY_INPUT_REGEX.test(nextValue)) {
+              setTournament({ ...tournament, prizePool: nextValue.replace(',', '.') });
+            }
+          }}
         />
       </div>
     </div>
@@ -635,10 +792,15 @@ const CreateTournament = () => {
         min="0"
         placeholder="Monto" 
         value={tournament.prizesByRank.first}
-        onChange={(e) => setTournament({
-            ...tournament, 
-            prizesByRank: {...tournament.prizesByRank, first: e.target.value}
-        })}
+        onChange={(e) => {
+          const nextValue = e.target.value;
+          if (MONEY_INPUT_REGEX.test(nextValue)) {
+            setTournament({
+              ...tournament, 
+              prizesByRank: { ...tournament.prizesByRank, first: nextValue.replace(',', '.') }
+            });
+          }
+        }}
       />
     </div>
     <div className="prize-item silver">
@@ -648,10 +810,15 @@ const CreateTournament = () => {
         min="0"
         placeholder="Monto" 
         value={tournament.prizesByRank.second}
-        onChange={(e) => setTournament({
-            ...tournament, 
-            prizesByRank: {...tournament.prizesByRank, second: e.target.value}
-        })}
+        onChange={(e) => {
+          const nextValue = e.target.value;
+          if (MONEY_INPUT_REGEX.test(nextValue)) {
+            setTournament({
+              ...tournament, 
+              prizesByRank: { ...tournament.prizesByRank, second: nextValue.replace(',', '.') }
+            });
+          }
+        }}
       />
     </div>
     <div className="prize-item bronze">
@@ -661,10 +828,15 @@ const CreateTournament = () => {
         min="0"
         placeholder="Monto" 
         value={tournament.prizesByRank.third}
-        onChange={(e) => setTournament({
-            ...tournament, 
-            prizesByRank: {...tournament.prizesByRank, third: e.target.value}
-        })}
+        onChange={(e) => {
+          const nextValue = e.target.value;
+          if (MONEY_INPUT_REGEX.test(nextValue)) {
+            setTournament({
+              ...tournament, 
+              prizesByRank: { ...tournament.prizesByRank, third: nextValue.replace(',', '.') }
+            });
+          }
+        }}
       />
     </div>
   </div>  
