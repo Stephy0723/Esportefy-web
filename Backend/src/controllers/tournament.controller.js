@@ -44,6 +44,7 @@ const parsePositiveIntEnv = (value, fallback) => {
 const MLBB_BETA_MODE = parseBooleanEnv(process.env.MLBB_BETA_MODE, true);
 const MLBB_MIN_APPROVED_TEAMS = parsePositiveIntEnv(process.env.MLBB_MIN_APPROVED_TEAMS, 2);
 const MLBB_REQUIRE_LINKED_STARTERS = parseBooleanEnv(process.env.MLBB_REQUIRE_LINKED_STARTERS, true);
+const MLBB_REQUIRE_LINKED_PLAYERS = parseBooleanEnv(process.env.MLBB_REQUIRE_LINKED_PLAYERS, true);
 const MLBB_ALLOWED_FORMATS = new Set([
     'single_elimination',
     'double_elimination',
@@ -91,6 +92,14 @@ const normalizeTournamentFormat = (value = '') => {
 };
 
 const normalizeEntryFee = (value = '') => normalizeText(value).trim();
+const normalizeTournamentSearchQuery = (value = '') =>
+    String(value || '')
+        .trim()
+        .replace(/^#/, '')
+        .replace(/^(TOR-)\s*/i, '')
+        .replace(/^(TOR-)\s*/i, '')
+        .replace(/^TOR[-_\s]*/i, '')
+        .trim();
 
 const findBannedMlbbTerm = (text = '') => {
     const normalized = normalizeText(text);
@@ -106,11 +115,22 @@ const normalizeMlbbIdentity = (value = '') => String(value || '').trim();
 
 const isValidMlbbId = (value = '') => /^\d{5,15}$/.test(normalizeMlbbIdentity(value));
 const isValidMlbbZone = (value = '') => /^\d{3,6}$/.test(normalizeMlbbIdentity(value));
+const isFilledRosterEntry = (player) => Boolean(
+    player && (player.user || player.nickname || player.gameId || player.region || player.role)
+);
 
 const getMlbbStarters = (registration) =>
     Array.isArray(registration?.roster?.starters)
-        ? registration.roster.starters.filter(Boolean)
+        ? registration.roster.starters.filter(isFilledRosterEntry)
         : [];
+const getMlbbSubs = (registration) =>
+    Array.isArray(registration?.roster?.subs)
+        ? registration.roster.subs.filter(isFilledRosterEntry)
+        : [];
+const getMlbbRosterPlayers = (registration) => [
+    ...getMlbbStarters(registration),
+    ...getMlbbSubs(registration)
+];
 
 const getApprovedRegistrations = (tournament) =>
     (Array.isArray(tournament?.registrations) ? tournament.registrations : [])
@@ -121,11 +141,18 @@ const validateMlbbRegistrationRoster = (registration) => {
     if (!starters.length) {
         return { ok: false, message: `El equipo ${registration?.teamName || 'sin nombre'} no tiene titulares definidos.` };
     }
-    const invalid = starters.find((p) => !isValidMlbbId(p?.gameId) || !isValidMlbbZone(p?.region));
-    if (invalid) {
+    const invalidStarter = starters.find((p) => !isValidMlbbId(p?.gameId) || !isValidMlbbZone(p?.region));
+    if (invalidStarter) {
         return {
             ok: false,
             message: `El equipo ${registration?.teamName || 'sin nombre'} tiene titulares sin User ID + Zone ID válidos.`
+        };
+    }
+    const invalidSub = getMlbbSubs(registration).find((p) => !isValidMlbbId(p?.gameId) || !isValidMlbbZone(p?.region));
+    if (invalidSub) {
+        return {
+            ok: false,
+            message: `El equipo ${registration?.teamName || 'sin nombre'} tiene suplentes sin User ID + Zone ID válidos.`
         };
     }
     return { ok: true };
@@ -136,8 +163,8 @@ const findDuplicateMlbbIdentity = (registrations = []) => {
     for (const reg of registrations) {
         const teamName = reg?.teamName || 'Equipo';
         const regId = String(reg?._id || '');
-        const starters = getMlbbStarters(reg);
-        for (const p of starters) {
+        const players = getMlbbRosterPlayers(reg);
+        for (const p of players) {
             const key = `${normalizeMlbbIdentity(p?.gameId)}::${normalizeMlbbIdentity(p?.region)}`;
             if (!isValidMlbbId(p?.gameId) || !isValidMlbbZone(p?.region)) continue;
             if (seen.has(key) && seen.get(key).regId !== regId) {
@@ -156,8 +183,8 @@ const findDuplicateMlbbIdentity = (registrations = []) => {
 const buildMlbbUserIdentityMap = async (registrations = []) => {
     const userIds = new Set();
     for (const reg of registrations) {
-        const starters = getMlbbStarters(reg);
-        for (const p of starters) {
+        const players = getMlbbRosterPlayers(reg);
+        for (const p of players) {
             if (p?.user) userIds.add(String(p.user));
         }
     }
@@ -188,29 +215,30 @@ const getMlbbIdentityBindingIssues = (
     identityMap = new Map(),
     options = {}
 ) => {
-    const strictLinkedStarters = options.strictLinkedStarters !== undefined
-        ? options.strictLinkedStarters === true
-        : MLBB_REQUIRE_LINKED_STARTERS;
+    const strictLinkedPlayers = options.strictLinkedPlayers !== undefined
+        ? options.strictLinkedPlayers === true
+        : MLBB_REQUIRE_LINKED_PLAYERS;
     const issues = [];
     for (const reg of registrations) {
         const teamName = reg?.teamName || 'Equipo';
-        const starters = getMlbbStarters(reg);
-        for (const p of starters) {
+        const players = getMlbbRosterPlayers(reg);
+        for (const p of players) {
+            const slotLabel = getMlbbStarters(reg).includes(p) ? 'titular' : 'suplente';
             if (!p?.user) {
-                if (strictLinkedStarters) {
-                    issues.push(`El titular "${p?.nickname || 'N/A'}" de "${teamName}" no está vinculado a un usuario de Esportefy.`);
+                if (strictLinkedPlayers) {
+                    issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no está vinculado a un usuario de Esportefy.`);
                 }
                 continue;
             }
             const linked = identityMap.get(String(p.user));
             if (!linked || linked.status !== 'verified') {
-                issues.push(`El titular "${p?.nickname || 'N/A'}" de "${teamName}" no tiene cuenta MLBB verificada.`);
+                issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no tiene cuenta MLBB verificada.`);
                 continue;
             }
             const pid = normalizeMlbbIdentity(p?.gameId);
             const zid = normalizeMlbbIdentity(p?.region);
             if (pid !== linked.playerId || zid !== linked.zoneId) {
-                issues.push(`El titular "${p?.nickname || 'N/A'}" de "${teamName}" no coincide con su cuenta MLBB vinculada.`);
+                issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no coincide con su cuenta MLBB vinculada.`);
             }
         }
     }
@@ -848,6 +876,7 @@ export const getManageableTournaments = async (req, res) => {
 export const searchPublicTournaments = async (req, res) => {
     try {
         const q = String(req.query?.q || '').trim();
+        const normalizedQ = normalizeTournamentSearchQuery(q);
         const baseQuery = {
             status: { $ne: 'draft' },
             'publicSettings.visibility': { $in: ['public', null] }
@@ -856,6 +885,7 @@ export const searchPublicTournaments = async (req, res) => {
         if (q) {
             baseQuery.$or = [
                 { tournamentId: { $regex: q, $options: 'i' } },
+                ...(normalizedQ && normalizedQ !== q ? [{ tournamentId: { $regex: normalizedQ, $options: 'i' } }] : []),
                 { title: { $regex: q, $options: 'i' } }
             ];
         }
@@ -1093,7 +1123,9 @@ export const registerTeam = async (req, res) => {
             if (String(team.game) !== String(tournament.game)) {
                 return res.status(400).json({ message: 'El juego del equipo no coincide con el torneo' });
             }
-            const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+            const starters = Array.isArray(team.roster?.starters)
+                ? team.roster.starters.filter(isFilledRosterEntry)
+                : [];
             const expected = team.maxMembers || starters.length;
             const complete = expected > 0
                 && starters.length >= expected
@@ -1151,6 +1183,9 @@ export const registerTeam = async (req, res) => {
                 }
             }
             if (requiresMlbb) {
+                const mlbbRosterPlayers = starters
+                    .slice(0, expected)
+                    .concat(Array.isArray(team.roster?.subs) ? team.roster.subs.filter(isFilledRosterEntry) : []);
                 if (MLBB_REQUIRE_LINKED_STARTERS) {
                     const missingLinkedStarter = starters.slice(0, expected).find((p) => !p?.user);
                     if (missingLinkedStarter) {
@@ -1159,7 +1194,15 @@ export const registerTeam = async (req, res) => {
                         });
                     }
                 }
-                const missing = starters.slice(0, expected).find(p => {
+                if (MLBB_REQUIRE_LINKED_PLAYERS) {
+                    const missingLinkedPlayer = mlbbRosterPlayers.find((p) => !p?.user);
+                    if (missingLinkedPlayer) {
+                        return res.status(400).json({
+                            message: 'En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de Esportefy.'
+                        });
+                    }
+                }
+                const missing = mlbbRosterPlayers.find(p => {
                     if (p?.user) {
                         const linked = mlbbMap.get(String(p.user));
                         return !linked || linked.status !== 'verified';
@@ -1167,9 +1210,9 @@ export const registerTeam = async (req, res) => {
                     return !p?.gameId || !p?.region;
                 });
                 if (missing) {
-                    return res.status(400).json({ message: 'Todos los titulares deben tener cuenta MLBB verificada (o User ID + Zone ID completos)' });
+                    return res.status(400).json({ message: 'Todos los jugadores del roster MLBB deben tener cuenta verificada y User ID + Zone ID válidos.' });
                 }
-                const mismatch = starters.slice(0, expected).find((p) => {
+                const mismatch = mlbbRosterPlayers.find((p) => {
                     if (!p?.user) return false;
                     const linked = mlbbMap.get(String(p.user));
                     if (!linked || linked.status !== 'verified') return false;
@@ -1177,7 +1220,7 @@ export const registerTeam = async (req, res) => {
                         || normalizeMlbbIdentity(p?.region) !== linked.zoneId;
                 });
                 if (mismatch) {
-                    return res.status(400).json({ message: 'Hay titulares cuyo User ID + Zone ID no coincide con su cuenta MLBB vinculada.' });
+                    return res.status(400).json({ message: 'Hay jugadores del roster cuyo User ID + Zone ID no coincide con su cuenta MLBB vinculada.' });
                 }
             }
 
@@ -1208,7 +1251,7 @@ export const registerTeam = async (req, res) => {
                         role: p?.role || '',
                         riotId: p?.user ? (riotMap.get(String(p.user)) || '') : ''
                     })),
-                    subs: Array.isArray(team.roster?.subs) ? team.roster.subs.map(p => ({
+                    subs: Array.isArray(team.roster?.subs) ? team.roster.subs.filter(isFilledRosterEntry).map(p => ({
                         user: p?.user || null,
                         nickname: p?.nickname || '',
                         gameId: p?.gameId || '',
@@ -1247,6 +1290,27 @@ export const registerTeam = async (req, res) => {
                 },
                 status: 'approved'
             };
+        }
+
+        if (requiresMlbb) {
+            const rosterCheck = validateMlbbRegistrationRoster(registrationPayload);
+            if (!rosterCheck.ok) {
+                return res.status(400).json({ message: rosterCheck.message });
+            }
+
+            const candidateApproved = [
+                ...getApprovedRegistrations(tournament),
+                { ...registrationPayload, status: 'approved' }
+            ];
+            const duplicateCheck = findDuplicateMlbbIdentity(candidateApproved);
+            if (duplicateCheck.found) {
+                return res.status(400).json({ message: duplicateCheck.message });
+            }
+            const identityMap = await buildMlbbUserIdentityMap(candidateApproved);
+            const bindingIssues = getMlbbIdentityBindingIssues(candidateApproved, identityMap);
+            if (bindingIssues.length) {
+                return res.status(400).json({ message: bindingIssues[0] });
+            }
         }
 
         tournament.registrations = tournament.registrations || [];
@@ -1499,9 +1563,11 @@ export const getTournamentCompliance = async (req, res) => {
             const bindingIssues = getMlbbIdentityBindingIssues(approved, identityMap);
             checks.push({
                 id: 'identityBinding',
-                label: MLBB_REQUIRE_LINKED_STARTERS
-                    ? 'Titulares vinculados + User ID/Zone coinciden con cuenta MLBB'
-                    : 'User ID + Zone ID coincide con cuenta vinculada',
+                label: MLBB_REQUIRE_LINKED_PLAYERS
+                    ? 'Jugadores del roster vinculados + User ID/Zone coinciden con cuenta MLBB'
+                    : MLBB_REQUIRE_LINKED_STARTERS
+                        ? 'Titulares vinculados + User ID/Zone coinciden con cuenta MLBB'
+                        : 'User ID + Zone ID coincide con cuenta vinculada',
                 ok: bindingIssues.length === 0,
                 detail: bindingIssues.length ? bindingIssues.join(' | ') : 'Sin inconsistencias de identidad'
             });
@@ -1521,7 +1587,8 @@ export const getTournamentCompliance = async (req, res) => {
             mode: {
                 mlbbBetaMode: MLBB_BETA_MODE,
                 minApprovedTeams: MLBB_MIN_APPROVED_TEAMS,
-                requireLinkedStarters: MLBB_REQUIRE_LINKED_STARTERS
+                requireLinkedStarters: MLBB_REQUIRE_LINKED_STARTERS,
+                requireLinkedPlayers: MLBB_REQUIRE_LINKED_PLAYERS
             },
             checks
         });

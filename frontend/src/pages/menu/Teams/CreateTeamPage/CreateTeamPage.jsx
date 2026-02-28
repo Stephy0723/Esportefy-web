@@ -6,10 +6,11 @@ import {
     FaCamera, FaUser, FaUserAstronaut, FaCheckCircle, FaPlus, FaWhatsapp, 
     FaArrowLeft, FaIdCard, FaGlobe, FaTrophy, FaVenusMars, FaLanguage, 
     FaMapMarkerAlt, FaCheck, FaCopy, FaSearch, FaDiscord, FaTwitter, 
-    FaFacebook, FaPaperPlane, FaGamepad, FaUpload 
+    FaFacebook, FaPaperPlane, FaGamepad, FaUpload, FaLock
 } from 'react-icons/fa';
 import { withCsrfHeaders } from '../../../../utils/csrf';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
 import './CreateTeamPage.css';
 
@@ -113,9 +114,10 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase();
 const CreateTeamPage = () => {
     const navigate = useNavigate();
     const { addToast } = useNotification();
+    const { user: authUser } = useAuth();
     
     // --- ESTADOS Y DATOS ---
-    const currentUser = useMemo(() => {
+    const storedUser = useMemo(() => {
         const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
         if (!userString) return { name: "Usuario" };
         try {
@@ -124,6 +126,7 @@ const CreateTeamPage = () => {
             return { name: "Usuario" };
         }
     }, []);
+    const currentUser = authUser || storedUser;
 
     const riotVerified = Boolean(currentUser?.connections?.riot?.verified);
     const riotGameName = String(currentUser?.connections?.riot?.gameName || '');
@@ -341,6 +344,20 @@ const CreateTeamPage = () => {
         if (isMlbbGameSelected) return 'Este juego requiere cuenta MLBB verificada en Conexiones.';
         return '';
     }, [requiresLinkedAccount, isRiotGame, isMlbbGameSelected]);
+    const mlbbManualRosterSlots = useMemo(() => {
+        if (!isMlbbGameSelected) return [];
+        const captainUserId = String(currentUser?._id || currentUser?.id || '');
+        const players = []
+            .concat(Array.isArray(roster.starters) ? roster.starters : [])
+            .concat(Array.isArray(roster.subs) ? roster.subs : []);
+
+        return players.filter((slot) => {
+            if (!slot) return false;
+            const filled = Boolean(slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role);
+            if (!filled) return false;
+            return String(slot.user || '') !== captainUserId;
+        });
+    }, [isMlbbGameSelected, roster, currentUser]);
 
     useEffect(() => {
         if (formData.teamCountry && !COUNTRY_OPTIONS.includes(formData.teamCountry)) {
@@ -503,6 +520,10 @@ const CreateTeamPage = () => {
         addToast(requiredLinkMessage || 'Debes vincular la cuenta del juego en Conexiones', 'error');
         return;
     }
+    if (isMlbbGameSelected && mlbbManualRosterSlots.length > 0) {
+        addToast('En equipos MLBB solo el capitán se define al crear. Los demás jugadores deben unirse con su cuenta sincronizada.', 'error');
+        return;
+    }
     setSubmitting(true);
     
     try {
@@ -576,6 +597,8 @@ const CreateTeamPage = () => {
         const roles = ROLE_NAMES[formData.game];
         return roles ? roles[index] : `Player ${index + 1}`;
     };
+
+    const isMlbbRosterSlotLocked = (type) => isMlbbGameSelected && type !== 'coach';
 
     // --- RENDERIZADO ---
     return (
@@ -904,14 +927,30 @@ const CreateTeamPage = () => {
                             <h3>Alineación ({formData.teamLevel})</h3>
                             <span className="game-badge">{formData.game}</span>
                         </div>
+                        {isMlbbGameSelected && (
+                            <div className="section-card" style={{ marginBottom: '16px' }}>
+                                <small style={{ color: 'var(--theme-color)', display: 'block' }}>
+                                    Para MLBB el roster debe construirse con usuarios reales sincronizados.
+                                    Crea el equipo con el capitán y luego comparte el código para que cada jugador se una con su cuenta.
+                                </small>
+                                <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
+                                    En este paso no se agregan jugadores manualmente. Si necesitas cambiar el rol del capitán, vuelve al paso anterior.
+                                </small>
+                            </div>
+                        )}
 
                         {/* Titulares */}
                         <div className="roles-section">
                             <label className="section-label">Titulares</label>
                             <div className="circles-grid">
                                 {roster.starters.map((slot, idx) => (
-                                    <div key={idx} className="role-item" onClick={() => handleSlotClick('starters', idx)}>
-                                        <div className={`role-circle ${slot ? 'filled' : 'empty'}`}>
+                                    <div
+                                        key={idx}
+                                        className={`role-item ${isMlbbRosterSlotLocked('starters') ? 'disabled' : ''}`}
+                                        onClick={isMlbbRosterSlotLocked('starters') ? undefined : () => handleSlotClick('starters', idx)}
+                                        role={isMlbbRosterSlotLocked('starters') ? 'presentation' : 'button'}
+                                    >
+                                        <div className={`role-circle ${slot ? 'filled' : 'empty'} ${isMlbbRosterSlotLocked('starters') ? 'locked' : ''}`}>
                                             {/* AQUÍ SE MUESTRA LA FOTO SI EXISTE */}
                                             {slot ? (
                                                 slot.photo ? (
@@ -920,12 +959,17 @@ const CreateTeamPage = () => {
                                                     <span className="initials">{slot.nickname.substring(0,2).toUpperCase()}</span>
                                                 )
                                             ) : (
-                                                <FaUser className="user-icon" />
+                                                isMlbbRosterSlotLocked('starters') ? <FaLock className="user-icon" /> : <FaUser className="user-icon" />
                                             )}
                                         </div>
                                         <span className="role-label-text">
                                             {slot ? slot.nickname : getRoleLabel(idx)}
                                         </span>
+                                        {isMlbbGameSelected && (
+                                            <span className="role-slot-hint">
+                                                {slot ? 'Capitán sincronizado' : 'Entra por código'}
+                                            </span>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -937,8 +981,13 @@ const CreateTeamPage = () => {
                                 <label className="section-label">Suplentes</label>
                                 <div className="circles-grid">
                                     {roster.subs.map((slot, idx) => (
-                                        <div key={idx} className="role-item" onClick={() => handleSlotClick('subs', idx)}>
-                                            <div className={`role-circle small ${slot ? 'filled' : 'empty'}`}>
+                                        <div
+                                            key={idx}
+                                            className={`role-item ${isMlbbRosterSlotLocked('subs') ? 'disabled' : ''}`}
+                                            onClick={isMlbbRosterSlotLocked('subs') ? undefined : () => handleSlotClick('subs', idx)}
+                                            role={isMlbbRosterSlotLocked('subs') ? 'presentation' : 'button'}
+                                        >
+                                            <div className={`role-circle small ${slot ? 'filled' : 'empty'} ${isMlbbRosterSlotLocked('subs') ? 'locked' : ''}`}>
                                                 {slot ? (
                                                     slot.photo ? (
                                                         <img src={slot.photo} alt="Sub" style={{width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover'}} />
@@ -946,10 +995,13 @@ const CreateTeamPage = () => {
                                                         <span className="initials">{slot.nickname.substring(0,2)}</span>
                                                     )
                                                 ) : (
-                                                    <FaPlus />
+                                                    isMlbbRosterSlotLocked('subs') ? <FaLock /> : <FaPlus />
                                                 )}
                                             </div>
                                             <span className="role-label-text">Suplente {idx+1}</span>
+                                            {isMlbbGameSelected && (
+                                                <span className="role-slot-hint">Se une después</span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -978,7 +1030,7 @@ const CreateTeamPage = () => {
                         <div className="form-footer-sticky">
                             <button className="btn-ghost" onClick={() => setStep(1)}><FaArrowLeft /> Datos</button>
                             <button className="btn-primary-glow" onClick={finalizeCreation} disabled={submitting}>
-                                {submitting ? "Registrando..." : "Confirmar Equipo"}
+                                {submitting ? "Registrando..." : isMlbbGameSelected ? "Crear Equipo y Generar Código" : "Confirmar Equipo"}
                             </button>
                         </div>
                     </div>
@@ -996,6 +1048,18 @@ const CreateTeamPage = () => {
                                 <p className="subtitle-glow">Tu escuadra está lista para competir.</p>
                             </div>
                         </div>
+
+                        {isMlbbGameSelected && (
+                            <div className="section-card mlbb-share-brief">
+                                <h3>Flujo MLBB</h3>
+                                <div className="mlbb-share-steps">
+                                    <span>1. Comparte el código o link del equipo.</span>
+                                    <span>2. Cada jugador debe vincular y verificar su cuenta MLBB en Conexiones.</span>
+                                    <span>3. Cada jugador entra con su propia cuenta sincronizada.</span>
+                                    <span>4. El sistema valida torneos y actividad usando ese User ID + Zone ID.</span>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="recruit-grid">
                             {/* COLUMNA IZQUIERDA */}

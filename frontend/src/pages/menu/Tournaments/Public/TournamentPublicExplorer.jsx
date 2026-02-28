@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { formatTournamentPublicId } from '../../../../utils/publicIds';
 import './TournamentPublic.css';
 
 const TournamentPublicExplorer = () => {
@@ -61,7 +62,7 @@ const TournamentPublicExplorer = () => {
           {items.map((t) => (
             <article key={t.tournamentId} className="tpe-card">
               <div>
-                <p className="tpv-chip tpe-id">#{t.tournamentId}</p>
+                <p className="tpv-chip tpe-id">{formatTournamentPublicId(t)}</p>
                 <h3>{t.title}</h3>
                 <p>{t.game} · {t.status}</p>
               </div>

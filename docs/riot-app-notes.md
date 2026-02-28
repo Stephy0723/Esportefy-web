@@ -85,6 +85,7 @@ If needed, we can provide:
 
 ### Product/Legal
 - Public HTTPS URL works and is reachable by Riot reviewers.
+- Site verification file can be published quickly if Riot requests `riot.txt`.
 - Non-affiliation text visible in legal/settings pages.
 - No official Riot logo usage (replace any asset that could be interpreted as official branding).
 
@@ -98,4 +99,5 @@ If needed, we can provide:
 ### Documentation to include
 - `docs/riot-compliance-checklist.md`
 - This file (`docs/riot-app-notes.md`)
+- `docs/riot-manual-review-checklist.md`
 - Optional: 2-5 min screen recording showing core Riot-safe flows.

@@ -140,6 +140,26 @@ const Footer = () => {
           </div>
         </div>
 
+        <div className="border-t border-[var(--border-color)] pt-6 pb-2">
+          <div className="flex flex-col gap-2">
+            <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-5xl">
+              Esportefy no esta respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games
+              ni de personas oficialmente involucradas en la produccion o gestion de propiedades de Riot Games.
+              Riot Games y todas sus propiedades asociadas son marcas o marcas registradas de Riot Games, Inc.
+            </p>
+            <p className="text-[var(--text-muted)] text-xs">
+              Consulta los detalles legales en{' '}
+              <Link to="/legal/terms" className="text-[var(--primary)] hover:underline">
+                Terminos y Condiciones
+              </Link>
+              {' '}y{' '}
+              <Link to="/legal/privacy" className="text-[var(--primary)] hover:underline">
+                Politica de Privacidad
+              </Link>.
+            </p>
+          </div>
+        </div>
+
         {/* Divider */}
         <div className="border-t border-[var(--border-color)] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[var(--text-muted)] text-xs">

@@ -11,6 +11,7 @@ import PlayerTag from '../PlayerTag/PlayerTag';
 import { FRAMES } from '../../data/profileOptions';
 import { STATUS_LIST } from '../../data/defaultAvatars';
 import { GAME_IMAGES } from '../../data/gameImages';
+import { resolveMediaUrl } from '../../utils/media';
 import './UserCard.css';
 
 /**
@@ -123,7 +124,7 @@ const UserCard = ({ userId, children }) => {
                             <div className="uc__header">
                                 <div className="uc__header-glow" />
                                 <AvatarCircle
-                                    src={data.avatar || `https://ui-avatars.com/api/?name=${data.username}`}
+                                    src={resolveMediaUrl(data.avatar) || `https://ui-avatars.com/api/?name=${data.username}`}
                                     frameConfig={userFrame}
                                     size="80px"
                                     status={data.status}

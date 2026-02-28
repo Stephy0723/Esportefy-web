@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../../utils/publicIds';
 import './TournamentAdmin.css';
 
 const TournamentAdminHub = () => {
@@ -31,6 +32,7 @@ const TournamentAdminHub = () => {
     return items.filter((t) =>
       String(t.title || '').toLowerCase().includes(q) ||
       String(t.tournamentId || '').toLowerCase().includes(q) ||
+      matchesTournamentPublicId(t, q) ||
       String(t.game || '').toLowerCase().includes(q)
     );
   }, [items, query]);
@@ -45,7 +47,7 @@ const TournamentAdminHub = () => {
       <div className="ta-toolbar">
         <input
           type="search"
-          placeholder="Buscar por ID, nombre o juego"
+          placeholder="Buscar por TOR-ID, nombre o juego"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -61,7 +63,7 @@ const TournamentAdminHub = () => {
           {filtered.map((t) => (
             <article key={t._id || t.tournamentId} className="ta-card">
               <div>
-                <span className="ta-id">#{t.tournamentId}</span>
+                <span className="ta-id">{formatTournamentPublicId(t)}</span>
                 <h3>{t.title}</h3>
                 <p>{t.game} · {t.status}</p>
               </div>

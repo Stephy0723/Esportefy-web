@@ -206,6 +206,7 @@ const CreateTournament = () => {
   useEffect(() => {
     if (!isEditMode) return;
     const toDate = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
+    const editMaxSlots = String(editTournament.maxSlots ?? editTournament.slots ?? '').trim();
     setTournament((prev) => ({
       ...prev,
       title: editTournament.title || '',

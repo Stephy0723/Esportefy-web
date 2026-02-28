@@ -94,6 +94,15 @@ export default function Settings() {
     const navigate = useNavigate();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+    const syncCachedUser = (userData) => {
+        if (!userData) return;
+        localStorage.setItem('esportefyUser', JSON.stringify(userData));
+        if (sessionStorage.getItem('esportefyUser')) {
+            sessionStorage.setItem('esportefyUser', JSON.stringify(userData));
+        }
+        window.dispatchEvent(new Event('user-update'));
+    };
+
     const fetchSettings = async () => {
         try {
             const res = await axios.get(
@@ -109,6 +118,7 @@ export default function Settings() {
             setPrivacy(res.data.privacy);
             setGameProfiles(res.data.gameProfiles || {});
             setIsAdmin(res.data?.isAdmin === true);
+            syncCachedUser(res.data);
             setLoading(false);
         } catch (error) {
             console.error("Error cargando settings", error.response?.data || error.message);
@@ -559,8 +569,8 @@ export default function Settings() {
                                     {connections?.riot?.verified ? 'Conectado' : 'No conectado'}
                                 </div>
 
-                                <div className="int-icon riot">
-                                    <img src="/riot-icon.svg" alt="Cuenta Riot" />
+                                <div className="int-icon riot" aria-hidden="true">
+                                    <i className="bx bx-shield-quarter riot-generic-icon"></i>
                                 </div>
 
                                 <div className="int-details">
@@ -571,10 +581,10 @@ export default function Settings() {
                                         </small>
                                     )}
                                     <small className="riot-msg">
-                                        Esportefy no está afiliado, asociado ni respaldado por Riot Games.
+                                        Esportefy no está respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games.
                                     </small>
                                     <small className="riot-msg">
-                                        Riot Games, VALORANT y League of Legends son marcas de sus respectivos propietarios.
+                                        Riot Games y sus propiedades asociadas son marcas o marcas registradas de Riot Games, Inc.
                                     </small>
 
                                     {connections?.riot?.verified ? (

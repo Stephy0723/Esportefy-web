@@ -7,9 +7,9 @@ Esta lista cubre lo mínimo para operar torneos de Mobile Legends en beta sin de
 Backend (`Backend/.env`):
 
 - `MLBB_VERIFICATION_MODE=manual` para revisión humana, o `auto` para alto volumen.
-- `MLBB_REVIEW_EMAIL=tu-correo@dominio.com` para solicitudes pendientes.
+- `MLBB_REVIEW_EMAIL=tu-correo@dominio.com` para solicitudes pendientes si usas `manual`.
 - `MLBB_LINK_COOLDOWN_SECONDS=90` para evitar spam de solicitudes repetidas.
-- `MLBB_EMAIL_QUEUE_ENABLED=true` para activar cola de correos MLBB.
+- `MLBB_EMAIL_QUEUE_ENABLED=true` para activar cola de correos MLBB si usas `manual`.
 - `MLBB_EMAIL_QUEUE_POLL_MS=5000` para frecuencia del worker.
 - `MLBB_EMAIL_QUEUE_BATCH_SIZE=20` para procesar lotes por ciclo.
 - `MLBB_EMAIL_QUEUE_MAX_ATTEMPTS=5` para reintentos de entrega.
@@ -25,8 +25,9 @@ Frontend (`frontend/.env`):
 
 - Registro de cuenta MLBB por `User ID + Zone ID`.
 - Duplicados bloqueados entre usuarios (`pending/verified`).
-- Revisión admin para aprobar/rechazar solicitudes (si `manual`).
-- Cola persistente para envío de correos de revisión MLBB (retry con backoff).
+- Revisión admin para aprobar/rechazar solicitudes si `manual`.
+- Vinculación inmediata con estado `verified` si `auto`.
+- Cola persistente para envío de correos de revisión MLBB solo si `manual`.
 - Bitácora de auditoría admin para revisiones MLBB y cambios críticos de torneo.
 - En equipos MLBB, si un jugador está vinculado por usuario, su `User ID + Zone ID`
   debe coincidir con su cuenta MLBB verificada.
@@ -44,7 +45,7 @@ Frontend (`frontend/.env`):
 ## 3) Flujo operativo recomendado
 
 1. Jugador conecta MLBB en `Ajustes > Conexiones`.
-2. Admin revisa en `Ajustes > Revisión MLBB`.
+2. Si `manual`, admin revisa en `Ajustes > Revisión MLBB`.
 3. Capitán crea equipo MLBB con IDs válidos.
 4. Equipo se registra en torneo MLBB.
 5. Admin valida cumplimiento desde:

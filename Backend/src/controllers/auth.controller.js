@@ -438,7 +438,7 @@ export const updateProfile = async (req, res) => {
 
         // 1. Manejo de la imagen (Multer)
         if (req.file) {
-            updateData.avatar = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+            updateData.avatar = `/uploads/avatars/${req.file.filename}`;
         }
 
         // 2. Limpieza de Arrays de Texto (Juegos, Metas, etc.)

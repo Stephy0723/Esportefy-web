@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { logger } from './middlewares/logger.js';
 import { verifyCsrf } from './middlewares/csrf.middleware.js';
@@ -18,6 +20,9 @@ connectDB();
 startMlbbMailQueueWorker();
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, '../uploads');
 const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000', frontendOrigin];
@@ -69,7 +74,8 @@ try {
         frameAncestors: ["'none'"]
       }
     },
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
   });
 } catch (_) {
   console.warn('helmet no está instalado. Usando headers de seguridad manuales.');
@@ -80,7 +86,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(securityMiddleware);
 app.use(logger);
 app.use(verifyCsrf);
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);

@@ -8,6 +8,7 @@ import defaultBanner from '../../../assets/images/login-black.png';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
+import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -249,7 +250,7 @@ const Dashboard = () => {
                     <div className="db__profile-row">
                         <div className="db__avatar-area">
                             <AvatarCircle
-                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${user.username}`}
                                 frameConfig={currentFrame}
                                 size="110px"
                                 status={user.status}
@@ -404,7 +405,13 @@ const Dashboard = () => {
                                 <div key={team._id} className="db__team-row" onClick={() => navigate('/teams')}>
                                     <div className="db__team-logo">
                                         {team.logo
-                                            ? <img src={team.logo} alt={team.name} />
+                                            ? (
+                                                <img
+                                                    src={resolveMediaUrl(team.logo)}
+                                                    alt={team.name}
+                                                    onError={(e) => applyImageFallback(e, getTeamFallback(team.name))}
+                                                />
+                                            )
                                             : <div className="db__team-logo--ph"><i className="bx bx-group"></i></div>
                                         }
                                     </div>
@@ -458,7 +465,13 @@ const Dashboard = () => {
                                 <div key={t._id || t.tournamentId} className="db__tourney-row" onClick={() => navigate(`/tournaments/${t.tournamentId}`)}>
                                     <div className="db__tourney-icon">
                                         {t.bannerImage
-                                            ? <img src={`${API_URL}/${t.bannerImage}`} alt="" />
+                                            ? (
+                                                <img
+                                                    src={resolveMediaUrl(t.bannerImage)}
+                                                    alt=""
+                                                    onError={(e) => applyImageFallback(e, defaultBanner)}
+                                                />
+                                            )
                                             : <i className="bx bx-trophy"></i>
                                         }
                                     </div>
@@ -535,13 +548,13 @@ const Dashboard = () => {
                     <div className="db__nav-grid">
                         {[
                             { icon: 'bx bxs-user-detail', label: 'Perfil',      path: '/profile',     color: '#8EDB15' },
-                            { icon: 'bx bxs-group',       label: 'Equipos',     path: '/teams',       color: '#00d2ff' },
+                            { icon: 'bx bxs-group',       label: 'Equipos',     path: '/equipos',     color: '#00d2ff' },
                             { icon: 'bx bxs-trophy',      label: 'Torneos',     path: '/tournaments', color: '#ffd700' },
                             { icon: 'bx bxs-graduation',  label: 'Universidad', path: '/university',  color: '#ff6b6b' },
                             { icon: 'bx bxs-cog',         label: 'Ajustes',     path: '/settings',    color: '#a78bfa' },
-                            { icon: 'bx bxs-store',       label: 'Tienda',      path: '/marketplace', color: '#f97316' },
+                            { icon: 'bx bxs-store',       label: 'Tienda',      path: '/support',     color: '#f97316' },
                         ].map(item => (
-                            <button key={item.path} className="db__nav-btn" onClick={() => navigate(item.path)} style={{ '--nav-c': item.color }}>
+                            <button type="button" key={item.label} className="db__nav-btn" onClick={() => navigate(item.path)} style={{ '--nav-c': item.color }}>
                                 <i className={item.icon}></i>
                                 <span>{item.label}</span>
                             </button>

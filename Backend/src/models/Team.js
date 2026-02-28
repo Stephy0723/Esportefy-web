@@ -53,7 +53,7 @@ teamSchema.pre('validate', async function(next) {
 
     while (!isUnique) {
         const randomDigits = Math.floor(100000 + Math.random() * 900000);
-        const candidate = `TEAM-${randomDigits}`;
+        const candidate = `${randomDigits}`;
         const existing = await TeamModel.findOne({ teamCode: candidate }).select('_id').lean();
         if (!existing) {
             this.teamCode = candidate;

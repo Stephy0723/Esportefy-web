@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { formatTournamentPublicId } from '../../../../utils/publicIds';
 import './TournamentPublic.css';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
@@ -92,7 +93,7 @@ const TournamentPublicView = () => {
         <div className="tpv-hero-content">
           <p className="tpv-chip"><i className='bx bx-globe'></i> Vista publica del torneo</p>
           <h1>{data.title}</h1>
-          <p className="tpv-meta-line">#{data.tournamentId} · {data.game} · {STATUS_LABELS[data.status] || 'Publicado'}</p>
+          <p className="tpv-meta-line">{formatTournamentPublicId(data)} · {data.game} · {STATUS_LABELS[data.status] || 'Publicado'}</p>
           {data.customMessage ? <p className="tpv-note">{data.customMessage}</p> : null}
         </div>
         <div className="tpv-hero-side">
@@ -117,7 +118,7 @@ const TournamentPublicView = () => {
         <div className="tpv-grid">
           <div className="tpv-mini"><span>Formato</span><strong>{data.format || '-'}</strong></div>
           <div className="tpv-mini"><span>Modalidad</span><strong>{data.modality || '-'}</strong></div>
-          <div className="tpv-mini"><span>ID torneo</span><strong>{data.tournamentId}</strong></div>
+          <div className="tpv-mini"><span>ID torneo</span><strong>{formatTournamentPublicId(data)}</strong></div>
         </div>
       </section>
 

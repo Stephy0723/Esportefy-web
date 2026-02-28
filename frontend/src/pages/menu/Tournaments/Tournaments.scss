@@ -1846,6 +1846,45 @@ $navbar-height: 80px;
       font-weight: 500; line-height: 1.5;
     }
 
+    .registration-sync-pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      margin-top: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border: 1px solid transparent;
+    }
+
+    .registration-sync-pill.compact {
+      margin-top: 6px;
+      margin-bottom: 2px;
+      font-size: 0.62rem;
+      padding: 4px 8px;
+    }
+
+    .registration-sync-pill.ready {
+      color: #34d399;
+      background: rgba(16,185,129,0.12);
+      border-color: rgba(16,185,129,0.18);
+    }
+
+    .registration-sync-pill.warn {
+      color: #fbbf24;
+      background: rgba(251,191,36,0.12);
+      border-color: rgba(251,191,36,0.18);
+    }
+
+    .registration-sync-pill.missing {
+      color: #f87171;
+      background: rgba(239,68,68,0.12);
+      border-color: rgba(239,68,68,0.18);
+    }
+
     .registration-meta {
       margin-top: 8px;
       padding: 10px 12px;

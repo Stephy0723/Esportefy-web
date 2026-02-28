@@ -2,18 +2,17 @@
 
 Checklist operativo para cerrar beta MLBB antes de enfocarnos en brackets.
 
+## Estrategia activa
+
+- `auto`: recomendada para beta controlada y mayor volumen.
+- `manual`: solo si vas a revisar solicitudes por correo/admin.
+
 ## P0 (bloqueante)
 
 - [ ] API backend en línea y estable (`/api/auth/*`, `/api/tournaments/*`, `/api/teams/*`).
-- [ ] `MLBB_VERIFICATION_MODE` definido (`manual` o `auto`) según estrategia.
-- [ ] SMTP configurado:
-  - `EMAIL_USER`
-  - `EMAIL_PASS`
-  - `MLBB_REVIEW_EMAIL`
-- [ ] Cola MLBB activa:
-  - `MLBB_EMAIL_QUEUE_ENABLED=true`
-  - worker corriendo
-  - `GET /api/auth/mlbb/ops/status` devuelve métricas
+- [ ] `MLBB_VERIFICATION_MODE` definido y coherente con la operación:
+  - `auto` para vinculación automática.
+  - `manual` para revisión admin.
 - [ ] Verificación MLBB end-to-end ejecutada:
   - `npm run test:e2e:mlbb` en `Backend`
 - [ ] Carga base verificada (>=100 concurrencia):
@@ -27,14 +26,40 @@ Checklist operativo para cerrar beta MLBB antes de enfocarnos en brackets.
   - gratis en beta
   - sin términos de apuestas/gambling
   - mínimos de aprobación antes de iniciar
+- [ ] Smoke test real en entorno parecido a producción:
+  - conectar cuenta MLBB
+  - crear equipo MLBB
+  - registrar equipo en torneo MLBB
+  - validar que el torneo no inicia si incumple reglas
+
+## P0 adicional si usas `auto`
+
+- [ ] `MLBB_EMAIL_QUEUE_ENABLED=false` o cola desactivada explícitamente.
+- [ ] `GET /api/auth/mlbb/status` devuelve `verified` al terminar el flujo.
+- [ ] Duplicados `playerId + zoneId` siguen bloqueados entre usuarios.
+
+## P0 adicional si usas `manual`
+
+- [ ] SMTP configurado:
+  - `EMAIL_USER`
+  - `EMAIL_PASS`
+  - `MLBB_REVIEW_EMAIL`
+- [ ] Cola MLBB activa:
+  - `MLBB_EMAIL_QUEUE_ENABLED=true`
+  - worker corriendo
+  - `GET /api/auth/mlbb/ops/status` devuelve métricas
+- [ ] Flujo admin de aprobación probado:
+  - `GET /api/auth/mlbb/review/pending`
+  - `PATCH /api/auth/mlbb/review/:userId`
 
 ## P1 (recomendado)
 
-- [ ] Monitoreo de entrega SMTP (ratio delivered/failed por hora).
+- [ ] Monitoreo de entrega SMTP si usas `manual`.
 - [ ] Alertas operativas (errores de cola, backlog alto).
 - [ ] Dominio final + HTTPS con certificado válido.
 - [ ] Endurecer CORS y variables de producción.
-- [ ] Runbook de incidentes (caída SMTP/Redis/Mongo).
+- [ ] Runbook de incidentes (caída SMTP/Mongo/backend).
+- [ ] Cuenta demo y credenciales controladas para smoke tests.
 
 ## Comandos útiles
 
@@ -70,6 +95,13 @@ export LOAD_PATH=/api/auth/mlbb/status
 export LOAD_METHOD=GET
 export LOAD_TOTAL_REQUESTS=500
 export LOAD_CONCURRENCY=100
+```
+
+Si usas `auto`, puedes generar el token de carga con una cuenta de prueba local y luego correr:
+
+```bash
+cd Backend
+LOAD_AUTH_TOKEN=<TOKEN_VALIDO> npm run test:load:mlbb
 ```
 
 Estado operativo (admin token):

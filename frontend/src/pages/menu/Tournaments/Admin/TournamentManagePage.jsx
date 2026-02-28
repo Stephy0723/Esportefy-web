@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { formatTournamentPublicId } from '../../../../utils/publicIds';
 import './TournamentAdmin.css';
 
 const createEmptyBracket = () => ({
@@ -190,7 +191,7 @@ const TournamentManagePage = () => {
     <div className="ta-page">
       <header className="ta-header">
         <h1>Gestión de torneo</h1>
-        <p>{tournament.title} · #{tournament.tournamentId}</p>
+        <p>{tournament.title} · {formatTournamentPublicId(tournament)}</p>
       </header>
 
       <section className="ta-section">

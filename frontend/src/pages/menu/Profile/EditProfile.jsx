@@ -13,6 +13,7 @@ import { PLAYER_TAGS } from '../../../data/playerTags';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
+import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import './EditProfile.css';
 
 // ─── Game assets ───
@@ -160,7 +161,7 @@ const EditProfile = () => {
                 phone: u.phone || '',
                 gender: u.gender || 'Otro',
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
-                avatar: u.avatar || '',
+                avatar: resolveMediaUrl(u.avatar) || '',
                 bio: u.bio || '',
                 selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : [],
                 platforms: Array.isArray(u.platforms) ? u.platforms : [],
@@ -182,7 +183,7 @@ const EditProfile = () => {
                 status: u.status || 'online',
                 selectedTagId: u.selectedTagId || 'tag-obsidian'
             });
-            setPreview(u.avatar || '');
+            setPreview(resolveMediaUrl(u.avatar) || '');
             setLoading(false);
         } catch (err) {
             console.error('Error fetching profile:', err);
@@ -428,13 +429,13 @@ const EditProfile = () => {
             const u = res.data;
             setFormData(prev => ({
                 ...prev,
-                avatar: u.avatar || prev.avatar,
+                avatar: resolveMediaUrl(u.avatar) || prev.avatar,
                 selectedFrameId: u.selectedFrameId || prev.selectedFrameId,
                 selectedBgId: u.selectedBgId || prev.selectedBgId,
                 selectedTagId: u.selectedTagId || prev.selectedTagId,
                 status: u.status || prev.status,
             }));
-            if (u.avatar) setPreview(u.avatar);
+            if (u.avatar) setPreview(resolveMediaUrl(u.avatar));
         } catch (err) {
             const msg = err.response?.data?.message || 'Error al guardar los cambios.';
             setSaveMsg({ type: 'error', text: msg });
@@ -500,9 +501,10 @@ const EditProfile = () => {
                                 {/* Avatar section */}
                                 <div className="ep__avatar-section">
                                     <img
-                                        src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`}
+                                        src={resolveMediaUrl(preview || formData.avatar) || `https://ui-avatars.com/api/?name=${formData.username}`}
                                         alt="Avatar"
                                         className="ep__avatar-preview"
+                                        onError={(e) => applyImageFallback(e, getAvatarFallback(formData.username))}
                                     />
                                     <div className="ep__avatar-actions">
                                         <label className="ep__upload-btn">
@@ -699,7 +701,7 @@ const EditProfile = () => {
                                     <div className="ep__preview-overlay" />
                                     <div className="ep__preview-center">
                                         <AvatarCircle
-                                            src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`}
+                                            src={resolveMediaUrl(preview || formData.avatar) || `https://ui-avatars.com/api/?name=${formData.username}`}
                                             frameConfig={currentFrame}
                                             size="120px"
                                             status={formData.status}

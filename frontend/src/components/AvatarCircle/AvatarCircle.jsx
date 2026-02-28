@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { getAvatarFallback } from '../../utils/media';
 import './AvatarCircle.css';
 
 /* Status icon mapping (Boxicons classes) */
@@ -19,15 +20,24 @@ const AvatarCircle = ({
   size = "160px", 
   status = "offline",
   isActive = false,
-  frameConfig = null 
+  frameConfig = null,
+  fallbackSrc = ''
 }) => {
-  
   const frameClass = frameConfig?.type === 'css' ? `frame-${frameConfig.id}` : '';
   const themeClass = frameConfig?.id || '';
   const currentStatus = isActive ? 'online' : status;
 
   const styles = { width: size, height: size };
   const iconClass = STATUS_ICONS[currentStatus];
+  const safeFallbackSrc = useMemo(
+    () => fallbackSrc || getAvatarFallback(alt || 'Player'),
+    [alt, fallbackSrc]
+  );
+  const [imgSrc, setImgSrc] = useState(src || safeFallbackSrc);
+
+  useEffect(() => {
+    setImgSrc(src || safeFallbackSrc);
+  }, [src, safeFallbackSrc]);
 
   return (
     <div className={`avatar-circle-container ${frameClass} ${themeClass} ${currentStatus}`} style={styles}>
@@ -42,7 +52,13 @@ const AvatarCircle = ({
 
       {/* 2. LA FOTO DE USUARIO */}
       <div className="avatar-core">
-        <img src={src} alt={alt} />
+        <img
+          src={imgSrc || safeFallbackSrc}
+          alt={alt}
+          onError={() => {
+            if (imgSrc !== safeFallbackSrc) setImgSrc(safeFallbackSrc);
+          }}
+        />
       </div>
 
       {/* 3. INDICADOR DE ESTADO — Animated orbit/drop system */}

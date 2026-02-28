@@ -8,7 +8,8 @@
     "start": "node server.js",
     "test": "jest --watchAll --no-cache",
     "test:e2e:mlbb": "node scripts/e2e/mlbb-flow-smoke.js",
-    "test:load:mlbb": "node scripts/load/mlbb-load-smoke.js"
+    "test:load:mlbb": "node scripts/load/mlbb-load-smoke.js",
+    "test:load:mlbb:writes": "node --env-file=.env scripts/load/mlbb-write-load-smoke.js"
   },
   "keywords": [],
   "author": "",

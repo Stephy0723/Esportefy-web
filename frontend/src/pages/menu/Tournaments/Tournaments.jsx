@@ -8,6 +8,8 @@ import './Tournaments.scss';
 import { GAME_IMAGES } from '../../../data/gameImages';
 import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
 import PageHud from '../../../components/PageHud/PageHud';
+import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
@@ -200,9 +202,7 @@ const getTournamentStatusLabel = (status) => (
 );
 
 const toAssetUrl = (path) => {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return `${API_URL}/${path.replace(/^\//, '')}`;
+  return resolveMediaUrl(path);
 };
 
 const getLocalTournaments = () => {
@@ -316,8 +316,34 @@ const RIOT_GAMES = new Set([
   'Teamfight Tactics',
   'Legends of Runeterra'
 ]);
+const MLBB_GAMES = new Set([
+  'Mobile Legends',
+  'Mobile Legends: Bang Bang',
+  'MLBB'
+]);
 
 const isRiotGame = (game) => RIOT_GAMES.has(game);
+const isMlbbGame = (game) => MLBB_GAMES.has(String(game || '').trim());
+
+const getMlbbEntryStatus = (player) => {
+  if (!player) return null;
+  const hasUser = Boolean(player?.user);
+  const hasIds = Boolean(player?.gameId && player?.region);
+  if (hasUser && hasIds) return { label: 'Sincronizado', tone: 'ready' };
+  if (hasUser) return { label: 'Datos incompletos', tone: 'warn' };
+  return { label: 'Sin vincular', tone: 'missing' };
+};
+
+const getMlbbRosterStatusSummary = (roster) => {
+  const starters = Array.isArray(roster?.starters) ? roster.starters : [];
+  const subs = Array.isArray(roster?.subs) ? roster.subs : [];
+  const active = starters.concat(subs).filter((player) => player && (player.nickname || player.user));
+  if (!active.length) return null;
+  const issues = active.filter((player) => getMlbbEntryStatus(player)?.tone !== 'ready').length;
+  return issues === 0
+    ? { label: 'Roster MLBB listo', tone: 'ready' }
+    : { label: `Roster MLBB con ${issues} problema${issues === 1 ? '' : 's'}`, tone: 'warn' };
+};
 
 const BRACKET_STATUS_LABELS = {
   pending: 'Pendiente',
@@ -806,6 +832,7 @@ useEffect(() => {
         t.game?.toLowerCase().includes(q) ||
         t.organizer?.toLowerCase().includes(q) ||
         t.tournamentId?.toLowerCase().includes(q) ||
+        matchesTournamentPublicId(t, q) ||
         t.format?.toLowerCase().includes(q) ||
         t.platform?.toLowerCase().includes(q)
       );
@@ -1773,7 +1800,11 @@ useEffect(() => {
                   <td>
                     <div className="round-robin-team-cell">
                       {row.logoUrl ? (
-                        <img src={row.logoUrl} alt={row.teamName} />
+                        <img
+                          src={row.logoUrl}
+                          alt={row.teamName}
+                          onError={(e) => applyImageFallback(e, getTeamFallback(row.teamName))}
+                        />
                       ) : (
                         <span className="round-robin-team-fallback">{getInitials(row.teamName)}</span>
                       )}
@@ -1899,7 +1930,13 @@ useEffect(() => {
                                                 <div className="team-row">
                                                     <div className="team-logo">
                                                         {r.logoUrl
-                                                            ? <img src={toAssetUrl(r.logoUrl)} alt={r.teamName || 'Equipo'} />
+                                                            ? (
+                                                                <img
+                                                                    src={toAssetUrl(r.logoUrl)}
+                                                                    alt={r.teamName || 'Equipo'}
+                                                                    onError={(e) => applyImageFallback(e, getTeamFallback(r.teamName))}
+                                                                />
+                                                            )
                                                             : <span>{getInitials(r.teamName)}</span>
                                                         }
                                                     </div>
@@ -2071,7 +2108,12 @@ useEffect(() => {
                                                     <div className="seed-main">
                                                         <span className="seed-position">#{slot.slot}</span>
                                                         {slot.entry?.logoUrl ? (
-                                                          <img className="seed-logo" src={slot.entry.logoUrl} alt={slot.entry.teamName || 'Equipo'} />
+                                                          <img
+                                                            className="seed-logo"
+                                                            src={slot.entry.logoUrl}
+                                                            alt={slot.entry.teamName || 'Equipo'}
+                                                            onError={(e) => applyImageFallback(e, getTeamFallback(slot.entry?.teamName))}
+                                                          />
                                                         ) : (
                                                           <span className="seed-empty-dot"><i className='bx bx-plus'></i></span>
                                                         )}
@@ -2172,22 +2214,28 @@ useEffect(() => {
 
                         <div className="divider"></div>
 
-                        <div className="info-section">
+                        {/* <div className="info-section">
                             <h4><i className='bx bx-file'></i> Descripción y Reglas</h4>
                             <p>{selectedTournament.desc}</p>
-                        </div>
+                        </div> */}
 
-                        {Array.isArray(selectedTournament.registrations) && selectedTournament.registrations.length > 0 && (
+                        {/* {Array.isArray(selectedTournament.registrations) && selectedTournament.registrations.length > 0 && (
                             <div className="info-section registrations-section" style={{ marginTop: 18 }}>
                                 <h4><i className='bx bx-group'></i> Equipos inscritos</h4>
                                 <div className="tournament-registrations">
                                     {selectedTournament.registrations.map((r, idx) => (
                                         <div key={r._id || `${r.teamName}-${idx}`} className="registration-row">
-                                            <div className="registration-main">
+                                            {/* <div className="registration-main">
                                                 <div className="team-row">
                                                     <div className="team-logo">
                                                         {r.logoUrl
-                                                            ? <img src={toAssetUrl(r.logoUrl)} alt={r.teamName || 'Equipo'} />
+                                                            ? (
+                                                                <img
+                                                                    src={toAssetUrl(r.logoUrl)}
+                                                                    alt={r.teamName || 'Equipo'}
+                                                                    onError={(e) => applyImageFallback(e, getTeamFallback(r.teamName))}
+                                                                />
+                                                            )
                                                             : <span>{getInitials(r.teamName)}</span>
                                                         }
                                                     </div>
@@ -2201,13 +2249,18 @@ useEffect(() => {
                                                     </div>
                                                 </div>
                                                 {r.status && <span className={`reg-status ${r.status}`}>{r.status}</span>}
-                                            </div>
+                                            </div> */}
                                             
-                                            {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
+                                            {/* {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
                                                 <div className="registration-roster">
                                                     {r.roster.starters.map(p => p.nickname || '').filter(Boolean).join(' | ')}
                                                 </div>
-                                            )}
+                                            )} */}
+                                            {/* {isMlbbGame(selectedTournament?.game) && getMlbbRosterStatusSummary(r.roster) && (
+                                                <div className={`registration-sync-pill ${getMlbbRosterStatusSummary(r.roster).tone}`}>
+                                                    {getMlbbRosterStatusSummary(r.roster).label}
+                                                </div>
+                                            )} */}
                                             {/* {Array.isArray(r.roster?.starters) && r.roster.starters.length > 0 && (
                                                 <div className="registration-roster">
                                                     {r.roster.starters.map((p, i) => (
@@ -2218,7 +2271,7 @@ useEffect(() => {
                                                 </div>
                                             )} */}
                                             
-                                            {(r.teamMeta || r.teamId) && (
+                                            {/* {(r.teamMeta || r.teamId) && (
                                                 <div className="registration-meta">
                                                     <div className="registration-meta-grid">
                                                         {r.teamMeta?.category && (
@@ -2247,8 +2300,8 @@ useEffect(() => {
                                                         )}
                                                     </div>
                                                 </div>
-                                            )}
-                                            {(canManageTournament(selectedTournament) || r.teamId) && (
+                                            )} */}
+                                            {/* {(canManageTournament(selectedTournament) || r.teamId) && (
                                                 <div className="registration-actions">
                                                     
                                                     {r.teamId && (
@@ -2270,7 +2323,7 @@ useEffect(() => {
                                                         </button>
                                                     )}
                                                 </div>
-                                            )}
+                                            )} */}
                                             
                                             {/* {canManageTournament(selectedTournament) && (
                                                 <div className="registration-actions">
@@ -2282,14 +2335,14 @@ useEffect(() => {
                                                         Quitar equipo
                                                     </button>
                                                 </div>
-                                            )} */}
+                                            
                                         </div>
                                     ))}
                                 </div>
                             </div>
-                        )}
+                        )}*/}
                         
-                        {(selectedTournament.platform || selectedTournament.server || selectedTournament.gender) && (
+                        {/* {(selectedTournament.platform || selectedTournament.server || selectedTournament.gender) && (
                             <div className="stats-grid" style={{ marginTop: 14 }}>
                                 {selectedTournament.platform && (
                                     <div className="stat-box">
@@ -2310,7 +2363,7 @@ useEffect(() => {
                                     </div>
                                 )}
                             </div>
-                        )}
+                        )} */} 
 
                         {isRiotGame(selectedTournament.game) && selectedTournament.riotRequirements?.required && (
                             <div className="info-section" style={{ marginTop: 18 }}>
@@ -2455,7 +2508,13 @@ useEffect(() => {
                             <div className="team-brand">
                                 <div className="team-logo large">
                                     {selectedTeamPreview?.logo
-                                        ? <img src={toAssetUrl(selectedTeamPreview.logo)} alt={selectedTeamPreview?.name || 'Equipo'} />
+                                        ? (
+                                            <img
+                                                src={toAssetUrl(selectedTeamPreview.logo)}
+                                                alt={selectedTeamPreview?.name || 'Equipo'}
+                                                onError={(e) => applyImageFallback(e, getTeamFallback(selectedTeamPreview?.name))}
+                                            />
+                                        )
                                         : <span>{getInitials(selectedTeamPreview?.name)}</span>
                                     }
                                 </div>
@@ -2479,6 +2538,11 @@ useEffect(() => {
                         </div>
                         <div className="info-section">
                             <h4><i className='bx bx-group'></i> Roster</h4>
+                            {isMlbbGame(selectedTeamPreview?.game) && getMlbbRosterStatusSummary(selectedTeamPreview?.roster) && (
+                                <div className={`registration-sync-pill ${getMlbbRosterStatusSummary(selectedTeamPreview?.roster).tone}`}>
+                                    {getMlbbRosterStatusSummary(selectedTeamPreview?.roster).label}
+                                </div>
+                            )}
                             <div className="tournament-registrations">
                                 {(selectedTeamPreview?.roster?.starters || []).map((p, i) => (
                                     <div key={`team-prev-${i}`} className="registration-row">
@@ -2486,6 +2550,11 @@ useEffect(() => {
                                             <strong>{p?.nickname || 'Vacante'}</strong>
                                             {p?.role && <span className="reg-status approved">{p.role}</span>}
                                         </div>
+                                        {isMlbbGame(selectedTeamPreview?.game) && p?.nickname && getMlbbEntryStatus(p) && (
+                                            <div className={`registration-sync-pill compact ${getMlbbEntryStatus(p).tone}`}>
+                                                {getMlbbEntryStatus(p).label}
+                                            </div>
+                                        )}
                                         <div className="registration-roster">
                                             {canSeeTeamIds(selectedTournament)
                                                 ? `${p?.gameId ? `ID: ${p.gameId}` : 'ID: N/A'} | ${p?.region || 'Región: N/A'}${p?.riotId ? ` | Riot: ${p.riotId}` : ''}`
@@ -2653,7 +2722,7 @@ useEffect(() => {
                             <i className='bx bx-search'></i>
                             <input 
                                 type="text" 
-                                placeholder="Buscar torneo, juego, organizador, formato..." 
+                                placeholder="Buscar por TOR-ID, torneo, juego u organizador..." 
                                 value={search} 
                                 onChange={(e) => setSearch(e.target.value)} 
                             />
@@ -2851,7 +2920,7 @@ useEffect(() => {
 
                                         <div className="card-content">
                                             <div className="tn__card-header">
-                                                <span className="tournament-id-tag">#{torneo.tournamentId}</span>
+                                                <span className="tournament-id-tag">{formatTournamentPublicId(torneo)}</span>
                                                 {torneo.entryFee && torneo.entryFee !== 'Gratis' && (
                                                     <span className="tn__entry-badge"><i className='bx bx-dollar'></i> {torneo.entryFee}</span>
                                                 )}

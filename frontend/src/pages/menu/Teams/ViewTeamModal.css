@@ -486,6 +486,34 @@
     flex-direction: column;
     gap: 6px;
 }
+.vtm-roster-sync-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.vtm-roster-sync-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+.vtm-roster-sync-pill--ready {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.18);
+}
+.vtm-roster-sync-pill--warn {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.18);
+}
 
 /* ── Player cards ── */
 .vtm-player {
@@ -589,6 +617,34 @@
     color: #a78bfa;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+.vtm-player-sync {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    margin-top: 2px;
+}
+.vtm-player-sync--ready {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.18);
+}
+.vtm-player-sync--warn {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.18);
+}
+.vtm-player-sync--missing {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.18);
 }
 
 .vtm-player-meta {
