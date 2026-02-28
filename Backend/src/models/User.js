@@ -85,6 +85,23 @@ const UserSchema = new mongoose.Schema({
                 attempts: { type: Number, default: 0 },
                 lastSentAt: Date
             }
+        },
+
+        mlbb: {
+            playerId: { type: String },
+            zoneId: { type: String },
+            ign: { type: String },
+            verificationStatus: {
+                type: String,
+                enum: ['unlinked', 'pending', 'verified', 'rejected'],
+                default: 'unlinked'
+            },
+            verified: { type: Boolean, default: false },
+            linkedAt: Date,
+            reviewRequestedAt: Date,
+            reviewedAt: Date,
+            reviewedBy: { type: String },
+            rejectReason: { type: String, default: '' }
         }
     },
 
@@ -142,5 +159,20 @@ const UserSchema = new mongoose.Schema({
     }]
 
 }, { timestamps: true });
+
+UserSchema.index(
+    {
+        'connections.mlbb.playerId': 1,
+        'connections.mlbb.zoneId': 1
+    },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'connections.mlbb.verified': true,
+            'connections.mlbb.playerId': { $exists: true, $type: 'string' },
+            'connections.mlbb.zoneId': { $exists: true, $type: 'string' }
+        }
+    }
+);
 
 export default mongoose.model('User', UserSchema);

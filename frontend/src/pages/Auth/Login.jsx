@@ -54,9 +54,9 @@ const Login = () => {
 
             if (!response) throw lastError || new Error('No se encontró endpoint de login');
 
-            const { user, token } = response.data;
-
-            if (!token || !user) {
+            const { user, token, session } = response.data || {};
+            const hasSession = Boolean(token) || Boolean(session);
+            if (!user || !hasSession) {
                 throw new Error('Respuesta de login inválida');
             }
             
@@ -64,14 +64,14 @@ const Login = () => {
             // AuthContext sincronizará los datos completos desde /profile vía cookies
             localStorage.setItem('esportefyUser', JSON.stringify(user));
             // Flag de sesión — la auth real va por HttpOnly cookies
-            localStorage.setItem('token', 'cookie-session');
+            localStorage.setItem('token', token || 'cookie-session');
             
             window.dispatchEvent(new Event('user-update'));
 
             navigate('/dashboard');
             
         } catch (err) {
-            const message = err.response?.data?.message || 'Error al conectar con el servidor';
+            const message = err.response?.data?.message || err.message || 'Error al conectar con el servidor';
             setError(message);
         }
     };

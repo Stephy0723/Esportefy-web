@@ -392,6 +392,18 @@ const BRACKET_SCALE_MIN = 0.75;
 const BRACKET_SCALE_MAX = 1.35;
 const BRACKET_SCALE_STEP = 0.1;
 
+const normalizeBracketFormat = (value = '') => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'single_elimination';
+
+  if (raw.includes('double') || raw.includes('doble')) return 'double_elimination';
+  if (raw.includes('round robin') || raw.includes('round_robin') || raw.includes('todos contra todos')) return 'round_robin';
+  if (raw.includes('swiss') || raw.includes('suizo')) return 'swiss';
+  if (raw.includes('single') || raw.includes('directa') || raw.includes('simple')) return 'single_elimination';
+
+  return raw.replace(/\s+/g, '_');
+};
+
 const isSingleEliminationFormat = (formatValue) => normalizeBracketFormat(formatValue) === 'single_elimination';
 
 const getRegistrationByParticipant = (participant, registrations = []) => {
@@ -443,6 +455,17 @@ const Tournaments = () => {
   const [showTeamPreview, setShowTeamPreview] = useState(false);
   const [selectedTeamIdForPreview, setSelectedTeamIdForPreview] = useState(null);
   const [selectedTeamPreview, setSelectedTeamPreview] = useState(null);
+  const [showBracketPreview, setShowBracketPreview] = useState(false);
+  const [showBracketManagement, setShowBracketManagement] = useState(false);
+  const [bracketLoading, setBracketLoading] = useState(false);
+  const [statusActionLoading, setStatusActionLoading] = useState('');
+  const [matchActionLoadingId, setMatchActionLoadingId] = useState('');
+  const [previewBracket, setPreviewBracket] = useState(null);
+  const [customSeedingOpen, setCustomSeedingOpen] = useState(false);
+  const [customSeedOrder, setCustomSeedOrder] = useState([]);
+  const [dragSeedRefId, setDragSeedRefId] = useState('');
+  const [dragOverSeedRefId, setDragOverSeedRefId] = useState('');
+  const [bracketScale, setBracketScale] = useState(1);
   const rightPanelRef = useRef(null);
   const bracketPanRef = useRef({
     active: false,
@@ -2791,7 +2814,7 @@ useEffect(() => {
                                 const [ocupados, totales] = torneo.slots.split('/').map(Number);
                                 const pct = totales > 0 ? (ocupados / totales) * 100 : 0;
                                 const estaLleno = ocupados >= totales;
-                                const hasTeam = userTeamIds.length > 0;
+                                const hasTeam = user?.isAdmin ? true : userTeamIds.length > 0;
                                 const alreadyIn = hasRegisteredTeam(torneo);
                                 const canRegisterOnCard = isRegistrationOpenForTournament(torneo);
                                 const canJoin = canRegisterOnCard && !estaLleno && hasTeam && !alreadyIn;

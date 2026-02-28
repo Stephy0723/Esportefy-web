@@ -168,6 +168,7 @@ const tournamentSchema = new mongoose.Schema({
         },
         roster: {
             starters: [{
+                user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
                 nickname: String,
                 gameId: String,
                 region: String,
@@ -175,6 +176,7 @@ const tournamentSchema = new mongoose.Schema({
                 riotId: String
             }],
             subs: [{
+                user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
                 nickname: String,
                 gameId: String,
                 region: String,

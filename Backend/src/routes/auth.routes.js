@@ -32,6 +32,16 @@ import {
   validateRiotId,
   riotStatus
 } from '../controllers/riot.controller.js';
+import {
+  validateMlbbId,
+  linkMlbbAccount,
+  unlinkMlbbAccount,
+  mlbbStatus,
+  listPendingMlbbReviews,
+  reviewMlbbLink,
+  mlbbOpsStatus,
+  processMlbbOpsQueue
+} from '../controllers/mlbb.controller.js';
 
 const router = Router();
 
@@ -41,6 +51,7 @@ const rlCheckPhone = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyP
 const rlForgot = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'forgot' });
 const rlReset = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'reset' });
 const rlRiot = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 6, keyPrefix: 'riot' });
+const rlMlbb = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 12, keyPrefix: 'mlbb' });
 const rlDiscord = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8, keyPrefix: 'discord-oauth' });
 
 /* =========================
@@ -75,5 +86,17 @@ router.get('/riot/status', verifyToken, rlRiot, riotStatus);
 // (Opcional) sync manual
 router.post('/riot/sync', verifyToken, rlRiot, syncRiotNow);
 router.post('/riot/validate', verifyToken, rlRiot, validateRiotId);
+
+/* =========================
+   MOBILE LEGENDS
+========================= */
+router.post('/mlbb/validate', verifyToken, rlMlbb, validateMlbbId);
+router.post('/mlbb/link', verifyToken, rlMlbb, linkMlbbAccount);
+router.delete('/mlbb', verifyToken, unlinkMlbbAccount);
+router.get('/mlbb/status', verifyToken, rlMlbb, mlbbStatus);
+router.get('/mlbb/review/pending', verifyToken, rlMlbb, listPendingMlbbReviews);
+router.patch('/mlbb/review/:userId', verifyToken, rlMlbb, reviewMlbbLink);
+router.get('/mlbb/ops/status', verifyToken, rlMlbb, mlbbOpsStatus);
+router.post('/mlbb/ops/process', verifyToken, rlMlbb, processMlbbOpsQueue);
 
 export default router;

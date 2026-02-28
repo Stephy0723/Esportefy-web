@@ -98,6 +98,10 @@ const PaymentPolicy = () => {
               financiero interno de Esportefy. Este control protege a jugadores y organizadores.
             </p>
             <p>
+              En la beta de Mobile Legends se priorizan torneos gratuitos y se bloquean
+              referencias a apuestas o gambling para reducir riesgo legal y operativo.
+            </p>
+            <p>
               Para prevencion de fraude y riesgos financieros, podemos aplicar verificaciones
               adicionales alineadas con obligaciones de cumplimiento de la
               <span className="legal-key"> Ley 155-17</span> cuando corresponda.

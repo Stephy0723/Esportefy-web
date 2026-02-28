@@ -12,8 +12,13 @@ const createEmptyBracket = () => ({
 const TournamentManagePage = () => {
   const { code } = useParams();
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
   const [loading, setLoading] = useState(true);
   const [tournament, setTournament] = useState(null);
+  const [compliance, setCompliance] = useState(null);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [registrationFilter, setRegistrationFilter] = useState('all');
+  const [registrationQuery, setRegistrationQuery] = useState('');
   const [settings, setSettings] = useState({
     visibility: 'public',
     showPrize: true,
@@ -27,11 +32,31 @@ const TournamentManagePage = () => {
   });
   const [bracket, setBracket] = useState(createEmptyBracket());
 
+  const authConfig = useMemo(
+    () => ({
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    }),
+    [token]
+  );
+
+  const isMlbbTournament = useMemo(() => {
+    const game = String(tournament?.game || '').trim();
+    return ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(game);
+  }, [tournament?.game]);
+
+  const hasValidMlbbRoster = (registration) => {
+    const starters = Array.isArray(registration?.roster?.starters)
+      ? registration.roster.starters
+      : [];
+    if (starters.length === 0) return false;
+    return starters.every((p) => String(p?.gameId || '').trim() && String(p?.region || '').trim());
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API_URL}/api/tournaments/${code}`);
+        const res = await axios.get(`${API_URL}/api/tournaments/${code}`, authConfig);
         setTournament(res.data);
         setSettings((prev) => ({ ...prev, ...(res.data?.publicSettings || {}) }));
         setBracket(res.data?.bracket || createEmptyBracket());
@@ -42,16 +67,46 @@ const TournamentManagePage = () => {
       }
     };
     load();
-  }, [code]);
+  }, [code, authConfig]);
+
+  const fetchCompliance = async () => {
+    try {
+      setComplianceLoading(true);
+      const res = await axios.get(`${API_URL}/api/tournaments/${code}/compliance`, authConfig);
+      setCompliance(res.data || null);
+    } catch (e) {
+      setCompliance(null);
+      console.error('Error cargando cumplimiento:', e);
+    } finally {
+      setComplianceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!code || !token) return;
+    fetchCompliance();
+  }, [code, token]);
 
   const registrations = useMemo(
     () => (Array.isArray(tournament?.registrations) ? tournament.registrations : []),
     [tournament]
   );
 
+  const filteredRegistrations = useMemo(() => {
+    const q = String(registrationQuery || '').trim().toLowerCase();
+    return registrations.filter((r) => {
+      const status = String(r?.status || '').toLowerCase();
+      if (registrationFilter !== 'all' && status !== registrationFilter) return false;
+      if (!q) return true;
+      const name = String(r?.teamName || '').toLowerCase();
+      return name.includes(q);
+    });
+  }, [registrations, registrationFilter, registrationQuery]);
+
   const savePublicSettings = async () => {
     try {
-      await axios.patch(`${API_URL}/api/tournaments/${code}/public-settings`, settings);
+      await axios.patch(`${API_URL}/api/tournaments/${code}/public-settings`, settings, authConfig);
+      await fetchCompliance();
       alert('Configuración pública guardada.');
     } catch (e) {
       alert(e.response?.data?.message || 'No se pudo guardar la configuración pública.');
@@ -60,7 +115,7 @@ const TournamentManagePage = () => {
 
   const saveBracket = async () => {
     try {
-      await axios.patch(`${API_URL}/api/tournaments/${code}/bracket`, { bracket });
+      await axios.patch(`${API_URL}/api/tournaments/${code}/bracket`, { bracket }, authConfig);
       alert('Bracket guardado.');
     } catch (e) {
       alert(e.response?.data?.message || 'No se pudo guardar el bracket.');
@@ -69,11 +124,16 @@ const TournamentManagePage = () => {
 
   const updateRegistration = async (registrationId, status) => {
     try {
-      await axios.patch(`${API_URL}/api/tournaments/${code}/registrations/${registrationId}`, { status });
+      await axios.patch(
+        `${API_URL}/api/tournaments/${code}/registrations/${registrationId}`,
+        { status },
+        authConfig
+      );
       setTournament((prev) => ({
         ...prev,
         registrations: (prev.registrations || []).map((r) => (String(r._id) === String(registrationId) ? { ...r, status } : r))
       }));
+      await fetchCompliance();
     } catch (e) {
       alert(e.response?.data?.message || 'No se pudo actualizar el estado.');
     }
@@ -81,11 +141,12 @@ const TournamentManagePage = () => {
 
   const removeRegistration = async (registrationId) => {
     try {
-      await axios.delete(`${API_URL}/api/tournaments/${code}/registrations/${registrationId}`);
+      await axios.delete(`${API_URL}/api/tournaments/${code}/registrations/${registrationId}`, authConfig);
       setTournament((prev) => ({
         ...prev,
         registrations: (prev.registrations || []).filter((r) => String(r._id) !== String(registrationId))
       }));
+      await fetchCompliance();
     } catch (e) {
       alert(e.response?.data?.message || 'No se pudo eliminar la inscripción.');
     }
@@ -175,19 +236,77 @@ const TournamentManagePage = () => {
       </section>
 
       <section className="ta-section">
+        <h2>Cumplimiento MLBB</h2>
+        <div className="ta-actions">
+          <button className="ghost" onClick={fetchCompliance} disabled={complianceLoading}>
+            {complianceLoading ? 'Verificando...' : 'Revisar cumplimiento'}
+          </button>
+        </div>
+        {!compliance ? (
+          <div className="ta-empty">No se pudo obtener el estado de cumplimiento.</div>
+        ) : (
+          <>
+            {compliance?.mode?.requireLinkedStarters === true && (
+              <p className="ta-empty">Modo estricto activo: todos los titulares deben estar vinculados a cuentas reales de Esportefy.</p>
+            )}
+            <div className="ta-compliance-list">
+              {(Array.isArray(compliance.checks) ? compliance.checks : []).map((check) => (
+                <article key={check.id} className={`ta-compliance-card ${check.ok ? 'ok' : 'warn'}`}>
+                  <strong>{check.label}</strong>
+                  <p>{check.detail}</p>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="ta-section">
         <h2>Aceptar equipos</h2>
-        {registrations.length === 0 ? (
+        <div className="ta-registration-toolbar">
+          <input
+            placeholder="Buscar equipo..."
+            value={registrationQuery}
+            onChange={(e) => setRegistrationQuery(e.target.value)}
+          />
+          <select value={registrationFilter} onChange={(e) => setRegistrationFilter(e.target.value)}>
+            <option value="all">Todos</option>
+            <option value="approved">Aprobados</option>
+            <option value="rejected">Rechazados</option>
+          </select>
+        </div>
+
+        {filteredRegistrations.length === 0 ? (
           <div className="ta-empty">No hay equipos inscritos.</div>
         ) : (
           <div className="ta-list">
-            {registrations.map((r) => (
+            {filteredRegistrations.map((r) => (
               <article key={r._id} className="ta-row">
                 <div>
                   <strong>{r.teamName}</strong>
                   <p>Estado: {r.status}</p>
+                  <div className="ta-row-meta">
+                    {isMlbbTournament && (
+                      <span className={`ta-pill ${hasValidMlbbRoster(r) ? 'ok' : 'warn'}`}>
+                        {hasValidMlbbRoster(r) ? 'MLBB ID completo' : 'MLBB ID incompleto'}
+                      </span>
+                    )}
+                    {r?.teamMeta?.teamCountry && (
+                      <span className="ta-pill">{r.teamMeta.teamCountry}</span>
+                    )}
+                    {r?.teamMeta?.teamLevel && (
+                      <span className="ta-pill">{r.teamMeta.teamLevel}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="ta-row-actions">
-                  <button onClick={() => updateRegistration(r._id, 'approved')}>Aprobar</button>
+                  <button
+                    onClick={() => updateRegistration(r._id, 'approved')}
+                    disabled={isMlbbTournament && !hasValidMlbbRoster(r)}
+                    title={isMlbbTournament && !hasValidMlbbRoster(r) ? 'Faltan IDs MLBB en titulares' : ''}
+                  >
+                    Aprobar
+                  </button>
                   <button className="warn" onClick={() => updateRegistration(r._id, 'rejected')}>Rechazar</button>
                   <button className="danger" onClick={() => removeRegistration(r._id)}>Quitar</button>
                 </div>

@@ -45,6 +45,29 @@ const isNewTeam = (team) => {
     return diff < NEW_TEAM_DAYS * 86_400_000;
 };
 
+const resolveMediaUrl = (src) => {
+    const raw = String(src || '').trim();
+    if (!raw) return '';
+    if (/^(data:|blob:)/i.test(raw)) return raw;
+    const apiBase = String(API_URL || '').replace(/\/+$/, '');
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            const url = new URL(raw);
+            if ((url.hostname === 'localhost' || url.hostname === '127.0.0.1') && apiBase) {
+                const apiUrl = new URL(apiBase);
+                return `${apiUrl.protocol}//${apiUrl.host}${url.pathname}${url.search}${url.hash}`;
+            }
+        } catch (_) {
+            return raw;
+        }
+        return raw;
+    }
+    if (!apiBase) return raw;
+    return raw.startsWith('/') ? `${apiBase}${raw}` : `${apiBase}/${raw}`;
+};
+
+const getPublicTeamCode = (team) => String(team?.teamCode || '').trim().toUpperCase();
+
 /* ═══════════════════════════════════════
    FILTER TABS
    ═══════════════════════════════════════ */
@@ -230,6 +253,8 @@ const Team = () => {
             const level = team.teamLevel?.toLowerCase() || '';
             const gender = team.teamGender?.toLowerCase() || '';
             const q = search.toLowerCase();
+            const normalizedQ = q.replace(/^#/, '');
+            const publicTeamCode = getPublicTeamCode(team).toLowerCase();
 
             let matchesTab = true;
             if (activeTab === 'myteams') {
@@ -244,7 +269,8 @@ const Team = () => {
                 || team.name?.toLowerCase().includes(q)
                 || team.game?.toLowerCase().includes(q)
                 || team.category?.toLowerCase().includes(q)
-                || team.teamCountry?.toLowerCase().includes(q);
+                || team.teamCountry?.toLowerCase().includes(q)
+                || publicTeamCode.includes(normalizedQ);
 
             return matchesTab && matchesSearch;
         });
@@ -348,7 +374,7 @@ const Team = () => {
                     <i className='bx bx-search'></i>
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, juego, pais..."
+                        placeholder="Buscar por ID, nombre, juego, pais..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -429,11 +455,14 @@ const Team = () => {
                                     <div className="th__card-top">
                                         <div className="th__card-logo">
                                             {team.logo
-                                                ? <img src={team.logo} alt="" />
+                                                ? <img src={resolveMediaUrl(team.logo)} alt="" />
                                                 : <span>{team.name.substring(0, 2).toUpperCase()}</span>
                                             }
                                         </div>
                                         <div className="th__card-identity">
+                                            {getPublicTeamCode(team) && (
+                                                <span className="tournament-id-tag">#{getPublicTeamCode(team)}</span>
+                                            )}
                                             <h3 className="th__card-name">{team.name}</h3>
                                             <div className="th__card-meta">
                                                 <span className="th__card-game">{team.game}</span>
@@ -493,7 +522,7 @@ const Team = () => {
                                         <div className="th__roster-stack">
                                             {starters.slice(0, 5).map((p, idx) => p && (
                                                 <div key={idx} className="th__roster-avatar" style={{ zIndex: 10 - idx }}>
-                                                    <img src={p.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
+                                                    <img src={resolveMediaUrl(p.photo) || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
                                                 </div>
                                             ))}
                                             {startersFilled > 5 && (
@@ -601,11 +630,14 @@ const Team = () => {
                             <div className="th__modal-hero">
                                 <div className="th__modal-logo">
                                     {selectedTeam.logo
-                                        ? <img src={selectedTeam.logo} alt="" />
+                                        ? <img src={resolveMediaUrl(selectedTeam.logo)} alt="" />
                                         : <span>{selectedTeam.name.substring(0, 2).toUpperCase()}</span>
                                     }
                                 </div>
                                 <div className="th__modal-hero-info">
+                                    {getPublicTeamCode(selectedTeam) && (
+                                        <span className="tournament-id-tag">#{getPublicTeamCode(selectedTeam)}</span>
+                                    )}
                                     <h2>{selectedTeam.name}</h2>
                                     {selectedTeam.slogan && <p className="th__modal-slogan">"{selectedTeam.slogan}"</p>}
                                     <div className="th__modal-hero-tags">
@@ -686,7 +718,7 @@ const Team = () => {
                                             <div key={`st-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
                                                 <div className="th__modal-player-avatar">
                                                     {p?.photo
-                                                        ? <img src={p.photo} alt="" />
+                                                        ? <img src={resolveMediaUrl(p.photo)} alt="" />
                                                         : p?.nickname
                                                             ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
                                                             : <i className='bx bx-user-plus'></i>
@@ -718,7 +750,7 @@ const Team = () => {
                                             <div key={`sub-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
                                                 <div className="th__modal-player-avatar">
                                                     {p?.photo
-                                                        ? <img src={p.photo} alt="" />
+                                                        ? <img src={resolveMediaUrl(p.photo)} alt="" />
                                                         : p?.nickname
                                                             ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
                                                             : <i className='bx bx-user-plus'></i>
@@ -743,7 +775,7 @@ const Team = () => {
                                     <div className="th__modal-player th__modal-player--coach">
                                         <div className="th__modal-player-avatar">
                                             {previewCoach.photo
-                                                ? <img src={previewCoach.photo} alt="" />
+                                                ? <img src={resolveMediaUrl(previewCoach.photo)} alt="" />
                                                 : <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${previewCoach.nickname}`} alt="" />
                                             }
                                         </div>

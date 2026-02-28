@@ -51,14 +51,91 @@ const RIOT_GAMES = new Set([
     'Teamfight Tactics',
     'Legends of Runeterra'
 ]);
+const MLBB_GAMES = new Set([
+    'Mobile Legends',
+    'Mobile Legends: Bang Bang',
+    'MLBB'
+]);
+
+const CUSTOM_OPTION = '__custom__';
+
+const COUNTRY_OPTIONS = [
+    'República Dominicana',
+    'México',
+    'Colombia',
+    'Argentina',
+    'Chile',
+    'Perú',
+    'España',
+    'Estados Unidos',
+    'Canadá',
+    'Brasil',
+    'Internacional'
+];
+
+const RIOT_REGION_OPTIONS = [
+    'LATAM',
+    'LAS',
+    'LAN',
+    'NA',
+    'BR',
+    'EUW',
+    'EUNE',
+    'TR',
+    'RU',
+    'OCE',
+    'KR',
+    'JP',
+    'PH',
+    'SG',
+    'TH',
+    'TW',
+    'VN'
+];
+
+const MLBB_REGION_OPTIONS = [
+    'LATAM',
+    'NA',
+    'EU',
+    'MENA',
+    'SEA',
+    'PH',
+    'ID',
+    'MY',
+    'SG'
+];
+
+const DEFAULT_REGION_OPTIONS = ['LATAM', 'NA', 'EU', 'BR', 'SEA', 'Global'];
+const MAX_LOGO_BYTES = 8 * 1024 * 1024;
+const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
 const CreateTeamPage = () => {
     const navigate = useNavigate();
     const { addToast } = useNotification();
     
     // --- ESTADOS Y DATOS ---
-    const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-    const currentUser = userString ? JSON.parse(userString) : { name: "Usuario" };
+    const currentUser = useMemo(() => {
+        const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
+        if (!userString) return { name: "Usuario" };
+        try {
+            return JSON.parse(userString);
+        } catch (_) {
+            return { name: "Usuario" };
+        }
+    }, []);
+
+    const riotVerified = Boolean(currentUser?.connections?.riot?.verified);
+    const riotGameName = String(currentUser?.connections?.riot?.gameName || '');
+    const riotTagLine = String(currentUser?.connections?.riot?.tagLine || '');
+    const riotRegionRaw =
+        currentUser?.gameProfiles?.lol?.platformRegion ||
+        currentUser?.gameProfiles?.valorant?.shard ||
+        currentUser?.connections?.riot?.accountRegion ||
+        '';
+    const mlbbVerified = Boolean(currentUser?.connections?.mlbb?.verified);
+    const mlbbPlayerId = String(currentUser?.connections?.mlbb?.playerId || '');
+    const mlbbZoneId = String(currentUser?.connections?.mlbb?.zoneId || '');
     
     const [step, setStep] = useState(1);
     const [logoPreview, setLogoPreview] = useState(null);
@@ -66,6 +143,8 @@ const CreateTeamPage = () => {
     const [submitting, setSubmitting] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [useCustomCountry, setUseCustomCountry] = useState(false);
+    const [useCustomRegion, setUseCustomRegion] = useState(false);
 
     // Datos del formulario COMPLETO
     const [formData, setFormData] = useState({
@@ -126,6 +205,22 @@ const CreateTeamPage = () => {
         return 'theme-default';
     };
 
+    const getRegionOptionsByGame = (gameName) => {
+        const normalized = String(gameName || '').trim();
+        if (RIOT_GAMES.has(normalized)) return RIOT_REGION_OPTIONS;
+        if (MLBB_GAMES.has(normalized)) return MLBB_REGION_OPTIONS;
+        return DEFAULT_REGION_OPTIONS;
+    };
+
+    const regionOptions = useMemo(() => {
+        const base = [...getRegionOptionsByGame(formData.game)];
+        if (formData.leaderRegion && !base.includes(formData.leaderRegion)) {
+            return [formData.leaderRegion, ...base];
+        }
+        return base;
+    }, [formData.game, formData.leaderRegion]);
+    const selectedGameRoles = useMemo(() => ROLE_NAMES[formData.game] || [], [formData.game]);
+
     const mapRiotRegion = (raw) => {
         const value = String(raw || '').toLowerCase().trim();
         const map = {
@@ -156,27 +251,122 @@ const CreateTeamPage = () => {
 
     useEffect(() => {
         if (!RIOT_GAMES.has(String(formData.game || '').trim())) return;
-        if (!currentUser?.connections?.riot?.verified) return;
-        const gameName = currentUser.connections.riot.gameName || '';
-        const tagLine = currentUser.connections.riot.tagLine || '';
-        const regionRaw =
-            currentUser?.gameProfiles?.lol?.platformRegion ||
-            currentUser?.gameProfiles?.valorant?.shard ||
-            currentUser?.connections?.riot?.accountRegion ||
-            '';
+        if (!riotVerified) return;
+        const gameName = riotGameName;
+        const tagLine = riotTagLine;
+        const regionRaw = riotRegionRaw;
         const region = mapRiotRegion(regionRaw);
 
-        setFormData((prev) => ({
-            ...prev,
-            leaderIgn: prev.leaderIgn || gameName,
-            leaderGameId: prev.leaderGameId || tagLine,
-            leaderRegion: prev.leaderRegion || region
-        }));
-    }, [formData.game, currentUser]);
+        setFormData((prev) => {
+            const nextIgn = gameName || prev.leaderIgn;
+            const nextGameId = tagLine || prev.leaderGameId;
+            const nextRegion = prev.leaderRegion || region;
+            if (
+                prev.leaderIgn === nextIgn &&
+                prev.leaderGameId === nextGameId &&
+                prev.leaderRegion === nextRegion
+            ) {
+                return prev;
+            }
+            return {
+                ...prev,
+                leaderIgn: nextIgn,
+                leaderGameId: nextGameId,
+                leaderRegion: nextRegion
+            };
+        });
+    }, [formData.game, riotVerified, riotGameName, riotTagLine, riotRegionRaw]);
+
+    useEffect(() => {
+        if (!MLBB_GAMES.has(String(formData.game || '').trim())) return;
+        if (!mlbbVerified) return;
+        const playerId = mlbbPlayerId;
+        const zoneId = mlbbZoneId;
+
+        setFormData((prev) => {
+            if (prev.leaderGameId === playerId && prev.leaderRegion === zoneId) {
+                return prev;
+            }
+            return {
+                ...prev,
+                leaderGameId: playerId,
+                leaderRegion: zoneId
+            };
+        });
+    }, [formData.game, mlbbVerified, mlbbPlayerId, mlbbZoneId]);
+
+    const lockMlbbIdentity = useMemo(
+        () => MLBB_GAMES.has(String(formData.game || '').trim()) && mlbbVerified,
+        [formData.game, mlbbVerified]
+    );
+    const riotLinked = useMemo(
+        () => riotVerified,
+        [riotVerified]
+    );
+    const mlbbLinked = useMemo(
+        () => {
+            const status = String(
+                currentUser?.connections?.mlbb?.verificationStatus
+                || (currentUser?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+            );
+            return status === 'verified';
+        },
+        [currentUser]
+    );
+    const isRiotGame = useMemo(
+        () => RIOT_GAMES.has(String(formData.game || '').trim()),
+        [formData.game]
+    );
+    const isMlbbGameSelected = useMemo(
+        () => MLBB_GAMES.has(String(formData.game || '').trim()),
+        [formData.game]
+    );
+    const lockRiotIdentity = useMemo(
+        () => isRiotGame && riotLinked && Boolean(riotTagLine),
+        [isRiotGame, riotLinked, riotTagLine]
+    );
+    const requiresLinkedAccount = useMemo(
+        () => isRiotGame || isMlbbGameSelected,
+        [isRiotGame, isMlbbGameSelected]
+    );
+    const hasRequiredLink = useMemo(() => {
+        if (!requiresLinkedAccount) return true;
+        if (isRiotGame) return riotLinked;
+        if (isMlbbGameSelected) return mlbbLinked;
+        return true;
+    }, [requiresLinkedAccount, isRiotGame, isMlbbGameSelected, riotLinked, mlbbLinked]);
+    const requiredLinkMessage = useMemo(() => {
+        if (!requiresLinkedAccount) return '';
+        if (isRiotGame) return 'Este juego requiere cuenta Riot vinculada y verificada en Conexiones.';
+        if (isMlbbGameSelected) return 'Este juego requiere cuenta MLBB verificada en Conexiones.';
+        return '';
+    }, [requiresLinkedAccount, isRiotGame, isMlbbGameSelected]);
+
+    useEffect(() => {
+        if (formData.teamCountry && !COUNTRY_OPTIONS.includes(formData.teamCountry)) {
+            setUseCustomCountry(true);
+        }
+    }, [formData.teamCountry]);
+
+    useEffect(() => {
+        if (lockMlbbIdentity) {
+            setUseCustomRegion(false);
+        }
+    }, [lockMlbbIdentity]);
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            if (!ALLOWED_LOGO_TYPES.has(file.type)) {
+                addToast('Logo inválido. Usa JPG, PNG o WEBP.', 'error');
+                e.target.value = '';
+                return;
+            }
+            if (file.size > MAX_LOGO_BYTES) {
+                addToast('El logo excede 8MB.', 'error');
+                e.target.value = '';
+                return;
+            }
             const reader = new FileReader();
             reader.onloadend = () => setLogoPreview(reader.result);
             reader.readAsDataURL(file);
@@ -196,15 +386,17 @@ const CreateTeamPage = () => {
     const handleGameChange = (e) => {
         const gameName = e.target.value;
         if (!gameName) {
-            setFormData(prev => ({ ...prev, game: '', maxMembers: 0 }));
+            setFormData(prev => ({ ...prev, game: '', maxMembers: 0, maxSubstitutes: 0, leaderRole: '' }));
             return;
         }
         
         const rules = esportsCatalog[selectedCategory][gameName];
+        const defaultRole = (ROLE_NAMES[gameName] && ROLE_NAMES[gameName][0]) ? ROLE_NAMES[gameName][0] : '';
         setFormData(prev => ({
             ...prev, game: gameName, 
             maxMembers: rules.maxPlayers, 
-            maxSubstitutes: rules.maxSubs
+            maxSubstitutes: rules.maxSubs,
+            leaderRole: defaultRole
         }));
 
         setRoster({
@@ -213,6 +405,65 @@ const CreateTeamPage = () => {
             coach: null
         });
     };
+
+    useEffect(() => {
+        if (step !== 2) return;
+        if (!formData.game || !formData.leaderIgn) return;
+        const captainUserId = String(currentUser?._id || currentUser?.id || '');
+        const captainPayload = {
+            user: captainUserId || null,
+            nickname: String(formData.leaderIgn || '').trim(),
+            gameId: String(formData.leaderGameId || '').trim(),
+            region: String(formData.leaderRegion || '').trim(),
+            email: '',
+            role: String(formData.leaderRole || '').trim()
+        };
+        const isEmptySlot = (slot) => !slot || (!slot.user && !slot.nickname && !slot.gameId && !slot.email && !slot.role);
+        const roleIdx = selectedGameRoles.findIndex((role) => normalizeText(role) === normalizeText(formData.leaderRole));
+
+        setRoster((prev) => {
+            const starters = Array.isArray(prev.starters) ? [...prev.starters] : [];
+            if (!starters.length) return prev;
+
+            const captainIndex = starters.findIndex((slot) => {
+                if (!slot) return false;
+                if (captainUserId && String(slot.user || '') === captainUserId) return true;
+                return (
+                    normalizeText(slot.nickname) === normalizeText(captainPayload.nickname) &&
+                    normalizeText(slot.gameId) === normalizeText(captainPayload.gameId)
+                );
+            });
+
+            if (captainIndex >= 0) {
+                const merged = { ...(starters[captainIndex] || {}), ...captainPayload };
+                const before = JSON.stringify(starters[captainIndex] || {});
+                const after = JSON.stringify(merged);
+                if (before === after) return prev;
+                starters[captainIndex] = merged;
+                return { ...prev, starters };
+            }
+
+            let targetIdx = -1;
+            if (roleIdx >= 0 && isEmptySlot(starters[roleIdx])) {
+                targetIdx = roleIdx;
+            } else {
+                targetIdx = starters.findIndex(isEmptySlot);
+            }
+            if (targetIdx < 0) return prev;
+
+            starters[targetIdx] = { ...(starters[targetIdx] || {}), ...captainPayload };
+            return { ...prev, starters };
+        });
+    }, [
+        step,
+        formData.game,
+        formData.leaderIgn,
+        formData.leaderGameId,
+        formData.leaderRegion,
+        formData.leaderRole,
+        selectedGameRoles,
+        currentUser
+    ]);
 
     const handleSlotClick = (type, index) => {
         setCurrentSlot({ type, index });
@@ -248,6 +499,10 @@ const CreateTeamPage = () => {
     };
 
     const finalizeCreation = async () => {
+    if (!hasRequiredLink) {
+        addToast(requiredLinkMessage || 'Debes vincular la cuenta del juego en Conexiones', 'error');
+        return;
+    }
     setSubmitting(true);
     
     try {
@@ -358,7 +613,7 @@ const CreateTeamPage = () => {
                                 <label htmlFor="logo-upload" className="logo-placeholder">
                                     {logoPreview ? <img src={logoPreview} alt="Logo" className="logo-preview-img" /> : <FaCamera />}
                                 </label>
-                                <input id="logo-upload" type="file" onChange={handleLogoChange} hidden />
+                                <input id="logo-upload" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoChange} hidden />
                             </div>
 
                             <div className="branding-inputs">
@@ -396,13 +651,36 @@ const CreateTeamPage = () => {
                                 </div>
                                 <div className="form-group">
                                     <label className="section-label"><FaMapMarkerAlt/> País / Región Base</label>
-                                    <input 
-                                        type="text" 
-                                        className="input-modern" 
-                                        placeholder="Ej: Argentina / Global" 
-                                        value={formData.teamCountry} 
-                                        onChange={e => setFormData({...formData, teamCountry: e.target.value})} 
-                                    />
+                                    <select
+                                        className="select-modern"
+                                        value={useCustomCountry ? CUSTOM_OPTION : (formData.teamCountry || '')}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === CUSTOM_OPTION) {
+                                                setUseCustomCountry(true);
+                                                setFormData({ ...formData, teamCountry: '' });
+                                                return;
+                                            }
+                                            setUseCustomCountry(false);
+                                            setFormData({ ...formData, teamCountry: value });
+                                        }}
+                                    >
+                                        <option value="">Selecciona país</option>
+                                        {COUNTRY_OPTIONS.map((country) => (
+                                            <option key={country} value={country}>{country}</option>
+                                        ))}
+                                        <option value={CUSTOM_OPTION}>Personalizado</option>
+                                    </select>
+                                    {useCustomCountry && (
+                                        <input
+                                            type="text"
+                                            className="input-modern"
+                                            placeholder="Escribe el país o región"
+                                            value={formData.teamCountry}
+                                            onChange={(e) => setFormData({ ...formData, teamCountry: e.target.value })}
+                                            style={{ marginTop: '8px' }}
+                                        />
+                                    )}
                                 </div>
                             </div>
 
@@ -457,6 +735,11 @@ const CreateTeamPage = () => {
                                         <option value="">{selectedCategory ? 'Selecciona Título' : '---'}</option>
                                         {selectedCategory && Object.keys(esportsCatalog[selectedCategory]).map(g => <option key={g} value={g}>{g}</option>)}
                                     </select>
+                                    {requiresLinkedAccount && !hasRequiredLink && (
+                                        <small style={{ color: '#ff6b6b', display: 'block', marginTop: '8px' }}>
+                                            {requiredLinkMessage}
+                                        </small>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -482,7 +765,8 @@ const CreateTeamPage = () => {
                                         type="text" 
                                         placeholder="Ej: Faker" 
                                         value={formData.leaderIgn} 
-                                        onChange={e => setFormData({...formData, leaderIgn: e.target.value})} 
+                                        onChange={e => setFormData({...formData, leaderIgn: e.target.value})}
+                                        disabled={lockRiotIdentity}
                                     />
                                 </div>
                                 <div>
@@ -491,39 +775,121 @@ const CreateTeamPage = () => {
                                         type="text" 
                                         placeholder="#TAG / UID" 
                                         value={formData.leaderGameId} 
-                                        onChange={e => setFormData({...formData, leaderGameId: e.target.value})} 
+                                        onChange={e => setFormData({...formData, leaderGameId: e.target.value})}
+                                        disabled={lockMlbbIdentity || lockRiotIdentity}
                                     />
                                 </div>
                             </div>
 
                             <div className="split-row">
                                 <div>
-                                    <label className="section-label">Región / Servidor</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Ej: LAS / NA" 
-                                        value={formData.leaderRegion} 
-                                        onChange={e => setFormData({...formData, leaderRegion: e.target.value})} 
-                                    />
+                                    <label className="section-label">
+                                        {isMlbbGameSelected ? 'Zone ID (MLBB)' : 'Región / Servidor'}
+                                    </label>
+                                    {isMlbbGameSelected ? (
+                                        <input
+                                            type="text"
+                                            className="input-modern"
+                                            placeholder="Ej: 5280"
+                                            value={formData.leaderRegion}
+                                            onChange={(e) => setFormData({ ...formData, leaderRegion: e.target.value.replace(/\D/g, '') })}
+                                            disabled={lockMlbbIdentity}
+                                        />
+                                    ) : (
+                                        <>
+                                            <select
+                                                className="select-modern"
+                                                value={useCustomRegion ? CUSTOM_OPTION : (formData.leaderRegion || '')}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    if (value === CUSTOM_OPTION) {
+                                                        setUseCustomRegion(true);
+                                                        setFormData({ ...formData, leaderRegion: '' });
+                                                        return;
+                                                    }
+                                                    setUseCustomRegion(false);
+                                                    setFormData({ ...formData, leaderRegion: value });
+                                                }}
+                                            >
+                                                <option value="">Selecciona región/servidor</option>
+                                                {regionOptions.map((region) => (
+                                                    <option key={region} value={region}>{region}</option>
+                                                ))}
+                                                <option value={CUSTOM_OPTION}>Personalizado</option>
+                                            </select>
+                                            {useCustomRegion && (
+                                                <input
+                                                    type="text"
+                                                    className="input-modern"
+                                                    placeholder="Escribe la región o servidor"
+                                                    value={formData.leaderRegion}
+                                                    onChange={(e) => setFormData({ ...formData, leaderRegion: e.target.value })}
+                                                    style={{ marginTop: '8px' }}
+                                                />
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="section-label">Tu Rol Principal</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Ej: IGL / Mid" 
-                                        value={formData.leaderRole} 
-                                        onChange={e => setFormData({...formData, leaderRole: e.target.value})} 
-                                    />
+                                    {selectedGameRoles.length > 0 ? (
+                                        <select
+                                            className="select-modern"
+                                            value={formData.leaderRole || ''}
+                                            onChange={(e) => setFormData({ ...formData, leaderRole: e.target.value })}
+                                        >
+                                            <option value="">Selecciona rol</option>
+                                            {selectedGameRoles.map((role) => (
+                                                <option key={role} value={role}>{role}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: IGL / Mid"
+                                            value={formData.leaderRole}
+                                            onChange={e => setFormData({ ...formData, leaderRole: e.target.value })}
+                                        />
+                                    )}
                                 </div>
                             </div>
+                            {lockMlbbIdentity && (
+                                <small style={{ color: 'var(--theme-color)', display: 'block', marginTop: '8px' }}>
+                                    Para MLBB usamos tu User ID + Zone ID verificados en Conexiones.
+                                </small>
+                            )}
+                            {lockRiotIdentity && (
+                                <small style={{ color: 'var(--theme-color)', display: 'block', marginTop: '8px' }}>
+                                    Para Riot usamos tu Riot ID vinculado en Conexiones.
+                                </small>
+                            )}
                         </div>
 
                         <div className="form-footer-sticky">
                             <button className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
                             <button 
                                 className="btn-primary-glow" 
-                                disabled={!formData.game || !formData.name || !formData.leaderIgn} 
-                                onClick={() => setStep(2)}
+                                disabled={!formData.game || !formData.name || !formData.leaderIgn || !hasRequiredLink}
+                                onClick={() => {
+                                    if (!hasRequiredLink) {
+                                        addToast(requiredLinkMessage || 'Debes vincular la cuenta del juego en Conexiones', 'error');
+                                        return;
+                                    }
+                                    if (selectedGameRoles.length > 0) {
+                                        if (!formData.leaderRole) {
+                                            addToast('Selecciona el rol principal del capitán.', 'error');
+                                            return;
+                                        }
+                                        const validRole = selectedGameRoles.some(
+                                            (role) => normalizeText(role) === normalizeText(formData.leaderRole)
+                                        );
+                                        if (!validRole) {
+                                            addToast('El rol del capitán debe existir en el roster del juego.', 'error');
+                                            return;
+                                        }
+                                    }
+                                    setStep(2);
+                                }}
                             >
                                 Siguiente: Roster
                             </button>
@@ -762,21 +1128,35 @@ const CreateTeamPage = () => {
 
                         <div className="split-row">
                             <div>
-                                <label className="section-label">Game ID / Tag</label>
+                                <label className="section-label">
+                                    {isMlbbGameSelected ? 'User ID (MLBB)' : 'Game ID / Tag'}
+                                </label>
                                 <input 
                                     type="text" 
-                                    placeholder="#TAG / UID"
+                                    placeholder={isMlbbGameSelected ? 'Ej: 853455730' : '#TAG / UID'}
                                     value={slotData.gameId} 
-                                    onChange={(e) => setSlotData({...slotData, gameId: e.target.value})} 
+                                    onChange={(e) =>
+                                        setSlotData({
+                                            ...slotData,
+                                            gameId: isMlbbGameSelected ? e.target.value.replace(/\D/g, '') : e.target.value
+                                        })
+                                    }
                                 />
                             </div>
                             <div>
-                                <label className="section-label">Región</label>
+                                <label className="section-label">
+                                    {isMlbbGameSelected ? 'Zone ID (MLBB)' : 'Región'}
+                                </label>
                                 <input 
                                     type="text" 
-                                    placeholder="Ej: LAS"
+                                    placeholder={isMlbbGameSelected ? 'Ej: 5280' : 'Ej: LAS'}
                                     value={slotData.region} 
-                                    onChange={(e) => setSlotData({...slotData, region: e.target.value})} 
+                                    onChange={(e) =>
+                                        setSlotData({
+                                            ...slotData,
+                                            region: isMlbbGameSelected ? e.target.value.replace(/\D/g, '') : e.target.value
+                                        })
+                                    }
                                 />
                             </div>
                         </div>

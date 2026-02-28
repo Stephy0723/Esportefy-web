@@ -11,9 +11,11 @@ import tournamentRoutes from './routes/tournament.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import communityRoutes from './routes/community.routes.js';
+import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
 
 dotenv.config();
 connectDB();
+startMlbbMailQueueWorker();
 
 const app = express();
 const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -97,6 +99,12 @@ app.use((err, req, res, next) => {
   if (err?.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({ message: 'Archivo demasiado grande' });
+    }
+    if (err.code === 'LIMIT_FIELD_VALUE') {
+      return res.status(413).json({ message: 'Los datos del formulario son demasiado grandes (reduce imágenes del roster)' });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ message: 'Campo de archivo inesperado. Usa el campo "logo".' });
     }
     return res.status(400).json({ message: 'Error al procesar el archivo' });
   }

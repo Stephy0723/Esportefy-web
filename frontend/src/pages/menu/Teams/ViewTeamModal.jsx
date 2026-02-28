@@ -49,6 +49,29 @@ const TABS = [
     { key: 'settings', icon: 'bx-cog', label: 'Ajustes' },
 ];
 
+const resolveMediaUrl = (src) => {
+    const raw = String(src || '').trim();
+    if (!raw) return '';
+    if (/^(data:|blob:)/i.test(raw)) return raw;
+    const apiBase = String(API_URL || '').replace(/\/+$/, '');
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            const url = new URL(raw);
+            if ((url.hostname === 'localhost' || url.hostname === '127.0.0.1') && apiBase) {
+                const apiUrl = new URL(apiBase);
+                return `${apiUrl.protocol}//${apiUrl.host}${url.pathname}${url.search}${url.hash}`;
+            }
+        } catch (_) {
+            return raw;
+        }
+        return raw;
+    }
+    if (!apiBase) return raw;
+    return raw.startsWith('/') ? `${apiBase}${raw}` : `${apiBase}/${raw}`;
+};
+
+const getPublicTeamCode = (team) => String(team?.teamCode || '').trim().toUpperCase();
+
 const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, initialInviteCode }) => {
     if (!isOpen || !team) return null;
 
@@ -318,11 +341,14 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                     <div className="vtm-header-top">
                         <div className="vtm-header-logo">
                             {team.logo
-                                ? <img src={team.logo} alt="" />
+                                ? <img src={resolveMediaUrl(team.logo)} alt="" />
                                 : <span>{(team.name || '??').substring(0, 2).toUpperCase()}</span>
                             }
                         </div>
                         <div className="vtm-header-info">
+                            {getPublicTeamCode(team) && (
+                                <span className="tournament-id-tag">#{getPublicTeamCode(team)}</span>
+                            )}
                             <h2>{team.name}</h2>
                             <div className="vtm-header-tags">
                                 <span className="vtm-tag vtm-tag--game">{(team.game || 'SIN JUEGO').toUpperCase()}</span>
@@ -460,7 +486,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                         <div className="vtm-logo-upload">
                                             <div className="vtm-logo-preview">
                                                 {(logoPreview || team.logo)
-                                                    ? <img src={logoPreview || team.logo} alt="" />
+                                                    ? <img src={resolveMediaUrl(logoPreview || team.logo)} alt="" />
                                                     : <i className='bx bx-image-add'></i>
                                                 }
                                             </div>
@@ -498,7 +524,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                         <div key={entry.id} className={`vtm-player ${entry.filled ? '' : 'vtm-player--empty'}`}>
                                             <div className="vtm-player-avatar">
                                                 {entry.photo
-                                                    ? <img src={entry.photo} alt="" />
+                                                    ? <img src={resolveMediaUrl(entry.photo)} alt="" />
                                                     : entry.filled
                                                         ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${entry.name}`} alt="" />
                                                         : <i className='bx bx-user-plus'></i>
@@ -538,7 +564,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                             <div key={entry.id} className={`vtm-player ${entry.filled ? '' : 'vtm-player--empty'}`}>
                                                 <div className="vtm-player-avatar">
                                                     {entry.photo
-                                                        ? <img src={entry.photo} alt="" />
+                                                        ? <img src={resolveMediaUrl(entry.photo)} alt="" />
                                                         : entry.filled
                                                             ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${entry.name}`} alt="" />
                                                             : <i className='bx bx-user-plus'></i>
@@ -574,7 +600,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                         <div className={`vtm-player vtm-player--coach ${coach.filled ? '' : 'vtm-player--empty'}`}>
                                             <div className="vtm-player-avatar">
                                                 {coach.photo
-                                                    ? <img src={coach.photo} alt="" />
+                                                    ? <img src={resolveMediaUrl(coach.photo)} alt="" />
                                                     : coach.filled
                                                         ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${coach.name}`} alt="" />
                                                         : <i className='bx bx-user-voice'></i>

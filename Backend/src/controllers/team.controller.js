@@ -39,7 +39,10 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ 
     storage,
-    limits: { fileSize: 8 * 1024 * 1024 },
+    limits: {
+        fileSize: 8 * 1024 * 1024,
+        fieldSize: 20 * 1024 * 1024
+    },
     fileFilter: (req, file, cb) => {
         const ext = path.extname(file.originalname || '').toLowerCase();
         const validMime = ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype);
@@ -57,6 +60,9 @@ export const getTeamByInviteCode = async (req, res) => {
         if (!code) return res.status(400).json({ message: "Código requerido" });
         const team = await Team.findOne({ inviteCode: String(code).toUpperCase() });
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
+        if (!team.teamCode) {
+            await team.save();
+        }
         return res.status(200).json(team);
     } catch (error) {
         return res.status(500).json({ message: "Error al buscar equipo", error: error.message });
@@ -72,8 +78,8 @@ export const createTeam = async (req, res) => {
         const parsedFormData = typeof formData === 'string' ? JSON.parse(formData) : formData;
         const parsedRoster = typeof roster === 'string' ? JSON.parse(roster) : roster;
 
-        const logoPath = req.file 
-            ? `${req.protocol}://${req.get('host')}/uploads/teams/${req.file.filename}`
+        const logoPath = req.file
+            ? `/uploads/teams/${req.file.filename}`
             : '/uploads/teams/default.png';
 
         const rosterData = parsedRoster || { starters: [], subs: [], coach: null };
@@ -86,11 +92,34 @@ export const createTeam = async (req, res) => {
             email: '',
             role: parsedFormData?.leaderRole || ''
         };
-        if (Array.isArray(rosterData.starters) && !rosterData.starters[0]) {
-            rosterData.starters[0] = captainPlayer;
+        if (Array.isArray(rosterData.starters)) {
+            const isEmptySlot = (slot) => !slot || (!slot.user && !slot.nickname && !slot.gameId && !slot.email && !slot.role);
+            const captainIdx = rosterData.starters.findIndex((slot) => String(slot?.user || '') === String(req.userId));
+            if (captainIdx >= 0) {
+                rosterData.starters[captainIdx] = {
+                    ...(rosterData.starters[captainIdx] || {}),
+                    ...captainPlayer
+                };
+            } else {
+                const firstEmptyIdx = rosterData.starters.findIndex(isEmptySlot);
+                if (firstEmptyIdx >= 0) {
+                    rosterData.starters[firstEmptyIdx] = {
+                        ...(rosterData.starters[firstEmptyIdx] || {}),
+                        ...captainPlayer
+                    };
+                } else if (rosterData.starters.length === 0) {
+                    rosterData.starters.push(captainPlayer);
+                } else {
+                    return res.status(400).json({ message: "Debes dejar un slot disponible para el capitán en el roster" });
+                }
+            }
         }
 
         if (RIOT_GAMES.has(parsedFormData.game)) {
+            const linked = await requireRiotLinked(req.userId);
+            if (!linked) {
+                return res.status(400).json({ message: "Debes vincular tu cuenta Riot en Conexiones para crear equipo" });
+            }
             if (process.env.RIOT_API_KEY) {
                 const riotCheck = await validateRiotAccount(parsedFormData.leaderIgn, parsedFormData.leaderGameId);
                 if (!riotCheck.ok) {
@@ -105,6 +134,28 @@ export const createTeam = async (req, res) => {
             } else {
                 console.warn('[createTeam] RIOT_API_KEY no configurada — Riot validation omitida (dev mode)');
             }
+        }
+        if (isMlbbGame(parsedFormData.game)) {
+            const ok = await requireMlbbLinked(req.userId);
+            if (!ok) return res.status(400).json({ message: "Debes verificar tu cuenta MLBB en Conexiones para crear equipo" });
+            const mlbbCheck = validateMlbbIdentity(parsedFormData.leaderGameId, parsedFormData.leaderRegion);
+            if (!mlbbCheck.ok) return res.status(400).json({ message: mlbbCheck.message });
+            const mlbbMatch = await ensureMlbbPlayerMatchesLinkedUser(
+                req.userId,
+                parsedFormData.leaderGameId,
+                parsedFormData.leaderRegion
+            );
+            if (!mlbbMatch.ok) return res.status(400).json({ message: mlbbMatch.message });
+            if (Array.isArray(rosterData.starters)) {
+                rosterData.starters[0] = {
+                    ...(rosterData.starters[0] || {}),
+                    user: req.userId,
+                    gameId: String(parsedFormData.leaderGameId || '').trim(),
+                    region: String(parsedFormData.leaderRegion || '').trim()
+                };
+            }
+            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(parsedFormData.game, parsedFormData.leaderGameId, parsedFormData.leaderRegion, null);
+            if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
         }
 
         const uniqueCheck = await ensureUserNotInOtherTeam(parsedFormData.game, req.userId, null);
@@ -136,7 +187,6 @@ export const createTeam = async (req, res) => {
 };
 
 const userInRoster = (team, userId) => {
-    if (String(team?.captain || '') === String(userId || '')) return true;
     const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
     const subs = Array.isArray(team.roster?.subs) ? team.roster.subs : [];
     const coach = team.roster?.coach;
@@ -162,10 +212,6 @@ const applyRosterSlot = (team, slotType, slotIndex, player) => {
     const list = Array.isArray(team.roster[slotType]) ? team.roster[slotType] : [];
     const idx = Number(slotIndex);
     if (Number.isNaN(idx) || idx < 0) return { ok: false, message: 'Índice inválido' };
-    const max = slotType === 'starters' ? Number(team.maxMembers) : Number(team.maxSubstitutes);
-    if (Number.isFinite(max) && max > 0 && idx >= max) {
-        return { ok: false, message: `Slot fuera del límite de ${slotType === 'starters' ? 'titulares' : 'suplentes'}` };
-    }
     if (isSlotFilled(list[idx])) return { ok: false, message: 'Ese slot ya está ocupado' };
     list[idx] = { ...(list[idx] || {}), ...player };
     team.roster[slotType] = list;
@@ -232,59 +278,6 @@ const pushNotification = async (userId, payload) => {
     await User.findByIdAndUpdate(userId, { $push: { notifications: payload } });
 };
 
-const toPlayerList = (roster = {}) => {
-    const starters = Array.isArray(roster?.starters) ? roster.starters : [];
-    const subs = Array.isArray(roster?.subs) ? roster.subs : [];
-    const coach = roster?.coach;
-    return [...starters, ...subs, coach].filter(Boolean);
-};
-
-const findDuplicateValue = (values = []) => {
-    const seen = new Set();
-    for (const value of values || []) {
-        const normalized = String(value || '').trim();
-        if (!normalized) continue;
-        if (seen.has(normalized)) return normalized;
-        seen.add(normalized);
-    }
-    return '';
-};
-
-const findDuplicateUserInRoster = (roster = {}) => {
-    const users = toPlayerList(roster)
-        .map((player) => String(player?.user || '').trim())
-        .filter(Boolean);
-    return findDuplicateValue(users);
-};
-
-const sanitizeCreateRoster = (roster = {}) => {
-    const sanitizePlayer = (player) => {
-        if (!player || typeof player !== 'object') return null;
-        return { ...player, user: null };
-    };
-    return {
-        starters: Array.isArray(roster?.starters) ? roster.starters.map(sanitizePlayer) : [],
-        subs: Array.isArray(roster?.subs) ? roster.subs.map(sanitizePlayer) : [],
-        coach: sanitizePlayer(roster?.coach)
-    };
-};
-
-const validateRequestedSlot = (team, slotType, slotIndex) => {
-    if (slotType === 'coach') return { ok: true, slotIndex: 0 };
-    if (!['starters', 'subs'].includes(slotType)) {
-        return { ok: false, message: 'Slot inválido' };
-    }
-    const idx = Number(slotIndex);
-    if (Number.isNaN(idx) || idx < 0) {
-        return { ok: false, message: 'Índice inválido' };
-    }
-    const max = slotType === 'starters' ? Number(team.maxMembers) : Number(team.maxSubstitutes);
-    if (Number.isFinite(max) && max > 0 && idx >= max) {
-        return { ok: false, message: `Slot fuera del límite de ${slotType === 'starters' ? 'titulares' : 'suplentes'}` };
-    }
-    return { ok: true, slotIndex: idx };
-};
-
 const RIOT_GAMES = new Set([
     'Valorant',
     'League of Legends',
@@ -292,99 +285,87 @@ const RIOT_GAMES = new Set([
     'Teamfight Tactics',
     'Legends of Runeterra'
 ]);
+const MLBB_GAMES = new Set([
+    'Mobile Legends',
+    'Mobile Legends: Bang Bang',
+    'MLBB'
+]);
 
-const normalizeRiotPart = (value = '') => String(value || '').trim().toLowerCase();
+const isMlbbGame = (game) => MLBB_GAMES.has(String(game || '').trim());
 
-const riotIdMatches = (leftName, leftTag, rightName, rightTag) => (
-    normalizeRiotPart(leftName) === normalizeRiotPart(rightName)
-    && normalizeRiotPart(leftTag) === normalizeRiotPart(rightTag)
-);
-
-const buildRiotKey = (nickname, gameId) => {
-    const gn = normalizeRiotPart(nickname);
-    const tl = normalizeRiotPart(gameId);
-    if (!gn || !tl) return '';
-    return `${gn}#${tl}`;
-};
-
-const findDuplicateRiotInRoster = (roster = {}) => {
-    const riotKeys = toPlayerList(roster)
-        .map((player) => buildRiotKey(player?.nickname, player?.gameId))
-        .filter(Boolean);
-    return findDuplicateValue(riotKeys);
-};
-
-const findRiotInRoster = (team) => {
-    const starters = Array.isArray(team?.roster?.starters) ? team.roster.starters : [];
-    const subs = Array.isArray(team?.roster?.subs) ? team.roster.subs : [];
-    const coach = team?.roster?.coach;
-    return [...starters, ...subs, coach].filter(Boolean);
-};
-
-const riotIdExistsInTeamRoster = (team, nickname, gameId) => {
-    const gn = String(nickname || '').trim();
-    const tl = String(gameId || '').trim();
-    if (!gn || !tl) return false;
-
-    return findRiotInRoster(team).some((player) => (
-        riotIdMatches(player?.nickname, player?.gameId, gn, tl)
-    ));
-};
-
-const riotIdExistsInPendingRequests = (team, nickname, gameId, ignoredRequestId = '') => {
-    const gn = String(nickname || '').trim();
-    const tl = String(gameId || '').trim();
-    if (!gn || !tl) return false;
-    const ignore = String(ignoredRequestId || '');
-
-    const requests = Array.isArray(team?.joinRequests) ? team.joinRequests : [];
-    return requests.some((request) => {
-        if (ignore && String(request?._id || '') === ignore) return false;
-        if (String(request?.status || 'pending').toLowerCase() !== 'pending') return false;
-        return riotIdMatches(request?.player?.nickname, request?.player?.gameId, gn, tl);
-    });
-};
-
-const getLinkedRiotForUser = async (userId) => {
+const requireRiotLinked = async (userId) => {
     const user = await User.findById(userId).select('connections.riot');
-    if (!user?.connections?.riot?.verified) {
-        return { ok: false, message: 'Debes vincular tu cuenta Riot para continuar' };
-    }
+    return Boolean(user?.connections?.riot?.verified);
+};
 
-    const gameName = String(user?.connections?.riot?.gameName || '').trim();
-    const tagLine = String(user?.connections?.riot?.tagLine || '').trim();
-    if (!gameName || !tagLine) {
-        return { ok: false, message: 'Tu cuenta Riot vinculada está incompleta. Vuelve a vincularla.' };
-    }
-
+const getMlbbConnectionState = async (userId) => {
+    const user = await User.findById(userId).select('connections.mlbb');
+    const status = String(
+        user?.connections?.mlbb?.verificationStatus
+        || (user?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+    );
     return {
-        ok: true,
-        riot: {
-            gameName,
-            tagLine,
-            riotId: `${gameName}#${tagLine}`
-        }
+        status,
+        playerId: String(user?.connections?.mlbb?.playerId || '').trim(),
+        zoneId: String(user?.connections?.mlbb?.zoneId || '').trim()
     };
 };
 
-const ensurePlayerMatchesLinkedRiot = async (userId, player = {}) => {
-    const linked = await getLinkedRiotForUser(userId);
-    if (!linked.ok) return linked;
+const requireMlbbLinked = async (userId) => {
+    const conn = await getMlbbConnectionState(userId);
+    return conn.status === 'verified';
+};
 
-    const nickname = String(player?.nickname || '').trim();
-    const gameId = String(player?.gameId || '').trim();
-    if (!nickname || !gameId) {
-        return { ok: false, message: 'Debes indicar tu Riot ID completo (GameName y TagLine)' };
+const validateMlbbIdentity = (playerId, zoneId) => {
+    const pid = String(playerId || '').trim();
+    const zid = String(zoneId || '').trim();
+    if (!pid || !zid) {
+        return { ok: false, message: 'Para Mobile Legends debes completar User ID y Zone ID.' };
+    }
+    if (!/^\d+$/.test(pid)) {
+        return { ok: false, message: 'El User ID de Mobile Legends debe contener solo números.' };
+    }
+    if (!/^\d+$/.test(zid)) {
+        return { ok: false, message: 'El Zone ID de Mobile Legends debe contener solo números.' };
+    }
+    return { ok: true };
+};
+
+const ensureMlbbPlayerMatchesLinkedUser = async (userId, playerId, zoneId) => {
+    const conn = await getMlbbConnectionState(userId);
+    if (conn.status !== 'verified') {
+        return { ok: false, message: 'La cuenta MLBB del jugador no está verificada.' };
     }
 
-    if (!riotIdMatches(nickname, gameId, linked.riot.gameName, linked.riot.tagLine)) {
-        return {
-            ok: false,
-            message: `El Riot ID debe coincidir con tu cuenta vinculada (${linked.riot.riotId})`
-        };
+    const pid = String(playerId || '').trim();
+    const zid = String(zoneId || '').trim();
+    if (pid !== conn.playerId || zid !== conn.zoneId) {
+        return { ok: false, message: 'El User ID + Zone ID no coincide con la cuenta MLBB vinculada.' };
     }
 
-    return linked;
+    return { ok: true };
+};
+
+const ensureMlbbIdNotInOtherTeam = async (game, playerId, zoneId, currentTeamId) => {
+    const pid = String(playerId || '').trim();
+    const zid = String(zoneId || '').trim();
+    if (!pid || !zid) return { ok: true };
+    const playerRegex = new RegExp(`^${pid.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i');
+    const zoneRegex = new RegExp(`^${zid.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i');
+    const query = {
+        game,
+        _id: { $ne: currentTeamId },
+        $or: [
+            { 'roster.starters': { $elemMatch: { gameId: playerRegex, region: zoneRegex } } },
+            { 'roster.subs': { $elemMatch: { gameId: playerRegex, region: zoneRegex } } },
+            { 'roster.coach.gameId': playerRegex, 'roster.coach.region': zoneRegex }
+        ]
+    };
+    const exists = await Team.findOne(query).select('_id');
+    if (exists) {
+        return { ok: false, message: 'Este User ID + Zone ID de Mobile Legends ya pertenece a otro equipo de este juego' };
+    }
+    return { ok: true };
 };
 
 const canJoinByGender = async (team, userId) => {
@@ -397,37 +378,8 @@ const canJoinByGender = async (team, userId) => {
     return { ok: true };
 };
 const validateRiotAccount = async (gameName, tagLine) => {
-    const isLocalOrPrivateHost = (hostname = '') => {
-        const host = String(hostname || '').trim().toLowerCase();
-        if (!host) return false;
-        if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return true;
-        if (host.startsWith('10.')) return true;
-        if (host.startsWith('192.168.')) return true;
-        if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
-        return false;
-    };
-
     if (!process.env.RIOT_API_KEY) {
-        return { ok: false, message: 'Riot API no configurada en el servidor' };
-    }
-    const keyMode = String(process.env.RIOT_KEY_MODE || 'development').trim().toLowerCase();
-    const nodeEnv = String(process.env.NODE_ENV || 'development').trim().toLowerCase();
-    const allowDevKeyInProd = String(process.env.ALLOW_RIOT_DEV_KEY_IN_PROD || '').trim().toLowerCase() === 'true';
-    if (keyMode !== 'production' && nodeEnv === 'production' && !allowDevKeyInProd) {
-        return { ok: false, message: 'La key Riot en modo development/interim no puede usarse en este entorno' };
-    }
-    if (keyMode !== 'production') {
-        const frontendUrl = String(process.env.FRONTEND_URL || '').trim();
-        if (frontendUrl) {
-            try {
-                const frontendHost = new URL(frontendUrl).hostname;
-                if (!isLocalOrPrivateHost(frontendHost) && !allowDevKeyInProd) {
-                    return { ok: false, message: 'La key Riot en modo development/interim requiere entorno local/privado' };
-                }
-            } catch (_) {
-                return { ok: false, message: 'FRONTEND_URL inválida para RIOT_KEY_MODE=development' };
-            }
-        }
+        throw new Error('RIOT_API_KEY no configurada');
     }
     const gn = String(gameName || '').trim();
     const tl = String(tagLine || '').trim();
@@ -441,11 +393,7 @@ const validateRiotAccount = async (gameName, tagLine) => {
         );
         return { ok: true };
     } catch (e) {
-        const status = e?.response?.status;
-        if (status === 404) return { ok: false, message: 'Riot ID no válido' };
-        if (status === 429) return { ok: false, message: 'Riot API rate limit alcanzado. Intenta más tarde.' };
-        if (status === 401 || status === 403) return { ok: false, message: 'Riot API key inválida o sin permisos' };
-        return { ok: false, message: 'No se pudo validar Riot ID en este momento' };
+        return { ok: false, message: 'Riot ID no válido' };
     }
 };
 
@@ -453,7 +401,6 @@ export const joinTeam = async (req, res) => {
     try {
         const { teamId, inviteCode, slotType, slotIndex, player } = req.body;
         const team = await Team.findById(teamId);
-        let normalizedPlayer = { ...(player || {}) };
 
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
         const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id);
@@ -461,19 +408,22 @@ export const joinTeam = async (req, res) => {
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
         if (RIOT_GAMES.has(team.game)) {
-            const linked = await ensurePlayerMatchesLinkedRiot(req.userId, normalizedPlayer);
-            if (!linked.ok) return res.status(400).json({ message: linked.message });
-            normalizedPlayer.nickname = linked.riot.gameName;
-            normalizedPlayer.gameId = linked.riot.tagLine;
-
-            if (riotIdExistsInTeamRoster(team, normalizedPlayer.nickname, normalizedPlayer.gameId)) {
-                return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
-            }
-
-            const riotCheck = await validateRiotAccount(normalizedPlayer.nickname, normalizedPlayer.gameId);
+            const ok = await requireRiotLinked(req.userId);
+            if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para unirte a este equipo" });
+            const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, normalizedPlayer.nickname, normalizedPlayer.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
+        }
+        if (isMlbbGame(team.game)) {
+            const ok = await requireMlbbLinked(req.userId);
+            if (!ok) return res.status(400).json({ message: "Debes verificar tu cuenta MLBB para unirte a este equipo" });
+            const mlbbCheck = validateMlbbIdentity(player?.gameId, player?.region);
+            if (!mlbbCheck.ok) return res.status(400).json({ message: mlbbCheck.message });
+            const mlbbMatch = await ensureMlbbPlayerMatchesLinkedUser(req.userId, player?.gameId, player?.region);
+            if (!mlbbMatch.ok) return res.status(400).json({ message: mlbbMatch.message });
+            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, player?.gameId, player?.region, team._id);
+            if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
         }
         if (!inviteCode || inviteCode !== team.inviteCode) {
             return res.status(401).json({ message: "Código incorrecto" });
@@ -481,10 +431,10 @@ export const joinTeam = async (req, res) => {
         if (userInRoster(team, req.userId)) {
             return res.status(400).json({ message: "Ya estás en este equipo" });
         }
-        if (!normalizedPlayer?.nickname) {
+        if (!player?.nickname) {
             return res.status(400).json({ message: "Nickname requerido" });
         }
-        const playerPayload = { ...normalizedPlayer, user: req.userId };
+        const playerPayload = { ...player, user: req.userId };
         const applied = applyRosterSlot(team, slotType, slotIndex, playerPayload);
         if (!applied.ok) return res.status(400).json({ message: applied.message });
 
@@ -519,53 +469,43 @@ export const addMemberDirect = async (req, res) => {
             return res.status(403).json({ message: "No tienes permisos para gestionar este equipo" });
         }
 
-        const slotValidation = validateRequestedSlot(team, slotType, slotIndex);
-        if (!slotValidation.ok) return res.status(400).json({ message: slotValidation.message });
-
-        const incomingUserId = String(player?.user || '').trim();
-        if (incomingUserId) {
-            if (userInRoster(team, incomingUserId)) {
-                return res.status(400).json({ message: "Ese usuario ya está en este equipo" });
-            }
-            const uniqueCheck = await ensureUserNotInOtherTeam(team.game, incomingUserId, team._id);
-            if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
-            const genderCheck = await canJoinByGender(team, incomingUserId);
-            if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
-        }
-
-        const normalizedPlayer = { ...(player || {}) };
-        const persistedUser = incomingUserId || null;
-
-        if (RIOT_GAMES.has(team.game)) {
-            if (incomingUserId) {
-                const linked = await ensurePlayerMatchesLinkedRiot(incomingUserId, normalizedPlayer);
-                if (!linked.ok) return res.status(400).json({ message: linked.message });
-                normalizedPlayer.nickname = linked.riot.gameName;
-                normalizedPlayer.gameId = linked.riot.tagLine;
-            }
-            if (!normalizedPlayer?.nickname || !normalizedPlayer?.gameId) {
-                return res.status(400).json({ message: "Riot ID requerido (GameName y TagLine)" });
-            }
-            if (riotIdExistsInTeamRoster(team, normalizedPlayer?.nickname, normalizedPlayer?.gameId)) {
-                return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
-            }
-            const riotCheck = await validateRiotAccount(normalizedPlayer?.nickname, normalizedPlayer?.gameId);
-            if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, normalizedPlayer?.nickname, normalizedPlayer?.gameId, team._id);
-            if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
-        }
-
-        if (!normalizedPlayer?.nickname) {
+        if (!player?.nickname) {
             return res.status(400).json({ message: "Nickname requerido" });
         }
 
-        const applied = applyRosterSlot(team, slotType, slotValidation.slotIndex, { ...normalizedPlayer, user: persistedUser });
+        if (slotType === 'starters' && Number.isFinite(team.maxMembers) && Number(slotIndex) >= Number(team.maxMembers)) {
+            return res.status(400).json({ message: "Slot fuera del límite de titulares" });
+        }
+        if (slotType === 'subs' && Number.isFinite(team.maxSubstitutes) && Number(slotIndex) >= Number(team.maxSubstitutes)) {
+            return res.status(400).json({ message: "Slot fuera del límite de suplentes" });
+        }
+
+        if (RIOT_GAMES.has(team.game)) {
+            const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
+            if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
+            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
+            if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
+        }
+        if (isMlbbGame(team.game)) {
+            const mlbbCheck = validateMlbbIdentity(player?.gameId, player?.region);
+            if (!mlbbCheck.ok) return res.status(400).json({ message: mlbbCheck.message });
+            if (player?.user) {
+                const uniqueUser = await ensureUserNotInOtherTeam(team.game, player.user, team._id);
+                if (!uniqueUser.ok) return res.status(400).json({ message: uniqueUser.message });
+                const mlbbMatch = await ensureMlbbPlayerMatchesLinkedUser(player.user, player?.gameId, player?.region);
+                if (!mlbbMatch.ok) return res.status(400).json({ message: mlbbMatch.message });
+            }
+            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, player?.gameId, player?.region, team._id);
+            if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
+        }
+
+        const applied = applyRosterSlot(team, slotType, slotIndex, {
+            ...player,
+            user: player?.user || null
+        });
         if (!applied.ok) return res.status(400).json({ message: applied.message });
 
         await team.save();
-        if (persistedUser) {
-            await User.updateOne({ _id: persistedUser }, { $addToSet: { teams: team._id } });
-        }
         return res.status(200).json({ message: "Jugador agregado", team });
     } catch (error) {
         return res.status(500).json({ message: "Error al agregar jugador", error: error.message });
@@ -636,7 +576,6 @@ export const requestJoinTeam = async (req, res) => {
         const { teamId } = req.params;
         const { slotType, slotIndex, player, inviteCode } = req.body;
         const team = await Team.findById(teamId);
-        let normalizedPlayer = { ...(player || {}) };
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
 
         // Invite code verification
@@ -649,22 +588,22 @@ export const requestJoinTeam = async (req, res) => {
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
         if (RIOT_GAMES.has(team.game)) {
-            const linked = await ensurePlayerMatchesLinkedRiot(req.userId, normalizedPlayer);
-            if (!linked.ok) return res.status(400).json({ message: linked.message });
-            normalizedPlayer.nickname = linked.riot.gameName;
-            normalizedPlayer.gameId = linked.riot.tagLine;
-
-            if (riotIdExistsInTeamRoster(team, normalizedPlayer.nickname, normalizedPlayer.gameId)) {
-                return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
-            }
-            if (riotIdExistsInPendingRequests(team, normalizedPlayer.nickname, normalizedPlayer.gameId)) {
-                return res.status(400).json({ message: "Ya existe una solicitud pendiente con ese Riot ID" });
-            }
-
-            const riotCheck = await validateRiotAccount(normalizedPlayer.nickname, normalizedPlayer.gameId);
+            const ok = await requireRiotLinked(req.userId);
+            if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para solicitar ingreso" });
+            const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, normalizedPlayer.nickname, normalizedPlayer.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
+        }
+        if (isMlbbGame(team.game)) {
+            const ok = await requireMlbbLinked(req.userId);
+            if (!ok) return res.status(400).json({ message: "Debes verificar tu cuenta MLBB para solicitar ingreso" });
+            const mlbbCheck = validateMlbbIdentity(player?.gameId, player?.region);
+            if (!mlbbCheck.ok) return res.status(400).json({ message: mlbbCheck.message });
+            const mlbbMatch = await ensureMlbbPlayerMatchesLinkedUser(req.userId, player?.gameId, player?.region);
+            if (!mlbbMatch.ok) return res.status(400).json({ message: mlbbMatch.message });
+            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, player?.gameId, player?.region, team._id);
+            if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
         }
         if (userInRoster(team, req.userId)) {
             return res.status(400).json({ message: "Ya estás en este equipo" });
@@ -685,8 +624,8 @@ export const requestJoinTeam = async (req, res) => {
         team.joinRequests.push({
             user: req.userId,
             slotType,
-            slotIndex: slotValidation.slotIndex,
-            player: { ...normalizedPlayer, user: req.userId },
+            slotIndex: Number(slotIndex) || 0,
+            player: { ...player, user: req.userId },
             status: 'pending'
         });
         await team.save();
@@ -737,31 +676,27 @@ export const handleJoinRequest = async (req, res) => {
         if (!Array.isArray(team.joinRequests)) team.joinRequests = [];
         const reqDoc = team.joinRequests.id(requestId);
         if (!reqDoc) return res.status(404).json({ message: "Solicitud no encontrada" });
-        if (String(reqDoc.status || 'pending').toLowerCase() !== 'pending') {
-            return res.status(400).json({ message: "La solicitud ya fue gestionada" });
-        }
 
         if (action === 'approve') {
             const uniqueCheck = await ensureUserNotInOtherTeam(team.game, reqDoc.user, team._id);
             if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
-            let requestPlayer = { ...(reqDoc.player || {}) };
             if (RIOT_GAMES.has(team.game)) {
-                const linked = await ensurePlayerMatchesLinkedRiot(reqDoc.user, requestPlayer);
-                if (!linked.ok) return res.status(400).json({ message: linked.message });
-                requestPlayer.nickname = linked.riot.gameName;
-                requestPlayer.gameId = linked.riot.tagLine;
-
-                if (riotIdExistsInTeamRoster(team, requestPlayer.nickname, requestPlayer.gameId)) {
-                    return res.status(400).json({ message: "Ese Riot ID ya está en este equipo" });
-                }
-                if (riotIdExistsInPendingRequests(team, requestPlayer.nickname, requestPlayer.gameId, requestId)) {
-                    return res.status(400).json({ message: "Ya existe otra solicitud pendiente con ese Riot ID" });
-                }
-
-                const riotCheck = await validateRiotAccount(requestPlayer.nickname, requestPlayer.gameId);
+                const ok = await requireRiotLinked(reqDoc.user);
+                if (!ok) return res.status(400).json({ message: "El jugador debe vincular su cuenta Riot" });
+                const riotCheck = await validateRiotAccount(reqDoc.player?.nickname, reqDoc.player?.gameId);
                 if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-                const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, requestPlayer.nickname, requestPlayer.gameId, team._id);
+                const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, reqDoc.player?.nickname, reqDoc.player?.gameId, team._id);
                 if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
+            }
+            if (isMlbbGame(team.game)) {
+                const ok = await requireMlbbLinked(reqDoc.user);
+                if (!ok) return res.status(400).json({ message: "El jugador debe verificar su cuenta MLBB" });
+                const mlbbCheck = validateMlbbIdentity(reqDoc.player?.gameId, reqDoc.player?.region);
+                if (!mlbbCheck.ok) return res.status(400).json({ message: mlbbCheck.message });
+                const mlbbMatch = await ensureMlbbPlayerMatchesLinkedUser(reqDoc.user, reqDoc.player?.gameId, reqDoc.player?.region);
+                if (!mlbbMatch.ok) return res.status(400).json({ message: mlbbMatch.message });
+                const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, reqDoc.player?.gameId, reqDoc.player?.region, team._id);
+                if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
             }
             const genderCheck = await canJoinByGender(team, reqDoc.user);
             if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
@@ -770,7 +705,7 @@ export const handleJoinRequest = async (req, res) => {
                 await team.save();
                 return res.status(400).json({ message: "El jugador ya está en el equipo" });
             }
-            let applied = applyRosterSlot(team, reqDoc.slotType, reqDoc.slotIndex, requestPlayer || {});
+            let applied = applyRosterSlot(team, reqDoc.slotType, reqDoc.slotIndex, reqDoc.player || {});
             if (!applied.ok) {
                 // Si el slot solicitado está ocupado, intenta el primero disponible
                 if (applied.message === 'Ese slot ya está ocupado' && ['starters', 'subs'].includes(reqDoc.slotType)) {
@@ -778,7 +713,7 @@ export const handleJoinRequest = async (req, res) => {
                     if (firstEmpty === -1) {
                         return res.status(400).json({ message: 'No hay slots disponibles' });
                     }
-                    applied = applyRosterSlot(team, reqDoc.slotType, firstEmpty, requestPlayer || {});
+                    applied = applyRosterSlot(team, reqDoc.slotType, firstEmpty, reqDoc.player || {});
                 }
                 if (!applied.ok) return res.status(400).json({ message: applied.message });
             }
@@ -821,45 +756,56 @@ export const handleJoinRequest = async (req, res) => {
 
 export const getTeams = async (req, res) => {
     try {
-        // 1. Buscamos todos los equipos
-        // 2. Traemos la info del capitán (nombre y foto si tiene)
         const teams = await Team.find()
-            .populate('captain', 'fullName avatar') 
-            .sort({ createdAt: -1 }); // Los más nuevos primero
+            .populate('captain', 'fullName avatar')
+            .sort({ createdAt: -1 });
 
-        /* NOTA: Si en tu modelo los miembros están dentro de 'roster.starters', 
-           el populate se vería así:
-           .populate('roster.starters')
-        */
-            
-        res.status(200).json(teams);
+        for (const team of teams) {
+            if (!team.teamCode) {
+                await team.save();
+            }
+        }
+
+        const neededUserIds = new Set();
+        const collectUserId = (slot) => {
+            const id = String(slot?.user || '').trim();
+            if (id && !slot?.photo) neededUserIds.add(id);
+        };
+
+        teams.forEach((team) => {
+            (team?.roster?.starters || []).forEach(collectUserId);
+            (team?.roster?.subs || []).forEach(collectUserId);
+            collectUserId(team?.roster?.coach);
+        });
+
+        let avatarMap = new Map();
+        if (neededUserIds.size > 0) {
+            const users = await User.find({ _id: { $in: Array.from(neededUserIds) } }).select('_id avatar');
+            avatarMap = new Map(users.map((u) => [String(u._id), String(u.avatar || '').trim()]));
+        }
+
+        const fillSlotPhoto = (slot) => {
+            if (!slot || slot.photo) return slot;
+            const userId = String(slot.user || '').trim();
+            const avatar = avatarMap.get(userId);
+            if (!avatar) return slot;
+            return { ...slot, photo: avatar };
+        };
+
+        const normalized = teams.map((teamDoc) => {
+            const team = teamDoc.toObject();
+            if (!team.roster) return team;
+            team.roster.starters = (team.roster.starters || []).map(fillSlotPhoto);
+            team.roster.subs = (team.roster.subs || []).map(fillSlotPhoto);
+            team.roster.coach = fillSlotPhoto(team.roster.coach);
+            return team;
+        });
+
+        res.status(200).json(normalized);
     } catch (error) {
         res.status(500).json({ 
             message: "Error al obtener los equipos", 
             error: error.message 
-        });
-    }
-};
-
-export const getTeamByInviteCode = async (req, res) => {
-    try {
-        const inviteCode = String(req.params.code || '').trim().toUpperCase();
-        if (!inviteCode) {
-            return res.status(400).json({ message: "Código de invitación inválido" });
-        }
-
-        const team = await Team.findOne({ inviteCode })
-            .populate('captain', 'fullName avatar');
-
-        if (!team) {
-            return res.status(404).json({ message: "Equipo no encontrado" });
-        }
-
-        return res.status(200).json(team);
-    } catch (error) {
-        return res.status(500).json({
-            message: "Error al obtener equipo por invitación",
-            error: error.message
         });
     }
 };
@@ -937,7 +883,7 @@ export const updateTeamLogo = async (req, res) => {
         }
 
         if (!req.file) return res.status(400).json({ message: "Logo requerido" });
-        const logoPath = `${req.protocol}://${req.get('host')}/uploads/teams/${req.file.filename}`;
+        const logoPath = `/uploads/teams/${req.file.filename}`;
         team.logo = logoPath;
         await team.save();
         res.status(200).json({ message: "Logo actualizado", team });

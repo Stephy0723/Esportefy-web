@@ -45,10 +45,22 @@ const TeamRegistration = () => {
   const gameMatches = !tournament.game || !selectedTeam?.game || String(selectedTeam.game) === String(tournament.game);
   const requiresRiot = Boolean(tournament.riotRequirements?.required) || ['Valorant','League of Legends','Wild Rift','Teamfight Tactics','Legends of Runeterra'].includes(tournament.game);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
+  const requiresMlbb = ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(tournament.game);
+  const hasMlbbLinked = Boolean(currentUser?.connections?.mlbb?.verified);
+  const startersMissingLinkedUser = requiresMlbb
+    ? starters.slice(0, expectedStarters).some(p => p && !p.user)
+    : false;
   const startersMissingRiotId = requiresRiot
     ? starters.slice(0, expectedStarters).some(p => p && !p.gameId)
     : false;
-  const canSubmit = Boolean(selectedTeamId) && teamComplete && gameMatches && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId));
+  const startersMissingMlbbId = requiresMlbb
+    ? starters.slice(0, expectedStarters).some(p => p && (!p.gameId || !p.region))
+    : false;
+  const canSubmit = Boolean(selectedTeamId)
+    && teamComplete
+    && gameMatches
+    && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId))
+    && (!requiresMlbb || (hasMlbbLinked && !startersMissingMlbbId && !startersMissingLinkedUser));
 
   useEffect(() => {
     const loadTeams = async () => {
@@ -58,10 +70,12 @@ const TeamRegistration = () => {
         const user = storedUser ? JSON.parse(storedUser) : null;
         const response = await axios.get(`${API_URL}/api/teams`);
         const allTeams = response.data || [];
-        const mine = user?._id
-          ? allTeams.filter(t => String(t.captain?._id || t.captain) === String(user._id))
-          : allTeams;
-        setUserTeams(mine);
+        const visibleTeams = user?.isAdmin
+          ? allTeams
+          : (user?._id
+              ? allTeams.filter(t => String(t.captain?._id || t.captain) === String(user._id))
+              : allTeams);
+        setUserTeams(visibleTeams);
       } catch (err) {
         console.error('Error cargando equipos:', err);
       } finally {
@@ -102,6 +116,18 @@ const TeamRegistration = () => {
     }
     if (requiresRiot && startersMissingRiotId) {
       alert('Todos los titulares deben tener Riot ID.');
+      return;
+    }
+    if (requiresMlbb && !hasMlbbLinked) {
+      alert('Debes verificar tu cuenta MLBB para inscribirte.');
+      return;
+    }
+    if (requiresMlbb && startersMissingLinkedUser) {
+      alert('Modo estricto MLBB: todos los titulares deben ser usuarios vinculados de Esportefy.');
+      return;
+    }
+    if (requiresMlbb && startersMissingMlbbId) {
+      alert('Todos los titulares deben tener User ID y Zone ID de MLBB.');
       return;
     }
     try {
@@ -161,7 +187,9 @@ const TeamRegistration = () => {
                             >
                               <option value="">Selecciona tu equipo</option>
                               {userTeams.map(team => (
-                                <option key={team._id} value={team._id}>{team.name}</option>
+                                <option key={team._id} value={team._id}>
+                                  {team.name}{team.teamCode ? ` · #${team.teamCode}` : ''}
+                                </option>
                               ))}
                             </select>
                             <label>Equipo</label>
@@ -181,6 +209,9 @@ const TeamRegistration = () => {
                             {!teamComplete && <p style={{color:'#ff6b6b'}}>El equipo no está completo ({filledStarters}/{expectedStarters}).</p>}
                             {requiresRiot && !hasRiotLinked && <p style={{color:'#ff6b6b'}}>Debes vincular tu cuenta Riot en Settings.</p>}
                             {requiresRiot && startersMissingRiotId && <p style={{color:'#ff6b6b'}}>Faltan Riot ID en titulares.</p>}
+                            {requiresMlbb && !hasMlbbLinked && <p style={{color:'#ff6b6b'}}>Debes verificar tu cuenta MLBB en Settings.</p>}
+                            {requiresMlbb && startersMissingLinkedUser && <p style={{color:'#ff6b6b'}}>Modo estricto MLBB: titulares deben ser usuarios vinculados.</p>}
+                            {requiresMlbb && startersMissingMlbbId && <p style={{color:'#ff6b6b'}}>Faltan User ID/Zone ID de MLBB en titulares.</p>}
                           </div>
                         )}
 

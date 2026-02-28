@@ -50,6 +50,7 @@ const OrganizerTerms = () => {
               <li>Publicar reglas completas, criterios de desempate y cronograma realista.</li>
               <li>Gestionar disputas con evidencia trazable y decisiones consistentes.</li>
               <li>Respetar politica de pagos y no desviar flujo financiero autorizado.</li>
+              <li>En torneos MLBB beta: no afirmar afiliacion oficial con Moonton y operar sin apuestas.</li>
             </ul>
 
             <h2 className="legal-h"><i className="bx bx-shield-quarter"></i>3. Integridad y anticorrupcion</h2>

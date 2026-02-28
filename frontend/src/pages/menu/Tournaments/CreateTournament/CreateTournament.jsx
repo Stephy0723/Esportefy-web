@@ -105,6 +105,29 @@ const RIOT_TITLES = new Set([
   'Legends of Runeterra'
 ]);
 
+const MLBB_TITLES = new Set([
+  'Mobile Legends',
+  'Mobile Legends: Bang Bang',
+  'MLBB'
+]);
+
+const MLBB_BETA_MODE = String(import.meta.env.VITE_MLBB_BETA_MODE ?? 'true').trim().toLowerCase() !== 'false';
+const MLBB_BANNED_TERMS = ['apuesta', 'apuestas', 'bet', 'bets', 'betting', 'wager', 'wagering', 'gambling', 'casino', 'odds', 'parlay', 'cuota', 'cuotas'];
+
+const normalizeText = (value = '') =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const findMlbbBannedTerm = (text = '') => {
+  const normalized = normalizeText(text);
+  return MLBB_BANNED_TERMS.find((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${escaped}\\b`, 'i').test(normalized);
+  }) || '';
+};
+
 const parseTeamSizeFromModality = (modality = '') => {
   const raw = String(modality || '').trim().toLowerCase();
   const match = raw.match(/^(\d+)\s*v\s*(\d+)$/i);
@@ -162,6 +185,7 @@ const CreateTournament = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const token = localStorage.getItem('token');
   const [isPublished, setIsPublished] = useState(false);
   const [tournament, setTournament] = useState(baseState(user?.username || 'Organizador Oficial'));
   const editTournament = location.state?.editTournament;
@@ -251,6 +275,11 @@ const CreateTournament = () => {
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [tournament]);
+
+  const isMlbbTournament = useMemo(
+    () => MLBB_TITLES.has(String(tournament.game || '').trim()),
+    [tournament.game]
+  );
 
   const identityReady = Boolean(tournament.title?.trim() && tournament.game && tournament.description?.trim() && tournament.date && tournament.time);
   const formatReady = Boolean(tournament.maxSlots && tournament.modality && tournament.format);
@@ -495,8 +524,8 @@ const CreateTournament = () => {
     try {
       const data = buildFormData(source);
       const url = isEditMode
-        ? `${API_URL}/tournaments/${editTournament.tournamentId}`
-        : `${API_URL}/tournaments`;
+        ? `${API_URL}/api/tournaments/${editTournament.tournamentId}`
+        : `${API_URL}/api/tournaments`;
       const method = isEditMode ? 'put' : 'post';
 
       await axios({
@@ -504,6 +533,7 @@ const CreateTournament = () => {
         method,
         data,
         headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
           'Content-Type': 'multipart/form-data'
         }
       });
@@ -545,6 +575,46 @@ const CreateTournament = () => {
       && tournament.checkInWindow.start > tournament.date) {
       alert('La fecha "Check-in desde" debe ser antes del inicio del torneo.');
       return;
+    }
+
+    if (isMlbbTournament) {
+      const formatAllowed = [
+        'Eliminacion Directa',
+        'Doble Eliminacion',
+        'Swiss',
+        'Round Robin',
+        'single_elimination',
+        'double_elimination',
+        'swiss',
+        'round_robin'
+      ].includes(String(tournament.format || '').trim());
+      if (!formatAllowed) {
+        alert('En MLBB solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
+        return;
+      }
+
+      if (MLBB_BETA_MODE && String(tournament.entryFee || '').trim().toLowerCase() !== 'gratis') {
+        alert('En beta de MLBB solo se permiten torneos gratuitos.');
+        return;
+      }
+
+      const banned = findMlbbBannedTerm(
+        [tournament.title, tournament.description, tournament.prizeDetails].join(' ')
+      );
+      if (banned) {
+        alert(`Texto no permitido para cumplimiento MLBB: "${banned}".`);
+        return;
+      }
+
+      if (!String(tournament.contact.email || '').trim()) {
+        alert('Para torneos MLBB debes definir un correo de contacto.');
+        return;
+      }
+
+      if (!String(tournament.legalCompliance.claimsContact || '').trim()) {
+        alert('Para torneos MLBB debes definir un canal de reclamos legales.');
+        return;
+      }
     }
 
     try {
@@ -716,6 +786,11 @@ const CreateTournament = () => {
               <strong>Que debes hacer aqui:</strong>
               <span>Marca las 3 casillas de declaracion legal. Sin esas 3 confirmaciones no se puede publicar.</span>
             </div>
+            {isMlbbTournament && (
+              <p className="ct-legal-intro">
+                <FaShieldAlt /> MLBB compliance: no afiliación oficial con Moonton, no apuestas y registro gratuito en modo beta.
+              </p>
+            )}
             <div className="ct-grid three">
               <label className="ct-field">
                 <span>Jurisdiccion principal</span>
