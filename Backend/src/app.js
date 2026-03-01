@@ -13,6 +13,7 @@ import tournamentRoutes from './routes/tournament.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import communityRoutes from './routes/community.routes.js';
+import universityRoutes from './routes/university.routes.js';
 import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
 
 dotenv.config();
@@ -94,6 +95,7 @@ app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/university', universityRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {

@@ -66,6 +66,15 @@ const UserSchema = new mongoose.Schema({
             verified: { type: Boolean, default: false }
         },
 
+        microsoft: {
+            tenantId: { type: String, default: '' },
+            userId: { type: String, default: '' },
+            email: { type: String, default: '' },
+            displayName: { type: String, default: '' },
+            verified: { type: Boolean, default: false },
+            linkedAt: { type: Date, default: null }
+        },
+
         riot: {
             puuid: String,
             gameName: String,
@@ -139,6 +148,39 @@ const UserSchema = new mongoose.Schema({
         allowTeamInvites: { type: Boolean, default: true },
         showOnlineStatus: { type: Boolean, default: true },
         allowTournamentInvites: { type: Boolean, default: true }
+    },
+    university: {
+        universityId: { type: String, default: '' },
+        universityTag: { type: String, default: '' },
+        universityName: { type: String, default: '' },
+        region: { type: String, default: '' },
+        city: { type: String, default: '' },
+        campus: { type: String, default: '' },
+        studentId: { type: String, default: '' },
+        program: { type: String, default: '' },
+        academicLevel: { type: String, default: '' },
+        institutionalEmail: { type: String, default: '' },
+        verificationSource: {
+            type: String,
+            enum: ['none', 'manual', 'microsoft'],
+            default: 'none'
+        },
+        verificationStatus: {
+            type: String,
+            enum: ['unlinked', 'pending', 'verified', 'rejected'],
+            default: 'unlinked'
+        },
+        verified: { type: Boolean, default: false },
+        tenantId: { type: String, default: '' },
+        appliedAt: { type: Date, default: null },
+        verifiedAt: { type: Date, default: null },
+        reviewedAt: { type: Date, default: null },
+        reviewedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        rejectReason: { type: String, default: '' }
     },
     notifications: [{
         type: { type: String, default: 'info' },
