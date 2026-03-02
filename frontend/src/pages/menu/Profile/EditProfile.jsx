@@ -13,6 +13,7 @@ import { PLAYER_TAGS } from '../../../data/playerTags';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
+import PageHud from '../../../components/PageHud/PageHud';
 import './EditProfile.css';
 
 // ─── Game assets ───
@@ -325,6 +326,7 @@ const EditProfile = () => {
 
     return (
         <div className="ep fade-in">
+            <PageHud page="EDITAR PERFIL" />
             {/* Top bar */}
             <div className="ep__topbar">
                 <button className="ep__back" onClick={() => navigate('/profile')}>

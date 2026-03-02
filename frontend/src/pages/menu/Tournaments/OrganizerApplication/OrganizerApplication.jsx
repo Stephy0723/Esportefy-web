@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../../context/NotificationContext'; 
 import axios from 'axios';
+import PageHud from '../../../../components/PageHud/PageHud';
 import './OrganizerApplication.css';
 
 const OrganizerApplication = () => {
@@ -67,6 +68,7 @@ const OrganizerApplication = () => {
 
   return (
     <div className="reg-page">
+      <PageHud page="ORGANIZADOR" />
       <div className="main-content-wrapper">
         <div className="split-layout">
             

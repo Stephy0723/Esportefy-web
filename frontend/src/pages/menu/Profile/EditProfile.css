@@ -10,9 +10,10 @@
     background: var(--bg-page);
     color: var(--text-main);
     font-family: 'Inter', 'Segoe UI', sans-serif;
-    padding: 90px 5% 40px;
+    padding: 20px 5% 40px;
     animation: epFadeIn .4s ease;
 }
+
 @keyframes epFadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }

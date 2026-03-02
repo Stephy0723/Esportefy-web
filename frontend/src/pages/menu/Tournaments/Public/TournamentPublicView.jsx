@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
@@ -11,39 +11,40 @@ const getLocalTournamentByCode = (code) => {
     const raw = localStorage.getItem(LOCAL_TOURNAMENTS_KEY);
     const list = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(list)) return null;
-    return list.find((t) => String(t?.tournamentId || '').toUpperCase() === String(code || '').toUpperCase()) || null;
+    return list.find((item) => String(item?.tournamentId || '').toUpperCase() === String(code || '').toUpperCase()) || null;
   } catch {
     return null;
   }
 };
 
-const mapLocalToPublicShape = (t) => ({
-  tournamentId: t.tournamentId,
-  title: t.title,
-  game: t.game,
-  status: t.status || 'open',
-  description: t.description || '',
-  modality: t.modality || '',
-  format: t.format || '',
-  date: t.date || null,
-  time: t.time || '',
-  timezone: t.timezone || '',
+const mapLocalToPublicShape = (item) => ({
+  tournamentId: item.tournamentId,
+  title: item.title,
+  game: item.game,
+  status: item.status || 'open',
+  description: item.description || '',
+  modality: item.modality || '',
+  format: item.format || '',
+  date: item.date || null,
+  time: item.time || '',
+  timezone: item.timezone || '',
   slots: {
-    current: Number(t.currentSlots || 0),
-    max: Number(t.maxSlots || 0)
+    current: Number(item.currentSlots || 0),
+    max: Number(item.maxSlots || 0),
   },
-  customMessage: t.publicSettings?.customMessage || 'Vista local de prueba.',
-  prizeMode: t.prizeMode || 'none',
-  prizeDetails: t.prizeDetails || '',
-  prizePool: t.prizePool || '',
-  currency: t.currency || 'USD',
-  prizesByRank: t.prizesByRank || {},
-  sponsors: Array.isArray(t.sponsors) ? t.sponsors : [],
-  contact: t.contact || {},
-  broadcast: t.broadcast || {},
-  rulesPdf: t.rulesPdf || '',
-  registrations: Array.isArray(t.registrations) ? t.registrations : [],
-  bracket: t.bracket || null
+  customMessage: item.publicSettings?.customMessage || '',
+  publicSettings: item.publicSettings || {},
+  prizeMode: item.prizeMode || 'none',
+  prizeDetails: item.prizeDetails || '',
+  prizePool: item.prizePool || '',
+  currency: item.currency || 'USD',
+  prizesByRank: item.prizesByRank || {},
+  sponsors: Array.isArray(item.sponsors) ? item.sponsors : [],
+  contact: item.contact || {},
+  broadcast: item.broadcast || {},
+  rulesPdf: item.rulesPdf || '',
+  registrations: Array.isArray(item.registrations) ? item.registrations : [],
+  bracket: item.bracket || null,
 });
 
 const STATUS_LABELS = {
@@ -51,8 +52,59 @@ const STATUS_LABELS = {
   ongoing: 'En curso',
   finished: 'Finalizado',
   cancelled: 'Cancelado',
-  draft: 'Borrador'
+  draft: 'Borrador',
 };
+
+const formatDate = (value) => {
+  if (!value) return 'Fecha por anunciar';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Fecha por anunciar';
+  return parsed.toLocaleDateString('es-DO', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const PublicBracketBoard = ({ bracket, game }) => (
+  <div className="tpv-stage">
+    <div className="tpv-stage__backdrop" />
+    <div className="tpv-stage__brand">
+      <span>{game}</span>
+      <strong>{bracket?.title || 'Bracket'}</strong>
+    </div>
+
+    <div className="tpv-stage__board">
+      {(bracket?.rounds || []).map((round, roundIndex) => (
+        <div key={`round-${roundIndex}`} className="tpv-stage__column">
+          <div className="tpv-stage__round-head">
+            <h3>{round.name || `Ronda ${roundIndex + 1}`}</h3>
+            <span>{(round.matches || []).length} matches</span>
+          </div>
+
+          <div className="tpv-stage__matches">
+            {(round.matches || []).map((match, matchIndex) => (
+              <article key={`match-${roundIndex}-${matchIndex}`} className="tpv-stage__match">
+                <div className="tpv-stage__match-top">
+                  <span>{`MATCH ${matchIndex + 1}`}</span>
+                  <small>{match.scheduledLabel || 'Sin horario'}</small>
+                </div>
+                <div className="tpv-stage__team-row">
+                  <strong>{match.teamA || 'TBD'}</strong>
+                  <span>{match.scoreA || 0}</span>
+                </div>
+                <div className="tpv-stage__team-row">
+                  <strong>{match.teamB || 'TBD'}</strong>
+                  <span>{match.scoreB || 0}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const TournamentPublicView = () => {
   const { code } = useParams();
@@ -65,133 +117,213 @@ const TournamentPublicView = () => {
       try {
         setLoading(true);
         setError('');
-        const res = await axios.get(`${API_URL}/api/tournaments/public/${code}`);
-        setData(res.data);
-      } catch (e) {
+        const response = await axios.get(`${API_URL}/api/tournaments/public/${code}`);
+        setData(response.data);
+      } catch (loadError) {
         const local = getLocalTournamentByCode(code);
         if (local) {
           setData(mapLocalToPublicShape(local));
           setError('');
         } else {
-          setError(e.response?.data?.message || 'No fue posible cargar este torneo.');
+          setError(loadError.response?.data?.message || 'No fue posible cargar este torneo.');
         }
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, [code]);
+
+  const highlights = useMemo(() => {
+    if (!data) return [];
+    return [
+      { label: 'Juego', value: data.game || '-' },
+      { label: 'Formato', value: data.format || '-' },
+      { label: 'Modalidad', value: data.modality || '-' },
+      { label: 'Equipos', value: `${data.slots?.current ?? 0}/${data.slots?.max ?? 0}` },
+    ];
+  }, [data]);
 
   if (loading) return <div className="tpv-page"><div className="tpv-empty">Cargando torneo...</div></div>;
   if (error) return <div className="tpv-page"><div className="tpv-empty">{error}</div></div>;
   if (!data) return <div className="tpv-page"><div className="tpv-empty">Sin datos del torneo.</div></div>;
 
+  const settings = data.publicSettings || {};
+  const showPrize = settings.showPrize !== false;
+  const showSponsors = settings.showSponsors !== false;
+  const showRules = settings.showRules !== false;
+  const showContact = settings.showContact !== false;
+  const showTeams = settings.showTeams === true;
+  const showBracket = settings.showBracket !== false;
+  const displaySponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
+  const displayRegistrations = Array.isArray(data.registrations) ? data.registrations : [];
+
   return (
     <div className="tpv-page">
-      <header className="tpv-hero">
-        <div className="tpv-hero-content">
-          <p className="tpv-chip"><i className='bx bx-globe'></i> Vista publica del torneo</p>
+      <section className="tpv-showcase">
+        <div className="tpv-showcase__copy">
+          <p className="tpv-chip"><i className="bx bx-trophy" /> Torneo oficial</p>
           <h1>{data.title}</h1>
-          <p className="tpv-meta-line">#{data.tournamentId} · {data.game} · {STATUS_LABELS[data.status] || 'Publicado'}</p>
-          {data.customMessage ? <p className="tpv-note">{data.customMessage}</p> : null}
-        </div>
-        <div className="tpv-hero-side">
-          <div className="tpv-kpi">
-            <span>Cupos</span>
-            <strong>{data.slots?.current ?? 0}/{data.slots?.max ?? 0}</strong>
-          </div>
-          <div className="tpv-kpi">
-            <span>Fecha</span>
-            <strong>{data.date ? new Date(data.date).toLocaleDateString() : '-'}</strong>
-          </div>
-          <div className="tpv-kpi">
-            <span>Hora</span>
-            <strong>{data.time || '-'} {data.timezone || ''}</strong>
+          <p className="tpv-meta-line">
+            #{data.tournamentId} - {data.game} - {STATUS_LABELS[data.status] || 'Publicado'}
+          </p>
+          <p className="tpv-lead">
+            {data.customMessage || data.description || 'Competencia organizada para equipos, comunidad y transmision en directo.'}
+          </p>
+          <div className="tpv-showcase__actions">
+            {data.rulesPdf ? <a className="tpv-cta" href={data.rulesPdf} target="_blank" rel="noreferrer">Ver reglamento</a> : null}
+            {data.broadcast?.streamUrl ? <a className="tpv-cta tpv-cta--ghost" href={data.broadcast.streamUrl} target="_blank" rel="noreferrer">Ver stream</a> : null}
           </div>
         </div>
-      </header>
 
-      <section className="tpv-card">
-        <h2><i className='bx bx-info-circle'></i> Informacion general</h2>
-        <p className="tpv-desc">{data.description || 'Sin descripcion publica.'}</p>
-        <div className="tpv-grid">
-          <div className="tpv-mini"><span>Formato</span><strong>{data.format || '-'}</strong></div>
-          <div className="tpv-mini"><span>Modalidad</span><strong>{data.modality || '-'}</strong></div>
-          <div className="tpv-mini"><span>ID torneo</span><strong>{data.tournamentId}</strong></div>
-        </div>
+        <aside className="tpv-showcase__side">
+          <div className="tpv-event-card">
+            <span>Fecha</span>
+            <strong>{formatDate(data.date)}</strong>
+            <p>{data.time || 'Hora por anunciar'} {data.timezone || ''}</p>
+          </div>
+          <div className="tpv-event-card">
+            <span>Participacion</span>
+            <strong>{data.slots?.current ?? 0}/{data.slots?.max ?? 0}</strong>
+            <p>{STATUS_LABELS[data.status] || 'Publicado'}</p>
+          </div>
+        </aside>
       </section>
 
-      {(data.prizePool !== undefined || data.prizeDetails) && (
-        <section className="tpv-card">
-          <h2><i className='bx bx-trophy'></i> Premios</h2>
-          {data.prizePool ? <p className="tpv-prize-main">{data.prizePool} {data.currency || ''}</p> : <p className="tpv-muted">Sin premio en efectivo.</p>}
-          {data.prizeDetails ? <p className="tpv-muted">{data.prizeDetails}</p> : null}
-          {(data.prizesByRank?.first || data.prizesByRank?.second || data.prizesByRank?.third) && (
-            <div className="tpv-grid">
-              <div className="tpv-mini"><span>1er lugar</span><strong>{data.prizesByRank?.first || '-'}</strong></div>
-              <div className="tpv-mini"><span>2do lugar</span><strong>{data.prizesByRank?.second || '-'}</strong></div>
-              <div className="tpv-mini"><span>3er lugar</span><strong>{data.prizesByRank?.third || '-'}</strong></div>
-            </div>
-          )}
-        </section>
-      )}
+      <section className="tpv-highlights">
+        {highlights.map((item) => (
+          <article key={item.label} className="tpv-highlight">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </section>
 
-      {Array.isArray(data.sponsors) && data.sponsors.length > 0 && (
-        <section className="tpv-card">
-          <h2><i className='bx bx-diamond'></i> Sponsors</h2>
-          <div className="tpv-list">
-            {data.sponsors.map((s, i) => (
-              <article key={`sp-${i}`} className="tpv-row">
-                <div>
-                  <strong>{s.name || 'Sponsor'}</strong>
-                  <p>{s.tier || 'Partner'}</p>
+      <div className="tpv-layout">
+        <div className="tpv-main">
+          <section className="tpv-card tpv-card--feature">
+            <div className="tpv-card__topline">
+              <span className="tpv-chip tpv-chip--soft">Vista general</span>
+            </div>
+            <h2>Produccion y narrativa del torneo</h2>
+            <p className="tpv-desc">
+              {data.description || 'Torneo competitivo preparado para exhibicion publica, seguimiento de llaves y lectura clara de participantes.'}
+            </p>
+          </section>
+
+          {showBracket && data.bracket ? (
+            <section className="tpv-card tpv-card--bracket">
+              <div className="tpv-card__topline">
+                <span className="tpv-chip tpv-chip--soft">Bracket oficial</span>
+              </div>
+              <h2>{data.bracket.title || 'Bracket principal'}</h2>
+              <PublicBracketBoard bracket={data.bracket} game={data.game} />
+            </section>
+          ) : null}
+
+          {showTeams ? (
+            <section className="tpv-card">
+              <div className="tpv-card__topline">
+                <span className="tpv-chip tpv-chip--soft">Participantes</span>
+              </div>
+              <h2>Equipos en competencia</h2>
+              {displayRegistrations.length === 0 ? (
+                <div className="tpv-empty">No hay equipos publicos.</div>
+              ) : (
+                <div className="tpv-list">
+                  {displayRegistrations.map((item) => (
+                    <article key={item._id || item.teamName} className="tpv-row">
+                      <div>
+                        <strong>{item.teamName}</strong>
+                        <p>Equipo inscrito</p>
+                      </div>
+                      <span className="tpv-tag">{item.status}</span>
+                    </article>
+                  ))}
                 </div>
-                {s.link ? <a className="tpv-link" href={s.link} target="_blank" rel="noreferrer">Sitio web</a> : null}
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+              )}
+            </section>
+          ) : null}
+        </div>
 
-      {Array.isArray(data.registrations) && (
-        <section className="tpv-card">
-          <h2><i className='bx bx-group'></i> Equipos</h2>
-          {data.registrations.length === 0 ? <div className="tpv-empty">No hay equipos publicos.</div> : (
-            <div className="tpv-list">
-              {data.registrations.map((r) => (
-                <article key={r._id || r.teamName} className="tpv-row">
-                  <strong>{r.teamName}</strong>
-                  <span className="tpv-tag">{r.status}</span>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {data.bracket && (
-        <section className="tpv-card">
-          <h2><i className='bx bx-sitemap'></i> {data.bracket.title || 'Bracket'}</h2>
-          {(data.bracket.rounds || []).map((round, i) => (
-            <div key={`round-${i}`} className="tpv-round">
-              <h3>{round.name || `Ronda ${i + 1}`}</h3>
-              {(round.matches || []).map((m, j) => (
-                <div key={`m-${j}`} className="tpv-match">
-                  <div>
-                    <strong>{m.teamA || 'TBD'}</strong>
-                    <span>{m.scoreA || 0}</span>
-                  </div>
-                  <span>VS</span>
-                  <div>
-                    <strong>{m.teamB || 'TBD'}</strong>
-                    <span>{m.scoreB || 0}</span>
-                  </div>
+        <aside className="tpv-sidebar">
+          {showPrize ? (
+            <section className="tpv-card">
+              <div className="tpv-card__topline">
+                <span className="tpv-chip tpv-chip--soft">Premios</span>
+              </div>
+              <h2>Prize pool</h2>
+              {data.prizePool ? (
+                <p className="tpv-prize-main">{data.prizePool} {data.currency || ''}</p>
+              ) : (
+                <p className="tpv-muted">Sin premio en efectivo.</p>
+              )}
+              {data.prizeDetails ? <p className="tpv-muted">{data.prizeDetails}</p> : null}
+              {(data.prizesByRank?.first || data.prizesByRank?.second || data.prizesByRank?.third) ? (
+                <div className="tpv-rank-grid">
+                  <div className="tpv-mini"><span>1er lugar</span><strong>{data.prizesByRank?.first || '-'}</strong></div>
+                  <div className="tpv-mini"><span>2do lugar</span><strong>{data.prizesByRank?.second || '-'}</strong></div>
+                  <div className="tpv-mini"><span>3er lugar</span><strong>{data.prizesByRank?.third || '-'}</strong></div>
                 </div>
-              ))}
-            </div>
-          ))}
-        </section>
-      )}
+              ) : null}
+            </section>
+          ) : null}
+
+          {showContact ? (
+            <section className="tpv-card">
+              <div className="tpv-card__topline">
+                <span className="tpv-chip tpv-chip--soft">Contacto</span>
+              </div>
+              <h2>Canales oficiales</h2>
+              <div className="tpv-stack">
+                <div className="tpv-mini">
+                  <span>Organizador</span>
+                  <strong>{data.contact?.email || 'Sin correo publicado'}</strong>
+                </div>
+                <div className="tpv-mini">
+                  <span>Stream</span>
+                  <strong>{data.broadcast?.channelName || data.broadcast?.streamUrl || 'Sin canal definido'}</strong>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {showRules ? (
+            <section className="tpv-card">
+              <div className="tpv-card__topline">
+                <span className="tpv-chip tpv-chip--soft">Reglas</span>
+              </div>
+              <h2>Documentacion</h2>
+              {data.rulesPdf ? (
+                <a className="tpv-link" href={data.rulesPdf} target="_blank" rel="noreferrer">Abrir reglamento del torneo</a>
+              ) : (
+                <p className="tpv-muted">Aun no se ha publicado un reglamento.</p>
+              )}
+            </section>
+          ) : null}
+
+          {showSponsors && displaySponsors.length > 0 ? (
+            <section className="tpv-card">
+              <div className="tpv-card__topline">
+                <span className="tpv-chip tpv-chip--soft">Aliados</span>
+              </div>
+              <h2>Sponsors</h2>
+              <div className="tpv-list">
+                {displaySponsors.map((item, index) => (
+                  <article key={`sponsor-${index}`} className="tpv-row">
+                    <div>
+                      <strong>{item.name || 'Sponsor'}</strong>
+                      <p>{item.tier || 'Partner'}</p>
+                    </div>
+                    {item.link ? <a className="tpv-link" href={item.link} target="_blank" rel="noreferrer">Visitar</a> : null}
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </aside>
+      </div>
     </div>
   );
 };

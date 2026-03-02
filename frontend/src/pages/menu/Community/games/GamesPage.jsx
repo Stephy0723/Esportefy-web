@@ -8,7 +8,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import './GameCard.css';
 
 const GamesPage = () => {
-    const { id } = useParams();
+    const { gameId } = useParams();
     const navigate = useNavigate();
     const [isLiked, setIsLiked] = useState(false);
     const [particles, setParticles] = useState([]);
@@ -17,7 +17,7 @@ const GamesPage = () => {
     const { theme } = useTheme();
 
     const normalizeId = (value) => String(value || '').toLowerCase().trim();
-    const incomingId = normalizeId(id);
+    const incomingId = normalizeId(gameId);
 
     const aliasToCatalogId = {
         ow2: 'overwatch',
@@ -71,7 +71,7 @@ const GamesPage = () => {
                 <div className="gp-error">
                     <i className='bx bx-error-circle' style={{ fontSize: '3rem', color: '#ef4444' }} />
                     <h2>Juego no encontrado</h2>
-                    <p>El ID "{id}" no coincide con ningun juego.</p>
+                    <p>El ID "{gameId}" no coincide con ningun juego.</p>
                     <button className="gp-btn gp-btn--primary" onClick={() => navigate(-1)}>
                         <FaArrowLeft /> Volver
                     </button>

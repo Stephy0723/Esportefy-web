@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaBullhorn } from 'react-icons/fa';
 import './SponsorMotion.css';
 
 import banner1 from '../../assets/bannerGamer/1.jpg';
@@ -10,6 +9,9 @@ import banner14 from '../../assets/bannerGamer/14.jpg';
 import banner19 from '../../assets/bannerGamer/19.jpg';
 import banner23 from '../../assets/bannerGamer/23.jpg';
 import banner28 from '../../assets/bannerGamer/28.jpg';
+
+const DISMISS_KEY = 'sponsor-motion-hidden-until';
+const DISMISS_MS = 2 * 60 * 60 * 1000;
 
 const SponsorMotion = () => {
   const sponsors = useMemo(
@@ -26,12 +28,63 @@ const SponsorMotion = () => {
     []
   );
 
-  const [activeIdx, setActiveIdx] = useState(0);
   const [hoveredSponsor, setHoveredSponsor] = useState(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const hiddenUntil = Number(window.localStorage.getItem(DISMISS_KEY) || 0);
+
+    if (!hiddenUntil || hiddenUntil <= Date.now()) {
+      window.localStorage.removeItem(DISMISS_KEY);
+      return undefined;
+    }
+
+    setIsVisible(false);
+
+    const timeoutId = window.setTimeout(() => {
+      window.localStorage.removeItem(DISMISS_KEY);
+      setIsVisible(true);
+    }, hiddenUntil - Date.now());
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  const handleDismiss = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const hiddenUntil = Date.now() + DISMISS_MS;
+    window.localStorage.setItem(DISMISS_KEY, String(hiddenUntil));
+    setIsClosing(true);
+
+    window.setTimeout(() => {
+      setHoveredSponsor(null);
+      setIsVisible(false);
+      setIsClosing(false);
+    }, 220);
+  };
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <>
-      <div className="spx-snake-wrap" aria-label="Patrocinadores destacados">
+      <div className={`spx-snake-wrap${isClosing ? ' is-closing' : ''}`} aria-label="Patrocinadores destacados">
+        <button
+          type="button"
+          className="spx-snake-wrap__close"
+          onClick={handleDismiss}
+          aria-label="Ocultar patrocinadores por 2 horas"
+        >
+          x
+        </button>
         {hoveredSponsor && (
           <div className="spx-info-modal">
             <h4>{hoveredSponsor.name}</h4>
