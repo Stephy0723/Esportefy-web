@@ -139,6 +139,8 @@ const CreateTeamPage = () => {
     const mlbbVerified = Boolean(currentUser?.connections?.mlbb?.verified);
     const mlbbPlayerId = String(currentUser?.connections?.mlbb?.playerId || '');
     const mlbbZoneId = String(currentUser?.connections?.mlbb?.zoneId || '');
+    const currentUserUniversity = currentUser?.university || {};
+    const currentUserUniversityVerified = Boolean(currentUserUniversity?.verified && currentUserUniversity?.universityId);
     
     const [step, setStep] = useState(1);
     const [logoPreview, setLogoPreview] = useState(null);
@@ -324,6 +326,10 @@ const CreateTeamPage = () => {
         () => MLBB_GAMES.has(String(formData.game || '').trim()),
         [formData.game]
     );
+    const isUniversityTeamSelected = useMemo(
+        () => normalizeText(formData.teamLevel) === 'universitario',
+        [formData.teamLevel]
+    );
     const lockRiotIdentity = useMemo(
         () => isRiotGame && riotLinked && Boolean(riotTagLine),
         [isRiotGame, riotLinked, riotTagLine]
@@ -344,6 +350,10 @@ const CreateTeamPage = () => {
         if (isMlbbGameSelected) return 'Este juego requiere cuenta MLBB verificada en Conexiones.';
         return '';
     }, [requiresLinkedAccount, isRiotGame, isMlbbGameSelected]);
+    const universityRequirementMessage = useMemo(() => {
+        if (!isUniversityTeamSelected) return '';
+        return 'Los equipos universitarios solo pueden crearse con una universidad verificada en tu perfil.';
+    }, [isUniversityTeamSelected]);
     const mlbbManualRosterSlots = useMemo(() => {
         if (!isMlbbGameSelected) return [];
         const captainUserId = String(currentUser?._id || currentUser?.id || '');
@@ -358,6 +368,20 @@ const CreateTeamPage = () => {
             return String(slot.user || '') !== captainUserId;
         });
     }, [isMlbbGameSelected, roster, currentUser]);
+    const universityManualRosterSlots = useMemo(() => {
+        if (!isUniversityTeamSelected) return [];
+        const captainUserId = String(currentUser?._id || currentUser?.id || '');
+        const players = []
+            .concat(Array.isArray(roster.starters) ? roster.starters : [])
+            .concat(Array.isArray(roster.subs) ? roster.subs : []);
+
+        return players.filter((slot) => {
+            if (!slot) return false;
+            const filled = Boolean(slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role);
+            if (!filled) return false;
+            return String(slot.user || '') !== captainUserId;
+        });
+    }, [isUniversityTeamSelected, roster, currentUser]);
 
     useEffect(() => {
         if (formData.teamCountry && !COUNTRY_OPTIONS.includes(formData.teamCountry)) {
@@ -524,6 +548,10 @@ const CreateTeamPage = () => {
         addToast('En equipos MLBB solo el capitán se define al crear. Los demás jugadores deben unirse con su cuenta sincronizada.', 'error');
         return;
     }
+    if (isUniversityTeamSelected && universityManualRosterSlots.length > 0) {
+        addToast('En equipos universitarios solo el capitán se define al crear. Los demás jugadores deben unirse con su cuenta universitaria verificada.', 'error');
+        return;
+    }
     setSubmitting(true);
     
     try {
@@ -598,7 +626,7 @@ const CreateTeamPage = () => {
         return roles ? roles[index] : `Player ${index + 1}`;
     };
 
-    const isMlbbRosterSlotLocked = (type) => isMlbbGameSelected && type !== 'coach';
+    const isRosterSlotLocked = (type) => (isMlbbGameSelected || isUniversityTeamSelected) && type !== 'coach';
 
     // --- RENDERIZADO ---
     return (
@@ -718,6 +746,13 @@ const CreateTeamPage = () => {
                                         <option value="Profesional">Profesional (Tier 1)</option>
                                         <option value="Leyenda">Leyenda (Elite)</option>
                                     </select>
+                                    {isUniversityTeamSelected && (
+                                        <small style={{ color: currentUserUniversityVerified ? 'var(--theme-color)' : '#ff6b6b', display: 'block', marginTop: '8px' }}>
+                                            {currentUserUniversityVerified
+                                                ? `Equipo universitario vinculado a ${currentUserUniversity.universityName || currentUserUniversity.universityTag || 'tu universidad verificada'}.`
+                                                : universityRequirementMessage}
+                                        </small>
+                                    )}
                                 </div>
                                 <div className="form-group">
                                     <label className="section-label"><FaLanguage/> Idioma Principal</label>
@@ -892,10 +927,14 @@ const CreateTeamPage = () => {
                             <button className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
                             <button 
                                 className="btn-primary-glow" 
-                                disabled={!formData.game || !formData.name || !formData.leaderIgn || !hasRequiredLink}
+                                disabled={!formData.game || !formData.name || !formData.leaderIgn || !hasRequiredLink || (isUniversityTeamSelected && !currentUserUniversityVerified)}
                                 onClick={() => {
                                     if (!hasRequiredLink) {
                                         addToast(requiredLinkMessage || 'Debes vincular la cuenta del juego en Conexiones', 'error');
+                                        return;
+                                    }
+                                    if (isUniversityTeamSelected && !currentUserUniversityVerified) {
+                                        addToast(universityRequirementMessage, 'error');
                                         return;
                                     }
                                     if (selectedGameRoles.length > 0) {
@@ -938,6 +977,19 @@ const CreateTeamPage = () => {
                                 </small>
                             </div>
                         )}
+                        {isUniversityTeamSelected && (
+                            <div className="section-card" style={{ marginBottom: '16px' }}>
+                                <small style={{ color: currentUserUniversityVerified ? 'var(--theme-color)' : '#ff6b6b', display: 'block' }}>
+                                    Los equipos universitarios deben formarse con estudiantes verificados de la misma universidad.
+                                    Crea el equipo con el capitán y luego invita al resto para que entren con su cuenta validada.
+                                </small>
+                                {!currentUserUniversityVerified && (
+                                    <small style={{ color: '#ff6b6b', display: 'block', marginTop: '8px' }}>
+                                        No puedes continuar hasta verificar tu universidad en el módulo University.
+                                    </small>
+                                )}
+                            </div>
+                        )}
 
                         {/* Titulares */}
                         <div className="roles-section">
@@ -946,11 +998,11 @@ const CreateTeamPage = () => {
                                 {roster.starters.map((slot, idx) => (
                                     <div
                                         key={idx}
-                                        className={`role-item ${isMlbbRosterSlotLocked('starters') ? 'disabled' : ''}`}
-                                        onClick={isMlbbRosterSlotLocked('starters') ? undefined : () => handleSlotClick('starters', idx)}
-                                        role={isMlbbRosterSlotLocked('starters') ? 'presentation' : 'button'}
+                                        className={`role-item ${isRosterSlotLocked('starters') ? 'disabled' : ''}`}
+                                        onClick={isRosterSlotLocked('starters') ? undefined : () => handleSlotClick('starters', idx)}
+                                        role={isRosterSlotLocked('starters') ? 'presentation' : 'button'}
                                     >
-                                        <div className={`role-circle ${slot ? 'filled' : 'empty'} ${isMlbbRosterSlotLocked('starters') ? 'locked' : ''}`}>
+                                        <div className={`role-circle ${slot ? 'filled' : 'empty'} ${isRosterSlotLocked('starters') ? 'locked' : ''}`}>
                                             {/* AQUÍ SE MUESTRA LA FOTO SI EXISTE */}
                                             {slot ? (
                                                 slot.photo ? (
@@ -959,15 +1011,15 @@ const CreateTeamPage = () => {
                                                     <span className="initials">{slot.nickname.substring(0,2).toUpperCase()}</span>
                                                 )
                                             ) : (
-                                                isMlbbRosterSlotLocked('starters') ? <FaLock className="user-icon" /> : <FaUser className="user-icon" />
+                                                isRosterSlotLocked('starters') ? <FaLock className="user-icon" /> : <FaUser className="user-icon" />
                                             )}
                                         </div>
                                         <span className="role-label-text">
                                             {slot ? slot.nickname : getRoleLabel(idx)}
                                         </span>
-                                        {isMlbbGameSelected && (
+                                        {(isMlbbGameSelected || isUniversityTeamSelected) && (
                                             <span className="role-slot-hint">
-                                                {slot ? 'Capitán sincronizado' : 'Entra por código'}
+                                                {slot ? 'Capitán validado' : 'Entra por invitación'}
                                             </span>
                                         )}
                                     </div>
@@ -983,11 +1035,11 @@ const CreateTeamPage = () => {
                                     {roster.subs.map((slot, idx) => (
                                         <div
                                             key={idx}
-                                            className={`role-item ${isMlbbRosterSlotLocked('subs') ? 'disabled' : ''}`}
-                                            onClick={isMlbbRosterSlotLocked('subs') ? undefined : () => handleSlotClick('subs', idx)}
-                                            role={isMlbbRosterSlotLocked('subs') ? 'presentation' : 'button'}
+                                            className={`role-item ${isRosterSlotLocked('subs') ? 'disabled' : ''}`}
+                                            onClick={isRosterSlotLocked('subs') ? undefined : () => handleSlotClick('subs', idx)}
+                                            role={isRosterSlotLocked('subs') ? 'presentation' : 'button'}
                                         >
-                                            <div className={`role-circle small ${slot ? 'filled' : 'empty'} ${isMlbbRosterSlotLocked('subs') ? 'locked' : ''}`}>
+                                            <div className={`role-circle small ${slot ? 'filled' : 'empty'} ${isRosterSlotLocked('subs') ? 'locked' : ''}`}>
                                                 {slot ? (
                                                     slot.photo ? (
                                                         <img src={slot.photo} alt="Sub" style={{width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover'}} />
@@ -995,11 +1047,11 @@ const CreateTeamPage = () => {
                                                         <span className="initials">{slot.nickname.substring(0,2)}</span>
                                                     )
                                                 ) : (
-                                                    isMlbbRosterSlotLocked('subs') ? <FaLock /> : <FaPlus />
+                                                    isRosterSlotLocked('subs') ? <FaLock /> : <FaPlus />
                                                 )}
                                             </div>
                                             <span className="role-label-text">Suplente {idx+1}</span>
-                                            {isMlbbGameSelected && (
+                                            {(isMlbbGameSelected || isUniversityTeamSelected) && (
                                                 <span className="role-slot-hint">Se une después</span>
                                             )}
                                         </div>
@@ -1029,8 +1081,8 @@ const CreateTeamPage = () => {
 
                         <div className="form-footer-sticky">
                             <button className="btn-ghost" onClick={() => setStep(1)}><FaArrowLeft /> Datos</button>
-                            <button className="btn-primary-glow" onClick={finalizeCreation} disabled={submitting}>
-                                {submitting ? "Registrando..." : isMlbbGameSelected ? "Crear Equipo y Generar Código" : "Confirmar Equipo"}
+                            <button className="btn-primary-glow" onClick={finalizeCreation} disabled={submitting || (isUniversityTeamSelected && !currentUserUniversityVerified)}>
+                                {submitting ? "Registrando..." : (isMlbbGameSelected || isUniversityTeamSelected) ? "Crear Equipo y Generar Código" : "Confirmar Equipo"}
                             </button>
                         </div>
                     </div>
@@ -1049,14 +1101,14 @@ const CreateTeamPage = () => {
                             </div>
                         </div>
 
-                        {isMlbbGameSelected && (
+                        {(isMlbbGameSelected || isUniversityTeamSelected) && (
                             <div className="section-card mlbb-share-brief">
-                                <h3>Flujo MLBB</h3>
+                                <h3>{isMlbbGameSelected ? 'Flujo MLBB' : 'Flujo universitario'}</h3>
                                 <div className="mlbb-share-steps">
                                     <span>1. Comparte el código o link del equipo.</span>
-                                    <span>2. Cada jugador debe vincular y verificar su cuenta MLBB en Conexiones.</span>
-                                    <span>3. Cada jugador entra con su propia cuenta sincronizada.</span>
-                                    <span>4. El sistema valida torneos y actividad usando ese User ID + Zone ID.</span>
+                                    <span>2. Cada jugador debe tener su cuenta validada en el módulo correspondiente.</span>
+                                    <span>3. Cada jugador entra con su propia cuenta verificada.</span>
+                                    <span>4. El sistema valida la elegibilidad real antes de torneos y actividad.</span>
                                 </div>
                             </div>
                         )}

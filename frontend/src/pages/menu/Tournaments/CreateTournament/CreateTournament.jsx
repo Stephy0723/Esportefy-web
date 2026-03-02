@@ -52,7 +52,7 @@ const baseState = (name) => ({
   organizerName: name,
   registrationWindow: { start: '', end: '' },
   checkInWindow: { start: '', end: '' },
-  eligibility: { minAge: 13, allowedCountries: 'Global', notes: '' },
+  eligibility: { minAge: 13, allowedCountries: 'Global', notes: '', universityOnly: false },
   contact: { email: '', phone: '', discordInvite: '' },
   broadcast: { streamUrl: '', streamLanguage: 'es' },
   matchConfig: { seriesType: 'BO3', mapPool: '', patchVersion: '' },
@@ -241,7 +241,8 @@ const CreateTournament = () => {
         allowedCountries: Array.isArray(editTournament.eligibility?.allowedCountries)
           ? editTournament.eligibility.allowedCountries.join(', ')
           : prev.eligibility.allowedCountries,
-        notes: editTournament.eligibility?.notes || ''
+        notes: editTournament.eligibility?.notes || '',
+        universityOnly: editTournament.eligibility?.universityOnly === true
       },
       contact: editTournament.contact || prev.contact,
       broadcast: editTournament.broadcast || prev.broadcast,
@@ -722,6 +723,19 @@ const CreateTournament = () => {
               <label className="ct-field"><span>Tipo de registro</span><select value={tournament.entryFee} onChange={(e) => setField('entryFee', e.target.value)}><option>Gratis</option><option>Invitacion</option><option>Password</option><option>Pago</option></select></label>
             </div>
             <label className="ct-field"><span>Notas de elegibilidad</span><textarea rows="2" value={tournament.eligibility.notes} onChange={(e) => setNested('eligibility', 'notes', e.target.value)} /></label>
+            <label className="ct-checkline">
+              <input
+                type="checkbox"
+                checked={tournament.eligibility.universityOnly === true}
+                onChange={(e) => setNested('eligibility', 'universityOnly', e.target.checked)}
+              />
+              <span>Solo equipos universitarios verificados</span>
+            </label>
+            {tournament.eligibility.universityOnly === true && (
+              <p className="ct-inline-help">
+                El backend exigirá que el equipo y todos sus jugadores tengan la misma universidad verificada en Esportefy.
+              </p>
+            )}
           </fieldset>
         </section>
 

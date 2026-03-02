@@ -125,6 +125,8 @@ const Team = () => {
     ).trim();
     const currentUserMlbbPlayerId = String(mlbbConnection?.playerId || '').trim();
     const currentUserMlbbZoneId = String(mlbbConnection?.zoneId || '').trim();
+    const currentUserUniversity = currentUser?.university || {};
+    const currentUserUniversityVerified = Boolean(currentUserUniversity?.verified && currentUserUniversity?.universityId);
 
     /* ── helpers ── */
     const isUserMember = (team) => {
@@ -144,6 +146,7 @@ const Team = () => {
         return (team.joinRequests || []).filter(r => r.status === 'pending');
     };
     const isMlbbTeam = (team) => MLBB_GAMES.has(String(team?.game || '').trim());
+    const isUniversityTeam = (team) => team?.university?.isUniversityTeam === true || String(team?.teamLevel || '').trim().toLowerCase().includes('universitario');
 
     const ROLE_NAMES_JOIN = {
         "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -547,6 +550,11 @@ const Team = () => {
                                         {team.category && (
                                             <span className="th__tag th__tag--category">{team.category}</span>
                                         )}
+                                        {team.university?.isUniversityTeam && (
+                                            <span className="th__tag th__tag--category">
+                                                <i className='bx bx-book-reader'></i> {team.university.universityTag || team.university.universityName || 'Universitario'}
+                                            </span>
+                                        )}
                                         {team.teamGender && team.teamGender !== 'Mixto' && (
                                             <span className="th__tag" style={{ '--tag-color': GENDER_CONFIG[team.teamGender.toLowerCase()]?.color || '#8EDB15' }}>
                                                 {team.teamGender}
@@ -743,6 +751,15 @@ const Team = () => {
                                         <p>{selectedTeam.teamLevel || 'No definido'}</p>
                                     </div>
                                 </div>
+                                {selectedTeam.university?.isUniversityTeam && (
+                                    <div className="th__modal-info-item">
+                                        <i className='bx bx-book-reader'></i>
+                                        <div>
+                                            <label>Universidad</label>
+                                            <p>{selectedTeam.university.universityName || selectedTeam.university.universityTag || 'Verificada'}</p>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="th__modal-info-item">
                                     <i className='bx bx-globe-alt'></i>
                                     <div>
@@ -885,6 +902,9 @@ const Team = () => {
                             const maxSb = st.maxSubstitutes || st.roster?.subs?.length || 0;
                             const roles = ROLE_NAMES_JOIN[st.game] || [];
                             const isMlbbJoinTeam = isMlbbTeam(st);
+                            const isUniversityJoinTeam = isUniversityTeam(st);
+                            const userMatchesUniversity = currentUserUniversityVerified
+                                && String(currentUserUniversity.universityId || '') === String(st?.university?.universityId || '');
                             return (
                                 <div className="th__modal-section th__modal-join-section">
                                     <h4><i className='bx bx-log-in-circle'></i> Unirse al Equipo</h4>
@@ -919,6 +939,16 @@ const Team = () => {
                                                         {currentUserMlbbVerified
                                                             ? `Se usará tu cuenta MLBB vinculada: ${currentUserMlbbIgn || 'IGN no disponible'} · ${currentUserMlbbPlayerId}/${currentUserMlbbZoneId}`
                                                             : 'Para unirte a equipos MLBB primero debes verificar tu cuenta en Conexiones.'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {isUniversityJoinTeam && (
+                                                <div className={`th__join-sync-banner ${userMatchesUniversity ? 'is-ready' : 'is-missing'}`}>
+                                                    <i className={`bx ${userMatchesUniversity ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
+                                                    <span>
+                                                        {userMatchesUniversity
+                                                            ? `Se usará tu verificación universitaria: ${currentUserUniversity.universityName || currentUserUniversity.universityTag}`
+                                                            : `Este equipo pertenece a ${st?.university?.universityName || 'una universidad verificada'}. Debes tener esa misma universidad validada para entrar.`}
                                                     </span>
                                                 </div>
                                             )}
@@ -981,6 +1011,39 @@ const Team = () => {
                                                         <div className="th__join-account-item">
                                                             <label>Estado</label>
                                                             <p>{currentUserMlbbVerified ? 'Verificada' : 'Pendiente'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {isUniversityJoinTeam && (
+                                                <div className={`th__join-account-card ${userMatchesUniversity ? 'is-ready' : 'is-missing'}`}>
+                                                    <div className="th__join-account-head">
+                                                        <i className={`bx ${userMatchesUniversity ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
+                                                        <div>
+                                                            <strong>Verificación universitaria</strong>
+                                                            <span>
+                                                                {userMatchesUniversity
+                                                                    ? 'Tu universidad coincide con la del equipo y se usará para validar torneos universitarios.'
+                                                                    : 'Tu cuenta no tiene una universidad válida para este equipo.'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="th__join-account-grid">
+                                                        <div className="th__join-account-item">
+                                                            <label>Equipo</label>
+                                                            <p>{st?.university?.universityName || 'No definida'}</p>
+                                                        </div>
+                                                        <div className="th__join-account-item">
+                                                            <label>Tu cuenta</label>
+                                                            <p>{currentUserUniversity.universityName || 'No verificada'}</p>
+                                                        </div>
+                                                        <div className="th__join-account-item">
+                                                            <label>Campus</label>
+                                                            <p>{currentUserUniversity.campus || 'No disponible'}</p>
+                                                        </div>
+                                                        <div className="th__join-account-item">
+                                                            <label>Estado</label>
+                                                            <p>{userMatchesUniversity ? 'Compatible' : 'No compatible'}</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1087,9 +1150,15 @@ const Team = () => {
                                                     <span>En MLBB no puedes enviar User ID o Zone ID manualmente. El sistema usa la cuenta verificada de tu perfil.</span>
                                                 </div>
                                             )}
+                                            {isUniversityJoinTeam && (
+                                                <div className="th__join-mlbb-note">
+                                                    <i className='bx bx-info-circle'></i>
+                                                    <span>En equipos universitarios solo pueden entrar estudiantes verificados de la misma universidad.</span>
+                                                </div>
+                                            )}
                                             <div className="th__join-form-actions">
                                                 <button type="button" className="th__join-btn-cancel" onClick={resetJoinForm}>Cancelar</button>
-                                                <button type="submit" className="th__join-btn-submit" disabled={joinSubmitting || (isMlbbJoinTeam && !currentUserMlbbVerified)}>
+                                                <button type="submit" className="th__join-btn-submit" disabled={joinSubmitting || (isMlbbJoinTeam && !currentUserMlbbVerified) || (isUniversityJoinTeam && !userMatchesUniversity)}>
                                                     {joinSubmitting ? <><i className='bx bx-loader-alt bx-spin'></i> Enviando...</> : <><i className='bx bx-send'></i> Enviar Solicitud</>}
                                                 </button>
                                             </div>

@@ -26,6 +26,15 @@ const teamSchema = new mongoose.Schema({
     teamLevel: String,
     teamLanguage: String,
     logo: String,
+    university: {
+        isUniversityTeam: { type: Boolean, default: false },
+        universityId: { type: String, default: '' },
+        universityTag: { type: String, default: '' },
+        universityName: { type: String, default: '' },
+        region: { type: String, default: '' },
+        campus: { type: String, default: '' },
+        verifiedAt: { type: Date, default: null }
+    },
     maxMembers: Number,
     maxSubstitutes: Number,
     captain: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
