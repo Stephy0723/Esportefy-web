@@ -32,7 +32,8 @@ const TeamRegistration = () => {
   const location = useLocation();
   const { user: authUser } = useAuth();
 
-  const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop';
+  const DEFAULT_IMAGE =
+    'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop';
   const incomingTournament = location.state?.tournament;
 
   const tournament = {
@@ -41,6 +42,7 @@ const TeamRegistration = () => {
     tournamentId: incomingTournament?.tournamentId || '',
     game: incomingTournament?.game || '',
     riotRequirements: incomingTournament?.riotRequirements || {},
+    eligibility: incomingTournament?.eligibility || {},
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -60,24 +62,44 @@ const TeamRegistration = () => {
   const selectedTeam = userTeams.find((team) => String(team._id) === String(selectedTeamId));
   const starters = Array.isArray(selectedTeam?.roster?.starters) ? selectedTeam.roster.starters : [];
   const subs = Array.isArray(selectedTeam?.roster?.subs) ? selectedTeam.roster.subs.filter(Boolean) : [];
-  const expectedStarters = Number.isFinite(Number(selectedTeam?.maxMembers)) && Number(selectedTeam?.maxMembers) > 0
-    ? Number(selectedTeam.maxMembers)
-    : starters.length;
-  const filledStarters = starters.slice(0, expectedStarters).filter((p) => p && (p.nickname || p.user)).length;
+  const expectedStarters =
+    Number.isFinite(Number(selectedTeam?.maxMembers)) && Number(selectedTeam?.maxMembers) > 0
+      ? Number(selectedTeam.maxMembers)
+      : starters.length;
+  const filledStarters = starters
+    .slice(0, expectedStarters)
+    .filter((p) => p && (p.nickname || p.user)).length;
   const teamComplete = expectedStarters > 0 && filledStarters >= expectedStarters;
   const gameMatches = !tournamentGameNormalized || normalizeGame(selectedTeam?.game) === tournamentGameNormalized;
   const requiresRiot = Boolean(tournament.riotRequirements?.required) || RIOT_GAMES.has(tournamentGameNormalized);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
   const requiresMlbb = ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(tournament.game);
-  const hasMlbbLinked = String(
-    currentUser?.connections?.mlbb?.verificationStatus
-    || (currentUser?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
-  ) === 'verified';
-  const mlbbRosterPlayers = requiresMlbb
-    ? starters.slice(0, expectedStarters).concat(subs)
-    : [];
+  const hasMlbbLinked =
+    String(
+      currentUser?.connections?.mlbb?.verificationStatus
+        || (currentUser?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+    ) === 'verified';
+  const currentUserUniversity = currentUser?.university || {};
+  const hasVerifiedUniversity = Boolean(currentUserUniversity?.verified && currentUserUniversity?.universityId);
+  const requiresUniversityTeam =
+    tournament?.eligibility?.universityOnly === true || incomingTournament?.eligibility?.universityOnly === true;
+  const mlbbRosterPlayers = requiresMlbb ? starters.slice(0, expectedStarters).concat(subs) : [];
+  const universityRosterPlayers = requiresUniversityTeam ? starters.slice(0, expectedStarters).concat(subs) : [];
   const mlbbPlayersMissingLinkedUser = requiresMlbb
     ? mlbbRosterPlayers.some((p) => p && !p.user)
+    : false;
+  const universityTeamValid = requiresUniversityTeam
+    ? Boolean(selectedTeam?.university?.isUniversityTeam && selectedTeam?.university?.universityId)
+    : true;
+  const universityPlayersMissingLinkedUser = requiresUniversityTeam
+    ? universityRosterPlayers.some((p) => p && !p.user)
+    : false;
+  const universityMismatch = requiresUniversityTeam
+    ? Boolean(
+        selectedTeam?.university?.universityId
+          && hasVerifiedUniversity
+          && String(selectedTeam.university.universityId) !== String(currentUserUniversity.universityId)
+      )
     : false;
   const startersMissingRiotId = requiresRiot
     ? starters.slice(0, expectedStarters).some((p) => p && !p.gameId)
@@ -85,9 +107,12 @@ const TeamRegistration = () => {
   const mlbbPlayersMissingId = requiresMlbb
     ? mlbbRosterPlayers.some((p) => p && (!p.gameId || !p.region))
     : false;
-  const canSubmit = Boolean(selectedTeamId)
+  const canSubmit =
+    Boolean(selectedTeamId)
     && teamComplete
     && gameMatches
+    && (!requiresUniversityTeam
+      || (hasVerifiedUniversity && universityTeamValid && !universityPlayersMissingLinkedUser && !universityMismatch))
     && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId))
     && (!requiresMlbb || (hasMlbbLinked && !mlbbPlayersMissingId && !mlbbPlayersMissingLinkedUser));
 
@@ -103,7 +128,10 @@ const TeamRegistration = () => {
           : (user?._id
               ? allTeams.filter((t) => String(t.captain?._id || t.captain) === String(user._id))
               : allTeams);
-        setUserTeams(visibleTeams);
+        const scopedTeams = requiresUniversityTeam
+          ? visibleTeams.filter((team) => team?.university?.isUniversityTeam === true)
+          : visibleTeams;
+        setUserTeams(scopedTeams);
       } catch (err) {
         console.error('Error cargando equipos:', err);
       } finally {
@@ -111,7 +139,7 @@ const TeamRegistration = () => {
       }
     };
     loadTeams();
-  }, [authUser, storedUser]);
+  }, [authUser, storedUser, requiresUniversityTeam]);
 
   useEffect(() => {
     if (!selectedTeamId) return;
@@ -145,6 +173,22 @@ const TeamRegistration = () => {
       alert('Todos los titulares deben tener Riot ID.');
       return;
     }
+    if (requiresUniversityTeam && !hasVerifiedUniversity) {
+      alert('Debes tener tu universidad verificada para inscribirte en este torneo.');
+      return;
+    }
+    if (requiresUniversityTeam && !universityTeamValid) {
+      alert('Este torneo solo acepta equipos universitarios verificados.');
+      return;
+    }
+    if (requiresUniversityTeam && universityPlayersMissingLinkedUser) {
+      alert('En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de Esportefy.');
+      return;
+    }
+    if (requiresUniversityTeam && universityMismatch) {
+      alert('Tu cuenta universitaria no coincide con la universidad del equipo seleccionado.');
+      return;
+    }
     if (requiresMlbb && !hasMlbbLinked) {
       alert('Debes verificar tu cuenta MLBB para inscribirte.');
       return;
@@ -167,12 +211,8 @@ const TeamRegistration = () => {
       }
       await axios.post(
         `${API_URL}/api/tournaments/${tournament.tournamentId}/register`,
-        {
-          teamId: selectedTeamId,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { teamId: selectedTeamId },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       alert('Equipo registrado. GL HF.');
       navigate('/tournaments');
@@ -185,7 +225,8 @@ const TeamRegistration = () => {
   };
 
   const handleImageError = (e) => {
-    e.target.src = 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=2070&auto=format&fit=crop';
+    e.target.src =
+      'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=2070&auto=format&fit=crop';
   };
 
   return (
@@ -199,9 +240,9 @@ const TeamRegistration = () => {
               <h1>Registro <span className="highlight">{tournament.title}</span></h1>
               {formatTournamentPublicId(tournament) && <p>{formatTournamentPublicId(tournament)}</p>}
               <p>Prepara a tu escuadra para la gloria.</p>
-              {tournament.game && (
+              {tournament.game ? (
                 <div className="tournament-game-badge">Juego: {tournament.game}</div>
-              )}
+              ) : null}
             </div>
 
             <form onSubmit={handleRegister}>
@@ -240,18 +281,46 @@ const TeamRegistration = () => {
 
               {selectedTeam ? (
                 <div className="validation-box">
-                  {!gameMatches && <p className="validation-error">El juego del equipo no coincide con el torneo.</p>}
-                  {!teamComplete && <p className="validation-error">El equipo no esta completo ({filledStarters}/{expectedStarters}).</p>}
-                  {requiresRiot && !hasRiotLinked && <p className="validation-error">Debes vincular tu cuenta Riot en Settings.</p>}
-                  {requiresRiot && startersMissingRiotId && <p className="validation-error">Faltan Riot ID en titulares.</p>}
-                  {requiresMlbb && !hasMlbbLinked && <p className="validation-error">Debes verificar tu cuenta MLBB en Settings.</p>}
-                  {requiresMlbb && mlbbPlayersMissingLinkedUser && <p className="validation-error">En MLBB todos los jugadores del roster deben ser usuarios vinculados.</p>}
-                  {requiresMlbb && mlbbPlayersMissingId && <p className="validation-error">Faltan User ID/Zone ID de MLBB en algun jugador del roster.</p>}
+                  {!gameMatches ? (
+                    <p className="validation-error">El juego del equipo no coincide con el torneo.</p>
+                  ) : null}
+                  {!teamComplete ? (
+                    <p className="validation-error">El equipo no esta completo ({filledStarters}/{expectedStarters}).</p>
+                  ) : null}
+                  {requiresUniversityTeam && !hasVerifiedUniversity ? (
+                    <p className="validation-error">Debes tener tu universidad verificada en University.</p>
+                  ) : null}
+                  {requiresUniversityTeam && !universityTeamValid ? (
+                    <p className="validation-error">Solo puedes registrar equipos universitarios verificados.</p>
+                  ) : null}
+                  {requiresUniversityTeam && universityPlayersMissingLinkedUser ? (
+                    <p className="validation-error">Todos los jugadores del roster deben ser usuarios universitarios verificados.</p>
+                  ) : null}
+                  {requiresUniversityTeam && universityMismatch ? (
+                    <p className="validation-error">Tu universidad verificada no coincide con la del equipo.</p>
+                  ) : null}
+                  {requiresRiot && !hasRiotLinked ? (
+                    <p className="validation-error">Debes vincular tu cuenta Riot en Settings.</p>
+                  ) : null}
+                  {requiresRiot && startersMissingRiotId ? (
+                    <p className="validation-error">Faltan Riot ID en titulares.</p>
+                  ) : null}
+                  {requiresMlbb && !hasMlbbLinked ? (
+                    <p className="validation-error">Debes verificar tu cuenta MLBB en Settings.</p>
+                  ) : null}
+                  {requiresMlbb && mlbbPlayersMissingLinkedUser ? (
+                    <p className="validation-error">En MLBB todos los jugadores del roster deben ser usuarios vinculados.</p>
+                  ) : null}
+                  {requiresMlbb && mlbbPlayersMissingId ? (
+                    <p className="validation-error">Faltan User ID/Zone ID de MLBB en algun jugador del roster.</p>
+                  ) : null}
                 </div>
               ) : null}
 
               <div className="actions">
-                <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>Cancelar</button>
+                <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>
+                  Cancelar
+                </button>
                 <button type="submit" className="btn-confirm" disabled={submitting || !canSubmit}>
                   {submitting ? 'Registrando...' : 'Confirmar Registro'}
                 </button>

@@ -239,6 +239,26 @@
   color: var(--text-muted);
 }
 
+.ct-checkline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.ct-checkline input {
+  width: 16px;
+  height: 16px;
+}
+
+.ct-inline-help {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
 .ct-inline-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;

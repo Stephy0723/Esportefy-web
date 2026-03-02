@@ -83,6 +83,7 @@ export const createTeam = async (req, res) => {
             : '/uploads/teams/default.png';
 
         const rosterData = parsedRoster || { starters: [], subs: [], coach: null };
+        const wantsUniversityTeam = isUniversityTeamLevel(parsedFormData?.teamLevel);
         // Asegura que el capitán quede en el roster
         const captainPlayer = {
             user: req.userId,
@@ -113,6 +114,15 @@ export const createTeam = async (req, res) => {
                     return res.status(400).json({ message: "Debes dejar un slot disponible para el capitán en el roster" });
                 }
             }
+        }
+
+        let universitySnapshot = getEmptyUniversityTeamSnapshot();
+        if (wantsUniversityTeam) {
+            const universityResult = await buildVerifiedUniversitySnapshot(req.userId);
+            if (!universityResult.ok) {
+                return res.status(400).json({ message: universityResult.message });
+            }
+            universitySnapshot = universityResult.snapshot;
         }
 
         if (RIOT_GAMES.has(parsedFormData.game)) {
@@ -175,9 +185,20 @@ export const createTeam = async (req, res) => {
             return res.status(400).json({ message: uniqueCheck.message });
         }
 
+        if (wantsUniversityTeam) {
+            const universityRosterValidation = await validateUniversityTeamRoster(
+                { roster: rosterData, university: universitySnapshot },
+                universitySnapshot.universityId
+            );
+            if (!universityRosterValidation.ok) {
+                return res.status(400).json({ message: universityRosterValidation.message });
+            }
+        }
+
         const newTeam = new Team({
             ...parsedFormData,
             logo: logoPath,
+            university: universitySnapshot,
             roster: rosterData,
             captain: req.userId,
             inviteCode: crypto.randomBytes(4).toString('hex').toUpperCase()
@@ -313,11 +334,90 @@ const MLBB_GAMES = new Set([
     'Mobile Legends: Bang Bang',
     'MLBB'
 ]);
+const UNIVERSITY_TEAM_LEVEL = 'universitario';
 
+const normalizeText = (value = '') =>
+    String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
 const isMlbbGame = (game) => MLBB_GAMES.has(String(game || '').trim());
 const isFilledRosterPlayer = (slot) => Boolean(
     slot && (slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role)
 );
+const normalizeUniversityText = (value = '') => String(value || '').trim();
+const isUniversityTeamLevel = (value = '') => normalizeText(value).includes(UNIVERSITY_TEAM_LEVEL);
+const getEmptyUniversityTeamSnapshot = () => ({
+    isUniversityTeam: false,
+    universityId: '',
+    universityTag: '',
+    universityName: '',
+    region: '',
+    campus: '',
+    verifiedAt: null
+});
+const toUniversityTeamSnapshot = (university = {}) => ({
+    isUniversityTeam: true,
+    universityId: normalizeUniversityText(university?.universityId),
+    universityTag: normalizeUniversityText(university?.universityTag),
+    universityName: normalizeUniversityText(university?.universityName),
+    region: normalizeUniversityText(university?.region),
+    campus: normalizeUniversityText(university?.campus),
+    verifiedAt: university?.verifiedAt || new Date()
+});
+const buildVerifiedUniversitySnapshot = async (userId) => {
+    const user = await User.findById(userId).select('university');
+    const university = user?.university || {};
+    const universityId = normalizeUniversityText(university?.universityId);
+    if (!university?.verified || !universityId) {
+        return {
+            ok: false,
+            message: 'Para crear o gestionar un equipo universitario debes tener tu universidad verificada.'
+        };
+    }
+    return { ok: true, snapshot: toUniversityTeamSnapshot(university) };
+};
+const ensureUserMatchesUniversityTeam = async (userId, expectedUniversityId) => {
+    const user = await User.findById(userId).select('university');
+    const university = user?.university || {};
+    if (!user || !university?.verified || !normalizeUniversityText(university?.universityId)) {
+        return {
+            ok: false,
+            message: 'Todos los jugadores del equipo universitario deben tener universidad verificada.'
+        };
+    }
+    if (normalizeUniversityText(university.universityId) !== normalizeUniversityText(expectedUniversityId)) {
+        return {
+            ok: false,
+            message: 'Todos los jugadores del equipo universitario deben pertenecer a la misma universidad.'
+        };
+    }
+    return { ok: true, university };
+};
+const getUniversityRosterPlayers = (roster = {}) => {
+    const starters = Array.isArray(roster?.starters) ? roster.starters.filter(isFilledRosterPlayer) : [];
+    const subs = Array.isArray(roster?.subs) ? roster.subs.filter(isFilledRosterPlayer) : [];
+    return [...starters, ...subs];
+};
+const validateUniversityTeamRoster = async (teamLike = {}, expectedUniversityId = '') => {
+    const universityId = normalizeUniversityText(expectedUniversityId || teamLike?.university?.universityId);
+    if (!universityId) {
+        return { ok: false, message: 'El equipo universitario no tiene universidad vinculada.' };
+    }
+    const players = getUniversityRosterPlayers(teamLike?.roster || {});
+    for (const player of players) {
+        if (!player?.user) {
+            return {
+                ok: false,
+                message: 'En equipos universitarios todos los jugadores del roster deben ser usuarios verificados de Esportefy.'
+            };
+        }
+        const universityCheck = await ensureUserMatchesUniversityTeam(player.user, universityId);
+        if (!universityCheck.ok) return universityCheck;
+    }
+    return { ok: true };
+};
 const getMlbbRosterPlayers = (roster = {}) => {
     const starters = Array.isArray(roster?.starters) ? roster.starters.filter(isFilledRosterPlayer) : [];
     const subs = Array.isArray(roster?.subs) ? roster.subs.filter(isFilledRosterPlayer) : [];
@@ -500,6 +600,10 @@ export const joinTeam = async (req, res) => {
         if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
+        if (team?.university?.isUniversityTeam && slotType !== 'coach') {
+            const universityCheck = await ensureUserMatchesUniversityTeam(req.userId, team.university.universityId);
+            if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
+        }
         if (RIOT_GAMES.has(team.game)) {
             const ok = await requireRiotLinked(req.userId);
             if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para unirte a este equipo" });
@@ -528,6 +632,10 @@ export const joinTeam = async (req, res) => {
         }
         const applied = applyRosterSlot(team, slotType, slotIndex, playerPayload);
         if (!applied.ok) return res.status(400).json({ message: applied.message });
+        if (team?.university?.isUniversityTeam) {
+            const universityRosterValidation = await validateUniversityTeamRoster(team, team.university.universityId);
+            if (!universityRosterValidation.ok) return res.status(400).json({ message: universityRosterValidation.message });
+        }
         if (isMlbbGame(team.game)) {
             const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id);
             if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
@@ -583,6 +691,15 @@ export const addMemberDirect = async (req, res) => {
         if (playerPayload?.user && userInRoster(team, playerPayload.user)) {
             return res.status(400).json({ message: 'Ese usuario ya pertenece al roster de este equipo' });
         }
+        if (team?.university?.isUniversityTeam && slotType !== 'coach') {
+            if (!playerPayload?.user) {
+                return res.status(400).json({
+                    message: 'En equipos universitarios no puedes agregar jugadores manuales sin usuario verificado.'
+                });
+            }
+            const universityCheck = await ensureUserMatchesUniversityTeam(playerPayload.user, team.university.universityId);
+            if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
+        }
 
         if (RIOT_GAMES.has(team.game)) {
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
@@ -613,6 +730,10 @@ export const addMemberDirect = async (req, res) => {
 
         const applied = applyRosterSlot(team, slotType, slotIndex, playerPayload);
         if (!applied.ok) return res.status(400).json({ message: applied.message });
+        if (team?.university?.isUniversityTeam) {
+            const universityRosterValidation = await validateUniversityTeamRoster(team, team.university.universityId);
+            if (!universityRosterValidation.ok) return res.status(400).json({ message: universityRosterValidation.message });
+        }
         if (isMlbbGame(team.game)) {
             const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id);
             if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
@@ -701,6 +822,10 @@ export const requestJoinTeam = async (req, res) => {
         if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
+        if (team?.university?.isUniversityTeam && slotType !== 'coach') {
+            const universityCheck = await ensureUserMatchesUniversityTeam(req.userId, team.university.universityId);
+            if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
+        }
         if (RIOT_GAMES.has(team.game)) {
             const ok = await requireRiotLinked(req.userId);
             if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para solicitar ingreso" });
@@ -793,6 +918,10 @@ export const handleJoinRequest = async (req, res) => {
         if (action === 'approve') {
             const uniqueCheck = await ensureUserNotInOtherTeam(team.game, reqDoc.user, team._id);
             if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
+            if (team?.university?.isUniversityTeam && reqDoc.slotType !== 'coach') {
+                const universityCheck = await ensureUserMatchesUniversityTeam(reqDoc.user, team.university.universityId);
+                if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
+            }
             if (RIOT_GAMES.has(team.game)) {
                 const ok = await requireRiotLinked(reqDoc.user);
                 if (!ok) return res.status(400).json({ message: "El jugador debe vincular su cuenta Riot" });
@@ -833,6 +962,10 @@ export const handleJoinRequest = async (req, res) => {
             if (isMlbbGame(team.game)) {
                 const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id);
                 if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
+            }
+            if (team?.university?.isUniversityTeam) {
+                const universityRosterValidation = await validateUniversityTeamRoster(team, team.university.universityId);
+                if (!universityRosterValidation.ok) return res.status(400).json({ message: universityRosterValidation.message });
             }
             await User.updateOne({ _id: reqDoc.user }, { $addToSet: { teams: team._id } });
             team.joinRequests = team.joinRequests.filter(r => String(r._id) !== String(requestId));
@@ -978,6 +1111,21 @@ export const updateTeam = async (req, res) => {
         allowed.forEach((key) => {
             if (data[key] !== undefined) team[key] = data[key];
         });
+
+        const wantsUniversityTeam = isUniversityTeamLevel(team.teamLevel);
+        if (wantsUniversityTeam) {
+            const universityResult = await buildVerifiedUniversitySnapshot(team.captain);
+            if (!universityResult.ok) {
+                return res.status(400).json({ message: universityResult.message });
+            }
+            team.university = universityResult.snapshot;
+            const universityRosterValidation = await validateUniversityTeamRoster(team, team.university.universityId);
+            if (!universityRosterValidation.ok) {
+                return res.status(400).json({ message: universityRosterValidation.message });
+            }
+        } else {
+            team.university = getEmptyUniversityTeamSnapshot();
+        }
 
         await team.save();
         res.status(200).json({ message: "Equipo actualizado", team });

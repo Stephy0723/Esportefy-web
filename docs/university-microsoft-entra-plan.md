@@ -87,3 +87,9 @@ Si hay estudiantes de EE. UU., revisar FERPA antes de leer informacion educativa
    - `POST /api/university/microsoft/unlink`
 3. Validar tokens e identidad institucional en backend.
 4. Crear panel admin universitario para aprobar estudiantes.
+
+## QA manual
+
+Checklist operativo del modulo actual:
+- `docs/university-manual-review-checklist.md`
+- `docs/university-entra-manual-checklist.md`

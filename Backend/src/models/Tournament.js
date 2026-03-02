@@ -54,7 +54,8 @@ const tournamentSchema = new mongoose.Schema({
     eligibility: {
         minAge: { type: Number, default: 13 },
         allowedCountries: { type: [String], default: ['Global'] },
-        notes: { type: String, default: '' }
+        notes: { type: String, default: '' },
+        universityOnly: { type: Boolean, default: false }
     },
     contact: {
         email: { type: String, default: '' },
@@ -164,7 +165,15 @@ const tournamentSchema = new mongoose.Schema({
             category: String,
             teamCountry: String,
             teamLevel: String,
-            coach: String
+            coach: String,
+            university: {
+                isUniversityTeam: { type: Boolean, default: false },
+                universityId: { type: String, default: '' },
+                universityTag: { type: String, default: '' },
+                universityName: { type: String, default: '' },
+                region: { type: String, default: '' },
+                campus: { type: String, default: '' }
+            }
         },
         roster: {
             starters: [{

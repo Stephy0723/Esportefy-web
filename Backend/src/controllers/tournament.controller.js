@@ -66,6 +66,8 @@ const MLBB_BANNED_TERMS = [
     'cuota',
     'cuotas'
 ];
+const normalizeUniversityText = (value = '') => String(value || '').trim();
+const isUniversityOnlyTournament = (tournament = {}) => tournament?.eligibility?.universityOnly === true;
 
 const normalizeText = (value = '') =>
     String(value || '')
@@ -292,6 +294,49 @@ const getMlbbComplianceIssues = ({
     return issues;
 };
 
+const validateUniversityTournamentTeam = async (team) => {
+    if (!team?.university?.isUniversityTeam || !normalizeUniversityText(team?.university?.universityId)) {
+        return {
+            ok: false,
+            message: 'Este torneo solo acepta equipos universitarios verificados.'
+        };
+    }
+
+    const rosterPlayers = []
+        .concat(Array.isArray(team?.roster?.starters) ? team.roster.starters.filter(isFilledRosterEntry) : [])
+        .concat(Array.isArray(team?.roster?.subs) ? team.roster.subs.filter(isFilledRosterEntry) : []);
+
+    if (!rosterPlayers.length) {
+        return { ok: false, message: 'El equipo universitario no tiene roster válido.' };
+    }
+
+    for (const player of rosterPlayers) {
+        if (!player?.user) {
+            return {
+                ok: false,
+                message: 'En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de Esportefy.'
+            };
+        }
+    }
+
+    const userIds = [...new Set(rosterPlayers.map((player) => String(player.user)).filter(Boolean))];
+    const users = await User.find({ _id: { $in: userIds } }).select('university');
+    const userMap = new Map(users.map((user) => [String(user._id), user.university || {}]));
+    const expectedUniversityId = normalizeUniversityText(team.university.universityId);
+
+    for (const player of rosterPlayers) {
+        const university = userMap.get(String(player.user)) || {};
+        if (!university?.verified || normalizeUniversityText(university?.universityId) !== expectedUniversityId) {
+            return {
+                ok: false,
+                message: 'Todos los jugadores del equipo deben tener la misma universidad verificada para competir en torneos universitarios.'
+            };
+        }
+    }
+
+    return { ok: true };
+};
+
 const ACTIVE_DAYS = 30;
 
 const canManageTournament = async (tournament, userId) => {
@@ -497,7 +542,8 @@ export const createTournament = async (req, res) => {
             eligibility: {
                 minAge: Number(parsedEligibility.minAge) > 0 ? Number(parsedEligibility.minAge) : 13,
                 allowedCountries: normalizeStringArray(parsedEligibility.allowedCountries),
-                notes: parsedEligibility.notes || ''
+                notes: parsedEligibility.notes || '',
+                universityOnly: parsedEligibility.universityOnly === true || String(parsedEligibility.universityOnly || '').trim().toLowerCase() === 'true'
             },
             contact: {
                 email: parsedContact.email || '',
@@ -723,7 +769,8 @@ export const updateTournament = async (req, res) => {
             update.eligibility = {
                 minAge: Number(parsedEligibility.minAge) > 0 ? Number(parsedEligibility.minAge) : 13,
                 allowedCountries: normalizeStringArray(parsedEligibility.allowedCountries),
-                notes: parsedEligibility.notes || ''
+                notes: parsedEligibility.notes || '',
+                universityOnly: parsedEligibility.universityOnly === true || String(parsedEligibility.universityOnly || '').trim().toLowerCase() === 'true'
             };
         }
         if (parsedContact) {
@@ -1112,6 +1159,11 @@ export const registerTeam = async (req, res) => {
                 message: 'Para torneos MLBB debes inscribir un equipo existente (no registro manual).'
             });
         }
+        if (!teamId && isUniversityOnlyTournament(tournament)) {
+            return res.status(400).json({
+                message: 'Para torneos universitarios debes inscribir un equipo universitario existente.'
+            });
+        }
 
         let registrationPayload = null;
         if (teamId) {
@@ -1122,6 +1174,12 @@ export const registerTeam = async (req, res) => {
             }
             if (String(team.game) !== String(tournament.game)) {
                 return res.status(400).json({ message: 'El juego del equipo no coincide con el torneo' });
+            }
+            if (isUniversityOnlyTournament(tournament)) {
+                const universityTeamCheck = await validateUniversityTournamentTeam(team);
+                if (!universityTeamCheck.ok) {
+                    return res.status(400).json({ message: universityTeamCheck.message });
+                }
             }
             const starters = Array.isArray(team.roster?.starters)
                 ? team.roster.starters.filter(isFilledRosterEntry)
@@ -1240,7 +1298,15 @@ export const registerTeam = async (req, res) => {
                     category: team.category || '',
                     teamCountry: team.teamCountry || '',
                     teamLevel: team.teamLevel || '',
-                    coach: team.roster?.coach?.nickname || ''
+                    coach: team.roster?.coach?.nickname || '',
+                    university: {
+                        isUniversityTeam: team?.university?.isUniversityTeam === true,
+                        universityId: team?.university?.universityId || '',
+                        universityTag: team?.university?.universityTag || '',
+                        universityName: team?.university?.universityName || '',
+                        region: team?.university?.region || '',
+                        campus: team?.university?.campus || ''
+                    }
                 },
                 roster: {
                     starters: starters.map(p => ({
@@ -1354,6 +1420,17 @@ export const updateRegistrationStatus = async (req, res) => {
         }
 
         const isMlbbTournament = MLBB_GAMES.has(String(tournament.game || '').trim());
+        const universityOnly = isUniversityOnlyTournament(tournament);
+        if (status === 'approved' && universityOnly) {
+            if (!reg?.teamId) {
+                return res.status(400).json({ message: 'Los torneos universitarios solo aceptan equipos universitarios existentes.' });
+            }
+            const team = await Team.findById(reg.teamId);
+            const universityTeamCheck = await validateUniversityTournamentTeam(team);
+            if (!universityTeamCheck.ok) {
+                return res.status(400).json({ message: universityTeamCheck.message });
+            }
+        }
         if (status === 'approved' && isMlbbTournament) {
             const rosterCheck = validateMlbbRegistrationRoster(reg);
             if (!rosterCheck.ok) {
@@ -1577,6 +1654,35 @@ export const getTournamentCompliance = async (req, res) => {
                 label: 'Cumplimiento MLBB',
                 ok: true,
                 detail: 'Este torneo no es de Mobile Legends'
+            });
+        }
+
+        if (isUniversityOnlyTournament(tournament)) {
+            const approved = getApprovedRegistrations(tournament);
+            const universityIssues = [];
+            for (const reg of approved) {
+                if (!reg?.teamId) {
+                    universityIssues.push(`"${reg?.teamName || 'Equipo'}" no está ligado a un equipo universitario real.`);
+                    continue;
+                }
+                const team = await Team.findById(reg.teamId).select('university roster');
+                const result = await validateUniversityTournamentTeam(team);
+                if (!result.ok) {
+                    universityIssues.push(`"${reg?.teamName || 'Equipo'}": ${result.message}`);
+                }
+            }
+            checks.push({
+                id: 'universityEligibility',
+                label: 'Elegibilidad universitaria',
+                ok: universityIssues.length === 0,
+                detail: universityIssues.length ? universityIssues.join(' | ') : 'Todos los equipos aprobados cumplen con universidad verificada'
+            });
+        } else {
+            checks.push({
+                id: 'universityScope',
+                label: 'Elegibilidad universitaria',
+                ok: true,
+                detail: 'Este torneo no está restringido a equipos universitarios'
             });
         }
 

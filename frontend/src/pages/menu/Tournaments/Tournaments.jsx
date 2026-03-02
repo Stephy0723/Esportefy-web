@@ -1889,16 +1889,21 @@ useEffect(() => {
                                     <strong style={{color: '#fff'}}>{selectedTournament.organizer}</strong>
                                     <i className='bx bxs-badge-check' style={{color: '#00b894'}}></i>
                                 </div>
-                                <div className="banner-status-group">
-                                    <div className="top-tags">
-                                        <span className="game-badge" style={{background: GAME_CONFIG[selectedTournament.game]?.color || '#fff'}}>
-                                            <i className={`bx ${GAME_CONFIG[selectedTournament.game]?.icon}`}></i> {selectedTournament.game}
-                                        </span>
-                                    </div>
-                                    {selectedTournament.status && (
-                                        <div className="tournament-status-pill">
-                                            {getTournamentStatusLabel(selectedTournament.status)}
+                                    <div className="banner-status-group">
+                                        <div className="top-tags">
+                                            <span className="game-badge" style={{background: GAME_CONFIG[selectedTournament.game]?.color || '#fff'}}>
+                                                <i className={`bx ${GAME_CONFIG[selectedTournament.game]?.icon}`}></i> {selectedTournament.game}
+                                            </span>
+                                            {selectedTournament.eligibility?.universityOnly === true && (
+                                                <span className="game-badge" style={{ background: '#6366f1', color: '#fff' }}>
+                                                    <i className='bx bx-book-reader'></i> Solo universidades
+                                                </span>
+                                            )}
                                         </div>
+                                        {selectedTournament.status && (
+                                            <div className="tournament-status-pill">
+                                                {getTournamentStatusLabel(selectedTournament.status)}
+                                            </div>
                                     )}
                                 </div>
                             </div>
@@ -1913,6 +1918,11 @@ useEffect(() => {
                         <div className="info-section">
                             <h4><i className='bx bx-file'></i> Descripción y Reglas</h4>
                             <p>{selectedTournament.desc}</p>
+                            {selectedTournament.eligibility?.universityOnly === true && (
+                                <p style={{ marginTop: 12, color: '#a5b4fc' }}>
+                                    Este torneo exige equipos universitarios verificados. El backend validará que todo el roster pertenezca a la misma universidad.
+                                </p>
+                            )}
                         </div>
 
                         {Array.isArray(selectedTournament.registrations) && selectedTournament.registrations.length > 0 && (
@@ -2912,6 +2922,11 @@ useEffect(() => {
                                                 <span className="game-pill" style={{ borderColor: gameColor, color: '#fff' }}>
                                                     <i className={`bx ${GAME_CONFIG[torneo.game]?.icon || 'bx-joystick'}`}></i> {torneo.game}
                                                 </span>
+                                                {torneo.eligibility?.universityOnly === true && (
+                                                    <span className="tn__card-status" style={{ background: '#6366f118', color: '#818cf8', border: '1px solid #818cf830' }}>
+                                                        <i className='bx bx-book-reader'></i> Universitario
+                                                    </span>
+                                                )}
                                                 <span className="tn__card-status" style={{ background: `${statusCfg.color}18`, color: statusCfg.color, border: `1px solid ${statusCfg.color}30` }}>
                                                     <i className={`bx ${statusCfg.icon}`}></i> {statusCfg.label}
                                                 </span>
@@ -2942,6 +2957,11 @@ useEffect(() => {
                                                     <i className='bx bx-trophy' style={{ color: '#ffd700' }}></i>
                                                     <span>{torneo.prize || 'Sin premio'}</span>
                                                 </div>
+                                                {torneo.eligibility?.universityOnly === true && (
+                                                    <span className="tn__gender-tag">
+                                                        <i className='bx bx-book-reader'></i> Solo universidades
+                                                    </span>
+                                                )}
                                                 {torneo.gender && (
                                                     <span className="tn__gender-tag">
                                                         <i className='bx bx-user'></i> {torneo.gender}
