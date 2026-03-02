@@ -101,19 +101,33 @@
 /* ── Step Indicator ── */
 .ct-stepper {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     margin-bottom: 2.5rem;
     padding: 0 2rem;
+    width: 100%;
 }
-.ct-step {
+.ct-stepper > .ct-step {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
     z-index: 1;
+    flex: 0 0 84px;
+    text-align: center;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
+    color: inherit;
 }
-.ct-step-dot {
+.ct-stepper > .ct-step .ct-step-dot {
     width: 42px;
     height: 42px;
     border-radius: 50%;
@@ -128,37 +142,40 @@
     color: var(--text-muted);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.ct-step.active .ct-step-dot {
+.ct-stepper > .ct-step.active .ct-step-dot {
     background: var(--theme-gradient);
     border-color: var(--theme-color);
     color: #000;
     box-shadow: 0 0 24px var(--theme-glow), 0 0 48px rgba(0,0,0,0.3);
     transform: scale(1.15);
 }
-.ct-step.done .ct-step-dot {
+.ct-stepper > .ct-step.done .ct-step-dot {
     background: var(--theme-color);
     border-color: var(--theme-color);
     color: #000;
 }
-.ct-step-label {
+.ct-stepper > .ct-step .ct-step-label {
     font-size: 0.6rem;
     text-transform: uppercase;
     letter-spacing: 1.2px;
     font-weight: 700;
     color: var(--text-muted);
     transition: color 0.3s;
+    display: block;
+    width: 100%;
+    text-align: center;
 }
-.ct-step.active .ct-step-label,
-.ct-step.done .ct-step-label {
+.ct-stepper > .ct-step.active .ct-step-label,
+.ct-stepper > .ct-step.done .ct-step-label {
     color: var(--theme-color);
 }
 .ct-step-line {
     flex: 1;
     height: 2px;
     background: var(--border-color);
-    margin: 0 -4px;
-    margin-bottom: 22px;
-    min-width: 60px;
+    margin: 20px 10px 0;
+    min-width: 72px;
+    align-self: flex-start;
     transition: background 0.4s, box-shadow 0.4s;
 }
 .ct-step-line.done {
@@ -1050,9 +1067,10 @@ select option {
     }
     .btn-primary-glow { padding: 10px 20px; font-size: 0.85rem; }
     .ct-stepper { padding: 0 0.5rem; }
-    .ct-step-dot { width: 34px; height: 34px; font-size: 0.75rem; }
-    .ct-step-line { min-width: 40px; }
-    .ct-step-label { font-size: 0.55rem; }
+    .ct-stepper > .ct-step { flex-basis: 72px; }
+    .ct-stepper > .ct-step .ct-step-dot { width: 34px; height: 34px; font-size: 0.75rem; }
+    .ct-step-line { min-width: 28px; margin: 16px 6px 0; }
+    .ct-stepper > .ct-step .ct-step-label { font-size: 0.55rem; }
     .branding-section { flex-direction: column; text-align: center; }
     .split-row { grid-template-columns: 1fr; }
     .social-grid-pro { grid-template-columns: repeat(4, 1fr); }
