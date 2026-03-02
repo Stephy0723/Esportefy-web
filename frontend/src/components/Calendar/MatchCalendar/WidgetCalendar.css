@@ -464,6 +464,19 @@
 .wc__event-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wc__event-code {
+  display: block;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ev-color, var(--primary));
+  opacity: 0.9;
 }
 
 .wc__event-title {
@@ -627,6 +640,19 @@
 .wc__upcoming-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wc__upcoming-code {
+  display: block;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ev-color, var(--primary));
+  opacity: 0.9;
 }
 
 .wc__upcoming-title {

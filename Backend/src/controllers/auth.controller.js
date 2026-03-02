@@ -110,6 +110,38 @@ const normalizeStringArray = (value) => {
     return [];
 };
 
+const isValidNonNegativeNumberString = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
+const isValidObjectIdLike = (value = '') => /^[a-fA-F0-9]{24}$/.test(String(value));
+
+export const checkPhoneAvailability = async (req, res) => {
+    try {
+        const rawPhone = String(req.query.phone || '').trim();
+        const excludeUserId = String(req.query.excludeUserId || '').trim();
+
+        if (!rawPhone) {
+            return res.status(400).json({ available: false, message: 'El teléfono es obligatorio' });
+        }
+
+        if (!isValidNonNegativeNumberString(rawPhone)) {
+            return res.status(400).json({ available: false, message: 'El teléfono debe contener solo números y no puede ser negativo' });
+        }
+
+        const query = { phone: rawPhone };
+        if (excludeUserId) {
+            if (!isValidObjectIdLike(excludeUserId)) {
+                return res.status(400).json({ available: false, message: 'ID de usuario inválido para exclusión' });
+            }
+            query._id = { $ne: excludeUserId };
+        }
+
+        const existingUser = await User.findOne(query).select('_id');
+        return res.status(200).json({ available: !existingUser });
+    } catch (error) {
+        console.error('Error verificando teléfono:', error);
+        return res.status(500).json({ available: false, message: 'Error verificando disponibilidad del teléfono' });
+    }
+};
+
 export const register = async (req, res) => {
     try {
         const payload = req.body || {};
@@ -224,6 +256,7 @@ export const login = async (req, res) => {
 
         res.status(200).json({ 
             session: true,
+            token,
             user: {
                 id: user._id,
                 userName: user.username,
@@ -405,7 +438,7 @@ export const updateProfile = async (req, res) => {
 
         // 1. Manejo de la imagen (Multer)
         if (req.file) {
-            updateData.avatar = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+            updateData.avatar = `/uploads/avatars/${req.file.filename}`;
         }
 
         // 2. Limpieza de Arrays de Texto (Juegos, Metas, etc.)

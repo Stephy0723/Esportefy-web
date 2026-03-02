@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { esportsCatalog } from '../../../data/esportsCatalog.jsx';
 import { API_URL } from '../../../config/api';
+import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { formatTeamPublicId } from '../../../utils/publicIds';
 import './ViewTeamModal.css';
 
 /* ── Role names per game ── */
@@ -36,6 +38,7 @@ const ROLE_NAMES = {
 };
 
 const RIOT_GAMES = new Set(['Valorant', 'League of Legends', 'Wild Rift', 'Teamfight Tactics', 'Legends of Runeterra']);
+const MLBB_GAMES = new Set(['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB']);
 const REGION_OPTIONS = ["LAN", "LAS", "NA", "BR", "EUW", "EUNE", "TR", "RU", "OCE", "KR", "JP", "PH", "SG", "TH", "TW", "VN", "LATAM", "GLOBAL"];
 
 const LEVEL_OPTIONS = ['Casual', 'Amateur', 'Semi-Pro', 'Universitario', 'Profesional', 'Leyenda (Elite)'];
@@ -271,13 +274,23 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         const starters = team.roster?.starters || [];
         const subs = team.roster?.subs || [];
         const roles = ROLE_NAMES[team.game] || [];
+        const isMlbbTeam = MLBB_GAMES.has(String(team?.game || '').trim());
+        const getSyncMeta = (member) => {
+            if (!isMlbbTeam || !member) return null;
+            const hasUser = Boolean(member?.user);
+            const hasIds = Boolean(member?.gameId && member?.region);
+            if (hasUser && hasIds) return { label: 'Sincronizado', tone: 'ready' };
+            if (hasUser) return { label: 'Datos incompletos', tone: 'warn' };
+            return { label: 'Sin vincular', tone: 'missing' };
+        };
 
         for (let i = 0; i < starterSlots; i++) {
             const m = starters[i];
             list.push({
                 id: m?._id || `s-${i}`, name: m?.nickname || '', role: m?.role || roles[i] || `Titular ${i + 1}`,
                 userId: m?.user || null, gameId: m?.gameId || '', email: m?.email || '', region: m?.region || '',
-                photo: m?.photo || '', slotType: 'starters', slotIndex: i, filled: Boolean(m?.nickname || m?.user)
+                photo: m?.photo || '', slotType: 'starters', slotIndex: i, filled: Boolean(m?.nickname || m?.user),
+                syncMeta: getSyncMeta(m)
             });
         }
         for (let i = 0; i < subSlots; i++) {
@@ -285,20 +298,32 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
             list.push({
                 id: m?._id || `sub-${i}`, name: m?.nickname || '', role: m?.role || `Suplente ${i + 1}`,
                 userId: m?.user || null, gameId: m?.gameId || '', email: m?.email || '', region: m?.region || '',
-                photo: m?.photo || '', slotType: 'subs', slotIndex: i, filled: Boolean(m?.nickname || m?.user)
+                photo: m?.photo || '', slotType: 'subs', slotIndex: i, filled: Boolean(m?.nickname || m?.user),
+                syncMeta: getSyncMeta(m)
             });
         }
         const c = team.roster?.coach;
         list.push({
             id: c?._id || 'coach', name: c?.nickname || '', role: c?.role || 'Coach',
             userId: c?.user || null, gameId: c?.gameId || '', email: c?.email || '', region: c?.region || '',
-            photo: c?.photo || '', slotType: 'coach', slotIndex: 0, filled: Boolean(c?.nickname || c?.user)
+            photo: c?.photo || '', slotType: 'coach', slotIndex: 0, filled: Boolean(c?.nickname || c?.user),
+            syncMeta: getSyncMeta(c)
         });
         return list;
     }, [team, starterSlots, subSlots]);
 
     const filledCount = rosterEntries.filter(e => e.filled).length;
     const totalSlots = rosterEntries.length;
+    const isMlbbTeam = MLBB_GAMES.has(String(team?.game || '').trim());
+    const mlbbSyncSummary = useMemo(() => {
+        if (!isMlbbTeam) return null;
+        const active = rosterEntries.filter((entry) => entry.filled && entry.slotType !== 'coach');
+        return {
+            total: active.length,
+            ready: active.filter((entry) => entry.syncMeta?.tone === 'ready').length,
+            issues: active.filter((entry) => entry.syncMeta && entry.syncMeta.tone !== 'ready').length
+        };
+    }, [isMlbbTeam, rosterEntries]);
 
     /* ═══════════════ RENDER ═══════════════ */
     return (
@@ -318,11 +343,20 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                     <div className="vtm-header-top">
                         <div className="vtm-header-logo">
                             {team.logo
-                                ? <img src={team.logo} alt="" />
+                                ? (
+                                    <img
+                                        src={resolveMediaUrl(team.logo)}
+                                        alt=""
+                                        onError={(e) => applyImageFallback(e, getTeamFallback(team.name))}
+                                    />
+                                )
                                 : <span>{(team.name || '??').substring(0, 2).toUpperCase()}</span>
                             }
                         </div>
                         <div className="vtm-header-info">
+                            {formatTeamPublicId(team) && (
+                                <span className="tournament-id-tag">{formatTeamPublicId(team)}</span>
+                            )}
                             <h2>{team.name}</h2>
                             <div className="vtm-header-tags">
                                 <span className="vtm-tag vtm-tag--game">{(team.game || 'SIN JUEGO').toUpperCase()}</span>
@@ -460,7 +494,13 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                         <div className="vtm-logo-upload">
                                             <div className="vtm-logo-preview">
                                                 {(logoPreview || team.logo)
-                                                    ? <img src={logoPreview || team.logo} alt="" />
+                                                    ? (
+                                                        <img
+                                                            src={resolveMediaUrl(logoPreview || team.logo)}
+                                                            alt=""
+                                                            onError={(e) => applyImageFallback(e, getTeamFallback(team.name))}
+                                                        />
+                                                    )
                                                     : <i className='bx bx-image-add'></i>
                                                 }
                                             </div>
@@ -490,6 +530,12 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                 </div>
                                 <span>{filledCount}/{totalSlots} slots ocupados</span>
                             </div>
+                            {isMlbbTeam && mlbbSyncSummary && (
+                                <div className="vtm-roster-sync-summary">
+                                    <span className="vtm-roster-sync-pill vtm-roster-sync-pill--ready">Sincronizados: {mlbbSyncSummary.ready}</span>
+                                    <span className="vtm-roster-sync-pill vtm-roster-sync-pill--warn">Con problemas: {mlbbSyncSummary.issues}</span>
+                                </div>
+                            )}
 
                             <div className="vtm-roster-section">
                                 <h4><i className='bx bx-star'></i> Titulares</h4>
@@ -498,9 +544,15 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                         <div key={entry.id} className={`vtm-player ${entry.filled ? '' : 'vtm-player--empty'}`}>
                                             <div className="vtm-player-avatar">
                                                 {entry.photo
-                                                    ? <img src={entry.photo} alt="" />
+                                                    ? (
+                                                        <img
+                                                            src={resolveMediaUrl(entry.photo)}
+                                                            alt=""
+                                                            onError={(e) => applyImageFallback(e, getBotAvatarFallback(entry.name))}
+                                                        />
+                                                    )
                                                     : entry.filled
-                                                        ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${entry.name}`} alt="" />
+                                                        ? <img src={getBotAvatarFallback(entry.name)} alt="" />
                                                         : <i className='bx bx-user-plus'></i>
                                                 }
                                                 {entry.userId && String(entry.userId) === String(captainId) && (
@@ -510,6 +562,9 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                             <div className="vtm-player-info">
                                                 <span className="vtm-player-name">{entry.filled ? entry.name : 'Vacante'}</span>
                                                 <span className="vtm-player-role">{entry.role}</span>
+                                                {entry.filled && entry.syncMeta && (
+                                                    <span className={`vtm-player-sync vtm-player-sync--${entry.syncMeta.tone}`}>{entry.syncMeta.label}</span>
+                                                )}
                                                 {entry.filled && entry.gameId && !hideGameId && (
                                                     <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {entry.gameId}</span>
                                                 )}
@@ -538,15 +593,24 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                             <div key={entry.id} className={`vtm-player ${entry.filled ? '' : 'vtm-player--empty'}`}>
                                                 <div className="vtm-player-avatar">
                                                     {entry.photo
-                                                        ? <img src={entry.photo} alt="" />
+                                                        ? (
+                                                            <img
+                                                                src={resolveMediaUrl(entry.photo)}
+                                                                alt=""
+                                                                onError={(e) => applyImageFallback(e, getBotAvatarFallback(entry.name))}
+                                                            />
+                                                        )
                                                         : entry.filled
-                                                            ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${entry.name}`} alt="" />
+                                                            ? <img src={getBotAvatarFallback(entry.name)} alt="" />
                                                             : <i className='bx bx-user-plus'></i>
                                                     }
                                                 </div>
                                                 <div className="vtm-player-info">
                                                     <span className="vtm-player-name">{entry.filled ? entry.name : 'Vacante'}</span>
                                                     <span className="vtm-player-role">{entry.role}</span>
+                                                    {entry.filled && entry.syncMeta && (
+                                                        <span className={`vtm-player-sync vtm-player-sync--${entry.syncMeta.tone}`}>{entry.syncMeta.label}</span>
+                                                    )}
                                                     {entry.filled && entry.gameId && !hideGameId && (
                                                         <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {entry.gameId}</span>
                                                     )}
@@ -574,15 +638,24 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                         <div className={`vtm-player vtm-player--coach ${coach.filled ? '' : 'vtm-player--empty'}`}>
                                             <div className="vtm-player-avatar">
                                                 {coach.photo
-                                                    ? <img src={coach.photo} alt="" />
+                                                    ? (
+                                                        <img
+                                                            src={resolveMediaUrl(coach.photo)}
+                                                            alt=""
+                                                            onError={(e) => applyImageFallback(e, getBotAvatarFallback(coach.name))}
+                                                        />
+                                                    )
                                                     : coach.filled
-                                                        ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${coach.name}`} alt="" />
+                                                        ? <img src={getBotAvatarFallback(coach.name)} alt="" />
                                                         : <i className='bx bx-user-voice'></i>
                                                 }
                                             </div>
                                             <div className="vtm-player-info">
                                                 <span className="vtm-player-name">{coach.filled ? coach.name : 'Sin coach'}</span>
                                                 <span className="vtm-player-role">{coach.role}</span>
+                                                {coach.filled && coach.syncMeta && (
+                                                    <span className={`vtm-player-sync vtm-player-sync--${coach.syncMeta.tone}`}>{coach.syncMeta.label}</span>
+                                                )}
                                                 {coach.filled && coach.gameId && !hideGameId && (
                                                     <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {coach.gameId}</span>
                                                 )}

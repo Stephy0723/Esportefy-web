@@ -20,6 +20,7 @@ import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { STATUS_LIST } from '../../../data/defaultAvatars';
 import UserCard from '../../../components/UserCard/UserCard';
 import PageHud from '../../../components/PageHud/PageHud';
+import { resolveMediaUrl } from '../../../utils/media';
 import './Profile.css';
 
 /* ═══════════════════════════════
@@ -107,6 +108,7 @@ const Profile = () => {
     const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0];
     const userStatus = STATUS_LIST.find(s => s.id === user.status) || STATUS_LIST[0];
     const unlockedAch = MOCK_ACHIEVEMENTS.filter(a => a.unlocked);
+    const resolvedUserAvatar = resolveMediaUrl(user.avatar);
 
     // Calculate age
     const calcAge = (birthDate) => {
@@ -146,7 +148,7 @@ const Profile = () => {
                     <div className="gp__id">
                         <div className="gp__avatar-wrap">
                             <AvatarCircle
-                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                src={resolvedUserAvatar || `https://ui-avatars.com/api/?name=${user.username}`}
                                 frameConfig={currentFrame}
                                 size="150px"
                                 status={user.status}
@@ -424,9 +426,9 @@ const Profile = () => {
                             return (
                                 <div key={team._id} className="gp__team-card">
                                     <div className="gp__team-banner">
-                                        <img src={team.logo || defaultLogo} alt="" className="gp__team-banner-bg" onError={e => e.target.src = defaultLogo} />
+                                        <img src={resolveMediaUrl(team.logo) || defaultLogo} alt="" className="gp__team-banner-bg" onError={e => e.target.src = defaultLogo} />
                                         <div className="gp__team-banner-ov" />
-                                        <img src={team.logo || defaultLogo} alt={team.name} className="gp__team-logo" onError={e => e.target.src = defaultLogo} />
+                                        <img src={resolveMediaUrl(team.logo) || defaultLogo} alt={team.name} className="gp__team-logo" onError={e => e.target.src = defaultLogo} />
                                     </div>
                                     <div className="gp__team-body">
                                         <div className="gp__team-top">
@@ -486,7 +488,7 @@ const Profile = () => {
                 <div className="gp__card gp__create-post">
                     <div className="gp__create-top">
                         <AvatarCircle
-                            src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                            src={resolvedUserAvatar || `https://ui-avatars.com/api/?name=${user.username}`}
                             frameConfig={currentFrame}
                             size="44px"
                             status={user.status}
@@ -517,7 +519,7 @@ const Profile = () => {
                         <article key={post.id} className="gp__card gp__post">
                             <div className="gp__post-head">
                                 <AvatarCircle
-                                    src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                    src={resolvedUserAvatar || `https://ui-avatars.com/api/?name=${user.username}`}
                                     frameConfig={currentFrame}
                                     size="40px"
                                     status={user.status}

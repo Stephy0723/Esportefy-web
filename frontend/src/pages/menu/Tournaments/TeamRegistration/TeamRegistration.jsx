@@ -3,6 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import PageHud from '../../../../components/PageHud/PageHud';
+import { resolveMediaUrl } from '../../../../utils/media';
+import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/publicIds';
+import { useAuth } from '../../../../context/AuthContext';
 import './TeamRegistration.css';
 
 const RIOT_GAMES = new Set([
@@ -10,7 +13,7 @@ const RIOT_GAMES = new Set([
   'league of legends',
   'wild rift',
   'teamfight tactics',
-  'legends of runeterra'
+  'legends of runeterra',
 ]);
 
 const normalizeGame = (value) => {
@@ -19,7 +22,7 @@ const normalizeGame = (value) => {
   const aliases = {
     mlbb: 'mobile legends',
     'mobile legends: bang bang': 'mobile legends',
-    'mobile legends bang bang': 'mobile legends'
+    'mobile legends bang bang': 'mobile legends',
   };
   return aliases[raw] || raw;
 };
@@ -27,16 +30,17 @@ const normalizeGame = (value) => {
 const TeamRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user: authUser } = useAuth();
 
   const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop';
   const incomingTournament = location.state?.tournament;
 
   const tournament = {
     title: incomingTournament?.title || 'Torneo Global',
-    image: incomingTournament?.bannerImage || incomingTournament?.image || DEFAULT_IMAGE,
+    image: resolveMediaUrl(incomingTournament?.bannerImage || incomingTournament?.image) || DEFAULT_IMAGE,
     tournamentId: incomingTournament?.tournamentId || '',
     game: incomingTournament?.game || '',
-    riotRequirements: incomingTournament?.riotRequirements || {}
+    riotRequirements: incomingTournament?.riotRequirements || {},
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +49,7 @@ const TeamRegistration = () => {
   const [loadingTeams, setLoadingTeams] = useState(true);
 
   const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const currentUser = authUser || (storedUser ? JSON.parse(storedUser) : null);
   const tournamentGameNormalized = normalizeGame(tournament.game);
 
   const filteredTeams = useMemo(() => {
@@ -55,6 +59,7 @@ const TeamRegistration = () => {
 
   const selectedTeam = userTeams.find((team) => String(team._id) === String(selectedTeamId));
   const starters = Array.isArray(selectedTeam?.roster?.starters) ? selectedTeam.roster.starters : [];
+  const subs = Array.isArray(selectedTeam?.roster?.subs) ? selectedTeam.roster.subs.filter(Boolean) : [];
   const expectedStarters = Number.isFinite(Number(selectedTeam?.maxMembers)) && Number(selectedTeam?.maxMembers) > 0
     ? Number(selectedTeam.maxMembers)
     : starters.length;
@@ -63,27 +68,42 @@ const TeamRegistration = () => {
   const gameMatches = !tournamentGameNormalized || normalizeGame(selectedTeam?.game) === tournamentGameNormalized;
   const requiresRiot = Boolean(tournament.riotRequirements?.required) || RIOT_GAMES.has(tournamentGameNormalized);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
+  const requiresMlbb = ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(tournament.game);
+  const hasMlbbLinked = String(
+    currentUser?.connections?.mlbb?.verificationStatus
+    || (currentUser?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+  ) === 'verified';
+  const mlbbRosterPlayers = requiresMlbb
+    ? starters.slice(0, expectedStarters).concat(subs)
+    : [];
+  const mlbbPlayersMissingLinkedUser = requiresMlbb
+    ? mlbbRosterPlayers.some((p) => p && !p.user)
+    : false;
   const startersMissingRiotId = requiresRiot
     ? starters.slice(0, expectedStarters).some((p) => p && !p.gameId)
     : false;
-
+  const mlbbPlayersMissingId = requiresMlbb
+    ? mlbbRosterPlayers.some((p) => p && (!p.gameId || !p.region))
+    : false;
   const canSubmit = Boolean(selectedTeamId)
     && teamComplete
     && gameMatches
-    && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId));
+    && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId))
+    && (!requiresMlbb || (hasMlbbLinked && !mlbbPlayersMissingId && !mlbbPlayersMissingLinkedUser));
 
   useEffect(() => {
     const loadTeams = async () => {
       try {
         setLoadingTeams(true);
-        const localUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-        const user = localUser ? JSON.parse(localUser) : null;
+        const user = authUser || (storedUser ? JSON.parse(storedUser) : null);
         const response = await axios.get(`${API_URL}/api/teams`);
         const allTeams = response.data || [];
-        const mine = user?._id
-          ? allTeams.filter((t) => String(t.captain?._id || t.captain) === String(user._id))
-          : allTeams;
-        setUserTeams(mine);
+        const visibleTeams = user?.isAdmin
+          ? allTeams
+          : (user?._id
+              ? allTeams.filter((t) => String(t.captain?._id || t.captain) === String(user._id))
+              : allTeams);
+        setUserTeams(visibleTeams);
       } catch (err) {
         console.error('Error cargando equipos:', err);
       } finally {
@@ -91,7 +111,7 @@ const TeamRegistration = () => {
       }
     };
     loadTeams();
-  }, []);
+  }, [authUser, storedUser]);
 
   useEffect(() => {
     if (!selectedTeamId) return;
@@ -125,12 +145,35 @@ const TeamRegistration = () => {
       alert('Todos los titulares deben tener Riot ID.');
       return;
     }
+    if (requiresMlbb && !hasMlbbLinked) {
+      alert('Debes verificar tu cuenta MLBB para inscribirte.');
+      return;
+    }
+    if (requiresMlbb && mlbbPlayersMissingLinkedUser) {
+      alert('En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de Esportefy.');
+      return;
+    }
+    if (requiresMlbb && mlbbPlayersMissingId) {
+      alert('Todos los jugadores del roster MLBB deben tener User ID y Zone ID.');
+      return;
+    }
 
     try {
       setSubmitting(true);
-      await axios.post(`${API_URL}/api/tournaments/${tournament.tournamentId}/register`, {
-        teamId: selectedTeamId
-      });
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        alert('Debes iniciar sesion para registrar tu equipo.');
+        return;
+      }
+      await axios.post(
+        `${API_URL}/api/tournaments/${tournament.tournamentId}/register`,
+        {
+          teamId: selectedTeamId,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       alert('Equipo registrado. GL HF.');
       navigate('/tournaments');
     } catch (err) {
@@ -154,6 +197,7 @@ const TeamRegistration = () => {
             <div className="header-box">
               <span className="step-tag">FASE 1</span>
               <h1>Registro <span className="highlight">{tournament.title}</span></h1>
+              {formatTournamentPublicId(tournament) && <p>{formatTournamentPublicId(tournament)}</p>}
               <p>Prepara a tu escuadra para la gloria.</p>
               {tournament.game && (
                 <div className="tournament-game-badge">Juego: {tournament.game}</div>
@@ -171,35 +215,40 @@ const TeamRegistration = () => {
                 >
                   <option value="">{loadingTeams ? 'Cargando equipos...' : 'Selecciona tu equipo'}</option>
                   {filteredTeams.map((team) => (
-                    <option key={team._id} value={team._id}>{team.name}</option>
+                    <option key={team._id} value={team._id}>
+                      {team.name}{formatTeamPublicId(team) ? ` · ${formatTeamPublicId(team)}` : ''}
+                    </option>
                   ))}
                 </select>
                 <label>Equipo</label>
                 <span className="bar" />
               </div>
 
-              {(!loadingTeams && userTeams.length === 0) && (
+              {!loadingTeams && userTeams.length === 0 ? (
                 <div className="neon-input-group">
                   <button type="button" className="btn-confirm" onClick={() => navigate('/create-team')}>
                     Crear equipo
                   </button>
                 </div>
-              )}
+              ) : null}
 
-              {(!loadingTeams && userTeams.length > 0 && filteredTeams.length === 0) && (
+              {!loadingTeams && userTeams.length > 0 && filteredTeams.length === 0 ? (
                 <div className="registration-alert">
                   No tienes equipos para <strong>{tournament.game}</strong>. Crea uno para inscribirte.
                 </div>
-              )}
+              ) : null}
 
-              {selectedTeam && (
+              {selectedTeam ? (
                 <div className="validation-box">
                   {!gameMatches && <p className="validation-error">El juego del equipo no coincide con el torneo.</p>}
                   {!teamComplete && <p className="validation-error">El equipo no esta completo ({filledStarters}/{expectedStarters}).</p>}
                   {requiresRiot && !hasRiotLinked && <p className="validation-error">Debes vincular tu cuenta Riot en Settings.</p>}
                   {requiresRiot && startersMissingRiotId && <p className="validation-error">Faltan Riot ID en titulares.</p>}
+                  {requiresMlbb && !hasMlbbLinked && <p className="validation-error">Debes verificar tu cuenta MLBB en Settings.</p>}
+                  {requiresMlbb && mlbbPlayersMissingLinkedUser && <p className="validation-error">En MLBB todos los jugadores del roster deben ser usuarios vinculados.</p>}
+                  {requiresMlbb && mlbbPlayersMissingId && <p className="validation-error">Faltan User ID/Zone ID de MLBB en algun jugador del roster.</p>}
                 </div>
-              )}
+              ) : null}
 
               <div className="actions">
                 <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>Cancelar</button>

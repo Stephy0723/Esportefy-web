@@ -14,6 +14,7 @@ import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
+import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import './EditProfile.css';
 
 // ─── Game assets ───
@@ -103,6 +104,14 @@ const EditProfile = () => {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState('');
     const [hasChanges, setHasChanges] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState('');
+    const [phoneAvailability, setPhoneAvailability] = useState({
+        loading: false,
+        checked: false,
+        available: true,
+        message: '',
+        warning: false
+    });
 
     const [formData, setFormData] = useState({
         username: '',
@@ -129,6 +138,8 @@ const EditProfile = () => {
     });
 
     const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+    const normalizePhone = (value = '') => String(value).replace(/[^\d]/g, '');
+    const isValidPhone = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
 
     // Helpers for live preview
     const currentFrame = FRAMES.find(f => f.id === formData.selectedFrameId) || FRAMES[0];
@@ -143,6 +154,7 @@ const EditProfile = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const u = res.data;
+            setCurrentUserId(u?._id || u?.id || '');
             setFormData({
                 username: u.username || '',
                 fullName: u.fullName || '',
@@ -150,7 +162,7 @@ const EditProfile = () => {
                 phone: u.phone || '',
                 gender: u.gender || 'Otro',
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
-                avatar: u.avatar || '',
+                avatar: resolveMediaUrl(u.avatar) || '',
                 bio: u.bio || '',
                 selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : [],
                 platforms: Array.isArray(u.platforms) ? u.platforms : [],
@@ -172,7 +184,7 @@ const EditProfile = () => {
                 status: u.status || 'online',
                 selectedTagId: u.selectedTagId || 'tag-obsidian'
             });
-            setPreview(u.avatar || '');
+            setPreview(resolveMediaUrl(u.avatar) || '');
             setLoading(false);
         } catch (err) {
             console.error('Error fetching profile:', err);
@@ -191,7 +203,23 @@ const EditProfile = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        updateField(name, type === 'checkbox' ? checked : value);
+        const nextValue = type === 'checkbox'
+            ? checked
+            : name === 'phone'
+                ? normalizePhone(value)
+                : value;
+
+        if (name === 'phone') {
+            setPhoneAvailability({
+                loading: false,
+                checked: false,
+                available: true,
+                message: '',
+                warning: false
+            });
+        }
+
+        updateField(name, nextValue);
     };
 
     const toggleSelection = (field, id) => {
@@ -237,6 +265,94 @@ const EditProfile = () => {
         setHasChanges(true);
     };
 
+    const checkPhoneAvailability = useCallback(async (phoneValue) => {
+        const normalized = normalizePhone(phoneValue);
+        if (!normalized) {
+            const message = 'El teléfono es obligatorio.';
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available: false,
+                message,
+                warning: false
+            });
+            return { available: false, message, warning: false };
+        }
+        if (!isValidPhone(normalized)) {
+            const message = 'El teléfono debe contener solo números y no puede ser negativo.';
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available: false,
+                message,
+                warning: false
+            });
+            return { available: false, message, warning: false };
+        }
+
+        setPhoneAvailability({
+            loading: true,
+            checked: false,
+            available: true,
+            message: '',
+            warning: false
+        });
+
+        try {
+            const token = getToken();
+            const endpoints = [
+                `${API_URL}/api/auth/check-phone`,
+                `${API_URL}/auth/check-phone`,
+                `${API_URL}/check-phone`
+            ];
+
+            let response = null;
+            let lastError = null;
+            for (const endpoint of endpoints) {
+                try {
+                    response = await axios.get(endpoint, {
+                        params: {
+                            phone: normalized,
+                            excludeUserId: currentUserId || undefined
+                        },
+                        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+                    });
+                    break;
+                } catch (error) {
+                    if (error?.response?.status === 404 || error?.response?.status === 405) {
+                        lastError = error;
+                        continue;
+                    }
+                    throw error;
+                }
+            }
+
+            if (!response) throw lastError || new Error('No se encontró endpoint de verificación de teléfono');
+
+            const available = Boolean(response.data?.available);
+            const message = available ? '' : 'Este teléfono ya está registrado.';
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available,
+                message,
+                warning: false
+            });
+            return { available, message, warning: false };
+        } catch (error) {
+            const message = 'No se pudo verificar el teléfono ahora. Se validará al guardar.';
+            console.warn('No se pudo verificar teléfono en edición:', error?.response?.status || error?.message || error);
+            setPhoneAvailability({
+                loading: false,
+                checked: true,
+                available: true,
+                message,
+                warning: true
+            });
+            return { available: true, message, warning: true };
+        }
+    }, [API_URL, currentUserId]);
+
     // ─── Save ───
     const handleSave = async (e) => {
         e.preventDefault();
@@ -251,11 +367,25 @@ const EditProfile = () => {
             setSaveMsg({ type: 'error', text: 'El nombre completo es obligatorio.' });
             return;
         }
+        const normalizedPhone = normalizePhone(formData.phone);
+        if (!normalizedPhone) {
+            setSaveMsg({ type: 'error', text: 'El teléfono es obligatorio.' });
+            return;
+        }
+        if (!isValidPhone(normalizedPhone)) {
+            setSaveMsg({ type: 'error', text: 'El teléfono debe contener solo números y no puede ser negativo.' });
+            return;
+        }
+
+        const phoneValidation = await checkPhoneAvailability(normalizedPhone);
+        if (!phoneValidation.available) {
+            setSaveMsg({ type: 'error', text: phoneValidation.message || 'Este teléfono ya está registrado.' });
+            return;
+        }
 
         setSaving(true);
         setSaveMsg(null);
         const token = getToken();
-
         // Only send fields that the backend allowedFields supports
         const data = new FormData();
 
@@ -265,7 +395,7 @@ const EditProfile = () => {
             'avatar', 'bio', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'
         ];
         stringFields.forEach(key => {
-            const val = formData[key];
+            const val = key === 'phone' ? normalizedPhone : formData[key];
             if (val !== undefined && val !== null && val !== '') {
                 data.append(key, val);
             }
@@ -288,7 +418,11 @@ const EditProfile = () => {
         if (file) data.append('avatarFile', file);
 
         try {
-            const res = await axios.put(`${API_URL}/api/auth/update-profile`, data);
+            const res = await axios.put(`${API_URL}/api/auth/update-profile`, data, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             // Sync localStorage for other components
             localStorage.setItem('esportefyUser', JSON.stringify(res.data));
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
@@ -298,13 +432,13 @@ const EditProfile = () => {
             const u = res.data;
             setFormData(prev => ({
                 ...prev,
-                avatar: u.avatar || prev.avatar,
+                avatar: resolveMediaUrl(u.avatar) || prev.avatar,
                 selectedFrameId: u.selectedFrameId || prev.selectedFrameId,
                 selectedBgId: u.selectedBgId || prev.selectedBgId,
                 selectedTagId: u.selectedTagId || prev.selectedTagId,
                 status: u.status || prev.status,
             }));
-            if (u.avatar) setPreview(u.avatar);
+            if (u.avatar) setPreview(resolveMediaUrl(u.avatar));
         } catch (err) {
             const msg = err.response?.data?.message || 'Error al guardar los cambios.';
             setSaveMsg({ type: 'error', text: msg });
@@ -371,9 +505,10 @@ const EditProfile = () => {
                                 {/* Avatar section */}
                                 <div className="ep__avatar-section">
                                     <img
-                                        src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`}
+                                        src={resolveMediaUrl(preview || formData.avatar) || `https://ui-avatars.com/api/?name=${formData.username}`}
                                         alt="Avatar"
                                         className="ep__avatar-preview"
+                                        onError={(e) => applyImageFallback(e, getAvatarFallback(formData.username))}
                                     />
                                     <div className="ep__avatar-actions">
                                         <label className="ep__upload-btn">
@@ -428,7 +563,24 @@ const EditProfile = () => {
                                     </div>
                                     <div className="ep__field">
                                         <label>Teléfono</label>
-                                        <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="+1 234 567 890" />
+                                        <input
+                                            type="text"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            onBlur={() => checkPhoneAvailability(formData.phone)}
+                                            placeholder="Solo números (sin + ni espacios)"
+                                            className={phoneAvailability.checked && !phoneAvailability.available ? 'ep__input-error' : ''}
+                                        />
+                                        {phoneAvailability.loading && (
+                                            <span className="ep__helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
+                                        )}
+                                        {phoneAvailability.checked && !phoneAvailability.available && (
+                                            <span className="ep__error-text"><i className='bx bx-error-circle'></i> {phoneAvailability.message}</span>
+                                        )}
+                                        {phoneAvailability.warning && (
+                                            <span className="ep__helper-text"><i className='bx bx-info-circle'></i> {phoneAvailability.message}</span>
+                                        )}
                                     </div>
                                     <div className="ep__field">
                                         <label>Fecha de Nacimiento</label>
@@ -553,7 +705,7 @@ const EditProfile = () => {
                                     <div className="ep__preview-overlay" />
                                     <div className="ep__preview-center">
                                         <AvatarCircle
-                                            src={preview || formData.avatar || `https://ui-avatars.com/api/?name=${formData.username}`}
+                                            src={resolveMediaUrl(preview || formData.avatar) || `https://ui-avatars.com/api/?name=${formData.username}`}
                                             frameConfig={currentFrame}
                                             size="120px"
                                             status={formData.status}

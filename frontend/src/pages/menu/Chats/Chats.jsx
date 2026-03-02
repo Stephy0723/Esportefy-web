@@ -1,6 +1,7 @@
 import React from 'react';
 import './Chats.css';
 import PageHud from '../../../components/PageHud/PageHud';
+import { CHAT_URL } from '../../../config/api';
 
 export default function Chats() {
   return (

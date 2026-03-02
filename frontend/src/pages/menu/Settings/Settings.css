@@ -604,8 +604,14 @@ input[type="password"]:focus {
 }
 
 .discord { color: #5865F2; }
+.mlbb { color: #2f8bff; }
 .steam { color: var(--text-main); }
 .riot img { width: 60px; height: auto; }
+.riot .riot-generic-icon {
+    font-size: 2.65rem;
+    color: #ff4655;
+    filter: drop-shadow(0 0 14px rgba(255, 70, 85, 0.2));
+}
 
 /* ═══════════════════════════════════════════════════════
    SWITCH TOGGLE
@@ -857,6 +863,109 @@ input:checked + .slider:before {
 .theme-light .plan-card { background: #ffffff; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05); }
 
 .plan-header h3 { font-size: 1.5rem; font-weight: 900; margin: 0; text-transform: uppercase; }
+
+/* ═══════════════════════════════════════════════════════
+   MLBB REVIEW (ADMIN)
+   ═══════════════════════════════════════════════════════ */
+.mlbb-admin-alert {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border-color));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--primary) 8%, var(--bg-card));
+    color: var(--text-main);
+    font-size: .88rem;
+}
+
+.mlbb-admin-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
+.mlbb-review-list {
+    display: grid;
+    gap: 12px;
+}
+
+.mlbb-empty-state {
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    color: var(--text-muted);
+    font-weight: 600;
+    background: color-mix(in srgb, var(--bg-elevated) 65%, var(--bg-card));
+}
+
+.mlbb-review-card {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px;
+    background: color-mix(in srgb, var(--bg-elevated) 65%, var(--bg-card));
+}
+
+.mlbb-review-main h4 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.mlbb-review-main span {
+    display: block;
+    color: var(--text-muted);
+    font-size: .82rem;
+    margin-bottom: 3px;
+}
+
+.mlbb-review-main small {
+    display: block;
+    color: var(--text-soft);
+    font-size: .78rem;
+    margin-bottom: 6px;
+}
+
+.mlbb-review-main p {
+    margin: 0;
+    font-size: .86rem;
+    font-weight: 700;
+}
+
+.mlbb-review-controls {
+    display: grid;
+    gap: 10px;
+}
+
+.mlbb-review-controls input {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-main);
+    border-radius: 10px;
+    height: 40px;
+    padding: 0 12px;
+}
+
+.mlbb-review-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.mlbb-review-buttons .btn-connect,
+.mlbb-review-buttons .btn-disconnect {
+    margin-top: 0;
+    height: 42px;
+}
+
+@media (max-width: 860px) {
+    .mlbb-review-card {
+        grid-template-columns: 1fr;
+    }
+}
 .plan-header .price { font-size: 2rem; font-weight: 900; margin: 12px 0; color: var(--text-main); }
 .plan-header .period { font-size: .95rem; color: var(--text-muted); }
 

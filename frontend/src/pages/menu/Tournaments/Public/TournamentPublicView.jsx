@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { formatTournamentPublicId } from '../../../../utils/publicIds';
 import './TournamentPublic.css';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
@@ -166,7 +167,7 @@ const TournamentPublicView = () => {
           <p className="tpv-chip"><i className="bx bx-trophy" /> Torneo oficial</p>
           <h1>{data.title}</h1>
           <p className="tpv-meta-line">
-            #{data.tournamentId} - {data.game} - {STATUS_LABELS[data.status] || 'Publicado'}
+            {formatTournamentPublicId(data)} - {data.game} - {STATUS_LABELS[data.status] || 'Publicado'}
           </p>
           <p className="tpv-lead">
             {data.customMessage || data.description || 'Competencia organizada para equipos, comunidad y transmision en directo.'}

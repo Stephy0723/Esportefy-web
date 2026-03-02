@@ -619,6 +619,23 @@
     text-transform: uppercase;
 }
 
+/* Mensajes del formulario de registro */
+.helper-text,
+.error-text {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.95rem;
+    line-height: 1.35;
+}
+
+.helper-text {
+    color: var(--text-muted);
+}
+
+.error-text {
+    color: #ff5b4d;
+}
+
 /* ESTADO SELECCIONADO (OBJETIVO) */
 .goal-card.selected {
     border-color: var(--primary);

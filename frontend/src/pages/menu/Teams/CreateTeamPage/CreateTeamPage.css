@@ -414,6 +414,12 @@ select option {
     transition: transform 0.2s;
 }
 .role-item:hover { transform: translateY(-5px); }
+.role-item.disabled {
+    cursor: default;
+}
+.role-item.disabled:hover {
+    transform: none;
+}
 
 /* Círculo Base (AUMENTADO DE TAMAÑO) */
 .role-circle {
@@ -462,6 +468,21 @@ select option {
     transition: transform 0.3s;
 }
 .role-item:hover .player-circle-img { transform: scale(1.1); }
+.role-circle.locked {
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+.role-item.disabled:hover .role-circle.locked {
+    border-color: rgba(255,255,255,0.1);
+    background-color: var(--bg-input);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+.role-item.disabled .user-icon,
+.role-item.disabled .role-label-text,
+.role-item.disabled .initials {
+    color: var(--text-muted);
+    text-shadow: none;
+}
 
 /* Etiquetas de Texto */
 .role-label-text {
@@ -473,10 +494,36 @@ select option {
     letter-spacing: 1px;
 }
 .role-item:hover .role-label-text { color: white; }
+.role-slot-hint {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+    line-height: 1.2;
+}
 
 /* Suplentes (Un poco más pequeños pero visibles) */
 .role-circle.small { width: 70px; height: 70px; }
 .role-circle.small .user-icon { font-size: 1.8rem; }
+.mlbb-share-brief {
+    text-align: left;
+}
+.mlbb-share-brief h3 {
+    margin-bottom: 1rem;
+}
+.mlbb-share-steps {
+    display: grid;
+    gap: 0.55rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.mlbb-share-steps span {
+    display: block;
+}
 /* =========================================
    6. PANTALLA FINAL — SHARE / RECRUIT
    ========================================= */
@@ -891,12 +938,19 @@ select option {
    7. FOOTER STICKY Y BOTONES
    ========================================= */
 .form-footer-sticky {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: rgba(18, 18, 20, 0.88);
-    border-top: 1px solid var(--border-color);
-    padding: 1rem 2.5rem;
-    display: flex; justify-content: space-between; align-items: center;
-    z-index: 100;
+    position: relative;
+    width: 100%;
+    margin-top: 1rem;
+    background: rgba(18, 18, 20, 0.96);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    z-index: 9999;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
 }
@@ -984,7 +1038,16 @@ select option {
 /* Responsive */
 @media (max-width: 768px) {
     .recruit-grid { grid-template-columns: 1fr; }
-    .form-footer-sticky { padding: 1rem; }
+    .form-footer-sticky {
+        padding: 0.75rem;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .form-footer-sticky .btn-ghost,
+    .form-footer-sticky .btn-primary-glow {
+        width: 100%;
+        justify-content: center;
+    }
     .btn-primary-glow { padding: 10px 20px; font-size: 0.85rem; }
     .ct-stepper { padding: 0 0.5rem; }
     .ct-step-dot { width: 34px; height: 34px; font-size: 0.75rem; }

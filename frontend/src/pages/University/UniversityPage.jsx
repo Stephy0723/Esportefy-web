@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { API_URL } from '../../config/api';
 import './UniversityPage.scss';
 
 /* ═══════════════════════════════════════════════════════════
@@ -511,10 +513,76 @@ const STATUS_LABELS = {
   upcoming: 'PRÓXIMAMENTE',
 };
 
+const EMPTY_UNIVERSITY_STATUS = {
+  universityId: '',
+  universityTag: '',
+  universityName: '',
+  region: '',
+  city: '',
+  campus: '',
+  studentId: '',
+  program: '',
+  academicLevel: '',
+  institutionalEmail: '',
+  verificationSource: 'none',
+  verificationStatus: 'unlinked',
+  verified: false,
+  tenantId: '',
+  appliedAt: null,
+  verifiedAt: null,
+  reviewedAt: null,
+  reviewedBy: null,
+  rejectReason: ''
+};
+
+const UNIVERSITY_STATUS_META = {
+  unlinked: {
+    tone: 'neutral',
+    title: 'Sin verificación universitaria',
+    text: 'Aún no has enviado una postulación institucional.'
+  },
+  pending: {
+    tone: 'pending',
+    title: 'Postulación en revisión',
+    text: 'Tu solicitud universitaria fue enviada y está pendiente de validación.'
+  },
+  verified: {
+    tone: 'verified',
+    title: 'Cuenta universitaria verificada',
+    text: 'Tu cuenta ya está aprobada para competir como estudiante universitario.'
+  },
+  rejected: {
+    tone: 'rejected',
+    title: 'Postulación rechazada',
+    text: 'Puedes corregir los datos y volver a enviar la solicitud.'
+  }
+};
+
+const STUDENT_ID_REGEX = /^[A-Za-z0-9][A-Za-z0-9._/-]{3,31}$/;
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  'gmail.com',
+  'hotmail.com',
+  'outlook.com',
+  'live.com',
+  'yahoo.com',
+  'icloud.com',
+  'proton.me',
+  'protonmail.com'
+]);
+const ALLOWED_ACADEMIC_LEVELS = new Set(['1', '2', '3', '4', 'egresado', 'maestria']);
+
+const getEmailDomain = (value) => {
+  const email = String(value || '').trim().toLowerCase();
+  const atIndex = email.lastIndexOf('@');
+  return atIndex === -1 ? '' : email.slice(atIndex + 1);
+};
+
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════ */
 const UniversityPage = () => {
+  const token = useMemo(() => localStorage.getItem('token') || sessionStorage.getItem('token') || '', []);
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeRegion, setActiveRegion] = useState('rd');
   const [activeTab, setActiveTab] = useState('universidades');
   const [searchQuery, setSearchQuery] = useState('');
@@ -522,7 +590,17 @@ const UniversityPage = () => {
   const [enrollModal, setEnrollModal] = useState(false);      // Modal postulación
   const [enrollUni, setEnrollUni] = useState(null);
   const [enrollStep, setEnrollStep] = useState(1);
-  const [formData, setFormData] = useState({ matricula: '', carrera: '', campus: '', nivel: '' });
+  const [formData, setFormData] = useState({ matricula: '', carrera: '', campus: '', customCampus: '', nivel: '', institutionalEmail: '' });
+  const [myUniversityStatus, setMyUniversityStatus] = useState(EMPTY_UNIVERSITY_STATUS);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [statusNotice, setStatusNotice] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [adminApplications, setAdminApplications] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [reviewLoadingId, setReviewLoadingId] = useState('');
+  const [rejectDrafts, setRejectDrafts] = useState({});
+  const [adminFilters, setAdminFilters] = useState({ status: 'pending', region: '' });
 
   const regionUnis = useMemo(() => {
     return ALL_UNIVERSITIES
@@ -550,17 +628,272 @@ const UniversityPage = () => {
     };
   }, [activeRegion, regionTournaments.length]);
 
+  const loadProfile = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCurrentUser(res.data || null);
+    } catch (error) {
+      console.error('Error cargando perfil en University:', error);
+    }
+  };
+
+  const loadMyUniversityStatus = async () => {
+    if (!token) {
+      setStatusLoading(false);
+      return;
+    }
+    try {
+      const res = await axios.get(`${API_URL}/api/university/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const nextStatus = res.data?.university || EMPTY_UNIVERSITY_STATUS;
+      setMyUniversityStatus(nextStatus);
+      setFormData((prev) => ({
+        ...prev,
+        institutionalEmail: prev.institutionalEmail || nextStatus.institutionalEmail || res.data?.microsoftConnection?.email || res.data?.userEmail || ''
+      }));
+    } catch (error) {
+      console.error('Error cargando estado universitario:', error);
+      setStatusNotice({
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudo cargar tu estado universitario.'
+      });
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
+    loadMyUniversityStatus();
+  }, [token]);
+
+  const loadAdminApplications = async () => {
+    if (!token || !currentUser?.isAdmin) return;
+    setAdminLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (adminFilters.status) params.set('status', adminFilters.status);
+      if (adminFilters.region) params.set('region', adminFilters.region);
+
+      const res = await axios.get(`${API_URL}/api/university/applications${params.toString() ? `?${params}` : ''}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAdminApplications(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error('Error cargando postulaciones universitarias:', error);
+      setStatusNotice({
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudo cargar la cola de postulaciones universitarias.'
+      });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'admin' && currentUser?.isAdmin) {
+      loadAdminApplications();
+    }
+  }, [activeTab, currentUser?.isAdmin, adminFilters.status, adminFilters.region]);
+
+  const currentUniversityState = myUniversityStatus?.verificationStatus || 'unlinked';
+  const currentUniversityMeta = UNIVERSITY_STATUS_META[currentUniversityState] || UNIVERSITY_STATUS_META.unlinked;
+  const selectedUniMatchesCurrent = Boolean(selectedUni && myUniversityStatus?.universityId === selectedUni.id);
+  const selectedUniLocked = selectedUniMatchesCurrent && ['pending', 'verified'].includes(currentUniversityState);
+
+  const handleReviewApplication = async (application, decision) => {
+    if (!token || !currentUser?.isAdmin || !application?._id) return;
+
+    const rejectReason = String(rejectDrafts[application._id] || '').trim();
+    if (decision === 'rejected' && !rejectReason) {
+      setStatusNotice({
+        type: 'error',
+        text: 'Debes indicar el motivo del rechazo antes de rechazar una postulación.'
+      });
+      return;
+    }
+
+    setReviewLoadingId(application._id);
+    setStatusNotice(null);
+    try {
+      await axios.patch(`${API_URL}/api/university/applications/${application._id}/review`, {
+        decision,
+        rejectReason
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setRejectDrafts((prev) => {
+        const next = { ...prev };
+        delete next[application._id];
+        return next;
+      });
+      setStatusNotice({
+        type: 'success',
+        text: decision === 'approved'
+          ? 'Postulación universitaria aprobada.'
+          : 'Postulación universitaria rechazada.'
+      });
+      await loadAdminApplications();
+    } catch (error) {
+      console.error('Error revisando postulación universitaria:', error);
+      setStatusNotice({
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudo revisar la postulación universitaria.'
+      });
+    } finally {
+      setReviewLoadingId('');
+    }
+  };
+
+  const renderUniversityStatusBanner = () => {
+    if (!statusNotice && currentUniversityState === 'unlinked' && !statusLoading) return null;
+
+    return (
+      <div className="up-status-stack">
+        {statusNotice && (
+          <div className={`up-status-banner up-status-banner--${statusNotice.type}`}>
+            <i className={`bx ${statusNotice.type === 'success' ? 'bx-check-circle' : 'bx-error-circle'}`}></i>
+            <div>
+              <strong>{statusNotice.type === 'success' ? 'University' : 'Atención'}</strong>
+              <span>{statusNotice.text}</span>
+            </div>
+          </div>
+        )}
+
+        {statusLoading ? (
+          <div className="up-status-banner up-status-banner--neutral">
+            <i className="bx bx-loader-alt"></i>
+            <div>
+              <strong>University</strong>
+              <span>Cargando tu estado institucional...</span>
+            </div>
+          </div>
+        ) : currentUniversityState !== 'unlinked' ? (
+          <div className={`up-status-banner up-status-banner--${currentUniversityMeta.tone}`}>
+            <i className={`bx ${
+              currentUniversityState === 'verified'
+                ? 'bx-badge-check'
+                : currentUniversityState === 'pending'
+                  ? 'bx-time-five'
+                  : 'bx-x-circle'
+            }`}></i>
+            <div>
+              <strong>{currentUniversityMeta.title}</strong>
+              <span>
+                {myUniversityStatus.universityName ? `${myUniversityStatus.universityName}. ` : ''}
+                {currentUniversityMeta.text}
+                {currentUniversityState === 'rejected' && myUniversityStatus.rejectReason ? ` Motivo: ${myUniversityStatus.rejectReason}` : ''}
+              </span>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   // Enroll handlers
   const openEnroll = (uni) => {
+    setStatusNotice(null);
+    setFieldErrors({});
     setEnrollUni(uni);
     setEnrollStep(1);
     setEnrollModal(true);
+    setFormData((prev) => ({
+      ...prev,
+      institutionalEmail: prev.institutionalEmail || myUniversityStatus?.institutionalEmail || ''
+    }));
   };
-  const handleSubmitEnroll = (e) => {
+
+  const validateEnrollForm = () => {
+    const nextErrors = {};
+    const normalizedStudentId = String(formData.matricula || '').trim();
+    const normalizedProgram = String(formData.carrera || '').trim();
+    const selectedCampus = formData.campus === 'otro'
+      ? String(formData.customCampus || '').trim()
+      : String(formData.campus || '').trim();
+    const normalizedEmail = String(formData.institutionalEmail || '').trim().toLowerCase();
+
+    if (!STUDENT_ID_REGEX.test(normalizedStudentId)) {
+      nextErrors.matricula = 'Usa entre 4 y 32 caracteres. Solo letras, números, ".", "_", "/" o "-".';
+    }
+
+    if (normalizedProgram.length < 3) {
+      nextErrors.carrera = 'La carrera debe tener al menos 3 caracteres.';
+    }
+
+    if (selectedCampus.length < 3) {
+      nextErrors.campus = 'Indica un campus válido.';
+    }
+
+    if (!ALLOWED_ACADEMIC_LEVELS.has(String(formData.nivel || '').trim())) {
+      nextErrors.nivel = 'Selecciona un nivel académico válido.';
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      nextErrors.institutionalEmail = 'Ingresa un correo institucional válido.';
+    } else if (PUBLIC_EMAIL_DOMAINS.has(getEmailDomain(normalizedEmail))) {
+      nextErrors.institutionalEmail = 'Usa un correo institucional, no uno personal.';
+    }
+
+    setFieldErrors(nextErrors);
+    return {
+      isValid: Object.keys(nextErrors).length === 0,
+      normalizedCampus: selectedCampus
+    };
+  };
+
+  const handleSubmitEnroll = async (e) => {
     e.preventDefault();
-    console.log('Postulación:', { university: enrollUni, ...formData });
-    setEnrollModal(false);
-    setFormData({ matricula: '', carrera: '', campus: '', nivel: '' });
+    if (!token) {
+      setStatusNotice({ type: 'error', text: 'Debes iniciar sesión para postularte a una universidad.' });
+      return;
+    }
+    if (!enrollUni) return;
+
+    const { isValid, normalizedCampus } = validateEnrollForm();
+    if (!isValid) return;
+
+    setSubmitLoading(true);
+    setStatusNotice(null);
+
+    try {
+      await axios.post(`${API_URL}/api/university/applications`, {
+        universityId: enrollUni.id,
+        universityTag: enrollUni.tag,
+        universityName: enrollUni.name,
+        region: enrollUni.region,
+        city: enrollUni.city,
+        campus: normalizedCampus,
+        studentId: formData.matricula,
+        program: formData.carrera,
+        academicLevel: formData.nivel,
+        institutionalEmail: formData.institutionalEmail
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setEnrollModal(false);
+      setFieldErrors({});
+      setFormData({ matricula: '', carrera: '', campus: '', customCampus: '', nivel: '', institutionalEmail: '' });
+      setStatusNotice({
+        type: 'success',
+        text: 'Tu postulación universitaria fue enviada. Ahora queda pendiente de validación.'
+      });
+      await loadMyUniversityStatus();
+    } catch (error) {
+      console.error('Error enviando postulación:', error);
+      setStatusNotice({
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudo enviar la postulación universitaria.'
+      });
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   /* ─── VISTA DETALLE DE UNIVERSIDAD ─── */
@@ -598,12 +931,24 @@ const UniversityPage = () => {
                 <span className="up-detail-hero__score-val">{selectedUni.points.toLocaleString()}</span>
                 <small>PUNTOS</small>
               </div>
-              <button className="up-btn up-btn--primary" onClick={() => openEnroll(selectedUni)}>
-                <i className='bx bx-right-top-arrow-circle'></i> POSTULARME
+              <button
+                className="up-btn up-btn--primary"
+                type="button"
+                onClick={() => openEnroll(selectedUni)}
+                disabled={selectedUniLocked || submitLoading}
+              >
+                <i className='bx bx-right-top-arrow-circle'></i>{' '}
+                {selectedUniMatchesCurrent && currentUniversityState === 'pending'
+                  ? 'EN REVISIÓN'
+                  : selectedUniMatchesCurrent && currentUniversityState === 'verified'
+                    ? 'VERIFICADA'
+                    : 'POSTULARME'}
               </button>
             </div>
           </div>
         </div>
+
+        {renderUniversityStatusBanner()}
 
         {/* Grid de contenido */}
         <div className="up-detail-grid">
@@ -763,23 +1108,90 @@ const UniversityPage = () => {
               <h3 className="up-modal__form-title">DATOS DE ESTUDIANTE</h3>
               <div className="up-field">
                 <label>Matrícula / ID Estudiantil</label>
-                <input type="text" placeholder="Ej: 2023-0145" required value={formData.matricula} onChange={e => setFormData({ ...formData, matricula: e.target.value })} />
+                <input
+                  className={fieldErrors.matricula ? 'up-field__input--error' : ''}
+                  type="text"
+                  placeholder="Ej: 2023-0145"
+                  required
+                  value={formData.matricula}
+                  onChange={e => {
+                    setFormData({ ...formData, matricula: e.target.value });
+                    if (fieldErrors.matricula) setFieldErrors((prev) => ({ ...prev, matricula: '' }));
+                  }}
+                />
+                {fieldErrors.matricula && <small className="up-field__error">{fieldErrors.matricula}</small>}
+              </div>
+              <div className="up-field">
+                <label>Correo institucional</label>
+                <input
+                  className={fieldErrors.institutionalEmail ? 'up-field__input--error' : ''}
+                  type="email"
+                  placeholder="tu-correo@universidad.edu"
+                  required
+                  value={formData.institutionalEmail}
+                  onChange={e => {
+                    setFormData({ ...formData, institutionalEmail: e.target.value });
+                    if (fieldErrors.institutionalEmail) setFieldErrors((prev) => ({ ...prev, institutionalEmail: '' }));
+                  }}
+                />
+                {fieldErrors.institutionalEmail && <small className="up-field__error">{fieldErrors.institutionalEmail}</small>}
               </div>
               <div className="up-field">
                 <label>Carrera</label>
-                <input type="text" placeholder="Ingeniería, Diseño, etc." required value={formData.carrera} onChange={e => setFormData({ ...formData, carrera: e.target.value })} />
+                <input
+                  className={fieldErrors.carrera ? 'up-field__input--error' : ''}
+                  type="text"
+                  placeholder="Ingeniería, Diseño, etc."
+                  required
+                  value={formData.carrera}
+                  onChange={e => {
+                    setFormData({ ...formData, carrera: e.target.value });
+                    if (fieldErrors.carrera) setFieldErrors((prev) => ({ ...prev, carrera: '' }));
+                  }}
+                />
+                {fieldErrors.carrera && <small className="up-field__error">{fieldErrors.carrera}</small>}
               </div>
               <div className="up-field">
                 <label>Ciudad del campus</label>
-                <select required value={formData.campus} onChange={e => setFormData({ ...formData, campus: e.target.value })}>
+                <select
+                  className={fieldErrors.campus ? 'up-field__input--error' : ''}
+                  required
+                  value={formData.campus}
+                  onChange={e => {
+                    setFormData({ ...formData, campus: e.target.value });
+                    if (fieldErrors.campus) setFieldErrors((prev) => ({ ...prev, campus: '' }));
+                  }}
+                >
                   <option value="" disabled>Selecciona</option>
                   {campusCities.map((c, i) => <option key={i} value={c}>{c}</option>)}
                   <option value="otro">Otro</option>
                 </select>
+                {formData.campus === 'otro' && (
+                  <input
+                    className={fieldErrors.campus ? 'up-field__input--error' : ''}
+                    type="text"
+                    placeholder="Escribe el campus"
+                    required
+                    value={formData.customCampus}
+                    onChange={e => {
+                      setFormData({ ...formData, customCampus: e.target.value });
+                      if (fieldErrors.campus) setFieldErrors((prev) => ({ ...prev, campus: '' }));
+                    }}
+                  />
+                )}
+                {fieldErrors.campus && <small className="up-field__error">{fieldErrors.campus}</small>}
               </div>
               <div className="up-field">
                 <label>Nivel académico</label>
-                <select required value={formData.nivel} onChange={e => setFormData({ ...formData, nivel: e.target.value })}>
+                <select
+                  className={fieldErrors.nivel ? 'up-field__input--error' : ''}
+                  required
+                  value={formData.nivel}
+                  onChange={e => {
+                    setFormData({ ...formData, nivel: e.target.value });
+                    if (fieldErrors.nivel) setFieldErrors((prev) => ({ ...prev, nivel: '' }));
+                  }}
+                >
                   <option value="" disabled>Seleccionar</option>
                   <option value="1">1er Año (Freshman)</option>
                   <option value="2">2do Año (Sophomore)</option>
@@ -788,8 +1200,11 @@ const UniversityPage = () => {
                   <option value="egresado">Egresado</option>
                   <option value="maestria">Postgrado / Maestría</option>
                 </select>
+                {fieldErrors.nivel && <small className="up-field__error">{fieldErrors.nivel}</small>}
               </div>
-              <button type="submit" className="up-btn up-btn--primary up-btn--full">CONFIRMAR POSTULACIÓN</button>
+              <button type="submit" className="up-btn up-btn--primary up-btn--full" disabled={submitLoading}>
+                {submitLoading ? 'ENVIANDO...' : 'CONFIRMAR POSTULACIÓN'}
+              </button>
             </form>
           )}
         </div>
@@ -832,6 +1247,8 @@ const UniversityPage = () => {
         </div>
       </header>
 
+      {renderUniversityStatusBanner()}
+
       {/* ═══ REGIONES ═══ */}
       <div className="up-regions">
         {REGIONS.map(r => (
@@ -858,6 +1275,11 @@ const UniversityPage = () => {
         <button className={`up-tabs__btn ${activeTab === 'rankings' ? 'up-tabs__btn--active' : ''}`} onClick={() => setActiveTab('rankings')}>
           <i className='bx bx-bar-chart-alt-2'></i> Rankings
         </button>
+        {currentUser?.isAdmin && (
+          <button className={`up-tabs__btn ${activeTab === 'admin' ? 'up-tabs__btn--active' : ''}`} onClick={() => setActiveTab('admin')}>
+            <i className='bx bx-check-shield'></i> Validaciones
+          </button>
+        )}
       </div>
 
       {/* ═══ CONTENT ═══ */}
@@ -1006,6 +1428,124 @@ const UniversityPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {activeTab === 'admin' && currentUser?.isAdmin && (
+          <div className="up-admin">
+            <div className="up-admin__toolbar">
+              <div>
+                <span className="up-eyebrow">ADMIN</span>
+                <h3>Validación universitaria</h3>
+              </div>
+              <div className="up-admin__filters">
+                <select
+                  value={adminFilters.status}
+                  onChange={(e) => setAdminFilters((prev) => ({ ...prev, status: e.target.value }))}
+                >
+                  <option value="pending">Pendientes</option>
+                  <option value="approved">Aprobadas</option>
+                  <option value="rejected">Rechazadas</option>
+                  <option value="">Todas</option>
+                </select>
+                <select
+                  value={adminFilters.region}
+                  onChange={(e) => setAdminFilters((prev) => ({ ...prev, region: e.target.value }))}
+                >
+                  <option value="">Todas las regiones</option>
+                  {REGIONS.map((region) => (
+                    <option key={region.id} value={region.id}>{region.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {adminLoading ? (
+              <div className="up-empty">
+                <i className='bx bx-loader-alt'></i>
+                <h3>Cargando cola</h3>
+                <p>Obteniendo postulaciones universitarias...</p>
+              </div>
+            ) : adminApplications.length === 0 ? (
+              <div className="up-empty">
+                <i className='bx bx-check-shield'></i>
+                <h3>Sin postulaciones</h3>
+                <p>No hay postulaciones para los filtros seleccionados.</p>
+              </div>
+            ) : (
+              <div className="up-admin__grid">
+                {adminApplications.map((application) => {
+                  const isReviewing = reviewLoadingId === application._id;
+                  const isRejected = application.status === 'rejected';
+                  const isApproved = application.status === 'approved';
+                  return (
+                    <div key={application._id} className={`up-admin-card up-admin-card--${application.status}`}>
+                      <div className="up-admin-card__top">
+                        <div>
+                          <span className="up-eyebrow">{application.universityTag}</span>
+                          <h4>{application.universityName}</h4>
+                        </div>
+                        <span className={`up-admin-card__status up-admin-card__status--${application.status}`}>
+                          {application.status}
+                        </span>
+                      </div>
+
+                      <div className="up-admin-card__user">
+                        <strong>{application.user?.fullName || 'Usuario'}</strong>
+                        <span>@{application.user?.username || 'sin-usuario'}</span>
+                        <span>{application.user?.email || 'sin correo'}</span>
+                      </div>
+
+                      <div className="up-admin-card__meta">
+                        <span><i className='bx bx-id-card'></i>{application.studentId}</span>
+                        <span><i className='bx bx-book'></i>{application.program}</span>
+                        <span><i className='bx bx-buildings'></i>{application.campus}</span>
+                        <span><i className='bx bx-layer'></i>{application.academicLevel}</span>
+                        <span><i className='bx bx-envelope'></i>{application.institutionalEmail}</span>
+                        <span><i className='bx bx-world'></i>{application.region}</span>
+                        <span><i className='bx bx-shield'></i>{application.verificationSource}</span>
+                      </div>
+
+                      {isRejected && application.rejectReason && (
+                        <div className="up-admin-card__reason">
+                          <strong>Motivo previo</strong>
+                          <p>{application.rejectReason}</p>
+                        </div>
+                      )}
+
+                      {!isApproved && (
+                        <>
+                          <textarea
+                            className="up-admin-card__textarea"
+                            placeholder="Motivo de rechazo (requerido solo si rechazas)"
+                            value={rejectDrafts[application._id] || ''}
+                            onChange={(e) => setRejectDrafts((prev) => ({ ...prev, [application._id]: e.target.value }))}
+                          />
+                          <div className="up-admin-card__actions">
+                            <button
+                              type="button"
+                              className="up-btn up-btn--primary"
+                              disabled={isReviewing}
+                              onClick={() => handleReviewApplication(application, 'approved')}
+                            >
+                              {isReviewing ? 'PROCESANDO...' : 'APROBAR'}
+                            </button>
+                            <button
+                              type="button"
+                              className="up-btn up-btn--ghost up-btn--danger"
+                              disabled={isReviewing}
+                              onClick={() => handleReviewApplication(application, 'rejected')}
+                            >
+                              {isReviewing ? 'PROCESANDO...' : 'RECHAZAR'}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -35,7 +35,8 @@ export const createRateLimiter = ({ windowMs = 15 * 60 * 1000, max = 100, keyPre
     return async (req, res, next) => {
         try {
             const now = Date.now();
-            const key = `${keyPrefix}:${req.ip}`;
+            const scope = req.userId ? `user:${req.userId}` : `ip:${req.ip}`;
+            const key = `${keyPrefix}:${scope}`;
 
             const redisClient = await getRedisClient();
             const count = redisClient

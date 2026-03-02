@@ -47,6 +47,8 @@ export const STATUS_LABELS = {
 export const useTournamentAdminData = (code) => {
   const [loading, setLoading] = useState(true);
   const [tournament, setTournament] = useState(null);
+  const [compliance, setCompliance] = useState(null);
+  const [complianceLoading, setComplianceLoading] = useState(false);
   const [settings, setSettings] = useState({
     visibility: 'public',
     showPrize: true,
@@ -59,12 +61,19 @@ export const useTournamentAdminData = (code) => {
     customMessage: '',
   });
   const [bracket, setBracket] = useState(createEmptyBracket());
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const authConfig = useMemo(
+    () => ({
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    }),
+    [token]
+  );
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API_URL}/api/tournaments/${code}`);
+        const res = await axios.get(`${API_URL}/api/tournaments/${code}`, authConfig);
         setTournament(res.data);
         setSettings((prev) => ({ ...prev, ...(res.data?.publicSettings || {}) }));
         setBracket(res.data?.bracket || createEmptyBracket());
@@ -76,7 +85,29 @@ export const useTournamentAdminData = (code) => {
     };
 
     load();
-  }, [code]);
+  }, [code, authConfig]);
+
+  const refreshCompliance = async () => {
+    if (!code || !token) {
+      setCompliance(null);
+      return;
+    }
+
+    try {
+      setComplianceLoading(true);
+      const res = await axios.get(`${API_URL}/api/tournaments/${code}/compliance`, authConfig);
+      setCompliance(res.data || null);
+    } catch (error) {
+      console.error('Error cargando cumplimiento:', error);
+      setCompliance(null);
+    } finally {
+      setComplianceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshCompliance();
+  }, [code, authConfig]);
 
   const registrations = useMemo(
     () => (Array.isArray(tournament?.registrations) ? tournament.registrations : []),
@@ -89,10 +120,32 @@ export const useTournamentAdminData = (code) => {
   );
 
   const prizeOptions = useMemo(() => buildPrizeOptions(tournament), [tournament]);
+  const isMlbbTournament = useMemo(() => {
+    const game = String(tournament?.game || '').trim();
+    return ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(game);
+  }, [tournament?.game]);
+
+  const hasValidMlbbRoster = (registration) => {
+    const starters = Array.isArray(registration?.roster?.starters)
+      ? registration.roster.starters.filter(Boolean)
+      : [];
+    const subs = Array.isArray(registration?.roster?.subs)
+      ? registration.roster.subs.filter(Boolean)
+      : [];
+    const roster = [...starters, ...subs];
+
+    if (starters.length === 0) return false;
+
+    return roster.every((player) => {
+      if (!player) return true;
+      return String(player.gameId || '').trim() && String(player.region || '').trim();
+    });
+  };
 
   const savePublicSettings = async () => {
     try {
-      await axios.patch(`${API_URL}/api/tournaments/${code}/public-settings`, settings);
+      await axios.patch(`${API_URL}/api/tournaments/${code}/public-settings`, settings, authConfig);
+      await refreshCompliance();
       alert('Configuracion publica guardada.');
     } catch (error) {
       alert(error.response?.data?.message || 'No se pudo guardar la configuracion publica.');
@@ -101,7 +154,7 @@ export const useTournamentAdminData = (code) => {
 
   const saveBracket = async () => {
     try {
-      await axios.patch(`${API_URL}/api/tournaments/${code}/bracket`, { bracket });
+      await axios.patch(`${API_URL}/api/tournaments/${code}/bracket`, { bracket }, authConfig);
       alert('Bracket guardado.');
     } catch (error) {
       alert(error.response?.data?.message || 'No se pudo guardar el bracket.');
@@ -110,13 +163,14 @@ export const useTournamentAdminData = (code) => {
 
   const updateRegistration = async (registrationId, status) => {
     try {
-      await axios.patch(`${API_URL}/api/tournaments/${code}/registrations/${registrationId}`, { status });
+      await axios.patch(`${API_URL}/api/tournaments/${code}/registrations/${registrationId}`, { status }, authConfig);
       setTournament((prev) => ({
         ...prev,
         registrations: (prev?.registrations || []).map((item) =>
           String(item._id) === String(registrationId) ? { ...item, status } : item
         ),
       }));
+      await refreshCompliance();
     } catch (error) {
       alert(error.response?.data?.message || 'No se pudo actualizar el estado.');
     }
@@ -124,11 +178,12 @@ export const useTournamentAdminData = (code) => {
 
   const removeRegistration = async (registrationId) => {
     try {
-      await axios.delete(`${API_URL}/api/tournaments/${code}/registrations/${registrationId}`);
+      await axios.delete(`${API_URL}/api/tournaments/${code}/registrations/${registrationId}`, authConfig);
       setTournament((prev) => ({
         ...prev,
         registrations: (prev?.registrations || []).filter((item) => String(item._id) !== String(registrationId)),
       }));
+      await refreshCompliance();
     } catch (error) {
       alert(error.response?.data?.message || 'No se pudo eliminar la inscripcion.');
     }
@@ -141,9 +196,14 @@ export const useTournamentAdminData = (code) => {
     setSettings,
     bracket,
     setBracket,
+    compliance,
+    complianceLoading,
     registrations,
     approvedTeams,
     prizeOptions,
+    isMlbbTournament,
+    hasValidMlbbRoster,
+    refreshCompliance,
     savePublicSettings,
     saveBracket,
     updateRegistration,

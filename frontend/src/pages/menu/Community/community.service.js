@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_URL } from '../../../config/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE_URL = API_URL;
 
 const formatRelativeTime = (dateInput) => {
   if (!dateInput) return 'Ahora';

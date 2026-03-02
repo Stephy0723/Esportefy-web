@@ -1,25 +1,10 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "./WidgetCalendar.css";
+import { loadTournamentCalendarEntries } from "../../../utils/tournamentCalendar";
 
-/* ── Event type config ── */
 const EVENT_TYPES = {
-  tournament: { label: 'Torneo', color: '#8EDB15', icon: 'bx-trophy' },
-  vs:         { label: 'VS',     color: '#4facfe', icon: 'bx-target-lock' },
-  event:      { label: 'Evento', color: '#f093fb', icon: 'bx-calendar-star' },
-  scrim:      { label: 'Scrim',  color: '#ffd700', icon: 'bx-shield-quarter' },
-};
-
-/* ── Mock events (will be replaced with API data) ── */
-const MOCK_EVENTS = {
-  "2026-02-05": [{ type: "tournament", title: "Copa Esportefy", time: "18:00" }],
-  "2026-02-08": [
-    { type: "vs", title: "Alpha vs Omega", time: "20:00" },
-    { type: "event", title: "Scrim Night", time: "22:00" }
-  ],
-  "2026-02-14": [{ type: "scrim", title: "Ranked Scrims", time: "19:00" }],
-  "2026-02-20": [{ type: "tournament", title: "Liga Pro S2", time: "21:00" }],
-  "2026-02-25": [{ type: "event", title: "Community Night", time: "20:00" }],
+  tournament: { label: 'Torneo', icon: 'bx-trophy' }
 };
 
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -34,6 +19,19 @@ export default function WidgetCalendar() {
     new Date(today.getFullYear(), today.getMonth(), 1)
   );
   const [selectedDay, setSelectedDay] = useState(null);
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadEvents = async () => {
+      const loaded = await loadTournamentCalendarEntries();
+      if (!cancelled) setEvents(loaded);
+    };
+    loadEvents();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -41,6 +39,16 @@ export default function WidgetCalendar() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const rawStart = new Date(year, month, 1).getDay();
   const startDay = rawStart === 0 ? 6 : rawStart - 1;
+
+  const eventsByDate = useMemo(() => {
+    const grouped = {};
+    events.forEach((event) => {
+      if (!event?.dateKey) return;
+      grouped[event.dateKey] = grouped[event.dateKey] || [];
+      grouped[event.dateKey].push(event);
+    });
+    return grouped;
+  }, [events]);
 
   const prevMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1));
@@ -63,36 +71,42 @@ export default function WidgetCalendar() {
   const getDateKey = (day) =>
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-  /* ── Count events this month ── */
-  const monthEventCount = useMemo(() => {
-    let count = 0;
-    for (const [date, evts] of Object.entries(MOCK_EVENTS)) {
-      const [ey, em] = date.split('-').map(Number);
-      if (ey === year && em === month + 1) count += evts.length;
-    }
-    return count;
-  }, [year, month]);
+  const monthEventCount = useMemo(
+    () => events.filter((event) => {
+      if (!event?.dateKey) return false;
+      const [eventYear, eventMonth] = event.dateKey.split('-').map(Number);
+      return eventYear === year && eventMonth === month + 1;
+    }).length,
+    [events, year, month]
+  );
 
-  /* ── Upcoming events for the panel ── */
-  const upcomingEvents = useMemo(() => {
-    const all = [];
-    for (const [date, evts] of Object.entries(MOCK_EVENTS)) {
-      const [ey, em] = date.split('-').map(Number);
-      if (ey === year && em === month + 1) {
-        evts.forEach(ev => all.push({ ...ev, date, day: Number(date.split('-')[2]) }));
+  const monthGames = useMemo(() => {
+    const unique = new Map();
+    events.forEach((event) => {
+      if (!event?.dateKey) return;
+      const [eventYear, eventMonth] = event.dateKey.split('-').map(Number);
+      if (eventYear === year && eventMonth === month + 1 && !unique.has(event.game)) {
+        unique.set(event.game, { game: event.game, color: event.color });
       }
-    }
-    return all.sort((a, b) => a.day - b.day);
-  }, [year, month]);
+    });
+    return Array.from(unique.values()).slice(0, 6);
+  }, [events, year, month]);
 
-  /* ── Selected day's events ── */
+  const upcomingEvents = useMemo(
+    () => events.filter((event) => {
+      if (!event?.dateKey) return false;
+      const [eventYear, eventMonth] = event.dateKey.split('-').map(Number);
+      return eventYear === year && eventMonth === month + 1;
+    }),
+    [events, year, month]
+  );
+
   const selectedEvents = selectedDay
-    ? (MOCK_EVENTS[getDateKey(selectedDay)] || [])
+    ? (eventsByDate[getDateKey(selectedDay)] || [])
     : [];
 
   return (
     <div className="wc">
-      {/* ── HEADER ── */}
       <div className="wc__header">
         <div className="wc__header-top">
           <div className="wc__brand">
@@ -117,29 +131,26 @@ export default function WidgetCalendar() {
           </button>
         </div>
 
-        {/* ── Mini stat bar ── */}
         <div className="wc__stats">
           <div className="wc__stat">
             <span className="wc__stat-num">{monthEventCount}</span>
-            <span className="wc__stat-label">Eventos</span>
+            <span className="wc__stat-label">Torneos</span>
           </div>
           <div className="wc__stat-divider" />
-          {Object.entries(EVENT_TYPES).map(([key, cfg]) => (
-            <div key={key} className="wc__stat-dot" title={cfg.label}>
-              <span style={{ background: cfg.color }} />
+          {monthGames.map((item) => (
+            <div key={item.game} className="wc__stat-dot" title={item.game}>
+              <span style={{ background: item.color }} />
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── WEEKDAY LABELS ── */}
       <div className="wc__weekdays">
         {WEEKDAYS.map((d, i) => (
-          <span key={i} className={i >= 5 ? 'wc__wd-weekend' : ''}>{d}</span>
+          <span key={`${d}-${i}`} className={i >= 5 ? 'wc__wd-weekend' : ''}>{d}</span>
         ))}
       </div>
 
-      {/* ── DAYS GRID ── */}
       <div className="wc__grid">
         {Array.from({ length: startDay }).map((_, i) => (
           <div key={`pad-${i}`} className="wc__day wc__day--pad" />
@@ -148,24 +159,24 @@ export default function WidgetCalendar() {
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
           const dateKey = getDateKey(day);
-          const events = MOCK_EVENTS[dateKey] || [];
+          const dayEvents = eventsByDate[dateKey] || [];
           const isTd = isToday(day);
           const isSel = selectedDay === day;
 
           return (
             <button
               key={day}
-              className={`wc__day${isTd ? ' wc__day--today' : ''}${isSel ? ' wc__day--selected' : ''}${events.length ? ' wc__day--has-event' : ''}`}
+              className={`wc__day${isTd ? ' wc__day--today' : ''}${isSel ? ' wc__day--selected' : ''}${dayEvents.length ? ' wc__day--has-event' : ''}`}
               onClick={() => setSelectedDay(isSel ? null : day)}
             >
               <span className="wc__day-num">{day}</span>
-              {events.length > 0 && (
+              {dayEvents.length > 0 && (
                 <div className="wc__dots">
-                  {events.map((ev, idx) => (
+                  {dayEvents.map((event, idx) => (
                     <span
-                      key={idx}
+                      key={`${event.tournamentId}-${idx}`}
                       className="wc__dot"
-                      style={{ '--dot-color': EVENT_TYPES[ev.type]?.color || '#8EDB15' }}
+                      style={{ '--dot-color': event.color }}
                     />
                   ))}
                 </div>
@@ -175,7 +186,6 @@ export default function WidgetCalendar() {
         })}
       </div>
 
-      {/* ── SELECTED DAY DETAIL ── */}
       {selectedDay && selectedEvents.length > 0 && (
         <div className="wc__detail">
           <div className="wc__detail-heading">
@@ -183,26 +193,27 @@ export default function WidgetCalendar() {
               <span className="wc__detail-day">{selectedDay}</span>
               <div className="wc__detail-meta">
                 <span className="wc__detail-month">{MONTH_NAMES[month].slice(0, 3)}</span>
-                <span className="wc__detail-count">{selectedEvents.length} evento{selectedEvents.length > 1 ? 's' : ''}</span>
+                <span className="wc__detail-count">{selectedEvents.length} torneo{selectedEvents.length > 1 ? 's' : ''}</span>
               </div>
             </div>
             <button className="wc__detail-close" onClick={() => setSelectedDay(null)}>
               <i className="bx bx-x"></i>
             </button>
           </div>
-          {selectedEvents.map((ev, idx) => {
-            const cfg = EVENT_TYPES[ev.type] || EVENT_TYPES.event;
+          {selectedEvents.map((event, idx) => {
+            const cfg = EVENT_TYPES.tournament;
             return (
-              <div key={idx} className="wc__event" style={{ '--ev-color': cfg.color }}>
+              <div key={`${event.tournamentId}-${idx}`} className="wc__event" style={{ '--ev-color': event.color }}>
                 <div className="wc__event-accent" />
-                <div className="wc__event-icon-wrap" style={{ '--ev-color': cfg.color }}>
-                  <i className={`bx ${cfg.icon}`}></i>
+                <div className="wc__event-icon-wrap" style={{ '--ev-color': event.color }}>
+                  <i className={`bx ${event.icon || cfg.icon}`}></i>
                 </div>
                 <div className="wc__event-info">
-                  <span className="wc__event-title">{ev.title}</span>
+                  <span className="wc__event-code">{event.codeLabel}</span>
+                  <span className="wc__event-title">{event.title}</span>
                   <div className="wc__event-sub">
-                    <span className="wc__event-badge" style={{ '--ev-color': cfg.color }}>{cfg.label}</span>
-                    {ev.time && <span className="wc__event-time"><i className="bx bx-time-five"></i>{ev.time}</span>}
+                    <span className="wc__event-badge" style={{ '--ev-color': event.color }}>{event.game}</span>
+                    {event.time && <span className="wc__event-time"><i className="bx bx-time-five"></i>{event.time}</span>}
                   </div>
                 </div>
                 <i className="bx bx-chevron-right wc__event-arrow"></i>
@@ -212,7 +223,6 @@ export default function WidgetCalendar() {
         </div>
       )}
 
-      {/* ── SELECTED DAY (no events) ── */}
       {selectedDay && selectedEvents.length === 0 && (
         <div className="wc__detail wc__detail--empty">
           <div className="wc__detail-heading">
@@ -228,42 +238,38 @@ export default function WidgetCalendar() {
           </div>
           <div className="wc__empty-day">
             <i className="bx bx-calendar-check"></i>
-            <span>Sin eventos</span>
+            <span>Sin torneos</span>
           </div>
         </div>
       )}
 
-      {/* ── UPCOMING EVENTS (when no day selected) ── */}
       {!selectedDay && upcomingEvents.length > 0 && (
         <div className="wc__upcoming">
           <div className="wc__upcoming-header">
             <span className="wc__upcoming-label">
               <i className="bx bx-pulse"></i>
-              Próximos
+              Próximos torneos
             </span>
             <span className="wc__upcoming-count">{upcomingEvents.length}</span>
           </div>
-          {upcomingEvents.slice(0, 3).map((ev, idx) => {
-            const cfg = EVENT_TYPES[ev.type] || EVENT_TYPES.event;
-            return (
-              <div key={idx} className="wc__upcoming-item" style={{ '--ev-color': cfg.color }}>
-                <div className="wc__upcoming-date">
-                  <span className="wc__upcoming-day">{ev.day}</span>
-                  <span className="wc__upcoming-monthAbbr">{MONTH_NAMES[month].slice(0, 3)}</span>
-                </div>
-                <div className="wc__upcoming-line" style={{ '--ev-color': cfg.color }} />
-                <i className={`bx ${cfg.icon} wc__upcoming-icon`} style={{ color: cfg.color }}></i>
-                <div className="wc__upcoming-info">
-                  <span className="wc__upcoming-title">{ev.title}</span>
-                  {ev.time && <span className="wc__upcoming-time">{ev.time}</span>}
-                </div>
+          {upcomingEvents.slice(0, 3).map((event, idx) => (
+            <div key={`${event.tournamentId}-${idx}`} className="wc__upcoming-item" style={{ '--ev-color': event.color }}>
+              <div className="wc__upcoming-date">
+                <span className="wc__upcoming-day">{Number(event.dateKey.split('-')[2])}</span>
+                <span className="wc__upcoming-monthAbbr">{MONTH_NAMES[month].slice(0, 3)}</span>
               </div>
-            );
-          })}
+              <div className="wc__upcoming-line" style={{ '--ev-color': event.color }} />
+              <i className={`bx ${event.icon || EVENT_TYPES.tournament.icon} wc__upcoming-icon`} style={{ color: event.color }}></i>
+              <div className="wc__upcoming-info">
+                <span className="wc__upcoming-code">{event.codeLabel}</span>
+                <span className="wc__upcoming-title">{event.title}</span>
+                {event.time && <span className="wc__upcoming-time">{event.time}</span>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* ── FOOTER LINK ── */}
       <Link to="/CalendarPage" className="wc__link">
         <div className="wc__link-content">
           <i className="bx bx-calendar wc__link-icon"></i>

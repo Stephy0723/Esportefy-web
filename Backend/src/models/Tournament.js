@@ -168,6 +168,7 @@ const tournamentSchema = new mongoose.Schema({
         },
         roster: {
             starters: [{
+                user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
                 nickname: String,
                 gameId: String,
                 region: String,
@@ -175,6 +176,7 @@ const tournamentSchema = new mongoose.Schema({
                 riotId: String
             }],
             subs: [{
+                user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
                 nickname: String,
                 gameId: String,
                 region: String,
@@ -184,7 +186,98 @@ const tournamentSchema = new mongoose.Schema({
         },
         status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
         registeredAt: { type: Date, default: Date.now }
-    }]
+    }],
+
+    bracket: {
+        format: {
+            type: String,
+            enum: ['single_elimination', 'double_elimination', 'swiss', 'round_robin'],
+            default: 'single_elimination'
+        },
+        seedingMode: {
+            type: String,
+            enum: ['random', 'custom'],
+            default: 'random'
+        },
+        size: { type: Number, default: 0 },
+        isProvisional: { type: Boolean, default: false },
+        generatedAt: Date,
+        rounds: [{
+            round: Number,
+            name: String,
+            matches: [{
+                matchId: String,
+                teamA: {
+                    refId: String,
+                    teamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
+                    registrationId: { type: mongoose.Schema.Types.ObjectId, default: null },
+                    teamName: String,
+                    logoUrl: String,
+                    seed: Number,
+                    isBye: { type: Boolean, default: false },
+                    isPlaceholder: { type: Boolean, default: false }
+                },
+                teamB: {
+                    refId: String,
+                    teamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
+                    registrationId: { type: mongoose.Schema.Types.ObjectId, default: null },
+                    teamName: String,
+                    logoUrl: String,
+                    seed: Number,
+                    isBye: { type: Boolean, default: false },
+                    isPlaceholder: { type: Boolean, default: false }
+                },
+                winnerRefId: { type: String, default: '' },
+                winnerTeamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
+                scoreA: { type: Number, default: null },
+                scoreB: { type: Number, default: null },
+                status: {
+                    type: String,
+                    enum: ['pending', 'ready', 'walkover', 'live', 'finished'],
+                    default: 'pending'
+                },
+                confirmationStatus: {
+                    type: String,
+                    enum: ['unconfirmed', 'agreed', 'disputed', 'resolved'],
+                    default: 'unconfirmed'
+                },
+                resultSubmissions: [{
+                    side: {
+                        type: String,
+                        enum: ['A', 'B'],
+                        required: true
+                    },
+                    winnerRefId: String,
+                    scoreA: { type: Number, default: null },
+                    scoreB: { type: Number, default: null },
+                    submittedBy: {
+                        type: mongoose.Schema.Types.ObjectId,
+                        ref: 'User',
+                        default: null
+                    },
+                    submittedAt: { type: Date, default: Date.now }
+                }],
+                resolvedBy: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User',
+                    default: null
+                },
+                resolvedAt: Date,
+                nextMatchId: { type: String, default: '' },
+                nextSlot: {
+                    type: String,
+                    enum: ['', 'A', 'B'],
+                    default: ''
+                },
+                loserNextMatchId: { type: String, default: '' },
+                loserNextSlot: {
+                    type: String,
+                    enum: ['', 'A', 'B'],
+                    default: ''
+                }
+            }]
+        }]
+    }
 
 }, { timestamps: true });
 

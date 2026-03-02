@@ -66,6 +66,15 @@ const UserSchema = new mongoose.Schema({
             verified: { type: Boolean, default: false }
         },
 
+        microsoft: {
+            tenantId: { type: String, default: '' },
+            userId: { type: String, default: '' },
+            email: { type: String, default: '' },
+            displayName: { type: String, default: '' },
+            verified: { type: Boolean, default: false },
+            linkedAt: { type: Date, default: null }
+        },
+
         riot: {
             puuid: String,
             gameName: String,
@@ -81,8 +90,27 @@ const UserSchema = new mongoose.Schema({
                 expiresAt: Date,
                 puuid: String,
                 gameName: String,
-                tagLine: String
+                tagLine: String,
+                attempts: { type: Number, default: 0 },
+                lastSentAt: Date
             }
+        },
+
+        mlbb: {
+            playerId: { type: String },
+            zoneId: { type: String },
+            ign: { type: String },
+            verificationStatus: {
+                type: String,
+                enum: ['unlinked', 'pending', 'verified', 'rejected'],
+                default: 'unlinked'
+            },
+            verified: { type: Boolean, default: false },
+            linkedAt: Date,
+            reviewRequestedAt: Date,
+            reviewedAt: Date,
+            reviewedBy: { type: String },
+            rejectReason: { type: String, default: '' }
         }
     },
 
@@ -121,6 +149,39 @@ const UserSchema = new mongoose.Schema({
         showOnlineStatus: { type: Boolean, default: true },
         allowTournamentInvites: { type: Boolean, default: true }
     },
+    university: {
+        universityId: { type: String, default: '' },
+        universityTag: { type: String, default: '' },
+        universityName: { type: String, default: '' },
+        region: { type: String, default: '' },
+        city: { type: String, default: '' },
+        campus: { type: String, default: '' },
+        studentId: { type: String, default: '' },
+        program: { type: String, default: '' },
+        academicLevel: { type: String, default: '' },
+        institutionalEmail: { type: String, default: '' },
+        verificationSource: {
+            type: String,
+            enum: ['none', 'manual', 'microsoft'],
+            default: 'none'
+        },
+        verificationStatus: {
+            type: String,
+            enum: ['unlinked', 'pending', 'verified', 'rejected'],
+            default: 'unlinked'
+        },
+        verified: { type: Boolean, default: false },
+        tenantId: { type: String, default: '' },
+        appliedAt: { type: Date, default: null },
+        verifiedAt: { type: Date, default: null },
+        reviewedAt: { type: Date, default: null },
+        reviewedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        rejectReason: { type: String, default: '' }
+    },
     notifications: [{
         type: { type: String, default: 'info' },
         category: { type: String, default: 'system' },
@@ -140,5 +201,20 @@ const UserSchema = new mongoose.Schema({
     }]
 
 }, { timestamps: true });
+
+UserSchema.index(
+    {
+        'connections.mlbb.playerId': 1,
+        'connections.mlbb.zoneId': 1
+    },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'connections.mlbb.verified': true,
+            'connections.mlbb.playerId': { $exists: true, $type: 'string' },
+            'connections.mlbb.zoneId': { $exists: true, $type: 'string' }
+        }
+    }
+);
 
 export default mongoose.model('User', UserSchema);

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useTheme } from '../../context/ThemeContext';
 import { STATUS_LIST } from '../../data/defaultAvatars';
+import { applyImageFallback, getBotAvatarFallback, resolveMediaUrl } from '../../utils/media';
 import './Navbar.css';
 
 /* ── Route → readable breadcrumb map ── */
@@ -52,6 +53,7 @@ const Navbar = () => {
   const profileRef = useRef(null);
   const actionsRef = useRef(null);
   const searchInputRef = useRef(null);
+  const avatarFallback = getBotAvatarFallback(activeUser?.username || activeUser?.name || 'player');
 
   /* ── Breadcrumb from current route ── */
   const breadcrumb = useMemo(() => {
@@ -337,9 +339,10 @@ const Navbar = () => {
               >
                 <div className={`nb__avatar-ring nb__status--${activeUser.status || 'online'}`}>
                   <img
-                    src={activeUser.avatar || 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=warrior&backgroundColor=1a1a2e'}
+                    src={resolveMediaUrl(activeUser.avatar) || avatarFallback}
                     alt="Avatar"
                     className="nb__avatar"
+                    onError={(e) => applyImageFallback(e, avatarFallback)}
                   />
                   <span className={`nb__avatar-status nb__si--${activeUser.status || 'online'}`}>
                     {(() => {
@@ -363,9 +366,10 @@ const Navbar = () => {
                 <div className="nb__dropdown">
                   <div className="nb__dropdown-header">
                     <img
-                      src={activeUser.avatar || 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=warrior&backgroundColor=1a1a2e'}
+                      src={resolveMediaUrl(activeUser.avatar) || avatarFallback}
                       alt=""
                       className="nb__dropdown-avatar"
+                      onError={(e) => applyImageFallback(e, avatarFallback)}
                     />
                     <div>
                       <div className="nb__dropdown-name">{activeUser.username || activeUser.name}</div>

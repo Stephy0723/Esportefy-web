@@ -69,6 +69,14 @@ const TermsConditions = () => {
               final para preservar <span className="legal-key">integridad competitiva</span>.
             </p>
 
+            <h2 className="legal-h"><i className="bx bx-mobile-alt"></i>4.1 Mobile Legends (alcance beta)</h2>
+            <p className="legal-section-mini">Las verificaciones MLBB se basan en datos declarados por el usuario y control interno.</p>
+            <ul>
+              <li>Esportefy no declara afiliacion, partnership ni respaldo oficial de Moonton.</li>
+              <li>Se valida identidad con User ID + Zone ID y controles anti-duplicado.</li>
+              <li>Se prohibe contenido o dinamicas de apuestas, cuotas o gambling en torneos MLBB.</li>
+            </ul>
+
             <h2 className="legal-h"><i className="bx bx-server"></i>5. Disponibilidad del servicio</h2>
             <p className="legal-section-mini">Mantenimientos y terceros pueden afectar el acceso de forma temporal.</p>
             <p>

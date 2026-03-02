@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../../context/NotificationContext'; 
 import axios from 'axios';
 import PageHud from '../../../../components/PageHud/PageHud';
+import { API_URL } from '../../../../config/api';
 import './OrganizerApplication.css';
 
 const OrganizerApplication = () => {
@@ -44,6 +45,11 @@ const OrganizerApplication = () => {
         return notify('error', 'Archivo faltante', 'Por favor sube una foto de tu documento de identidad.');
     }
 
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) {
+      return notify('error', 'Sesion requerida', 'Debes iniciar sesion para enviar la solicitud.');
+    }
+
     setLoading(true);
 
     const data = new FormData();
@@ -51,8 +57,9 @@ const OrganizerApplication = () => {
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
 
     try {
-      await axios.post('http://localhost:4000/api/auth/apply-organizer', data, {
+      await axios.post(`${API_URL}/api/auth/apply-organizer`, data, {
         headers: { 
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });

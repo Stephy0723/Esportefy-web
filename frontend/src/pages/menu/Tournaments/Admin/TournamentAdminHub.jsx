@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../../utils/publicIds';
 import './TournamentAdmin.css';
 
 const STATUS_META = {
@@ -27,12 +28,15 @@ const TournamentAdminHub = () => {
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API_URL}/api/tournaments/manage/mine`);
+        const res = await axios.get(`${API_URL}/api/tournaments/manage/mine`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         setItems(Array.isArray(res.data) ? res.data : []);
       } catch (e) {
         console.error('Error cargando torneos administrables:', e);
@@ -41,7 +45,7 @@ const TournamentAdminHub = () => {
       }
     };
     load();
-  }, []);
+  }, [token]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -49,6 +53,7 @@ const TournamentAdminHub = () => {
     return items.filter((t) =>
       String(t.title || '').toLowerCase().includes(q) ||
       String(t.tournamentId || '').toLowerCase().includes(q) ||
+      matchesTournamentPublicId(t, q) ||
       String(t.game || '').toLowerCase().includes(q)
     );
   }, [items, query]);
@@ -116,7 +121,7 @@ const TournamentAdminHub = () => {
             return (
               <article key={t._id || t.tournamentId} className="ta-card">
                 <div className="ta-card__top">
-                  <span className="ta-id">#{t.tournamentId}</span>
+                  <span className="ta-id">{formatTournamentPublicId(t)}</span>
                   <span className={`ta-status ta-status--${status.tone}`}>{status.label}</span>
                 </div>
 
@@ -125,8 +130,8 @@ const TournamentAdminHub = () => {
                   <p className="ta-card__game">{t.game || 'Juego no definido'}</p>
 
                   <div className="ta-card__meta">
-                    <span><i className='bx bx-calendar' /> {formatDate(t.date)}</span>
-                    <span><i className='bx bx-group' /> {slotsCurrent}/{slotsMax || 0} equipos</span>
+                    <span><i className="bx bx-calendar" /> {formatDate(t.date)}</span>
+                    <span><i className="bx bx-group" /> {slotsCurrent}/{slotsMax || 0} equipos</span>
                   </div>
 
                   <div className="ta-card__progress">

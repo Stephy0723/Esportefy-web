@@ -29,25 +29,49 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-            const response = await axios.post(`${API_URL}/api/auth/login`, {
-                email,
-                password
-            });
+            const endpointCandidates = [
+                `${API_URL}/api/auth/login`,
+                `${API_URL}/auth/login`,
+                `${API_URL}/login`
+            ];
 
-            const { user } = response.data;
+            let response = null;
+            let lastError = null;
+            for (const endpoint of endpointCandidates) {
+                try {
+                    response = await axios.post(endpoint, {
+                        email,
+                        password
+                    });
+                    break;
+                } catch (candidateError) {
+                    const status = Number(candidateError?.response?.status || 0);
+                    lastError = candidateError;
+                    if (status === 404) continue;
+                    throw candidateError;
+                }
+            }
+
+            if (!response) throw lastError || new Error('No se encontró endpoint de login');
+
+            const { user, token, session } = response.data || {};
+            const hasSession = Boolean(token) || Boolean(session);
+            if (!user || !hasSession) {
+                throw new Error('Respuesta de login inválida');
+            }
             
             // Guardar datos iniciales en localStorage para carga rápida
             // AuthContext sincronizará los datos completos desde /profile vía cookies
             localStorage.setItem('esportefyUser', JSON.stringify(user));
             // Flag de sesión — la auth real va por HttpOnly cookies
-            localStorage.setItem('token', 'cookie-session');
+            localStorage.setItem('token', token || 'cookie-session');
             
             window.dispatchEvent(new Event('user-update'));
 
             navigate('/dashboard');
             
         } catch (err) {
-            const message = err.response?.data?.message || 'Error al conectar con el servidor';
+            const message = err.response?.data?.message || err.message || 'Error al conectar con el servidor';
             setError(message);
         }
     };

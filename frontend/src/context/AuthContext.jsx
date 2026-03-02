@@ -12,6 +12,14 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const checkAuth = async () => {
             const storedUser = localStorage.getItem('esportefyUser');
+            const currentPath = window.location.pathname || '/';
+            const isPublicAuthRoute = (
+                currentPath === '/'
+                || currentPath === '/login'
+                || currentPath === '/register'
+                || currentPath === '/reset-password'
+                || currentPath.startsWith('/legal/')
+            );
 
             // 1. Carga inicial rápida desde LocalStorage para no mostrar la App vacía
             if (storedUser) {

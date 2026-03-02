@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios';
+import { API_URL } from '../../../../config/api';
 import {
   FaBullhorn,
   FaCheckCircle,
@@ -67,10 +68,124 @@ const baseState = (name) => ({
   staff: { moderators: [''], casters: [''] }
 });
 
+const FORMAT_OPTIONS = [
+  { value: 'single_elimination', label: 'Eliminación Directa' },
+  { value: 'double_elimination', label: 'Doble Eliminación' },
+  { value: 'swiss', label: 'Suizo (Swiss)' },
+  { value: 'round_robin', label: 'Round Robin' }
+];
+
+const PLATFORM_OPTIONS = [
+  { value: 'PC', label: 'PC' },
+  { value: 'Mobile', label: 'Mobile' },
+  { value: 'Console', label: 'Consola' },
+  { value: 'Crossplay', label: 'Crossplay' }
+];
+const REGION_OPTIONS = [
+  { value: 'LAN', label: 'LATAM Norte (LAN)' },
+  { value: 'LAS', label: 'LATAM Sur (LAS)' },
+  { value: 'NA', label: 'Norteamerica (NA)' },
+  { value: 'EUW', label: 'Europa Oeste (EUW)' },
+  { value: 'EUNE', label: 'Europa Noreste (EUNE)' },
+  { value: 'BR', label: 'Brasil (BR)' },
+  { value: 'KR', label: 'Corea (KR)' },
+  { value: 'JP', label: 'Japon (JP)' },
+  { value: 'OCE', label: 'Oceania (OCE)' },
+  { value: 'GLOBAL', label: 'Global / Internacional' }
+];
+const BRACKET_SLOT_PRESETS = ['4', '8', '16', '32', '64'];
+const INTEGER_INPUT_REGEX = /^\d*$/;
+const MONEY_INPUT_REGEX = /^\d*(?:[.,]\d{0,2})?$/;
+
+const RIOT_TITLES = new Set([
+  'Valorant',
+  'League of Legends',
+  'Wild Rift',
+  'Teamfight Tactics',
+  'Legends of Runeterra'
+]);
+
+const MLBB_TITLES = new Set([
+  'Mobile Legends',
+  'Mobile Legends: Bang Bang',
+  'MLBB'
+]);
+
+const MLBB_BETA_MODE = String(import.meta.env.VITE_MLBB_BETA_MODE ?? 'true').trim().toLowerCase() !== 'false';
+const MLBB_BANNED_TERMS = ['apuesta', 'apuestas', 'bet', 'bets', 'betting', 'wager', 'wagering', 'gambling', 'casino', 'odds', 'parlay', 'cuota', 'cuotas'];
+
+const normalizeText = (value = '') =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const findMlbbBannedTerm = (text = '') => {
+  const normalized = normalizeText(text);
+  return MLBB_BANNED_TERMS.find((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${escaped}\\b`, 'i').test(normalized);
+  }) || '';
+};
+
+const parseTeamSizeFromModality = (modality = '') => {
+  const raw = String(modality || '').trim().toLowerCase();
+  const match = raw.match(/^(\d+)\s*v\s*(\d+)$/i);
+  if (!match) return 1;
+  const left = Number.parseInt(match[1], 10);
+  const right = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(left) || left <= 0) return 1;
+  if (!Number.isFinite(right) || right <= 0) return left;
+  return Math.max(left, right);
+};
+
+const normalizeFormatValue = (value) => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'single_elimination';
+  if (['single_elimination', 'double_elimination', 'swiss', 'round_robin'].includes(raw)) return raw;
+  if (raw.includes('doble')) return 'double_elimination';
+  if (raw.includes('swiss') || raw.includes('suizo')) return 'swiss';
+  if (raw.includes('round robin') || raw.includes('round_robin')) return 'round_robin';
+  if (raw.includes('elim')) return 'single_elimination';
+  return 'single_elimination';
+};
+
+const normalizePlatformValue = (value) => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'PC';
+  if (raw === 'pc') return 'PC';
+  if (raw === 'mobile') return 'Mobile';
+  if (raw === 'console' || raw === 'consola') return 'Console';
+  if (raw === 'crossplay') return 'Crossplay';
+  return 'PC';
+};
+
+const parsePositiveInt = (value, fallback = 0) => {
+  const parsed = Number.parseInt(String(value ?? '').trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+};
+
+const normalizeMoneyValue = (value) => {
+  const raw = String(value ?? '').trim().replace(',', '.');
+  if (!raw) return '';
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) return '';
+  return parsed.toString();
+};
+
+const resolveMaxSlotsSelection = (value = '') => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return '';
+  if (BRACKET_SLOT_PRESETS.includes(normalized)) return normalized;
+  return 'custom';
+};
+
 const CreateTournament = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const token = localStorage.getItem('token');
   const [isPublished, setIsPublished] = useState(false);
   const [tournament, setTournament] = useState(baseState(user?.username || 'Organizador Oficial'));
   const editTournament = location.state?.editTournament;
@@ -91,6 +206,7 @@ const CreateTournament = () => {
   useEffect(() => {
     if (!isEditMode) return;
     const toDate = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
+    const editMaxSlots = String(editTournament.maxSlots ?? editTournament.slots ?? '').trim();
     setTournament((prev) => ({
       ...prev,
       title: editTournament.title || '',
@@ -107,10 +223,10 @@ const CreateTournament = () => {
       prizeDetails: editTournament.prizeDetails || '',
       prizesByRank: editTournament.prizesByRank || prev.prizesByRank,
       entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
-      maxSlots: editTournament.maxSlots || prev.maxSlots,
-      format: editTournament.format || prev.format,
+      maxSlots: editMaxSlots || prev.maxSlots,
+      format: normalizeFormatValue(editTournament.format || prev.format),
       server: editTournament.server || '',
-      platform: editTournament.platform || prev.platform,
+      platform: normalizePlatformValue(editTournament.platform || prev.platform),
       organizerName: editTournament.organizer || prev.organizerName,
       registrationWindow: {
         start: toDate(editTournament.registrationWindow?.start),
@@ -160,6 +276,11 @@ const CreateTournament = () => {
     ];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [tournament]);
+
+  const isMlbbTournament = useMemo(
+    () => MLBB_TITLES.has(String(tournament.game || '').trim()),
+    [tournament.game]
+  );
 
   const identityReady = Boolean(tournament.title?.trim() && tournament.game && tournament.description?.trim() && tournament.date && tournament.time);
   const formatReady = Boolean(tournament.maxSlots && tournament.modality && tournament.format);
@@ -383,26 +504,43 @@ const CreateTournament = () => {
       }
       sponsors.push(item);
     });
-
     data.append('sponsors', JSON.stringify(sponsors));
+
+    // Archivos principales
     if (source.bannerFile) data.append('bannerFile', source.bannerFile);
     if (source.rulesPdf) data.append('rulesPdf', source.rulesPdf);
+
+    // Archivos de Sponsors (Logos individuales)
+    // sponsorLogos ya agregados en el bloque de sponsors
+
     return data;
   };
 
-  const createTournamentRequest = async (source, forceCreate = false) => {
-    const data = buildFormData(source);
-    const url = forceCreate
-      ? 'http://localhost:4000/api/tournaments'
-      : (isEditMode
-        ? `http://localhost:4000/api/tournaments/${editTournament.tournamentId}`
-        : 'http://localhost:4000/api/tournaments');
-    await axios({
-      url,
-      method: forceCreate ? 'post' : (isEditMode ? 'put' : 'post'),
-      data,
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+  const createTournamentRequest = async (source, isLocal) => {
+    if (isLocal) {
+      saveTournamentToLocal(source);
+      return;
+    }
+
+    try {
+      const data = buildFormData(source);
+      const url = isEditMode
+        ? `${API_URL}/api/tournaments/${editTournament.tournamentId}`
+        : `${API_URL}/api/tournaments`;
+      const method = isEditMode ? 'put' : 'post';
+
+      await axios({
+        url,
+        method,
+        data,
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    } catch (error) {
+      throw error;
+    }
   };
 
   const createMlbbDemoNow = async () => {
@@ -438,6 +576,46 @@ const CreateTournament = () => {
       && tournament.checkInWindow.start > tournament.date) {
       alert('La fecha "Check-in desde" debe ser antes del inicio del torneo.');
       return;
+    }
+
+    if (isMlbbTournament) {
+      const formatAllowed = [
+        'Eliminacion Directa',
+        'Doble Eliminacion',
+        'Swiss',
+        'Round Robin',
+        'single_elimination',
+        'double_elimination',
+        'swiss',
+        'round_robin'
+      ].includes(String(tournament.format || '').trim());
+      if (!formatAllowed) {
+        alert('En MLBB solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
+        return;
+      }
+
+      if (MLBB_BETA_MODE && String(tournament.entryFee || '').trim().toLowerCase() !== 'gratis') {
+        alert('En beta de MLBB solo se permiten torneos gratuitos.');
+        return;
+      }
+
+      const banned = findMlbbBannedTerm(
+        [tournament.title, tournament.description, tournament.prizeDetails].join(' ')
+      );
+      if (banned) {
+        alert(`Texto no permitido para cumplimiento MLBB: "${banned}".`);
+        return;
+      }
+
+      if (!String(tournament.contact.email || '').trim()) {
+        alert('Para torneos MLBB debes definir un correo de contacto.');
+        return;
+      }
+
+      if (!String(tournament.legalCompliance.claimsContact || '').trim()) {
+        alert('Para torneos MLBB debes definir un canal de reclamos legales.');
+        return;
+      }
     }
 
     try {
@@ -609,6 +787,11 @@ const CreateTournament = () => {
               <strong>Que debes hacer aqui:</strong>
               <span>Marca las 3 casillas de declaracion legal. Sin esas 3 confirmaciones no se puede publicar.</span>
             </div>
+            {isMlbbTournament && (
+              <p className="ct-legal-intro">
+                <FaShieldAlt /> MLBB compliance: no afiliación oficial con Moonton, no apuestas y registro gratuito en modo beta.
+              </p>
+            )}
             <div className="ct-grid three">
               <label className="ct-field">
                 <span>Jurisdiccion principal</span>

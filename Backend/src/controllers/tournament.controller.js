@@ -1,6 +1,7 @@
 import Tournament from '../models/Tournament.js';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
+import { recordAdminAudit } from '../services/auditLogger.js';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -19,7 +20,277 @@ const RIOT_GAMES = new Set([
     'Teamfight Tactics',
     'Legends of Runeterra'
 ]);
+const MLBB_GAMES = new Set([
+    'Mobile Legends',
+    'Mobile Legends: Bang Bang',
+    'MLBB'
+]);
 import fs from 'fs';
+
+const parseBooleanEnv = (value, fallback = false) => {
+    const raw = String(value ?? '').trim().toLowerCase();
+    if (!raw) return fallback;
+    if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+    if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+    return fallback;
+};
+
+const parsePositiveIntEnv = (value, fallback) => {
+    const parsed = Number.parseInt(String(value ?? '').trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    return parsed;
+};
+
+const MLBB_BETA_MODE = parseBooleanEnv(process.env.MLBB_BETA_MODE, true);
+const MLBB_MIN_APPROVED_TEAMS = parsePositiveIntEnv(process.env.MLBB_MIN_APPROVED_TEAMS, 2);
+const MLBB_REQUIRE_LINKED_STARTERS = parseBooleanEnv(process.env.MLBB_REQUIRE_LINKED_STARTERS, true);
+const MLBB_REQUIRE_LINKED_PLAYERS = parseBooleanEnv(process.env.MLBB_REQUIRE_LINKED_PLAYERS, true);
+const MLBB_ALLOWED_FORMATS = new Set([
+    'single_elimination',
+    'double_elimination',
+    'swiss',
+    'round_robin'
+]);
+const MLBB_BANNED_TERMS = [
+    'apuesta',
+    'apuestas',
+    'bet',
+    'bets',
+    'betting',
+    'wager',
+    'wagering',
+    'gambling',
+    'casino',
+    'odds',
+    'parlay',
+    'cuota',
+    'cuotas'
+];
+
+const normalizeText = (value = '') =>
+    String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+const normalizeTournamentFormat = (value = '') => {
+    const raw = normalizeText(value).trim();
+    if (!raw) return '';
+    if (raw === 'single_elimination' || raw.includes('eliminacion directa') || raw.includes('single elimination')) {
+        return 'single_elimination';
+    }
+    if (raw === 'double_elimination' || raw.includes('doble eliminacion') || raw.includes('double elimination')) {
+        return 'double_elimination';
+    }
+    if (raw === 'swiss' || raw.includes('suizo')) {
+        return 'swiss';
+    }
+    if (raw === 'round_robin' || raw.includes('round robin')) {
+        return 'round_robin';
+    }
+    return raw;
+};
+
+const normalizeEntryFee = (value = '') => normalizeText(value).trim();
+const normalizeTournamentSearchQuery = (value = '') =>
+    String(value || '')
+        .trim()
+        .replace(/^#/, '')
+        .replace(/^(TOR-)\s*/i, '')
+        .replace(/^(TOR-)\s*/i, '')
+        .replace(/^TOR[-_\s]*/i, '')
+        .trim();
+
+const findBannedMlbbTerm = (text = '') => {
+    const normalized = normalizeText(text);
+    for (const term of MLBB_BANNED_TERMS) {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+        if (regex.test(normalized)) return term;
+    }
+    return '';
+};
+
+const normalizeMlbbIdentity = (value = '') => String(value || '').trim();
+
+const isValidMlbbId = (value = '') => /^\d{5,15}$/.test(normalizeMlbbIdentity(value));
+const isValidMlbbZone = (value = '') => /^\d{3,6}$/.test(normalizeMlbbIdentity(value));
+const isFilledRosterEntry = (player) => Boolean(
+    player && (player.user || player.nickname || player.gameId || player.region || player.role)
+);
+
+const getMlbbStarters = (registration) =>
+    Array.isArray(registration?.roster?.starters)
+        ? registration.roster.starters.filter(isFilledRosterEntry)
+        : [];
+const getMlbbSubs = (registration) =>
+    Array.isArray(registration?.roster?.subs)
+        ? registration.roster.subs.filter(isFilledRosterEntry)
+        : [];
+const getMlbbRosterPlayers = (registration) => [
+    ...getMlbbStarters(registration),
+    ...getMlbbSubs(registration)
+];
+
+const getApprovedRegistrations = (tournament) =>
+    (Array.isArray(tournament?.registrations) ? tournament.registrations : [])
+        .filter((r) => String(r?.status || 'approved') === 'approved');
+
+const validateMlbbRegistrationRoster = (registration) => {
+    const starters = getMlbbStarters(registration);
+    if (!starters.length) {
+        return { ok: false, message: `El equipo ${registration?.teamName || 'sin nombre'} no tiene titulares definidos.` };
+    }
+    const invalidStarter = starters.find((p) => !isValidMlbbId(p?.gameId) || !isValidMlbbZone(p?.region));
+    if (invalidStarter) {
+        return {
+            ok: false,
+            message: `El equipo ${registration?.teamName || 'sin nombre'} tiene titulares sin User ID + Zone ID válidos.`
+        };
+    }
+    const invalidSub = getMlbbSubs(registration).find((p) => !isValidMlbbId(p?.gameId) || !isValidMlbbZone(p?.region));
+    if (invalidSub) {
+        return {
+            ok: false,
+            message: `El equipo ${registration?.teamName || 'sin nombre'} tiene suplentes sin User ID + Zone ID válidos.`
+        };
+    }
+    return { ok: true };
+};
+
+const findDuplicateMlbbIdentity = (registrations = []) => {
+    const seen = new Map();
+    for (const reg of registrations) {
+        const teamName = reg?.teamName || 'Equipo';
+        const regId = String(reg?._id || '');
+        const players = getMlbbRosterPlayers(reg);
+        for (const p of players) {
+            const key = `${normalizeMlbbIdentity(p?.gameId)}::${normalizeMlbbIdentity(p?.region)}`;
+            if (!isValidMlbbId(p?.gameId) || !isValidMlbbZone(p?.region)) continue;
+            if (seen.has(key) && seen.get(key).regId !== regId) {
+                const first = seen.get(key);
+                return {
+                    found: true,
+                    message: `User ID + Zone ID duplicado entre "${first.teamName}" y "${teamName}".`
+                };
+            }
+            seen.set(key, { regId, teamName });
+        }
+    }
+    return { found: false, message: '' };
+};
+
+const buildMlbbUserIdentityMap = async (registrations = []) => {
+    const userIds = new Set();
+    for (const reg of registrations) {
+        const players = getMlbbRosterPlayers(reg);
+        for (const p of players) {
+            if (p?.user) userIds.add(String(p.user));
+        }
+    }
+
+    if (!userIds.size) return new Map();
+
+    const users = await User.find({ _id: { $in: [...userIds] } }).select('connections.mlbb');
+    return new Map(
+        users.map((u) => {
+            const status = String(
+                u?.connections?.mlbb?.verificationStatus
+                || (u?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+            );
+            return [
+                String(u._id),
+                {
+                    status,
+                    playerId: normalizeMlbbIdentity(u?.connections?.mlbb?.playerId),
+                    zoneId: normalizeMlbbIdentity(u?.connections?.mlbb?.zoneId)
+                }
+            ];
+        })
+    );
+};
+
+const getMlbbIdentityBindingIssues = (
+    registrations = [],
+    identityMap = new Map(),
+    options = {}
+) => {
+    const strictLinkedPlayers = options.strictLinkedPlayers !== undefined
+        ? options.strictLinkedPlayers === true
+        : MLBB_REQUIRE_LINKED_PLAYERS;
+    const issues = [];
+    for (const reg of registrations) {
+        const teamName = reg?.teamName || 'Equipo';
+        const players = getMlbbRosterPlayers(reg);
+        for (const p of players) {
+            const slotLabel = getMlbbStarters(reg).includes(p) ? 'titular' : 'suplente';
+            if (!p?.user) {
+                if (strictLinkedPlayers) {
+                    issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no está vinculado a un usuario de Esportefy.`);
+                }
+                continue;
+            }
+            const linked = identityMap.get(String(p.user));
+            if (!linked || linked.status !== 'verified') {
+                issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no tiene cuenta MLBB verificada.`);
+                continue;
+            }
+            const pid = normalizeMlbbIdentity(p?.gameId);
+            const zid = normalizeMlbbIdentity(p?.region);
+            if (pid !== linked.playerId || zid !== linked.zoneId) {
+                issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no coincide con su cuenta MLBB vinculada.`);
+            }
+        }
+    }
+    return issues;
+};
+
+const getMlbbComplianceIssues = ({
+    title = '',
+    description = '',
+    prizeDetails = '',
+    entryFee = '',
+    format = '',
+    contact = {},
+    legalCompliance = {}
+}) => {
+    const issues = [];
+
+    const normalizedFormat = normalizeTournamentFormat(format);
+    if (!MLBB_ALLOWED_FORMATS.has(normalizedFormat)) {
+        issues.push('Formato no permitido para MLBB. Usa eliminación directa, doble eliminación, suizo o round robin.');
+    }
+
+    if (MLBB_BETA_MODE) {
+        const normalizedEntryFee = normalizeEntryFee(entryFee);
+        if (!['gratis', 'free', '0', '0.0', '0.00'].includes(normalizedEntryFee)) {
+            issues.push('En modo beta MLBB solo se permiten torneos gratuitos (entry fee = Gratis).');
+        }
+    }
+
+    const banned = findBannedMlbbTerm([title, description, prizeDetails].join(' '));
+    if (banned) {
+        issues.push(`Texto no permitido para cumplimiento MLBB: "${banned}".`);
+    }
+
+    if (!String(contact?.email || '').trim()) {
+        issues.push('Debes definir un correo de contacto para el torneo MLBB.');
+    }
+
+    if (!String(legalCompliance?.claimsContact || '').trim()) {
+        issues.push('Debes definir un canal de reclamos legales para el torneo MLBB.');
+    }
+
+    if (!String(legalCompliance?.jurisdiction || '').trim() || !String(legalCompliance?.governingLaw || '').trim()) {
+        issues.push('Debes completar jurisdicción y normativa aplicable para torneos MLBB.');
+    }
+
+    if (legalCompliance?.rulesAccepted !== true || legalCompliance?.privacyAccepted !== true || legalCompliance?.organizerDeclaration !== true) {
+        issues.push('Debes aceptar reglas, privacidad y declaración de organizador para torneos MLBB.');
+    }
+
+    return issues;
+};
 
 const ACTIVE_DAYS = 30;
 
@@ -306,6 +577,24 @@ export const createTournament = async (req, res) => {
             return res.status(400).json({ message: 'Debes aceptar los términos, privacidad y declaración de organizador' });
         }
 
+        if (MLBB_GAMES.has(String(data.game || '').trim())) {
+            const mlbbIssues = getMlbbComplianceIssues({
+                title: data.title,
+                description: data.description,
+                prizeDetails: data.prizeDetails,
+                entryFee: data.entryFee,
+                format: data.format,
+                contact: parsedContact,
+                legalCompliance: parsedLegalCompliance
+            });
+            if (mlbbIssues.length) {
+                return res.status(400).json({
+                    message: mlbbIssues[0],
+                    complianceIssues: mlbbIssues
+                });
+            }
+        }
+
 
         const savedTournament = await newTournament.save();
 
@@ -492,6 +781,31 @@ export const updateTournament = async (req, res) => {
         if (!String(targetLegalCompliance.jurisdiction || '').trim() || !String(targetLegalCompliance.governingLaw || '').trim()) {
             return res.status(400).json({ message: 'Debes definir jurisdicción y normativa aplicable del torneo' });
         }
+        const targetGame = String(update.game || tournament.game || '').trim();
+        const targetContact = update.contact || tournament.contact || {};
+        const targetEntryFee = update.entryFee !== undefined ? update.entryFee : tournament.entryFee;
+        const targetFormat = update.format !== undefined ? update.format : tournament.format;
+        const targetDescription = update.description !== undefined ? update.description : tournament.description;
+        const targetTitle = update.title !== undefined ? update.title : tournament.title;
+        const targetPrizeDetails = update.prizeDetails !== undefined ? update.prizeDetails : tournament.prizeDetails;
+
+        if (MLBB_GAMES.has(targetGame)) {
+            const mlbbIssues = getMlbbComplianceIssues({
+                title: targetTitle,
+                description: targetDescription,
+                prizeDetails: targetPrizeDetails,
+                entryFee: targetEntryFee,
+                format: targetFormat,
+                contact: targetContact,
+                legalCompliance: targetLegalCompliance
+            });
+            if (mlbbIssues.length) {
+                return res.status(400).json({
+                    message: mlbbIssues[0],
+                    complianceIssues: mlbbIssues
+                });
+            }
+        }
 
         if (sponsorsWithLogos !== undefined) update.sponsors = sponsorsWithLogos;
         if (bannerPath) update.bannerImage = bannerPath;
@@ -562,6 +876,7 @@ export const getManageableTournaments = async (req, res) => {
 export const searchPublicTournaments = async (req, res) => {
     try {
         const q = String(req.query?.q || '').trim();
+        const normalizedQ = normalizeTournamentSearchQuery(q);
         const baseQuery = {
             status: { $ne: 'draft' },
             'publicSettings.visibility': { $in: ['public', null] }
@@ -570,6 +885,7 @@ export const searchPublicTournaments = async (req, res) => {
         if (q) {
             baseQuery.$or = [
                 { tournamentId: { $regex: q, $options: 'i' } },
+                ...(normalizedQ && normalizedQ !== q ? [{ tournamentId: { $regex: normalizedQ, $options: 'i' } }] : []),
                 { title: { $regex: q, $options: 'i' } }
             ];
         }
@@ -741,18 +1057,23 @@ export const registerTeam = async (req, res) => {
             return res.status(400).json({ message: 'No hay cupos disponibles' });
         }
 
+        const requester = await User.findById(req.userId).select('isAdmin connections.riot connections.mlbb gameProfiles.lol');
+        if (!requester) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+        const requesterIsAdmin = requester.isAdmin === true;
         const requiresRiot = tournament.riotRequirements?.required === true || RIOT_GAMES.has(tournament.game);
+        const requiresMlbb = MLBB_GAMES.has(String(tournament.game || '').trim());
         // Requisitos Riot (si aplica)
         if (requiresRiot) {
-            const user = await User.findById(req.userId).select('connections.riot gameProfiles.lol');
-            if (!user?.connections?.riot?.verified) {
+            if (!requester?.connections?.riot?.verified) {
                 return res.status(400).json({ message: 'Debes vincular tu cuenta Riot para inscribirte' });
             }
             const minTier = tournament.riotRequirements?.minTier;
             const maxTier = tournament.riotRequirements?.maxTier;
             if (minTier || maxTier) {
                 const tierOrder = ['IRON','BRONZE','SILVER','GOLD','PLATINUM','DIAMOND','MASTER','GRANDMASTER','CHALLENGER'];
-                const userTier = user?.gameProfiles?.lol?.rank?.tier;
+                const userTier = requester?.gameProfiles?.lol?.rank?.tier;
                 if (!userTier) {
                     return res.status(400).json({ message: 'No se encontró tu rango Riot (LoL). Sin rango no puedes inscribirte.' });
                 }
@@ -771,23 +1092,40 @@ export const registerTeam = async (req, res) => {
                 }
             }
         }
+        if (requiresMlbb) {
+            const status = String(
+                requester?.connections?.mlbb?.verificationStatus
+                || (requester?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+            );
+            if (status !== 'verified') {
+                return res.status(400).json({ message: 'Debes verificar tu cuenta MLBB para inscribirte' });
+            }
+        }
 
         const alreadyRegistered = (tournament.registrations || []).some(r => String(r.captain) === String(req.userId));
         if (alreadyRegistered) {
             return res.status(400).json({ message: 'Ya registraste un equipo en este torneo' });
         }
 
+        if (!teamId && requiresMlbb) {
+            return res.status(400).json({
+                message: 'Para torneos MLBB debes inscribir un equipo existente (no registro manual).'
+            });
+        }
+
         let registrationPayload = null;
         if (teamId) {
             const team = await Team.findById(teamId);
             if (!team) return res.status(404).json({ message: 'Equipo no encontrado' });
-            if (String(team.captain) !== String(req.userId)) {
-                return res.status(403).json({ message: 'Solo el capitán puede inscribir al equipo' });
+            if (String(team.captain) !== String(req.userId) && !requesterIsAdmin) {
+                return res.status(403).json({ message: 'Solo el capitán o un admin puede inscribir al equipo' });
             }
             if (String(team.game) !== String(tournament.game)) {
                 return res.status(400).json({ message: 'El juego del equipo no coincide con el torneo' });
             }
-            const starters = Array.isArray(team.roster?.starters) ? team.roster.starters : [];
+            const starters = Array.isArray(team.roster?.starters)
+                ? team.roster.starters.filter(isFilledRosterEntry)
+                : [];
             const expected = team.maxMembers || starters.length;
             const complete = expected > 0
                 && starters.length >= expected
@@ -816,6 +1154,25 @@ export const registerTeam = async (req, res) => {
             const riotMap = new Map(
                 riotUsers.map(u => [String(u._id), u.connections?.riot?.verified ? `${u.connections.riot.gameName}#${u.connections.riot.tagLine}` : ''])
             );
+            const mlbbUsers = users.length
+                ? await User.find({ _id: { $in: users } }).select('connections.mlbb')
+                : [];
+            const mlbbMap = new Map(
+                mlbbUsers.map((u) => {
+                    const status = String(
+                        u?.connections?.mlbb?.verificationStatus
+                        || (u?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+                    );
+                    return [
+                        String(u._id),
+                        {
+                            status,
+                            playerId: normalizeMlbbIdentity(u?.connections?.mlbb?.playerId),
+                            zoneId: normalizeMlbbIdentity(u?.connections?.mlbb?.zoneId)
+                        }
+                    ];
+                })
+            );
             if (requiresRiot) {
                 const missing = starters.slice(0, expected).find(p => {
                     if (p?.user) return !riotMap.get(String(p.user));
@@ -823,6 +1180,47 @@ export const registerTeam = async (req, res) => {
                 });
                 if (missing) {
                     return res.status(400).json({ message: 'Todos los titulares deben tener Riot vinculado' });
+                }
+            }
+            if (requiresMlbb) {
+                const mlbbRosterPlayers = starters
+                    .slice(0, expected)
+                    .concat(Array.isArray(team.roster?.subs) ? team.roster.subs.filter(isFilledRosterEntry) : []);
+                if (MLBB_REQUIRE_LINKED_STARTERS) {
+                    const missingLinkedStarter = starters.slice(0, expected).find((p) => !p?.user);
+                    if (missingLinkedStarter) {
+                        return res.status(400).json({
+                            message: 'Modo estricto MLBB: todos los titulares deben estar vinculados a usuarios reales de Esportefy.'
+                        });
+                    }
+                }
+                if (MLBB_REQUIRE_LINKED_PLAYERS) {
+                    const missingLinkedPlayer = mlbbRosterPlayers.find((p) => !p?.user);
+                    if (missingLinkedPlayer) {
+                        return res.status(400).json({
+                            message: 'En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de Esportefy.'
+                        });
+                    }
+                }
+                const missing = mlbbRosterPlayers.find(p => {
+                    if (p?.user) {
+                        const linked = mlbbMap.get(String(p.user));
+                        return !linked || linked.status !== 'verified';
+                    }
+                    return !p?.gameId || !p?.region;
+                });
+                if (missing) {
+                    return res.status(400).json({ message: 'Todos los jugadores del roster MLBB deben tener cuenta verificada y User ID + Zone ID válidos.' });
+                }
+                const mismatch = mlbbRosterPlayers.find((p) => {
+                    if (!p?.user) return false;
+                    const linked = mlbbMap.get(String(p.user));
+                    if (!linked || linked.status !== 'verified') return false;
+                    return normalizeMlbbIdentity(p?.gameId) !== linked.playerId
+                        || normalizeMlbbIdentity(p?.region) !== linked.zoneId;
+                });
+                if (mismatch) {
+                    return res.status(400).json({ message: 'Hay jugadores del roster cuyo User ID + Zone ID no coincide con su cuenta MLBB vinculada.' });
                 }
             }
 
@@ -846,13 +1244,15 @@ export const registerTeam = async (req, res) => {
                 },
                 roster: {
                     starters: starters.map(p => ({
+                        user: p?.user || null,
                         nickname: p?.nickname || '',
                         gameId: p?.gameId || '',
                         region: p?.region || '',
                         role: p?.role || '',
                         riotId: p?.user ? (riotMap.get(String(p.user)) || '') : ''
                     })),
-                    subs: Array.isArray(team.roster?.subs) ? team.roster.subs.map(p => ({
+                    subs: Array.isArray(team.roster?.subs) ? team.roster.subs.filter(isFilledRosterEntry).map(p => ({
+                        user: p?.user || null,
                         nickname: p?.nickname || '',
                         gameId: p?.gameId || '',
                         region: p?.region || '',
@@ -890,6 +1290,27 @@ export const registerTeam = async (req, res) => {
                 },
                 status: 'approved'
             };
+        }
+
+        if (requiresMlbb) {
+            const rosterCheck = validateMlbbRegistrationRoster(registrationPayload);
+            if (!rosterCheck.ok) {
+                return res.status(400).json({ message: rosterCheck.message });
+            }
+
+            const candidateApproved = [
+                ...getApprovedRegistrations(tournament),
+                { ...registrationPayload, status: 'approved' }
+            ];
+            const duplicateCheck = findDuplicateMlbbIdentity(candidateApproved);
+            if (duplicateCheck.found) {
+                return res.status(400).json({ message: duplicateCheck.message });
+            }
+            const identityMap = await buildMlbbUserIdentityMap(candidateApproved);
+            const bindingIssues = getMlbbIdentityBindingIssues(candidateApproved, identityMap);
+            if (bindingIssues.length) {
+                return res.status(400).json({ message: bindingIssues[0] });
+            }
         }
 
         tournament.registrations = tournament.registrations || [];
@@ -932,6 +1353,27 @@ export const updateRegistrationStatus = async (req, res) => {
             return res.status(404).json({ message: 'Registro no encontrado' });
         }
 
+        const isMlbbTournament = MLBB_GAMES.has(String(tournament.game || '').trim());
+        if (status === 'approved' && isMlbbTournament) {
+            const rosterCheck = validateMlbbRegistrationRoster(reg);
+            if (!rosterCheck.ok) {
+                return res.status(400).json({ message: rosterCheck.message });
+            }
+            const otherApproved = (tournament.registrations || []).filter((r) =>
+                String(r?._id) !== String(registrationId) && String(r?.status || 'approved') === 'approved'
+            );
+            const candidateApproved = [...otherApproved, { ...reg.toObject(), status: 'approved' }];
+            const duplicateCheck = findDuplicateMlbbIdentity(candidateApproved);
+            if (duplicateCheck.found) {
+                return res.status(400).json({ message: duplicateCheck.message });
+            }
+            const identityMap = await buildMlbbUserIdentityMap(candidateApproved);
+            const bindingIssues = getMlbbIdentityBindingIssues(candidateApproved, identityMap);
+            if (bindingIssues.length) {
+                return res.status(400).json({ message: bindingIssues[0] });
+            }
+        }
+
         const team = reg?.teamId ? await Team.findById(reg.teamId) : null;
         const rosterUsers = team
             ? (Array.isArray(team.roster?.starters) ? team.roster.starters : [])
@@ -970,6 +1412,20 @@ export const updateRegistrationStatus = async (req, res) => {
             });
         }
         await tournament.save();
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: status === 'approved' ? 'tournament.registration.approve' : 'tournament.registration.reject',
+            entityType: 'tournament_registration',
+            entityId: String(registrationId),
+            meta: {
+                tournamentId: tournament.tournamentId,
+                teamId: reg?.teamId ? String(reg.teamId) : '',
+                registrationStatus: status,
+                game: tournament.game
+            },
+            req
+        });
 
         return res.status(200).json({ message: 'Estado actualizado', status });
 
@@ -1021,9 +1477,123 @@ export const removeRegistration = async (req, res) => {
         });
         tournament.currentSlots = Math.max((tournament.currentSlots || 0) - 1, 0);
         await tournament.save();
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: 'tournament.registration.remove',
+            entityType: 'tournament_registration',
+            entityId: String(registrationId),
+            meta: {
+                tournamentId: tournament.tournamentId,
+                teamId: reg?.teamId ? String(reg.teamId) : '',
+                game: tournament.game
+            },
+            req
+        });
+
         return res.status(200).json({ message: 'Equipo removido' });
     } catch (error) {
         console.error("Error al eliminar inscripción:", error);
+        return res.status(500).json({ message: "Error interno del servidor", error: error.message });
+    }
+};
+
+export const getTournamentCompliance = async (req, res) => {
+    try {
+        const { code } = req.params;
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: "No se encontró ningún torneo con ese código" });
+        }
+
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) {
+            return res.status(403).json({ message: 'No tienes permisos para ver cumplimiento de este torneo' });
+        }
+
+        const game = String(tournament.game || '').trim();
+        const isMlbbTournament = MLBB_GAMES.has(game);
+        const checks = [];
+
+        if (isMlbbTournament) {
+            const policyIssues = getMlbbComplianceIssues({
+                title: tournament.title,
+                description: tournament.description,
+                prizeDetails: tournament.prizeDetails,
+                entryFee: tournament.entryFee,
+                format: tournament.format,
+                contact: tournament.contact,
+                legalCompliance: tournament.legalCompliance
+            });
+            checks.push({
+                id: 'policy',
+                label: 'Reglas legales y de publicación MLBB',
+                ok: policyIssues.length === 0,
+                detail: policyIssues.length ? policyIssues.join(' | ') : 'Sin observaciones'
+            });
+
+            const approved = getApprovedRegistrations(tournament);
+            checks.push({
+                id: 'approvedTeams',
+                label: `Equipos aprobados (mínimo ${MLBB_MIN_APPROVED_TEAMS})`,
+                ok: approved.length >= MLBB_MIN_APPROVED_TEAMS,
+                detail: `${approved.length} aprobados`
+            });
+
+            const rosterIssues = approved
+                .map((reg) => validateMlbbRegistrationRoster(reg))
+                .filter((r) => !r.ok)
+                .map((r) => r.message);
+            checks.push({
+                id: 'mlbbRoster',
+                label: 'Titulares con User ID + Zone ID válidos',
+                ok: rosterIssues.length === 0,
+                detail: rosterIssues.length ? rosterIssues.join(' | ') : 'Todos los titulares válidos'
+            });
+
+            const duplicateCheck = findDuplicateMlbbIdentity(approved);
+            checks.push({
+                id: 'duplicates',
+                label: 'Sin duplicados de User ID + Zone ID',
+                ok: !duplicateCheck.found,
+                detail: duplicateCheck.found ? duplicateCheck.message : 'No hay duplicados'
+            });
+
+            const identityMap = await buildMlbbUserIdentityMap(approved);
+            const bindingIssues = getMlbbIdentityBindingIssues(approved, identityMap);
+            checks.push({
+                id: 'identityBinding',
+                label: MLBB_REQUIRE_LINKED_PLAYERS
+                    ? 'Jugadores del roster vinculados + User ID/Zone coinciden con cuenta MLBB'
+                    : MLBB_REQUIRE_LINKED_STARTERS
+                        ? 'Titulares vinculados + User ID/Zone coinciden con cuenta MLBB'
+                        : 'User ID + Zone ID coincide con cuenta vinculada',
+                ok: bindingIssues.length === 0,
+                detail: bindingIssues.length ? bindingIssues.join(' | ') : 'Sin inconsistencias de identidad'
+            });
+        } else {
+            checks.push({
+                id: 'scope',
+                label: 'Cumplimiento MLBB',
+                ok: true,
+                detail: 'Este torneo no es de Mobile Legends'
+            });
+        }
+
+        return res.status(200).json({
+            tournamentId: tournament.tournamentId,
+            game,
+            isMlbbTournament,
+            mode: {
+                mlbbBetaMode: MLBB_BETA_MODE,
+                minApprovedTeams: MLBB_MIN_APPROVED_TEAMS,
+                requireLinkedStarters: MLBB_REQUIRE_LINKED_STARTERS,
+                requireLinkedPlayers: MLBB_REQUIRE_LINKED_PLAYERS
+            },
+            checks
+        });
+    } catch (error) {
+        console.error("Error obteniendo cumplimiento de torneo:", error);
         return res.status(500).json({ message: "Error interno del servidor", error: error.message });
     }
 };
@@ -1058,6 +1628,30 @@ export const updateTournamentStatus = async (req, res) => {
                 tournament.registrationClosed = true;
                 break;
             case 'start':
+                if (MLBB_GAMES.has(String(tournament.game || '').trim())) {
+                    const approved = getApprovedRegistrations(tournament);
+                    if (approved.length < MLBB_MIN_APPROVED_TEAMS) {
+                        return res.status(400).json({
+                            message: `Para iniciar un torneo MLBB necesitas al menos ${MLBB_MIN_APPROVED_TEAMS} equipos aprobados.`,
+                            minApprovedTeams: MLBB_MIN_APPROVED_TEAMS
+                        });
+                    }
+                    for (const registration of approved) {
+                        const rosterCheck = validateMlbbRegistrationRoster(registration);
+                        if (!rosterCheck.ok) {
+                            return res.status(400).json({ message: rosterCheck.message });
+                        }
+                    }
+                    const duplicateCheck = findDuplicateMlbbIdentity(approved);
+                    if (duplicateCheck.found) {
+                        return res.status(400).json({ message: duplicateCheck.message });
+                    }
+                    const identityMap = await buildMlbbUserIdentityMap(approved);
+                    const bindingIssues = getMlbbIdentityBindingIssues(approved, identityMap);
+                    if (bindingIssues.length) {
+                        return res.status(400).json({ message: bindingIssues[0] });
+                    }
+                }
                 tournament.status = 'ongoing';
                 tournament.registrationClosed = true;
                 break;
@@ -1069,6 +1663,20 @@ export const updateTournamentStatus = async (req, res) => {
         }
 
         await tournament.save();
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: `tournament.status.${String(action || '').toLowerCase()}`,
+            entityType: 'tournament',
+            entityId: String(tournament._id),
+            meta: {
+                tournamentId: tournament.tournamentId,
+                game: tournament.game,
+                status: tournament.status,
+                registrationClosed: Boolean(tournament.registrationClosed)
+            },
+            req
+        });
 
         const registeredCaptains = (tournament.registrations || [])
             .map((r) => r.captain)

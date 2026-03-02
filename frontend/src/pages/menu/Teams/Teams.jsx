@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
 import ViewTeamModal from './ViewTeamModal';
 import PageHud from '../../../components/PageHud/PageHud';
+import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { formatTeamPublicId, getPublicTeamCode, matchesTeamPublicId } from '../../../utils/publicIds';
 import './Teams.css';
 
 /* ═══════════════════════════════════════
@@ -45,6 +48,12 @@ const isNewTeam = (team) => {
     return diff < NEW_TEAM_DAYS * 86_400_000;
 };
 
+const MLBB_GAMES = new Set([
+    'Mobile Legends',
+    'Mobile Legends: Bang Bang',
+    'MLBB'
+]);
+
 /* ═══════════════════════════════════════
    FILTER TABS
    ═══════════════════════════════════════ */
@@ -71,6 +80,7 @@ const TABS = [
 const Team = () => {
     const navigate = useNavigate();
     const { addToast } = useNotification();
+    const { user: authUser } = useAuth();
 
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -92,8 +102,29 @@ const Team = () => {
     const [joinPhotoPreview, setJoinPhotoPreview] = useState('');
     const [joinSuccess, setJoinSuccess] = useState(false);
 
-    const storedUser = localStorage.getItem('esportefyUser');
-    const currentUser = storedUser ? JSON.parse(storedUser) : null;
+    const storedUser = useMemo(() => {
+        const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
+        if (!userString) return null;
+        try {
+            return JSON.parse(userString);
+        } catch (_) {
+            return null;
+        }
+    }, []);
+    const currentUser = authUser || storedUser;
+    const mlbbConnection = currentUser?.connections?.mlbb || {};
+    const currentUserMlbbStatus = String(
+        mlbbConnection?.verificationStatus
+        || (mlbbConnection?.verified ? 'verified' : 'unlinked')
+    );
+    const currentUserMlbbVerified = currentUserMlbbStatus === 'verified';
+    const currentUserMlbbIgn = String(
+        currentUser?.gameProfiles?.mlbb?.ign
+        || mlbbConnection?.ign
+        || ''
+    ).trim();
+    const currentUserMlbbPlayerId = String(mlbbConnection?.playerId || '').trim();
+    const currentUserMlbbZoneId = String(mlbbConnection?.zoneId || '').trim();
 
     /* ── helpers ── */
     const isUserMember = (team) => {
@@ -112,6 +143,7 @@ const Team = () => {
         if (!team) return [];
         return (team.joinRequests || []).filter(r => r.status === 'pending');
     };
+    const isMlbbTeam = (team) => MLBB_GAMES.has(String(team?.game || '').trim());
 
     const ROLE_NAMES_JOIN = {
         "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -142,8 +174,13 @@ const Team = () => {
 
     const handleJoinTeam = async (e, team) => {
         e.preventDefault();
-        if (!joinPlayer.nickname.trim()) return addToast('Nickname requerido', 'error');
+        const isMlbb = isMlbbTeam(team);
+        const resolvedNickname = (joinPlayer.nickname || currentUserMlbbIgn || '').trim();
+        if (!resolvedNickname) return addToast('Nickname requerido', 'error');
         if (!joinInviteCode.trim()) return addToast('Código de invitación requerido', 'error');
+        if (isMlbb && !currentUserMlbbVerified) {
+            return addToast('Debes verificar tu cuenta MLBB en Conexiones antes de solicitar ingreso.', 'error');
+        }
         try {
             setJoinSubmitting(true);
             const token = localStorage.getItem('token');
@@ -165,7 +202,13 @@ const Team = () => {
                     inviteCode: joinInviteCode.trim(),
                     slotType: joinSlotType,
                     slotIndex: joinSlotIndex,
-                    player: { ...joinPlayer, photo: photoData }
+                    player: {
+                        ...joinPlayer,
+                        nickname: resolvedNickname,
+                        gameId: isMlbb ? currentUserMlbbPlayerId : joinPlayer.gameId,
+                        region: isMlbb ? currentUserMlbbZoneId : joinPlayer.region,
+                        photo: photoData
+                    }
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -187,6 +230,32 @@ const Team = () => {
         setJoinPhotoPreview('');
         setJoinSuccess(false);
     };
+
+    useEffect(() => {
+        if (!joinFormOpen || !selectedTeam || !isMlbbTeam(selectedTeam)) return;
+        setJoinPlayer((prev) => {
+            const next = {
+                ...prev,
+                nickname: prev.nickname || currentUserMlbbIgn,
+                gameId: currentUserMlbbPlayerId,
+                region: currentUserMlbbZoneId
+            };
+            if (
+                prev.nickname === next.nickname &&
+                prev.gameId === next.gameId &&
+                prev.region === next.region
+            ) {
+                return prev;
+            }
+            return next;
+        });
+    }, [
+        joinFormOpen,
+        selectedTeam,
+        currentUserMlbbIgn,
+        currentUserMlbbPlayerId,
+        currentUserMlbbZoneId
+    ]);
 
     const handleRequestAction = async (teamId, requestId, action) => {
         try {
@@ -230,6 +299,7 @@ const Team = () => {
             const level = team.teamLevel?.toLowerCase() || '';
             const gender = team.teamGender?.toLowerCase() || '';
             const q = search.toLowerCase();
+            const publicTeamCode = getPublicTeamCode(team).toLowerCase();
 
             let matchesTab = true;
             if (activeTab === 'myteams') {
@@ -244,7 +314,9 @@ const Team = () => {
                 || team.name?.toLowerCase().includes(q)
                 || team.game?.toLowerCase().includes(q)
                 || team.category?.toLowerCase().includes(q)
-                || team.teamCountry?.toLowerCase().includes(q);
+                || team.teamCountry?.toLowerCase().includes(q)
+                || publicTeamCode.includes(q.replace(/^#/, ''))
+                || matchesTeamPublicId(team, q);
 
             return matchesTab && matchesSearch;
         });
@@ -348,7 +420,7 @@ const Team = () => {
                     <i className='bx bx-search'></i>
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, juego, pais..."
+                        placeholder="Buscar por TEAM-ID, nombre, juego, pais..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -429,11 +501,20 @@ const Team = () => {
                                     <div className="th__card-top">
                                         <div className="th__card-logo">
                                             {team.logo
-                                                ? <img src={team.logo} alt="" />
+                                                ? (
+                                                    <img
+                                                        src={resolveMediaUrl(team.logo)}
+                                                        alt=""
+                                                        onError={(e) => applyImageFallback(e, getTeamFallback(team.name))}
+                                                    />
+                                                )
                                                 : <span>{team.name.substring(0, 2).toUpperCase()}</span>
                                             }
                                         </div>
                                         <div className="th__card-identity">
+                                            {formatTeamPublicId(team) && (
+                                                <span className="tournament-id-tag">{formatTeamPublicId(team)}</span>
+                                            )}
                                             <h3 className="th__card-name">{team.name}</h3>
                                             <div className="th__card-meta">
                                                 <span className="th__card-game">{team.game}</span>
@@ -493,7 +574,11 @@ const Team = () => {
                                         <div className="th__roster-stack">
                                             {starters.slice(0, 5).map((p, idx) => p && (
                                                 <div key={idx} className="th__roster-avatar" style={{ zIndex: 10 - idx }}>
-                                                    <img src={p.photo || `https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
+                                                    <img
+                                                        src={resolveMediaUrl(p.photo) || getBotAvatarFallback(p.nickname)}
+                                                        alt=""
+                                                        onError={(e) => applyImageFallback(e, getBotAvatarFallback(p.nickname))}
+                                                    />
                                                 </div>
                                             ))}
                                             {startersFilled > 5 && (
@@ -601,11 +686,20 @@ const Team = () => {
                             <div className="th__modal-hero">
                                 <div className="th__modal-logo">
                                     {selectedTeam.logo
-                                        ? <img src={selectedTeam.logo} alt="" />
+                                        ? (
+                                            <img
+                                                src={resolveMediaUrl(selectedTeam.logo)}
+                                                alt=""
+                                                onError={(e) => applyImageFallback(e, getTeamFallback(selectedTeam.name))}
+                                            />
+                                        )
                                         : <span>{selectedTeam.name.substring(0, 2).toUpperCase()}</span>
                                     }
                                 </div>
                                 <div className="th__modal-hero-info">
+                                    {formatTeamPublicId(selectedTeam) && (
+                                        <span className="tournament-id-tag">{formatTeamPublicId(selectedTeam)}</span>
+                                    )}
                                     <h2>{selectedTeam.name}</h2>
                                     {selectedTeam.slogan && <p className="th__modal-slogan">"{selectedTeam.slogan}"</p>}
                                     <div className="th__modal-hero-tags">
@@ -686,9 +780,15 @@ const Team = () => {
                                             <div key={`st-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
                                                 <div className="th__modal-player-avatar">
                                                     {p?.photo
-                                                        ? <img src={p.photo} alt="" />
+                                                        ? (
+                                                            <img
+                                                                src={resolveMediaUrl(p.photo)}
+                                                                alt=""
+                                                                onError={(e) => applyImageFallback(e, getBotAvatarFallback(p.nickname))}
+                                                            />
+                                                        )
                                                         : p?.nickname
-                                                            ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
+                                                            ? <img src={getBotAvatarFallback(p.nickname)} alt="" />
                                                             : <i className='bx bx-user-plus'></i>
                                                     }
                                                     {isCap && <span className="th__modal-captain-crown"><i className='bx bxs-crown'></i></span>}
@@ -718,9 +818,15 @@ const Team = () => {
                                             <div key={`sub-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
                                                 <div className="th__modal-player-avatar">
                                                     {p?.photo
-                                                        ? <img src={p.photo} alt="" />
+                                                        ? (
+                                                            <img
+                                                                src={resolveMediaUrl(p.photo)}
+                                                                alt=""
+                                                                onError={(e) => applyImageFallback(e, getBotAvatarFallback(p.nickname))}
+                                                            />
+                                                        )
                                                         : p?.nickname
-                                                            ? <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${p.nickname}`} alt="" />
+                                                            ? <img src={getBotAvatarFallback(p.nickname)} alt="" />
                                                             : <i className='bx bx-user-plus'></i>
                                                     }
                                                 </div>
@@ -743,8 +849,14 @@ const Team = () => {
                                     <div className="th__modal-player th__modal-player--coach">
                                         <div className="th__modal-player-avatar">
                                             {previewCoach.photo
-                                                ? <img src={previewCoach.photo} alt="" />
-                                                : <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${previewCoach.nickname}`} alt="" />
+                                                ? (
+                                                    <img
+                                                        src={resolveMediaUrl(previewCoach.photo)}
+                                                        alt=""
+                                                        onError={(e) => applyImageFallback(e, getBotAvatarFallback(previewCoach.nickname))}
+                                                    />
+                                                )
+                                                : <img src={getBotAvatarFallback(previewCoach.nickname)} alt="" />
                                             }
                                         </div>
                                         <div className="th__modal-player-info">
@@ -772,6 +884,7 @@ const Team = () => {
                             const maxS = st.maxMembers || st.roster?.starters?.length || 5;
                             const maxSb = st.maxSubstitutes || st.roster?.subs?.length || 0;
                             const roles = ROLE_NAMES_JOIN[st.game] || [];
+                            const isMlbbJoinTeam = isMlbbTeam(st);
                             return (
                                 <div className="th__modal-section th__modal-join-section">
                                     <h4><i className='bx bx-log-in-circle'></i> Unirse al Equipo</h4>
@@ -799,6 +912,16 @@ const Team = () => {
                                     ) : !joinFormOpen ? (
                                         <div className="th__join-gate">
                                             <p className="th__join-gate-desc">Ingresa el código de invitación para unirte a este equipo</p>
+                                            {isMlbbJoinTeam && (
+                                                <div className={`th__join-sync-banner ${currentUserMlbbVerified ? 'is-ready' : 'is-missing'}`}>
+                                                    <i className={`bx ${currentUserMlbbVerified ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
+                                                    <span>
+                                                        {currentUserMlbbVerified
+                                                            ? `Se usará tu cuenta MLBB vinculada: ${currentUserMlbbIgn || 'IGN no disponible'} · ${currentUserMlbbPlayerId}/${currentUserMlbbZoneId}`
+                                                            : 'Para unirte a equipos MLBB primero debes verificar tu cuenta en Conexiones.'}
+                                                    </span>
+                                                </div>
+                                            )}
                                             <div className="th__join-gate-row">
                                                 <div className="th__join-gate-input">
                                                     <i className='bx bx-key'></i>
@@ -829,6 +952,40 @@ const Team = () => {
                                                 </button>
                                             </div>
 
+                                            {isMlbbJoinTeam && (
+                                                <div className={`th__join-account-card ${currentUserMlbbVerified ? 'is-ready' : 'is-missing'}`}>
+                                                    <div className="th__join-account-head">
+                                                        <i className={`bx ${currentUserMlbbVerified ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
+                                                        <div>
+                                                            <strong>Cuenta MLBB sincronizada</strong>
+                                                            <span>
+                                                                {currentUserMlbbVerified
+                                                                    ? 'Esta identidad se usará para validar tu ingreso y cualquier actividad del torneo.'
+                                                                    : 'No tienes una cuenta MLBB verificada. Debes completar Conexiones antes de continuar.'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="th__join-account-grid">
+                                                        <div className="th__join-account-item">
+                                                            <label>IGN</label>
+                                                            <p>{currentUserMlbbIgn || 'No disponible'}</p>
+                                                        </div>
+                                                        <div className="th__join-account-item">
+                                                            <label>User ID</label>
+                                                            <p>{currentUserMlbbPlayerId || 'No disponible'}</p>
+                                                        </div>
+                                                        <div className="th__join-account-item">
+                                                            <label>Zone ID</label>
+                                                            <p>{currentUserMlbbZoneId || 'No disponible'}</p>
+                                                        </div>
+                                                        <div className="th__join-account-item">
+                                                            <label>Estado</label>
+                                                            <p>{currentUserMlbbVerified ? 'Verificada' : 'Pendiente'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Photo upload */}
                                             <div className="th__join-photo-upload">
                                                 <label className="th__join-photo-label">
@@ -856,31 +1013,35 @@ const Team = () => {
 
                                             <div className="th__join-form-grid">
                                                 <div className="th__join-field">
-                                                    <label>Nickname *</label>
+                                                    <label>{isMlbbJoinTeam ? 'Nickname visible *' : 'Nickname *'}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="Tu nickname"
+                                                        placeholder={isMlbbJoinTeam ? (currentUserMlbbIgn || 'Tu nickname') : 'Tu nickname'}
                                                         value={joinPlayer.nickname}
                                                         onChange={e => setJoinPlayer({ ...joinPlayer, nickname: e.target.value })}
                                                         required
                                                     />
                                                 </div>
-                                                <div className="th__join-field">
-                                                    <label>Game ID</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Riot ID / Tag"
-                                                        value={joinPlayer.gameId}
-                                                        onChange={e => setJoinPlayer({ ...joinPlayer, gameId: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="th__join-field">
-                                                    <label>Región</label>
-                                                    <select value={joinPlayer.region} onChange={e => setJoinPlayer({ ...joinPlayer, region: e.target.value })}>
-                                                        <option value="">Seleccionar...</option>
-                                                        {REGION_OPTIONS_JOIN.map(r => <option key={r} value={r}>{r}</option>)}
-                                                    </select>
-                                                </div>
+                                                {!isMlbbJoinTeam && (
+                                                    <>
+                                                        <div className="th__join-field">
+                                                            <label>Game ID</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Riot ID / Tag"
+                                                                value={joinPlayer.gameId}
+                                                                onChange={e => setJoinPlayer({ ...joinPlayer, gameId: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div className="th__join-field">
+                                                            <label>Región</label>
+                                                            <select value={joinPlayer.region} onChange={e => setJoinPlayer({ ...joinPlayer, region: e.target.value })}>
+                                                                <option value="">Seleccionar...</option>
+                                                                {REGION_OPTIONS_JOIN.map(r => <option key={r} value={r}>{r}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    </>
+                                                )}
                                                 <div className="th__join-field">
                                                     <label>Rol</label>
                                                     <select value={joinPlayer.role} onChange={e => setJoinPlayer({ ...joinPlayer, role: e.target.value })}>
@@ -920,9 +1081,15 @@ const Team = () => {
                                                     />
                                                 </div>
                                             </div>
+                                            {isMlbbJoinTeam && (
+                                                <div className="th__join-mlbb-note">
+                                                    <i className='bx bx-info-circle'></i>
+                                                    <span>En MLBB no puedes enviar User ID o Zone ID manualmente. El sistema usa la cuenta verificada de tu perfil.</span>
+                                                </div>
+                                            )}
                                             <div className="th__join-form-actions">
                                                 <button type="button" className="th__join-btn-cancel" onClick={resetJoinForm}>Cancelar</button>
-                                                <button type="submit" className="th__join-btn-submit" disabled={joinSubmitting}>
+                                                <button type="submit" className="th__join-btn-submit" disabled={joinSubmitting || (isMlbbJoinTeam && !currentUserMlbbVerified)}>
                                                     {joinSubmitting ? <><i className='bx bx-loader-alt bx-spin'></i> Enviando...</> : <><i className='bx bx-send'></i> Enviar Solicitud</>}
                                                 </button>
                                             </div>

@@ -11,6 +11,12 @@ const playerSchema = new mongoose.Schema({
 });
 
 const teamSchema = new mongoose.Schema({
+    teamCode: {
+        type: String,
+        unique: true,
+        uppercase: true,
+        sparse: true
+    },
     name: { type: String, required: true },
     slogan: String,
     category: String,
@@ -38,5 +44,24 @@ const teamSchema = new mongoose.Schema({
         createdAt: { type: Date, default: Date.now }
     }]
 }, { timestamps: true });
+
+teamSchema.pre('validate', async function(next) {
+    if (this.teamCode) return next();
+
+    const TeamModel = this.constructor;
+    let isUnique = false;
+
+    while (!isUnique) {
+        const randomDigits = Math.floor(100000 + Math.random() * 900000);
+        const candidate = `${randomDigits}`;
+        const existing = await TeamModel.findOne({ teamCode: candidate }).select('_id').lean();
+        if (!existing) {
+            this.teamCode = candidate;
+            isUnique = true;
+        }
+    }
+
+    next();
+});
 
 export default mongoose.model("Team", teamSchema);

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { logger } from './middlewares/logger.js';
 import { verifyCsrf } from './middlewares/csrf.middleware.js';
@@ -11,11 +13,17 @@ import tournamentRoutes from './routes/tournament.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import communityRoutes from './routes/community.routes.js';
+import universityRoutes from './routes/university.routes.js';
+import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
 
 dotenv.config();
 connectDB();
+startMlbbMailQueueWorker();
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, '../uploads');
 const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000', frontendOrigin];
@@ -34,7 +42,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'X-XSRF-Token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token']
 };
 
 app.disable('x-powered-by');
@@ -67,7 +75,8 @@ try {
         frameAncestors: ["'none'"]
       }
     },
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
   });
 } catch (_) {
   console.warn('helmet no está instalado. Usando headers de seguridad manuales.');
@@ -78,7 +87,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(securityMiddleware);
 app.use(logger);
 app.use(verifyCsrf);
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
@@ -86,6 +95,7 @@ app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/university', universityRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {
@@ -97,6 +107,12 @@ app.use((err, req, res, next) => {
   if (err?.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({ message: 'Archivo demasiado grande' });
+    }
+    if (err.code === 'LIMIT_FIELD_VALUE') {
+      return res.status(413).json({ message: 'Los datos del formulario son demasiado grandes (reduce imágenes del roster)' });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ message: 'Campo de archivo inesperado. Usa el campo "logo".' });
     }
     return res.status(400).json({ message: 'Error al procesar el archivo' });
   }

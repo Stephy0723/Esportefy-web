@@ -14,7 +14,12 @@ const TournamentManagePage = () => {
     tournament,
     settings,
     setSettings,
+    compliance,
+    complianceLoading,
     registrations,
+    isMlbbTournament,
+    hasValidMlbbRoster,
+    refreshCompliance,
     savePublicSettings,
     updateRegistration,
     removeRegistration,
@@ -120,6 +125,33 @@ const TournamentManagePage = () => {
               </div>
             </div>
           </article>
+
+          <article className="ta-panel ta-panel--compact">
+            <div className="ta-panel__head">
+              <div>
+                <span className="ta-kicker">Compliance</span>
+                <h3>Revision backend</h3>
+              </div>
+              <div className="ta-actions">
+                <button className="ghost" onClick={refreshCompliance} disabled={complianceLoading}>
+                  {complianceLoading ? 'Verificando...' : 'Actualizar'}
+                </button>
+              </div>
+            </div>
+
+            {!compliance ? (
+              <div className="ta-empty">No se pudo cargar el estado de cumplimiento.</div>
+            ) : (
+              <div className="ta-compliance-list">
+                {compliance.checks?.map((check) => (
+                  <article key={check.id} className={`ta-compliance-card ${check.ok ? 'ok' : 'warn'}`}>
+                    <strong>{check.label}</strong>
+                    <p>{check.detail}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </article>
         </section>
       </div>
 
@@ -140,9 +172,24 @@ const TournamentManagePage = () => {
                 <div>
                   <strong>{item.teamName}</strong>
                   <p>Estado actual: {item.status}</p>
+                  <div className="ta-row-meta">
+                    {item?.teamMeta?.teamCountry ? <span className="ta-pill">{item.teamMeta.teamCountry}</span> : null}
+                    {item?.teamMeta?.teamLevel ? <span className="ta-pill">{item.teamMeta.teamLevel}</span> : null}
+                    {isMlbbTournament ? (
+                      <span className={`ta-pill ${hasValidMlbbRoster(item) ? 'ok' : 'warn'}`}>
+                        {hasValidMlbbRoster(item) ? 'MLBB listo' : 'MLBB incompleto'}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="ta-row-actions">
-                  <button onClick={() => updateRegistration(item._id, 'approved')}>Aprobar</button>
+                  <button
+                    onClick={() => updateRegistration(item._id, 'approved')}
+                    disabled={isMlbbTournament && !hasValidMlbbRoster(item)}
+                    title={isMlbbTournament && !hasValidMlbbRoster(item) ? 'Faltan User ID/Zone ID en el roster MLBB.' : ''}
+                  >
+                    Aprobar
+                  </button>
                   <button className="warn" onClick={() => updateRegistration(item._id, 'rejected')}>Rechazar</button>
                   <button className="danger" onClick={() => removeRegistration(item._id)}>Quitar</button>
                 </div>

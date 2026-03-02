@@ -13,7 +13,8 @@ import {
   searchPublicTournaments,
   getPublicTournamentByCode,
   updateTournamentPublicSettings,
-  updateTournamentBracket
+  updateTournamentBracket,
+  getTournamentCompliance
 } from '../controllers/tournament.controller.js';
 import { uploadTournamentFiles } from '../middlewares/multer.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
@@ -35,6 +36,7 @@ router.get('/:code', getTournamentByCode);
 router.put('/:code', verifyToken, rlManage, uploadTournamentFiles, updateTournament);
 router.patch('/:code/public-settings', verifyToken, rlManage, updateTournamentPublicSettings);
 router.patch('/:code/bracket', verifyToken, rlManage, updateTournamentBracket);
+router.get('/:code/compliance', verifyToken, rlManage, getTournamentCompliance);
 router.delete('/:code', verifyToken, rlManage, deleteTournament);
 router.post('/:code/register', verifyToken, rlRegister, registerTeam);
 router.patch('/:code/registrations/:registrationId', verifyToken, rlManage, updateRegistrationStatus);

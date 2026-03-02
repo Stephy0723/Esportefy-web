@@ -26,12 +26,24 @@ const getTokenFromCookie = (req) => {
     return cookies[AUTH_COOKIE_NAME] || null;
 };
 
+const getTokenFromAuthorizationHeader = (req) => {
+    const authHeader = req.headers?.authorization || req.headers?.Authorization;
+    if (typeof authHeader !== 'string') return null;
+    if (!authHeader.toLowerCase().startsWith('bearer ')) return null;
+    const token = authHeader.slice(7).trim();
+    return token || null;
+};
+
+const getToken = (req) => {
+    return getTokenFromCookie(req) || getTokenFromAuthorizationHeader(req);
+};
+
 export const verifyToken = (req, res, next) => {
     try {
-        const token = getTokenFromCookie(req);
+        const token = getToken(req);
 
         if (!token) {
-            return res.status(403).json({ message: "Acceso denegado. No se encontró cookie de sesión." });
+            return res.status(403).json({ message: "Acceso denegado. No se encontró token de sesión." });
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
