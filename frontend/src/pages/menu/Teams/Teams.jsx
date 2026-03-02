@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { useNotification } from '../../../context/NotificationContext';
@@ -79,6 +79,7 @@ const TABS = [
    ═══════════════════════════════════════ */
 const Team = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { addToast } = useNotification();
     const { user: authUser } = useAuth();
 
@@ -292,6 +293,27 @@ const Team = () => {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        const navigationTeamId = location.state?.teamId;
+        const shouldOpenManage = location.state?.openManage === true;
+        const shouldOpenPreview = location.state?.openPreview === true;
+        if (!navigationTeamId || teams.length === 0) return;
+
+        const targetTeam = teams.find((team) => String(team._id) === String(navigationTeamId));
+        if (!targetTeam) return;
+
+        setSelectedTeam(targetTeam);
+        if (shouldOpenManage) {
+            setIsViewModalOpen(true);
+            setIsPreviewOpen(false);
+        } else if (shouldOpenPreview) {
+            setIsPreviewOpen(true);
+            setIsViewModalOpen(false);
+        }
+
+        navigate(location.pathname, { replace: true, state: {} });
+    }, [teams, location.state, location.pathname, navigate]);
 
     /* ── filter ── */
     const filteredTeams = useMemo(() => {

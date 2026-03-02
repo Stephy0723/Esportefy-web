@@ -44,11 +44,17 @@ const TRACKS = [
 ];
 
 const HUB_ACTIONS = [
-  { id: 'music', icon: FaHeadphones, label: 'Abrir hub de musica', x: '-72px', y: '0px', color: '#7ecce8' },
-  { id: 'agent', icon: FaCommentDots, label: 'Hablar con un agente', x: '-144px', y: '0px', color: '#89f7c8' },
-  { id: 'sponsor', icon: FaHandshake, label: 'Abrir patrocinio', x: '-216px', y: '0px', color: '#f3d68a' },
-  { id: 'quick', icon: FaBolt, label: 'Abrir acciones rapidas', x: '-288px', y: '0px', color: '#e8a0d0' },
+  { id: 'music', icon: FaHeadphones, label: 'Música', color: '#4cc9f0' },
+  { id: 'agent', icon: FaCommentDots, label: 'Agente', color: '#8EDB15' },
+  { id: 'sponsor', icon: FaHandshake, label: 'Patrocinio', color: '#f3c667' },
+  { id: 'quick', icon: FaBolt, label: 'Esportefy TV', color: '#c084fc' },
 ];
+
+const ACTION_LAYOUT = {
+  music: { x: '-54px', y: '-112px' },
+  agent: { x: '-104px', y: '-58px' },
+  sponsor: { x: '-6px', y: '-58px' },
+};
 
 const DEFAULT_MUSIC_STATE = { trackIndex: 0, volume: 0.42 };
 
@@ -87,15 +93,10 @@ const BubbleButton = ({ action, commandOpen, onClick }) => {
   return (
     <button
       type="button"
-      className={`spm-bubble${commandOpen ? ' is-open' : ''}`}
+      className={`spm-action${commandOpen ? ' is-open' : ''}`}
       onClick={onClick}
       aria-label={action.label}
-      style={{
-        '--bubble-x': action.x,
-        '--bubble-y': action.y,
-        '--bubble-color': action.color,
-        '--bubble-delay': action.delay,
-      }}
+      style={{ '--ac-color': action.color, '--ac-delay': action.delay, '--ac-x': action.x, '--ac-y': action.y }}
     >
       <Icon />
     </button>
@@ -116,55 +117,67 @@ const MusicPanel = ({
   volume,
 }) => (
   <section className={`spm-music-panel${musicPanelOpen ? ' is-open' : ''}`} aria-hidden={!musicPanelOpen}>
-    <div className="spm-music-panel__head">
-      <div>
-        <span>Ambient Hub</span>
-        <strong>{currentTrack.title}</strong>
+    {/* Accent top border */}
+    <div className="spm-mp__accent" style={{ background: `linear-gradient(90deg, transparent, ${currentTrack.accent}, transparent)` }} />
+
+    <div className="spm-mp__head">
+      <div className="spm-mp__now">
+        <div className="spm-mp__vis" style={{ '--vis-c': currentTrack.accent }}>
+          {isPlaying && <>
+            <span /><span /><span /><span /><span />
+          </>}
+          {!isPlaying && <FaHeadphones style={{ color: currentTrack.accent, fontSize: '1rem' }} />}
+        </div>
+        <div>
+          <span className="spm-mp__label">REPRODUCIENDO</span>
+          <strong className="spm-mp__title">{currentTrack.title}</strong>
+        </div>
       </div>
-      <button type="button" onClick={onClose} aria-label="Cerrar music hub">
+      <button type="button" className="spm-mp__close" onClick={onClose} aria-label="Cerrar">
         <FaTimes />
       </button>
     </div>
 
-    <div className="spm-track-list">
+    <div className="spm-mp__tracks">
       {TRACKS.map((track, index) => (
         <button
           key={track.title}
           type="button"
-          className={`spm-track${currentTrackIndex === index ? ' is-active' : ''}`}
+          className={`spm-mp__track${currentTrackIndex === index ? ' is-active' : ''}`}
           onClick={() => onSelectTrack(index)}
-          style={{ '--track-accent': track.accent }}
+          style={{ '--t-c': track.accent }}
         >
-          <FaHeadphones />
-          <span>{track.title}</span>
+          <span className="spm-mp__track-idx">{String(index + 1).padStart(2, '0')}</span>
+          <span className="spm-mp__track-name">{track.title}</span>
+          {currentTrackIndex === index && isPlaying && (
+            <span className="spm-mp__track-live">LIVE</span>
+          )}
         </button>
       ))}
     </div>
 
-    <div className="spm-music-controls">
-      <button type="button" onClick={onPlayPause} aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
+    <div className="spm-mp__controls">
+      <button type="button" className="spm-mp__btn spm-mp__btn--main" onClick={onPlayPause} aria-label={isPlaying ? 'Pausar' : 'Reproducir'} style={{ '--btn-c': currentTrack.accent }}>
         {isPlaying ? <FaPause /> : <FaPlay />}
       </button>
-      <button type="button" onClick={onNextTrack} aria-label="Siguiente cancion">
+      <button type="button" className="spm-mp__btn" onClick={onNextTrack} aria-label="Siguiente">
         <FaStepForward />
       </button>
-      <button type="button" onClick={onStopTrack} aria-label="Detener cancion">
+      <button type="button" className="spm-mp__btn" onClick={onStopTrack} aria-label="Detener">
         <FaStop />
       </button>
+      <label className="spm-mp__vol">
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
+          onChange={(e) => setVolume(Number(e.target.value))}
+          aria-label="Volumen"
+        />
+      </label>
     </div>
-
-    <label className="spm-volume">
-      <span>Volumen</span>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        value={volume}
-        onChange={(e) => setVolume(Number(e.target.value))}
-        aria-label="Control de volumen"
-      />
-    </label>
   </section>
 );
 
@@ -330,10 +343,13 @@ const SponsorshipHub = () => {
   const [hasActivatedMusic, setHasActivatedMusic] = useState(false);
 
   const currentTrack = TRACKS[currentTrackIndex];
-  const actions = HUB_ACTIONS.map((action, index) => ({
-    ...action,
-    delay: `${index * 60}ms`,
-  }));
+  const actions = HUB_ACTIONS
+    .filter((action) => action.id !== 'quick')
+    .map((action, index) => ({
+      ...action,
+      ...(ACTION_LAYOUT[action.id] || {}),
+      delay: `${index * 60}ms`,
+    }));
 
   // Persist music state
   useEffect(() => {
@@ -530,13 +546,10 @@ const SponsorshipHub = () => {
           onClick={handleHubToggle}
           aria-label="Abrir command hub"
         >
-          <span className="spm-core__glow" />
-          <span className="spm-core__highlight" />
-          <span className="spm-core__eye spm-core__eye--left" />
-          <span className="spm-core__eye spm-core__eye--right" />
-          <span className="spm-core__cheek spm-core__cheek--left" />
-          <span className="spm-core__cheek spm-core__cheek--right" />
-          <span className="spm-core__mouth" />
+          <span className="spm-core__ring" />
+          <span className="spm-core__icon">
+            {commandOpen ? <FaTimes /> : <FaBolt />}
+          </span>
         </button>
       </div>
 

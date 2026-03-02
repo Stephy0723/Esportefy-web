@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import {
@@ -96,8 +96,9 @@ const rolesList = [
 ];
 
 const EditProfile = () => {
+    const location = useLocation();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('general');
+    const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'general');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState(null); // { type: 'success'|'error', text }
@@ -194,6 +195,13 @@ const EditProfile = () => {
     }, [navigate]);
 
     useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+    useEffect(() => {
+        if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.pathname, location.state, navigate]);
 
     // ─── Form handlers ───
     const updateField = (name, value) => {
