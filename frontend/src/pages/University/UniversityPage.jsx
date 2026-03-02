@@ -13,6 +13,8 @@ const REGIONS = [
   { id: 'latam', name: 'Latinoamérica', flag: '🌎', short: 'LATAM' },
   { id: 'americas', name: 'América', flag: '🗽', short: 'América' },
 ];
+const UNIVERSITY_ENABLED_REGION = 'rd';
+const UNIVERSITY_VISIBLE_REGIONS = REGIONS.filter((region) => region.id === UNIVERSITY_ENABLED_REGION);
 
 const ALL_UNIVERSITIES = [
   // ═══ REPÚBLICA DOMINICANA ═══
@@ -535,6 +537,14 @@ const EMPTY_UNIVERSITY_STATUS = {
   rejectReason: ''
 };
 
+const EMPTY_MICROSOFT_CONNECTION = {
+  verified: false,
+  tenantId: '',
+  userId: '',
+  email: '',
+  displayName: ''
+};
+
 const UNIVERSITY_STATUS_META = {
   unlinked: {
     tone: 'neutral',
@@ -570,11 +580,42 @@ const PUBLIC_EMAIL_DOMAINS = new Set([
   'protonmail.com'
 ]);
 const ALLOWED_ACADEMIC_LEVELS = new Set(['1', '2', '3', '4', 'egresado', 'maestria']);
+const RD_UNIVERSITY_DOMAIN_RULES = {
+  uasd: ['uasd.edu.do'],
+  pucmm: ['pucmm.edu.do'],
+  intec: ['intec.edu.do'],
+  unibe: ['unibe.edu.do'],
+  itla: ['itla.edu.do'],
+  unapec: ['unapec.edu.do'],
+  unphu: ['unphu.edu.do'],
+  utesa: ['utesa.edu'],
+  uapa: ['uapa.edu.do'],
+  ucne: ['ucne.edu'],
+  isfodosu: ['isfodosu.edu.do'],
+  itsc: ['itsc.edu.do'],
+  ucateci: ['ucateci.edu.do'],
+  uniremhos: ['uniremhos.edu.do'],
+  unicaribe: ['unicaribe.edu.do'],
+  oym: ['udoym.edu.do', 'oymas.edu.do', 'oym.edu.do'],
+  uce: ['uce.edu.do', 'aluce.edu.do'],
+  ufhec: ['ufhec.edu.do'],
+  ucsd: ['ucsd.edu.do'],
+  loyola: ['loyola.edu.do']
+};
 
 const getEmailDomain = (value) => {
   const email = String(value || '').trim().toLowerCase();
   const atIndex = email.lastIndexOf('@');
   return atIndex === -1 ? '' : email.slice(atIndex + 1);
+};
+
+const getUniversityAllowedDomains = (universityId = '') =>
+  RD_UNIVERSITY_DOMAIN_RULES[String(universityId || '').trim().toLowerCase()] || [];
+
+const isUniversityInstitutionalEmailAllowed = (universityId = '', email = '') => {
+  const allowedDomains = getUniversityAllowedDomains(universityId);
+  const domain = getEmailDomain(email);
+  return Boolean(domain && allowedDomains.length > 0 && allowedDomains.includes(domain));
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -592,15 +633,18 @@ const UniversityPage = () => {
   const [enrollStep, setEnrollStep] = useState(1);
   const [formData, setFormData] = useState({ matricula: '', carrera: '', campus: '', customCampus: '', nivel: '', institutionalEmail: '' });
   const [myUniversityStatus, setMyUniversityStatus] = useState(EMPTY_UNIVERSITY_STATUS);
+  const [myUniversityApplication, setMyUniversityApplication] = useState(null);
+  const [microsoftConnection, setMicrosoftConnection] = useState(EMPTY_MICROSOFT_CONNECTION);
   const [statusLoading, setStatusLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [connectLoading, setConnectLoading] = useState(false);
   const [statusNotice, setStatusNotice] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [adminApplications, setAdminApplications] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [reviewLoadingId, setReviewLoadingId] = useState('');
   const [rejectDrafts, setRejectDrafts] = useState({});
-  const [adminFilters, setAdminFilters] = useState({ status: 'pending', region: '' });
+  const [adminFilters, setAdminFilters] = useState({ status: 'pending', region: UNIVERSITY_ENABLED_REGION });
 
   const regionUnis = useMemo(() => {
     return ALL_UNIVERSITIES
@@ -615,7 +659,7 @@ const UniversityPage = () => {
   }, [activeRegion, searchQuery]);
 
   const regionTournaments = TOURNAMENTS_BY_REGION[activeRegion] || [];
-  const currentRegion = REGIONS.find(r => r.id === activeRegion);
+  const currentRegion = UNIVERSITY_VISIBLE_REGIONS.find(r => r.id === activeRegion) || UNIVERSITY_VISIBLE_REGIONS[0];
   const campusCities = CAMPUS_CITIES[activeRegion] || [];
 
   const stats = useMemo(() => {
@@ -651,6 +695,8 @@ const UniversityPage = () => {
       });
       const nextStatus = res.data?.university || EMPTY_UNIVERSITY_STATUS;
       setMyUniversityStatus(nextStatus);
+      setMyUniversityApplication(res.data?.application || null);
+      setMicrosoftConnection(res.data?.microsoftConnection || EMPTY_MICROSOFT_CONNECTION);
       setFormData((prev) => ({
         ...prev,
         institutionalEmail: prev.institutionalEmail || nextStatus.institutionalEmail || res.data?.microsoftConnection?.email || res.data?.userEmail || ''
@@ -670,6 +716,29 @@ const UniversityPage = () => {
     loadProfile();
     loadMyUniversityStatus();
   }, [token]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const microsoftStatus = params.get('universityMs');
+    if (!microsoftStatus) return;
+
+    const message = params.get('message') || '';
+    setStatusNotice({
+      type: microsoftStatus === 'error' ? 'error' : 'success',
+      text: message || (
+        microsoftStatus === 'approved'
+          ? 'Cuenta universitaria verificada automáticamente.'
+          : microsoftStatus === 'linked'
+            ? 'Cuenta universitaria conectada.'
+            : 'Se completó la conexión institucional.'
+      )
+    });
+
+    params.delete('universityMs');
+    params.delete('message');
+    const nextQuery = params.toString();
+    window.history.replaceState({}, document.title, `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}`);
+  }, []);
 
   const loadAdminApplications = async () => {
     if (!token || !currentUser?.isAdmin) return;
@@ -704,6 +773,78 @@ const UniversityPage = () => {
   const currentUniversityMeta = UNIVERSITY_STATUS_META[currentUniversityState] || UNIVERSITY_STATUS_META.unlinked;
   const selectedUniMatchesCurrent = Boolean(selectedUni && myUniversityStatus?.universityId === selectedUni.id);
   const selectedUniLocked = selectedUniMatchesCurrent && ['pending', 'verified'].includes(currentUniversityState);
+  const institutionalEmail = String(myUniversityApplication?.institutionalEmail || myUniversityStatus?.institutionalEmail || '').trim().toLowerCase();
+  const microsoftEmail = String(microsoftConnection?.email || '').trim().toLowerCase();
+  const currentUniversityAllowedDomains = getUniversityAllowedDomains(myUniversityApplication?.universityId || myUniversityStatus?.universityId);
+  const hasMicrosoftInstitutionalMatch = Boolean(
+    microsoftConnection?.verified &&
+    institutionalEmail &&
+    microsoftEmail &&
+    microsoftEmail === institutionalEmail
+  );
+
+  const handleConnectMicrosoftUniversity = async () => {
+    if (!token) {
+      setStatusNotice({ type: 'error', text: 'Debes iniciar sesión para conectar tu cuenta universitaria.' });
+      return;
+    }
+
+    if (!institutionalEmail) {
+      setStatusNotice({ type: 'error', text: 'Primero envía tu postulación con tu correo institucional.' });
+      return;
+    }
+
+    setConnectLoading(true);
+    setStatusNotice(null);
+    try {
+      const res = await axios.post(`${API_URL}/api/university/microsoft/connect`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.data?.authorizationUrl) {
+        throw new Error('No se recibió la URL de autorización.');
+      }
+
+      window.location.href = res.data.authorizationUrl;
+    } catch (error) {
+      console.error('Error iniciando conexión universitaria Microsoft:', error);
+      setStatusNotice({
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudo iniciar la conexión con Microsoft/Entra.'
+      });
+      setConnectLoading(false);
+    }
+  };
+
+  const handleDisconnectMicrosoftUniversity = async () => {
+    if (!token) {
+      setStatusNotice({ type: 'error', text: 'Debes iniciar sesión para desconectar tu cuenta universitaria.' });
+      return;
+    }
+
+    setConnectLoading(true);
+    setStatusNotice(null);
+
+    try {
+      const res = await axios.delete(`${API_URL}/api/university/microsoft`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setStatusNotice({
+        type: 'success',
+        text: res.data?.message || 'Cuenta universitaria desconectada.'
+      });
+      await loadMyUniversityStatus();
+    } catch (error) {
+      console.error('Error desconectando cuenta universitaria Microsoft:', error);
+      setStatusNotice({
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudo desconectar la cuenta universitaria.'
+      });
+    } finally {
+      setConnectLoading(false);
+    }
+  };
 
   const handleReviewApplication = async (application, decision) => {
     if (!token || !currentUser?.isAdmin || !application?._id) return;
@@ -792,6 +933,59 @@ const UniversityPage = () => {
             </div>
           </div>
         ) : null}
+
+        {(currentUniversityState === 'pending' || currentUniversityState === 'rejected') && institutionalEmail ? (
+          <div className="up-ms-card">
+            <div className="up-ms-card__icon">
+              <i className='bx bxl-microsoft'></i>
+            </div>
+            <div className="up-ms-card__content">
+              <strong>Conexión con cuenta universitaria</strong>
+              <span>
+                Usa tu cuenta institucional de Microsoft/Entra. No se aceptan cuentas personales de Microsoft.
+                {microsoftConnection?.verified && microsoftEmail
+                  ? ` Cuenta conectada: ${microsoftEmail}.`
+                  : ` Correo esperado: ${institutionalEmail}.`}
+              </span>
+              {currentUniversityAllowedDomains.length > 0 ? (
+                <small className="up-ms-card__warning">
+                  Dominios permitidos para esta universidad: {currentUniversityAllowedDomains.join(', ')}.
+                </small>
+              ) : null}
+              {microsoftConnection?.verified && microsoftEmail && !hasMicrosoftInstitutionalMatch ? (
+                <small className="up-ms-card__warning">
+                  La cuenta conectada no coincide exactamente con el correo institucional de la postulación. Quedará en revisión manual.
+                </small>
+              ) : null}
+            </div>
+            <div className="up-ms-card__actions">
+              <button
+                type="button"
+                className="up-btn up-btn--microsoft"
+                onClick={handleConnectMicrosoftUniversity}
+                disabled={connectLoading || currentUniversityState === 'verified'}
+              >
+                <i className='bx bxl-microsoft'></i>
+                {connectLoading
+                  ? 'Conectando...'
+                  : hasMicrosoftInstitutionalMatch
+                    ? 'Reconectar cuenta'
+                    : 'Conectar cuenta universitaria'}
+              </button>
+              {microsoftConnection?.verified ? (
+                <button
+                  type="button"
+                  className="up-btn up-btn--ghost up-btn--danger"
+                  onClick={handleDisconnectMicrosoftUniversity}
+                  disabled={connectLoading}
+                >
+                  <i className='bx bx-unlink'></i>
+                  Desconectar
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   };
@@ -838,6 +1032,12 @@ const UniversityPage = () => {
       nextErrors.institutionalEmail = 'Ingresa un correo institucional válido.';
     } else if (PUBLIC_EMAIL_DOMAINS.has(getEmailDomain(normalizedEmail))) {
       nextErrors.institutionalEmail = 'Usa un correo institucional, no uno personal.';
+    } else if (enrollUni?.region !== 'rd') {
+      nextErrors.institutionalEmail = 'Por ahora la verificación institucional solo está habilitada para universidades de República Dominicana.';
+    } else if (getUniversityAllowedDomains(enrollUni?.id).length === 0) {
+      nextErrors.institutionalEmail = 'Esta universidad todavía no tiene dominios institucionales configurados para verificación.';
+    } else if (!isUniversityInstitutionalEmailAllowed(enrollUni?.id, normalizedEmail)) {
+      nextErrors.institutionalEmail = `Usa uno de los dominios institucionales oficiales de esta universidad: ${getUniversityAllowedDomains(enrollUni?.id).join(', ')}.`;
     }
 
     setFieldErrors(nextErrors);
@@ -882,7 +1082,7 @@ const UniversityPage = () => {
       setFormData({ matricula: '', carrera: '', campus: '', customCampus: '', nivel: '', institutionalEmail: '' });
       setStatusNotice({
         type: 'success',
-        text: 'Tu postulación universitaria fue enviada. Ahora queda pendiente de validación.'
+        text: 'Tu postulación universitaria fue enviada. Ahora puedes conectar la misma cuenta institucional Microsoft/Entra para intentar verificación semiautomática.'
       });
       await loadMyUniversityStatus();
     } catch (error) {
@@ -1135,6 +1335,11 @@ const UniversityPage = () => {
                   }}
                 />
                 {fieldErrors.institutionalEmail && <small className="up-field__error">{fieldErrors.institutionalEmail}</small>}
+                {!fieldErrors.institutionalEmail && (
+                  <small className="up-field__hint">
+                    Por ahora solo aceptamos correos institucionales oficiales de las universidades RD habilitadas en la app. Dominios permitidos para esta universidad: {getUniversityAllowedDomains(enrollUni?.id).join(', ') || 'pendiente de configurar'}. Después de enviar la postulación, conecta esta misma cuenta institucional Microsoft/Entra para verificación semiautomática.
+                  </small>
+                )}
               </div>
               <div className="up-field">
                 <label>Carrera</label>
@@ -1224,7 +1429,7 @@ const UniversityPage = () => {
             Universidades <span className="up-glow-text">Partner</span>
           </h1>
           <p className="up-header__desc">
-            Instituciones que impulsan los esports universitarios. Compite, consigue becas y forma parte del ecosistema competitivo más grande de las Américas.
+            Por ahora la University Series está enfocada en República Dominicana. Competirán estudiantes de las universidades RD ya activas dentro de la plataforma.
           </p>
         </div>
         <div className="up-header__right">
@@ -1251,7 +1456,7 @@ const UniversityPage = () => {
 
       {/* ═══ REGIONES ═══ */}
       <div className="up-regions">
-        {REGIONS.map(r => (
+        {UNIVERSITY_VISIBLE_REGIONS.map(r => (
           <button
             key={r.id}
             className={`up-regions__btn ${activeRegion === r.id ? 'up-regions__btn--active' : ''}`}
@@ -1452,8 +1657,7 @@ const UniversityPage = () => {
                   value={adminFilters.region}
                   onChange={(e) => setAdminFilters((prev) => ({ ...prev, region: e.target.value }))}
                 >
-                  <option value="">Todas las regiones</option>
-                  {REGIONS.map((region) => (
+                  {UNIVERSITY_VISIBLE_REGIONS.map((region) => (
                     <option key={region.id} value={region.id}>{region.name}</option>
                   ))}
                 </select>
