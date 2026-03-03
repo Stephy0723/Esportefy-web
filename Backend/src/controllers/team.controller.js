@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -84,6 +85,11 @@ export const createTeam = async (req, res) => {
 
         const rosterData = parsedRoster || { starters: [], subs: [], coach: null };
         const wantsUniversityTeam = isUniversityTeamLevel(parsedFormData?.teamLevel);
+        if (wantsUniversityTeam && !isUniversityGameAllowed(parsedFormData?.game)) {
+            return res.status(400).json({
+                message: 'Los equipos universitarios solo pueden crearse para juegos de Riot o Mobile Legends.'
+            });
+        }
         // Asegura que el capitán quede en el roster
         const captainPlayer = {
             user: req.userId,
@@ -1113,6 +1119,11 @@ export const updateTeam = async (req, res) => {
         });
 
         const wantsUniversityTeam = isUniversityTeamLevel(team.teamLevel);
+        if (wantsUniversityTeam && !isUniversityGameAllowed(team.game)) {
+            return res.status(400).json({
+                message: 'Los equipos universitarios solo pueden competir en juegos de Riot o Mobile Legends.'
+            });
+        }
         if (wantsUniversityTeam) {
             const universityResult = await buildVerifiedUniversitySnapshot(team.captain);
             if (!universityResult.ok) {

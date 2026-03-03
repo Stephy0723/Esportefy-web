@@ -217,4 +217,26 @@ UserSchema.index(
     }
 );
 
+UserSchema.index(
+    { 'university.studentId': 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'university.studentId': { $exists: true, $type: 'string' },
+            'university.verificationStatus': { $in: ['pending', 'verified'] }
+        }
+    }
+);
+
+UserSchema.index(
+    { 'university.institutionalEmail': 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'university.institutionalEmail': { $exists: true, $type: 'string' },
+            'university.verificationStatus': { $in: ['pending', 'verified'] }
+        }
+    }
+);
+
 export default mongoose.model('User', UserSchema);

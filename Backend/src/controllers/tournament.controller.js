@@ -2,6 +2,7 @@ import Tournament from '../models/Tournament.js';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
+import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -523,6 +524,12 @@ export const createTournament = async (req, res) => {
                 };
             })
             : [];
+        const wantsUniversityOnly = parsedEligibility.universityOnly === true || String(parsedEligibility.universityOnly || '').trim().toLowerCase() === 'true';
+        if (wantsUniversityOnly && !isUniversityGameAllowed(data.game)) {
+            return res.status(400).json({
+                message: 'Los torneos universitarios solo pueden crearse para juegos de Riot o Mobile Legends.'
+            });
+        }
 
         const newTournament = new Tournament({
             ...data,
@@ -543,7 +550,7 @@ export const createTournament = async (req, res) => {
                 minAge: Number(parsedEligibility.minAge) > 0 ? Number(parsedEligibility.minAge) : 13,
                 allowedCountries: normalizeStringArray(parsedEligibility.allowedCountries),
                 notes: parsedEligibility.notes || '',
-                universityOnly: parsedEligibility.universityOnly === true || String(parsedEligibility.universityOnly || '').trim().toLowerCase() === 'true'
+                universityOnly: wantsUniversityOnly
             },
             contact: {
                 email: parsedContact.email || '',
@@ -772,6 +779,13 @@ export const updateTournament = async (req, res) => {
                 notes: parsedEligibility.notes || '',
                 universityOnly: parsedEligibility.universityOnly === true || String(parsedEligibility.universityOnly || '').trim().toLowerCase() === 'true'
             };
+        }
+        const targetUniversityOnly = (update.eligibility || tournament.eligibility || {}).universityOnly === true;
+        const targetUniversityGame = String(update.game || tournament.game || '').trim();
+        if (targetUniversityOnly && !isUniversityGameAllowed(targetUniversityGame)) {
+            return res.status(400).json({
+                message: 'Los torneos universitarios solo pueden competir en juegos de Riot o Mobile Legends.'
+            });
         }
         if (parsedContact) {
             update.contact = {

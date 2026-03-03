@@ -94,4 +94,28 @@ UniversityApplicationSchema.index(
   { name: 'uni_student_lookup' }
 );
 
+UniversityApplicationSchema.index(
+  { studentId: 1 },
+  {
+    unique: true,
+    name: 'uni_student_unique_active',
+    partialFilterExpression: {
+      studentId: { $exists: true, $type: 'string' },
+      status: { $in: ['pending', 'approved'] }
+    }
+  }
+);
+
+UniversityApplicationSchema.index(
+  { institutionalEmail: 1 },
+  {
+    unique: true,
+    name: 'uni_email_unique_active',
+    partialFilterExpression: {
+      institutionalEmail: { $exists: true, $type: 'string' },
+      status: { $in: ['pending', 'approved'] }
+    }
+  }
+);
+
 export default mongoose.model('UniversityApplication', UniversityApplicationSchema);
