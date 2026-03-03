@@ -57,6 +57,38 @@
     linear-gradient(90deg, color-mix(in srgb, var(--bg-page) 86%, transparent), color-mix(in srgb, var(--bg-page) 56%, transparent), color-mix(in srgb, var(--bg-page) 86%, transparent));
   backdrop-filter: blur(4px);
   overflow: hidden;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.spx-snake-wrap.is-closing {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+.spx-snake-wrap__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border-color));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+  color: var(--text-main);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: .85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.spx-snake-wrap__close:hover,
+.spx-snake-wrap__close:focus-visible {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-card));
+  color: var(--primary);
 }
 
 .spx-info-modal {

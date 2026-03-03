@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import {
@@ -13,6 +13,7 @@ import { PLAYER_TAGS } from '../../../data/playerTags';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
+import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import './EditProfile.css';
 
@@ -95,8 +96,9 @@ const rolesList = [
 ];
 
 const EditProfile = () => {
+    const location = useLocation();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('general');
+    const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'general');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState(null); // { type: 'success'|'error', text }
@@ -193,6 +195,13 @@ const EditProfile = () => {
     }, [navigate]);
 
     useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+    useEffect(() => {
+        if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.pathname, location.state, navigate]);
 
     // ─── Form handlers ───
     const updateField = (name, value) => {
@@ -385,8 +394,6 @@ const EditProfile = () => {
         setSaving(true);
         setSaveMsg(null);
         const token = getToken();
-        const normalizedData = { ...formData, phone: normalizedPhone };
-
         // Only send fields that the backend allowedFields supports
         const data = new FormData();
 
@@ -396,7 +403,7 @@ const EditProfile = () => {
             'avatar', 'bio', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'
         ];
         stringFields.forEach(key => {
-            const val = formData[key];
+            const val = key === 'phone' ? normalizedPhone : formData[key];
             if (val !== undefined && val !== null && val !== '') {
                 data.append(key, val);
             }
@@ -419,7 +426,11 @@ const EditProfile = () => {
         if (file) data.append('avatarFile', file);
 
         try {
-            const res = await axios.put(`${API_URL}/api/auth/update-profile`, data);
+            const res = await axios.put(`${API_URL}/api/auth/update-profile`, data, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
             // Sync localStorage for other components
             localStorage.setItem('esportefyUser', JSON.stringify(res.data));
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
@@ -457,6 +468,7 @@ const EditProfile = () => {
 
     return (
         <div className="ep fade-in">
+            <PageHud page="EDITAR PERFIL" />
             {/* Top bar */}
             <div className="ep__topbar">
                 <button className="ep__back" onClick={() => navigate('/profile')}>

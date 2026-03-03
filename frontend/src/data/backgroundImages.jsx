@@ -29,6 +29,23 @@ import bg26 from '../assets/bannerGamer/26.jpg';
 import bg27 from '../assets/bannerGamer/27.jpg';
 import bg28 from '../assets/bannerGamer/28.jpg';
 import bg29 from '../assets/bannerGamer/29.jpg';
+import bg30 from '../assets/bannerGamer/30.jpg';
+import bg31 from '../assets/bannerGamer/31.jpg';
+import bg32 from '../assets/bannerGamer/32.jpg';  
+import bg33 from '../assets/bannerGamer/33.jpg';
+import bg34 from '../assets/bannerGamer/34.jpg';
+import bg35 from '../assets/bannerGamer/35.jpg';    
+import bg36 from '../assets/bannerGamer/36.jpg';
+import bg37 from '../assets/bannerGamer/37.jpg';
+import bg38 from '../assets/bannerGamer/38.jpg';
+import bg39 from '../assets/bannerGamer/39.jpg';
+import bg40 from '../assets/bannerGamer/40.jpg';
+import bg41 from '../assets/bannerGamer/41.jpg';
+import bg42 from '../assets/bannerGamer/42.jpg';
+import bg43 from '../assets/bannerGamer/43.jpg';
+import bg44 from '../assets/bannerGamer/44.jpg';
+import bg45 from '../assets/bannerGamer/45.jpg';
+import bg46 from '../assets/bannerGamer/46.jpg';    
 
 
 // Exportamos un array
@@ -61,7 +78,25 @@ export const backgroundList = [
     bg26,
     bg27,
     bg28,
-    bg29
+    bg29,
+    bg30,
+    bg31,
+    bg32,
+    bg33,
+    bg34,
+    bg35,
+    bg36,
+    bg37,
+    bg38,
+    bg39,
+    bg40,
+    bg41,
+    bg42,
+    bg43,
+    bg44,
+    bg45,
+    bg46
+        
 ];
 
 // CORRECCIÓN: Usamos 'backgroundList' que es la variable real

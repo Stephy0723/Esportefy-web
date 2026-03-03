@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import './App.css';
 
 import { NotificationProvider } from './context/NotificationContext';
 import ToastContainer from './components/Toasts/ToastContainer';
-import SponsorshipModal from './components/SponsorshipModal/SponsorshipModal';
+import SponsorshipHub from './components/SponsorshipHub/SponsorshipHub';
 import SponsorMotion from './components/SponsorMotion/SponsorMotion';
 import Footer from './components/Home/Footer';
 
@@ -17,6 +17,9 @@ import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ResetPassword from './pages/Auth/ForgotPasswordFlow';
 import Rankings from './pages/menu/Rankings/Rankings';
+import Noticias from './pages/menu/Noticias/Noticias';
+import NewsDetail from './pages/menu/Noticias/NewsDetail';
+import OrganismProfile from './pages/menu/Organismos/OrganismProfile';
 import Dashboard from './pages/menu/Dashboard/Dashboard';
 import Chats from './pages/menu/Chats/Chats';
 import Tv from './pages/menu/EsportefyTV/Tv';
@@ -34,6 +37,8 @@ import CreateTournament from './pages/menu/Tournaments/CreateTournament/CreateTo
 import OrganizerApplication from './pages/menu/Tournaments/OrganizerApplication/OrganizerApplication';
 import TournamentAdminHub from './pages/menu/Tournaments/Admin/TournamentAdminHub';
 import TournamentManagePage from './pages/menu/Tournaments/Admin/TournamentManagePage';
+import TournamentBracketPage from './pages/menu/Tournaments/Admin/TournamentBracketPage';
+import TournamentRoulettePage from './pages/menu/Tournaments/Admin/TournamentRoulettePage';
 import TournamentPublicExplorer from './pages/menu/Tournaments/Public/TournamentPublicExplorer';
 import TournamentPublicView from './pages/menu/Tournaments/Public/TournamentPublicView';
 import EditProfile from './pages/menu/Profile/EditProfile';
@@ -49,6 +54,7 @@ import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
 import CommunityTemplate from './pages/menu/Community/CommunityTemplate/CommunityTemplate';
 import CommunityAdminTemplate from './pages/menu/Community/CommunityAdminTemplate/CommunityAdminTemplate';
 import CommunityGamePageTemplate from './pages/Game/CommunityGamePageTemplate';
+import CommunitySpacePage from './pages/menu/Community/groups/CommunitySpacePage';
 
 const WelcomeTrigger = () => null;
 
@@ -78,6 +84,78 @@ const PublicLayout = () => {
   );
 };
 
+const AppRouterContent = () => {
+  const location = useLocation();
+  const hideFloatingOverlays =
+    location.pathname.startsWith('/create-team') ||
+    location.pathname.includes('/roulette/live');
+
+  return (
+    <>
+      {!hideFloatingOverlays && <SponsorshipHub />}
+      {!hideFloatingOverlays && <SponsorMotion />}
+      <Routes>
+        <Route path="/" element={<Home />} />
+
+        <Route element={<PublicLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/CalendarPage" element={<CalendarPage />} />
+          <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />
+          <Route path="/legal/payment-policy" element={<PaymentPolicy />} />
+          <Route path="/legal/terms" element={<TermsConditions />} />
+          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+          <Route path="/create-team" element={<CreateTeamPage />} />
+          <Route path="/torneos/publicos" element={<TournamentPublicExplorer />} />
+          <Route path="/torneos/publicos/:code" element={<TournamentPublicView />} />
+          <Route path="/tournaments/:code" element={<TournamentPublicView />} />
+        </Route>
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/tournaments/manage/:code/roulette/live/single" element={<TournamentRoulettePage />} />
+          <Route path="/tournaments/manage/:code/roulette/live/duel" element={<TournamentRoulettePage />} />
+
+          <Route element={<MainLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/chats" element={<Chats />} />
+            <Route path="/tv" element={<Tv />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/torneos" element={<Tournaments />} />
+            <Route path="/comunidad" element={<Community />} />
+            <Route path="/equipos" element={<Teams />} />
+            <Route path="/tournaments" element={<Tournaments />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/rankings" element={<Rankings />} />
+            <Route path="/noticias" element={<Noticias />} />
+            <Route path="/noticias/:id" element={<NewsDetail />} />
+            <Route path="/organismos/:slug" element={<OrganismProfile />} />
+            <Route path="/team-registration" element={<TeamRegistration />} />
+            <Route path="/organizer-application" element={<OrganizerApplication />} />
+            <Route path="/create-tournament" element={<CreateTournament />} />
+            <Route path="/tournaments/admin" element={<TournamentAdminHub />} />
+            <Route path="/tournaments/manage/:code" element={<TournamentManagePage />} />
+            <Route path="/tournaments/manage/:code/bracket" element={<TournamentBracketPage />} />
+            <Route path="/tournaments/manage/:code/roulette" element={<TournamentRoulettePage />} />
+            <Route path="/games/:gameId" element={<GamesPage />} />
+            <Route path="/games/filter/:type/:value" element={<GamesFilterTemplate />} />
+            <Route path="/university" element={<UniversityPage />} />
+            <Route path="/game/:gameId" element={<CommunityGamePageTemplate />} />
+            <Route path="/community/:slug" element={<CommunityTemplate />} />
+            <Route path="/communities/:shortUrl" element={<CommunitySpacePage />} />
+            <Route path="/community/:id/admin" element={<CommunityAdminTemplate />} />
+            <Route path="/group/:id" element={<GroupPage />} />
+            <Route path="/organizer/:id" element={<OrganizerPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </>
+  );
+};
+
 function App() {
   return (
     <NotificationProvider>
@@ -85,57 +163,7 @@ function App() {
       <WelcomeTrigger />
 
       <BrowserRouter>
-        <SponsorshipModal />
-        <SponsorMotion />
-        <Routes>
-          <Route path="/" element={<Home />} />
-
-          <Route element={<PublicLayout />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            <Route path="/CalendarPage" element={<CalendarPage />} />
-            <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />
-            <Route path="/legal/payment-policy" element={<PaymentPolicy />} />
-            <Route path="/legal/terms" element={<TermsConditions />} />
-            <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-            <Route path="/create-team" element={<CreateTeamPage />} />
-            <Route path="/torneos/publicos" element={<TournamentPublicExplorer />} />
-            <Route path="/torneos/publicos/:code" element={<TournamentPublicView />} />
-            <Route path="/tournaments/:code" element={<TournamentPublicView />} />
-          </Route>
-
-          <Route element={<ProtectedRoute />}>
-            <Route element={<MainLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/chats" element={<Chats />} />
-              <Route path="/tv" element={<Tv />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/torneos" element={<Tournaments />} />
-              <Route path="/comunidad" element={<Community />} />
-              <Route path="/equipos" element={<Teams />} />
-              <Route path="/tournaments" element={<Tournaments />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/rankings" element={<Rankings />} />
-              <Route path="/team-registration" element={<TeamRegistration />} />
-              <Route path="/organizer-application" element={<OrganizerApplication />} />
-              <Route path="/create-tournament" element={<CreateTournament />} />
-              <Route path="/tournaments/admin" element={<TournamentAdminHub />} />
-              <Route path="/tournaments/manage/:code" element={<TournamentManagePage />} />
-              <Route path="/games/:id" element={<GamesPage />} />
-              <Route path="/games/filter/:type/:value" element={<GamesFilterTemplate />} />
-              <Route path="/university" element={<UniversityPage />} />
-              <Route path="/game/:gameId" element={<CommunityGamePageTemplate />} />
-              <Route path="/community/:slug" element={<CommunityTemplate />} />
-              <Route path="/community/:id/admin" element={<CommunityAdminTemplate />} />
-              <Route path="/group/:id" element={<GroupPage />} />
-              <Route path="/organizer/:id" element={<OrganizerPage />} />
-            </Route>
-          </Route>
-        </Routes>
+        <AppRouterContent />
       </BrowserRouter>
     </NotificationProvider>
   );

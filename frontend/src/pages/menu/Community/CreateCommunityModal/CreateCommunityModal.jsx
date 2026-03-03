@@ -1,20 +1,45 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; // <--- IMPORTANTE
-import { 
-    FaPlusCircle, FaTimes, FaCamera, FaImage, FaUserShield, 
-    FaLock, FaGamepad, FaFilePdf, FaGlobeAmericas, FaInfoCircle, 
-    FaCheck, FaBullhorn, FaGavel, FaUsers, FaShieldAlt, FaRocket, FaChevronRight 
+import React, { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    FaTimes,
+    FaCamera,
+    FaImage,
+    FaGamepad,
+    FaFilePdf,
+    FaInfoCircle,
+    FaGavel,
+    FaUsers,
+    FaShieldAlt,
+    FaRocket,
+    FaChevronRight,
+    FaChevronLeft,
+    FaCheck
 } from 'react-icons/fa';
+import { createCommunitySpace } from '../community.service';
+import { useNotification } from '../../../../context/NotificationContext';
+import './CreateCommunityModal.css';
 
-const CURRENT_USER_ROLE = 'organizer'; 
+const CURRENT_USER_ROLE = 'organizer';
+const AVAILABLE_GAMES = ['Valorant', 'LoL', 'CS2', 'Fortnite', 'CoD', 'FIFA', 'Minecraft', 'Overwatch 2', 'Rocket League', 'GTA V'];
+const TAB_ORDER = ['identity', 'content', 'rules', 'team', 'settings'];
 
-const CreateCommunityModal = ({ isOpen, onClose }) => {
-    const navigate = useNavigate(); // <--- ACTIVAMOS NAVEGACIÓN
-    const [activeTab, setActiveTab] = useState('identity'); 
+const slugify = (value) =>
+    String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 50);
 
-    // --- ESTADOS ---
+const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
+    const navigate = useNavigate();
+    const { addToast } = useNotification();
+    const [activeTab, setActiveTab] = useState('identity');
+    const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', shortUrl: '', description: '', type: 'Mixta', 
+        name: '', shortUrl: '', description: '', type: 'Mixta',
         targetAudience: 'Mixto', language: 'Español', region: 'LATAM', launchDate: '',
         mainGames: [], allowAllGames: false,
         contentCategories: { noticias: true, memes: true, opinion: true, clips: true, fanart: true, guias: true },
@@ -28,153 +53,356 @@ const CreateCommunityModal = ({ isOpen, onClose }) => {
         discordIntegration: false, welcomeEmail: true,
         futureEvents: false, futureTournaments: false
     });
-
     const [media, setMedia] = useState({
         banner: { file: null, preview: null },
         avatar: { file: null, preview: null },
         rulesPdf: { file: null, name: '' }
     });
-
     const [adminInput, setAdminInput] = useState('');
     const [admins, setAdmins] = useState([]);
     const bannerRef = useRef(null);
     const avatarRef = useRef(null);
     const pdfRef = useRef(null);
 
-    // --- LÓGICA DE ENVÍO Y REDIRECCIÓN ---
-    const handleLaunch = () => {
-        // 1. Preparar los datos para enviar
-        const communityData = {
-            name: formData.name,
-            tagline: formData.description,
-            // Usamos las imágenes previsualizadas. En una app real, aquí subirías a un servidor.
-            banner: media.banner.preview, 
-            avatar: media.avatar.preview,
-            stats: { members: 1, online: 1 },
-            created_at: new Date().toLocaleDateString()
-        };
+    const resolvedSlug = useMemo(
+        () => formData.shortUrl || slugify(formData.name),
+        [formData.shortUrl, formData.name]
+    );
 
-        // 2. Definir la URL (Slug)
-        const slug = formData.shortUrl || formData.name.toLowerCase().replace(/ /g, '-');
-
-        // 3. Cerrar Modal
+    const handleClose = () => {
+        if (isSaving) return;
         onClose();
-
-        // 4. Navegar y pasar los datos
-        navigate(`/community/${slug}`, { state: communityData });
     };
 
-    if (!isOpen) return null;
-    if (CURRENT_USER_ROLE !== 'organizer') return null; // Simplificado para brevedad
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
 
-    // --- HANDLERS ---
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-    const handleCheck = (e) => setFormData({ ...formData, [e.target.name]: e.target.checked });
     const handleNestedCheck = (category, key) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             [category]: { ...prev[category], [key]: !prev[category][key] }
         }));
     };
+
     const handleImage = (e, type) => {
-        const file = e.target.files[0];
-        if (file) setMedia(prev => ({ ...prev, [type]: { file, preview: URL.createObjectURL(file) } }));
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setMedia((prev) => ({
+            ...prev,
+            [type]: { file, preview: URL.createObjectURL(file) }
+        }));
     };
+
     const handlePdf = (e) => {
-        const file = e.target.files[0];
-        if (file) setMedia(prev => ({ ...prev, rulesPdf: { file, name: file.name } }));
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setMedia((prev) => ({
+            ...prev,
+            rulesPdf: { file, name: file.name }
+        }));
     };
+
     const toggleGame = (game) => {
-        const current = formData.mainGames;
-        if (current.includes(game)) setFormData({ ...formData, mainGames: current.filter(g => g !== game) });
-        else if (current.length < 5) setFormData({ ...formData, mainGames: [...current, game] });
+        setFormData((prev) => {
+            const current = prev.mainGames;
+            if (current.includes(game)) {
+                return { ...prev, mainGames: current.filter((item) => item !== game) };
+            }
+            if (current.length >= 5) return prev;
+            return { ...prev, mainGames: [...current, game] };
+        });
     };
+
     const addAdmin = (e) => {
-        if (e.key === 'Enter' && adminInput.trim()) {
-            if (!admins.includes(adminInput.trim())) setAdmins([...admins, adminInput.trim()]);
-            setAdminInput('');
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const next = adminInput.trim().replace(/^@+/, '');
+        if (!next) return;
+        setAdmins((prev) => (prev.includes(next) ? prev : [...prev, next]));
+        setAdminInput('');
+    };
+
+    const removeAdmin = (admin) => {
+        setAdmins((prev) => prev.filter((item) => item !== admin));
+    };
+
+    const goNext = () => {
+        const index = TAB_ORDER.indexOf(activeTab);
+        if (index < TAB_ORDER.length - 1) setActiveTab(TAB_ORDER[index + 1]);
+    };
+
+    const goPrev = () => {
+        const index = TAB_ORDER.indexOf(activeTab);
+        if (index > 0) setActiveTab(TAB_ORDER[index - 1]);
+    };
+
+    const handleLaunch = async () => {
+        if (!formData.name.trim()) {
+            addToast('El nombre de la comunidad es obligatorio', 'error');
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            const created = await createCommunitySpace({
+                formData: {
+                    ...formData,
+                    shortUrl: resolvedSlug,
+                    rulesText: formData.rulesText || '1. Respeto.\n2. No spam.\n3. Nada de toxicidad.',
+                },
+                media,
+                admins,
+            });
+
+            addToast('Comunidad creada correctamente', 'success');
+            onCreated?.(created);
+            navigate(`/communities/${created.shortUrl}`);
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo crear la comunidad', 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
-    const AVAILABLE_GAMES = ["Valorant", "LoL", "CS2", "Fortnite", "CoD", "FIFA", "Minecraft", "Overwatch 2", "Rocket League", "GTA V"];
+
+    if (!isOpen) return null;
+    if (CURRENT_USER_ROLE !== 'organizer') return null;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content fade-in-up modal-xl-pro"> 
-                {/* HEADER */}
-                <div className="modal-header-complex">
-                    <div className="header-top">
-                        <div className="header-brand">
-                            <h3>Crear Comunidad Profesional</h3>
-                            <small>Panel de Control de Organizador</small>
-                        </div>
-                        <button className="close-btn" onClick={onClose}><FaTimes /></button>
+        <div className="ccm-overlay" onClick={(e) => e.target === e.currentTarget && handleClose()}>
+            <div className="ccm-modal">
+                <div className="ccm-header">
+                    <div className="ccm-header__copy">
+                        <span className="ccm-kicker">Crear comunidad</span>
+                        <h3>Usa el formulario que ya preparaste y publícala de una vez</h3>
                     </div>
-                    <div className="modal-tabs-pro">
-                        {[{ id: 'identity', icon: FaInfoCircle, label: 'Identidad' }, { id: 'content', icon: FaGamepad, label: 'Contenido' }, { id: 'rules', icon: FaGavel, label: 'Reglas' }, { id: 'team', icon: FaUsers, label: 'Equipo' }, { id: 'settings', icon: FaShieldAlt, label: 'Avanzado' }].map(tab => (
-                            <button key={tab.id} className={`tab-btn-pro ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
-                                <tab.icon /> {tab.label}
-                            </button>
-                        ))}
-                    </div>
+                    <button className="ccm-close" onClick={handleClose} disabled={isSaving}>
+                        <FaTimes />
+                    </button>
                 </div>
 
-                {/* BODY */}
-                <div className="modal-body scrollable-body pro-body">
+                <div className="ccm-tabs">
+                    {[
+                        { id: 'identity', icon: FaInfoCircle, label: 'Identidad' },
+                        { id: 'content', icon: FaGamepad, label: 'Contenido' },
+                        { id: 'rules', icon: FaGavel, label: 'Reglas' },
+                        { id: 'team', icon: FaUsers, label: 'Equipo' },
+                        { id: 'settings', icon: FaShieldAlt, label: 'Avanzado' }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            className={`ccm-tab ${activeTab === tab.id ? 'is-active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                            disabled={isSaving}
+                        >
+                            <tab.icon /> {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="ccm-body">
                     {activeTab === 'identity' && (
-                        <div className="tab-content fade-in">
-                            <div className="media-upload-section">
-                                <div className="banner-upload-area" onClick={() => bannerRef.current.click()} style={{backgroundImage: media.banner.preview ? `url(${media.banner.preview})` : 'none'}}>
-                                    {!media.banner.preview && <div className="placeholder-content"><FaImage size={24}/> <span>Subir Banner (1200x300)</span></div>}
+                        <div className="ccm-panel">
+                            <div className="ccm-media">
+                                <button className="ccm-banner" onClick={() => bannerRef.current?.click()} style={{ backgroundImage: media.banner.preview ? `url(${media.banner.preview})` : 'none' }}>
+                                    {!media.banner.preview && <span><FaImage /> Subir banner</span>}
                                     <input type="file" ref={bannerRef} hidden accept="image/*" onChange={(e) => handleImage(e, 'banner')} />
-                                </div>
-                                <div className="avatar-upload-circle" onClick={() => avatarRef.current.click()} style={{backgroundImage: media.avatar.preview ? `url(${media.avatar.preview})` : 'none'}}>
+                                </button>
+                                <button className="ccm-avatar" onClick={() => avatarRef.current?.click()} style={{ backgroundImage: media.avatar.preview ? `url(${media.avatar.preview})` : 'none' }}>
                                     {!media.avatar.preview && <FaCamera />}
                                     <input type="file" ref={avatarRef} hidden accept="image/*" onChange={(e) => handleImage(e, 'avatar')} />
-                                </div>
+                                </button>
                             </div>
-                            <div className="form-grid">
-                                <div className="form-group-v3">
-                                    <label>Nombre Público</label>
-                                    <input type="text" name="name" className="modal-input-v3" placeholder="Ej: Valorant LATAM Oficial" value={formData.name} onChange={handleChange} />
-                                </div>
-                                <div className="form-group-v3">
-                                    <label>URL Corta / Slug</label>
-                                    <div className="input-prefix-group">
-                                        <span>esportefy.com/c/</span>
-                                        <input type="text" name="shortUrl" placeholder="valorant-latam" value={formData.shortUrl} onChange={handleChange} />
-                                    </div>
-                                </div>
+
+                            <div className="ccm-grid">
+                                <label className="ccm-field">
+                                    <span>Nombre público</span>
+                                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Ej: Valorant LATAM Oficial" />
+                                </label>
+                                <label className="ccm-field">
+                                    <span>URL corta</span>
+                                    <input name="shortUrl" value={formData.shortUrl} onChange={handleChange} placeholder="valorant-latam" />
+                                    <small>Resultado: /communities/{resolvedSlug || 'tu-slug'}</small>
+                                </label>
                             </div>
-                            <div className="form-group-v3">
-                                <label>Descripción Pública (Misión)</label>
-                                <textarea name="description" className="modal-input-v3" rows="2" placeholder="¿Qué es esta comunidad y para quién?" value={formData.description} onChange={handleChange}></textarea>
+
+                            <label className="ccm-field">
+                                <span>Descripción pública</span>
+                                <textarea name="description" rows="4" value={formData.description} onChange={handleChange} placeholder="¿Qué es esta comunidad y para quién?" />
+                            </label>
+
+                            <div className="ccm-grid">
+                                <label className="ccm-field">
+                                    <span>Región</span>
+                                    <select name="region" value={formData.region} onChange={handleChange}>
+                                        <option value="LATAM">LATAM</option>
+                                        <option value="NA">NA</option>
+                                        <option value="Global">Global</option>
+                                    </select>
+                                </label>
+                                <label className="ccm-field">
+                                    <span>Idioma</span>
+                                    <select name="language" value={formData.language} onChange={handleChange}>
+                                        <option value="Español">Español</option>
+                                        <option value="Inglés">Inglés</option>
+                                    </select>
+                                </label>
                             </div>
                         </div>
                     )}
-                    
-                    {/* ... (TUS OTRAS PESTAÑAS: CONTENT, RULES, TEAM, SETTINGS VAN AQUÍ IGUAL QUE ANTES) ... */}
-                    {/* He omitido repetirlas para que el código entre, pero asume que están aquí. */}
-                    {/* Si necesitas que las repita todas, dímelo, pero la lógica clave está en el handleLaunch */}
 
+                    {activeTab === 'content' && (
+                        <div className="ccm-panel">
+                            <div className="ccm-field">
+                                <span>Juegos principales</span>
+                                <div className="ccm-chips">
+                                    {AVAILABLE_GAMES.map((game) => (
+                                        <button
+                                            key={game}
+                                            type="button"
+                                            className={`ccm-chip ${formData.mainGames.includes(game) ? 'is-active' : ''}`}
+                                            onClick={() => toggleGame(game)}
+                                        >
+                                            {game}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="ccm-grid">
+                                <label className="ccm-field">
+                                    <span>Quién puede publicar</span>
+                                    <select name="whoCanPost" value={formData.whoCanPost} onChange={handleChange}>
+                                        <option value="all">Todos</option>
+                                        <option value="verified">Verificados</option>
+                                        <option value="staff">Solo staff</option>
+                                    </select>
+                                </label>
+                                <label className="ccm-field">
+                                    <span>Audiencia</span>
+                                    <select name="targetAudience" value={formData.targetAudience} onChange={handleChange}>
+                                        <option value="Mixto">Mixto</option>
+                                        <option value="Competitivo">Competitivo</option>
+                                        <option value="Casual">Casual</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <label className="ccm-field">
+                                <span>Contenido prohibido</span>
+                                <input name="contentProhibited" value={formData.contentProhibited} onChange={handleChange} placeholder="Piratería, cheats, NSFW explícito..." />
+                            </label>
+
+                            <div className="ccm-toggle-grid">
+                                {[
+                                    ['allowComments', 'Permitir comentarios'],
+                                    ['allowReactions', 'Permitir reacciones'],
+                                    ['allowShare', 'Permitir compartir'],
+                                    ['preModeration', 'Pre-moderación']
+                                ].map(([key, label]) => (
+                                    <button key={key} type="button" className={`ccm-toggle ${formData[key] ? 'is-on' : ''}`} onClick={() => setFormData((prev) => ({ ...prev, [key]: !prev[key] }))}>
+                                        <FaCheck /> {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'rules' && (
+                        <div className="ccm-panel">
+                            <label className="ccm-field">
+                                <span>Reglas de la comunidad</span>
+                                <textarea name="rulesText" rows="7" value={formData.rulesText} onChange={handleChange} placeholder={'1. Respeto ante todo\n2. No spam\n3. Usa los canales correctos'} />
+                            </label>
+
+                            <button className="ccm-upload" onClick={() => pdfRef.current?.click()}>
+                                <FaFilePdf /> {media.rulesPdf.name || 'Subir reglamento en PDF'}
+                                <input type="file" ref={pdfRef} hidden accept=".pdf" onChange={handlePdf} />
+                            </button>
+
+                            <div className="ccm-toggle-grid">
+                                {[
+                                    ['toxicityFilter', 'Filtro de toxicidad'],
+                                    ['spoilerTag', 'Etiquetado de spoilers'],
+                                    ['nsfwAllowed', 'Permitir NSFW']
+                                ].map(([key, label]) => (
+                                    <button key={key} type="button" className={`ccm-toggle ${formData[key] ? 'is-on' : ''}`} onClick={() => setFormData((prev) => ({ ...prev, [key]: !prev[key] }))}>
+                                        <FaCheck /> {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'team' && (
+                        <div className="ccm-panel">
+                            <label className="ccm-field">
+                                <span>Agregar admins</span>
+                                <input value={adminInput} onChange={(e) => setAdminInput(e.target.value)} onKeyDown={addAdmin} placeholder="Escribe un username y pulsa Enter" />
+                            </label>
+
+                            {admins.length > 0 && (
+                                <div className="ccm-admins">
+                                    {admins.map((admin) => (
+                                        <button key={admin} type="button" className="ccm-admin-pill" onClick={() => removeAdmin(admin)}>
+                                            @{admin} <FaTimes />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="ccm-field">
+                                <span>Roles disponibles</span>
+                                <div className="ccm-toggle-grid">
+                                    {Object.keys(formData.roles).map((role) => (
+                                        <button key={role} type="button" className={`ccm-toggle ${formData.roles[role] ? 'is-on' : ''}`} onClick={() => handleNestedCheck('roles', role)}>
+                                            <FaCheck /> {role}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="ccm-panel">
+                            <div className="ccm-toggle-grid">
+                                {[
+                                    ['emailVerification', 'Verificación por email'],
+                                    ['antiSpamControl', 'Anti spam'],
+                                    ['discordIntegration', 'Integración Discord'],
+                                    ['welcomeEmail', 'Correo de bienvenida'],
+                                    ['futureEvents', 'Eventos futuros'],
+                                    ['futureTournaments', 'Torneos futuros'],
+                                ].map(([key, label]) => (
+                                    <button key={key} type="button" className={`ccm-toggle ${formData[key] ? 'is-on' : ''}`} onClick={() => setFormData((prev) => ({ ...prev, [key]: !prev[key] }))}>
+                                        <FaCheck /> {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* FOOTER - AQUÍ ESTÁ LA MAGIA */}
-                <div className="modal-footer">
-                    <button className="btn-cancel-v3" onClick={onClose}>Cancelar</button>
-                    {activeTab !== 'settings' ? (
-                        <button className="btn-next-v3" onClick={() => {
-                            const tabs = ['identity', 'content', 'rules', 'team', 'settings'];
-                            const nextIndex = tabs.indexOf(activeTab) + 1;
-                            if (nextIndex < tabs.length) setActiveTab(tabs[nextIndex]);
-                        }}>
-                            Siguiente <FaChevronRight />
-                        </button>
-                    ) : (
-                        // BOTÓN LANZAR QUE LLAMA A LA FUNCIÓN DE NAVEGACIÓN
-                        <button className="btn-confirm-v3" onClick={handleLaunch} disabled={!formData.name}>
-                            Lanzar Comunidad <FaRocket />
-                        </button>
-                    )}
+                <div className="ccm-footer">
+                    <button className="ccm-btn ccm-btn--ghost" onClick={handleClose} disabled={isSaving}>Cancelar</button>
+                    <div className="ccm-footer__actions">
+                        {activeTab !== 'identity' && (
+                            <button className="ccm-btn ccm-btn--ghost" onClick={goPrev} disabled={isSaving}>
+                                <FaChevronLeft /> Anterior
+                            </button>
+                        )}
+                        {activeTab !== 'settings' ? (
+                            <button className="ccm-btn ccm-btn--primary" onClick={goNext} disabled={isSaving}>
+                                Siguiente <FaChevronRight />
+                            </button>
+                        ) : (
+                            <button className="ccm-btn ccm-btn--primary" onClick={handleLaunch} disabled={isSaving || !formData.name.trim()}>
+                                {isSaving ? 'Creando...' : <>Lanzar comunidad <FaRocket /></>}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

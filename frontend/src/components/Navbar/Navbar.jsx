@@ -15,6 +15,7 @@ const ROUTE_NAMES = {
   '/equipos': 'Equipos',
   '/comunidad': 'Comunidad',
   '/rankings': 'Rankings',
+  '/noticias': 'Noticias',
   '/chats': 'Mensajes',
   '/tv': 'Esportefy TV',
   '/settings': 'Configuración',
@@ -179,7 +180,6 @@ const Navbar = () => {
   };
 
   const timeString = currentTime.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-
   return (
     <nav className={`nb ${scrolled ? 'nb--scrolled' : ''}`}>
       <div className="nb__inner">
@@ -234,6 +234,11 @@ const Navbar = () => {
                   <span>Rankings globales</span>
                   <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                 </Link>
+                <Link to="/noticias" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
+                  <i className="bx bx-news"></i>
+                  <span>Noticias esports</span>
+                  <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
+                </Link>
                 <Link to="/comunidad" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                   <i className="bx bx-world"></i>
                   <span>Explorar comunidades</span>
@@ -286,16 +291,23 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* ── Chat ── */}
-          {activeUser && (
-            <button
-              className="nb__icon-btn"
-              onClick={() => navigate('/chats')}
-              title="Mensajes"
-            >
-              <i className="bx bx-message-rounded-dots"></i>
-            </button>
-          )}
+          {/* ── Rankings ── */}
+          <button
+            className="nb__icon-btn"
+            onClick={() => navigate('/rankings')}
+            title="Rankings"
+          >
+            <i className="bx bx-trophy"></i>
+          </button>
+
+          {/* ── Noticias ── */}
+          <button
+            className="nb__icon-btn"
+            onClick={() => navigate('/noticias')}
+            title="Noticias"
+          >
+            <i className="bx bx-news"></i>
+          </button>
 
           {/* ── Notifications ── */}
           <button

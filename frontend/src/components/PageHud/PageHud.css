@@ -5,33 +5,36 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 28px;
-    background: linear-gradient(
-        90deg,
-        color-mix(in srgb, var(--bg-card, #181818) 92%, transparent) 0%,
-        color-mix(in srgb, var(--bg-card, #181818) 85%, transparent) 50%,
-        color-mix(in srgb, var(--bg-card, #181818) 92%, transparent) 100%
-    );
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid color-mix(in srgb, var(--primary, #8EDB15) 15%, transparent);
+    padding: 10px 6px;
+    background: transparent;
+    backdrop-filter: none;
+    border: 0;
+    border-radius: 0;
     font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 2px;
-    color: var(--text-muted, rgba(255, 255, 255, 0.7));
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text-main);
     text-transform: uppercase;
-    font-family: 'Courier New', monospace;
-    margin-bottom: 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums lining-nums;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin-bottom: 10px;
     position: relative;
+    overflow: visible;
+    isolation: isolate;
 }
 
 .ph__strip::after {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: -2px;
     left: 0;
-    width: 120px;
+    width: 132px;
     height: 1px;
-    background: linear-gradient(90deg, var(--primary, #8EDB15), transparent);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--primary, #8EDB15) 72%, transparent), transparent);
 }
 
 .ph__dot {
@@ -52,22 +55,54 @@
 }
 
 .ph__sep {
-    opacity: 0.3;
-    margin: 0 6px;
+    opacity: 0.55;
+    margin: 0 8px;
 }
 
 .ph__left,
 .ph__right {
     display: flex;
     align-items: center;
+    color: inherit;
+    text-shadow: none;
+    white-space: nowrap;
+}
+
+.ph__left {
+    gap: 0;
+    font-weight: 700;
+}
+
+.ph__right {
+    justify-content: flex-end;
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    opacity: 0.92;
+}
+
+body.theme-dark .ph__strip,
+body.theme-amoled .ph__strip {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.theme-light .ph__strip,
+body.theme-gray .ph__strip {
+    color: rgba(17, 24, 39, 0.9);
 }
 
 @media (max-width: 600px) {
     .ph__strip {
-        padding: 8px 14px;
-        font-size: 0.6rem;
-        letter-spacing: 1px;
+        padding: 8px 0;
+        font-size: 0.62rem;
+        letter-spacing: 0.12em;
         flex-wrap: wrap;
-        gap: 4px;
+        gap: 6px;
+    }
+
+    .ph__right {
+        width: 100%;
+        justify-content: flex-start;
+        font-size: 0.6rem;
+        letter-spacing: 0.14em;
     }
 }

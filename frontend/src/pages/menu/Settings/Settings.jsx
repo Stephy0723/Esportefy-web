@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret,
     FaPaintBrush, FaHeadset, FaSave, FaTrash, FaDiscord,
@@ -8,11 +8,11 @@ import {
     FaApple, FaAndroid, FaWindows, FaLinux
 } from 'react-icons/fa';
 import './Settings.css';
-import PageHud from '../../../components/PageHud/PageHud';
 import axios from "axios";
 import { API_URL } from '../../../config/api';
 import { useEffect } from "react";
 import SecurityCenterUI from './SecurityCenterUI';
+import PageHud from '../../../components/PageHud/PageHud';
 
 
 export default function Settings() {
@@ -93,6 +93,36 @@ export default function Settings() {
     const [activeTab, setActiveTab] = useState('security');
     const navigate = useNavigate();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [expandedTabs, setExpandedTabs] = useState({});
+    const tabsScrollRef = useRef(null);
+    const [tabsOverflow, setTabsOverflow] = useState({ left: false, right: false });
+
+    const settingsTabs = [
+        { id: 'security', label: 'Seguridad', icon: FaShieldAlt, desc: 'Protege tu cuenta y accesos.' },
+        { id: 'connections', label: 'Conexiones', icon: FaGamepad, desc: 'Vincula cuentas y Game IDs.' },
+        { id: 'appearance', label: 'Apariencia', icon: FaPaintBrush, desc: 'Ajusta tema y experiencia visual.' },
+        { id: 'preferences', label: 'Privacidad', icon: FaUserSecret, desc: 'Controla quién puede encontrarte.' },
+        { id: 'billing', label: 'Suscripción', icon: FaCreditCard, desc: 'Administra planes y beneficios.' },
+        { id: 'report', label: 'Reportar', icon: FaExclamationTriangle, desc: 'Denuncia errores o conductas.' },
+        { id: 'support', label: 'Soporte', icon: FaHeadset, desc: 'Accede a ayuda y asistencia.' },
+        ...(isAdmin ? [{ id: 'mlbb-review', label: 'Revisión MLBB', icon: FaKey, desc: 'Gestiona solicitudes pendientes.' }] : [])
+    ];
+    const activeTabMeta = settingsTabs.find((tab) => tab.id === activeTab) || settingsTabs[0];
+    const isTabExpanded = !!expandedTabs[activeTab];
+    const expandTab = (tabId) => setExpandedTabs((prev) => ({ ...prev, [tabId]: true }));
+    const updateTabsOverflow = () => {
+        const el = tabsScrollRef.current;
+        if (!el) return;
+        setTabsOverflow({
+            left: el.scrollLeft > 8,
+            right: el.scrollLeft + el.clientWidth < el.scrollWidth - 8
+        });
+    };
+    const scrollTabs = (direction) => {
+        const el = tabsScrollRef.current;
+        if (!el) return;
+        el.scrollBy({ left: direction * 320, behavior: 'smooth' });
+    };
 
     const syncCachedUser = (userData) => {
         if (!userData) return;
@@ -292,6 +322,13 @@ export default function Settings() {
         fetchMlbbPendingReviews();
         fetchMlbbOpsStatus();
     }, [token, isAdmin, activeTab]);
+
+    useEffect(() => {
+        updateTabsOverflow();
+        const handleResize = () => updateTabsOverflow();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isAdmin]);
 
     const unlinkRiot = async () => {
         try {
@@ -1026,13 +1063,23 @@ export default function Settings() {
 
                         <div className="divider" ></div>
 
+                        {!isTabExpanded && (
+                            <div className="settings-continue-card settings-continue-card--wide">
+                                <h3>Comparar planes avanzados</h3>
+                                <p>Continúa para ver Elite Mensual y Legend Anual con todos sus beneficios.</p>
+                                <button className="btn-connect" onClick={() => expandTab('billing')}>
+                                    Continuar
+                                </button>
+                            </div>
+                        )}
+
                         {/* 2. OPCIONES DE PAGO (MENSUAL vs ANUAL) */}
-                        <div className="upgrade-title">
+                        <div className={`upgrade-title ${!isTabExpanded ? 'settings-collapsed-block' : ''}`}>
                             <h3>MEJORA TU NIVEL</h3>
                             <p>Desbloquea multigestión y prioridad.</p>
                         </div>
 
-                        <div className="billing-grid-comparison">
+                        <div className={`billing-grid-comparison ${!isTabExpanded ? 'settings-collapsed-block' : ''}`}>
 
                             {/* MENSUAL */}
                             <div className="plan-card monthly">
@@ -1211,7 +1258,17 @@ export default function Settings() {
                             </button>
                         </div>
 
-                        <div className="mlbb-review-list">
+                        {!isTabExpanded && (
+                            <div className="settings-continue-card settings-continue-card--wide">
+                                <h3>Revisar solicitudes pendientes</h3>
+                                <p>Continúa para aprobar, rechazar y gestionar la cola completa de verificación MLBB.</p>
+                                <button className="btn-connect" onClick={() => expandTab('mlbb-review')}>
+                                    Continuar
+                                </button>
+                            </div>
+                        )}
+
+                        <div className={`mlbb-review-list ${!isTabExpanded ? 'settings-collapsed-block' : ''}`}>
                             {mlbbPendingReviews.length === 0 ? (
                                 <div className="mlbb-empty-state">
                                     {mlbbReviewLoading ? 'Cargando solicitudes...' : 'No hay solicitudes pendientes.'}
@@ -1277,7 +1334,44 @@ export default function Settings() {
                 {/* SIDEBAR DE NAVEGACIÓN */}
                 <aside className="settings-sidebar">
                     <div className="sidebar-header">
-                        <h3>Ajustes</h3>
+                        <div>
+                            <h3>Ajustes</h3>
+                            <p>Panel general de cuenta, privacidad y conexiones.</p>
+                        </div>
+                        <div className="settings-active-tab">
+                            <span>{activeTabMeta.label}</span>
+                            <p>{activeTabMeta.desc}</p>
+                        </div>
+                    </div>
+                    <div className="settings-nav-shell">
+                        {tabsOverflow.left && (
+                            <button className="settings-nav-more settings-nav-more--back" onClick={() => scrollTabs(-1)}>
+                                Volver
+                            </button>
+                        )}
+                        <nav className="settings-nav settings-nav--rail" ref={tabsScrollRef} onScroll={updateTabsOverflow}>
+                            {settingsTabs.map((tab) => {
+                                const Icon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        className={`nav-item nav-item--rail ${activeTab === tab.id ? 'active' : ''}`}
+                                        onClick={() => setActiveTab(tab.id)}
+                                    >
+                                        <Icon />
+                                        <span className="nav-item__copy">
+                                            <strong>{tab.label}</strong>
+                                            <small>{tab.desc}</small>
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                        {tabsOverflow.right && (
+                            <button className="settings-nav-more" onClick={() => scrollTabs(1)}>
+                                Continuar
+                            </button>
+                        )}
                     </div>
                     <nav className="settings-nav">
                         <button className={`nav-item ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
