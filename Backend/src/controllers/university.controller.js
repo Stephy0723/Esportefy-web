@@ -5,9 +5,13 @@ import {
   getUniversityVerificationRule,
   isUniversityDomainAllowed
 } from '../config/universityVerificationRules.js';
+import { getUniversityCatalogByRegion, getUniversityCatalogItem, isUniversityGameAllowed } from '../config/universityCatalog.js';
 import User from '../models/User.js';
 import UniversityApplication from '../models/UniversityApplication.js';
 import AdminAuditLog from '../models/AdminAuditLog.js';
+import Team from '../models/Team.js';
+import Tournament from '../models/Tournament.js';
+import { calculateUniversityStandings, getUniversityPointsConfig } from '../services/universityStandings.js';
 
 const STATUS_UNLINKED = {
   universityId: '',
@@ -59,6 +63,23 @@ const getMicrosoftRedirectUri = () => normalizeText(process.env.MICROSOFT_REDIRE
 const getFrontendUrl = () => normalizeText(process.env.FRONTEND_URL || 'http://localhost:5173', 260).replace(/\/+$/, '');
 const shouldAutoApproveUniversityEmailMatch = () => String(process.env.UNIVERSITY_AUTO_APPROVE_EMAIL_MATCH || 'true').trim().toLowerCase() !== 'false';
 const formatAllowedDomainsMessage = (domains = []) => domains.join(', ');
+const getMicrosoftProviderErrorMessage = (error, fallback = 'No se pudo completar la verificación universitaria con Microsoft.') => {
+  const responseData = error?.response?.data;
+  const rawMessage =
+    responseData?.error_description ||
+    responseData?.error?.message ||
+    responseData?.message ||
+    error?.message ||
+    fallback;
+
+  const sanitized = String(rawMessage || fallback)
+    .replace(/\+/g, ' ')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return normalizeText(sanitized, 220) || fallback;
+};
 
 const normalizeMicrosoftIdentity = (value = {}) => ({
   tenantId: normalizeText(value.tenantId, 80),
@@ -147,9 +168,30 @@ const finalizeApplicationDecision = async ({
   notificationSource = 'University'
 }) => {
   const now = new Date();
+  const applicationStatus = decision === 'revoked' ? 'pending' : decision;
+  const userVerificationStatus = decision === 'approved'
+    ? 'verified'
+    : decision === 'rejected'
+      ? 'rejected'
+      : 'pending';
+  const notificationTitle = decision === 'approved'
+    ? 'Verificación universitaria aprobada'
+    : decision === 'rejected'
+      ? 'Verificación universitaria rechazada'
+      : 'Verificación universitaria retirada';
+  const notificationMessage = decision === 'approved'
+    ? `Tu cuenta fue verificada para ${application.universityName}.`
+    : decision === 'rejected'
+      ? `Tu postulación para ${application.universityName} fue rechazada. ${rejectReason}`
+      : `La verificación de tu cuenta para ${application.universityName} fue retirada. ${rejectReason}`;
+  const notificationColor = decision === 'approved'
+    ? '#8EDB15'
+    : decision === 'rejected'
+      ? '#ff5d73'
+      : '#f6c453';
 
-  application.status = decision;
-  application.rejectReason = decision === 'rejected' ? rejectReason : '';
+  application.status = applicationStatus;
+  application.rejectReason = decision === 'approved' ? '' : rejectReason;
   application.reviewedAt = now;
   application.reviewedBy = reviewedBy || null;
   await application.save();
@@ -167,7 +209,7 @@ const finalizeApplicationDecision = async ({
     institutionalEmail: application.institutionalEmail,
     verificationSource: application.verificationSource,
     tenantId: application.microsoft?.tenantId || '',
-    status: decision === 'approved' ? 'verified' : 'rejected',
+    status: userVerificationStatus,
     rejectReason: application.rejectReason,
     reviewedBy,
     appliedAt: application.submittedAt,
@@ -178,11 +220,9 @@ const finalizeApplicationDecision = async ({
   user.notifications.unshift({
     type: 'info',
     category: 'university',
-    title: decision === 'approved' ? 'Verificación universitaria aprobada' : 'Verificación universitaria rechazada',
+    title: notificationTitle,
     source: notificationSource,
-    message: decision === 'approved'
-      ? `Tu cuenta fue verificada para ${application.universityName}.`
-      : `Tu postulación para ${application.universityName} fue rechazada. ${rejectReason}`,
+    message: notificationMessage,
     status: 'unread',
     meta: {
       universityId: application.universityId,
@@ -191,7 +231,7 @@ const finalizeApplicationDecision = async ({
     },
     visuals: {
       icon: 'bx bxs-graduation',
-      color: decision === 'approved' ? '#8EDB15' : '#ff5d73',
+      color: notificationColor,
       glow: true
     },
     createdAt: now
@@ -303,6 +343,155 @@ const ensureAdmin = async (userId) => {
 
 const getActorIp = (req) => String(req.headers['x-forwarded-for'] || req.ip || '').slice(0, 200);
 const getActorAgent = (req) => String(req.headers['user-agent'] || '').slice(0, 500);
+const isFilledRosterPlayer = (player = null) =>
+  Boolean(player && (player.user || normalizeText(player.nickname, 120) || normalizeText(player.gameId, 120)));
+const toVisibleTeamSize = (team = {}) => {
+  if (Number.isFinite(Number(team?.maxMembers)) && Number(team.maxMembers) > 0) {
+    return Number(team.maxMembers);
+  }
+
+  return Array.isArray(team?.roster?.starters)
+    ? team.roster.starters.filter(isFilledRosterPlayer).length
+    : 0;
+};
+const mapUniversityTeamCard = (team = {}) => ({
+  id: String(team?._id || ''),
+  teamCode: normalizeText(team?.teamCode, 20),
+  name: normalizeText(team?.name, 120) || 'Equipo universitario',
+  game: normalizeText(team?.game, 80) || 'Juego',
+  members: toVisibleTeamSize(team),
+  rank: normalizeText(team?.teamLevel || team?.category || 'Universitario', 60)
+});
+const buildStandingMap = (standings = []) =>
+  new Map(standings.map((standing) => [String(standing?.universityId || '').trim().toLowerCase(), standing]));
+const mergeUniversityCatalogStats = (item = {}, standingMap = new Map(), teams = []) => {
+  const standing = standingMap.get(String(item?.id || '').trim().toLowerCase()) || null;
+  return {
+    ...item,
+    points: Number(standing?.points || 0),
+    stats: {
+      tournamentsPlayed: Number(standing?.tournamentsPlayed || 0),
+      matchWins: Number(standing?.matchWins || 0),
+      championships: Number(standing?.championships || 0),
+      finals: Number(standing?.finals || 0),
+      semifinals: Number(standing?.semifinals || 0)
+    },
+    teams,
+    activeTeamsCount: teams.length
+  };
+};
+
+export const listUniversityCatalog = async (req, res) => {
+  try {
+    const region = normalizeText(req.query?.region || 'rd', 30).toLowerCase();
+    const catalog = getUniversityCatalogByRegion(region);
+
+    if (catalog.length === 0) {
+      return res.json([]);
+    }
+
+    const teams = await Team.find({
+      'university.isUniversityTeam': true,
+      'university.region': region
+    })
+      .select('teamCode name game teamLevel category maxMembers roster university createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    const filteredTeams = teams.filter((team) => isUniversityGameAllowed(team?.game));
+
+    const finishedUniversityTournaments = await Tournament.find({
+      status: 'finished',
+      'eligibility.universityOnly': true
+    })
+      .select('game registrations bracket status eligibility')
+      .lean();
+    const standingsMap = buildStandingMap(
+      calculateUniversityStandings(finishedUniversityTournaments.filter((tournament) => isUniversityGameAllowed(tournament?.game)))
+    );
+
+    const teamsByUniversityId = filteredTeams.reduce((acc, team) => {
+      const universityId = normalizeText(team?.university?.universityId, 60).toLowerCase();
+      if (!universityId) return acc;
+      if (!acc[universityId]) acc[universityId] = [];
+      acc[universityId].push(mapUniversityTeamCard(team));
+      return acc;
+    }, {});
+
+    return res.json(
+      catalog.map((item) => mergeUniversityCatalogStats(item, standingsMap, teamsByUniversityId[item.id] || []))
+    );
+  } catch (error) {
+    console.error('listUniversityCatalog error:', error);
+    return res.status(500).json({ message: 'No se pudo cargar el catálogo universitario.' });
+  }
+};
+
+export const getUniversityCatalogDetail = async (req, res) => {
+  try {
+    const universityId = normalizeText(req.params?.id, 60).toLowerCase();
+    const item = getUniversityCatalogItem(universityId);
+
+    if (!item) {
+      return res.status(404).json({ message: 'Universidad no encontrada.' });
+    }
+
+    const teams = await Team.find({
+      'university.isUniversityTeam': true,
+      'university.universityId': universityId
+    })
+      .select('teamCode name game teamLevel category maxMembers roster university createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    const filteredTeams = teams.filter((team) => isUniversityGameAllowed(team?.game));
+
+    const finishedUniversityTournaments = await Tournament.find({
+      status: 'finished',
+      'eligibility.universityOnly': true,
+      'registrations.teamMeta.university.universityId': universityId
+    })
+      .select('game registrations bracket status eligibility')
+      .lean();
+    const standingsMap = buildStandingMap(
+      calculateUniversityStandings(finishedUniversityTournaments.filter((tournament) => isUniversityGameAllowed(tournament?.game)))
+    );
+
+    return res.json(mergeUniversityCatalogStats(item, standingsMap, filteredTeams.map(mapUniversityTeamCard)));
+  } catch (error) {
+    console.error('getUniversityCatalogDetail error:', error);
+    return res.status(500).json({ message: 'No se pudo cargar la universidad.' });
+  }
+};
+
+export const getUniversityStandings = async (_req, res) => {
+  try {
+    const catalog = getUniversityCatalogByRegion('rd');
+    const finishedUniversityTournaments = await Tournament.find({
+      status: 'finished',
+      'eligibility.universityOnly': true
+    })
+      .select('title game date tournamentId registrations bracket status eligibility')
+      .lean();
+
+    const standings = calculateUniversityStandings(
+      finishedUniversityTournaments.filter((tournament) => isUniversityGameAllowed(tournament?.game))
+    );
+    const standingMap = buildStandingMap(standings);
+    const payload = catalog
+      .map((item) => mergeUniversityCatalogStats(item, standingMap, []))
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return String(a.tag || '').localeCompare(String(b.tag || ''));
+      });
+
+    return res.json({
+      pointsConfig: getUniversityPointsConfig(),
+      standings: payload
+    });
+  } catch (error) {
+    console.error('getUniversityStandings error:', error);
+    return res.status(500).json({ message: 'No se pudo cargar el ranking universitario.' });
+  }
+};
 
 export const submitUniversityApplication = async (req, res) => {
   try {
@@ -312,7 +501,7 @@ export const submitUniversityApplication = async (req, res) => {
     const region = normalizeText(req.body?.region, 30).toLowerCase();
     const city = normalizeText(req.body?.city, 80);
     const campus = normalizeText(req.body?.campus, 100);
-    const studentId = normalizeText(req.body?.studentId, 60);
+    const studentId = normalizeText(req.body?.studentId, 60).toUpperCase();
     const program = normalizeText(req.body?.program, 120);
     const academicLevel = normalizeText(req.body?.academicLevel, 40);
     const institutionalEmail = normalizeText(req.body?.institutionalEmail, 160).toLowerCase();
@@ -323,14 +512,6 @@ export const submitUniversityApplication = async (req, res) => {
 
     if (!STUDENT_ID_REGEX.test(studentId)) {
       return res.status(400).json({ message: 'La matrícula o ID estudiantil debe tener entre 4 y 32 caracteres y solo usar letras, números, ".", "_" , "/" o "-".' });
-    }
-
-    if (program.length < 3) {
-      return res.status(400).json({ message: 'La carrera o programa debe tener al menos 3 caracteres.' });
-    }
-
-    if (campus.length < 3) {
-      return res.status(400).json({ message: 'Indica un campus válido.' });
     }
 
     if (!ALLOWED_ACADEMIC_LEVELS.has(academicLevel)) {
@@ -354,6 +535,29 @@ export const submitUniversityApplication = async (req, res) => {
       return res.status(400).json({ message: 'La universidad seleccionada todavía no tiene dominios institucionales configurados para verificación.' });
     }
 
+    const universityCatalogItem = getUniversityCatalogItem(universityId);
+    if (!universityCatalogItem) {
+      return res.status(400).json({ message: 'La universidad seleccionada no está disponible en el catálogo universitario.' });
+    }
+
+    const allowedPrograms = Array.isArray(universityCatalogItem.programs) ? universityCatalogItem.programs : [];
+    if (allowedPrograms.length === 0) {
+      return res.status(400).json({ message: 'La universidad seleccionada todavía no tiene carreras configuradas para postulación.' });
+    }
+
+    if (!allowedPrograms.includes(program)) {
+      return res.status(400).json({ message: 'Debes seleccionar una carrera válida de la universidad elegida.' });
+    }
+
+    const allowedCampuses = Array.isArray(universityCatalogItem.campuses) ? universityCatalogItem.campuses : [];
+    if (allowedCampuses.length === 0) {
+      return res.status(400).json({ message: 'La universidad seleccionada todavía no tiene campuses configurados para postulación.' });
+    }
+
+    if (!allowedCampuses.includes(campus)) {
+      return res.status(400).json({ message: 'Debes seleccionar una ciudad de campus válida para la universidad elegida.' });
+    }
+
     if (!isUniversityDomainAllowed(universityId, institutionalEmail)) {
       return res.status(400).json({
         message: `Ese correo no coincide con los dominios institucionales oficiales de la universidad seleccionada (${formatAllowedDomainsMessage(universityRule.allowedDomains)}).`
@@ -365,30 +569,68 @@ export const submitUniversityApplication = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
 
+    const existingApplication = await UniversityApplication.findOne({ user: req.userId }).select('universityId universityName status');
+
     if (user.university?.verified) {
       return res.status(409).json({ message: 'Tu cuenta ya está verificada con una universidad. Contacta soporte si necesitas cambiarla.' });
     }
 
+    if (
+      existingApplication &&
+      existingApplication.status !== 'rejected' &&
+      normalizeText(existingApplication.universityId, 60).toLowerCase() !== universityId
+    ) {
+      return res.status(409).json({
+        message: `Ya tienes una postulación asociada a ${existingApplication.universityName || existingApplication.universityId}. Por ahora solo puedes postularte a una universidad por cuenta.`
+      });
+    }
+
     const duplicateStudent = await UniversityApplication.findOne({
-      universityId,
       studentId,
       user: { $ne: req.userId },
       status: { $in: ['pending', 'approved'] }
-    }).select('_id');
+    }).select('_id universityName');
 
     if (duplicateStudent) {
-      return res.status(409).json({ message: 'Ese ID estudiantil ya está en uso en esta universidad.' });
+      return res.status(409).json({
+        message: `Esa matrícula ya está asociada a otra cuenta${duplicateStudent.universityName ? ` en ${duplicateStudent.universityName}` : ''}.`
+      });
     }
 
     const duplicateInstitutionalEmail = await UniversityApplication.findOne({
-      universityId,
       institutionalEmail,
       user: { $ne: req.userId },
       status: { $in: ['pending', 'approved'] }
-    }).select('_id');
+    }).select('_id universityName');
 
     if (duplicateInstitutionalEmail) {
-      return res.status(409).json({ message: 'Ese correo institucional ya está en uso en esta universidad.' });
+      return res.status(409).json({
+        message: `Ese correo institucional ya está asociado a otra cuenta${duplicateInstitutionalEmail.universityName ? ` en ${duplicateInstitutionalEmail.universityName}` : ''}.`
+      });
+    }
+
+    const duplicateStudentSnapshot = await User.findOne({
+      _id: { $ne: req.userId },
+      'university.studentId': studentId,
+      'university.verificationStatus': { $in: ['pending', 'verified'] }
+    }).select('_id university.universityName');
+
+    if (duplicateStudentSnapshot) {
+      return res.status(409).json({
+        message: `Esa matrícula ya está asociada a otra cuenta${duplicateStudentSnapshot.university?.universityName ? ` en ${duplicateStudentSnapshot.university.universityName}` : ''}.`
+      });
+    }
+
+    const duplicateInstitutionalEmailSnapshot = await User.findOne({
+      _id: { $ne: req.userId },
+      'university.institutionalEmail': institutionalEmail,
+      'university.verificationStatus': { $in: ['pending', 'verified'] }
+    }).select('_id university.universityName');
+
+    if (duplicateInstitutionalEmailSnapshot) {
+      return res.status(409).json({
+        message: `Ese correo institucional ya está asociado a otra cuenta${duplicateInstitutionalEmailSnapshot.university?.universityName ? ` en ${duplicateInstitutionalEmailSnapshot.university.universityName}` : ''}.`
+      });
     }
 
     const microsoftConnection = normalizeMicrosoftIdentity(user.connections?.microsoft || {});
@@ -568,12 +810,12 @@ export const reviewUniversityApplication = async (req, res) => {
     const decision = normalizeText(req.body?.decision, 20).toLowerCase();
     const rejectReason = normalizeText(req.body?.rejectReason, 220);
 
-    if (!['approved', 'rejected'].includes(decision)) {
+    if (!['approved', 'rejected', 'revoked'].includes(decision)) {
       return res.status(400).json({ message: 'Decisión inválida.' });
     }
 
-    if (decision === 'rejected' && !rejectReason) {
-      return res.status(400).json({ message: 'Debes indicar el motivo del rechazo.' });
+    if ((decision === 'rejected' || decision === 'revoked') && !rejectReason) {
+      return res.status(400).json({ message: decision === 'revoked' ? 'Debes indicar el motivo de la revocación.' : 'Debes indicar el motivo del rechazo.' });
     }
 
     const application = await UniversityApplication.findById(req.params.id);
@@ -586,6 +828,10 @@ export const reviewUniversityApplication = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
 
+    if (decision === 'revoked' && application.status !== 'approved') {
+      return res.status(400).json({ message: 'Solo puedes retirar verificaciones ya aprobadas.' });
+    }
+
     await finalizeApplicationDecision({
       application,
       user,
@@ -596,7 +842,11 @@ export const reviewUniversityApplication = async (req, res) => {
     });
 
     return res.json({
-      message: decision === 'approved' ? 'Postulación aprobada.' : 'Postulación rechazada.',
+      message: decision === 'approved'
+        ? 'Postulación aprobada.'
+        : decision === 'rejected'
+          ? 'Postulación rechazada.'
+          : 'Verificación retirada. La cuenta vuelve a revisión.',
       application
     });
   } catch (error) {
@@ -799,7 +1049,7 @@ export const completeUniversityMicrosoftConnect = async (req, res) => {
     );
   } catch (error) {
     console.error('completeUniversityMicrosoftConnect error:', error?.response?.data || error);
-    return redirectWithStatus('error', 'No se pudo completar la verificación universitaria con Microsoft.');
+    return redirectWithStatus('error', getMicrosoftProviderErrorMessage(error));
   }
 };
 
