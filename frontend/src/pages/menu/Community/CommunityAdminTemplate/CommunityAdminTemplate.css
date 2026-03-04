@@ -198,6 +198,12 @@
   outline: none;
   color: #87e987;
   font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+  padding: 0;
+}
+.search-box input:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .search-box input::placeholder {
