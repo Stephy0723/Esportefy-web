@@ -3,7 +3,10 @@ import { verifyToken } from '../middlewares/auth.middleware.js';
 import {
   completeUniversityMicrosoftConnect,
   getUniversityMicrosoftStatus,
+  getUniversityCatalogDetail,
+  getUniversityStandings,
   getMyUniversityStatus,
+  listUniversityCatalog,
   listUniversityApplications,
   reviewUniversityApplication,
   startUniversityMicrosoftConnect,
@@ -13,6 +16,9 @@ import {
 
 const router = Router();
 
+router.get('/catalog', listUniversityCatalog);
+router.get('/catalog/:id', getUniversityCatalogDetail);
+router.get('/standings', getUniversityStandings);
 router.get('/me', verifyToken, getMyUniversityStatus);
 router.post('/applications', verifyToken, submitUniversityApplication);
 router.get('/applications', verifyToken, listUniversityApplications);

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import './UniversityPage.scss';
@@ -16,503 +17,35 @@ const REGIONS = [
 const UNIVERSITY_ENABLED_REGION = 'rd';
 const UNIVERSITY_VISIBLE_REGIONS = REGIONS.filter((region) => region.id === UNIVERSITY_ENABLED_REGION);
 
-const ALL_UNIVERSITIES = [
-  // ═══ REPÚBLICA DOMINICANA ═══
-  {
-    id: 'uasd', tag: 'UASD', name: 'Universidad Autónoma de Santo Domingo',
-    region: 'rd', city: 'Santo Domingo', founded: 1538, joinedEsportefy: '2024',
-    points: 1540, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UASD&backgroundColor=0033a0',
-    bio: 'La universidad más antigua de América, fundada en 1538 como Universidad Santo Tomás de Aquino. Es la institución de educación superior más grande de República Dominicana con más de 200,000 estudiantes activos.',
-    games: ['Valorant', 'League of Legends', 'FIFA', 'NBA 2K'],
-    offers: ['Becas deportivas de esports', 'Centro de entrenamiento gaming', 'Torneos interuniversitarios', 'Club oficial de esports'],
-    teams: [
-      { name: 'UASD Titans', game: 'Valorant', members: 5, rank: 'Diamond+' },
-      { name: 'UASD Legends', game: 'League of Legends', members: 5, rank: 'Platinum+' },
-      { name: 'UASD FC', game: 'FIFA', members: 3, rank: 'Elite' },
-    ],
-  },
-  {
-    id: 'pucmm', tag: 'PUCMM', name: 'Pontificia Universidad Católica Madre y Maestra',
-    region: 'rd', city: 'Santiago', founded: 1962, joinedEsportefy: '2024',
-    points: 1420, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=PUCMM&backgroundColor=0033a0',
-    bio: 'Fundada en 1962, es considerada una de las mejores universidades privadas del Caribe. Pionera en programas de tecnología y negocios en República Dominicana, con campus en Santiago y Santo Domingo.',
-    games: ['Valorant', 'League of Legends', 'Counter-Strike 2'],
-    offers: ['Becas por mérito deportivo', 'Laboratorio de esports', 'Streaming studio', 'Programa de coaching'],
-    teams: [
-      { name: 'PUCMM Wolves', game: 'Valorant', members: 5, rank: 'Immortal' },
-      { name: 'PUCMM Storm', game: 'League of Legends', members: 5, rank: 'Diamond' },
-    ],
-  },
-  {
-    id: 'intec', tag: 'INTEC', name: 'Instituto Tecnológico de Santo Domingo',
-    region: 'rd', city: 'Santo Domingo', founded: 1972, joinedEsportefy: '2024',
-    points: 1280, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=INTEC&backgroundColor=d31145',
-    bio: 'Centro de excelencia en ingeniería y tecnología desde 1972. Reconocida por su rigor académico y enfoque en innovación. Lidera la formación tecnológica en el país.',
-    games: ['Valorant', 'League of Legends', 'Rocket League'],
-    offers: ['Becas tecnológicas gaming', 'Hackathons + Gaming events', 'Club de desarrollo de videojuegos'],
-    teams: [
-      { name: 'INTEC Bees', game: 'Valorant', members: 5, rank: 'Diamond' },
-      { name: 'INTEC Code', game: 'Rocket League', members: 3, rank: 'Champion' },
-    ],
-  },
-  {
-    id: 'unibe', tag: 'UNIBE', name: 'Universidad Iberoamericana',
-    region: 'rd', city: 'Santo Domingo', founded: 1982, joinedEsportefy: '2024',
-    points: 1150, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UNIBE&backgroundColor=cc0000',
-    bio: 'Universidad de élite fundada en 1982, conocida por sus programas de medicina, derecho y negocios. Infraestructura de primer nivel con fuerte inversión en tecnología y deportes electrónicos.',
-    games: ['Valorant', 'FIFA', 'Fortnite'],
-    offers: ['Gaming lounge premium', 'Torneos exclusivos', 'Mentorías con pros', 'Becas de rendimiento'],
-    teams: [
-      { name: 'UNIBE Red', game: 'Valorant', members: 5, rank: 'Ascendant' },
-      { name: 'UNIBE United', game: 'FIFA', members: 2, rank: 'Elite' },
-    ],
-  },
-  {
-    id: 'itla', tag: 'ITLA', name: 'Instituto Tecnológico de Las Américas',
-    region: 'rd', city: 'Santo Domingo Este', founded: 2000, joinedEsportefy: '2024',
-    points: 1090, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ITLA&backgroundColor=0052FF',
-    bio: 'Fundado en el año 2000, es el principal centro tecnológico del gobierno dominicano. Especializado en software, multimedia, redes y mecatrónica. Cuna de desarrolladores y gamers profesionales.',
-    games: ['Valorant', 'League of Legends', 'Counter-Strike 2', 'Fortnite'],
-    offers: ['Arena de esports dedicada', 'Programa de desarrollo gaming', 'Becas 100% por esports', 'Club de game dev'],
-    teams: [
-      { name: 'ITLA Nexus', game: 'Valorant', members: 5, rank: 'Immortal' },
-      { name: 'ITLA Binary', game: 'Counter-Strike 2', members: 5, rank: 'Global Elite' },
-      { name: 'ITLA Devs', game: 'League of Legends', members: 5, rank: 'Diamond' },
-    ],
-  },
-  {
-    id: 'unapec', tag: 'UNAPEC', name: 'Universidad APEC',
-    region: 'rd', city: 'Santo Domingo', founded: 1965, joinedEsportefy: '2025',
-    points: 1020, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=APEC&backgroundColor=002d62',
-    bio: 'Fundada en 1965 por la Acción Pro Educación y Cultura. Líder en negocios, tecnología y comunicación. Su comunidad estudiantil es una de las más activas en esports del país.',
-    games: ['Valorant', 'FIFA', 'NBA 2K'],
-    offers: ['Torneos semestrales', 'Club de esports oficial', 'Streaming room'],
-    teams: [
-      { name: 'APEC Eagles', game: 'Valorant', members: 5, rank: 'Diamond' },
-    ],
-  },
-  {
-    id: 'unphu', tag: 'UNPHU', name: 'Universidad Nacional Pedro Henríquez Ureña',
-    region: 'rd', city: 'Santo Domingo', founded: 1966, joinedEsportefy: '2025',
-    points: 980, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UNPHU&backgroundColor=006837',
-    bio: 'Institución fundada en 1966, reconocida por sus programas de arquitectura, ingeniería y ciencias de la salud. Campus extenso con áreas deportivas y espacios de innovación.',
-    games: ['Valorant', 'League of Legends'],
-    offers: ['Centro de alto rendimiento', 'Becas deportivas', 'Gaming events'],
-    teams: [
-      { name: 'UNPHU Green', game: 'Valorant', members: 5, rank: 'Platinum' },
-    ],
-  },
-  {
-    id: 'utesa', tag: 'UTESA', name: 'Universidad Tecnológica de Santiago',
-    region: 'rd', city: 'Santiago', founded: 1974, joinedEsportefy: '2025',
-    points: 940, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UTESA&backgroundColor=009b3a',
-    bio: 'Fundada en 1974 en Santiago de los Caballeros. Una de las universidades con mayor matrícula del país, con múltiples extensiones a nivel nacional.',
-    games: ['Valorant', 'FIFA'],
-    offers: ['Torneos regionales', 'Club gaming'],
-    teams: [
-      { name: 'UTESA Warriors', game: 'Valorant', members: 5, rank: 'Gold' },
-    ],
-  },
-  {
-    id: 'uapa', tag: 'UAPA', name: 'Universidad Abierta para Adultos',
-    region: 'rd', city: 'Santiago', founded: 1991, joinedEsportefy: '2025',
-    points: 870, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UAPA&backgroundColor=fdb813',
-    bio: 'Pionera en educación a distancia en RD desde 1991. Su modelo flexible atrae a una comunidad gaming diversa que compite desde múltiples ciudades.',
-    games: ['Valorant', 'Fortnite'],
-    offers: ['Torneos online', 'Comunidad gaming virtual'],
-    teams: [],
-  },
-  {
-    id: 'ucne', tag: 'UCNE', name: 'Universidad Católica Nordestana',
-    region: 'rd', city: 'San Fco. de Macorís', founded: 1978, joinedEsportefy: '2025',
-    points: 820, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCNE&backgroundColor=0033a0',
-    bio: 'Fundada en 1978 en San Francisco de Macorís. Principal centro universitario de la región nordeste del país con fuerte identidad comunitaria.',
-    games: ['Valorant', 'FIFA'],
-    offers: ['Torneos locales', 'Espacio gaming'],
-    teams: [],
-  },
-  {
-    id: 'isfodosu', tag: 'ISFODOSU', name: 'Instituto Superior de Formación Docente Salomé Ureña',
-    region: 'rd', city: 'Santo Domingo', founded: 2003, joinedEsportefy: '2025',
-    points: 790, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ISFO&backgroundColor=0033a0',
-    bio: 'Institución estatal dedicada a la formación de docentes desde 2003. Con múltiples recintos a nivel nacional, promueve el uso de la tecnología en la educación.',
-    games: ['League of Legends', 'Valorant'],
-    offers: ['Club de esports educativo'],
-    teams: [],
-  },
-  {
-    id: 'itsc', tag: 'ITSC', name: 'Instituto Técnico Superior Comunitario',
-    region: 'rd', city: 'San Pedro de Macorís', founded: 2012, joinedEsportefy: '2025',
-    points: 740, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ITSC&backgroundColor=0052FF',
-    bio: 'Centro técnico fundado en 2012 en San Pedro de Macorís. Enfocado en formación técnica y tecnológica accesible para comunidades de la región este.',
-    games: ['Valorant'],
-    offers: ['Torneos comunitarios'],
-    teams: [],
-  },
-  {
-    id: 'ucateci', tag: 'UCATECI', name: 'Universidad Católica del Cibao',
-    region: 'rd', city: 'La Vega', founded: 1983, joinedEsportefy: '2025',
-    points: 710, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCATECI&backgroundColor=0033a0',
-    bio: 'Fundada en 1983 en La Vega. Institución católica con fuerte presencia en la región del Cibao, comprometida con el desarrollo integral de sus estudiantes.',
-    games: ['Valorant', 'FIFA'],
-    offers: ['Eventos gaming semestrales'],
-    teams: [],
-  },
-  {
-    id: 'uniremhos', tag: 'UNIREMHOS', name: 'Universidad Eugenio María de Hostos',
-    region: 'rd', city: 'Santo Domingo', founded: 1981, joinedEsportefy: '2025',
-    points: 680, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=REMHOS&backgroundColor=0033a0',
-    bio: 'Fundada en 1981, nombrada en honor al educador puertorriqueño Eugenio María de Hostos. Ofrece programas de salud, negocios y humanidades.',
-    games: ['Valorant'],
-    offers: ['Club gaming estudiantil'],
-    teams: [],
-  },
-  {
-    id: 'unicaribe', tag: 'UNICARIBE', name: 'Universidad del Caribe',
-    region: 'rd', city: 'Santo Domingo', founded: 1995, joinedEsportefy: '2025',
-    points: 650, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UC&backgroundColor=0033a0',
-    bio: 'Institución fundada en 1995 con enfoque en accesibilidad educativa. Ofrece programas vespertinos y sabatinos para estudiantes trabajadores.',
-    games: ['Valorant', 'FIFA'],
-    offers: ['Torneos nocturnos'],
-    teams: [],
-  },
-  {
-    id: 'oym', tag: 'O&M', name: 'Universidad Organización y Método',
-    region: 'rd', city: 'Santo Domingo', founded: 1966, joinedEsportefy: '2025',
-    points: 620, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=OM&backgroundColor=000000',
-    bio: 'Una de las universidades más populares de RD, fundada en 1966. Conocida por sus programas accesibles y su gran comunidad estudiantil en todo el país.',
-    games: ['Valorant', 'NBA 2K'],
-    offers: ['Liga interna de esports'],
-    teams: [],
-  },
-  {
-    id: 'uce', tag: 'UCE', name: 'Universidad Central del Este',
-    region: 'rd', city: 'San Pedro de Macorís', founded: 1970, joinedEsportefy: '2025',
-    points: 590, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCE&backgroundColor=009b3a',
-    bio: 'Fundada en 1970 en San Pedro de Macorís, ciudad de los ingenios azucareros. Reconocida por su facultad de medicina y sus programas internacionales.',
-    games: ['Valorant'],
-    offers: ['Gaming zone estudiantil'],
-    teams: [],
-  },
-  {
-    id: 'ufhec', tag: 'UFHEC', name: 'Universidad Federico Henríquez y Carvajal',
-    region: 'rd', city: 'Santo Domingo', founded: 2003, joinedEsportefy: '2025',
-    points: 560, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UFHEC&backgroundColor=0033a0',
-    bio: 'Institución joven fundada en 2003 con visión moderna. Promueve la innovación y la integración tecnológica en todos sus programas académicos.',
-    games: ['Valorant'],
-    offers: ['Eventos de integración gaming'],
-    teams: [],
-  },
-  {
-    id: 'ucsd', tag: 'UCSD', name: 'Universidad Católica Santo Domingo',
-    region: 'rd', city: 'Santo Domingo', founded: 1982, joinedEsportefy: '2025',
-    points: 530, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCSD&backgroundColor=0033a0',
-    bio: 'Universidad católica fundada en 1982 por la Arquidiócesis de Santo Domingo. Combina formación humanística con programas técnicos modernos.',
-    games: ['Valorant', 'FIFA'],
-    offers: ['Club de gaming'],
-    teams: [],
-  },
-  {
-    id: 'loyola', tag: 'LOYOLA', name: 'Instituto Politécnico Loyola',
-    region: 'rd', city: 'San Cristóbal', founded: 1952, joinedEsportefy: '2025',
-    points: 500, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=IPL&backgroundColor=0033a0',
-    bio: 'El más antiguo politécnico del país, fundado en 1952 por los Padres Jesuitas en San Cristóbal. Formación técnica de excelencia con valores humanísticos.',
-    games: ['Valorant'],
-    offers: ['Espacio gaming técnico'],
-    teams: [],
-  },
-
-  // ═══ CARIBE ═══
-  {
-    id: 'uwi', tag: 'UWI', name: 'University of the West Indies',
-    region: 'caribe', city: 'Kingston, Jamaica', founded: 1948, joinedEsportefy: '2025',
-    points: 1380, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UWI&backgroundColor=6b2fa0',
-    bio: 'La principal universidad del Caribe anglófono, fundada en 1948. Con campus en Jamaica, Trinidad y Barbados, es el centro académico más importante de la región caribeña.',
-    games: ['Valorant', 'League of Legends', 'Call of Duty'],
-    offers: ['Caribbean Esports League', 'Becas de rendimiento', 'Gaming center multi-campus'],
-    teams: [
-      { name: 'UWI Tridents', game: 'Valorant', members: 5, rank: 'Diamond' },
-      { name: 'UWI Caribs', game: 'League of Legends', members: 5, rank: 'Platinum' },
-    ],
-  },
-  {
-    id: 'upr', tag: 'UPR', name: 'Universidad de Puerto Rico',
-    region: 'caribe', city: 'San Juan, PR', founded: 1903, joinedEsportefy: '2025',
-    points: 1340, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UPR&backgroundColor=009b3a',
-    bio: 'Principal sistema universitario público de Puerto Rico desde 1903. Con 11 campus por toda la isla, lidera la escena de esports universitarios en el Caribe hispano.',
-    games: ['Valorant', 'League of Legends', 'Super Smash Bros', 'Rocket League'],
-    offers: ['Puerto Rico University League', 'Becas deportivas', 'Arena gaming Río Piedras', 'Programa coaching'],
-    teams: [
-      { name: 'UPR Gallos', game: 'Valorant', members: 5, rank: 'Immortal' },
-      { name: 'UPR Smash', game: 'Super Smash Bros', members: 8, rank: 'Regional Top 10' },
-    ],
-  },
-  {
-    id: 'uniq', tag: 'UniQ', name: 'Université Quisqueya',
-    region: 'caribe', city: 'Puerto Príncipe, Haití', founded: 1988, joinedEsportefy: '2025',
-    points: 920, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UniQ&backgroundColor=00209f',
-    bio: 'Universidad privada líder de Haití fundada en 1988. A pesar de los desafíos del país, mantiene una comunidad gaming activa y resiliente.',
-    games: ['Valorant', 'FIFA'],
-    offers: ['Torneos comunitarios', 'Club de esports'],
-    teams: [
-      { name: 'UniQ Phoenix', game: 'Valorant', members: 5, rank: 'Gold' },
-    ],
-  },
-  {
-    id: 'utt', tag: 'UTT', name: 'University of Trinidad and Tobago',
-    region: 'caribe', city: 'Puerto España, T&T', founded: 2004, joinedEsportefy: '2025',
-    points: 880, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UTT&backgroundColor=ce1126',
-    bio: 'Universidad tecnológica fundada en 2004. Enfocada en innovación y desarrollo caribeño. Su programa de gaming está en crecimiento acelerado.',
-    games: ['Valorant', 'Fortnite'],
-    offers: ['Tech & Gaming program', 'Eventos intercampus'],
-    teams: [],
-  },
-  {
-    id: 'uh', tag: 'UH', name: 'Universidad de La Habana',
-    region: 'caribe', city: 'La Habana, Cuba', founded: 1728, joinedEsportefy: '2025',
-    points: 1100, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UH&backgroundColor=002a8f',
-    bio: 'Fundada en 1728, es una de las universidades más antiguas de América. A pesar de las limitaciones de conectividad, su comunidad gaming crece con determinación.',
-    games: ['League of Legends', 'FIFA'],
-    offers: ['LAN parties universitarias', 'Club de estrategia'],
-    teams: [
-      { name: 'UH Havana', game: 'League of Legends', members: 5, rank: 'Gold' },
-    ],
-  },
-
-  // ═══ LATINOAMÉRICA ═══
-  {
-    id: 'unam', tag: 'UNAM', name: 'Universidad Nacional Autónoma de México',
-    region: 'latam', city: 'CDMX, México', founded: 1551, joinedEsportefy: '2025',
-    points: 1900, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UNAM&backgroundColor=003366',
-    bio: 'La universidad más grande de Latinoamérica, fundada en 1551. Su campus es Patrimonio de la Humanidad. Lidera los esports universitarios en México con equipos profesionales.',
-    games: ['Valorant', 'League of Legends', 'Counter-Strike 2', 'Rocket League', 'FIFA'],
-    offers: ['Arena UNAM Esports', 'Becas deportivas completas', 'Liga UNAM Gaming', 'Programa de streaming', 'Bootcamps profesionales'],
-    teams: [
-      { name: 'UNAM Pumas Esports', game: 'Valorant', members: 5, rank: 'Radiant' },
-      { name: 'UNAM Azul y Oro', game: 'League of Legends', members: 5, rank: 'Challenger' },
-      { name: 'UNAM CS', game: 'Counter-Strike 2', members: 5, rank: 'Level 10 FACEIT' },
-    ],
-  },
-  {
-    id: 'tec', tag: 'ITESM', name: 'Tecnológico de Monterrey',
-    region: 'latam', city: 'Monterrey, México', founded: 1943, joinedEsportefy: '2025',
-    points: 1820, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=TEC&backgroundColor=003366',
-    bio: 'Fundado en 1943, es una de las universidades privadas más prestigiosas de América Latina. Con 26 campus en México, lidera la innovación en esports universitarios.',
-    games: ['Valorant', 'League of Legends', 'Rocket League', 'Overwatch 2'],
-    offers: ['Tec Esports Arena', 'Becas de alto rendimiento', 'Liga inter-campus', 'Certificación en esports management'],
-    teams: [
-      { name: 'Borregos Esports', game: 'Valorant', members: 5, rank: 'Immortal' },
-      { name: 'TEC Gaming', game: 'League of Legends', members: 5, rank: 'Diamond' },
-    ],
-  },
-  {
-    id: 'usp', tag: 'USP', name: 'Universidade de São Paulo',
-    region: 'latam', city: 'São Paulo, Brasil', founded: 1934, joinedEsportefy: '2025',
-    points: 1750, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=USP&backgroundColor=004b23',
-    bio: 'La mayor universidad de Brasil y una de las mejores de Latinoamérica, fundada en 1934. Brasil es potencia mundial en esports y USP lidera la escena universitaria.',
-    games: ['Valorant', 'League of Legends', 'Counter-Strike 2', 'Free Fire'],
-    offers: ['USP Esports Lab', 'Liga Universitária Brasileira', 'Becas deportivas', 'Game development program'],
-    teams: [
-      { name: 'USP Esports', game: 'Valorant', members: 5, rank: 'Immortal' },
-      { name: 'USP CBLOL Academy', game: 'League of Legends', members: 5, rank: 'Master' },
-    ],
-  },
-  {
-    id: 'uba', tag: 'UBA', name: 'Universidad de Buenos Aires',
-    region: 'latam', city: 'Buenos Aires, Argentina', founded: 1821, joinedEsportefy: '2025',
-    points: 1680, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UBA&backgroundColor=0066cc',
-    bio: 'Fundada en 1821, es la universidad más importante de Argentina y una de las top de Sudamérica. Argentina tiene una cultura gaming enorme y UBA es su epicentro universitario.',
-    games: ['Counter-Strike 2', 'Valorant', 'League of Legends', 'FIFA'],
-    offers: ['Liga UBA Gaming', 'Becas de rendimiento', 'Bootcamps', 'Co-working gaming'],
-    teams: [
-      { name: 'UBA Gaming', game: 'Counter-Strike 2', members: 5, rank: 'Level 10 FACEIT' },
-      { name: 'UBA Esports', game: 'Valorant', members: 5, rank: 'Ascendant' },
-    ],
-  },
-  {
-    id: 'puc', tag: 'PUC', name: 'Pontificia Universidad Católica de Chile',
-    region: 'latam', city: 'Santiago, Chile', founded: 1888, joinedEsportefy: '2025',
-    points: 1600, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=PUC&backgroundColor=003087',
-    bio: 'Fundada en 1888, es la mejor universidad de Chile y una de las top 100 del mundo. Su programa de esports integra academia con competición profesional.',
-    games: ['Valorant', 'League of Legends', 'StarCraft 2'],
-    offers: ['PUC Esports Center', 'Becas deportivas', 'Liga chilena universitaria'],
-    teams: [
-      { name: 'PUC Cruzados GG', game: 'Valorant', members: 5, rank: 'Immortal' },
-    ],
-  },
-  {
-    id: 'uandes', tag: 'UNIANDES', name: 'Universidad de los Andes',
-    region: 'latam', city: 'Bogotá, Colombia', founded: 1948, joinedEsportefy: '2025',
-    points: 1550, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ANDES&backgroundColor=fcd116',
-    bio: 'Universidad de élite colombiana fundada en 1948. Colombia es uno de los mercados de esports más grandes de LATAM y Uniandes lidera la escena universitaria.',
-    games: ['Valorant', 'League of Legends', 'Fortnite', 'FIFA'],
-    offers: ['Uniandes Gaming Hub', 'Liga Colombiana Universitaria', 'Becas esports', 'Incubadora gaming'],
-    teams: [
-      { name: 'Uniandes Esports', game: 'Valorant', members: 5, rank: 'Diamond' },
-      { name: 'Uniandes LoL', game: 'League of Legends', members: 5, rank: 'Diamond' },
-    ],
-  },
-  {
-    id: 'usm', tag: 'USM', name: 'Universidad Técnica Federico Santa María',
-    region: 'latam', city: 'Valparaíso, Chile', founded: 1926, joinedEsportefy: '2025',
-    points: 1200, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=USM&backgroundColor=c8102e',
-    bio: 'La mejor universidad técnica de Chile, fundada en 1926. Reconocida por su excelencia en ingeniería. Su comunidad gaming es muy activa.',
-    games: ['Valorant', 'League of Legends', 'Rocket League'],
-    offers: ['Gaming room USM', 'Liga interna', 'Eventos LAN'],
-    teams: [
-      { name: 'USM Sansanos', game: 'Valorant', members: 5, rank: 'Ascendant' },
-    ],
-  },
-  {
-    id: 'espol', tag: 'ESPOL', name: 'Escuela Politécnica del Litoral',
-    region: 'latam', city: 'Guayaquil, Ecuador', founded: 1958, joinedEsportefy: '2025',
-    points: 1100, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ESPOL&backgroundColor=005baa',
-    bio: 'Principal universidad técnica de Ecuador, fundada en 1958 en Guayaquil. Ecuador tiene una escena gaming creciente y ESPOL es su punta de lanza universitaria.',
-    games: ['Valorant', 'Fortnite', 'FIFA'],
-    offers: ['ESPOL Gaming Club', 'Torneos internos'],
-    teams: [
-      { name: 'ESPOL Esports', game: 'Valorant', members: 5, rank: 'Platinum' },
-    ],
-  },
-
-  // ═══ AMÉRICA (USA / CANADÁ) ═══
-  {
-    id: 'mit', tag: 'MIT', name: 'Massachusetts Institute of Technology',
-    region: 'americas', city: 'Cambridge, USA', founded: 1861, joinedEsportefy: '2025',
-    points: 2100, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=MIT&backgroundColor=a31f34',
-    bio: 'La institución tecnológica más prestigiosa del mundo, fundada en 1861. Su programa de esports combina competición de élite con investigación en gaming y AI.',
-    games: ['Valorant', 'League of Legends', 'Overwatch 2', 'Rocket League', 'Super Smash Bros'],
-    offers: ['MIT Gaming Lab', 'Research in esports analytics', 'Full esports scholarships', 'AI coaching tools', 'Professional streaming setup'],
-    teams: [
-      { name: 'MIT Engineers', game: 'Valorant', members: 5, rank: 'Radiant' },
-      { name: 'MIT LoL', game: 'League of Legends', members: 5, rank: 'Challenger' },
-      { name: 'MIT Rockets', game: 'Rocket League', members: 3, rank: 'Grand Champion' },
-    ],
-  },
-  {
-    id: 'uci', tag: 'UCI', name: 'University of California, Irvine',
-    region: 'americas', city: 'Irvine, USA', founded: 1965, joinedEsportefy: '2025',
-    points: 2050, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCI&backgroundColor=0064a4',
-    bio: 'Pionera absoluta en esports universitarios en EE.UU. Fue la primera universidad en ofrecer becas de esports y tiene un arena dedicada de $5.5M. Fundada en 1965.',
-    games: ['League of Legends', 'Valorant', 'Overwatch 2', 'Rocket League', 'Counter-Strike 2'],
-    offers: ['UCI Esports Arena (5,500 sq ft)', 'Full-ride esports scholarships', 'Esports management degree', 'Professional coaching staff', 'Content creation studio'],
-    teams: [
-      { name: 'UCI Anteaters LoL', game: 'League of Legends', members: 5, rank: 'Challenger' },
-      { name: 'UCI Valorant', game: 'Valorant', members: 5, rank: 'Radiant' },
-      { name: 'UCI OW', game: 'Overwatch 2', members: 6, rank: 'Top 500' },
-    ],
-  },
-  {
-    id: 'ubc', tag: 'UBC', name: 'University of British Columbia',
-    region: 'americas', city: 'Vancouver, Canadá', founded: 1908, joinedEsportefy: '2025',
-    points: 1950, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UBC&backgroundColor=002145',
-    bio: 'Una de las mejores universidades de Canadá, fundada en 1908. Su programa de esports es uno de los más completos del país con múltiples equipos competitivos.',
-    games: ['Valorant', 'League of Legends', 'Dota 2', 'Overwatch 2'],
-    offers: ['UBC Esports Lounge', 'Varsity esports program', 'Scholarships', 'Industry networking'],
-    teams: [
-      { name: 'UBC Thunderbirds', game: 'Valorant', members: 5, rank: 'Immortal' },
-      { name: 'UBC LoL', game: 'League of Legends', members: 5, rank: 'Master' },
-    ],
-  },
-  {
-    id: 'rmu', tag: 'RMU', name: 'Robert Morris University',
-    region: 'americas', city: 'Pittsburgh, USA', founded: 1921, joinedEsportefy: '2025',
-    points: 1900, verified: true,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=RMU&backgroundColor=003366',
-    bio: 'La PRIMERA universidad en EE.UU. en ofrecer becas de esports (2014). Fundada en 1921, RMU es un ícono histórico de los esports universitarios en Norteamérica.',
-    games: ['League of Legends', 'Valorant', 'Counter-Strike 2', 'Overwatch 2', 'Hearthstone'],
-    offers: ['Pioneer esports program (est. 2014)', 'Full athletic scholarships', 'Dedicated esports facility', 'Professional coaching', 'Career placement in gaming industry'],
-    teams: [
-      { name: 'RMU Eagles LoL', game: 'League of Legends', members: 5, rank: 'Master' },
-      { name: 'RMU Eagles VAL', game: 'Valorant', members: 5, rank: 'Immortal' },
-    ],
-  },
-  {
-    id: 'utaus', tag: 'UT Austin', name: 'University of Texas at Austin',
-    region: 'americas', city: 'Austin, USA', founded: 1883, joinedEsportefy: '2025',
-    points: 1850, verified: false,
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UT&backgroundColor=bf5700',
-    bio: 'Una de las universidades públicas más grandes de EE.UU., fundada en 1883. Ubicada en Austin, capital mundial del gaming y la tech. Su escena de esports está en expansión.',
-    games: ['Valorant', 'League of Legends', 'Rocket League', 'Super Smash Bros'],
-    offers: ['UT Esports Club', 'Gaming events at GDC', 'LAN tournaments', 'Community gaming nights'],
-    teams: [
-      { name: 'Texas Esports', game: 'Valorant', members: 5, rank: 'Ascendant' },
-      { name: 'Longhorn Gaming', game: 'League of Legends', members: 5, rank: 'Diamond' },
-    ],
-  },
-];
-
-const TOURNAMENTS_BY_REGION = {
-  rd: [
-    { id: 1, game: 'Valorant', title: 'Copa Quisqueya', date: '27 Feb', format: '5vs5', prize: 'RD$ 50,000', status: 'open', color: 'green' },
-    { id: 2, game: 'League of Legends', title: 'Battle of the Gods RD', date: '15 Mar', format: '5vs5', prize: 'RD$ 75,000', status: 'open', color: 'gold' },
-    { id: 3, game: 'NBA 2K / FIFA', title: 'Clásico Universitario', date: 'Hoy', format: '1vs1', prize: 'RD$ 25,000', status: 'live', color: 'danger' },
-    { id: 4, game: 'Fortnite', title: 'Tríos Universitarios RD', date: '5 Mar', format: '3vs3', prize: 'RD$ 30,000', status: 'open', color: 'green' },
-  ],
-  caribe: [
-    { id: 5, game: 'Valorant', title: 'Caribbean Clash', date: '10 Mar', format: '5vs5', prize: '$1,500 USD', status: 'open', color: 'green' },
-    { id: 6, game: 'League of Legends', title: 'Island Cup', date: '22 Mar', format: '5vs5', prize: '$2,000 USD', status: 'upcoming', color: 'muted' },
-  ],
-  latam: [
-    { id: 7, game: 'Valorant', title: 'Copa LATAM Universitaria', date: '1 Abr', format: '5vs5', prize: '$5,000 USD', status: 'upcoming', color: 'gold' },
-    { id: 8, game: 'Counter-Strike 2', title: 'CS University League', date: '15 Abr', format: '5vs5', prize: '$3,000 USD', status: 'upcoming', color: 'muted' },
-  ],
-  americas: [
-    { id: 9, game: 'Valorant', title: 'Americas Uni Championship', date: '1 May', format: '5vs5', prize: '$10,000 USD', status: 'upcoming', color: 'green' },
-    { id: 10, game: 'League of Legends', title: 'Collegiate LoL Open', date: '20 May', format: '5vs5', prize: '$8,000 USD', status: 'upcoming', color: 'gold' },
-  ],
-};
-
-const CAMPUS_CITIES = {
-  rd: [
-    'Santo Domingo (D.N. / Prov.)', 'Santiago de los Caballeros', 'San Francisco de Macorís',
-    'La Romana', 'Punta Cana / Higüey', 'San Pedro de Macorís', 'La Vega', 'Puerto Plata', 'Moca', 'Baní',
-  ],
-  caribe: ['Kingston, Jamaica', 'San Juan, PR', 'La Habana, Cuba', 'Puerto Príncipe, Haití', 'Puerto España, T&T'],
-  latam: ['CDMX, México', 'Monterrey, México', 'São Paulo, Brasil', 'Buenos Aires, Argentina', 'Santiago, Chile', 'Bogotá, Colombia', 'Guayaquil, Ecuador', 'Lima, Perú'],
-  americas: ['Boston, USA', 'Irvine, USA', 'Austin, USA', 'Pittsburgh, USA', 'Vancouver, Canadá', 'Toronto, Canadá'],
-};
-
 const STATUS_LABELS = {
-  live: 'EN VIVO',
+  ongoing: 'EN CURSO',
   open: 'INSCRIPCIONES ABIERTAS',
-  upcoming: 'PRÓXIMAMENTE',
+  finished: 'FINALIZADO',
+  cancelled: 'CANCELADO',
+  draft: 'BORRADOR'
+};
+
+const UNIVERSITY_TOURNAMENT_CARD_META = {
+  open: { color: 'green', label: STATUS_LABELS.open },
+  ongoing: { color: 'gold', label: STATUS_LABELS.ongoing },
+  finished: { color: 'muted', label: STATUS_LABELS.finished },
+  cancelled: { color: 'danger', label: STATUS_LABELS.cancelled },
+  draft: { color: 'muted', label: STATUS_LABELS.draft }
+};
+const UNIVERSITY_ALLOWED_GAMES = new Set([
+  'valorant',
+  'league of legends',
+  'mobile legends',
+  'mobile legends: bang bang',
+  'mlbb'
+]);
+const isUniversityAllowedGame = (game = '') => UNIVERSITY_ALLOWED_GAMES.has(String(game || '').trim().toLowerCase());
+
+const formatTournamentDateLabel = (value) => {
+  if (!value) return 'Sin fecha';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Sin fecha';
+  return parsed.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 const EMPTY_UNIVERSITY_STATUS = {
@@ -580,28 +113,6 @@ const PUBLIC_EMAIL_DOMAINS = new Set([
   'protonmail.com'
 ]);
 const ALLOWED_ACADEMIC_LEVELS = new Set(['1', '2', '3', '4', 'egresado', 'maestria']);
-const RD_UNIVERSITY_DOMAIN_RULES = {
-  uasd: ['uasd.edu.do'],
-  pucmm: ['pucmm.edu.do'],
-  intec: ['intec.edu.do'],
-  unibe: ['unibe.edu.do'],
-  itla: ['itla.edu.do'],
-  unapec: ['unapec.edu.do'],
-  unphu: ['unphu.edu.do'],
-  utesa: ['utesa.edu'],
-  uapa: ['uapa.edu.do'],
-  ucne: ['ucne.edu'],
-  isfodosu: ['isfodosu.edu.do'],
-  itsc: ['itsc.edu.do'],
-  ucateci: ['ucateci.edu.do'],
-  uniremhos: ['uniremhos.edu.do'],
-  unicaribe: ['unicaribe.edu.do'],
-  oym: ['udoym.edu.do', 'oymas.edu.do', 'oym.edu.do'],
-  uce: ['uce.edu.do', 'aluce.edu.do'],
-  ufhec: ['ufhec.edu.do'],
-  ucsd: ['ucsd.edu.do'],
-  loyola: ['loyola.edu.do']
-};
 
 const getEmailDomain = (value) => {
   const email = String(value || '').trim().toLowerCase();
@@ -609,21 +120,16 @@ const getEmailDomain = (value) => {
   return atIndex === -1 ? '' : email.slice(atIndex + 1);
 };
 
-const getUniversityAllowedDomains = (universityId = '') =>
-  RD_UNIVERSITY_DOMAIN_RULES[String(universityId || '').trim().toLowerCase()] || [];
-
-const isUniversityInstitutionalEmailAllowed = (universityId = '', email = '') => {
-  const allowedDomains = getUniversityAllowedDomains(universityId);
-  const domain = getEmailDomain(email);
-  return Boolean(domain && allowedDomains.length > 0 && allowedDomains.includes(domain));
-};
-
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════ */
 const UniversityPage = () => {
+  const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem('token') || sessionStorage.getItem('token') || '', []);
   const [currentUser, setCurrentUser] = useState(null);
+  const [catalogUniversities, setCatalogUniversities] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [pointsConfig, setPointsConfig] = useState(null);
   const [activeRegion, setActiveRegion] = useState('rd');
   const [activeTab, setActiveTab] = useState('universidades');
   const [searchQuery, setSearchQuery] = useState('');
@@ -635,6 +141,8 @@ const UniversityPage = () => {
   const [myUniversityStatus, setMyUniversityStatus] = useState(EMPTY_UNIVERSITY_STATUS);
   const [myUniversityApplication, setMyUniversityApplication] = useState(null);
   const [microsoftConnection, setMicrosoftConnection] = useState(EMPTY_MICROSOFT_CONNECTION);
+  const [liveUniversityTournaments, setLiveUniversityTournaments] = useState([]);
+  const [tournamentLoading, setTournamentLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
@@ -646,8 +154,21 @@ const UniversityPage = () => {
   const [rejectDrafts, setRejectDrafts] = useState({});
   const [adminFilters, setAdminFilters] = useState({ status: 'pending', region: UNIVERSITY_ENABLED_REGION });
 
+  const getCatalogUniversityAllowedDomains = (universityId = '') => {
+    const normalizedId = String(universityId || '').trim().toLowerCase();
+    if (!normalizedId) return [];
+    const found = catalogUniversities.find((item) => String(item?.id || '').trim().toLowerCase() === normalizedId);
+    return Array.isArray(found?.allowedDomains) ? found.allowedDomains : [];
+  };
+
+  const isCatalogInstitutionalEmailAllowed = (universityId = '', email = '') => {
+    const allowedDomains = getCatalogUniversityAllowedDomains(universityId);
+    const domain = getEmailDomain(email);
+    return Boolean(domain && allowedDomains.length > 0 && allowedDomains.includes(domain));
+  };
+
   const regionUnis = useMemo(() => {
-    return ALL_UNIVERSITIES
+    return catalogUniversities
       .filter(u => u.region === activeRegion)
       .filter(u =>
         !searchQuery ||
@@ -656,21 +177,28 @@ const UniversityPage = () => {
         u.city.toLowerCase().includes(searchQuery.toLowerCase())
       )
       .sort((a, b) => b.points - a.points);
-  }, [activeRegion, searchQuery]);
+  }, [activeRegion, catalogUniversities, searchQuery]);
 
-  const regionTournaments = TOURNAMENTS_BY_REGION[activeRegion] || [];
   const currentRegion = UNIVERSITY_VISIBLE_REGIONS.find(r => r.id === activeRegion) || UNIVERSITY_VISIBLE_REGIONS[0];
-  const campusCities = CAMPUS_CITIES[activeRegion] || [];
+  const regionTournaments = useMemo(() => {
+    return liveUniversityTournaments
+      .filter((tournament) => tournament.region === activeRegion)
+      .sort((a, b) => {
+        const aTime = new Date(a.date || 0).getTime();
+        const bTime = new Date(b.date || 0).getTime();
+        return aTime - bTime;
+      });
+  }, [activeRegion, liveUniversityTournaments]);
 
   const stats = useMemo(() => {
-    const unis = ALL_UNIVERSITIES.filter(u => u.region === activeRegion);
+    const unis = catalogUniversities.filter(u => u.region === activeRegion);
     return {
       total: unis.length,
       verified: unis.filter(u => u.verified).length,
       teams: unis.reduce((sum, u) => sum + u.teams.length, 0),
       tournaments: regionTournaments.length,
     };
-  }, [activeRegion, regionTournaments.length]);
+  }, [activeRegion, catalogUniversities, regionTournaments.length]);
 
   const loadProfile = async () => {
     if (!token) return;
@@ -712,10 +240,84 @@ const UniversityPage = () => {
     }
   };
 
+  const loadUniversityTournaments = async () => {
+    setTournamentLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/tournaments`);
+      const tournaments = Array.isArray(res.data) ? res.data : [];
+      const normalized = tournaments
+        .filter((tournament) => tournament?.eligibility?.universityOnly === true && isUniversityAllowedGame(tournament?.game))
+        .map((tournament) => {
+          const status = String(tournament?.status || 'draft').trim().toLowerCase();
+          const meta = UNIVERSITY_TOURNAMENT_CARD_META[status] || UNIVERSITY_TOURNAMENT_CARD_META.draft;
+          return {
+            id: tournament?._id || tournament?.tournamentId,
+            code: tournament?.tournamentId || '',
+            title: tournament?.title || 'Torneo universitario',
+            game: tournament?.game || 'Juego',
+            date: tournament?.date || null,
+            dateLabel: formatTournamentDateLabel(tournament?.date),
+            format: tournament?.format || 'Formato pendiente',
+            prize: tournament?.prizePool || tournament?.prizeDetails || 'Por anunciar',
+            status,
+            statusLabel: meta.label,
+            color: meta.color,
+            region: UNIVERSITY_ENABLED_REGION
+          };
+        });
+      setLiveUniversityTournaments(normalized);
+    } catch (error) {
+      console.error('Error cargando torneos universitarios:', error);
+      setStatusNotice((prev) => prev || {
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudieron cargar los torneos universitarios.'
+      });
+    } finally {
+      setTournamentLoading(false);
+    }
+  };
+
+  const loadUniversityCatalog = async () => {
+    setCatalogLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/university/catalog?region=${UNIVERSITY_ENABLED_REGION}`);
+      const nextCatalog = Array.isArray(res.data) ? res.data : [];
+      setCatalogUniversities(nextCatalog);
+    } catch (error) {
+      console.error('Error cargando catálogo universitario:', error);
+      setStatusNotice((prev) => prev || {
+        type: 'error',
+        text: error?.response?.data?.message || 'No se pudo cargar el catálogo universitario.'
+      });
+    } finally {
+      setCatalogLoading(false);
+    }
+  };
+
+  const loadUniversityStandingsMeta = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/university/standings`);
+      setPointsConfig(res.data?.pointsConfig || null);
+    } catch (error) {
+      console.error('Error cargando configuración de puntos universitarios:', error);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
+    loadUniversityCatalog();
+    loadUniversityStandingsMeta();
     loadMyUniversityStatus();
+    loadUniversityTournaments();
   }, [token]);
+
+  useEffect(() => {
+    if (!selectedUni?.id || catalogUniversities.length === 0) return;
+    const freshSelected = catalogUniversities.find((item) => item.id === selectedUni.id);
+    if (freshSelected) {
+      setSelectedUni(freshSelected);
+    }
+  }, [catalogUniversities, selectedUni?.id]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -771,17 +373,25 @@ const UniversityPage = () => {
 
   const currentUniversityState = myUniversityStatus?.verificationStatus || 'unlinked';
   const currentUniversityMeta = UNIVERSITY_STATUS_META[currentUniversityState] || UNIVERSITY_STATUS_META.unlinked;
+  const currentAppliedUniversityId = myUniversityApplication?.universityId || myUniversityStatus?.universityId || '';
   const selectedUniMatchesCurrent = Boolean(selectedUni && myUniversityStatus?.universityId === selectedUni.id);
-  const selectedUniLocked = selectedUniMatchesCurrent && ['pending', 'verified'].includes(currentUniversityState);
+  const hasBlockingUniversityApplication = ['pending', 'verified'].includes(currentUniversityState);
+  const selectedUniLocked = (
+    (selectedUniMatchesCurrent && hasBlockingUniversityApplication)
+    || (hasBlockingUniversityApplication && Boolean(selectedUni?.id) && Boolean(currentAppliedUniversityId) && currentAppliedUniversityId !== selectedUni.id)
+  );
   const institutionalEmail = String(myUniversityApplication?.institutionalEmail || myUniversityStatus?.institutionalEmail || '').trim().toLowerCase();
   const microsoftEmail = String(microsoftConnection?.email || '').trim().toLowerCase();
-  const currentUniversityAllowedDomains = getUniversityAllowedDomains(myUniversityApplication?.universityId || myUniversityStatus?.universityId);
+  const currentUniversityAllowedDomains = getCatalogUniversityAllowedDomains(myUniversityApplication?.universityId || myUniversityStatus?.universityId);
   const hasMicrosoftInstitutionalMatch = Boolean(
     microsoftConnection?.verified &&
     institutionalEmail &&
     microsoftEmail &&
     microsoftEmail === institutionalEmail
   );
+  const canCreateUniversityTeam = currentUniversityState === 'verified';
+  const canCompeteUniversityTournament = currentUniversityState === 'verified';
+  const needsManualReview = currentUniversityState === 'pending' || (microsoftConnection?.verified && !hasMicrosoftInstitutionalMatch);
 
   const handleConnectMicrosoftUniversity = async () => {
     if (!token) {
@@ -850,10 +460,12 @@ const UniversityPage = () => {
     if (!token || !currentUser?.isAdmin || !application?._id) return;
 
     const rejectReason = String(rejectDrafts[application._id] || '').trim();
-    if (decision === 'rejected' && !rejectReason) {
+    if ((decision === 'rejected' || decision === 'revoked') && !rejectReason) {
       setStatusNotice({
         type: 'error',
-        text: 'Debes indicar el motivo del rechazo antes de rechazar una postulación.'
+        text: decision === 'revoked'
+          ? 'Debes indicar el motivo antes de retirar una verificación.'
+          : 'Debes indicar el motivo del rechazo antes de rechazar una postulación.'
       });
       return;
     }
@@ -877,9 +489,12 @@ const UniversityPage = () => {
         type: 'success',
         text: decision === 'approved'
           ? 'Postulación universitaria aprobada.'
-          : 'Postulación universitaria rechazada.'
+          : decision === 'rejected'
+            ? 'Postulación universitaria rechazada.'
+            : 'Verificación universitaria retirada.'
       });
       await loadAdminApplications();
+      await loadMyUniversityStatus();
     } catch (error) {
       console.error('Error revisando postulación universitaria:', error);
       setStatusNotice({
@@ -928,6 +543,7 @@ const UniversityPage = () => {
               <span>
                 {myUniversityStatus.universityName ? `${myUniversityStatus.universityName}. ` : ''}
                 {currentUniversityMeta.text}
+                {currentUniversityState === 'pending' && myUniversityStatus.rejectReason ? ` Motivo actual: ${myUniversityStatus.rejectReason}` : ''}
                 {currentUniversityState === 'rejected' && myUniversityStatus.rejectReason ? ` Motivo: ${myUniversityStatus.rejectReason}` : ''}
               </span>
             </div>
@@ -990,15 +606,121 @@ const UniversityPage = () => {
     );
   };
 
+  const renderEligibilityOverview = () => (
+    <div className="up-eligibility">
+      <div className={`up-eligibility__card up-eligibility__card--${currentUniversityMeta.tone}`}>
+        <div className="up-eligibility__icon">
+          <i className={`bx ${
+            currentUniversityState === 'verified'
+              ? 'bx-badge-check'
+              : currentUniversityState === 'pending'
+                ? 'bx-time-five'
+                : currentUniversityState === 'rejected'
+                  ? 'bx-x-circle'
+                  : 'bx-id-card'
+          }`}></i>
+        </div>
+        <div className="up-eligibility__body">
+          <span className="up-eyebrow">ESTADO INSTITUCIONAL</span>
+          <strong>{currentUniversityMeta.title}</strong>
+          <p>{currentUniversityMeta.text}</p>
+          {currentAppliedUniversityId ? (
+            <small className="up-eligibility__hint">
+              Universidad ligada a tu cuenta: {myUniversityStatus?.universityName || myUniversityApplication?.universityName || currentAppliedUniversityId}.
+            </small>
+          ) : null}
+        </div>
+      </div>
+
+      <div className={`up-eligibility__card up-eligibility__card--${microsoftConnection?.verified ? 'verified' : 'neutral'}`}>
+        <div className="up-eligibility__icon">
+          <i className='bx bxl-microsoft'></i>
+        </div>
+        <div className="up-eligibility__body">
+          <span className="up-eyebrow">CUENTA UNIVERSITARIA</span>
+          <strong>{microsoftConnection?.verified ? 'Cuenta institucional conectada' : 'Cuenta institucional pendiente'}</strong>
+          <p>
+            {microsoftConnection?.verified && microsoftEmail
+              ? `${microsoftEmail}${hasMicrosoftInstitutionalMatch ? ' coincide con la postulación.' : ' no coincide exactamente con tu correo postulado.'}`
+              : 'Conecta tu cuenta Microsoft/Entra institucional para acelerar la revisión.'}
+          </p>
+        </div>
+      </div>
+
+      <div className={`up-eligibility__card up-eligibility__card--${canCreateUniversityTeam ? 'verified' : 'pending'}`}>
+        <div className="up-eligibility__icon">
+          <i className='bx bx-group'></i>
+        </div>
+        <div className="up-eligibility__body">
+          <span className="up-eyebrow">EQUIPO UNIVERSITARIO</span>
+          <strong>{canCreateUniversityTeam ? 'Puedes crear equipo universitario' : 'Aún no puedes crear equipo universitario'}</strong>
+          <p>
+            {canCreateUniversityTeam
+              ? 'Tu cuenta quedó verificada. Ya puedes crear equipos universitarios y aceptar solo estudiantes de tu misma institución.'
+              : needsManualReview
+                ? 'Tu cuenta sigue en revisión. Cuando cambie a verificada se habilitará la creación de equipo.'
+                : 'Primero debes postularte y validar tu cuenta institucional.'}
+          </p>
+        </div>
+        <div className="up-eligibility__actions">
+          <button
+            type="button"
+            className="up-btn up-btn--ghost"
+            disabled={!canCreateUniversityTeam}
+            onClick={() => navigate('/create-team')}
+          >
+            Ir a equipos
+          </button>
+        </div>
+      </div>
+
+      <div className={`up-eligibility__card up-eligibility__card--${canCompeteUniversityTournament ? 'verified' : 'pending'}`}>
+        <div className="up-eligibility__icon">
+          <i className='bx bx-trophy'></i>
+        </div>
+        <div className="up-eligibility__body">
+          <span className="up-eyebrow">TORNEOS UNIVERSITARIOS</span>
+          <strong>{canCompeteUniversityTournament ? 'Listo para competir' : 'Competencia bloqueada por ahora'}</strong>
+          <p>
+            {canCompeteUniversityTournament
+              ? 'Ya puedes registrar equipos universitarios verificados en torneos con elegibilidad universitaria.'
+              : 'Los torneos universitarios solo aceptan estudiantes RD verificados y equipos universitarios válidos.'}
+          </p>
+        </div>
+        <div className="up-eligibility__actions">
+          <button
+            type="button"
+            className="up-btn up-btn--ghost"
+            disabled={!canCompeteUniversityTournament}
+            onClick={() => navigate('/torneos')}
+          >
+            Ver torneos
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // Enroll handlers
   const openEnroll = (uni) => {
+    if (hasBlockingUniversityApplication && currentAppliedUniversityId && currentAppliedUniversityId !== uni?.id) {
+      setStatusNotice({
+        type: 'error',
+        text: `Tu cuenta ya tiene una postulación asociada a ${myUniversityStatus?.universityName || myUniversityApplication?.universityName || 'otra universidad'}. Por ahora solo puedes postularte a una universidad por cuenta.`
+      });
+      return;
+    }
     setStatusNotice(null);
     setFieldErrors({});
     setEnrollUni(uni);
     setEnrollStep(1);
     setEnrollModal(true);
     setFormData((prev) => ({
-      ...prev,
+      matricula: '',
+      carrera: '',
+      campus: '',
+      customCampus: '',
+      nivel: '',
       institutionalEmail: prev.institutionalEmail || myUniversityStatus?.institutionalEmail || ''
     }));
   };
@@ -1007,21 +729,29 @@ const UniversityPage = () => {
     const nextErrors = {};
     const normalizedStudentId = String(formData.matricula || '').trim();
     const normalizedProgram = String(formData.carrera || '').trim();
-    const selectedCampus = formData.campus === 'otro'
-      ? String(formData.customCampus || '').trim()
-      : String(formData.campus || '').trim();
+    const selectedCampus = String(formData.campus || '').trim();
     const normalizedEmail = String(formData.institutionalEmail || '').trim().toLowerCase();
+    const allowedPrograms = Array.isArray(enrollUni?.programs) ? enrollUni.programs : [];
+    const allowedCampuses = Array.isArray(enrollUni?.campuses) ? enrollUni.campuses : [];
 
     if (!STUDENT_ID_REGEX.test(normalizedStudentId)) {
       nextErrors.matricula = 'Usa entre 4 y 32 caracteres. Solo letras, números, ".", "_", "/" o "-".';
     }
 
-    if (normalizedProgram.length < 3) {
-      nextErrors.carrera = 'La carrera debe tener al menos 3 caracteres.';
+    if (!normalizedProgram) {
+      nextErrors.carrera = 'Selecciona una carrera.';
+    } else if (allowedPrograms.length === 0) {
+      nextErrors.carrera = 'Esta universidad no tiene carreras configuradas todavía.';
+    } else if (!allowedPrograms.includes(normalizedProgram)) {
+      nextErrors.carrera = 'Debes seleccionar una carrera válida de la universidad.';
     }
 
-    if (selectedCampus.length < 3) {
-      nextErrors.campus = 'Indica un campus válido.';
+    if (!selectedCampus) {
+      nextErrors.campus = 'Selecciona la ciudad de tu campus.';
+    } else if (allowedCampuses.length === 0) {
+      nextErrors.campus = 'Esta universidad no tiene campuses configurados todavía.';
+    } else if (!allowedCampuses.includes(selectedCampus)) {
+      nextErrors.campus = 'Debes seleccionar una ciudad de campus válida de la universidad.';
     }
 
     if (!ALLOWED_ACADEMIC_LEVELS.has(String(formData.nivel || '').trim())) {
@@ -1034,10 +764,10 @@ const UniversityPage = () => {
       nextErrors.institutionalEmail = 'Usa un correo institucional, no uno personal.';
     } else if (enrollUni?.region !== 'rd') {
       nextErrors.institutionalEmail = 'Por ahora la verificación institucional solo está habilitada para universidades de República Dominicana.';
-    } else if (getUniversityAllowedDomains(enrollUni?.id).length === 0) {
+    } else if (getCatalogUniversityAllowedDomains(enrollUni?.id).length === 0) {
       nextErrors.institutionalEmail = 'Esta universidad todavía no tiene dominios institucionales configurados para verificación.';
-    } else if (!isUniversityInstitutionalEmailAllowed(enrollUni?.id, normalizedEmail)) {
-      nextErrors.institutionalEmail = `Usa uno de los dominios institucionales oficiales de esta universidad: ${getUniversityAllowedDomains(enrollUni?.id).join(', ')}.`;
+    } else if (!isCatalogInstitutionalEmailAllowed(enrollUni?.id, normalizedEmail)) {
+      nextErrors.institutionalEmail = `Usa uno de los dominios institucionales oficiales de esta universidad: ${getCatalogUniversityAllowedDomains(enrollUni?.id).join(', ')}.`;
     }
 
     setFieldErrors(nextErrors);
@@ -1067,7 +797,7 @@ const UniversityPage = () => {
         universityTag: enrollUni.tag,
         universityName: enrollUni.name,
         region: enrollUni.region,
-        city: enrollUni.city,
+        city: normalizedCampus,
         campus: normalizedCampus,
         studentId: formData.matricula,
         program: formData.carrera,
@@ -1142,13 +872,18 @@ const UniversityPage = () => {
                   ? 'EN REVISIÓN'
                   : selectedUniMatchesCurrent && currentUniversityState === 'verified'
                     ? 'VERIFICADA'
-                    : 'POSTULARME'}
+                    : currentUniversityState === 'rejected'
+                      ? 'VOLVER A POSTULARME'
+                      : hasBlockingUniversityApplication && currentAppliedUniversityId && currentAppliedUniversityId !== selectedUni.id
+                      ? 'BLOQUEADA'
+                      : 'POSTULARME'}
               </button>
             </div>
           </div>
         </div>
 
         {renderUniversityStatusBanner()}
+        {renderEligibilityOverview()}
 
         {/* Grid de contenido */}
         <div className="up-detail-grid">
@@ -1180,6 +915,61 @@ const UniversityPage = () => {
                 <span>{selectedUni.games.length}</span>
                 <small>Juegos</small>
               </div>
+            </div>
+            <div className="up-detail-points">
+              <div className="up-surface__head">
+                <i className='bx bx-medal'></i>
+                <div>
+                  <span className="up-eyebrow">COMPETENCIA</span>
+                  <h3>Sistema de puntos</h3>
+                </div>
+              </div>
+              <div className="up-detail-points__grid">
+                <div className="up-detail-points__item">
+                  <strong>{selectedUni?.stats?.tournamentsPlayed || 0}</strong>
+                  <small>Torneos jugados</small>
+                </div>
+                <div className="up-detail-points__item">
+                  <strong>{selectedUni?.stats?.matchWins || 0}</strong>
+                  <small>Victorias</small>
+                </div>
+                <div className="up-detail-points__item">
+                  <strong>{selectedUni?.stats?.championships || 0}</strong>
+                  <small>Campeonatos</small>
+                </div>
+                <div className="up-detail-points__item">
+                  <strong>{selectedUni?.stats?.finals || 0}</strong>
+                  <small>Finales</small>
+                </div>
+              </div>
+              {pointsConfig ? (
+                <div className="up-detail-points__rules">
+                  <span>Participación base +{pointsConfig.participation}</span>
+                </div>
+              ) : null}
+              {pointsConfig?.sizeMultipliers ? (
+                <div className="up-detail-points__size-tiers">
+                  {pointsConfig.sizeMultipliers.map((tier) => (
+                    <span key={tier.label}>
+                      {tier.label} x{Number(tier.multiplier || 1).toFixed(2)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {pointsConfig?.formats ? (
+                <div className="up-detail-points__formats">
+                  {Object.entries(pointsConfig.formats).map(([formatKey, config]) => (
+                    <div key={formatKey} className="up-detail-points__format-card">
+                      <strong>{config.label}</strong>
+                      <small>Victoria +{config.matchWin}</small>
+                      <small>Campeón +{config.championBonus}</small>
+                      <small>Finalista +{config.finalistBonus}</small>
+                      <small>Semifinal / Top 4 +{config.semifinalBonus}</small>
+                      <em>{config.placementNote}</em>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -1337,24 +1127,32 @@ const UniversityPage = () => {
                 {fieldErrors.institutionalEmail && <small className="up-field__error">{fieldErrors.institutionalEmail}</small>}
                 {!fieldErrors.institutionalEmail && (
                   <small className="up-field__hint">
-                    Por ahora solo aceptamos correos institucionales oficiales de las universidades RD habilitadas en la app. Dominios permitidos para esta universidad: {getUniversityAllowedDomains(enrollUni?.id).join(', ') || 'pendiente de configurar'}. Después de enviar la postulación, conecta esta misma cuenta institucional Microsoft/Entra para verificación semiautomática.
+                    Por ahora solo aceptamos correos institucionales oficiales de las universidades RD habilitadas en la app. Dominios permitidos para esta universidad: {getCatalogUniversityAllowedDomains(enrollUni?.id).join(', ') || 'pendiente de configurar'}. Después de enviar la postulación, conecta esta misma cuenta institucional Microsoft/Entra para verificación semiautomática.
                   </small>
                 )}
               </div>
               <div className="up-field">
                 <label>Carrera</label>
-                <input
+                <select
                   className={fieldErrors.carrera ? 'up-field__input--error' : ''}
-                  type="text"
-                  placeholder="Ingeniería, Diseño, etc."
                   required
                   value={formData.carrera}
                   onChange={e => {
                     setFormData({ ...formData, carrera: e.target.value });
                     if (fieldErrors.carrera) setFieldErrors((prev) => ({ ...prev, carrera: '' }));
                   }}
-                />
+                >
+                  <option value="" disabled>Selecciona tu carrera</option>
+                  {(Array.isArray(uni.programs) ? uni.programs : []).map((program) => (
+                    <option key={program} value={program}>{program}</option>
+                  ))}
+                </select>
                 {fieldErrors.carrera && <small className="up-field__error">{fieldErrors.carrera}</small>}
+                {!fieldErrors.carrera && (
+                  <small className="up-field__hint">
+                    La carrera se valida contra la oferta académica configurada para {uni.tag}.
+                  </small>
+                )}
               </div>
               <div className="up-field">
                 <label>Ciudad del campus</label>
@@ -1368,23 +1166,16 @@ const UniversityPage = () => {
                   }}
                 >
                   <option value="" disabled>Selecciona</option>
-                  {campusCities.map((c, i) => <option key={i} value={c}>{c}</option>)}
-                  <option value="otro">Otro</option>
+                  {(Array.isArray(uni.campuses) ? uni.campuses : []).map((campus) => (
+                    <option key={campus} value={campus}>{campus}</option>
+                  ))}
                 </select>
-                {formData.campus === 'otro' && (
-                  <input
-                    className={fieldErrors.campus ? 'up-field__input--error' : ''}
-                    type="text"
-                    placeholder="Escribe el campus"
-                    required
-                    value={formData.customCampus}
-                    onChange={e => {
-                      setFormData({ ...formData, customCampus: e.target.value });
-                      if (fieldErrors.campus) setFieldErrors((prev) => ({ ...prev, campus: '' }));
-                    }}
-                  />
-                )}
                 {fieldErrors.campus && <small className="up-field__error">{fieldErrors.campus}</small>}
+                {!fieldErrors.campus && (
+                  <small className="up-field__hint">
+                    La ciudad del campus se valida contra las sedes habilitadas para {uni.tag}.
+                  </small>
+                )}
               </div>
               <div className="up-field">
                 <label>Nivel académico</label>
@@ -1453,6 +1244,7 @@ const UniversityPage = () => {
       </header>
 
       {renderUniversityStatusBanner()}
+      {renderEligibilityOverview()}
 
       {/* ═══ REGIONES ═══ */}
       <div className="up-regions">
@@ -1464,7 +1256,7 @@ const UniversityPage = () => {
           >
             <span className="up-regions__flag">{r.flag}</span>
             <span className="up-regions__name">{r.short}</span>
-            <span className="up-regions__count">{ALL_UNIVERSITIES.filter(u => u.region === r.id).length}</span>
+            <span className="up-regions__count">{catalogUniversities.filter(u => u.region === r.id).length}</span>
           </button>
         ))}
       </div>
@@ -1508,7 +1300,13 @@ const UniversityPage = () => {
               )}
             </div>
             <div className="up-uni-grid">
-              {regionUnis.length === 0 ? (
+              {catalogLoading ? (
+                <div className="up-empty">
+                  <i className='bx bx-loader-alt'></i>
+                  <h3>Cargando universidades</h3>
+                  <p>Consultando el catálogo universitario activo.</p>
+                </div>
+              ) : regionUnis.length === 0 ? (
                 <div className="up-empty">
                   <i className='bx bx-search-alt-2'></i>
                   <h3>Sin resultados</h3>
@@ -1558,29 +1356,37 @@ const UniversityPage = () => {
         {/* TAB: TORNEOS */}
         {activeTab === 'torneos' && (
           <div className="up-tournaments">
-            {regionTournaments.length === 0 ? (
+            {tournamentLoading ? (
+              <div className="up-empty">
+                <i className='bx bx-loader-alt'></i>
+                <h3>Cargando torneos universitarios</h3>
+                <p>Consultando los torneos universitarios activos de la plataforma.</p>
+              </div>
+            ) : regionTournaments.length === 0 ? (
               <div className="up-empty">
                 <i className='bx bx-trophy'></i>
                 <h3>Próximamente</h3>
-                <p>Los torneos de {currentRegion.name} se anunciarán pronto.</p>
+                <p>No hay torneos universitarios publicados todavía para {currentRegion.name}.</p>
               </div>
             ) : (
               regionTournaments.map(t => (
                 <div key={t.id} className={`up-tournament-card up-tournament-card--${t.color}`}>
                   <div className={`up-tournament-card__status up-tournament-card__status--${t.status}`}>
-                    {t.status === 'live' && <span className="up-pulse"></span>}
-                    {STATUS_LABELS[t.status]}
+                    {t.status === 'ongoing' && <span className="up-pulse"></span>}
+                    {t.statusLabel}
                   </div>
                   <div className="up-tournament-card__body">
                     <div className="up-tournament-card__icon">
                       <i className='bx bxs-zap'></i>
                     </div>
                     <div className="up-tournament-card__info">
+                      <span className="up-tournament-card__code">TOR-ID {String(t.code || '').replace(/^TOR-?/i, '')}</span>
                       <span className="up-eyebrow">{t.game}</span>
                       <h4>{t.title}</h4>
                       <div className="up-tournament-card__meta">
-                        <span><i className='bx bx-calendar-event'></i> {t.date}</span>
+                        <span><i className='bx bx-calendar-event'></i> {t.dateLabel}</span>
                         <span><i className='bx bx-group'></i> {t.format}</span>
+                        <span><i className='bx bx-check-shield'></i> Solo universidades</span>
                       </div>
                     </div>
                   </div>
@@ -1589,7 +1395,11 @@ const UniversityPage = () => {
                       <small>PRIZE POOL</small>
                       <strong>{t.prize}</strong>
                     </div>
-                    <button className="up-btn up-btn--icon">
+                    <button
+                      type="button"
+                      className="up-btn up-btn--icon"
+                      onClick={() => navigate(`/torneos/publicos/${t.code}`)}
+                    >
                       <i className='bx bx-chevron-right'></i>
                     </button>
                   </div>
@@ -1602,37 +1412,77 @@ const UniversityPage = () => {
         {/* TAB: RANKINGS */}
         {activeTab === 'rankings' && (
           <div className="up-rankings">
-            <div className="up-rankings__head">
-              <span className="up-rankings__col up-rankings__col--pos">#</span>
-              <span className="up-rankings__col up-rankings__col--uni">UNIVERSIDAD</span>
-              <span className="up-rankings__col up-rankings__col--city">CIUDAD</span>
-              <span className="up-rankings__col up-rankings__col--teams">EQUIPOS</span>
-              <span className="up-rankings__col up-rankings__col--pts">PUNTOS</span>
-            </div>
-            {regionUnis.map((uni, idx) => (
-              <div key={uni.id} className={`up-rankings__row ${idx < 3 ? `up-rankings__row--top${idx + 1}` : ''}`} onClick={() => setSelectedUni(uni)}>
-                <span className={`up-rankings__pos up-rankings__pos--${idx + 1}`}>
-                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
-                </span>
-                <div className="up-rankings__uni">
-                  <div className="up-rankings__logo">
-                    <img src={uni.logo} alt={uni.tag} />
-                  </div>
-                  <div className="up-rankings__uni-info">
-                    <div className="up-rankings__uni-name">
-                      <strong>{uni.tag}</strong>
-                      {uni.verified && <i className='bx bxs-badge-check up-verified'></i>}
-                    </div>
-                    <small>{uni.name}</small>
-                  </div>
+            {pointsConfig ? (
+              <div className="up-points-system">
+                <div className="up-points-system__head">
+                  <span className="up-eyebrow">RANKING UNIVERSITARIO</span>
+                  <h3>Sistema de puntos activo</h3>
                 </div>
-                <span className="up-rankings__city">{uni.city}</span>
-                <span className="up-rankings__teams">{uni.teams.length}</span>
-                <div className="up-rankings__pts">
-                  <span>{uni.points.toLocaleString()}</span>
+                <div className="up-points-system__rules">
+                  <span>Participación base +{pointsConfig.participation}</span>
+                </div>
+                <div className="up-points-system__size-tiers">
+                  {(pointsConfig.sizeMultipliers || []).map((tier) => (
+                    <span key={tier.label}>
+                      {tier.label} x{Number(tier.multiplier || 1).toFixed(2)}
+                    </span>
+                  ))}
+                </div>
+                <div className="up-points-system__formats">
+                  {Object.entries(pointsConfig.formats || {}).map(([formatKey, config]) => (
+                    <div key={formatKey} className="up-points-system__format-card">
+                      <strong>{config.label}</strong>
+                      <small>Victoria +{config.matchWin}</small>
+                      <small>Campeón +{config.championBonus}</small>
+                      <small>Finalista +{config.finalistBonus}</small>
+                      <small>Semifinal / Top 4 +{config.semifinalBonus}</small>
+                      <em>{config.placementNote}</em>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            ) : null}
+            {catalogLoading ? (
+              <div className="up-empty">
+                <i className='bx bx-loader-alt'></i>
+                <h3>Cargando rankings</h3>
+                <p>Consultando las universidades verificadas y sus equipos activos.</p>
+              </div>
+            ) : (
+              <>
+                <div className="up-rankings__head">
+                  <span className="up-rankings__col up-rankings__col--pos">#</span>
+                  <span className="up-rankings__col up-rankings__col--uni">UNIVERSIDAD</span>
+                  <span className="up-rankings__col up-rankings__col--city">CIUDAD</span>
+                  <span className="up-rankings__col up-rankings__col--teams">EQUIPOS</span>
+                  <span className="up-rankings__col up-rankings__col--pts">PUNTOS</span>
+                </div>
+                {regionUnis.map((uni, idx) => (
+                  <div key={uni.id} className={`up-rankings__row ${idx < 3 ? `up-rankings__row--top${idx + 1}` : ''}`} onClick={() => setSelectedUni(uni)}>
+                    <span className={`up-rankings__pos up-rankings__pos--${idx + 1}`}>
+                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                    </span>
+                    <div className="up-rankings__uni">
+                      <div className="up-rankings__logo">
+                        <img src={uni.logo} alt={uni.tag} />
+                      </div>
+                      <div className="up-rankings__uni-info">
+                        <div className="up-rankings__uni-name">
+                          <strong>{uni.tag}</strong>
+                          {uni.verified && <i className='bx bxs-badge-check up-verified'></i>}
+                        </div>
+                        <small>{uni.name}</small>
+                      </div>
+                    </div>
+                    <span className="up-rankings__city">{uni.city}</span>
+                    <span className="up-rankings__teams">{uni.teams.length}</span>
+                    <div className="up-rankings__pts">
+                      <span>{uni.points.toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         )}
 
@@ -1682,6 +1532,9 @@ const UniversityPage = () => {
                   const isReviewing = reviewLoadingId === application._id;
                   const isRejected = application.status === 'rejected';
                   const isApproved = application.status === 'approved';
+                  const actionPlaceholder = isApproved
+                    ? 'Motivo de retiro de verificación (requerido)'
+                    : 'Motivo de rechazo (requerido solo si rechazas)';
                   return (
                     <div key={application._id} className={`up-admin-card up-admin-card--${application.status}`}>
                       <div className="up-admin-card__top">
@@ -1717,14 +1570,26 @@ const UniversityPage = () => {
                         </div>
                       )}
 
-                      {!isApproved && (
+                      <textarea
+                        className="up-admin-card__textarea"
+                        placeholder={actionPlaceholder}
+                        value={rejectDrafts[application._id] || ''}
+                        onChange={(e) => setRejectDrafts((prev) => ({ ...prev, [application._id]: e.target.value }))}
+                      />
+
+                      {isApproved ? (
+                        <div className="up-admin-card__actions">
+                          <button
+                            type="button"
+                            className="up-btn up-btn--ghost up-btn--warning"
+                            disabled={isReviewing}
+                            onClick={() => handleReviewApplication(application, 'revoked')}
+                          >
+                            {isReviewing ? 'PROCESANDO...' : 'QUITAR VERIFICACIÓN'}
+                          </button>
+                        </div>
+                      ) : (
                         <>
-                          <textarea
-                            className="up-admin-card__textarea"
-                            placeholder="Motivo de rechazo (requerido solo si rechazas)"
-                            value={rejectDrafts[application._id] || ''}
-                            onChange={(e) => setRejectDrafts((prev) => ({ ...prev, [application._id]: e.target.value }))}
-                          />
                           <div className="up-admin-card__actions">
                             <button
                               type="button"
