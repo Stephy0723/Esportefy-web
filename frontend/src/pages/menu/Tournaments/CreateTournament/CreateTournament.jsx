@@ -4,6 +4,11 @@ import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import {
+  getTournamentServerOptions,
+  isValidTournamentServer,
+  normalizeTournamentServer
+} from '../../../../../../shared/tournamentServerOptions.js';
+import {
   FaBullhorn,
   FaCheckCircle,
   FaDiscord,
@@ -80,18 +85,6 @@ const PLATFORM_OPTIONS = [
   { value: 'Mobile', label: 'Mobile' },
   { value: 'Console', label: 'Consola' },
   { value: 'Crossplay', label: 'Crossplay' }
-];
-const REGION_OPTIONS = [
-  { value: 'LAN', label: 'LATAM Norte (LAN)' },
-  { value: 'LAS', label: 'LATAM Sur (LAS)' },
-  { value: 'NA', label: 'Norteamerica (NA)' },
-  { value: 'EUW', label: 'Europa Oeste (EUW)' },
-  { value: 'EUNE', label: 'Europa Noreste (EUNE)' },
-  { value: 'BR', label: 'Brasil (BR)' },
-  { value: 'KR', label: 'Corea (KR)' },
-  { value: 'JP', label: 'Japon (JP)' },
-  { value: 'OCE', label: 'Oceania (OCE)' },
-  { value: 'GLOBAL', label: 'Global / Internacional' }
 ];
 const BRACKET_SLOT_PRESETS = ['4', '8', '16', '32', '64'];
 const INTEGER_INPUT_REGEX = /^\d*$/;
@@ -282,6 +275,10 @@ const CreateTournament = () => {
     () => MLBB_TITLES.has(String(tournament.game || '').trim()),
     [tournament.game]
   );
+  const serverOptions = useMemo(
+    () => getTournamentServerOptions(tournament.game, tournament.server),
+    [tournament.game, tournament.server]
+  );
 
   const identityReady = Boolean(tournament.title?.trim() && tournament.game && tournament.description?.trim() && tournament.date && tournament.time);
   const formatReady = Boolean(tournament.maxSlots && tournament.modality && tournament.format);
@@ -313,6 +310,18 @@ const CreateTournament = () => {
     && tournament.legalCompliance.organizerDeclaration;
 
   const setField = (field, value) => setTournament((p) => ({ ...p, [field]: value }));
+  const setGameField = (value) => {
+    setTournament((prev) => {
+      const nextServer = isValidTournamentServer(value, prev.server)
+        ? normalizeTournamentServer(value, prev.server)
+        : '';
+      return {
+        ...prev,
+        game: value,
+        server: nextServer
+      };
+    });
+  };
   const setNested = (group, key, value) => setTournament((p) => ({ ...p, [group]: { ...p[group], [key]: value } }));
   const setPrize = (key, value) => setTournament((p) => ({ ...p, prizesByRank: { ...p.prizesByRank, [key]: value } }));
   const setSponsor = (index, key, value) =>
@@ -678,8 +687,23 @@ const CreateTournament = () => {
           <fieldset className="ct-fieldset">
             <div className="ct-grid three">
               <label className="ct-field"><span>Titulo oficial</span><input required value={tournament.title} onChange={(e) => setField('title', e.target.value)} /></label>
-              <label className="ct-field"><span>Juego</span><select required value={tournament.game} onChange={(e) => setField('game', e.target.value)}><option value="">Seleccionar</option>{GAMES.map((g) => <option key={g} value={g}>{g}</option>)}</select></label>
-              <label className="ct-field"><span>Servidor</span><input placeholder="LATAM Norte" value={tournament.server} onChange={(e) => setField('server', e.target.value)} /></label>
+              <label className="ct-field"><span>Juego</span><select required value={tournament.game} onChange={(e) => setGameField(e.target.value)}><option value="">Seleccionar</option>{GAMES.map((g) => <option key={g} value={g}>{g}</option>)}</select></label>
+              <label className="ct-field">
+                <span>Servidor</span>
+                <select
+                  value={tournament.server}
+                  onChange={(e) => setField('server', e.target.value)}
+                  disabled={!tournament.game}
+                >
+                  <option value="">{tournament.game ? 'Seleccionar servidor' : 'Selecciona el juego primero'}</option>
+                  {serverOptions.map((option) => (
+                    <option key={`${tournament.game || 'default'}-${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <small>El servidor se define por selección para mantener consistencia entre torneos.</small>
+              </label>
             </div>
             <div className="ct-grid four">
               <label className="ct-field"><span>Plataforma</span><select value={tournament.platform} onChange={(e) => setField('platform', e.target.value)}><option>PC</option><option>Mobile</option><option>Consola</option><option>Crossplay</option></select></label>

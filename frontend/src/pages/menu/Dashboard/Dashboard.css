@@ -212,6 +212,59 @@
 .db__conn-panel-desc {
     font-size: .82rem; color: var(--text-muted); line-height: 1.6; margin: 0; max-width: 280px;
 }
+.db__conn-panel-status--error > i { color: #ef4444; }
+.db__conn-panel-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 4px;
+}
+.db__conn-panel-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+}
+.db__conn-panel-field span {
+    font-size: .68rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.db__conn-panel-field input {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--text-main) 3%, transparent);
+    color: var(--text-main);
+    padding: 12px 14px;
+    font-size: .86rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+.db__conn-panel-field input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(142,219,21,.12);
+}
+.db__conn-panel-field input:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+.db__conn-panel-msg {
+    width: 100%;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(142,219,21,.08);
+    border: 1px solid rgba(142,219,21,.18);
+    color: var(--text-main);
+    font-size: .78rem;
+    line-height: 1.5;
+    text-align: left;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    TEAM DETAIL PANEL (slide-in right)
@@ -1251,8 +1304,17 @@
    ═══════════════════════════════════════════════════════════════ */
 .db__section--account {
     background: linear-gradient(170deg, var(--bg-page), color-mix(in srgb, var(--bg-page) 92%, #000));
+    min-height: auto;
+    justify-content: flex-start;
+    padding: 88px 0 40px;
+    scroll-snap-align: end;
 }
 .db__account-wrap { width: 100%; max-width: 900px; padding: 0 40px; }
+.db__footer-shell {
+    position: relative;
+    z-index: 2;
+    scroll-snap-align: none;
+}
 .db__account-header { text-align: center; margin-bottom: 50px; }
 .db__account-kicker {
     font-size: .68rem; font-weight: 800; color: #f97316;
@@ -1385,6 +1447,7 @@
     .db { scroll-snap-type: none; height: auto; overflow-y: visible; }
     .db__section { min-height: auto; scroll-snap-align: none; padding: 60px 0; }
     .db__section--hero { min-height: 100vh; padding-bottom: 60px; }
+    .db__section--account { padding: 60px 0 28px; }
     .db__dot-nav { display: none; }
     .db__conn-wrap, .db__teams-wrap,
     .db__tourneys-wrap, .db__comms-wrap, .db__library-wrap,
@@ -1444,6 +1507,7 @@
 @media (max-width: 480px) {
     .db__section { padding: 40px 0; }
     .db__section--hero { padding-bottom: 40px; }
+    .db__section--account { padding: 40px 0 20px; }
     .db__metric-card { padding: 24px 16px; }
     .db__team-card { flex: 0 0 200px; padding: 24px 18px; }
     .db__tc-logo { width: 70px; height: 70px; }

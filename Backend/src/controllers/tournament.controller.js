@@ -3,6 +3,8 @@ import User from '../models/User.js';
 import Team from '../models/Team.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
+import { normalizeTournamentServer } from '../../../shared/tournamentServerOptions.js';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
 
 const ROLE_NAMES = {
     "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -197,9 +199,9 @@ const buildMlbbUserIdentityMap = async (registrations = []) => {
     const users = await User.find({ _id: { $in: [...userIds] } }).select('connections.mlbb');
     return new Map(
         users.map((u) => {
-            const status = String(
-                u?.connections?.mlbb?.verificationStatus
-                || (u?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+            const status = normalizeMlbbVerificationStatus(
+                u?.connections?.mlbb?.verificationStatus,
+                u?.connections?.mlbb?.verified
             );
             return [
                 String(u._id),
@@ -234,7 +236,7 @@ const getMlbbIdentityBindingIssues = (
                 continue;
             }
             const linked = identityMap.get(String(p.user));
-            if (!linked || linked.status !== 'verified') {
+            if (!linked || !isMlbbVerifiedStatus(linked.status)) {
                 issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no tiene cuenta MLBB verificada.`);
                 continue;
             }
@@ -530,6 +532,12 @@ export const createTournament = async (req, res) => {
                 message: 'Los torneos universitarios solo pueden crearse para juegos de Riot o Mobile Legends.'
             });
         }
+        const normalizedServer = normalizeTournamentServer(data.game, data.server);
+        if (String(data.server || '').trim() && !normalizedServer) {
+            return res.status(400).json({
+                message: 'Selecciona un servidor válido para el juego elegido.'
+            });
+        }
 
         const newTournament = new Tournament({
             ...data,
@@ -574,6 +582,7 @@ export const createTournament = async (req, res) => {
                 privacyAccepted: parsedLegalCompliance.privacyAccepted === true,
                 organizerDeclaration: parsedLegalCompliance.organizerDeclaration === true
             },
+            server: normalizedServer || '',
             bannerImage: bannerPath,
             rulesPdf: pdfPath,
             organizer: req.userId,
@@ -843,6 +852,16 @@ export const updateTournament = async (req, res) => {
             return res.status(400).json({ message: 'Debes definir jurisdicción y normativa aplicable del torneo' });
         }
         const targetGame = String(update.game || tournament.game || '').trim();
+        const targetServerRaw = update.server !== undefined ? update.server : tournament.server;
+        const normalizedTargetServer = normalizeTournamentServer(targetGame, targetServerRaw);
+        if (String(targetServerRaw || '').trim() && !normalizedTargetServer) {
+            return res.status(400).json({
+                message: 'Selecciona un servidor válido para el juego elegido.'
+            });
+        }
+        if (update.server !== undefined || update.game !== undefined) {
+            update.server = normalizedTargetServer || '';
+        }
         const targetContact = update.contact || tournament.contact || {};
         const targetEntryFee = update.entryFee !== undefined ? update.entryFee : tournament.entryFee;
         const targetFormat = update.format !== undefined ? update.format : tournament.format;
@@ -1154,11 +1173,11 @@ export const registerTeam = async (req, res) => {
             }
         }
         if (requiresMlbb) {
-            const status = String(
-                requester?.connections?.mlbb?.verificationStatus
-                || (requester?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+            const status = normalizeMlbbVerificationStatus(
+                requester?.connections?.mlbb?.verificationStatus,
+                requester?.connections?.mlbb?.verified
             );
-            if (status !== 'verified') {
+            if (!isMlbbVerifiedStatus(status, requester?.connections?.mlbb?.verified)) {
                 return res.status(400).json({ message: 'Debes verificar tu cuenta MLBB para inscribirte' });
             }
         }
@@ -1183,8 +1202,9 @@ export const registerTeam = async (req, res) => {
         if (teamId) {
             const team = await Team.findById(teamId);
             if (!team) return res.status(404).json({ message: 'Equipo no encontrado' });
-            if (String(team.captain) !== String(req.userId) && !requesterIsAdmin) {
-                return res.status(403).json({ message: 'Solo el capitán o un admin puede inscribir al equipo' });
+            const requesterIsCoach = Boolean(team?.roster?.coach && String(team.roster.coach.user || '') === String(req.userId));
+            if (String(team.captain) !== String(req.userId) && !requesterIsCoach && !requesterIsAdmin) {
+                return res.status(403).json({ message: 'Solo el capitán, coach o un admin puede inscribir al equipo' });
             }
             if (String(team.game) !== String(tournament.game)) {
                 return res.status(400).json({ message: 'El juego del equipo no coincide con el torneo' });
@@ -1231,9 +1251,9 @@ export const registerTeam = async (req, res) => {
                 : [];
             const mlbbMap = new Map(
                 mlbbUsers.map((u) => {
-                    const status = String(
-                        u?.connections?.mlbb?.verificationStatus
-                        || (u?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+                    const status = normalizeMlbbVerificationStatus(
+                        u?.connections?.mlbb?.verificationStatus,
+                        u?.connections?.mlbb?.verified
                     );
                     return [
                         String(u._id),
@@ -1277,7 +1297,7 @@ export const registerTeam = async (req, res) => {
                 const missing = mlbbRosterPlayers.find(p => {
                     if (p?.user) {
                         const linked = mlbbMap.get(String(p.user));
-                        return !linked || linked.status !== 'verified';
+                        return !linked || !isMlbbVerifiedStatus(linked.status);
                     }
                     return !p?.gameId || !p?.region;
                 });
@@ -1287,7 +1307,7 @@ export const registerTeam = async (req, res) => {
                 const mismatch = mlbbRosterPlayers.find((p) => {
                     if (!p?.user) return false;
                     const linked = mlbbMap.get(String(p.user));
-                    if (!linked || linked.status !== 'verified') return false;
+                    if (!linked || !isMlbbVerifiedStatus(linked.status)) return false;
                     return normalizeMlbbIdentity(p?.gameId) !== linked.playerId
                         || normalizeMlbbIdentity(p?.region) !== linked.zoneId;
                 });

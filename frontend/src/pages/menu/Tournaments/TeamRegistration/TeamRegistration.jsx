@@ -6,6 +6,7 @@ import PageHud from '../../../../components/PageHud/PageHud';
 import { resolveMediaUrl } from '../../../../utils/media';
 import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/publicIds';
 import { useAuth } from '../../../../context/AuthContext';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import './TeamRegistration.css';
 
 const RIOT_GAMES = new Set([
@@ -74,11 +75,13 @@ const TeamRegistration = () => {
   const requiresRiot = Boolean(tournament.riotRequirements?.required) || RIOT_GAMES.has(tournamentGameNormalized);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
   const requiresMlbb = ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(tournament.game);
-  const hasMlbbLinked =
-    String(
-      currentUser?.connections?.mlbb?.verificationStatus
-        || (currentUser?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
-    ) === 'verified';
+  const hasMlbbLinked = isMlbbVerifiedStatus(
+    normalizeMlbbVerificationStatus(
+      currentUser?.connections?.mlbb?.verificationStatus,
+      currentUser?.connections?.mlbb?.verified
+    ),
+    currentUser?.connections?.mlbb?.verified
+  );
   const currentUserUniversity = currentUser?.university || {};
   const hasVerifiedUniversity = Boolean(currentUserUniversity?.verified && currentUserUniversity?.universityId);
   const requiresUniversityTeam =
@@ -101,6 +104,14 @@ const TeamRegistration = () => {
           && String(selectedTeam.university.universityId) !== String(currentUserUniversity.universityId)
       )
     : false;
+  const selectedTeamCaptainId = String(selectedTeam?.captain?._id || selectedTeam?.captain || '');
+  const selectedTeamCoachId = String(selectedTeam?.roster?.coach?.user || '');
+  const requesterIsSelectedTeamCoach = Boolean(currentUser?._id && selectedTeamCoachId && selectedTeamCoachId === String(currentUser._id));
+  const requesterCanRegisterSelectedTeam = Boolean(
+    currentUser?.isAdmin
+    || (currentUser?._id && selectedTeamCaptainId === String(currentUser._id))
+    || requesterIsSelectedTeamCoach
+  );
   const startersMissingRiotId = requiresRiot
     ? starters.slice(0, expectedStarters).some((p) => p && !p.gameId)
     : false;
@@ -112,7 +123,7 @@ const TeamRegistration = () => {
     && teamComplete
     && gameMatches
     && (!requiresUniversityTeam
-      || (hasVerifiedUniversity && universityTeamValid && !universityPlayersMissingLinkedUser && !universityMismatch))
+      || (requesterCanRegisterSelectedTeam && universityTeamValid && !universityPlayersMissingLinkedUser && !universityMismatch))
     && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId))
     && (!requiresMlbb || (hasMlbbLinked && !mlbbPlayersMissingId && !mlbbPlayersMissingLinkedUser));
 
@@ -126,7 +137,11 @@ const TeamRegistration = () => {
         const visibleTeams = user?.isAdmin
           ? allTeams
           : (user?._id
-              ? allTeams.filter((t) => String(t.captain?._id || t.captain) === String(user._id))
+              ? allTeams.filter((t) => {
+                  const captainId = String(t.captain?._id || t.captain || '');
+                  const coachId = String(t.roster?.coach?.user || '');
+                  return captainId === String(user._id) || coachId === String(user._id);
+                })
               : allTeams);
         const scopedTeams = requiresUniversityTeam
           ? visibleTeams.filter((team) => team?.university?.isUniversityTeam === true)
@@ -173,8 +188,8 @@ const TeamRegistration = () => {
       alert('Todos los titulares deben tener Riot ID.');
       return;
     }
-    if (requiresUniversityTeam && !hasVerifiedUniversity) {
-      alert('Debes tener tu universidad verificada para inscribirte en este torneo.');
+    if (requiresUniversityTeam && !requesterCanRegisterSelectedTeam) {
+      alert('Solo el capitán, coach o un admin puede inscribir este equipo universitario.');
       return;
     }
     if (requiresUniversityTeam && !universityTeamValid) {
@@ -287,8 +302,8 @@ const TeamRegistration = () => {
                   {!teamComplete ? (
                     <p className="validation-error">El equipo no esta completo ({filledStarters}/{expectedStarters}).</p>
                   ) : null}
-                  {requiresUniversityTeam && !hasVerifiedUniversity ? (
-                    <p className="validation-error">Debes tener tu universidad verificada en University.</p>
+                  {requiresUniversityTeam && !requesterCanRegisterSelectedTeam ? (
+                    <p className="validation-error">Solo el capitán, coach o un admin puede registrar este equipo.</p>
                   ) : null}
                   {requiresUniversityTeam && !universityTeamValid ? (
                     <p className="validation-error">Solo puedes registrar equipos universitarios verificados.</p>

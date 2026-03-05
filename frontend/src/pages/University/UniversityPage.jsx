@@ -195,6 +195,7 @@ const UniversityPage = () => {
     return {
       total: unis.length,
       verified: unis.filter(u => u.verified).length,
+      students: unis.reduce((sum, u) => sum + Number(u.verifiedStudentsCount || 0), 0),
       teams: unis.reduce((sum, u) => sum + u.teams.length, 0),
       tournaments: regionTournaments.length,
     };
@@ -667,7 +668,7 @@ const UniversityPage = () => {
             type="button"
             className="up-btn up-btn--ghost"
             disabled={!canCreateUniversityTeam}
-            onClick={() => navigate('/create-team')}
+            onClick={() => navigate('/create-team?teamLevel=universitario&source=university')}
           >
             Ir a equipos
           </button>
@@ -906,6 +907,10 @@ const UniversityPage = () => {
               <div className="up-detail-bio__stat">
                 <span>{selectedUni.joinedEsportefy}</span>
                 <small>En Esportefy</small>
+              </div>
+              <div className="up-detail-bio__stat">
+                <span>{Number(selectedUni.verifiedStudentsCount || 0).toLocaleString()}</span>
+                <small>Estudiantes</small>
               </div>
               <div className="up-detail-bio__stat">
                 <span>{selectedUni.teams.length}</span>
@@ -1236,6 +1241,11 @@ const UniversityPage = () => {
             </div>
             <div className="up-header__stat-sep"></div>
             <div className="up-header__stat">
+              <span>{stats.students}</span>
+              <small>ESTUDIANTES</small>
+            </div>
+            <div className="up-header__stat-sep"></div>
+            <div className="up-header__stat">
               <span>{stats.teams}</span>
               <small>EQUIPOS</small>
             </div>
@@ -1339,8 +1349,13 @@ const UniversityPage = () => {
                         ))}
                         {uni.games.length > 3 && <span className="up-tag up-tag--more">+{uni.games.length - 3}</span>}
                       </div>
-                      <div className="up-uni-card__teams-count">
-                        <i className='bx bx-group'></i> {uni.teams.length}
+                      <div className="up-uni-card__counts">
+                        <div className="up-uni-card__teams-count">
+                          <i className='bx bx-user'></i> {Number(uni.verifiedStudentsCount || 0)}
+                        </div>
+                        <div className="up-uni-card__teams-count">
+                          <i className='bx bx-group'></i> {uni.teams.length}
+                        </div>
                       </div>
                     </div>
                     <div className="up-uni-card__hover-hint">
@@ -1472,6 +1487,7 @@ const UniversityPage = () => {
                           {uni.verified && <i className='bx bxs-badge-check up-verified'></i>}
                         </div>
                         <small>{uni.name}</small>
+                        <small className="up-rankings__students">{Number(uni.verifiedStudentsCount || 0)} estudiantes verificados</small>
                       </div>
                     </div>
                     <span className="up-rankings__city">{uni.city}</span>

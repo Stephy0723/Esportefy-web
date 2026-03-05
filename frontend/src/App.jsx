@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -60,6 +60,8 @@ const WelcomeTrigger = () => null;
 
 const MainLayout = () => {
   const [isClosed, setIsClosed] = useState(true);
+  const location = useLocation();
+  const hideLayoutFooter = location.pathname.startsWith('/dashboard');
 
   return (
     <>
@@ -69,7 +71,7 @@ const MainLayout = () => {
         <div className="content-wrapper">
           <Outlet />
         </div>
-        <Footer />
+        {!hideLayoutFooter && <Footer />}
       </div>
     </>
   );
@@ -87,6 +89,7 @@ const PublicLayout = () => {
 const AppRouterContent = () => {
   const location = useLocation();
   const hideFloatingOverlays =
+    location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/create-team') ||
     location.pathname.includes('/roulette/live');
 
@@ -129,6 +132,7 @@ const AppRouterContent = () => {
             <Route path="/equipos" element={<Teams />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/perfil" element={<Navigate to="/profile" replace />} />
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NewsDetail />} />
@@ -170,4 +174,3 @@ function App() {
 }
 
 export default App;
-

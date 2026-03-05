@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
 import { 
@@ -12,6 +12,7 @@ import { withCsrfHeaders } from '../../../../utils/csrf';
 import { useNotification } from '../../../../context/NotificationContext';
 import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import './CreateTeamPage.css';
 
 // Configuración de Roles Visuales
@@ -113,8 +114,14 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
 const CreateTeamPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { addToast } = useNotification();
     const { user: authUser } = useAuth();
+    const presetTeamLevel = useMemo(() => {
+        const params = new URLSearchParams(location.search || '');
+        const raw = String(params.get('teamLevel') || '').trim().toLowerCase();
+        return raw === 'universitario' ? 'Universitario' : '';
+    }, [location.search]);
     
     // --- ESTADOS Y DATOS ---
     const storedUser = useMemo(() => {
@@ -136,7 +143,13 @@ const CreateTeamPage = () => {
         currentUser?.gameProfiles?.valorant?.shard ||
         currentUser?.connections?.riot?.accountRegion ||
         '';
-    const mlbbVerified = Boolean(currentUser?.connections?.mlbb?.verified);
+    const mlbbVerified = isMlbbVerifiedStatus(
+        normalizeMlbbVerificationStatus(
+            currentUser?.connections?.mlbb?.verificationStatus,
+            currentUser?.connections?.mlbb?.verified
+        ),
+        currentUser?.connections?.mlbb?.verified
+    );
     const mlbbPlayerId = String(currentUser?.connections?.mlbb?.playerId || '');
     const mlbbZoneId = String(currentUser?.connections?.mlbb?.zoneId || '');
     const currentUserUniversity = currentUser?.university || {};
@@ -161,7 +174,7 @@ const CreateTeamPage = () => {
         // Perfil de Escuadra
         teamGender: 'Mixto',      
         teamCountry: '',          
-        teamLevel: 'Amateur',     
+        teamLevel: presetTeamLevel || 'Amateur',     
         teamLanguage: 'Español',  
         // Lógica interna
         maxMembers: 0, 
@@ -310,11 +323,11 @@ const CreateTeamPage = () => {
     );
     const mlbbLinked = useMemo(
         () => {
-            const status = String(
-                currentUser?.connections?.mlbb?.verificationStatus
-                || (currentUser?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+            const status = normalizeMlbbVerificationStatus(
+                currentUser?.connections?.mlbb?.verificationStatus,
+                currentUser?.connections?.mlbb?.verified
             );
-            return status === 'verified';
+            return isMlbbVerifiedStatus(status, currentUser?.connections?.mlbb?.verified);
         },
         [currentUser]
     );
@@ -382,6 +395,15 @@ const CreateTeamPage = () => {
             return String(slot.user || '') !== captainUserId;
         });
     }, [isUniversityTeamSelected, roster, currentUser]);
+
+    useEffect(() => {
+        if (!presetTeamLevel) return;
+        setFormData((prev) => (
+            prev.teamLevel === presetTeamLevel
+                ? prev
+                : { ...prev, teamLevel: presetTeamLevel }
+        ));
+    }, [presetTeamLevel]);
 
     useEffect(() => {
         if (formData.teamCountry && !COUNTRY_OPTIONS.includes(formData.teamCountry)) {
@@ -746,6 +768,11 @@ const CreateTeamPage = () => {
                                         <option value="Profesional">Profesional (Tier 1)</option>
                                         <option value="Leyenda">Leyenda (Elite)</option>
                                     </select>
+                                    {presetTeamLevel === 'Universitario' && (
+                                        <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
+                                            Preseleccionado desde University como equipo institucional.
+                                        </small>
+                                    )}
                                     {isUniversityTeamSelected && (
                                         <small style={{ color: currentUserUniversityVerified ? 'var(--theme-color)' : '#ff6b6b', display: 'block', marginTop: '8px' }}>
                                             {currentUserUniversityVerified

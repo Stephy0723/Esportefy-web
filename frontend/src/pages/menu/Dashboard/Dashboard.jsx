@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Chart from 'react-apexcharts';
 import { API_URL } from '../../../config/api';
 import PageHud from '../../../components/PageHud/PageHud';
+import Footer from '../../../components/Home/Footer';
 import './Dashboard.css';
 import { gamesDetailedData } from '../../../data/gamesDetailedData';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx';
@@ -12,6 +13,8 @@ import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import SponsorMotion from '../../../components/SponsorMotion/SponsorMotion';
 import { applyImageFallback, getAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { useAuth } from '../../../context/AuthContext';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 
 /* ── Animated count-up ── */
 const AnimatedNumber = ({ target, duration = 1800 }) => {
@@ -83,6 +86,7 @@ const slideRight = {
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const { user: authUser } = useAuth();
     const containerRef = useRef(null);
     const sectionRefs = useRef({});
     const teamsTrackRef = useRef(null);
@@ -96,12 +100,22 @@ const Dashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [activeSection, setActiveSection] = useState('hero');
     const [connectionPanel, setConnectionPanel] = useState(null);
+    const [mlbbPlayerId, setMlbbPlayerId] = useState('');
+    const [mlbbZoneId, setMlbbZoneId] = useState('');
+    const [mlbbIgn, setMlbbIgn] = useState('');
+    const [mlbbMsg, setMlbbMsg] = useState('');
+    const [mlbbLoading, setMlbbLoading] = useState(false);
+    const [mlbbValidating, setMlbbValidating] = useState(false);
     const [myCommunities, setMyCommunities] = useState([]);
     const [currentMetricIdx, setCurrentMetricIdx] = useState(0);
     const [metricDetailOpen, setMetricDetailOpen] = useState(false);
     const [activeGameIdx, setActiveGameIdx] = useState(0);
     const [teamPanel, setTeamPanel] = useState(null);
     const [teamPanelLoading, setTeamPanelLoading] = useState(false);
+    const getToken = useCallback(
+        () => localStorage.getItem('token') || sessionStorage.getItem('token'),
+        []
+    );
 
     /* ── Reloj ── */
     useEffect(() => {
@@ -112,24 +126,39 @@ const Dashboard = () => {
     /* ══════════════════════════════════════════════
        FETCH PROFILE  (DB — NO TOCAR)
        ══════════════════════════════════════════════ */
-    useEffect(() => {
-        const fetchProfile = async () => {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) { navigate('/login'); return; }
-            try {
-                const response = await axios.get(`${API_URL}/api/auth/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                setUser(response.data);
-            } catch (error) {
-                console.error(error);
+    const fetchProfile = useCallback(async () => {
+        const token = getToken();
+        if (authUser?._id) {
+            setUser(authUser);
+        }
+        if (!token) {
+            if (!authUser?._id) {
                 navigate('/login');
-            } finally {
-                setLoading(false);
             }
-        };
+            setLoading(false);
+            return null;
+        }
+        try {
+            const response = await axios.get(`${API_URL}/api/auth/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(response.data);
+            return response.data;
+        } catch (error) {
+            console.error(error);
+            const status = Number(error?.response?.status || 0);
+            if ((status === 401 || status === 403) && !authUser?._id) {
+                navigate('/login');
+            }
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, [authUser, getToken, navigate]);
+
+    useEffect(() => {
         fetchProfile();
-    }, [navigate]);
+    }, [fetchProfile]);
 
     /* ══════════════════════════════════════════════
        FETCH TEAMS  (DB — NO TOCAR)
@@ -233,15 +262,23 @@ const Dashboard = () => {
         return () => observer.disconnect();
     }, [loading, user]);
 
-    const getToken = useCallback(
-        () => localStorage.getItem('token') || sessionStorage.getItem('token'),
-        []
-    );
-
     const scrollTo = useCallback((id) => {
         const el = sectionRefs.current[id];
         if (el) el.scrollIntoView({ behavior: 'smooth' });
     }, []);
+
+    useEffect(() => {
+        if (connectionPanel?.id !== 'moonton') return;
+        setMlbbPlayerId(user?.connections?.mlbb?.playerId || '');
+        setMlbbZoneId(user?.connections?.mlbb?.zoneId || '');
+        setMlbbIgn(user?.connections?.mlbb?.ign || '');
+        setMlbbMsg('');
+    }, [
+        connectionPanel?.id,
+        user?.connections?.mlbb?.playerId,
+        user?.connections?.mlbb?.zoneId,
+        user?.connections?.mlbb?.ign
+    ]);
 
     const scrollTeams = useCallback((dir) => {
         const track = teamsTrackRef.current;
@@ -430,15 +467,55 @@ const Dashboard = () => {
     }), [profileCompletion]);
 
     /* ── Connection status helper ── */
+    const getProviderConnection = (providerId) => {
+        if (providerId === 'moonton') return user?.connections?.mlbb || null;
+        return user?.connections?.[providerId] || null;
+    };
+
+    const getMlbbVerificationStatus = () => normalizeMlbbVerificationStatus(
+        user?.connections?.mlbb?.verificationStatus,
+        user?.connections?.mlbb?.verified
+    );
+
     const isConnected = (providerId) => {
+        if (providerId === 'moonton') {
+            const status = getMlbbVerificationStatus();
+            return Boolean(
+                isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified)
+                && user?.connections?.mlbb?.playerId
+                && user?.connections?.mlbb?.zoneId
+            );
+        }
         return !!user?.connections?.[providerId]?.verified;
     };
 
     const connectedCount = CONNECTION_PROVIDERS.filter(p => isConnected(p.id)).length;
 
+    const getProviderStatusLabel = (providerId) => {
+        if (providerId === 'moonton') {
+            const status = getMlbbVerificationStatus();
+            if (isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified)) return 'Vinculada';
+            if (status === 'pending') return 'En revisión';
+            if (status === 'rejected') return 'Rechazada';
+            return 'No vinculada';
+        }
+        return isConnected(providerId) ? 'Vinculada' : 'No vinculada';
+    };
+
     /* ── Get connected account display info ── */
     const getConnectionInfo = (provider) => {
-        const conn = user?.connections?.[provider.id];
+        const conn = getProviderConnection(provider.id);
+        if (provider.id === 'moonton') {
+            const status = getMlbbVerificationStatus();
+            if (!isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified) || !conn?.playerId || !conn?.zoneId) return null;
+            return {
+                tag: `ID ${conn.playerId} (${conn.zoneId})`,
+                stats: [
+                    { label: 'Estado', val: 'Verificada' },
+                    { label: 'IGN', val: conn.ign || 'Sin IGN' }
+                ]
+            };
+        }
         if (!conn?.verified) return null;
         switch (provider.id) {
             case 'riot':
@@ -458,6 +535,93 @@ const Dashboard = () => {
                 ] };
         }
     };
+
+    const validateMlbbDraft = useCallback(async () => {
+        const token = getToken();
+        if (!token) {
+            setMlbbMsg('Debes iniciar sesión nuevamente.');
+            return;
+        }
+        if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
+            setMlbbMsg('Debes completar User ID y Zone ID.');
+            return;
+        }
+        try {
+            setMlbbValidating(true);
+            setMlbbMsg('');
+            const res = await axios.post(
+                `${API_URL}/api/auth/mlbb/validate`,
+                {
+                    playerId: mlbbPlayerId.trim(),
+                    zoneId: mlbbZoneId.trim(),
+                    ign: mlbbIgn.trim()
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setMlbbMsg(res.data?.message || 'MLBB ID válido.');
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'No se pudo validar la cuenta MLBB.');
+        } finally {
+            setMlbbValidating(false);
+        }
+    }, [getToken, mlbbIgn, mlbbPlayerId, mlbbZoneId]);
+
+    const linkMlbb = useCallback(async () => {
+        const token = getToken();
+        if (!token) {
+            setMlbbMsg('Debes iniciar sesión nuevamente.');
+            return;
+        }
+        if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
+            setMlbbMsg('Debes completar User ID y Zone ID.');
+            return;
+        }
+        try {
+            setMlbbLoading(true);
+            setMlbbMsg('');
+            const res = await axios.post(
+                `${API_URL}/api/auth/mlbb/link`,
+                {
+                    playerId: mlbbPlayerId.trim(),
+                    zoneId: mlbbZoneId.trim(),
+                    ign: mlbbIgn.trim()
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            await fetchProfile();
+            const nextStatus = String(res?.data?.status || '');
+            setMlbbMsg(
+                nextStatus === 'pending'
+                    ? 'Solicitud enviada. Tu cuenta MLBB quedó en revisión.'
+                    : 'Cuenta MLBB vinculada correctamente.'
+            );
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'No se pudo vincular la cuenta MLBB.');
+        } finally {
+            setMlbbLoading(false);
+        }
+    }, [fetchProfile, getToken, mlbbIgn, mlbbPlayerId, mlbbZoneId]);
+
+    const unlinkMlbb = useCallback(async () => {
+        const token = getToken();
+        if (!token) {
+            setMlbbMsg('Debes iniciar sesión nuevamente.');
+            return;
+        }
+        try {
+            setMlbbLoading(true);
+            setMlbbMsg('');
+            await axios.delete(`${API_URL}/api/auth/mlbb`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchProfile();
+            setMlbbMsg('Cuenta MLBB desvinculada.');
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'No se pudo desvincular la cuenta MLBB.');
+        } finally {
+            setMlbbLoading(false);
+        }
+    }, [fetchProfile, getToken]);
 
     /* ── Active game for library ── */
     const activeGame = enrichedGames[activeGameIdx] || null;
@@ -634,6 +798,113 @@ const Dashboard = () => {
     const getFilledMemberCount = (team) => getTeamRoster(team).length;
     const getTeamCode = (team) => team?.teamCode ? `TEAM-${team.teamCode}` : (team?.inviteCode || team?._id?.slice(-6) || '—');
 
+    const renderMlbbConnectionPanel = () => {
+        const mlbbConn = user?.connections?.mlbb || {};
+        const mlbbStatus = getMlbbVerificationStatus();
+        const mlbbLinked = isConnected('moonton');
+
+        if (mlbbLinked) {
+            return (
+                <div className="db__conn-panel-linked">
+                    <div className="db__conn-panel-avatar" style={{ color: connectionPanel.color, borderColor: connectionPanel.color }}>
+                        <i className={connectionPanel.icon}></i>
+                        <span className="db__conn-panel-badge"><i className="bx bx-check"></i></span>
+                    </div>
+                    <p className="db__conn-panel-gamertag" style={{ color: connectionPanel.color }}>
+                        ID {mlbbConn.playerId} ({mlbbConn.zoneId})
+                    </p>
+                    <p className="db__conn-panel-sub">Cuenta MLBB verificada en Esportefy</p>
+                    <div className="db__conn-panel-stats">
+                        <div className="db__conn-panel-stat">
+                            <span className="db__conn-panel-stat-val">{mlbbConn.ign || 'Sin IGN'}</span>
+                            <span className="db__conn-panel-stat-lbl">IGN</span>
+                        </div>
+                        <div className="db__conn-panel-stat">
+                            <span className="db__conn-panel-stat-val">Verificada</span>
+                            <span className="db__conn-panel-stat-lbl">Estado</span>
+                        </div>
+                    </div>
+                    {mlbbMsg && <p className="db__conn-panel-msg">{mlbbMsg}</p>}
+                    <div className="db__conn-panel-actions">
+                        <button className="db__btn db__btn--outline" onClick={() => navigate('/settings')}>
+                            <i className="bx bx-cog"></i> Configurar
+                        </button>
+                        <button className="db__btn db__btn--danger-ghost" onClick={unlinkMlbb} disabled={mlbbLoading}>
+                            <i className="bx bx-unlink"></i> {mlbbLoading ? 'Procesando...' : 'Desvincular'}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="db__conn-panel-linked">
+                <div className={`db__conn-panel-status ${mlbbStatus === 'rejected' ? 'db__conn-panel-status--error' : 'db__conn-panel-status--pending'}`}>
+                    <i className={mlbbStatus === 'pending' ? 'bx bx-time-five' : mlbbStatus === 'rejected' ? 'bx bx-error-circle' : 'bx bx-link-external'}></i>
+                    <span>{getProviderStatusLabel('moonton')}</span>
+                    <p className="db__conn-panel-desc">Verificación interna de Esportefy. No es una validación oficial de Moonton/API pública de MLBB.</p>
+                    {mlbbStatus === 'pending' && (
+                        <p className="db__conn-panel-detail">Tu solicitud está en revisión.</p>
+                    )}
+                    {mlbbStatus === 'rejected' && (
+                        <p className="db__conn-panel-detail">{mlbbConn.rejectReason || 'La solicitud fue rechazada. Corrige los datos y vuelve a enviar.'}</p>
+                    )}
+                </div>
+
+                <div className="db__conn-panel-form">
+                    <label className="db__conn-panel-field">
+                        <span>User ID</span>
+                        <input
+                            type="text"
+                            value={mlbbPlayerId}
+                            onChange={(e) => setMlbbPlayerId(e.target.value)}
+                            disabled={mlbbLoading || mlbbValidating}
+                            placeholder="Ej: 853455730"
+                        />
+                    </label>
+                    <label className="db__conn-panel-field">
+                        <span>Zone ID</span>
+                        <input
+                            type="text"
+                            value={mlbbZoneId}
+                            onChange={(e) => setMlbbZoneId(e.target.value)}
+                            disabled={mlbbLoading || mlbbValidating}
+                            placeholder="Ej: 5280"
+                        />
+                    </label>
+                    <label className="db__conn-panel-field">
+                        <span>IGN (opcional)</span>
+                        <input
+                            type="text"
+                            value={mlbbIgn}
+                            onChange={(e) => setMlbbIgn(e.target.value)}
+                            disabled={mlbbLoading || mlbbValidating}
+                            placeholder="Tu nombre dentro del juego"
+                        />
+                    </label>
+                    {mlbbMsg && <p className="db__conn-panel-msg">{mlbbMsg}</p>}
+                </div>
+
+                <div className="db__conn-panel-actions">
+                    <button className="db__btn db__btn--outline" onClick={validateMlbbDraft} disabled={mlbbLoading || mlbbValidating}>
+                        <i className="bx bx-check-shield"></i> {mlbbValidating ? 'Validando...' : 'Validar ID'}
+                    </button>
+                    <button className="db__btn db__btn--primary" onClick={linkMlbb} disabled={mlbbLoading || mlbbValidating}>
+                        <i className="bx bx-link-alt"></i> {mlbbLoading ? 'Conectando...' : 'Conectar'}
+                    </button>
+                </div>
+
+                {(mlbbStatus === 'pending' || mlbbStatus === 'rejected') && (
+                    <div className="db__conn-panel-actions">
+                        <button className="db__btn db__btn--danger-ghost" onClick={unlinkMlbb} disabled={mlbbLoading}>
+                            <i className="bx bx-x-circle"></i> {mlbbLoading ? 'Procesando...' : mlbbStatus === 'pending' ? 'Cancelar solicitud' : 'Limpiar y volver a intentar'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     /* ── Loading ── */
     if (loading) {
         return (
@@ -671,9 +942,11 @@ const Dashboard = () => {
             </nav>
 
             {/* ═══════ SPONSOR SNAKE ═══════ */}
-            <div className="db__sponsor-wrap">
-                <SponsorMotion />
-            </div>
+            {!['library', 'account'].includes(activeSection) && (
+                <div className="db__sponsor-wrap">
+                    <SponsorMotion />
+                </div>
+            )}
 
             {/* ═══════ CONNECTION PANEL (slide right) ═══════ */}
             <AnimatePresence>
@@ -695,6 +968,9 @@ const Dashboard = () => {
                             </div>
                             <div className="db__conn-panel-body">
                                 {(() => {
+                                    if (connectionPanel.id === 'moonton') {
+                                        return renderMlbbConnectionPanel();
+                                    }
                                     const info = getConnectionInfo(connectionPanel);
                                     if (info) {
                                         /* ── Connected: rich account view ── */
@@ -1212,7 +1488,7 @@ const Dashboard = () => {
                                     <div className="db__conn-card-icon"><i className={p.icon}></i></div>
                                     <div className="db__conn-card-info">
                                         <strong>{p.name}</strong>
-                                        <span>{linked ? 'Vinculada' : 'No vinculada'}</span>
+                                        <span>{getProviderStatusLabel(p.id)}</span>
                                     </div>
                                     <div className="db__conn-card-status">
                                         {linked
@@ -1322,7 +1598,13 @@ const Dashboard = () => {
                                 return (
                                     <motion.div key={t._id || t.tournamentId} className="db__tr-card" variants={fadeChild} onClick={() => navigate(`/tournaments/${t.tournamentId}`)}>
                                         <div className="db__tr-thumb">
-                                            {t.bannerImage ? <img src={`${API_URL}/${t.bannerImage}`} alt="" /> : <i className="bx bx-trophy"></i>}
+                                            {t.bannerImage ? (
+                                                <img
+                                                    src={resolveMediaUrl(t.bannerImage)}
+                                                    alt={t.title || 'Torneo'}
+                                                    onError={(e) => applyImageFallback(e, getTeamFallback(t.title || t.game || 'Torneo'))}
+                                                />
+                                            ) : <i className="bx bx-trophy"></i>}
                                         </div>
                                         <div className="db__tr-info">
                                             <strong>{t.title}</strong>
@@ -1378,10 +1660,22 @@ const Dashboard = () => {
                             {myCommunities.slice(0, 6).map(c => (
                                 <motion.div key={c._id || c.id} className="db__comm-card" variants={fadeChild} onClick={() => navigate(`/community/${c.shortUrl}`)}>
                                     <div className="db__comm-banner">
-                                        {c.bannerUrl ? <img src={c.bannerUrl} alt="" /> : <div className="db__comm-banner--ph"></div>}
+                                        {c.bannerUrl ? (
+                                            <img
+                                                src={resolveMediaUrl(c.bannerUrl)}
+                                                alt={c.name || 'Comunidad'}
+                                                onError={(e) => applyImageFallback(e, getTeamFallback(c.name || 'Comunidad'))}
+                                            />
+                                        ) : <div className="db__comm-banner--ph"></div>}
                                     </div>
                                     <div className="db__comm-avatar">
-                                        {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} /> : <i className="bx bx-buildings"></i>}
+                                        {c.avatarUrl ? (
+                                            <img
+                                                src={resolveMediaUrl(c.avatarUrl)}
+                                                alt={c.name}
+                                                onError={(e) => applyImageFallback(e, getTeamFallback(c.name || 'Comunidad'))}
+                                            />
+                                        ) : <i className="bx bx-buildings"></i>}
                                     </div>
                                     <div className="db__comm-info">
                                         <strong>{c.name}</strong>
@@ -1547,6 +1841,10 @@ const Dashboard = () => {
                     </motion.div>
                 </motion.div>
             </section>
+
+            <div className="db__footer-shell">
+                <Footer />
+            </div>
         </div>
     );
 };

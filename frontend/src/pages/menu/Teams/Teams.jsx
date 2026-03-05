@@ -8,6 +8,7 @@ import ViewTeamModal from './ViewTeamModal';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
 import { formatTeamPublicId, getPublicTeamCode, matchesTeamPublicId } from '../../../utils/publicIds';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import './Teams.css';
 
 /* ═══════════════════════════════════════
@@ -114,11 +115,11 @@ const Team = () => {
     }, []);
     const currentUser = authUser || storedUser;
     const mlbbConnection = currentUser?.connections?.mlbb || {};
-    const currentUserMlbbStatus = String(
-        mlbbConnection?.verificationStatus
-        || (mlbbConnection?.verified ? 'verified' : 'unlinked')
+    const currentUserMlbbStatus = normalizeMlbbVerificationStatus(
+        mlbbConnection?.verificationStatus,
+        mlbbConnection?.verified
     );
-    const currentUserMlbbVerified = currentUserMlbbStatus === 'verified';
+    const currentUserMlbbVerified = isMlbbVerifiedStatus(currentUserMlbbStatus, mlbbConnection?.verified);
     const currentUserMlbbIgn = String(
         currentUser?.gameProfiles?.mlbb?.ign
         || mlbbConnection?.ign

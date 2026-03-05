@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { STATUS_LIST } from '../../data/defaultAvatars';
 import { applyImageFallback, getBotAvatarFallback, resolveMediaUrl } from '../../utils/media';
 import './Navbar.css';
@@ -49,6 +50,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
+  const { logout } = useAuth();
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const actionsRef = useRef(null);
@@ -162,12 +164,9 @@ const Navbar = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('esportefyUser');
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('user-update'));
+  const handleLogout = async () => {
     setProfileOpen(false);
-    navigate('/');
+    await logout();
   };
 
   const handleSearch = (e) => {

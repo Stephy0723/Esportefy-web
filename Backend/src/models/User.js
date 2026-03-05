@@ -102,7 +102,7 @@ const UserSchema = new mongoose.Schema({
             ign: { type: String },
             verificationStatus: {
                 type: String,
-                enum: ['unlinked', 'pending', 'verified', 'rejected'],
+                enum: ['unlinked', 'pending', 'verified', 'verified_auto', 'verified_manual', 'rejected'],
                 default: 'unlinked'
             },
             verified: { type: Boolean, default: false },
@@ -110,7 +110,9 @@ const UserSchema = new mongoose.Schema({
             reviewRequestedAt: Date,
             reviewedAt: Date,
             reviewedBy: { type: String },
-            rejectReason: { type: String, default: '' }
+            rejectReason: { type: String, default: '' },
+            linkAttempts: { type: [Date], default: [] },
+            riskFlags: { type: [String], default: [] }
         }
     },
 

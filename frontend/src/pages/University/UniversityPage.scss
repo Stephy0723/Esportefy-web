@@ -526,6 +526,13 @@ $primary-hover: #7ac40f;
     gap: 4px;
   }
 
+  &__counts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
   &__teams-count {
     display: flex;
     align-items: center;
@@ -814,6 +821,11 @@ $primary-hover: #7ac40f;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+  }
+
+  &__students {
+    color: var(--primary) !important;
+    font-weight: 700 !important;
   }
 
   &__uni-name {

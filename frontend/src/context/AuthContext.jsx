@@ -8,6 +8,12 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const clearClientSession = () => {
+        localStorage.removeItem('esportefyUser');
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('esportefyUser');
+        sessionStorage.removeItem('token');
+    };
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -39,7 +45,7 @@ export const AuthProvider = ({ children }) => {
             } catch (error) {
                 if (error.response?.status === 401 || error.response?.status === 403) {
                     // Cookie expirada o no existe — limpiar sesión sin redirect loop
-                    localStorage.removeItem('esportefyUser');
+                    clearClientSession();
                     setUser(null);
                 } else {
                     // Error de red — mantener datos cacheados si existen
@@ -72,8 +78,7 @@ export const AuthProvider = ({ children }) => {
         try {
             await axios.post(`${API_URL}/api/auth/logout`);
         } catch (_) { /* ignore */ }
-        localStorage.removeItem('esportefyUser');
-        localStorage.removeItem('token');
+        clearClientSession();
         setUser(null);
         window.location.href = '/'; 
     };

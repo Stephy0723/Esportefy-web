@@ -9,6 +9,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -437,9 +438,9 @@ const requireRiotLinked = async (userId) => {
 
 const getMlbbConnectionState = async (userId) => {
     const user = await User.findById(userId).select('connections.mlbb');
-    const status = String(
-        user?.connections?.mlbb?.verificationStatus
-        || (user?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+    const status = normalizeMlbbVerificationStatus(
+        user?.connections?.mlbb?.verificationStatus,
+        user?.connections?.mlbb?.verified
     );
     return {
         status,
@@ -450,7 +451,7 @@ const getMlbbConnectionState = async (userId) => {
 
 const requireMlbbLinked = async (userId) => {
     const conn = await getMlbbConnectionState(userId);
-    return conn.status === 'verified';
+    return isMlbbVerifiedStatus(conn.status);
 };
 
 const validateMlbbIdentity = (playerId, zoneId) => {
@@ -470,7 +471,7 @@ const validateMlbbIdentity = (playerId, zoneId) => {
 
 const ensureMlbbPlayerMatchesLinkedUser = async (userId, playerId, zoneId) => {
     const conn = await getMlbbConnectionState(userId);
-    if (conn.status !== 'verified') {
+    if (!isMlbbVerifiedStatus(conn.status)) {
         return { ok: false, message: 'La cuenta MLBB del jugador no está verificada.' };
     }
 
@@ -485,7 +486,7 @@ const ensureMlbbPlayerMatchesLinkedUser = async (userId, playerId, zoneId) => {
 
 const buildMlbbLinkedPlayerPayload = async (userId, player = {}) => {
     const conn = await getMlbbConnectionState(userId);
-    if (conn.status !== 'verified') {
+    if (!isMlbbVerifiedStatus(conn.status)) {
         return { ok: false, message: 'La cuenta MLBB del jugador no está verificada.' };
     }
 

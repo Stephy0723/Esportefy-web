@@ -13,6 +13,7 @@ import { API_URL } from '../../../config/api';
 import { useEffect } from "react";
 import SecurityCenterUI from './SecurityCenterUI';
 import PageHud from '../../../components/PageHud/PageHud';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 
 
 export default function Settings() {
@@ -55,11 +56,11 @@ export default function Settings() {
     const [mlbbValidating, setMlbbValidating] = useState(false);
     const [mlbbMsg, setMlbbMsg] = useState('');
     const [mlbbStatus, setMlbbStatus] = useState(null);
-    const mlbbVerificationStatus = String(
-        connections?.mlbb?.verificationStatus
-        || (connections?.mlbb?.verified ? 'verified' : 'unlinked')
+    const mlbbVerificationStatus = normalizeMlbbVerificationStatus(
+        connections?.mlbb?.verificationStatus,
+        connections?.mlbb?.verified
     );
-    const mlbbLinked = mlbbVerificationStatus === 'verified';
+    const mlbbLinked = isMlbbVerifiedStatus(mlbbVerificationStatus, connections?.mlbb?.verified);
 
 
     const [loading, setLoading] = useState(true);
