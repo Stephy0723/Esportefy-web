@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════
-   SETTINGS — Esportefy Pro Dashboard
+   SETTINGS — Esportefy Pro Dashboard V2
+   With Particles, Ambient Orbs & Animations
    ═══════════════════════════════════════════════════════ */
 
 :root {
@@ -16,15 +17,129 @@
 
 /* ═══════ PAGE ═══════ */
 .settings-page {
+    position: relative;
     min-height: 100vh;
     background-color: var(--bg-page);
     color: var(--text-main);
     font-family: 'Rajdhani', sans-serif;
     padding: 1.5rem;
     padding-top: .6rem;
+    overflow: hidden;
+}
+
+/* ═══════ FLOATING PARTICLES ═══════ */
+.settings-particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.settings-particle {
+    position: absolute;
+    bottom: -10px;
+    background: var(--primary);
+    border-radius: 50%;
+    opacity: 0;
+    animation: settings-float-particle linear infinite;
+    box-shadow: 0 0 8px var(--primary);
+}
+
+@keyframes settings-float-particle {
+    0% {
+        transform: translateY(0) translateX(0) scale(1);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-50vh) translateX(30px) scale(0.8);
+        opacity: 0.3;
+    }
+    90% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: translateY(-100vh) translateX(-20px) scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* ═══════ AMBIENT ORBS ═══════ */
+.settings-ambient-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+    animation: settings-orb-drift 20s ease-in-out infinite;
+}
+
+.settings-ambient-orb--1 {
+    width: 500px;
+    height: 500px;
+    background: var(--primary);
+    top: -150px;
+    left: -100px;
+    animation-delay: 0s;
+}
+
+.settings-ambient-orb--2 {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+    bottom: -100px;
+    right: -50px;
+    animation-delay: -7s;
+    animation-duration: 25s;
+}
+
+.settings-ambient-orb--3 {
+    width: 300px;
+    height: 300px;
+    background: #22c55e;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -12s;
+    animation-duration: 30s;
+    opacity: 0.06;
+}
+
+@keyframes settings-orb-drift {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    25% {
+        transform: translate(30px, -20px) scale(1.1);
+    }
+    50% {
+        transform: translate(-20px, 30px) scale(0.95);
+    }
+    75% {
+        transform: translate(40px, 20px) scale(1.05);
+    }
+}
+
+/* ═══════ GRID BACKGROUND ═══════ */
+.settings-grid {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: 
+        linear-gradient(90deg, rgba(var(--primary-rgb, 142, 219, 21), 0.02) 1px, transparent 1px),
+        linear-gradient(rgba(var(--primary-rgb, 142, 219, 21), 0.02) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
 }
 
 .settings-layout {
+    position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: 250px 1fr;
     gap: 1.25rem;
@@ -38,15 +153,32 @@
     top: 1.5rem;
     height: fit-content;
     border-radius: var(--st-radius-lg);
-    border: 1px solid var(--st-glass-border);
+    border: 1px solid rgba(var(--primary-rgb, 142, 219, 21), 0.15);
     background:
         linear-gradient(165deg,
-            color-mix(in srgb, var(--bg-card) 92%, var(--primary)),
+            color-mix(in srgb, var(--bg-card) 85%, var(--primary)),
             var(--bg-card) 40%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     padding: 1.25rem 1rem;
-    box-shadow: var(--st-shadow);
+    box-shadow: 
+        var(--st-shadow),
+        0 0 40px rgba(var(--primary-rgb, 142, 219, 21), 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+/* Sidebar glow effect */
+.settings-sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(180deg, rgba(var(--primary-rgb, 142, 219, 21), 0.08) 0%, transparent 100%);
+    pointer-events: none;
+    border-radius: var(--st-radius-lg) var(--st-radius-lg) 0 0;
 }
 
 .sidebar-header h3 {
@@ -103,20 +235,25 @@
 }
 
 .nav-item:hover {
-    background: color-mix(in srgb, var(--primary) 6%, var(--bg-elevated));
+    background: color-mix(in srgb, var(--primary) 8%, var(--bg-elevated));
     color: var(--text-main);
-    border-color: color-mix(in srgb, var(--primary) 8%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .nav-item:hover svg {
     color: var(--primary);
+    transform: scale(1.1);
 }
 
 .nav-item.active {
-    background: color-mix(in srgb, var(--primary) 12%, var(--bg-elevated));
+    background: linear-gradient(135deg, 
+        color-mix(in srgb, var(--primary) 15%, var(--bg-elevated)),
+        color-mix(in srgb, var(--primary) 8%, var(--bg-elevated)));
     color: var(--text-main);
-    border-color: color-mix(in srgb, var(--primary) 18%, var(--border-color));
-    box-shadow: var(--st-glow);
+    border-color: rgba(var(--primary-rgb, 142, 219, 21), 0.25);
+    box-shadow: 
+        0 0 20px rgba(var(--primary-rgb, 142, 219, 21), 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .nav-item.active::before {
@@ -136,15 +273,35 @@
 
 /* ═══════ CONTENT AREA ═══════ */
 .settings-content {
+    position: relative;
     border-radius: var(--st-radius-lg);
-    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    border: 1px solid rgba(var(--primary-rgb, 142, 219, 21), 0.12);
     background:
         linear-gradient(175deg,
-            color-mix(in srgb, var(--bg-card) 96%, var(--primary)),
+            color-mix(in srgb, var(--bg-card) 90%, var(--primary)),
             var(--bg-card) 30%);
-    box-shadow: var(--st-shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 
+        var(--st-shadow),
+        0 0 60px rgba(var(--primary-rgb, 142, 219, 21), 0.03),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
     padding: 1.75rem 2rem;
     min-height: 600px;
+    overflow: hidden;
+}
+
+/* Content top glow accent */
+.settings-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 150px;
+    background: radial-gradient(ellipse at top center, rgba(var(--primary-rgb, 142, 219, 21), 0.06) 0%, transparent 70%);
+    pointer-events: none;
+    border-radius: var(--st-radius-lg) var(--st-radius-lg) 0 0;
 }
 
 /* Panel inside content — no double boxing */
@@ -167,11 +324,17 @@
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 60px;
+    width: 80px;
     height: 3px;
     border-radius: 3px;
-    background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 30%, transparent));
-    box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 30%, transparent);
+    background: linear-gradient(90deg, var(--primary), transparent);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb, 142, 219, 21), 0.4);
+    animation: panel-header-glow 3s ease-in-out infinite;
+}
+
+@keyframes panel-header-glow {
+    0%, 100% { box-shadow: 0 0 15px rgba(var(--primary-rgb, 142, 219, 21), 0.4); width: 80px; }
+    50% { box-shadow: 0 0 25px rgba(var(--primary-rgb, 142, 219, 21), 0.6); width: 100px; }
 }
 
 .panel-header h2 {
@@ -181,6 +344,10 @@
     letter-spacing: .02em;
     line-height: 1.15;
     margin: 0;
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .panel-header p {
@@ -2783,8 +2950,14 @@ input[type="password"] {
     min-width: 280px;
     padding: .8rem .95rem;
     border-radius: 16px;
-    border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border-color));
-    background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
+    border: 1px solid rgba(var(--primary-rgb, 142, 219, 21), 0.2);
+    background: linear-gradient(135deg, 
+        rgba(var(--primary-rgb, 142, 219, 21), 0.08) 0%, 
+        rgba(var(--primary-rgb, 142, 219, 21), 0.02) 100%);
+    backdrop-filter: blur(10px);
+    box-shadow: 
+        0 0 20px rgba(var(--primary-rgb, 142, 219, 21), 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .settings-active-tab span {

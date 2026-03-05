@@ -1,20 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaHeart, FaRegHeart, FaUserPlus, FaGamepad, FaGlobe, FaLayerGroup, FaUsers, FaBolt, FaShareAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaHeart, FaRegHeart, FaUserPlus, FaUserCheck, FaGamepad, FaGlobe, FaLayerGroup, FaUsers, FaBolt, FaShareAlt, FaCopy, FaCheck, FaTwitter, FaWhatsapp } from 'react-icons/fa';
 import { gamesList } from '../../../../data/gamesData';
 import { COMMUNITY_GAMES } from '../../../../data/communityData';
 import { gamesDetailedData } from '../../../../data/gamesDetailedData';
-import { useTheme } from '../../../../context/ThemeContext';
+import { useTheme, THEMES } from '../../../../context/ThemeContext';
 import './GameCard.css';
 
 const GamesPage = () => {
     const { gameId } = useParams();
     const navigate = useNavigate();
     const [isLiked, setIsLiked] = useState(false);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [showShareMenu, setShowShareMenu] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [toast, setToast] = useState(null);
     const [particles, setParticles] = useState([]);
     const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
     const cardRef = useRef(null);
-    const { theme } = useTheme();
+    const shareMenuRef = useRef(null);
+    const { theme, isDarkMode } = useTheme();
 
     const normalizeId = (value) => String(value || '').toLowerCase().trim();
     const incomingId = normalizeId(gameId);
@@ -41,7 +46,7 @@ const GamesPage = () => {
     const catalogGame = gamesList?.find(g => normalizeId(g.id) === catalogId);
     const game = communityGame || catalogGame || null;
 
-    const gameColor = game?.color || '#22c55e';
+    const gameColor = game?.color || '#8EDB15';
 
     // Generate particles on mount
     useEffect(() => {
@@ -55,6 +60,79 @@ const GamesPage = () => {
         }));
         setParticles(p);
     }, []);
+
+    // Close share menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
+                setShowShareMenu(false);
+            }
+        };
+        if (showShareMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showShareMenu]);
+
+    // Toast auto-hide
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
+
+    // Show toast notification
+    const showToast = useCallback((message, type = 'success') => {
+        setToast({ message, type });
+    }, []);
+
+    // Handle like toggle
+    const handleLike = useCallback(() => {
+        setIsLiked(prev => {
+            const newState = !prev;
+            showToast(newState ? '¡Añadido a favoritos!' : 'Eliminado de favoritos', newState ? 'success' : 'info');
+            return newState;
+        });
+    }, [showToast]);
+
+    // Handle follow toggle
+    const handleFollow = useCallback(() => {
+        setIsFollowing(prev => {
+            const newState = !prev;
+            showToast(newState ? '¡Ahora sigues esta comunidad!' : 'Dejaste de seguir', newState ? 'success' : 'info');
+            return newState;
+        });
+    }, [showToast]);
+
+    // Copy link to clipboard
+    const handleCopyLink = useCallback(async () => {
+        const url = window.location.href;
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            showToast('¡Enlace copiado!', 'success');
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            showToast('Error al copiar', 'error');
+        }
+    }, [showToast]);
+
+    // Share to platform
+    const handleShare = useCallback((platform) => {
+        const url = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent(`Únete a la comunidad de ${game?.name || 'este juego'} en Esportefy`);
+        
+        const shareUrls = {
+            twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+            whatsapp: `https://wa.me/?text=${text}%20${url}`,
+        };
+
+        if (shareUrls[platform]) {
+            window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+        }
+        setShowShareMenu(false);
+    }, [game?.name]);
 
     // Card mouse tracking for glow
     const handleMouseMove = (e) => {
@@ -124,7 +202,14 @@ const GamesPage = () => {
     };
 
     return (
-        <div className="gp-backdrop" style={{ '--gc': gameColor }}>
+        <div className={`gp-backdrop theme-${theme}`} style={{ '--gc': gameColor }}>
+            {/* Toast notification */}
+            {toast && (
+                <div className={`gp-toast gp-toast--${toast.type}`}>
+                    <span>{toast.message}</span>
+                </div>
+            )}
+
             {/* Ambient particles */}
             <div className="gp-ambient">
                 {particles.map(p => (
@@ -154,7 +239,7 @@ const GamesPage = () => {
                     <div className="gp-card__image-scanlines" />
 
                     {/* Like button */}
-                    <button className={'gp-heart ' + (isLiked ? 'active' : '')} onClick={() => setIsLiked(!isLiked)}>
+                    <button className={'gp-heart ' + (isLiked ? 'active' : '')} onClick={handleLike} title={isLiked ? 'Quitar de favoritos' : 'Añadir a favoritos'}>
                         {isLiked ? <FaHeart /> : <FaRegHeart />}
                     </button>
 
@@ -240,11 +325,39 @@ const GamesPage = () => {
                         </div>
 
                         <div className="gp-actions">
-                            <button className="gp-btn gp-btn--icon" title="Compartir">
-                                <FaShareAlt />
-                            </button>
-                            <button className="gp-btn gp-btn--icon" title="Seguir">
-                                <FaUserPlus />
+                            {/* Share button with dropdown */}
+                            <div className="gp-share-wrapper" ref={shareMenuRef}>
+                                <button 
+                                    className={`gp-btn gp-btn--icon ${showShareMenu ? 'active' : ''}`} 
+                                    title="Compartir"
+                                    onClick={() => setShowShareMenu(!showShareMenu)}
+                                >
+                                    <FaShareAlt />
+                                </button>
+                                {showShareMenu && (
+                                    <div className="gp-share-menu">
+                                        <button onClick={handleCopyLink} className="gp-share-menu__item">
+                                            {copied ? <FaCheck /> : <FaCopy />}
+                                            <span>{copied ? '¡Copiado!' : 'Copiar enlace'}</span>
+                                        </button>
+                                        <button onClick={() => handleShare('twitter')} className="gp-share-menu__item">
+                                            <FaTwitter />
+                                            <span>Twitter</span>
+                                        </button>
+                                        <button onClick={() => handleShare('whatsapp')} className="gp-share-menu__item">
+                                            <FaWhatsapp />
+                                            <span>WhatsApp</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Follow button */}
+                            <button 
+                                className={`gp-btn gp-btn--icon ${isFollowing ? 'active' : ''}`} 
+                                title={isFollowing ? 'Dejar de seguir' : 'Seguir'}
+                                onClick={handleFollow}
+                            >
+                                {isFollowing ? <FaUserCheck /> : <FaUserPlus />}
                             </button>
                             <button
                                 className="gp-btn gp-btn--enter"

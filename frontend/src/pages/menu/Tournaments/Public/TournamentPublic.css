@@ -465,6 +465,16 @@
   background: var(--bg-input);
   color: var(--text-main);
   padding: 11px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  width: 100%;
+}
+.tpe-searchbar input::placeholder {
+  color: var(--text-muted);
+}
+.tpe-searchbar input:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 
 .tpe-searchbar button {

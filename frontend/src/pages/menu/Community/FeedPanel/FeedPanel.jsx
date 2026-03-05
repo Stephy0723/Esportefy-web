@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useAuth } from '../../../../context/AuthContext';
 import './FeedPanel.css';
 
 const GAME_OPTIONS = [
@@ -64,6 +65,7 @@ const DEMO_POSTS = [
 /* ───────────── POST CREATOR ───────────── */
 
 const PostCreator = ({ onPost }) => {
+    const { user } = useAuth();
     const [text, setText] = useState('');
     const [images, setImages] = useState([]);
     const [showPoll, setShowPoll] = useState(false);
@@ -76,6 +78,13 @@ const PostCreator = ({ onPost }) => {
     const imgInputRef = useRef(null);
     const docInputRef = useRef(null);
     const gamePickerRef = useRef(null);
+
+    // Obtener iniciales del nombre para fallback
+    const getUserInitials = () => {
+        if (!user) return '?';
+        const name = user.username || user.name || user.email || '';
+        return name.charAt(0).toUpperCase();
+    };
 
     const handleImageSelect = (e) => {
         const files = Array.from(e.target.files);
@@ -114,7 +123,11 @@ const PostCreator = ({ onPost }) => {
         <div className={'fp-creator' + (expanded ? ' expanded' : '')}>
             <div className="fp-creator__top">
                 <div className="fp-creator__avatar">
-                    <i className='bx bxs-user'></i>
+                    {user?.profilePicture ? (
+                        <img src={user.profilePicture} alt={user.username || 'Usuario'} />
+                    ) : (
+                        <span className="fp-creator__avatar-initial">{getUserInitials()}</span>
+                    )}
                 </div>
                 <div className="fp-creator__input-wrap" onClick={() => setExpanded(true)}>
                     <textarea
@@ -277,11 +290,18 @@ const PollWidget = ({ poll }) => {
 /* ───────────── SINGLE POST ───────────── */
 
 const FeedPost = ({ post }) => {
+    const { user } = useAuth();
     const [liked, setLiked] = useState(post.liked);
     const [likes, setLikes] = useState(post.likes);
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [imgIdx, setImgIdx] = useState(0);
+
+    const getUserInitials = () => {
+        if (!user) return '?';
+        const name = user.username || user.name || user.email || '';
+        return name.charAt(0).toUpperCase();
+    };
 
     const toggleLike = () => {
         setLiked(!liked);
@@ -364,7 +384,13 @@ const FeedPost = ({ post }) => {
             {showComments && (
                 <div className="fp-post__comments">
                     <div className="fp-post__comment-input">
-                        <div className="fp-post__comment-avatar"><i className='bx bxs-user'></i></div>
+                        <div className="fp-post__comment-avatar">
+                            {user?.profilePicture ? (
+                                <img src={user.profilePicture} alt={user.username || 'Usuario'} />
+                            ) : (
+                                <span>{getUserInitials()}</span>
+                            )}
+                        </div>
                         <input
                             placeholder="Escribe un comentario..."
                             value={commentText} onChange={e => setCommentText(e.target.value)}
@@ -380,14 +406,18 @@ const FeedPost = ({ post }) => {
 /* ───────────── FEED PANEL (MAIN) ───────────── */
 
 const FeedPanel = ({ communityName, filterGame }) => {
+    const { user } = useAuth();
     const [posts, setPosts] = useState(DEMO_POSTS);
     const [feedFilter, setFeedFilter] = useState('all');
 
     const handleNewPost = useCallback((postData) => {
+        const authorName = user?.username || user?.name || 'Usuario';
+        const authorInitial = authorName.charAt(0).toUpperCase();
+        
         const newPost = {
             id: Date.now(),
-            author: 'Tu',
-            avatar: 'T',
+            author: authorName,
+            avatar: user?.profilePicture || authorInitial,
             time: 'Ahora',
             game: postData.game,
             content: postData.text,
@@ -401,7 +431,7 @@ const FeedPanel = ({ communityName, filterGame }) => {
             likes: 0, comments: 0, shares: 0, liked: false,
         };
         setPosts(prev => [newPost, ...prev]);
-    }, []);
+    }, [user]);
 
     const filteredPosts = feedFilter === 'all'
         ? posts

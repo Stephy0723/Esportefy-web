@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret,
     FaPaintBrush, FaHeadset, FaSave, FaTrash, FaDiscord,
@@ -15,10 +16,48 @@ import SecurityCenterUI from './SecurityCenterUI';
 import PageHud from '../../../components/PageHud/PageHud';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 
+// Animation variants
+const pageVariants = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.1 } },
+    exit: { opacity: 0, transition: { duration: 0.3 } }
+};
+
+const sidebarVariants = {
+    initial: { x: -50, opacity: 0 },
+    animate: { x: 0, opacity: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+};
+
+const contentVariants = {
+    initial: { y: 30, opacity: 0 },
+    animate: { y: 0, opacity: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+    exit: { y: -20, opacity: 0, transition: { duration: 0.2 } }
+};
+
+const navItemVariants = {
+    initial: { x: -20, opacity: 0 },
+    animate: (i) => ({
+        x: 0,
+        opacity: 1,
+        transition: { delay: i * 0.05, duration: 0.3, ease: [0.22, 1, 0.36, 1] }
+    })
+};
+
 
 export default function Settings() {
 
     const location = useLocation();
+
+    // Generate floating particles
+    const particles = useMemo(() => {
+        return Array.from({ length: 30 }, (_, i) => ({
+            id: i,
+            x: `${Math.random() * 100}%`,
+            delay: `${Math.random() * 8}s`,
+            duration: `${12 + Math.random() * 10}s`,
+            size: Math.random() * 3 + 1
+        }));
+    }, []);
 
     const [privacy, setPrivacy] = useState({
         allowTeamInvites: false,
@@ -1329,20 +1368,60 @@ export default function Settings() {
     };
 
     return (
-        <div className="settings-page">
+        <motion.div 
+            className="settings-page"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+        >
+            {/* Floating Particles Background */}
+            <div className="settings-particles">
+                {particles.map((p) => (
+                    <div
+                        key={p.id}
+                        className="settings-particle"
+                        style={{
+                            left: p.x,
+                            width: `${p.size}px`,
+                            height: `${p.size}px`,
+                            animationDelay: p.delay,
+                            animationDuration: p.duration
+                        }}
+                    />
+                ))}
+            </div>
+
+            {/* Ambient Gradient Orbs */}
+            <div className="settings-ambient-orb settings-ambient-orb--1" />
+            <div className="settings-ambient-orb settings-ambient-orb--2" />
+            <div className="settings-ambient-orb settings-ambient-orb--3" />
+
+            {/* Grid Background */}
+            <div className="settings-grid" />
+
             <PageHud page="AJUSTES" />
             <div className="settings-layout">
                 {/* SIDEBAR DE NAVEGACIÓN */}
-                <aside className="settings-sidebar">
+                <motion.aside 
+                    className="settings-sidebar"
+                    variants={sidebarVariants}
+                >
                     <div className="sidebar-header">
                         <div>
                             <h3>Ajustes</h3>
                             <p>Panel general de cuenta, privacidad y conexiones.</p>
                         </div>
-                        <div className="settings-active-tab">
+                        <motion.div 
+                            className="settings-active-tab"
+                            key={activeTab}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
                             <span>{activeTabMeta.label}</span>
                             <p>{activeTabMeta.desc}</p>
-                        </div>
+                        </motion.div>
                     </div>
                     <div className="settings-nav-shell">
                         {tabsOverflow.left && (
@@ -1351,20 +1430,24 @@ export default function Settings() {
                             </button>
                         )}
                         <nav className="settings-nav settings-nav--rail" ref={tabsScrollRef} onScroll={updateTabsOverflow}>
-                            {settingsTabs.map((tab) => {
+                            {settingsTabs.map((tab, index) => {
                                 const Icon = tab.icon;
                                 return (
-                                    <button
+                                    <motion.button
                                         key={tab.id}
                                         className={`nav-item nav-item--rail ${activeTab === tab.id ? 'active' : ''}`}
                                         onClick={() => setActiveTab(tab.id)}
+                                        variants={navItemVariants}
+                                        custom={index}
+                                        whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                                        whileTap={{ scale: 0.98 }}
                                     >
                                         <Icon />
                                         <span className="nav-item__copy">
                                             <strong>{tab.label}</strong>
                                             <small>{tab.desc}</small>
                                         </span>
-                                    </button>
+                                    </motion.button>
                                 );
                             })}
                         </nav>
@@ -1375,47 +1458,82 @@ export default function Settings() {
                         )}
                     </div>
                     <nav className="settings-nav">
-                        <button className={`nav-item ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
-                            <FaShieldAlt /> Seguridad
-                        </button>
-                        <button className={`nav-item ${activeTab === 'connections' ? 'active' : ''}`} onClick={() => setActiveTab('connections')}>
-                            <FaGamepad /> Conexiones
-                        </button>
-                        <button className={`nav-item ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
-                            <FaPaintBrush /> Apariencia
-                        </button>
-                        <button className={`nav-item ${activeTab === 'preferences' ? 'active' : ''}`} onClick={() => setActiveTab('preferences')}>
-                            <FaUserSecret /> Privacidad
-                        </button>
-                        <button className={`nav-item ${activeTab === 'billing' ? 'active' : ''}`} onClick={() => setActiveTab('billing')}>
-                            <FaCreditCard /> Suscripción
-                        </button>
+                        {[
+                            { id: 'security', icon: FaShieldAlt, label: 'Seguridad' },
+                            { id: 'connections', icon: FaGamepad, label: 'Conexiones' },
+                            { id: 'appearance', icon: FaPaintBrush, label: 'Apariencia' },
+                            { id: 'preferences', icon: FaUserSecret, label: 'Privacidad' },
+                            { id: 'billing', icon: FaCreditCard, label: 'Suscripción' }
+                        ].map((item, idx) => (
+                            <motion.button
+                                key={item.id}
+                                className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+                                onClick={() => setActiveTab(item.id)}
+                                variants={navItemVariants}
+                                custom={idx}
+                                whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <item.icon /> {item.label}
+                            </motion.button>
+                        ))}
 
-                        <div className="divider" ></div>
+                        <div className="divider" />
 
                         {/* PESTAÑA REPORTAR */}
-                        <button className={`nav-item ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
+                        <motion.button 
+                            className={`nav-item ${activeTab === 'report' ? 'active' : ''}`} 
+                            onClick={() => setActiveTab('report')}
+                            variants={navItemVariants}
+                            custom={5}
+                            whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                            whileTap={{ scale: 0.98 }}
+                        >
                             <FaExclamationTriangle /> Reportar
-                        </button>
+                        </motion.button>
 
                         {/* PESTAÑA SOPORTE */}
-                        <button className={`nav-item ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
+                        <motion.button 
+                            className={`nav-item ${activeTab === 'support' ? 'active' : ''}`} 
+                            onClick={() => setActiveTab('support')}
+                            variants={navItemVariants}
+                            custom={6}
+                            whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                            whileTap={{ scale: 0.98 }}
+                        >
                             <FaHeadset /> Soporte
-                        </button>
+                        </motion.button>
 
                         {isAdmin && (
-                            <button className={`nav-item ${activeTab === 'mlbb-review' ? 'active' : ''}`} onClick={() => setActiveTab('mlbb-review')}>
+                            <motion.button 
+                                className={`nav-item ${activeTab === 'mlbb-review' ? 'active' : ''}`} 
+                                onClick={() => setActiveTab('mlbb-review')}
+                                variants={navItemVariants}
+                                custom={7}
+                                whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                                whileTap={{ scale: 0.98 }}
+                            >
                                 <FaKey /> Revisión MLBB
-                            </button>
+                            </motion.button>
                         )}
                     </nav>
-                </aside>
+                </motion.aside>
 
                 {/* ÁREA DE CONTENIDO */}
                 <main className="settings-content">
-                    {renderContent()}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            variants={contentVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                        >
+                            {renderContent()}
+                        </motion.div>
+                    </AnimatePresence>
                 </main>
             </div>
-        </div>
+        </motion.div>
     );
 }

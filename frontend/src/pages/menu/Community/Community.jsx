@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import './Community.css';
 import PageHud from '../../../components/PageHud/PageHud';
+import FeedPanel from './FeedPanel/FeedPanel';
+import CreateCommunityModal from './CreateCommunityModal/CreateCommunityModal';
 import {
     COMMUNITY_GAMES as GAMES,
     COMMUNITY_FILTERS as FILTERS,
@@ -9,14 +12,40 @@ import {
     COMMUNITY_TRENDING_TOPICS as TRENDING_TOPICS,
 } from '../../../data/communityData';
 
+/*  ANIMATION VARIANTS  */
+const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
+const fadeUp = {
+    hidden: { opacity: 0, y: 24 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } }
+};
+
+/*  HOOKS  */
+const useCountUp = (target, duration = 2200, active = true) => {
+    const [value, setValue] = useState(0);
+    useEffect(() => {
+        if (!active) return;
+        let start = 0;
+        const step = (timestamp) => {
+            if (!start) start = timestamp;
+            const progress = Math.min((timestamp - start) / duration, 1);
+            setValue(Math.floor(progress * target));
+            if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    }, [target, duration, active]);
+    return value;
+};
+
 /*  COMPONENTS  */
 
 const HeroBanner = () => {
     const [heroIdx, setHeroIdx] = useState(0);
+    const [isLoaded, setIsLoaded] = useState(false);
     const heroes = [GAMES[0], GAMES[1], GAMES[3], GAMES[4], GAMES[8]];
     const hero = heroes[heroIdx];
 
     useEffect(() => {
+        setIsLoaded(true);
         const t = setInterval(() => setHeroIdx(i => (i + 1) % heroes.length), 6000);
         return () => clearInterval(t);
     }, [heroes.length]);
@@ -30,23 +59,79 @@ const HeroBanner = () => {
                 <div className="cm-hero__overlay" />
                 <div className="cm-hero__grid-lines" />
                 <div className="cm-hero__scanlines" />
-            </div>
-            <div className="cm-hero__content">
-                <span className="cm-hero__badge"><span className="cm-hero__pulse" /> LIVE COMMUNITY</span>
-                <h1 className="cm-hero__title">DESCUBRE TU<br /><span className="cm-hero__accent">COMUNIDAD</span></h1>
-                <p className="cm-hero__sub">Unete a miles de jugadores. Comparte, compite y domina.</p>
-                <div className="cm-hero__dots">
-                    {heroes.map((_, i) => (
-                        <button key={i} className={'cm-hero__dot ' + (i === heroIdx ? 'active' : '')} onClick={() => setHeroIdx(i)} />
-                    ))}
+                <div className="cm-hero__cyber-lines">
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <path d="M0 80 Q 25 75, 50 80 T 100 75" className="cm-hero__path" />
+                        <path d="M0 85 Q 30 80, 60 85 T 100 82" className="cm-hero__path cm-hero__path--delay" />
+                    </svg>
                 </div>
             </div>
+            <motion.div
+                className="cm-hero__content"
+                initial={{ opacity: 0, y: 35 }}
+                animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 35 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.15 }}
+            >
+                <span className="cm-hero__badge">
+                    <span className="cm-hero__pulse" />
+                    <span className="cm-hero__badge-text">LIVE COMMUNITY</span>
+                    <span className="cm-hero__badge-glow" />
+                </span>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={heroIdx}
+                        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 1.02 }}
+                        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                    >
+                        <h1 className="cm-hero__title">
+                            <span className="cm-hero__title-line">DESCUBRE TU</span>
+                            <span className="cm-hero__accent">COMUNIDAD</span>
+                        </h1>
+                        <p className="cm-hero__sub">Unete a miles de jugadores. Comparte, compite y domina.</p>
+                    </motion.div>
+                </AnimatePresence>
+                <div className="cm-hero__cta">
+                    <motion.button 
+                        className="cm-hero__btn cm-hero__btn--primary"
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        <i className='bx bxs-rocket'></i>
+                        <span>Explorar</span>
+                    </motion.button>
+                    <motion.button 
+                        className="cm-hero__btn cm-hero__btn--secondary"
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        <i className='bx bxl-discord-alt'></i>
+                        <span>Discord</span>
+                    </motion.button>
+                </div>
+                <div className="cm-hero__dots">
+                    {heroes.map((_, i) => (
+                        <button key={i} className={'cm-hero__dot ' + (i === heroIdx ? 'active' : '')} onClick={() => setHeroIdx(i)}>
+                            <span className="cm-hero__dot-fill" />
+                        </button>
+                    ))}
+                </div>
+            </motion.div>
             <div className="cm-hero__particles">
-                {Array.from({ length: 24 }).map((_, i) => (
-                    <span key={i} className="cm-hero__particle" style={{ '--x': Math.random()*100+'%', '--y': Math.random()*100+'%', '--d': (2+Math.random()*6)+'s', '--s': (2+Math.random()*4)+'px' }} />
+                {Array.from({ length: 30 }).map((_, i) => (
+                    <span key={i} className="cm-hero__particle" style={{ 
+                        '--x': Math.random()*100+'%', 
+                        '--y': Math.random()*100+'%', 
+                        '--d': (2+Math.random()*6)+'s', 
+                        '--s': (2+Math.random()*5)+'px',
+                        '--delay': (Math.random() * 5) + 's'
+                    }} />
                 ))}
             </div>
             <div className="cm-hero__vignette" />
+            <div className="cm-hero__glow-orb cm-hero__glow-orb--1" />
+            <div className="cm-hero__glow-orb cm-hero__glow-orb--2" />
         </section>
     );
 };
@@ -112,10 +197,12 @@ const GameCard = ({ game, index }) => {
     const handleMouseMove = useCallback((e) => {
         if (!cardRef.current) return;
         const rect = cardRef.current.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width - 0.5) * 16;
-        const y = ((e.clientY - rect.top) / rect.height - 0.5) * -16;
+        const x = ((e.clientX - rect.left) / rect.width - 0.5) * 20;
+        const y = ((e.clientY - rect.top) / rect.height - 0.5) * -20;
         cardRef.current.style.setProperty('--rx', y + 'deg');
         cardRef.current.style.setProperty('--ry', x + 'deg');
+        cardRef.current.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
+        cardRef.current.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100) + '%');
     }, []);
 
     const handleMouseLeave = useCallback(() => {
@@ -127,42 +214,62 @@ const GameCard = ({ game, index }) => {
     }, []);
 
     return (
-        <div ref={cardRef} className={'cm-game ' + (isHovered ? 'hovered' : '')}
+        <motion.div 
+            ref={cardRef} 
+            className={'cm-game ' + (isHovered ? 'hovered' : '')}
             style={{ '--card-color': game.color, '--delay': (index * 0.05) + 's' }}
-            onMouseEnter={() => setIsHovered(true)} onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}>
+            onMouseEnter={() => setIsHovered(true)} 
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: index * 0.05 }}
+        >
             <div className="cm-game__inner">
                 <img src={game.img} alt={game.name} className="cm-game__img" loading="lazy" />
                 <div className="cm-game__shine" />
+                <div className="cm-game__cursor-glow" />
                 <div className="cm-game__gradient" />
-                <div className="cm-game__top-badge">{game.cat}</div>
+                <div className="cm-game__scanlines" />
+                <div className="cm-game__top-badge">
+                    <span className="cm-game__badge-dot" />
+                    {game.cat}
+                </div>
                 <div className="cm-game__info">
                     <h3 className="cm-game__name">{game.name}</h3>
-                    <div className="cm-game__players">
-                        <i className='bx bxs-user'></i> {game.players} jugadores
+                    <div className="cm-game__meta">
+                        <div className="cm-game__players">
+                            <i className='bx bxs-user'></i> {game.players}
+                        </div>
+                        <div className="cm-game__rating">
+                            <i className='bx bxs-star'></i> 4.8
+                        </div>
                     </div>
-                    <button className="cm-game__btn" onClick={(e) => { e.stopPropagation(); navigate('/games/' + game.id); }}>
-                        <i className='bx bx-info-circle'></i> Mas Info
-                    </button>
+                    <motion.button 
+                        className="cm-game__btn" 
+                        onClick={(e) => { e.stopPropagation(); navigate('/games/' + game.id); }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <i className='bx bx-right-arrow-alt'></i>
+                        <span>Explorar</span>
+                    </motion.button>
                 </div>
                 <div className="cm-game__border-glow" />
+                <div className="cm-game__corner cm-game__corner--tl" />
+                <div className="cm-game__corner cm-game__corner--tr" />
+                <div className="cm-game__corner cm-game__corner--bl" />
+                <div className="cm-game__corner cm-game__corner--br" />
             </div>
-        </div>
+        </motion.div>
     );
 };
 
 const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGame }) => {
-    const [visible, setVisible] = useState(false);
-    const ref = useRef(null);
     const carouselRef = useRef(null);
     const [isPaused, setIsPaused] = useState(false);
     const [progress, setProgress] = useState(0);
-
-    useEffect(() => {
-        const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.05 });
-        if (ref.current) obs.observe(ref.current);
-        return () => obs.disconnect();
-    }, []);
 
     const filtered = useMemo(() => {
         let result = activeFilter === 'all' ? GAMES : GAMES.filter(g => g.cat === activeFilter);
@@ -198,12 +305,31 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
     };
 
     return (
-        <section ref={ref} className={'cm-games ' + (visible ? 'visible' : '')}>
+        <motion.section
+            className="cm-games"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.05 }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        >
+            {/* Gaming ambient particles */}
+            <div className="cm-games__particles">
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <span key={i} className="cm-games__particle" style={{
+                        '--px': Math.random() * 100 + '%',
+                        '--py': Math.random() * 100 + '%',
+                        '--delay': (Math.random() * 5) + 's',
+                        '--dur': (3 + Math.random() * 4) + 's',
+                        '--size': (2 + Math.random() * 4) + 'px'
+                    }} />
+                ))}
+            </div>
+            <div className="cm-games__scanlines" />
             <div className="cm-section-header">
                 <div className="cm-section-header__left">
                     <div className="cm-section-icon"><i className='bx bxs-joystick'></i></div>
                     <div>
-                        <h2 className="cm-section-title">Videojuegos</h2>
+                        <h2 className="cm-section-title" data-text="Videojuegos">Videojuegos</h2>
                         <p className="cm-section-subtitle">{filtered.length} juegos disponibles</p>
                     </div>
                 </div>
@@ -252,7 +378,7 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
                     <p>No se encontraron juegos</p>
                 </div>
             )}
-        </section>
+        </motion.section>
     );
 };
 
@@ -328,14 +454,24 @@ const SuggestGameModal = ({ open, onClose }) => {
 
 const CommunityCard = ({ community, index }) => {
     const navigate = useNavigate();
-    const [isHovered, setIsHovered] = useState(false);
     const formatNum = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
+    const communityHref = `/community/${community.slug || community.shortUrl || community.id}`;
 
     return (
-        <div className={'cm-community ' + (isHovered ? 'hovered' : '')}
-            style={{ '--cc-color': community.color, '--delay': (index * 0.08) + 's' }}
-            onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}
-            onClick={() => navigate('/community/' + community.slug, { state: community })}>
+        <motion.div
+            className="cm-community"
+            style={{ '--cc-color': community.color }}
+            variants={fadeUp}
+            whileHover={{ y: -8, scale: 1.01, transition: { duration: 0.3, ease: [0.23, 1, 0.32, 1] } }}
+            onClick={() => navigate(communityHref, { state: community })}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(communityHref, { state: community });
+                }
+            }}
+            role="button"
+            tabIndex={0}>
             <div className="cm-community__banner">
                 <img src={community.img} alt={community.name} />
                 <div className="cm-community__banner-overlay" />
@@ -359,26 +495,23 @@ const CommunityCard = ({ community, index }) => {
                         <div className="cm-community__stat"><i className='bx bxs-group'></i><strong>{formatNum(community.members)}</strong> miembros</div>
                         <div className="cm-community__stat"><i className='bx bxs-message-dots'></i><strong>{formatNum(community.posts)}</strong> posts</div>
                     </div>
-                    <button className="cm-community__join" onClick={(e) => { e.stopPropagation(); }}>
-                        <i className='bx bx-log-in-circle'></i> Unirse
+                    <button
+                        className="cm-community__join"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(communityHref, { state: community });
+                        }}>
+                        <i className='bx bx-log-in-circle'></i> Abrir
                     </button>
                 </div>
             </div>
             <div className="cm-community__edge" />
-        </div>
+        </motion.div>
     );
 };
 
 const CommunitiesSection = ({ searchQuery, gameFilter }) => {
-    const [visible, setVisible] = useState(false);
     const [activeTab, setActiveTab] = useState('popular');
-    const ref = useRef(null);
-
-    useEffect(() => {
-        const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.05 });
-        if (ref.current) obs.observe(ref.current);
-        return () => obs.disconnect();
-    }, []);
 
     const filtered = useMemo(() => {
         let result = COMMUNITIES.filter(c => c.category === activeTab);
@@ -393,7 +526,13 @@ const CommunitiesSection = ({ searchQuery, gameFilter }) => {
     ];
 
     return (
-        <section ref={ref} className={'cm-communities ' + (visible ? 'visible' : '')}>
+        <motion.section
+            className="cm-communities"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.05 }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        >
             <div className="cm-section-header">
                 <div className="cm-section-header__left">
                     <div className="cm-section-icon cm-section-icon--green"><i className='bx bxs-group'></i></div>
@@ -411,9 +550,15 @@ const CommunitiesSection = ({ searchQuery, gameFilter }) => {
                     ))}
                 </div>
             </div>
-            <div className="cm-communities__grid">
+            <motion.div
+                className="cm-communities__grid"
+                variants={stagger}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.05 }}
+            >
                 {filtered.map((c, i) => <CommunityCard key={c.id} community={c} index={i} />)}
-            </div>
+            </motion.div>
             {filtered.length === 0 && (
                 <div className="cm-empty">
                     <i className='bx bx-group'></i>
@@ -421,89 +566,241 @@ const CommunitiesSection = ({ searchQuery, gameFilter }) => {
                     <span>Intenta cambiar los filtros o crea una nueva</span>
                 </div>
             )}
-        </section>
+        </motion.section>
     );
 };
 
 const QuickStats = () => {
+    const [inView, setInView] = useState(false);
+    const [hoveredStat, setHoveredStat] = useState(null);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold: 0.3 });
+        if (ref.current) obs.observe(ref.current);
+        return () => obs.disconnect();
+    }, []);
+
+    const gamesCount = useCountUp(GAMES.length, 1800, inView);
+    const communitiesCount = useCountUp(COMMUNITIES.length, 1800, inView);
+    const playersCount = useCountUp(213, 2200, inView);
+    const tourneysCount = useCountUp(48, 1600, inView);
+
     const stats = [
-        { icon: 'bx bxs-joystick', label: 'Juegos', value: GAMES.length, color: '#a35ddf', suffix: '' },
-        { icon: 'bx bxs-group', label: 'Comunidades', value: COMMUNITIES.length, color: '#22c55e', suffix: '' },
-        { icon: 'bx bxs-user-account', label: 'Jugadores', value: '21.3k', color: '#4facfe', suffix: '' },
-        { icon: 'bx bxs-trophy', label: 'Torneos', value: 48, color: '#f59e0b', suffix: ' activos' },
+        { icon: 'bx bxs-joystick', label: 'Juegos', value: gamesCount, display: String(gamesCount), color: 'var(--primary)', desc: 'Juegos disponibles' },
+        { icon: 'bx bxs-group', label: 'Comunidades', value: communitiesCount, display: String(communitiesCount), color: 'var(--primary-hover)', desc: 'Comunidades activas' },
+        { icon: 'bx bxs-user-account', label: 'Jugadores', value: playersCount, display: (playersCount / 10).toFixed(1) + 'k', color: '#a8e048', desc: 'Jugadores conectados' },
+        { icon: 'bx bxs-trophy', label: 'Torneos', value: tourneysCount, display: String(tourneysCount), color: '#6bb30a', desc: 'Torneos activos' },
     ];
     return (
-        <div className="cm-stats">
+        <motion.div
+            ref={ref}
+            className="cm-stats"
+            variants={stagger}
+            initial="hidden"
+            animate={inView ? 'visible' : 'hidden'}
+        >
             {stats.map((s, i) => (
-                <div key={i} className="cm-stat" style={{ '--stat-color': s.color, '--stat-delay': (i * 0.1) + 's' }}>
-                    <div className="cm-stat__icon-wrap"><i className={s.icon}></i></div>
-                    <div className="cm-stat__text">
-                        <span className="cm-stat__value">{s.value}</span>
-                        <span className="cm-stat__label">{s.label}{s.suffix}</span>
+                <motion.div 
+                    key={i} 
+                    className={'cm-stat ' + (hoveredStat === i ? 'hovered' : '')}
+                    style={{ '--stat-color': s.color, '--stat-index': i }} 
+                    variants={fadeUp}
+                    onMouseEnter={() => setHoveredStat(i)}
+                    onMouseLeave={() => setHoveredStat(null)}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                    <div className="cm-stat__glow" />
+                    <div className="cm-stat__icon-wrap">
+                        <i className={s.icon}></i>
+                        <div className="cm-stat__icon-ring" />
                     </div>
-                </div>
+                    <div className="cm-stat__text">
+                        <span className="cm-stat__value">{s.display}</span>
+                        <span className="cm-stat__label">{s.label}</span>
+                        <span className="cm-stat__desc">{s.desc}</span>
+                    </div>
+                    <div className="cm-stat__particles">
+                        {Array.from({ length: 3 }).map((_, j) => (
+                            <span key={j} className="cm-stat__particle" style={{ '--delay': (j * 0.3) + 's' }} />
+                        ))}
+                    </div>
+                </motion.div>
             ))}
-        </div>
+        </motion.div>
     );
 };
 
 const TrendingSidebar = () => (
-    <aside className="cm-trending">
+    <motion.aside
+        className="cm-trending"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+    >
+        {/* Corner decorations */}
+        <div className="cm-trending__corner cm-trending__corner--tl" />
+        <div className="cm-trending__corner cm-trending__corner--tr" />
+        
+        {/* Animated glow orb */}
+        <div className="cm-trending__glow-orb" />
+        
         <div className="cm-trending__header">
-            <i className='bx bxs-hot'></i>
+            <div className="cm-trending__icon-wrap">
+                <i className='bx bxs-hot'></i>
+                <span className="cm-trending__icon-ring" />
+            </div>
             <h3>Trending</h3>
+            <span className="cm-trending__badge">HOT</span>
         </div>
         <div className="cm-trending__list">
             {TRENDING_TOPICS.map((t, i) => (
-                <div key={i} className="cm-trending__item" style={{ '--tr-color': t.color }}>
+                <motion.div
+                    key={i}
+                    className="cm-trending__item"
+                    style={{ '--tr-color': t.color }}
+                    initial={{ opacity: 0, x: -12 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.15 + i * 0.06, duration: 0.35 }}
+                    whileHover={{ x: 6, transition: { duration: 0.2 } }}
+                >
                     <span className="cm-trending__rank">#{i + 1}</span>
                     <div className="cm-trending__info">
                         <span className="cm-trending__title">{t.title}</span>
-                        <span className="cm-trending__game">{t.game} &middot; {t.comments} comentarios</span>
+                        <span className="cm-trending__game">
+                            <i className='bx bxs-game'></i>
+                            {t.game} &middot; {t.comments} comentarios
+                        </span>
                     </div>
-                </div>
+                    <div className="cm-trending__arrow">
+                        <i className='bx bx-chevron-right'></i>
+                    </div>
+                </motion.div>
             ))}
         </div>
-    </aside>
+    </motion.aside>
 );
 
-const CreateCommunityModal = ({ open, onClose }) => {
-    if (!open) return null;
+const ActiveMembers = () => {
+    const members = [
+        { name: 'NexusKing', level: 'Pro', color: 'var(--primary)', rank: 'Diamond' },
+        { name: 'ProGamer_XD', level: 'Elite', color: '#a8e048', rank: 'Master' },
+        { name: 'TeamAlpha', level: 'Veterano', color: '#6bb30a', rank: 'Gold' },
+        { name: 'ClipMaster', level: 'Rising', color: 'var(--primary-hover)', rank: 'Platinum' },
+        { name: 'ShadowStrike', level: 'Pro', color: 'var(--primary)', rank: 'Diamond' },
+    ];
+
     return (
-        <div className="cm-modal-backdrop" onClick={onClose}>
-            <div className="cm-modal" onClick={e => e.stopPropagation()}>
-                <div className="cm-modal__header">
-                    <h2><i className='bx bx-plus-circle'></i> Crear Comunidad</h2>
-                    <button className="cm-modal__close" onClick={onClose}><i className='bx bx-x'></i></button>
+        <motion.aside
+            className="cm-active-members"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+        >
+            {/* Scanlines effect */}
+            <div className="cm-active-members__scanlines" />
+            
+            <div className="cm-active-members__header">
+                <div className="cm-active-members__icon-wrap">
+                    <i className='bx bxs-group'></i>
                 </div>
-                <div className="cm-modal__body">
-                    <div className="cm-modal__field">
-                        <label>Nombre de la comunidad</label>
-                        <input type="text" placeholder="Ej: Valorant Hispano" />
-                    </div>
-                    <div className="cm-modal__field">
-                        <label>Juego</label>
-                        <select>
-                            <option value="">Seleccionar juego...</option>
-                            {GAMES.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="cm-modal__field">
-                        <label>Descripcion</label>
-                        <textarea placeholder="Describe tu comunidad..." rows="3"></textarea>
-                    </div>
-                    <div className="cm-modal__field">
-                        <label>Tags (separados por coma)</label>
-                        <input type="text" placeholder="Ej: Ranked, Torneos, Clips" />
-                    </div>
-                    <button className="cm-modal__submit">
-                        <i className='bx bx-rocket'></i> Crear Comunidad
-                    </button>
-                </div>
+                <h3>Miembros Activos</h3>
+                <span className="cm-active-members__count">
+                    <span className="cm-active-members__count-dot" />
+                    23 online
+                </span>
             </div>
-        </div>
+            <div className="cm-active-members__list">
+                {members.map((m, i) => (
+                    <motion.div
+                        key={i}
+                        className="cm-active-members__item"
+                        initial={{ opacity: 0, x: -10 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2 + i * 0.05, duration: 0.3 }}
+                        whileHover={{ 
+                            backgroundColor: 'rgba(142, 219, 21, 0.08)',
+                            transition: { duration: 0.2 }
+                        }}
+                    >
+                        <div className="cm-active-members__avatar" style={{ '--am-color': m.color }}>
+                            {m.name[0]}
+                            <span className="cm-active-members__avatar-ring" />
+                        </div>
+                        <div className="cm-active-members__info">
+                            <span className="cm-active-members__name">{m.name}</span>
+                            <div className="cm-active-members__meta">
+                                <span className="cm-active-members__level" style={{ color: m.color }}>{m.level}</span>
+                                <span className="cm-active-members__rank">{m.rank}</span>
+                            </div>
+                        </div>
+                        <span className="cm-active-members__online-dot" />
+                    </motion.div>
+                ))}
+            </div>
+            <div className="cm-active-members__footer">
+                <button className="cm-active-members__view-all">
+                    Ver todos <i className='bx bx-right-arrow-alt'></i>
+                </button>
+            </div>
+        </motion.aside>
     );
 };
+
+const CommunityRules = () => (
+    <motion.aside 
+        className="cm-rules-card"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+    >
+        {/* Cyber corner decorations */}
+        <div className="cm-rules-card__corner cm-rules-card__corner--bl" />
+        <div className="cm-rules-card__corner cm-rules-card__corner--br" />
+        
+        <div className="cm-rules-card__header">
+            <div className="cm-rules-card__icon-wrap">
+                <i className='bx bxs-shield-alt-2'></i>
+            </div>
+            <h3>Reglas de la Comunidad</h3>
+        </div>
+        <div className="cm-rules-card__list">
+            {[
+                { icon: 'bx-heart', text: 'Respeta a todos los miembros' },
+                { icon: 'bx-block', text: 'No spam ni autopromocion excesiva' },
+                { icon: 'bx-joystick', text: 'Contenido relevante al gaming' },
+                { icon: 'bx-shield-x', text: 'No toxicidad ni hate speech' },
+                { icon: 'bx-flag', text: 'Reporta contenido inapropiado' },
+            ].map((rule, i) => (
+                <motion.div 
+                    key={i}
+                    className="cm-rules-card__rule"
+                    initial={{ opacity: 0, x: -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.06, duration: 0.3 }}
+                    whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                >
+                    <span className="cm-rules-card__number">{i + 1}</span>
+                    <i className={`bx ${rule.icon}`}></i>
+                    <span className="cm-rules-card__text">{rule.text}</span>
+                </motion.div>
+            ))}
+        </div>
+        <div className="cm-rules-card__footer">
+            <span className="cm-rules-card__disclaimer">
+                <i className='bx bx-info-circle'></i>
+                Violaciones pueden resultar en ban
+            </span>
+        </div>
+    </motion.aside>
+);
 
 const SectionDivider = () => (
     <div className="cm-divider">
@@ -513,29 +810,32 @@ const SectionDivider = () => (
     </div>
 );
 
-const CtaBanner = () => (
-    <div className="cm-cta-banner">
-        <div className="cm-cta-banner__particles">
-            {Array.from({ length: 8 }).map((_, i) => (
-                <span key={i} className="cm-cta-banner__particle" style={{ '--x': Math.random()*100+'%', '--d': (3+Math.random()*4)+'s' }} />
-            ))}
-        </div>
-        <div className="cm-cta-banner__content">
-            <div className="cm-cta-banner__text">
-                <h3 className="cm-cta-banner__title">¿Listo para competir?</h3>
-                <p className="cm-cta-banner__desc">Unite a torneos, encuentra tu equipo y domina la escena competitiva</p>
+const CtaBanner = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="cm-cta-banner">
+            <div className="cm-cta-banner__particles">
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <span key={i} className="cm-cta-banner__particle" style={{ '--x': Math.random()*100+'%', '--d': (3+Math.random()*4)+'s' }} />
+                ))}
             </div>
-            <div className="cm-cta-banner__actions">
-                <button className="cm-cta-banner__btn cm-cta-banner__btn--primary">
-                    <i className='bx bxs-trophy'></i> Ver Torneos
-                </button>
-                <button className="cm-cta-banner__btn cm-cta-banner__btn--secondary">
-                    <i className='bx bxl-discord-alt'></i> Discord
-                </button>
+            <div className="cm-cta-banner__content">
+                <div className="cm-cta-banner__text">
+                    <h3 className="cm-cta-banner__title">¿Listo para competir?</h3>
+                    <p className="cm-cta-banner__desc">Unite a torneos, encuentra tu equipo y domina la escena competitiva</p>
+                </div>
+                <div className="cm-cta-banner__actions">
+                    <button className="cm-cta-banner__btn cm-cta-banner__btn--primary" onClick={() => navigate('/torneos')}>
+                        <i className='bx bxs-trophy'></i> Ver Torneos
+                    </button>
+                    <button className="cm-cta-banner__btn cm-cta-banner__btn--secondary">
+                        <i className='bx bxl-discord-alt'></i> Discord
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 /*  MAIN PAGE  */
 
@@ -545,10 +845,39 @@ const Community = () => {
     const [activeFilter, setActiveFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showSuggestModal, setShowSuggestModal] = useState(false);
+    const [activeView, setActiveView] = useState('feed');
+
+    const viewTabs = [
+        { id: 'feed', label: 'Feed', icon: 'bx bxs-news' },
+        { id: 'games', label: 'Videojuegos', icon: 'bx bxs-joystick' },
+        { id: 'communities', label: 'Comunidades', icon: 'bx bxs-group' },
+    ];
+
+    // Generate random particles for global effect
+    const globalParticles = useMemo(() => 
+        Array.from({ length: 20 }).map((_, i) => ({
+            x: `${Math.random() * 100}%`,
+            duration: `${12 + Math.random() * 15}s`,
+            delay: `${Math.random() * 10}s`,
+        })), []);
 
     return (
         <div className="cm-page">
+            {/* Global immersive effects */}
             <div className="cm-bg-mesh" />
+            <div className="cm-page__cyber-grid" />
+            <div className="cm-page__particles">
+                {globalParticles.map((p, i) => (
+                    <span 
+                        key={i} 
+                        className="cm-page__particle"
+                        style={{ '--x': p.x, '--duration': p.duration, '--delay': p.delay }}
+                    />
+                ))}
+            </div>
+            <div className="cm-page__scanlines" />
+            <div className="cm-page__orb-extra" />
+            
             <PageHud page="Comunidad" />
             <HeroBanner />
             <div className="cm-container">
@@ -558,18 +887,116 @@ const Community = () => {
                     gameFilter={gameFilter} setGameFilter={setGameFilter}
                     onCreateCommunity={() => setShowCreateModal(true)}
                 />
-                <div className="cm-main-layout">
-                    <div className="cm-main-content">
-                        <GamesSection searchQuery={searchQuery} activeFilter={activeFilter} setActiveFilter={setActiveFilter} onSuggestGame={() => setShowSuggestModal(true)} />
-                        <SectionDivider />
-                        <CommunitiesSection searchQuery={searchQuery} gameFilter={gameFilter} />
-                        <SectionDivider />
-                        <CtaBanner />
-                    </div>
-                    <TrendingSidebar />
+
+                {/* View Navigation Tabs */}
+                <div className="cm-view-tabs">
+                    {viewTabs.map(t => (
+                        <button key={t.id} className={'cm-view-tab ' + (activeView === t.id ? 'active' : '')}
+                            onClick={() => setActiveView(t.id)}>
+                            <i className={t.icon}></i>
+                            <span>{t.label}</span>
+                        </button>
+                    ))}
                 </div>
+
+                <AnimatePresence mode="wait">
+                    {/* Feed View */}
+                    {activeView === 'feed' && (
+                        <motion.div
+                            key="feed"
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -16 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="cm-main-layout">
+                                <div className="cm-main-content">
+                                    <FeedPanel communityName="Comunidad Global" />
+                                </div>
+                                <div className="cm-sidebar">
+                                    <TrendingSidebar />
+                                    <ActiveMembers />
+                                    <CommunityRules />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Games View */}
+                    {activeView === 'games' && (
+                        <motion.div
+                            key="games"
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -16 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="cm-main-layout">
+                                <div className="cm-main-content">
+                                    <GamesSection searchQuery={searchQuery} activeFilter={activeFilter} setActiveFilter={setActiveFilter} onSuggestGame={() => setShowSuggestModal(true)} />
+                                </div>
+                                <div className="cm-sidebar">
+                                    <TrendingSidebar />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Communities View */}
+                    {activeView === 'communities' && (
+                        <motion.div
+                            key="communities"
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -16 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="cm-main-layout cm-main-layout--communities">
+                                <div className="cm-main-content">
+                                    <motion.section
+                                        className="cm-community-showcase"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.1 }}
+                                    >
+                                        <div className="cm-community-showcase__copy">
+                                            <span className="cm-community-showcase__eyebrow">Panel de comunidades</span>
+                                            <h2 className="cm-community-showcase__title">Encuentra hubs activos con identidad clara, reglas visibles y actividad real.</h2>
+                                            <p className="cm-community-showcase__text">
+                                                Explora espacios listos para competir, conversar y organizar contenido por juego, región e idioma.
+                                            </p>
+                                        </div>
+                                        <div className="cm-community-showcase__stats">
+                                            <div className="cm-community-showcase__stat">
+                                                <strong>{COMMUNITIES.length}</strong>
+                                                <span>Comunidades curadas</span>
+                                            </div>
+                                            <div className="cm-community-showcase__stat">
+                                                <strong>{GAMES.length}</strong>
+                                                <span>Juegos activos</span>
+                                            </div>
+                                            <div className="cm-community-showcase__stat">
+                                                <strong>{COMMUNITIES.filter((community) => community.featured).length}</strong>
+                                                <span>Destacadas ahora</span>
+                                            </div>
+                                        </div>
+                                    </motion.section>
+                                    <div className="cm-community-surface">
+                                        <CommunitiesSection searchQuery={searchQuery} gameFilter={gameFilter} />
+                                        <SectionDivider />
+                                        <CtaBanner />
+                                    </div>
+                                </div>
+                                <div className="cm-sidebar">
+                                    <TrendingSidebar />
+                                    <ActiveMembers />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
-            <CreateCommunityModal open={showCreateModal} onClose={() => setShowCreateModal(false)} />
+            <CreateCommunityModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
             <SuggestGameModal open={showSuggestModal} onClose={() => setShowSuggestModal(false)} />
         </div>
     );

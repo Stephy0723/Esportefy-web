@@ -225,9 +225,15 @@
     padding: 14px 0;
     color: var(--text-main, #eee);
     font-size: 0.88rem;
-    font-family: inherit;
+    font-family: 'Poppins', sans-serif;
     font-weight: 500;
     letter-spacing: 0.2px;
+    width: 100%;
+    min-width: 0;
+}
+.th__search input:focus {
+    outline: none;
+    box-shadow: none;
 }
 .th__search input::placeholder {
     color: var(--text-muted, #555);

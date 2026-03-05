@@ -1,0 +1,1404 @@
+import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { API_URL } from '../../../config/api';
+import { useTheme, THEMES } from '../../../context/ThemeContext';
+import SecurityCenterUI from './SecurityCenterUI';
+import './SettingsV2.css';
+
+// Icons
+import { 
+    FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret,
+    FaPaintBrush, FaHeadset, FaDiscord, FaCheckCircle,
+    FaExclamationTriangle, FaKey, FaChevronRight, FaTimes,
+    FaEyeSlash, FaExternalLinkAlt, FaFlag, FaSteam, FaTwitch,
+    FaXbox, FaPlaystation, FaGoogle, FaMicrosoft, FaLink, FaInfoCircle
+} from 'react-icons/fa';
+import { SiEpicgames, SiRiotgames } from 'react-icons/si';
+
+const TABS = [
+    { id: 'security', label: 'Seguridad', icon: FaShieldAlt, description: 'Contraseña, sesiones y autenticación' },
+    { id: 'connections', label: 'Conexiones', icon: FaGamepad, description: 'Vincula tus cuentas de juego' },
+    { id: 'privacy', label: 'Privacidad', icon: FaUserSecret, description: 'Controla quién puede contactarte' },
+    { id: 'appearance', label: 'Apariencia', icon: FaPaintBrush, description: 'Tema e interfaz visual' },
+    { id: 'billing', label: 'Suscripción', icon: FaCreditCard, description: 'Planes y métodos de pago' },
+    { id: 'support', label: 'Soporte', icon: FaHeadset, description: 'Ayuda y reportes' },
+];
+
+export default function SettingsV2() {
+    const navigate = useNavigate();
+    const { theme, setTheme } = useTheme();
+    const [activeTab, setActiveTab] = useState('security');
+    const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    
+    // Appearance settings
+    const [streamerMode, setStreamerMode] = useState(() => localStorage.getItem('streamerMode') === 'true');
+    const [reduceAnimations, setReduceAnimations] = useState(() => localStorage.getItem('reduceAnimations') === 'true');
+    
+    // User data
+    const [privacy, setPrivacy] = useState({
+        allowTeamInvites: false,
+        showOnlineStatus: false,
+        allowTournamentInvites: false
+    });
+    const [connections, setConnections] = useState({ discord: {}, riot: {}, mlbb: {}, steam: {} });
+    const [gameProfiles, setGameProfiles] = useState({});
+
+    // Riot State
+    const [riotGameName, setRiotGameName] = useState('');
+    const [riotTagLine, setRiotTagLine] = useState('');
+    const [riotLoading, setRiotLoading] = useState(false);
+    const [riotStep, setRiotStep] = useState('idle');
+    const [riotOtp, setRiotOtp] = useState('');
+    const [riotMsg, setRiotMsg] = useState('');
+    const [riotStatus, setRiotStatus] = useState(null);
+
+    // MLBB State
+    const [mlbbPlayerId, setMlbbPlayerId] = useState('');
+    const [mlbbZoneId, setMlbbZoneId] = useState('');
+    const [mlbbLoading, setMlbbLoading] = useState(false);
+    const [mlbbMsg, setMlbbMsg] = useState('');
+    const [mlbbStatus, setMlbbStatus] = useState(null);
+
+    // Support Section State
+    const [systemStatus, setSystemStatus] = useState({
+        overall: 'checking',
+        services: {
+            gameServers: 'checking',
+            tournamentApi: 'checking',
+            matchmaking: 'checking',
+            liveChat: 'checking'
+        },
+        lastChecked: null
+    });
+    const [supportToast, setSupportToast] = useState({ show: false, message: '', type: 'success' });
+    const [feedbackModal, setFeedbackModal] = useState({ open: false, type: 'suggestion', message: '', submitting: false });
+
+    const token = localStorage.getItem('token');
+    const mlbbVerificationStatus = String(
+        connections?.mlbb?.verificationStatus || (connections?.mlbb?.verified ? 'verified' : 'unlinked')
+    );
+    const mlbbLinked = mlbbVerificationStatus === 'verified';
+    const riotProfileIconId = gameProfiles?.lol?.profileIconId ?? 0;
+    const riotSummonerLevel = gameProfiles?.lol?.summonerLevel;
+    const riotRank = gameProfiles?.lol?.rank;
+
+    // Particles
+    const particles = useMemo(() => 
+        Array.from({ length: 20 }, (_, i) => ({
+            id: i,
+            x: `${Math.random() * 100}%`,
+            delay: `${Math.random() * 10}s`,
+            duration: `${15 + Math.random() * 10}s`,
+            size: Math.random() * 2 + 1
+        })), []
+    );
+
+    // Handle appearance toggles
+    const handleStreamerModeToggle = () => {
+        const newValue = !streamerMode;
+        setStreamerMode(newValue);
+        localStorage.setItem('streamerMode', String(newValue));
+        // Apply streamer mode class to body
+        document.body.classList.toggle('streamer-mode', newValue);
+    };
+
+    const handleReduceAnimationsToggle = () => {
+        const newValue = !reduceAnimations;
+        setReduceAnimations(newValue);
+        localStorage.setItem('reduceAnimations', String(newValue));
+        // Apply reduced motion preference
+        document.body.classList.toggle('reduce-motion', newValue);
+    };
+
+    // Apply saved settings on mount
+    useEffect(() => {
+        if (streamerMode) document.body.classList.add('streamer-mode');
+        if (reduceAnimations) document.body.classList.add('reduce-motion');
+        return () => {
+            document.body.classList.remove('streamer-mode', 'reduce-motion');
+        };
+    }, []);
+
+    // Fetch settings
+    const fetchSettings = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/api/auth/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setConnections(res.data.connections);
+            setPrivacy(res.data.privacy);
+            setGameProfiles(res.data.gameProfiles || {});
+            setIsAdmin(res.data?.isAdmin === true);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            setLoading(false);
+        }
+    };
+
+    const fetchRiotStatus = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/api/auth/riot/status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setRiotStatus(res.data);
+        } catch { setRiotStatus(null); }
+    };
+
+    const fetchMlbbStatus = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/api/auth/mlbb/status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setMlbbStatus(res.data);
+        } catch { setMlbbStatus(null); }
+    };
+
+    useEffect(() => {
+        if (token) {
+            fetchSettings();
+            fetchRiotStatus();
+            fetchMlbbStatus();
+        }
+    }, [token]);
+
+    // Simulate system status check
+    useEffect(() => {
+        const checkSystemStatus = () => {
+            // Simulate realistic status - 95% chance all operational
+            const statuses = ['operational', 'operational', 'operational', 'operational', 'operational', 
+                              'operational', 'operational', 'operational', 'operational', 'degraded'];
+            const getRandomStatus = () => statuses[Math.floor(Math.random() * statuses.length)];
+            
+            const services = {
+                gameServers: getRandomStatus(),
+                tournamentApi: getRandomStatus(),
+                matchmaking: getRandomStatus(),
+                liveChat: getRandomStatus()
+            };
+            
+            const hasIssue = Object.values(services).some(s => s !== 'operational');
+            
+            setSystemStatus({
+                overall: hasIssue ? 'degraded' : 'operational',
+                services,
+                lastChecked: new Date()
+            });
+        };
+        
+        // Initial check with a small delay to show "checking"
+        const timeout = setTimeout(checkSystemStatus, 1500);
+        
+        // Refresh every 30 seconds
+        const interval = setInterval(checkSystemStatus, 30000);
+        
+        return () => {
+            clearTimeout(timeout);
+            clearInterval(interval);
+        };
+    }, []);
+
+    // Support helper functions
+    const showSupportToast = (message, type = 'success') => {
+        setSupportToast({ show: true, message, type });
+        setTimeout(() => setSupportToast({ show: false, message: '', type: 'success' }), 3000);
+    };
+
+    const copyEmailToClipboard = async (email) => {
+        try {
+            await navigator.clipboard.writeText(email);
+            showSupportToast(`📋 ${email} copiado al portapapeles`);
+        } catch {
+            showSupportToast('Error al copiar', 'error');
+        }
+    };
+
+    const handleFeedbackSubmit = async () => {
+        if (!feedbackModal.message.trim()) {
+            showSupportToast('Por favor escribe un mensaje', 'error');
+            return;
+        }
+        
+        setFeedbackModal(prev => ({ ...prev, submitting: true }));
+        
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        setFeedbackModal({ open: false, type: 'suggestion', message: '', submitting: false });
+        showSupportToast('✅ ¡Gracias por tu feedback! Lo revisaremos pronto.');
+    };
+
+    const refreshSystemStatus = () => {
+        setSystemStatus(prev => ({ ...prev, overall: 'checking', services: {
+            gameServers: 'checking',
+            tournamentApi: 'checking',
+            matchmaking: 'checking',
+            liveChat: 'checking'
+        }}));
+        
+        setTimeout(() => {
+            const services = {
+                gameServers: 'operational',
+                tournamentApi: 'operational',
+                matchmaking: 'operational',
+                liveChat: 'operational'
+            };
+            setSystemStatus({
+                overall: 'operational',
+                services,
+                lastChecked: new Date()
+            });
+            showSupportToast('✓ Estado actualizado');
+        }, 2000);
+    };
+
+    // Privacy update
+    const updatePrivacy = async (newPrivacy) => {
+        try {
+            await axios.put(`${API_URL}/api/settings/privacy`, { privacy: newPrivacy }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setPrivacy(newPrivacy);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // Discord
+    const startDiscordLink = async () => {
+        try {
+            const res = await axios.post(`${API_URL}/api/auth/discord/start`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res?.data?.authorizeUrl) {
+                window.location.href = res.data.authorizeUrl;
+            }
+        } catch (error) {
+            console.error('Discord link error:', error);
+        }
+    };
+
+    const unlinkDiscord = async () => {
+        try {
+            await axios.delete(`${API_URL}/api/auth/discord`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchSettings();
+        } catch (error) {
+            console.error('Discord unlink error:', error);
+        }
+    };
+
+    // Riot
+    const initRiotLink = async () => {
+        if (!riotGameName.trim() || !riotTagLine.trim()) {
+            setRiotMsg('Completa GameName y TagLine');
+            return;
+        }
+        try {
+            setRiotLoading(true);
+            setRiotMsg('');
+            await axios.post(`${API_URL}/api/auth/riot/link/init`, 
+                { riotId: `${riotGameName}#${riotTagLine}` },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setRiotStep('otpSent');
+            setRiotMsg('Código enviado a tu correo');
+        } catch (error) {
+            setRiotMsg(error.response?.data?.message || 'Error enviando código');
+        } finally {
+            setRiotLoading(false);
+        }
+    };
+
+    const confirmRiotLink = async () => {
+        if (!riotOtp.trim()) {
+            setRiotMsg('Ingresa el código');
+            return;
+        }
+        try {
+            setRiotLoading(true);
+            await axios.post(`${API_URL}/api/auth/riot/link/confirm`, 
+                { otp: riotOtp },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            await fetchSettings();
+            await fetchRiotStatus();
+            setRiotMsg('Riot vinculado exitosamente');
+            setRiotStep('idle');
+            setRiotOtp('');
+            setRiotGameName('');
+            setRiotTagLine('');
+        } catch (error) {
+            setRiotMsg(error.response?.data?.message || 'Error confirmando código');
+        } finally {
+            setRiotLoading(false);
+        }
+    };
+
+    const unlinkRiot = async () => {
+        try {
+            await axios.delete(`${API_URL}/api/auth/riot`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchSettings();
+            await fetchRiotStatus();
+        } catch (error) {
+            console.error('Riot unlink error:', error);
+        }
+    };
+
+    // MLBB
+    const initMlbbLink = async () => {
+        if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
+            setMlbbMsg('Completa Player ID y Zone ID');
+            return;
+        }
+        try {
+            setMlbbLoading(true);
+            setMlbbMsg('');
+            await axios.post(`${API_URL}/api/auth/mlbb/link/init`,
+                { playerId: mlbbPlayerId, zoneId: mlbbZoneId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setMlbbMsg('Solicitud enviada. Espera la verificación.');
+            await fetchSettings();
+            await fetchMlbbStatus();
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'Error iniciando vinculación');
+        } finally {
+            setMlbbLoading(false);
+        }
+    };
+
+    const unlinkMlbb = async () => {
+        try {
+            await axios.delete(`${API_URL}/api/auth/mlbb`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchSettings();
+            await fetchMlbbStatus();
+        } catch (error) {
+            console.error('MLBB unlink error:', error);
+        }
+    };
+
+    // Render content
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'security':
+                if (loading) return <div className="stv2-loading">Cargando...</div>;
+                return (
+                    <motion.div key="security" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <SecurityCenterUI email={connections?.email || 'usuario@esportefy.com'} />
+                    </motion.div>
+                );
+
+            case 'connections':
+                return (
+                    <motion.div key="connections" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <h2 className="stv2-section__title">Conexiones de Plataformas</h2>
+                            <p className="stv2-section__desc">Vincula tus cuentas de juego y servicios para potenciar tu experiencia competitiva.</p>
+                            
+                            {/* Gaming Platforms */}
+                            <h3 className="stv2-section__subtitle">Plataformas de Juego</h3>
+                            <div className="stv2-connections">
+                                {/* Discord */}
+                                <div className={`stv2-connection ${connections?.discord?.id ? 'stv2-connection--active' : ''}`}>
+                                    <div className="stv2-connection__icon stv2-connection__icon--discord">
+                                        <FaDiscord />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Discord</h4>
+                                        <span>{connections?.discord?.username || 'Sin vincular'}</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        {connections?.discord?.id ? (
+                                            <span className="stv2-badge stv2-badge--success">Conectado</span>
+                                        ) : (
+                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        )}
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        {connections?.discord?.id ? (
+                                            <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkDiscord}>
+                                                Desvincular
+                                            </button>
+                                        ) : (
+                                            <button className="stv2-btn stv2-btn--primary" onClick={startDiscordLink}>
+                                                Conectar
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Riot Games */}
+                                <div className={`stv2-connection ${connections?.riot?.verified ? 'stv2-connection--active' : ''}`}>
+                                    <div className="stv2-connection__icon stv2-connection__icon--riot">
+                                        <SiRiotgames />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Riot Games</h4>
+                                        {connections?.riot?.verified ? (
+                                            <span>{connections.riot.gameName}#{connections.riot.tagLine}</span>
+                                        ) : (
+                                            <span>Sin vincular</span>
+                                        )}
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        {connections?.riot?.verified ? (
+                                            <span className="stv2-badge stv2-badge--success">Verificado</span>
+                                        ) : (
+                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        )}
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        {connections?.riot?.verified ? (
+                                            <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkRiot}>
+                                                Desvincular
+                                            </button>
+                                        ) : (
+                                            <button className="stv2-btn stv2-btn--primary" onClick={() => setActiveTab('riot-link')}>
+                                                Vincular
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Mobile Legends */}
+                                <div className={`stv2-connection ${mlbbLinked ? 'stv2-connection--active' : ''}`}>
+                                    <div className="stv2-connection__icon stv2-connection__icon--mlbb">
+                                        <FaGamepad />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Mobile Legends</h4>
+                                        {mlbbLinked ? (
+                                            <span>ID: {connections.mlbb.playerId}</span>
+                                        ) : (
+                                            <span>Sin vincular</span>
+                                        )}
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        {mlbbLinked ? (
+                                            <span className="stv2-badge stv2-badge--success">Verificado</span>
+                                        ) : mlbbVerificationStatus === 'pending' ? (
+                                            <span className="stv2-badge stv2-badge--warning">En revisión</span>
+                                        ) : (
+                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        )}
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        {mlbbLinked ? (
+                                            <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb}>
+                                                Desvincular
+                                            </button>
+                                        ) : mlbbVerificationStatus !== 'pending' && (
+                                            <button className="stv2-btn stv2-btn--primary" onClick={() => setActiveTab('mlbb-link')}>
+                                                Vincular
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Steam */}
+                                <div className={`stv2-connection ${connections?.steam?.id ? 'stv2-connection--active' : ''}`}>
+                                    <div className="stv2-connection__icon stv2-connection__icon--steam">
+                                        <FaSteam />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Steam</h4>
+                                        <span>{connections?.steam?.username || 'Sin vincular'}</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        {connections?.steam?.id ? (
+                                            <span className="stv2-badge stv2-badge--success">Conectado</span>
+                                        ) : (
+                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        )}
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        <button className="stv2-btn stv2-btn--outline" disabled>
+                                            Próximamente
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Epic Games */}
+                                <div className="stv2-connection">
+                                    <div className="stv2-connection__icon stv2-connection__icon--epic">
+                                        <SiEpicgames />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Epic Games</h4>
+                                        <span>Sin vincular</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        <button className="stv2-btn stv2-btn--outline" disabled>
+                                            Próximamente
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Streaming & Social */}
+                            <h3 className="stv2-section__subtitle">Streaming y Social</h3>
+                            <div className="stv2-connections">
+                                {/* Twitch */}
+                                <div className="stv2-connection">
+                                    <div className="stv2-connection__icon stv2-connection__icon--twitch">
+                                        <FaTwitch />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Twitch</h4>
+                                        <span>Sin vincular</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        <button className="stv2-btn stv2-btn--outline" disabled>
+                                            Próximamente
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Google */}
+                                <div className="stv2-connection">
+                                    <div className="stv2-connection__icon stv2-connection__icon--google">
+                                        <FaGoogle />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Google</h4>
+                                        <span>Sin vincular</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        <button className="stv2-btn stv2-btn--outline" disabled>
+                                            Próximamente
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Microsoft */}
+                                <div className="stv2-connection">
+                                    <div className="stv2-connection__icon stv2-connection__icon--microsoft">
+                                        <FaMicrosoft />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Microsoft</h4>
+                                        <span>Sin vincular</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        <button className="stv2-btn stv2-btn--outline" disabled>
+                                            Próximamente
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Console Platforms */}
+                            <h3 className="stv2-section__subtitle">Consolas</h3>
+                            <div className="stv2-connections">
+                                {/* Xbox */}
+                                <div className="stv2-connection">
+                                    <div className="stv2-connection__icon stv2-connection__icon--xbox">
+                                        <FaXbox />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>Xbox Live</h4>
+                                        <span>Sin vincular</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        <button className="stv2-btn stv2-btn--outline" disabled>
+                                            Próximamente
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* PlayStation */}
+                                <div className="stv2-connection">
+                                    <div className="stv2-connection__icon stv2-connection__icon--playstation">
+                                        <FaPlaystation />
+                                    </div>
+                                    <div className="stv2-connection__info">
+                                        <h4>PlayStation Network</h4>
+                                        <span>Sin vincular</span>
+                                    </div>
+                                    <div className="stv2-connection__status">
+                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                    </div>
+                                    <div className="stv2-connection__action">
+                                        <button className="stv2-btn stv2-btn--outline" disabled>
+                                            Próximamente
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Legal Disclaimer */}
+                            <div className="stv2-disclaimer">
+                                <div className="stv2-disclaimer__header">
+                                    <FaShieldAlt className="stv2-disclaimer__icon" />
+                                    <h4>Aviso Legal y Privacidad</h4>
+                                </div>
+                                <div className="stv2-disclaimer__content">
+                                    <p>
+                                        <strong>Esportefy</strong> no está respaldado, afiliado, asociado ni patrocinado por 
+                                        <strong> Riot Games, Inc.</strong>, <strong>Moonton</strong>, <strong>Valve Corporation</strong>, 
+                                        <strong> Epic Games, Inc.</strong>, <strong>Microsoft</strong>, <strong>Sony Interactive Entertainment</strong>, 
+                                        <strong> Twitch Interactive</strong> ni <strong>Google LLC</strong>.
+                                    </p>
+                                    <p>
+                                        Todas las marcas comerciales, logotipos e imágenes son propiedad de sus respectivos dueños.
+                                        League of Legends, Valorant y Wild Rift son marcas registradas de Riot Games, Inc.
+                                        Mobile Legends: Bang Bang es una marca registrada de Moonton.
+                                    </p>
+                                    <p className="stv2-disclaimer__privacy">
+                                        <FaLink /> Tus datos de conexión están protegidos mediante encriptación AES-256 y nunca son compartidos con terceros.
+                                        Consulta nuestra <a href="/privacy">Política de Privacidad</a> y <a href="/terms">Términos de Servicio</a>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 'riot-link':
+                return (
+                    <motion.div key="riot-link" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <button className="stv2-back" onClick={() => setActiveTab('connections')}>
+                                <i className="bx bx-arrow-left"></i> Volver a Conexiones
+                            </button>
+                            <h2 className="stv2-section__title">Vincular Riot Games</h2>
+                            <p className="stv2-section__desc">Ingresa tu Riot ID para verificar tu cuenta.</p>
+
+                            <div className="stv2-form">
+                                {riotStep === 'idle' ? (
+                                    <>
+                                        <div className="stv2-form__row">
+                                            <div className="stv2-input-group">
+                                                <label>Game Name</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={riotGameName} 
+                                                    onChange={(e) => setRiotGameName(e.target.value)}
+                                                    placeholder="Tu nombre de invocador"
+                                                />
+                                            </div>
+                                            <div className="stv2-input-group">
+                                                <label>Tag Line</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={riotTagLine} 
+                                                    onChange={(e) => setRiotTagLine(e.target.value)}
+                                                    placeholder="Ej: LAN1"
+                                                />
+                                            </div>
+                                        </div>
+                                        <button 
+                                            className="stv2-btn stv2-btn--primary stv2-btn--lg"
+                                            onClick={initRiotLink}
+                                            disabled={riotLoading}
+                                        >
+                                            {riotLoading ? 'Enviando...' : 'Enviar Código de Verificación'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="stv2-input-group">
+                                            <label>Código de Verificación</label>
+                                            <input 
+                                                type="text" 
+                                                value={riotOtp} 
+                                                onChange={(e) => setRiotOtp(e.target.value)}
+                                                placeholder="Ingresa el código de tu correo"
+                                            />
+                                        </div>
+                                        <button 
+                                            className="stv2-btn stv2-btn--primary stv2-btn--lg"
+                                            onClick={confirmRiotLink}
+                                            disabled={riotLoading}
+                                        >
+                                            {riotLoading ? 'Verificando...' : 'Confirmar Vinculación'}
+                                        </button>
+                                    </>
+                                )}
+                                {riotMsg && <p className="stv2-form__msg">{riotMsg}</p>}
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 'mlbb-link':
+                return (
+                    <motion.div key="mlbb-link" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <button className="stv2-back" onClick={() => setActiveTab('connections')}>
+                                <i className="bx bx-arrow-left"></i> Volver a Conexiones
+                            </button>
+                            <h2 className="stv2-section__title">Vincular Mobile Legends</h2>
+                            <p className="stv2-section__desc">Ingresa tu Player ID y Zone ID de MLBB.</p>
+
+                            <div className="stv2-form">
+                                <div className="stv2-form__row">
+                                    <div className="stv2-input-group">
+                                        <label>Player ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={mlbbPlayerId} 
+                                            onChange={(e) => setMlbbPlayerId(e.target.value)}
+                                            placeholder="Tu ID de jugador"
+                                        />
+                                    </div>
+                                    <div className="stv2-input-group">
+                                        <label>Zone ID</label>
+                                        <input 
+                                            type="text" 
+                                            value={mlbbZoneId} 
+                                            onChange={(e) => setMlbbZoneId(e.target.value)}
+                                            placeholder="ID de zona/servidor"
+                                        />
+                                    </div>
+                                </div>
+                                <button 
+                                    className="stv2-btn stv2-btn--primary stv2-btn--lg"
+                                    onClick={initMlbbLink}
+                                    disabled={mlbbLoading}
+                                >
+                                    {mlbbLoading ? 'Enviando...' : 'Enviar Solicitud'}
+                                </button>
+                                {mlbbMsg && <p className="stv2-form__msg">{mlbbMsg}</p>}
+                            </div>
+
+                            <div className="stv2-notice stv2-notice--warning">
+                                <i className="bx bx-time"></i>
+                                <p>La verificación de MLBB requiere revisión manual y puede tardar hasta 24 horas.</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 'privacy':
+                return (
+                    <motion.div key="privacy" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <h2 className="stv2-section__title">Privacidad</h2>
+                            <p className="stv2-section__desc">Controla quién puede interactuar contigo en la plataforma.</p>
+
+                            <div className="stv2-toggles">
+                                <div className="stv2-toggle">
+                                    <div className="stv2-toggle__info">
+                                        <h4>Invitaciones de Equipos</h4>
+                                        <p>Permite que capitanes te envíen ofertas de fichaje.</p>
+                                    </div>
+                                    <label className="stv2-switch">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={privacy.allowTeamInvites}
+                                            onChange={(e) => updatePrivacy({ ...privacy, allowTeamInvites: e.target.checked })}
+                                        />
+                                        <span className="stv2-switch__slider"></span>
+                                    </label>
+                                </div>
+
+                                <div className="stv2-toggle">
+                                    <div className="stv2-toggle__info">
+                                        <h4>Estado en Línea</h4>
+                                        <p>Muestra tu estado activo a otros usuarios.</p>
+                                    </div>
+                                    <label className="stv2-switch">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={privacy.showOnlineStatus}
+                                            onChange={(e) => updatePrivacy({ ...privacy, showOnlineStatus: e.target.checked })}
+                                        />
+                                        <span className="stv2-switch__slider"></span>
+                                    </label>
+                                </div>
+
+                                <div className="stv2-toggle">
+                                    <div className="stv2-toggle__info">
+                                        <h4>Invitaciones a Torneos</h4>
+                                        <p>Permite que organizadores te inscriban directamente.</p>
+                                    </div>
+                                    <label className="stv2-switch">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={privacy.allowTournamentInvites}
+                                            onChange={(e) => updatePrivacy({ ...privacy, allowTournamentInvites: e.target.checked })}
+                                        />
+                                        <span className="stv2-switch__slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 'appearance':
+                return (
+                    <motion.div key="appearance" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <h2 className="stv2-section__title">Apariencia</h2>
+                            <p className="stv2-section__desc">Personaliza tu experiencia visual.</p>
+
+                            <div className="stv2-toggles">
+                                <div className="stv2-toggle stv2-toggle--featured">
+                                    <div className="stv2-toggle__icon">
+                                        <FaEyeSlash />
+                                    </div>
+                                    <div className="stv2-toggle__info">
+                                        <h4>Modo Streamer</h4>
+                                        <p>Oculta información sensible mientras transmites.</p>
+                                    </div>
+                                    <label className="stv2-switch">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={streamerMode}
+                                            onChange={handleStreamerModeToggle}
+                                        />
+                                        <span className="stv2-switch__slider"></span>
+                                    </label>
+                                </div>
+
+                                <div className="stv2-toggle">
+                                    <div className="stv2-toggle__info">
+                                        <h4>Reducir Animaciones</h4>
+                                        <p>Desactiva animaciones para mejorar rendimiento.</p>
+                                    </div>
+                                    <label className="stv2-switch">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={reduceAnimations}
+                                            onChange={handleReduceAnimationsToggle}
+                                        />
+                                        <span className="stv2-switch__slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <h3 className="stv2-section__subtitle">Tema</h3>
+                            <div className="stv2-themes">
+                                <button 
+                                    className={`stv2-theme ${theme === THEMES.DARK ? 'stv2-theme--active' : ''}`}
+                                    onClick={() => setTheme(THEMES.DARK)}
+                                >
+                                    <div className="stv2-theme__preview stv2-theme__preview--dark"></div>
+                                    <span>Oscuro</span>
+                                </button>
+                                <button 
+                                    className={`stv2-theme ${theme === THEMES.LIGHT ? 'stv2-theme--active' : ''}`}
+                                    onClick={() => setTheme(THEMES.LIGHT)}
+                                >
+                                    <div className="stv2-theme__preview stv2-theme__preview--light"></div>
+                                    <span>Claro</span>
+                                </button>
+                                <button 
+                                    className={`stv2-theme ${theme === THEMES.AMOLED ? 'stv2-theme--active' : ''}`}
+                                    onClick={() => setTheme(THEMES.AMOLED)}
+                                >
+                                    <div className="stv2-theme__preview stv2-theme__preview--oled"></div>
+                                    <span>AMOLED</span>
+                                </button>
+                                <button 
+                                    className={`stv2-theme ${theme === THEMES.GRAY ? 'stv2-theme--active' : ''}`}
+                                    onClick={() => setTheme(THEMES.GRAY)}
+                                >
+                                    <div className="stv2-theme__preview stv2-theme__preview--contrast"></div>
+                                    <span>Gris</span>
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 'billing':
+                return (
+                    <motion.div key="billing" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <h2 className="stv2-section__title">Suscripción</h2>
+                            <p className="stv2-section__desc">Gestiona tu plan y beneficios.</p>
+
+                            {/* Current Plan */}
+                            <div className="stv2-plan stv2-plan--current">
+                                <div className="stv2-plan__header">
+                                    <span className="stv2-plan__badge">Plan Actual</span>
+                                    <h3>Rookie</h3>
+                                    <span className="stv2-plan__price">Gratis</span>
+                                </div>
+                                <ul className="stv2-plan__features">
+                                    <li><FaCheckCircle /> Estadísticas avanzadas</li>
+                                    <li><FaCheckCircle /> 1 equipo por juego</li>
+                                    <li><FaCheckCircle /> Torneos públicos</li>
+                                </ul>
+                            </div>
+
+                            <h3 className="stv2-section__subtitle">Mejora tu Plan</h3>
+                            <div className="stv2-plans">
+                                <div className="stv2-plan">
+                                    <div className="stv2-plan__header">
+                                        <h3>Elite</h3>
+                                        <span className="stv2-plan__price">RD$ 250<small>/mes</small></span>
+                                    </div>
+                                    <ul className="stv2-plan__features">
+                                        <li><FaCheckCircle /> Multi-equipos</li>
+                                        <li><FaCheckCircle /> Priority Pass en torneos</li>
+                                        <li><FaCheckCircle /> Comisiones reducidas</li>
+                                        <li><FaCheckCircle /> Insignia Elite</li>
+                                    </ul>
+                                    <button className="stv2-btn stv2-btn--outline">Suscribirse</button>
+                                </div>
+
+                                <div className="stv2-plan stv2-plan--featured">
+                                    <div className="stv2-plan__ribbon">Mejor Valor</div>
+                                    <div className="stv2-plan__header">
+                                        <h3>Legend</h3>
+                                        <span className="stv2-plan__price">RD$ 2,500<small>/año</small></span>
+                                        <span className="stv2-plan__savings">Ahorras 2 meses</span>
+                                    </div>
+                                    <ul className="stv2-plan__features">
+                                        <li><FaCheckCircle /> Todo de Elite</li>
+                                        <li><FaCheckCircle /> 2 meses gratis</li>
+                                        <li><FaCheckCircle /> Borde dorado exclusivo</li>
+                                        <li><FaCheckCircle /> Soporte prioritario</li>
+                                    </ul>
+                                    <button className="stv2-btn stv2-btn--primary">Suscribirse</button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 'support':
+                const getStatusIndicator = (status) => {
+                    switch (status) {
+                        case 'operational': return 'online';
+                        case 'degraded': return 'warning';
+                        case 'outage': return 'offline';
+                        default: return 'checking';
+                    }
+                };
+                
+                const getStatusLabel = (status) => {
+                    switch (status) {
+                        case 'operational': return 'Operativo';
+                        case 'degraded': return 'Degradado';
+                        case 'outage': return 'Caído';
+                        default: return 'Verificando...';
+                    }
+                };
+                
+                const getOverallLabel = () => {
+                    if (systemStatus.overall === 'checking') return 'Verificando sistemas...';
+                    if (systemStatus.overall === 'operational') return 'Todos los sistemas operativos';
+                    return 'Algunos servicios presentan problemas';
+                };
+
+                return (
+                    <motion.div key="support" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        {/* Toast Notification */}
+                        <AnimatePresence>
+                            {supportToast.show && (
+                                <motion.div 
+                                    className={`stv2-toast stv2-toast--${supportToast.type}`}
+                                    initial={{ opacity: 0, y: -20, x: '-50%' }}
+                                    animate={{ opacity: 1, y: 0, x: '-50%' }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                >
+                                    {supportToast.message}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <div className="stv2-section">
+                            <h2 className="stv2-section__title">Centro de Soporte</h2>
+                            <p className="stv2-section__desc">Obtén ayuda, reporta problemas y mantente informado.</p>
+
+                            {/* System Status */}
+                            <div className="stv2-system-status">
+                                <div className="stv2-system-status__header">
+                                    <div className={`stv2-system-status__indicator stv2-system-status__indicator--${getStatusIndicator(systemStatus.overall)}`} />
+                                    <span className="stv2-system-status__label">{getOverallLabel()}</span>
+                                    <button 
+                                        className="stv2-system-status__refresh"
+                                        onClick={refreshSystemStatus}
+                                        disabled={systemStatus.overall === 'checking'}
+                                    >
+                                        <i className={`bx bx-refresh ${systemStatus.overall === 'checking' ? 'spin' : ''}`} />
+                                    </button>
+                                </div>
+                                <div className="stv2-system-status__services">
+                                    <div className="stv2-system-status__service">
+                                        <span>Servidores de Juego</span>
+                                        <span className={`stv2-badge stv2-badge--${systemStatus.services.gameServers === 'operational' ? 'success' : systemStatus.services.gameServers === 'checking' ? 'info' : 'warning'}`}>
+                                            {getStatusLabel(systemStatus.services.gameServers)}
+                                        </span>
+                                    </div>
+                                    <div className="stv2-system-status__service">
+                                        <span>API de Torneos</span>
+                                        <span className={`stv2-badge stv2-badge--${systemStatus.services.tournamentApi === 'operational' ? 'success' : systemStatus.services.tournamentApi === 'checking' ? 'info' : 'warning'}`}>
+                                            {getStatusLabel(systemStatus.services.tournamentApi)}
+                                        </span>
+                                    </div>
+                                    <div className="stv2-system-status__service">
+                                        <span>Matchmaking</span>
+                                        <span className={`stv2-badge stv2-badge--${systemStatus.services.matchmaking === 'operational' ? 'success' : systemStatus.services.matchmaking === 'checking' ? 'info' : 'warning'}`}>
+                                            {getStatusLabel(systemStatus.services.matchmaking)}
+                                        </span>
+                                    </div>
+                                    <div className="stv2-system-status__service">
+                                        <span>Chat en Vivo</span>
+                                        <span className={`stv2-badge stv2-badge--${systemStatus.services.liveChat === 'operational' ? 'success' : systemStatus.services.liveChat === 'checking' ? 'info' : 'warning'}`}>
+                                            {getStatusLabel(systemStatus.services.liveChat)}
+                                        </span>
+                                    </div>
+                                </div>
+                                {systemStatus.lastChecked && (
+                                    <span className="stv2-system-status__timestamp">
+                                        Última verificación: {systemStatus.lastChecked.toLocaleTimeString()}
+                                    </span>
+                                )}
+                                <a href="/status" className="stv2-system-status__link">
+                                    Ver historial de estado <FaExternalLinkAlt />
+                                </a>
+                            </div>
+
+                            {/* Quick Actions */}
+                            <h3 className="stv2-section__subtitle">Acciones Rápidas</h3>
+                            <div className="stv2-support-cards">
+                                <div className="stv2-support-card" onClick={() => navigate('/support')}>
+                                    <div className="stv2-support-card__icon-wrapper stv2-support-card__icon-wrapper--primary">
+                                        <FaHeadset className="stv2-support-card__icon" />
+                                    </div>
+                                    <div className="stv2-support-card__content">
+                                        <h4>Centro de Ayuda</h4>
+                                        <p>Base de conocimiento con +50 artículos y guías paso a paso</p>
+                                    </div>
+                                    <FaChevronRight className="stv2-support-card__arrow" />
+                                </div>
+
+                                <div className="stv2-support-card" onClick={() => window.open('https://discord.gg/esportefy', '_blank')}>
+                                    <div className="stv2-support-card__icon-wrapper stv2-support-card__icon-wrapper--discord">
+                                        <FaDiscord className="stv2-support-card__icon" />
+                                    </div>
+                                    <div className="stv2-support-card__content">
+                                        <h4>Comunidad Discord</h4>
+                                        <p>Soporte en tiempo real y comunidad de jugadores</p>
+                                        <span className="stv2-support-card__meta">5,234 miembros activos</span>
+                                    </div>
+                                    <FaExternalLinkAlt className="stv2-support-card__arrow" />
+                                </div>
+
+                                <div className="stv2-support-card" onClick={() => navigate('/report')}>
+                                    <div className="stv2-support-card__icon-wrapper stv2-support-card__icon-wrapper--warning">
+                                        <FaFlag className="stv2-support-card__icon" />
+                                    </div>
+                                    <div className="stv2-support-card__content">
+                                        <h4>Reportar Problema</h4>
+                                        <p>Bugs, conductas tóxicas o errores técnicos</p>
+                                    </div>
+                                    <FaChevronRight className="stv2-support-card__arrow" />
+                                </div>
+
+                                <div className="stv2-support-card" onClick={() => setFeedbackModal({ ...feedbackModal, open: true })}>
+                                    <div className="stv2-support-card__icon-wrapper stv2-support-card__icon-wrapper--info">
+                                        <i className='bx bx-message-square-dots' style={{ fontSize: '1.2rem' }} />
+                                    </div>
+                                    <div className="stv2-support-card__content">
+                                        <h4>Enviar Feedback</h4>
+                                        <p>Sugerencias y mejoras para la plataforma</p>
+                                    </div>
+                                    <FaChevronRight className="stv2-support-card__arrow" />
+                                </div>
+                            </div>
+
+                            {/* Contact Options */}
+                            <h3 className="stv2-section__subtitle">Contacto Directo</h3>
+                            <div className="stv2-contact-grid">
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('soporte@esportefy.com')}>
+                                    <div className="stv2-contact-item__icon">
+                                        <i className='bx bx-envelope' />
+                                    </div>
+                                    <div className="stv2-contact-item__info">
+                                        <span className="stv2-contact-item__label">Soporte General</span>
+                                        <span className="stv2-contact-item__value">soporte@esportefy.com</span>
+                                    </div>
+                                    <i className='bx bx-copy stv2-contact-item__copy' />
+                                </div>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('security@esportefy.com')}>
+                                    <div className="stv2-contact-item__icon">
+                                        <i className='bx bx-shield-quarter' />
+                                    </div>
+                                    <div className="stv2-contact-item__info">
+                                        <span className="stv2-contact-item__label">Seguridad y Antifraude</span>
+                                        <span className="stv2-contact-item__value">security@esportefy.com</span>
+                                    </div>
+                                    <i className='bx bx-copy stv2-contact-item__copy' />
+                                </div>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('partners@esportefy.com')}>
+                                    <div className="stv2-contact-item__icon">
+                                        <i className='bx bx-briefcase' />
+                                    </div>
+                                    <div className="stv2-contact-item__info">
+                                        <span className="stv2-contact-item__label">Asociaciones y Negocios</span>
+                                        <span className="stv2-contact-item__value">partners@esportefy.com</span>
+                                    </div>
+                                    <i className='bx bx-copy stv2-contact-item__copy' />
+                                </div>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('press@esportefy.com')}>
+                                    <div className="stv2-contact-item__icon">
+                                        <i className='bx bx-news' />
+                                    </div>
+                                    <div className="stv2-contact-item__info">
+                                        <span className="stv2-contact-item__label">Prensa y Medios</span>
+                                        <span className="stv2-contact-item__value">press@esportefy.com</span>
+                                    </div>
+                                    <i className='bx bx-copy stv2-contact-item__copy' />
+                                </div>
+                            </div>
+
+                            {/* Social Links */}
+                            <h3 className="stv2-section__subtitle">Síguenos</h3>
+                            <div className="stv2-social-links">
+                                <a href="https://twitter.com/esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--twitter">
+                                    <i className='bx bxl-twitter' />
+                                    <span>Twitter</span>
+                                </a>
+                                <a href="https://instagram.com/esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--instagram">
+                                    <i className='bx bxl-instagram' />
+                                    <span>Instagram</span>
+                                </a>
+                                <a href="https://tiktok.com/@esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--tiktok">
+                                    <i className='bx bxl-tiktok' />
+                                    <span>TikTok</span>
+                                </a>
+                                <a href="https://youtube.com/@esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--youtube">
+                                    <i className='bx bxl-youtube' />
+                                    <span>YouTube</span>
+                                </a>
+                            </div>
+
+                            {/* App Info */}
+                            <div className="stv2-app-info">
+                                <div className="stv2-app-info__logo">
+                                    <span className="stv2-app-info__name">Esportefy</span>
+                                    <span className="stv2-app-info__badge">BETA</span>
+                                </div>
+                                <div className="stv2-app-info__details">
+                                    <div className="stv2-app-info__row">
+                                        <span>Versión</span>
+                                        <span>1.0.4-beta.2</span>
+                                    </div>
+                                    <div className="stv2-app-info__row">
+                                        <span>Última actualización</span>
+                                        <span>3 de marzo, 2026</span>
+                                    </div>
+                                    <div className="stv2-app-info__row">
+                                        <span>Entorno</span>
+                                        <span>Producción</span>
+                                    </div>
+                                </div>
+                                <div className="stv2-app-info__links">
+                                    <a href="/changelog">Registro de cambios</a>
+                                    <span>·</span>
+                                    <a href="/privacy">Privacidad</a>
+                                    <span>·</span>
+                                    <a href="/terms">Términos</a>
+                                    <span>·</span>
+                                    <a href="/licenses">Licencias</a>
+                                </div>
+                                <p className="stv2-app-info__copyright">
+                                    © 2024-2026 Esportefy. Todos los derechos reservados.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Feedback Modal */}
+                        <AnimatePresence>
+                            {feedbackModal.open && (
+                                <motion.div 
+                                    className="stv2-modal-overlay"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    onClick={() => !feedbackModal.submitting && setFeedbackModal({ ...feedbackModal, open: false })}
+                                >
+                                    <motion.div 
+                                        className="stv2-modal stv2-modal--feedback"
+                                        initial={{ scale: 0.9, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.9, opacity: 0 }}
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        <div className="stv2-modal__header">
+                                            <h3>Enviar Feedback</h3>
+                                            <button 
+                                                className="stv2-modal__close"
+                                                onClick={() => setFeedbackModal({ ...feedbackModal, open: false })}
+                                                disabled={feedbackModal.submitting}
+                                            >
+                                                <FaTimes />
+                                            </button>
+                                        </div>
+                                        <div className="stv2-modal__body">
+                                            <div className="stv2-feedback-types">
+                                                {[
+                                                    { id: 'suggestion', label: 'Sugerencia', icon: 'bx-bulb' },
+                                                    { id: 'bug', label: 'Bug', icon: 'bx-bug' },
+                                                    { id: 'feature', label: 'Nueva función', icon: 'bx-star' },
+                                                    { id: 'other', label: 'Otro', icon: 'bx-dots-horizontal-rounded' }
+                                                ].map(type => (
+                                                    <button
+                                                        key={type.id}
+                                                        className={`stv2-feedback-type ${feedbackModal.type === type.id ? 'stv2-feedback-type--active' : ''}`}
+                                                        onClick={() => setFeedbackModal({ ...feedbackModal, type: type.id })}
+                                                        disabled={feedbackModal.submitting}
+                                                    >
+                                                        <i className={`bx ${type.icon}`} />
+                                                        <span>{type.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <textarea
+                                                className="stv2-feedback-textarea"
+                                                placeholder="Cuéntanos tu experiencia, sugerencia o el problema que encontraste..."
+                                                value={feedbackModal.message}
+                                                onChange={e => setFeedbackModal({ ...feedbackModal, message: e.target.value })}
+                                                disabled={feedbackModal.submitting}
+                                                rows={5}
+                                            />
+                                            <p className="stv2-feedback-hint">
+                                                <FaInfoCircle /> Tu feedback nos ayuda a mejorar Esportefy
+                                            </p>
+                                        </div>
+                                        <div className="stv2-modal__footer">
+                                            <button 
+                                                className="stv2-btn stv2-btn--ghost"
+                                                onClick={() => setFeedbackModal({ ...feedbackModal, open: false })}
+                                                disabled={feedbackModal.submitting}
+                                            >
+                                                Cancelar
+                                            </button>
+                                            <button 
+                                                className="stv2-btn stv2-btn--primary"
+                                                onClick={handleFeedbackSubmit}
+                                                disabled={feedbackModal.submitting || !feedbackModal.message.trim()}
+                                            >
+                                                {feedbackModal.submitting ? (
+                                                    <>
+                                                        <i className='bx bx-loader-alt spin' /> Enviando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className='bx bx-send' /> Enviar Feedback
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    const currentTab = TABS.find(t => t.id === activeTab) || TABS[0];
+    const isSubPage = ['riot-link', 'mlbb-link'].includes(activeTab);
+
+    return (
+        <div className="stv2">
+            {/* Background Effects */}
+            <div className="stv2__particles">
+                {particles.map((p) => (
+                    <div
+                        key={p.id}
+                        className="stv2__particle"
+                        style={{
+                            left: p.x,
+                            width: `${p.size}px`,
+                            height: `${p.size}px`,
+                            animationDelay: p.delay,
+                            animationDuration: p.duration
+                        }}
+                    />
+                ))}
+            </div>
+            <div className="stv2__gradient stv2__gradient--1" />
+            <div className="stv2__gradient stv2__gradient--2" />
+
+            <div className="stv2__container">
+                {/* Header */}
+                <header className="stv2__header">
+                    <div className="stv2__header-content">
+                        <h1>Configuración</h1>
+                        <p>Gestiona tu cuenta, conexiones y preferencias</p>
+                    </div>
+                </header>
+
+                <div className="stv2__layout">
+                    {/* Sidebar */}
+                    <aside className="stv2__sidebar">
+                        <nav className="stv2__nav">
+                            {TABS.map((tab) => {
+                                const Icon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        className={`stv2__nav-item ${activeTab === tab.id ? 'stv2__nav-item--active' : ''}`}
+                                        onClick={() => setActiveTab(tab.id)}
+                                    >
+                                        <Icon className="stv2__nav-icon" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
+
+                        {isAdmin && (
+                            <div className="stv2__nav-divider" />
+                        )}
+                        {isAdmin && (
+                            <nav className="stv2__nav stv2__nav--admin">
+                                <button
+                                    className={`stv2__nav-item ${activeTab === 'mlbb-review' ? 'stv2__nav-item--active' : ''}`}
+                                    onClick={() => setActiveTab('mlbb-review')}
+                                >
+                                    <FaKey className="stv2__nav-icon" />
+                                    <span>Admin MLBB</span>
+                                </button>
+                            </nav>
+                        )}
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="stv2__content">
+                        <AnimatePresence mode="wait">
+                            {renderContent()}
+                        </AnimatePresence>
+                    </main>
+                </div>
+            </div>
+        </div>
+    );
+}
