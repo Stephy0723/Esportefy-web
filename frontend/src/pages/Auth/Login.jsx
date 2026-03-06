@@ -41,7 +41,8 @@ const Login = () => {
                 try {
                     response = await axios.post(endpoint, {
                         email,
-                        password
+                        password,
+                        rememberMe
                     });
                     break;
                 } catch (candidateError) {

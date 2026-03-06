@@ -181,6 +181,14 @@
 }
 .uc__info-item--riot svg { color: #eb0029; }
 
+.uc__usercode {
+    margin: -2px 0 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--primary);
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+}
+
 /* Games */
 .uc__games {
     display: flex;

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useNotification } from '../../context/NotificationContext';
 import './Notifications.css';
@@ -14,6 +15,7 @@ const FILTERS = [
 
 const Notifications = () => {
   const { notifications, removeNotification, addToast, loadNotifications } = useNotification();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -259,6 +261,25 @@ const Notifications = () => {
                         <i className={`bx ${note.isArchived ? 'bx-undo' : 'bx-archive-in'}`}></i>
                         {note.isArchived ? 'Restaurar' : 'Archivar'}
                       </button>
+
+                      {note?.meta?.action === 'team_invite' && note?.meta?.teamId && (
+                        <button
+                          className="nt__btn-action"
+                          onClick={() => {
+                            navigate('/teams', {
+                              state: {
+                                teamId: note.meta.teamId,
+                                openPreview: true,
+                                openJoinForm: true,
+                                inviteCode: String(note?.meta?.inviteCode || '').toUpperCase()
+                              }
+                            });
+                          }}
+                        >
+                          <i className='bx bx-log-in-circle'></i>
+                          Ver invitación
+                        </button>
+                      )}
 
                       <button
                         className="nt__btn-action nt__btn-action--danger"

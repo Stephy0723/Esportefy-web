@@ -143,7 +143,19 @@ export const createTeam = async (req, res) => {
                     console.warn('[createTeam] Riot validation failed:', riotCheck.message);
                     return res.status(400).json({ message: riotCheck.message });
                 }
-                const riotUnique = await ensureRiotIdNotInOtherTeam(parsedFormData.game, parsedFormData.leaderIgn, parsedFormData.leaderGameId, null);
+                const riotUnique = await ensureRiotIdNotInOtherTeam(
+                    parsedFormData.game,
+                    parsedFormData.leaderIgn,
+                    parsedFormData.leaderGameId,
+                    null,
+                    {
+                        targetTeamLike: {
+                            teamLevel: parsedFormData.teamLevel,
+                            university: { isUniversityTeam: wantsUniversityTeam }
+                        },
+                        targetUserId: req.userId
+                    }
+                );
                 if (!riotUnique.ok) {
                     console.warn('[createTeam] Riot ID already in team:', riotUnique.message);
                     return res.status(400).json({ message: riotUnique.message });
@@ -178,15 +190,37 @@ export const createTeam = async (req, res) => {
                     role: parsedFormData?.leaderRole || rosterData.starters[targetIdx]?.role || ''
                 };
             }
-            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(parsedFormData.game, parsedFormData.leaderGameId, parsedFormData.leaderRegion, null);
+            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(
+                parsedFormData.game,
+                parsedFormData.leaderGameId,
+                parsedFormData.leaderRegion,
+                null,
+                {
+                    targetTeamLike: {
+                        teamLevel: parsedFormData.teamLevel,
+                        university: { isUniversityTeam: wantsUniversityTeam }
+                    },
+                    targetUserId: req.userId
+                }
+            );
             if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
-            const mlbbRosterValidation = await validateMlbbRosterEntries(parsedFormData.game, rosterData, null);
+            const mlbbRosterValidation = await validateMlbbRosterEntries(
+                parsedFormData.game,
+                rosterData,
+                null,
+                { teamLevel: parsedFormData.teamLevel, university: { isUniversityTeam: wantsUniversityTeam } }
+            );
             if (!mlbbRosterValidation.ok) {
                 return res.status(400).json({ message: mlbbRosterValidation.message });
             }
         }
 
-        const uniqueCheck = await ensureUserNotInOtherTeam(parsedFormData.game, req.userId, null);
+        const uniqueCheck = await ensureUserNotInOtherTeam(
+            parsedFormData.game,
+            req.userId,
+            null,
+            { teamLevel: parsedFormData.teamLevel, university: { isUniversityTeam: wantsUniversityTeam } }
+        );
         if (!uniqueCheck.ok) {
             console.warn('[createTeam] User already in team for this game:', uniqueCheck.message);
             return res.status(400).json({ message: uniqueCheck.message });
@@ -269,7 +303,26 @@ const applyRosterSlot = (team, slotType, slotIndex, player) => {
     return { ok: true };
 };
 
-const ensureUserNotInOtherTeam = async (game, userId, currentTeamId) => {
+const getTeamScopeKey = (teamLike = {}) =>
+    (Boolean(teamLike?.university?.isUniversityTeam) || isUniversityTeamLevel(teamLike?.teamLevel))
+        ? 'university'
+        : 'normal';
+const getTeamScopeLabel = (teamLike = {}) => (getTeamScopeKey(teamLike) === 'university' ? 'universitario' : 'normal');
+const teamContainsUser = (teamLike = {}, userId = '') => {
+    const key = String(userId || '');
+    if (!key) return false;
+    if (String(teamLike?.captain || '') === key) return true;
+    const starters = Array.isArray(teamLike?.roster?.starters) ? teamLike.roster.starters : [];
+    const subs = Array.isArray(teamLike?.roster?.subs) ? teamLike.roster.subs : [];
+    const coach = teamLike?.roster?.coach;
+    if (starters.some((slot) => String(slot?.user || '') === key)) return true;
+    if (subs.some((slot) => String(slot?.user || '') === key)) return true;
+    if (String(coach?.user || '') === key) return true;
+    return false;
+};
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const ensureUserNotInOtherTeam = async (game, userId, currentTeamId, targetTeamLike = null) => {
     if (!userId) return { ok: true };
     const query = {
         game,
@@ -281,19 +334,35 @@ const ensureUserNotInOtherTeam = async (game, userId, currentTeamId) => {
             { 'roster.coach.user': userId }
         ]
     };
-    const exists = await Team.findOne(query).select('_id name');
-    if (exists) {
-        return { ok: false, message: `Ya perteneces a otro equipo (${exists.name}) de este juego` };
+    const existingTeams = await Team.find(query)
+        .select('_id name teamLevel university.isUniversityTeam captain roster.starters.user roster.subs.user roster.coach.user')
+        .lean();
+    if (!existingTeams.length) return { ok: true };
+
+    if (!targetTeamLike) {
+        return { ok: false, message: `Ya perteneces a otro equipo (${existingTeams[0]?.name || 'sin nombre'}) de este juego` };
     }
+
+    const targetScope = getTeamScopeKey(targetTeamLike);
+    const sameScopeTeam = existingTeams.find((teamDoc) => getTeamScopeKey(teamDoc) === targetScope);
+    if (sameScopeTeam) {
+        const scopeLabel = targetScope === 'university' ? 'universitario' : 'normal';
+        return {
+            ok: false,
+            message: `Ya perteneces a otro equipo ${scopeLabel} (${sameScopeTeam.name}) de este juego`
+        };
+    }
+
     return { ok: true };
 };
 
-const ensureRiotIdNotInOtherTeam = async (game, nickname, gameId, currentTeamId) => {
+const ensureRiotIdNotInOtherTeam = async (game, nickname, gameId, currentTeamId, options = {}) => {
+    const { targetTeamLike = null, targetUserId = null } = options;
     const gn = String(nickname || '').trim();
     const tl = String(gameId || '').trim();
     if (!gn || !tl) return { ok: true };
-    const nickRegex = new RegExp(`^${gn.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i');
-    const tagRegex = new RegExp(`^${tl.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i');
+    const nickRegex = new RegExp(`^${escapeRegex(gn)}$`, 'i');
+    const tagRegex = new RegExp(`^${escapeRegex(tl)}$`, 'i');
     const query = {
         game,
         _id: { $ne: currentTeamId },
@@ -303,10 +372,29 @@ const ensureRiotIdNotInOtherTeam = async (game, nickname, gameId, currentTeamId)
             { 'roster.coach.nickname': nickRegex, 'roster.coach.gameId': tagRegex }
         ]
     };
-    const exists = await Team.findOne(query).select('_id');
-    if (exists) {
-        return { ok: false, message: 'Este Riot ID ya pertenece a otro equipo de este juego' };
+    const existingTeams = await Team.find(query)
+        .select('_id name teamLevel university.isUniversityTeam captain roster.starters.user roster.subs.user roster.coach.user')
+        .lean();
+    if (!existingTeams.length) return { ok: true };
+
+    const targetScope = targetTeamLike ? getTeamScopeKey(targetTeamLike) : null;
+    for (const teamDoc of existingTeams) {
+        if (!targetScope || !targetUserId) {
+            return { ok: false, message: 'Este Riot ID ya pertenece a otro equipo de este juego' };
+        }
+        const existingScope = getTeamScopeKey(teamDoc);
+        const sameScope = existingScope === targetScope;
+        const sameUser = teamContainsUser(teamDoc, targetUserId);
+        if (sameScope || !sameUser) {
+            return {
+                ok: false,
+                message: sameScope
+                    ? `Este Riot ID ya pertenece a otro equipo ${getTeamScopeLabel(teamDoc)} de este juego`
+                    : 'Este Riot ID ya pertenece a otro equipo de este juego'
+            };
+        }
     }
+
     return { ok: true };
 };
 
@@ -328,6 +416,12 @@ const findFirstEmptySlot = (team, slotType) => {
 const pushNotification = async (userId, payload) => {
     await User.findByIdAndUpdate(userId, { $push: { notifications: payload } });
 };
+const isValidObjectIdLike = (value = '') => /^[a-fA-F0-9]{24}$/.test(String(value));
+const toIdArray = (value) => (
+    Array.isArray(value)
+        ? value.map((entry) => String(entry || '').trim()).filter(Boolean)
+        : []
+);
 
 const RIOT_GAMES = new Set([
     'Valorant',
@@ -384,6 +478,22 @@ const buildVerifiedUniversitySnapshot = async (userId) => {
         };
     }
     return { ok: true, snapshot: toUniversityTeamSnapshot(university) };
+};
+const ensureUniversityTeamConfigured = (teamLike = {}) => {
+    const isUniversity = Boolean(teamLike?.university?.isUniversityTeam) || isUniversityTeamLevel(teamLike?.teamLevel);
+    if (!isUniversity) {
+        return { ok: true, isUniversity: false, universityId: '' };
+    }
+    const universityId = normalizeUniversityText(teamLike?.university?.universityId);
+    if (!universityId) {
+        return {
+            ok: false,
+            isUniversity: true,
+            universityId: '',
+            message: 'Este equipo universitario no tiene la universidad sincronizada. Sincronízala antes de agregar jugadores.'
+        };
+    }
+    return { ok: true, isUniversity: true, universityId };
 };
 const ensureUserMatchesUniversityTeam = async (userId, expectedUniversityId) => {
     const user = await User.findById(userId).select('university');
@@ -501,12 +611,13 @@ const buildMlbbLinkedPlayerPayload = async (userId, player = {}) => {
     };
 };
 
-const ensureMlbbIdNotInOtherTeam = async (game, playerId, zoneId, currentTeamId) => {
+const ensureMlbbIdNotInOtherTeam = async (game, playerId, zoneId, currentTeamId, options = {}) => {
+    const { targetTeamLike = null, targetUserId = null } = options;
     const pid = String(playerId || '').trim();
     const zid = String(zoneId || '').trim();
     if (!pid || !zid) return { ok: true };
-    const playerRegex = new RegExp(`^${pid.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i');
-    const zoneRegex = new RegExp(`^${zid.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i');
+    const playerRegex = new RegExp(`^${escapeRegex(pid)}$`, 'i');
+    const zoneRegex = new RegExp(`^${escapeRegex(zid)}$`, 'i');
     const query = {
         game,
         _id: { $ne: currentTeamId },
@@ -516,14 +627,33 @@ const ensureMlbbIdNotInOtherTeam = async (game, playerId, zoneId, currentTeamId)
             { 'roster.coach.gameId': playerRegex, 'roster.coach.region': zoneRegex }
         ]
     };
-    const exists = await Team.findOne(query).select('_id');
-    if (exists) {
-        return { ok: false, message: 'Este User ID + Zone ID de Mobile Legends ya pertenece a otro equipo de este juego' };
+    const existingTeams = await Team.find(query)
+        .select('_id name teamLevel university.isUniversityTeam captain roster.starters.user roster.subs.user roster.coach.user')
+        .lean();
+    if (!existingTeams.length) return { ok: true };
+
+    const targetScope = targetTeamLike ? getTeamScopeKey(targetTeamLike) : null;
+    for (const teamDoc of existingTeams) {
+        if (!targetScope || !targetUserId) {
+            return { ok: false, message: 'Este User ID + Zone ID de Mobile Legends ya pertenece a otro equipo de este juego' };
+        }
+        const existingScope = getTeamScopeKey(teamDoc);
+        const sameScope = existingScope === targetScope;
+        const sameUser = teamContainsUser(teamDoc, targetUserId);
+        if (sameScope || !sameUser) {
+            return {
+                ok: false,
+                message: sameScope
+                    ? `Este User ID + Zone ID de Mobile Legends ya pertenece a otro equipo ${getTeamScopeLabel(teamDoc)} de este juego`
+                    : 'Este User ID + Zone ID de Mobile Legends ya pertenece a otro equipo de este juego'
+            };
+        }
     }
+
     return { ok: true };
 };
 
-const validateMlbbRosterEntries = async (game, roster, currentTeamId) => {
+const validateMlbbRosterEntries = async (game, roster, currentTeamId, targetTeamLike = null) => {
     const players = getMlbbRosterPlayers(roster);
     const seenUsers = new Set();
     const seenIds = new Set();
@@ -542,7 +672,7 @@ const validateMlbbRosterEntries = async (game, roster, currentTeamId) => {
         }
         seenUsers.add(userKey);
 
-        const uniqueUser = await ensureUserNotInOtherTeam(game, player.user, currentTeamId);
+        const uniqueUser = await ensureUserNotInOtherTeam(game, player.user, currentTeamId, targetTeamLike);
         if (!uniqueUser.ok) return uniqueUser;
 
         const mlbbCheck = validateMlbbIdentity(player?.gameId, player?.region);
@@ -560,7 +690,13 @@ const validateMlbbRosterEntries = async (game, roster, currentTeamId) => {
         }
         seenIds.add(idKey);
 
-        const mlbbUnique = await ensureMlbbIdNotInOtherTeam(game, player?.gameId, player?.region, currentTeamId);
+        const mlbbUnique = await ensureMlbbIdNotInOtherTeam(
+            game,
+            player?.gameId,
+            player?.region,
+            currentTeamId,
+            { targetTeamLike, targetUserId: player.user }
+        );
         if (!mlbbUnique.ok) return mlbbUnique;
     }
 
@@ -603,7 +739,7 @@ export const joinTeam = async (req, res) => {
         let playerPayload = { ...player, user: req.userId };
 
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
-        const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id);
+        const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id, team);
         if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
@@ -616,7 +752,13 @@ export const joinTeam = async (req, res) => {
             if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para unirte a este equipo" });
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(
+                team.game,
+                player?.nickname,
+                player?.gameId,
+                team._id,
+                { targetTeamLike: team, targetUserId: req.userId }
+            );
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
         }
         if (isMlbbGame(team.game)) {
@@ -625,7 +767,13 @@ export const joinTeam = async (req, res) => {
             const mlbbPlayer = await buildMlbbLinkedPlayerPayload(req.userId, playerPayload);
             if (!mlbbPlayer.ok) return res.status(400).json({ message: mlbbPlayer.message });
             playerPayload = mlbbPlayer.player;
-            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, playerPayload?.gameId, playerPayload?.region, team._id);
+            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(
+                team.game,
+                playerPayload?.gameId,
+                playerPayload?.region,
+                team._id,
+                { targetTeamLike: team, targetUserId: req.userId }
+            );
             if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
         }
         if (!inviteCode || inviteCode !== team.inviteCode) {
@@ -644,7 +792,7 @@ export const joinTeam = async (req, res) => {
             if (!universityRosterValidation.ok) return res.status(400).json({ message: universityRosterValidation.message });
         }
         if (isMlbbGame(team.game)) {
-            const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id);
+            const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id, team);
             if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
         }
 
@@ -671,6 +819,10 @@ export const addMemberDirect = async (req, res) => {
         const { slotType, slotIndex, player } = req.body;
         const team = await Team.findById(teamId);
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
+        const universityTeamState = ensureUniversityTeamConfigured(team);
+        if (!universityTeamState.ok && slotType !== 'coach') {
+            return res.status(400).json({ message: universityTeamState.message });
+        }
 
         const user = await User.findById(req.userId).select('isAdmin');
         const isCaptain = String(team.captain) === String(req.userId);
@@ -698,20 +850,26 @@ export const addMemberDirect = async (req, res) => {
         if (playerPayload?.user && userInRoster(team, playerPayload.user)) {
             return res.status(400).json({ message: 'Ese usuario ya pertenece al roster de este equipo' });
         }
-        if (team?.university?.isUniversityTeam && slotType !== 'coach') {
+        if (universityTeamState.isUniversity && slotType !== 'coach') {
             if (!playerPayload?.user) {
                 return res.status(400).json({
                     message: 'En equipos universitarios no puedes agregar jugadores manuales sin usuario verificado.'
                 });
             }
-            const universityCheck = await ensureUserMatchesUniversityTeam(playerPayload.user, team.university.universityId);
+            const universityCheck = await ensureUserMatchesUniversityTeam(playerPayload.user, universityTeamState.universityId);
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
 
         if (RIOT_GAMES.has(team.game)) {
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(
+                team.game,
+                player?.nickname,
+                player?.gameId,
+                team._id,
+                { targetTeamLike: team, targetUserId: playerPayload?.user || null }
+            );
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
         }
         if (isMlbbGame(team.game)) {
@@ -725,12 +883,18 @@ export const addMemberDirect = async (req, res) => {
                 if (!mlbbPlayer.ok) return res.status(400).json({ message: mlbbPlayer.message });
                 playerPayload = mlbbPlayer.player;
 
-                const uniqueUser = await ensureUserNotInOtherTeam(team.game, playerPayload.user, team._id);
+                const uniqueUser = await ensureUserNotInOtherTeam(team.game, playerPayload.user, team._id, team);
                 if (!uniqueUser.ok) return res.status(400).json({ message: uniqueUser.message });
-                const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, playerPayload?.gameId, playerPayload?.region, team._id);
+                const mlbbUnique = await ensureMlbbIdNotInOtherTeam(
+                    team.game,
+                    playerPayload?.gameId,
+                    playerPayload?.region,
+                    team._id,
+                    { targetTeamLike: team, targetUserId: playerPayload.user }
+                );
                 if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
             } else if (playerPayload?.user) {
-                const uniqueUser = await ensureUserNotInOtherTeam(team.game, playerPayload.user, team._id);
+                const uniqueUser = await ensureUserNotInOtherTeam(team.game, playerPayload.user, team._id, team);
                 if (!uniqueUser.ok) return res.status(400).json({ message: uniqueUser.message });
             }
         }
@@ -742,7 +906,7 @@ export const addMemberDirect = async (req, res) => {
             if (!universityRosterValidation.ok) return res.status(400).json({ message: universityRosterValidation.message });
         }
         if (isMlbbGame(team.game)) {
-            const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id);
+            const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id, team);
             if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
         }
 
@@ -750,6 +914,241 @@ export const addMemberDirect = async (req, res) => {
         return res.status(200).json({ message: "Jugador agregado", team });
     } catch (error) {
         return res.status(500).json({ message: "Error al agregar jugador", error: error.message });
+    }
+};
+
+export const inviteFriendToTeam = async (req, res) => {
+    try {
+        const { teamId } = req.params;
+        const { targetUserId, slotType, slotIndex, note } = req.body || {};
+
+        if (!isValidObjectIdLike(teamId)) {
+            return res.status(400).json({ message: 'Equipo inválido.' });
+        }
+        if (!isValidObjectIdLike(targetUserId)) {
+            return res.status(400).json({ message: 'Debes seleccionar un amigo válido.' });
+        }
+
+        const normalizedSlotType = ['starters', 'subs', 'coach'].includes(String(slotType || '').trim())
+            ? String(slotType).trim()
+            : 'starters';
+
+        const [team, actor, target] = await Promise.all([
+            Team.findById(teamId),
+            User.findById(req.userId).select('isAdmin fullName username followers following'),
+            User.findById(targetUserId).select('fullName username privacy.allowTeamInvites')
+        ]);
+
+        if (!team) return res.status(404).json({ message: 'Equipo no encontrado.' });
+        if (!actor) return res.status(401).json({ message: 'Sesión inválida.' });
+        if (!target) return res.status(404).json({ message: 'Amigo no encontrado.' });
+        if (String(target._id) === String(req.userId)) {
+            return res.status(400).json({ message: 'No puedes invitarte a ti mismo.' });
+        }
+
+        const isCaptain = String(team.captain) === String(req.userId);
+        const isAdmin = actor.isAdmin === true;
+        if (!isCaptain && !isAdmin) {
+            return res.status(403).json({ message: 'Solo el capitán o un admin puede invitar jugadores.' });
+        }
+
+        const targetId = String(target._id);
+        const actorFollowing = new Set(toIdArray(actor?.following));
+        const actorFollowers = new Set(toIdArray(actor?.followers));
+        const isMutualFriend = actorFollowing.has(targetId) && actorFollowers.has(targetId);
+        if (!isMutualFriend) {
+            return res.status(403).json({
+                message: 'Solo puedes invitar usuarios con seguimiento mutuo (amigos).'
+            });
+        }
+
+        if (target?.privacy?.allowTeamInvites === false) {
+            return res.status(403).json({ message: 'Este usuario no acepta invitaciones de equipo.' });
+        }
+
+        if (userInRoster(team, target._id)) {
+            return res.status(400).json({ message: 'Ese usuario ya pertenece a este equipo.' });
+        }
+
+        const hasPendingJoinRequest = Array.isArray(team.joinRequests)
+            ? team.joinRequests.some((request) =>
+                String(request?.user || '') === String(target._id) && request?.status === 'pending')
+            : false;
+        if (hasPendingJoinRequest) {
+            return res.status(409).json({ message: 'Ese usuario ya tiene una solicitud pendiente para este equipo.' });
+        }
+
+        const uniqueCheck = await ensureUserNotInOtherTeam(team.game, target._id, team._id, team);
+        if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
+
+        const genderCheck = await canJoinByGender(team, target._id);
+        if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
+
+        if (team?.university?.isUniversityTeam && normalizedSlotType !== 'coach') {
+            const universityCheck = await ensureUserMatchesUniversityTeam(target._id, team.university.universityId);
+            if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
+        }
+
+        if (RIOT_GAMES.has(team.game) && normalizedSlotType !== 'coach') {
+            const riotLinked = await requireRiotLinked(target._id);
+            if (!riotLinked) {
+                return res.status(400).json({
+                    message: 'Este usuario debe vincular su cuenta Riot antes de recibir invitación para este equipo.'
+                });
+            }
+        }
+
+        if (isMlbbGame(team.game) && normalizedSlotType !== 'coach') {
+            const mlbbLinked = await requireMlbbLinked(target._id);
+            if (!mlbbLinked) {
+                return res.status(400).json({
+                    message: 'Este usuario debe verificar su cuenta MLBB antes de recibir invitación para este equipo.'
+                });
+            }
+        }
+
+        const startersLimit = Number(team.maxMembers || 0);
+        const subsLimit = Number(team.maxSubstitutes || 0);
+        let resolvedSlotIndex = 0;
+
+        if (normalizedSlotType === 'coach') {
+            if (isSlotFilled(team?.roster?.coach)) {
+                return res.status(400).json({ message: 'El slot de coach ya está ocupado.' });
+            }
+            resolvedSlotIndex = 0;
+        } else {
+            const maxForType = normalizedSlotType === 'starters' ? startersLimit : subsLimit;
+            if (maxForType <= 0) {
+                return res.status(400).json({
+                    message: normalizedSlotType === 'subs'
+                        ? 'Este equipo no tiene slots de suplentes.'
+                        : 'Este equipo no tiene slots disponibles para titulares.'
+                });
+            }
+
+            const requestedIndex = Number(slotIndex);
+            resolvedSlotIndex = Number.isFinite(requestedIndex) ? requestedIndex : 0;
+            if (resolvedSlotIndex < 0 || resolvedSlotIndex >= maxForType) {
+                resolvedSlotIndex = 0;
+            }
+
+            const currentList = Array.isArray(team?.roster?.[normalizedSlotType]) ? team.roster[normalizedSlotType] : [];
+            if (isSlotFilled(currentList[resolvedSlotIndex])) {
+                const firstEmpty = findFirstEmptySlot(team, normalizedSlotType);
+                if (firstEmpty === -1) {
+                    return res.status(400).json({
+                        message: normalizedSlotType === 'starters'
+                            ? 'No hay slots libres de titulares para invitar.'
+                            : 'No hay slots libres de suplentes para invitar.'
+                    });
+                }
+                resolvedSlotIndex = firstEmpty;
+            }
+        }
+
+        const slotHasPendingJoinRequest = Array.isArray(team.joinRequests)
+            ? team.joinRequests.some((request) =>
+                request?.status === 'pending'
+                && String(request?.slotType || '') === normalizedSlotType
+                && Number(request?.slotIndex) === Number(resolvedSlotIndex))
+            : false;
+        if (slotHasPendingJoinRequest) {
+            return res.status(409).json({
+                message: 'Ese slot ya tiene una solicitud pendiente. Resuélvela antes de invitar a otro jugador.'
+            });
+        }
+
+        const slotHasPendingInvite = await User.findOne({
+            notifications: {
+                $elemMatch: {
+                    category: 'team',
+                    status: 'unread',
+                    'meta.action': 'team_invite',
+                    'meta.teamId': String(team._id),
+                    'meta.slotType': normalizedSlotType,
+                    'meta.slotIndex': Number(resolvedSlotIndex)
+                }
+            }
+        }).select('_id').lean();
+        if (slotHasPendingInvite) {
+            return res.status(409).json({
+                message: 'Ese slot ya tiene una invitación pendiente. Espera respuesta o cambia de slot.'
+            });
+        }
+
+        const duplicateInvite = await User.findOne({
+            _id: target._id,
+            notifications: {
+                $elemMatch: {
+                    category: 'team',
+                    status: 'unread',
+                    'meta.action': 'team_invite',
+                    'meta.teamId': String(team._id)
+                }
+            }
+        }).select('_id').lean();
+        if (duplicateInvite) {
+            return res.status(409).json({ message: 'Este usuario ya tiene una invitación pendiente para este equipo.' });
+        }
+
+        const inviterName = actor.fullName || actor.username || 'Un capitán';
+        const targetName = target.fullName || target.username || 'Jugador';
+        const slotLabel = normalizedSlotType === 'coach'
+            ? 'Coach'
+            : `${normalizedSlotType === 'starters' ? 'Titular' : 'Suplente'} #${resolvedSlotIndex + 1}`;
+        const trimmedNote = String(note || '').trim().slice(0, 120);
+        const noteSuffix = trimmedNote ? ` Nota: ${trimmedNote}` : '';
+
+        await pushNotification(target._id, {
+            type: 'team',
+            category: 'team',
+            title: 'Invitación de equipo',
+            source: team.name,
+            message: `${inviterName} te invitó a ${team.name} (${slotLabel}). Usa el código ${team.inviteCode} para solicitar ingreso.${noteSuffix}`,
+            status: 'unread',
+            meta: {
+                action: 'team_invite',
+                teamId: String(team._id),
+                teamName: team.name,
+                teamCode: team.teamCode || '',
+                inviteCode: team.inviteCode,
+                slotType: normalizedSlotType,
+                slotIndex: resolvedSlotIndex,
+                invitedBy: String(req.userId),
+                invitedByName: inviterName,
+                game: team.game,
+                isUniversityTeam: Boolean(team?.university?.isUniversityTeam)
+            },
+            visuals: { icon: 'bx-user-plus', color: '#4facfe', glow: true }
+        });
+
+        await pushNotification(req.userId, {
+            type: 'team',
+            category: 'team',
+            title: 'Invitación enviada',
+            source: team.name,
+            message: `Invitación enviada a ${targetName} para ${slotLabel}.`,
+            status: 'unread',
+            meta: {
+                action: 'team_invite_sent',
+                teamId: String(team._id),
+                targetUserId: String(target._id),
+                targetName
+            },
+            visuals: { icon: 'bx-send', color: '#8EDB15', glow: false }
+        });
+
+        return res.status(200).json({
+            message: 'Invitación enviada por notificación.',
+            invite: {
+                teamId: String(team._id),
+                targetUserId: String(target._id),
+                slotType: normalizedSlotType,
+                slotIndex: resolvedSlotIndex
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error al enviar invitación.', error: error.message });
     }
 };
 
@@ -825,7 +1224,7 @@ export const requestJoinTeam = async (req, res) => {
             return res.status(401).json({ message: "Código de invitación incorrecto" });
         }
 
-        const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id);
+        const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id, team);
         if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
@@ -838,7 +1237,13 @@ export const requestJoinTeam = async (req, res) => {
             if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para solicitar ingreso" });
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-            const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, player?.nickname, player?.gameId, team._id);
+            const riotUnique = await ensureRiotIdNotInOtherTeam(
+                team.game,
+                player?.nickname,
+                player?.gameId,
+                team._id,
+                { targetTeamLike: team, targetUserId: req.userId }
+            );
             if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
         }
         if (isMlbbGame(team.game)) {
@@ -847,7 +1252,13 @@ export const requestJoinTeam = async (req, res) => {
             const mlbbPlayer = await buildMlbbLinkedPlayerPayload(req.userId, requestPlayer);
             if (!mlbbPlayer.ok) return res.status(400).json({ message: mlbbPlayer.message });
             requestPlayer = mlbbPlayer.player;
-            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, requestPlayer?.gameId, requestPlayer?.region, team._id);
+            const mlbbUnique = await ensureMlbbIdNotInOtherTeam(
+                team.game,
+                requestPlayer?.gameId,
+                requestPlayer?.region,
+                team._id,
+                { targetTeamLike: team, targetUserId: req.userId }
+            );
             if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
         }
         if (userInRoster(team, req.userId)) {
@@ -923,7 +1334,7 @@ export const handleJoinRequest = async (req, res) => {
         if (!reqDoc) return res.status(404).json({ message: "Solicitud no encontrada" });
 
         if (action === 'approve') {
-            const uniqueCheck = await ensureUserNotInOtherTeam(team.game, reqDoc.user, team._id);
+            const uniqueCheck = await ensureUserNotInOtherTeam(team.game, reqDoc.user, team._id, team);
             if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
             if (team?.university?.isUniversityTeam && reqDoc.slotType !== 'coach') {
                 const universityCheck = await ensureUserMatchesUniversityTeam(reqDoc.user, team.university.universityId);
@@ -934,7 +1345,13 @@ export const handleJoinRequest = async (req, res) => {
                 if (!ok) return res.status(400).json({ message: "El jugador debe vincular su cuenta Riot" });
                 const riotCheck = await validateRiotAccount(reqDoc.player?.nickname, reqDoc.player?.gameId);
                 if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
-                const riotUnique = await ensureRiotIdNotInOtherTeam(team.game, reqDoc.player?.nickname, reqDoc.player?.gameId, team._id);
+                const riotUnique = await ensureRiotIdNotInOtherTeam(
+                    team.game,
+                    reqDoc.player?.nickname,
+                    reqDoc.player?.gameId,
+                    team._id,
+                    { targetTeamLike: team, targetUserId: reqDoc.user }
+                );
                 if (!riotUnique.ok) return res.status(400).json({ message: riotUnique.message });
             }
             if (isMlbbGame(team.game)) {
@@ -944,7 +1361,13 @@ export const handleJoinRequest = async (req, res) => {
                 if (!mlbbCheck.ok) return res.status(400).json({ message: mlbbCheck.message });
                 const mlbbMatch = await ensureMlbbPlayerMatchesLinkedUser(reqDoc.user, reqDoc.player?.gameId, reqDoc.player?.region);
                 if (!mlbbMatch.ok) return res.status(400).json({ message: mlbbMatch.message });
-                const mlbbUnique = await ensureMlbbIdNotInOtherTeam(team.game, reqDoc.player?.gameId, reqDoc.player?.region, team._id);
+                const mlbbUnique = await ensureMlbbIdNotInOtherTeam(
+                    team.game,
+                    reqDoc.player?.gameId,
+                    reqDoc.player?.region,
+                    team._id,
+                    { targetTeamLike: team, targetUserId: reqDoc.user }
+                );
                 if (!mlbbUnique.ok) return res.status(400).json({ message: mlbbUnique.message });
             }
             const genderCheck = await canJoinByGender(team, reqDoc.user);
@@ -967,7 +1390,7 @@ export const handleJoinRequest = async (req, res) => {
                 if (!applied.ok) return res.status(400).json({ message: applied.message });
             }
             if (isMlbbGame(team.game)) {
-                const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id);
+                const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id, team);
                 if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
             }
             if (team?.university?.isUniversityTeam) {

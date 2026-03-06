@@ -244,6 +244,12 @@
     color: #5865F2;
 }
 
+.pf-hero-info__meta--id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--primary);
+    letter-spacing: 0.03em;
+}
+
 .pf-hero-info__bio {
     max-width: 500px;
     color: var(--text-main);
@@ -525,6 +531,74 @@
 }
 
 /* ═══════════════════════════════
+   PROFILE DETAILS HUB
+   ═══════════════════════════════ */
+.pf-profile-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.pf-profile-details__row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.pf-profile-details__label {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.pf-profile-details__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.pf-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0.28rem 0.62rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-main);
+    font-size: 0.78rem;
+    line-height: 1;
+}
+
+.pf-profile-details__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.pf-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    min-height: 30px;
+    padding: 0.35rem 0.66rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    line-height: 1;
+}
+
+.pf-flag.is-active {
+    border-color: rgba(var(--primary-rgb), 0.6);
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.12);
+}
+
+/* ═══════════════════════════════
    FRIENDS HUB
    ═══════════════════════════════ */
 .pf-friends {
@@ -571,7 +645,13 @@
 
 .pf-friend__status--online { background: #22c55e; }
 .pf-friend__status--ingame { background: #a855f7; }
+.pf-friend__status--gaming { background: #a855f7; }
+.pf-friend__status--tournament { background: #f59e0b; }
+.pf-friend__status--streaming { background: #ef4444; }
+.pf-friend__status--searching { background: #3b82f6; }
 .pf-friend__status--away { background: #f59e0b; }
+.pf-friend__status--afk { background: #f59e0b; }
+.pf-friend__status--dnd { background: #ef4444; }
 .pf-friend__status--offline { background: #6b7280; }
 
 .pf-friend__info {
@@ -592,6 +672,16 @@
 .pf-friend__rank {
     font-size: 0.7rem;
     color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pf-friend__code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--primary);
+    font-size: 0.66rem;
+    letter-spacing: 0.03em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -648,6 +738,27 @@
     color: var(--text-muted);
 }
 
+.pf-team__info small {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+}
+
+.pf-team__meta {
+    color: var(--text-muted);
+}
+
+.pf-team__roster {
+    color: #8ab4ff;
+}
+
+.pf-team__code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--primary) !important;
+}
+
 .pf-team svg {
     color: var(--text-muted);
     font-size: 0.8rem;
@@ -677,6 +788,242 @@
     text-align: center;
     color: var(--text-muted);
     font-size: 0.85rem;
+}
+
+.pf-hub__more--social {
+    margin-top: 0.55rem;
+}
+
+/* ═══════════════════════════════
+   SOCIAL MODAL
+   ═══════════════════════════════ */
+.pf-social-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    background: rgba(3, 7, 18, 0.76);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.pf-social-modal__panel {
+    width: min(760px, 100%);
+    max-height: min(84vh, 860px);
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(12, 18, 32, 0.98), rgba(7, 12, 24, 0.98));
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+}
+
+.pf-social-modal__header {
+    padding: 1rem 1.1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pf-social-modal__header h3 {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.pf-social-modal__header button {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.pf-social-modal__header button:hover {
+    color: var(--text-main);
+    border-color: rgba(var(--primary-rgb), 0.55);
+}
+
+.pf-social-tabs {
+    padding: 0.75rem 1rem 0.35rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.pf-social-tab {
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border-radius: 10px;
+    min-height: 40px;
+    padding: 0.45rem 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    cursor: pointer;
+}
+
+.pf-social-tab span {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.pf-social-tab small {
+    min-width: 20px;
+    padding: 0.08rem 0.35rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+.pf-social-tab.is-active {
+    border-color: rgba(var(--primary-rgb), 0.75);
+    background: rgba(var(--primary-rgb), 0.15);
+    color: var(--primary);
+}
+
+.pf-social-search {
+    margin: 0.5rem 1rem 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.58rem 0.7rem;
+    color: var(--text-muted);
+}
+
+.pf-social-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 0.86rem;
+}
+
+.pf-social-search input:focus {
+    outline: none;
+}
+
+.pf-social-error {
+    margin: 0.15rem 1rem 0.2rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.14);
+    color: #ef4444;
+    border-radius: 8px;
+    font-size: 0.78rem;
+}
+
+.pf-social-list {
+    overflow: auto;
+    padding: 0.65rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.pf-social-item {
+    padding: 0.6rem 0.68rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.pf-social-item__left {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.pf-social-item__left img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.pf-social-item__left div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.pf-social-item__left strong {
+    font-size: 0.86rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pf-social-item__left span,
+.pf-social-item__left small {
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pf-social-item__left span {
+    font-size: 0.75rem;
+}
+
+.pf-social-item__code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--primary) !important;
+    font-size: 0.68rem !important;
+    letter-spacing: 0.03em;
+}
+
+.pf-social-item__left small {
+    font-size: 0.71rem;
+}
+
+.pf-social-item__follow {
+    min-width: 92px;
+    height: 34px;
+    border: 1px solid rgba(var(--primary-rgb), 0.72);
+    border-radius: 8px;
+    background: rgba(var(--primary-rgb), 0.16);
+    color: var(--primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pf-social-item__follow.is-following {
+    border-color: var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.pf-social-item__follow:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
 /* ═══════════════════════════════
@@ -743,6 +1090,16 @@
 .pf-comment-form button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.pf-comment-error {
+    margin: 0.4rem 0 0.9rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border-radius: 8px;
+    font-size: 0.78rem;
 }
 
 .pf-comments {
@@ -1057,6 +1414,10 @@
     .pf-col--center {
         grid-column: span 1;
     }
+
+    .pf-social-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 600px) {
@@ -1076,5 +1437,22 @@
     
     .pf-friends {
         grid-template-columns: 1fr;
+    }
+
+    .pf-social-modal {
+        padding: 0.55rem;
+    }
+
+    .pf-social-modal__panel {
+        max-height: 92vh;
+    }
+
+    .pf-social-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pf-social-item__follow {
+        width: 100%;
     }
 }

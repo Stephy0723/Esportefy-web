@@ -64,12 +64,16 @@ const UserCard = ({ userId, children }) => {
             const res = await axios.post(`${API_URL}/api/auth/follow/${userId}`, {}, {
                 headers: { Authorization: `Bearer ${getToken()}` }
             });
+            const followed = Boolean(res?.data?.followed);
+            const followersCount = Number(res?.data?.followersCount);
             setData(prev => ({
                 ...prev,
-                isFollowing: res.data.followed,
-                followers: res.data.followed
-                    ? [...(prev.followers || []), 'me']
-                    : (prev.followers || []).slice(0, -1)
+                isFollowing: followed,
+                followers: Number.isFinite(followersCount)
+                    ? Array.from({ length: Math.max(0, followersCount) }, (_, idx) => `f-${idx}`)
+                    : (followed
+                        ? [...(prev.followers || []), 'me']
+                        : (prev.followers || []).slice(0, -1))
             }));
         } catch (err) {
             console.error('Follow error:', err);
@@ -135,6 +139,7 @@ const UserCard = ({ userId, children }) => {
                             <div className="uc__body">
                                 <PlayerTag name={data.username || "Player"} tagId={data.selectedTagId} size="small" />
                                 {data.fullName && <p className="uc__realname">{data.fullName}</p>}
+                                {data.userCode && <p className="uc__usercode">#{data.userCode}</p>}
 
                                 {/* Tags: Organizador / Jugador */}
                                 <div className="uc__role-tags">

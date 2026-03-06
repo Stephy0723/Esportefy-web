@@ -7,6 +7,12 @@ import {
   login,
   logout,
   getProfile,
+  getProfileOverview,
+  getUserCard,
+  getFriends,
+  getSocialOverview,
+  searchUsers,
+  toggleFollow,
   forgotPassword,
   resetPassword,
   updateProfile,
@@ -57,6 +63,9 @@ const rlMlbbStatus = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 400, key
 const rlMlbbReview = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: 'mlbb-review' });
 const rlMlbbOps = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: 'mlbb-ops' });
 const rlDiscord = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8, keyPrefix: 'discord-oauth' });
+const rlProfile = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 120, keyPrefix: 'profile-read' });
+const rlSocialSearch = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 90, keyPrefix: 'social-search' });
+const rlFollowStrict = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 40, keyPrefix: 'social-follow' });
 
 /* =========================
    DISCORD
@@ -72,7 +81,13 @@ router.post('/register', rlRegister, register);
 router.get('/check-phone', rlCheckPhone, checkPhoneAvailability);
 router.post('/login', rlLogin, login);
 router.post('/logout', logout);
-router.get('/profile', verifyToken, getProfile);
+router.get('/profile', verifyToken, rlProfile, getProfile);
+router.get('/profile/overview', verifyToken, rlProfile, getProfileOverview);
+router.get('/user-card/:userId', verifyToken, rlProfile, getUserCard);
+router.get('/friends', verifyToken, rlProfile, getFriends);
+router.get('/social', verifyToken, rlProfile, getSocialOverview);
+router.get('/users/search', verifyToken, rlSocialSearch, searchUsers);
+router.post('/follow/:userId', verifyToken, rlFollowStrict, toggleFollow);
 router.put('/update-profile', verifyToken, upload.single('avatarFile'), updateProfile);
 router.post('/forgot-password', rlForgot, forgotPassword);
 router.post('/reset-password/:token', rlReset, resetPassword);

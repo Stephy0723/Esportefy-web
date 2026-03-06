@@ -92,6 +92,8 @@ const Team = () => {
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [viewModalInitialTab, setViewModalInitialTab] = useState('info');
+    const [viewModalSeed, setViewModalSeed] = useState(0);
 
     // Join flow state
     const [joinInviteCode, setJoinInviteCode] = useState('');
@@ -149,6 +151,14 @@ const Team = () => {
     };
     const isMlbbTeam = (team) => MLBB_GAMES.has(String(team?.game || '').trim());
     const isUniversityTeam = (team) => team?.university?.isUniversityTeam === true || String(team?.teamLevel || '').trim().toLowerCase().includes('universitario');
+    const openManageTeamModal = (team, initialTab = 'info') => {
+        if (!team?._id) return;
+        setSelectedTeam(team);
+        setViewModalInitialTab(initialTab === 'roster' ? 'roster' : 'info');
+        setViewModalSeed((prev) => prev + 1);
+        setIsPreviewOpen(false);
+        setIsViewModalOpen(true);
+    };
 
     const ROLE_NAMES_JOIN = {
         "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
@@ -302,6 +312,8 @@ const Team = () => {
         const navigationTeamId = location.state?.teamId;
         const shouldOpenManage = location.state?.openManage === true;
         const shouldOpenPreview = location.state?.openPreview === true;
+        const shouldOpenJoinForm = location.state?.openJoinForm === true;
+        const inviteCodeFromState = String(location.state?.inviteCode || '').trim().toUpperCase();
         if (!navigationTeamId || teams.length === 0) return;
 
         const targetTeam = teams.find((team) => String(team._id) === String(navigationTeamId));
@@ -309,11 +321,18 @@ const Team = () => {
 
         setSelectedTeam(targetTeam);
         if (shouldOpenManage) {
-            setIsViewModalOpen(true);
-            setIsPreviewOpen(false);
+            openManageTeamModal(targetTeam, 'info');
         } else if (shouldOpenPreview) {
             setIsPreviewOpen(true);
             setIsViewModalOpen(false);
+        }
+        if (inviteCodeFromState) {
+            setJoinInviteCode(inviteCodeFromState);
+        }
+        if (shouldOpenJoinForm) {
+            setIsPreviewOpen(true);
+            setJoinFormOpen(Boolean(inviteCodeFromState));
+            setJoinSuccess(false);
         }
 
         navigate(location.pathname, { replace: true, state: {} });
@@ -643,17 +662,28 @@ const Team = () => {
                                             </span>
                                         )}
                                         {(isCaptain || currentUser?.isAdmin) && (
-                                            <button
-                                                className="th__card-btn th__card-btn--manage"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedTeam(team);
-                                                    setIsViewModalOpen(true);
-                                                }}
-                                            >
-                                                Gestionar
-                                                <i className='bx bx-cog'></i>
-                                            </button>
+                                            <div className="th__card-actions">
+                                                <button
+                                                    className="th__card-btn th__card-btn--invite"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openManageTeamModal(team, 'roster');
+                                                    }}
+                                                >
+                                                    Invitar
+                                                    <i className='bx bx-user-plus'></i>
+                                                </button>
+                                                <button
+                                                    className="th__card-btn th__card-btn--manage"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openManageTeamModal(team, 'info');
+                                                    }}
+                                                >
+                                                    Gestionar
+                                                    <i className='bx bx-cog'></i>
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -684,10 +714,12 @@ const Team = () => {
             {/* ── MODALS ── */}
             {selectedTeam && (
                 <ViewTeamModal
+                    key={`${selectedTeam?._id || 'team'}-${viewModalSeed}`}
                     isOpen={isViewModalOpen}
                     onClose={() => setIsViewModalOpen(false)}
                     team={selectedTeam}
                     currentUser={currentUser}
+                    initialTab={viewModalInitialTab}
                     onTeamUpdated={(updated) => {
                         setSelectedTeam(updated);
                         setTeams(prev => prev.map(t => String(t._id) === String(updated._id) ? updated : t));
@@ -917,6 +949,23 @@ const Team = () => {
                                 )}
                             </div>
 
+                            {previewCanManage && (
+                                <div className="th__modal-actions">
+                                    <button
+                                        className="th__modal-btn th__modal-btn--primary"
+                                        onClick={() => openManageTeamModal(selectedTeam, 'roster')}
+                                    >
+                                        <i className='bx bx-user-plus'></i> Invitar amigo
+                                    </button>
+                                    <button
+                                        className="th__modal-btn th__modal-btn--secondary"
+                                        onClick={() => openManageTeamModal(selectedTeam, 'info')}
+                                    >
+                                        <i className='bx bx-cog'></i> Gestionar equipo
+                                    </button>
+                                </div>
+                            )}
+
                         {/* ── JOIN SECTION — for all logged-in users ── */}
                         {currentUser && (() => {
                             const alreadyMember = isUserMember(selectedTeam);
@@ -924,6 +973,34 @@ const Team = () => {
                             const maxS = st.maxMembers || st.roster?.starters?.length || 5;
                             const maxSb = st.maxSubstitutes || st.roster?.subs?.length || 0;
                             const roles = ROLE_NAMES_JOIN[st.game] || [];
+                            const starterList = Array.isArray(st?.roster?.starters) ? st.roster.starters : [];
+                            const subList = Array.isArray(st?.roster?.subs) ? st.roster.subs : [];
+                            const coach = st?.roster?.coach || null;
+                            const slotHasMember = (slot) => Boolean(slot?.user || slot?.nickname || slot?.gameId || slot?.email || slot?.role);
+                            const normalizeRoleKey = (value = '') => String(value || '').trim().toLowerCase();
+                            const usedRoles = new Set();
+                            [...starterList, ...subList, coach].forEach((member) => {
+                                if (!slotHasMember(member)) return;
+                                const roleKey = normalizeRoleKey(member?.role);
+                                if (roleKey) usedRoles.add(roleKey);
+                            });
+                            const availableRoles = roles.filter((role) => !usedRoles.has(normalizeRoleKey(role)));
+                            let roleCursor = 0;
+                            const roleHintsByType = { starters: {}, subs: {} };
+                            for (let idx = 0; idx < maxS; idx += 1) {
+                                if (slotHasMember(starterList[idx])) continue;
+                                if (availableRoles[roleCursor]) {
+                                    roleHintsByType.starters[idx] = availableRoles[roleCursor];
+                                    roleCursor += 1;
+                                }
+                            }
+                            for (let idx = 0; idx < maxSb; idx += 1) {
+                                if (slotHasMember(subList[idx])) continue;
+                                if (availableRoles[roleCursor]) {
+                                    roleHintsByType.subs[idx] = availableRoles[roleCursor];
+                                    roleCursor += 1;
+                                }
+                            }
                             const isMlbbJoinTeam = isMlbbTeam(st);
                             const isUniversityJoinTeam = isUniversityTeam(st);
                             const userMatchesUniversity = currentUserUniversityVerified
@@ -1151,7 +1228,12 @@ const Team = () => {
                                                         <select value={joinSlotIndex} onChange={e => setJoinSlotIndex(Number(e.target.value))}>
                                                             {Array.from({ length: joinSlotType === 'starters' ? maxS : maxSb }).map((_, i) => {
                                                                 const current = joinSlotType === 'starters' ? st.roster?.starters?.[i] : st.roster?.subs?.[i];
-                                                                const label = current?.nickname || current?.role || `Slot ${i + 1}`;
+                                                                const roleHint = joinSlotType === 'starters'
+                                                                    ? roleHintsByType.starters?.[i]
+                                                                    : roleHintsByType.subs?.[i];
+                                                                const label = current?.nickname
+                                                                    || current?.role
+                                                                    || `${joinSlotType === 'starters' ? 'Titular' : 'Suplente'} #${i + 1}${roleHint ? ` · ${roleHint}` : ''}`;
                                                                 return <option key={i} value={i} disabled={Boolean(current?.nickname)}>{label}{current?.nickname ? ' ✓' : ''}</option>;
                                                             })}
                                                         </select>
