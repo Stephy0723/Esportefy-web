@@ -683,6 +683,9 @@ export const searchUsers = async (req, res) => {
             { username: { $regex: q, $options: 'i' } },
             { fullName: { $regex: q, $options: 'i' } }
         ];
+        if (isValidObjectIdLike(query)) {
+            orFilters.push({ _id: query });
+        }
         if (codeQuery.length >= 2) {
             orFilters.push({
                 $and: [

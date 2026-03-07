@@ -733,7 +733,7 @@ const Profile = () => {
                                             onClick={() => navigate('/teams', {
                                                 state: {
                                                     teamId: team?._id,
-                                                    openManage: true
+                                                    openPreview: true
                                                 }
                                             })}
                                         >

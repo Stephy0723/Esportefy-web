@@ -58,6 +58,15 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     /* ── helpers ── */
     const normalizeGame = (v) => String(v || '').trim().toLowerCase();
     const isRiotGame = (g) => RIOT_GAMES.has(String(g || '').trim());
+    const formatRosterGameId = (entry) => {
+        const gameId = String(entry?.gameId || '').trim();
+        if (!gameId) return '';
+        if (!isRiotGame(team?.game)) return gameId;
+        const nick = String(entry?.name || '').trim();
+        const cleanedTag = gameId.replace(/^#/, '');
+        if (!nick || !cleanedTag) return gameId;
+        return `${nick}#${cleanedTag}`;
+    };
     const getGameRules = (game) => {
         const target = normalizeGame(game);
         if (!target) return null;
@@ -163,7 +172,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const saveEdit = async () => {
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
+            const token = getToken();
             let updated = team;
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}`, editForm, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -202,7 +211,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         if (!player.nickname.trim()) return showToast('Nickname requerido', 'error');
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await axios.post(`${API_URL}/api/teams/${team._id}/roster`,
                 { slotType, slotIndex, player },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -220,7 +229,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleRemovePlayer = async (entry) => {
         if (!window.confirm(`Remover a ${entry.name}?`)) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}/roster/remove`,
                 { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -234,7 +243,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
     const handleRequestAction = async (requestId, action) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}/requests/${requestId}`,
                 { action },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -406,7 +415,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleLeaveTeam = async () => {
         if (!window.confirm('¿Seguro que quieres salir del equipo?')) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             await axios.post(`${API_URL}/api/teams/leave/${team._id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -421,7 +430,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleDeleteTeam = async () => {
         if (!window.confirm('¿ELIMINAR este equipo permanentemente? Esta acción no se puede deshacer.')) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             await axios.delete(`${API_URL}/api/teams/${team._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -741,7 +750,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                     <span className={`vtm-player-sync vtm-player-sync--${entry.syncMeta.tone}`}>{entry.syncMeta.label}</span>
                                                 )}
                                                 {entry.filled && entry.gameId && !hideGameId && (
-                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {entry.gameId}</span>
+                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {formatRosterGameId(entry)}</span>
                                                 )}
                                                 {entry.filled && entry.region && (
                                                     <span className="vtm-player-meta"><i className='bx bx-map-pin'></i> {entry.region}</span>
@@ -787,7 +796,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                         <span className={`vtm-player-sync vtm-player-sync--${entry.syncMeta.tone}`}>{entry.syncMeta.label}</span>
                                                     )}
                                                     {entry.filled && entry.gameId && !hideGameId && (
-                                                        <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {entry.gameId}</span>
+                                                        <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {formatRosterGameId(entry)}</span>
                                                     )}
                                                     {entry.filled && entry.region && (
                                                         <span className="vtm-player-meta"><i className='bx bx-map-pin'></i> {entry.region}</span>
@@ -832,7 +841,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                     <span className={`vtm-player-sync vtm-player-sync--${coach.syncMeta.tone}`}>{coach.syncMeta.label}</span>
                                                 )}
                                                 {coach.filled && coach.gameId && !hideGameId && (
-                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {coach.gameId}</span>
+                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {formatRosterGameId(coach)}</span>
                                                 )}
                                             </div>
                                             {canManage && coach.filled && (

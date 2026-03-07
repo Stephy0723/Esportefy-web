@@ -1982,6 +1982,15 @@
     background: var(--bg-card);
     color: var(--text-main);
 }
+
+.th__join-role-locked-note {
+    margin-top: 6px;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgba(142, 219, 21, 0.9);
+}
+
 .th__join-mlbb-note {
     display: flex;
     align-items: flex-start;

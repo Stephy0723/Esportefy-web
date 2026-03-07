@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaSearch, FaUserFriends, FaUsers, FaUserPlus } from 'react-icons/fa';
 import { API_URL } from '../../../config/api';
 import { resolveMediaUrl } from '../../../utils/media';
@@ -32,6 +32,7 @@ const FriendsPage = () => {
     const [myUserCodeVisible, setMyUserCodeVisible] = useState(true);
     const [myUserCodeBusy, setMyUserCodeBusy] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
@@ -91,6 +92,21 @@ const FriendsPage = () => {
         loadSocialData();
         loadUserCodeVisibility();
     }, [loadSocialData, loadUserCodeVisibility]);
+
+    useEffect(() => {
+        const requestedDiscover = Boolean(location.state?.openDiscover);
+        const requestedQuery = String(location.state?.query || '').trim();
+        if (!requestedDiscover && !requestedQuery) return;
+
+        if (requestedDiscover) {
+            setActiveTab('discover');
+        }
+        if (requestedQuery) {
+            setQuery(requestedQuery);
+        }
+
+        navigate(location.pathname, { replace: true, state: {} });
+    }, [location.pathname, location.state, navigate]);
 
     useEffect(() => {
         let canceled = false;

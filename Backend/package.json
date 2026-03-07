@@ -7,10 +7,10 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "test": "jest --watchAll --no-cache",
-    "test:e2e:mlbb": "node scripts/e2e/mlbb-flow-smoke.js",
+    "test:e2e:mlbb": "node --env-file=.env scripts/e2e/mlbb-flow-smoke.js",
     "test:e2e:social": "node scripts/e2e/social-flow-smoke.js",
     "test:e2e:university": "node scripts/e2e/university-flow-smoke.js",
-    "test:load:mlbb": "node scripts/load/mlbb-load-smoke.js",
+    "test:load:mlbb": "node --env-file=.env scripts/load/mlbb-load-smoke.js",
     "test:load:mlbb:writes": "node --env-file=.env scripts/load/mlbb-write-load-smoke.js"
   },
   "keywords": [],

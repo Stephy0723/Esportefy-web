@@ -55,6 +55,24 @@ const MLBB_GAMES = new Set([
     'MLBB'
 ]);
 
+const RIOT_GAMES = new Set([
+    'League of Legends',
+    'Valorant',
+    'Wild Rift',
+    'Teamfight Tactics',
+    'Legends of Runeterra'
+]);
+
+const formatRosterGameId = (game, player = {}) => {
+    const gameId = String(player?.gameId || '').trim();
+    if (!gameId) return '';
+    if (!RIOT_GAMES.has(String(game || '').trim())) return gameId;
+    const nick = String(player?.nickname || '').trim();
+    const cleanedTag = gameId.replace(/^#/, '');
+    if (!nick || !cleanedTag) return gameId;
+    return `${nick}#${cleanedTag}`;
+};
+
 /* ═══════════════════════════════════════
    FILTER TABS
    ═══════════════════════════════════════ */
@@ -101,6 +119,7 @@ const Team = () => {
     const [joinSlotType, setJoinSlotType] = useState('starters');
     const [joinSlotIndex, setJoinSlotIndex] = useState(0);
     const [joinPlayer, setJoinPlayer] = useState({ nickname: '', gameId: '', region: '', email: '', role: '' });
+    const [joinRoleLockedByInvite, setJoinRoleLockedByInvite] = useState(false);
     const [joinSubmitting, setJoinSubmitting] = useState(false);
     const [joinPhoto, setJoinPhoto] = useState(null);
     const [joinPhotoPreview, setJoinPhotoPreview] = useState('');
@@ -131,6 +150,7 @@ const Team = () => {
     const currentUserMlbbZoneId = String(mlbbConnection?.zoneId || '').trim();
     const currentUserUniversity = currentUser?.university || {};
     const currentUserUniversityVerified = Boolean(currentUserUniversity?.verified && currentUserUniversity?.universityId);
+    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
     /* ── helpers ── */
     const isUserMember = (team) => {
@@ -178,6 +198,28 @@ const Team = () => {
     };
     const REGION_OPTIONS_JOIN = ["LAN", "LAS", "NA", "BR", "EUW", "EUNE", "TR", "RU", "OCE", "KR", "JP", "LATAM", "GLOBAL"];
 
+    const resolveJoinSlotRole = (team, slotType, slotIndex, explicitRole = '') => {
+        const explicit = String(explicitRole || '').trim();
+        if (explicit) return explicit;
+
+        const normalizedType = String(slotType || '').trim();
+        if (normalizedType === 'coach') {
+            return String(team?.roster?.coach?.role || 'Coach').trim();
+        }
+
+        if (!['starters', 'subs'].includes(normalizedType)) return '';
+        const index = Number(slotIndex);
+        if (!Number.isFinite(index) || index < 0) return '';
+
+        const rosterRole = String(team?.roster?.[normalizedType]?.[index]?.role || '').trim();
+        if (rosterRole) return rosterRole;
+
+        const templates = ROLE_NAMES_JOIN[String(team?.game || '').trim()] || [];
+        if (templates[index]) return templates[index];
+
+        return normalizedType === 'subs' ? `Suplente ${index + 1}` : `Titular ${index + 1}`;
+    };
+
     const handleJoinPhotoChange = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -191,6 +233,7 @@ const Team = () => {
         e.preventDefault();
         const isMlbb = isMlbbTeam(team);
         const resolvedNickname = (joinPlayer.nickname || currentUserMlbbIgn || '').trim();
+        const resolvedRole = resolveJoinSlotRole(team, joinSlotType, joinSlotIndex, joinPlayer.role);
         if (!resolvedNickname) return addToast('Nickname requerido', 'error');
         if (!joinInviteCode.trim()) return addToast('Código de invitación requerido', 'error');
         if (isMlbb && !currentUserMlbbVerified) {
@@ -198,7 +241,7 @@ const Team = () => {
         }
         try {
             setJoinSubmitting(true);
-            const token = localStorage.getItem('token');
+            const token = getToken();
             if (!token) return addToast('Debes iniciar sesión', 'error');
 
             // Convert photo to base64 if provided
@@ -222,6 +265,7 @@ const Team = () => {
                         nickname: resolvedNickname,
                         gameId: isMlbb ? currentUserMlbbPlayerId : joinPlayer.gameId,
                         region: isMlbb ? currentUserMlbbZoneId : joinPlayer.region,
+                        role: resolvedRole,
                         photo: photoData
                     }
                 },
@@ -241,6 +285,7 @@ const Team = () => {
         setJoinPlayer({ nickname: '', gameId: '', region: '', email: '', role: '' });
         setJoinSlotType('starters');
         setJoinSlotIndex(0);
+        setJoinRoleLockedByInvite(false);
         setJoinPhoto(null);
         setJoinPhotoPreview('');
         setJoinSuccess(false);
@@ -274,7 +319,7 @@ const Team = () => {
 
     const handleRequestAction = async (teamId, requestId, action) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             if (!token) return addToast('Debes iniciar sesion', 'error');
             const res = await axios.patch(
                 `${API_URL}/api/teams/${teamId}/requests/${requestId}`,
@@ -314,6 +359,11 @@ const Team = () => {
         const shouldOpenPreview = location.state?.openPreview === true;
         const shouldOpenJoinForm = location.state?.openJoinForm === true;
         const inviteCodeFromState = String(location.state?.inviteCode || '').trim().toUpperCase();
+        const slotTypeFromState = ['starters', 'subs', 'coach'].includes(String(location.state?.slotType || '').trim())
+            ? String(location.state.slotType).trim()
+            : '';
+        const slotIndexFromState = Number(location.state?.slotIndex);
+        const slotRoleFromState = String(location.state?.slotRole || '').trim();
         if (!navigationTeamId || teams.length === 0) return;
 
         const targetTeam = teams.find((team) => String(team._id) === String(navigationTeamId));
@@ -333,6 +383,28 @@ const Team = () => {
             setIsPreviewOpen(true);
             setJoinFormOpen(Boolean(inviteCodeFromState));
             setJoinSuccess(false);
+            if (slotTypeFromState) {
+                setJoinSlotType(slotTypeFromState);
+            }
+            if (Number.isFinite(slotIndexFromState) && slotIndexFromState >= 0) {
+                setJoinSlotIndex(slotIndexFromState);
+            } else if (slotTypeFromState === 'coach') {
+                setJoinSlotIndex(0);
+            }
+            if (slotTypeFromState || slotRoleFromState) {
+                const resolvedRole = resolveJoinSlotRole(
+                    targetTeam,
+                    slotTypeFromState || 'starters',
+                    Number.isFinite(slotIndexFromState) ? slotIndexFromState : 0,
+                    slotRoleFromState
+                );
+                if (resolvedRole) {
+                    setJoinPlayer((prev) => ({ ...prev, role: resolvedRole }));
+                }
+                setJoinRoleLockedByInvite(Boolean(slotTypeFromState || slotRoleFromState));
+            } else {
+                setJoinRoleLockedByInvite(false);
+            }
         }
 
         navigate(location.pathname, { replace: true, state: {} });
@@ -421,7 +493,7 @@ const Team = () => {
                             className="th__btn-create th__btn-create--demo"
                             onClick={async () => {
                                 try {
-                                    const token = localStorage.getItem('token');
+                                    const token = getToken();
                                     const res = await axios.post(`${API_URL}/api/teams/seed-demo`, {}, {
                                         headers: { Authorization: `Bearer ${token}` }
                                     });
@@ -441,7 +513,7 @@ const Team = () => {
                             className="th__btn-create th__btn-create--third"
                             onClick={async () => {
                                 try {
-                                    const token = localStorage.getItem('token');
+                                    const token = getToken();
                                     const res = await axios.post(`${API_URL}/api/teams/seed-third-party`, {}, {
                                         headers: { Authorization: `Bearer ${token}` }
                                     });
@@ -868,7 +940,7 @@ const Team = () => {
                                                 <div className="th__modal-player-info">
                                                     <span className="th__modal-player-name">{p?.nickname || 'Vacante'}</span>
                                                     {p?.role && <span className="th__modal-player-role">{p.role}</span>}
-                                                    {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {p.gameId}</span>}
+                                                    {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {formatRosterGameId(selectedTeam?.game, p)}</span>}
                                                     {p?.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {p.region}</span>}
                                                     {previewCanManage && p?.email && <span className="th__modal-player-detail"><i className='bx bx-envelope'></i> {p.email}</span>}
                                                 </div>
@@ -905,7 +977,7 @@ const Team = () => {
                                                 <div className="th__modal-player-info">
                                                     <span className="th__modal-player-name">{p?.nickname || 'Vacante'}</span>
                                                     {p?.role && <span className="th__modal-player-role">{p.role}</span>}
-                                                    {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {p.gameId}</span>}
+                                                    {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {formatRosterGameId(selectedTeam?.game, p)}</span>}
                                                     {p?.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {p.region}</span>}
                                                 </div>
                                             </div>
@@ -934,7 +1006,7 @@ const Team = () => {
                                         <div className="th__modal-player-info">
                                             <span className="th__modal-player-name">{previewCoach.nickname}</span>
                                             <span className="th__modal-player-role">{previewCoach.role || 'Coach'}</span>
-                                            {previewCoach.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {previewCoach.gameId}</span>}
+                                            {previewCoach.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {formatRosterGameId(selectedTeam?.game, previewCoach)}</span>}
                                             {previewCoach.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {previewCoach.region}</span>}
                                             {previewCanManage && previewCoach.email && <span className="th__modal-player-detail"><i className='bx bx-envelope'></i> {previewCoach.email}</span>}
                                         </div>
@@ -1060,13 +1132,21 @@ const Team = () => {
                                                         placeholder="Código de invitación"
                                                         value={joinInviteCode}
                                                         onChange={e => setJoinInviteCode(e.target.value.toUpperCase())}
-                                                        onKeyDown={e => { if (e.key === 'Enter' && joinInviteCode.trim()) setJoinFormOpen(true); }}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter' && joinInviteCode.trim()) {
+                                                                setJoinRoleLockedByInvite(false);
+                                                                setJoinFormOpen(true);
+                                                            }
+                                                        }}
                                                     />
                                                 </div>
                                                 <button
                                                     className="th__join-gate-btn"
                                                     disabled={!joinInviteCode.trim()}
-                                                    onClick={() => setJoinFormOpen(true)}
+                                                    onClick={() => {
+                                                        setJoinRoleLockedByInvite(false);
+                                                        setJoinFormOpen(true);
+                                                    }}
                                                 >
                                                     <i className='bx bx-right-arrow-alt'></i> Continuar
                                                 </button>
@@ -1207,12 +1287,21 @@ const Team = () => {
                                                 )}
                                                 <div className="th__join-field">
                                                     <label>Rol</label>
-                                                    <select value={joinPlayer.role} onChange={e => setJoinPlayer({ ...joinPlayer, role: e.target.value })}>
+                                                    <select
+                                                        value={joinPlayer.role}
+                                                        onChange={e => setJoinPlayer({ ...joinPlayer, role: e.target.value })}
+                                                        disabled={joinRoleLockedByInvite}
+                                                    >
                                                         <option value="">Seleccionar...</option>
                                                         {roles.map(r => <option key={r} value={r}>{r}</option>)}
                                                         <option value="Suplente">Suplente</option>
                                                         <option value="Coach">Coach</option>
                                                     </select>
+                                                    {joinRoleLockedByInvite && (
+                                                        <small className="th__join-role-locked-note">
+                                                            Rol fijado por la invitación del equipo.
+                                                        </small>
+                                                    )}
                                                 </div>
                                                 <div className="th__join-field">
                                                     <label>Posición</label>

@@ -3,7 +3,11 @@ import User from '../models/User.js';
 export const getNotifications = async (req, res) => {
     try {
         const user = await User.findById(req.userId).select('notifications');
-        return res.status(200).json(user?.notifications || []);
+        const notifications = Array.isArray(user?.notifications) ? [...user.notifications] : [];
+        notifications.sort(
+            (a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+        );
+        return res.status(200).json(notifications);
     } catch (error) {
         return res.status(500).json({ message: 'Error al obtener notificaciones', error: error.message });
     }

@@ -215,6 +215,16 @@ export const createTeam = async (req, res) => {
             }
         }
 
+        const captainRoleUniqueness = validateCaptainRoleUniquenessInCreate({
+            roster: rosterData,
+            captainUserId: req.userId,
+            leaderRole: parsedFormData?.leaderRole || '',
+            isUniversityTeam: wantsUniversityTeam
+        });
+        if (!captainRoleUniqueness.ok) {
+            return res.status(400).json({ message: captainRoleUniqueness.message });
+        }
+
         const uniqueCheck = await ensureUserNotInOtherTeam(
             parsedFormData.game,
             req.userId,
@@ -252,7 +262,9 @@ export const createTeam = async (req, res) => {
 
         res.status(201).json({
             message: "Equipo creado",
-            inviteLink: `http://localhost:3000/teams?invite=${savedTeam.inviteCode}`
+            inviteLink: `http://localhost:3000/teams?invite=${savedTeam.inviteCode}`,
+            teamId: String(savedTeam._id),
+            inviteCode: savedTeam.inviteCode
         });
     } catch (error) {
         res.status(500).json({ message: "Error", error: error.message });
@@ -279,6 +291,16 @@ const toPlainPlayerPayload = (player = {}) => {
     if (raw && typeof raw === 'object') {
         delete raw._id;
         delete raw.id;
+        Object.keys(raw).forEach((key) => {
+            const value = raw[key];
+            if (value === undefined || value === null) {
+                delete raw[key];
+                return;
+            }
+            if (typeof value === 'string' && value.trim() === '') {
+                delete raw[key];
+            }
+        });
     }
     return raw;
 };
@@ -414,8 +436,90 @@ const findFirstEmptySlot = (team, slotType) => {
 };
 
 const pushNotification = async (userId, payload) => {
-    await User.findByIdAndUpdate(userId, { $push: { notifications: payload } });
+    if (!isValidObjectIdLike(userId)) return false;
+    const notification = {
+        ...payload,
+        status: payload?.status || 'unread',
+        isSaved: Boolean(payload?.isSaved),
+        isArchived: Boolean(payload?.isArchived),
+        createdAt: payload?.createdAt || new Date()
+    };
+
+    const result = await User.updateOne(
+        { _id: userId },
+        {
+            $push: {
+                notifications: {
+                    $each: [notification],
+                    $slice: -200
+                }
+            }
+        }
+    );
+
+    return result?.modifiedCount > 0;
 };
+const resolveNotificationsForUser = async (userId, matcher) => {
+    if (!userId || typeof matcher !== 'function') return;
+    const user = await User.findById(userId).select('notifications');
+    if (!user || !Array.isArray(user.notifications) || user.notifications.length === 0) return;
+
+    let changed = false;
+    user.notifications.forEach((note) => {
+        if (!matcher(note)) return;
+        if (note.status !== 'read') {
+            note.status = 'read';
+            changed = true;
+        }
+        if (!note.isArchived) {
+            note.isArchived = true;
+            changed = true;
+        }
+    });
+    if (changed) {
+        await user.save();
+    }
+};
+const sameTeamMeta = (note, teamId) => String(note?.meta?.teamId || '') === String(teamId || '');
+const resolveTeamInviteNotificationsForInvitee = async (userId, teamId) => (
+    resolveNotificationsForUser(
+        userId,
+        (note) => sameTeamMeta(note, teamId) && String(note?.meta?.action || '') === 'team_invite'
+    )
+);
+const resolveTeamInviteSentNotificationsByTarget = async (teamId, targetUserId) => {
+    if (!teamId || !targetUserId) return;
+    const owners = await User.find({
+        notifications: {
+            $elemMatch: {
+                'meta.action': 'team_invite_sent',
+                'meta.teamId': String(teamId),
+                'meta.targetUserId': String(targetUserId)
+            }
+        }
+    }).select('_id').lean();
+
+    for (const owner of owners) {
+        await resolveNotificationsForUser(
+            owner?._id,
+            (note) =>
+                sameTeamMeta(note, teamId)
+                && String(note?.meta?.action || '') === 'team_invite_sent'
+                && String(note?.meta?.targetUserId || '') === String(targetUserId)
+        );
+    }
+};
+const resolveTeamJoinRequestNotification = async (userId, teamId, requestId) => (
+    resolveNotificationsForUser(
+        userId,
+        (note) =>
+            sameTeamMeta(note, teamId)
+            && (
+                String(note?.meta?.requestId || '') === String(requestId || '')
+                || String(note?.meta?.action || '') === 'team_join_request'
+            )
+    )
+);
 const isValidObjectIdLike = (value = '') => /^[a-fA-F0-9]{24}$/.test(String(value));
 const toIdArray = (value) => (
     Array.isArray(value)
@@ -436,6 +540,45 @@ const MLBB_GAMES = new Set([
     'MLBB'
 ]);
 const UNIVERSITY_TEAM_LEVEL = 'universitario';
+const ROLE_TEMPLATES_BY_GAME = {
+    'Mobile Legends': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
+    'Mobile Legends: Bang Bang': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
+    'MLBB': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
+    'League of Legends': ['Top', 'Jungle', 'Mid', 'ADC', 'Supp'],
+    'Wild Rift': ['Baron', 'Jungle', 'Mid', 'Dragon', 'Supp'],
+    'Valorant': ['Duelist', 'Sentinel', 'Controller', 'Initiator', 'Flex'],
+    'CS2': ['Entry', 'AWPer', 'Lurker', 'Support', 'IGL'],
+    'Overwatch 2': ['Tank', 'DPS', 'DPS', 'Support', 'Support'],
+    'Rainbow Six Siege': ['Entry', 'Support', 'Flex', 'Hard Breach', 'Anchor'],
+    'Free Fire': ['Rusher', 'Support', 'Sniper', 'IGL'],
+    'Fortnite': ['Fragger', 'IGL', 'Support', 'Builder'],
+    'PUBG': ['Fragger', 'IGL', 'Support', 'Scout'],
+    'Apex Legends': ['Fragger', 'IGL', 'Support'],
+    'Call of Duty': ['Slayer', 'OBJ', 'Support', 'Flex'],
+    'Dota 2': ['Carry', 'Mid', 'Offlane', 'Soft Supp', 'Hard Supp'],
+    'Rocket League': ['Striker', 'Midfielder', 'Defender']
+};
+const resolveSlotRole = ({ team, slotType, slotIndex, explicitRole = '' }) => {
+    const roleFromInput = String(explicitRole || '').trim();
+    if (roleFromInput) return roleFromInput;
+
+    const normalizedType = String(slotType || '').trim();
+    const index = Number(slotIndex);
+    if (normalizedType === 'coach') return 'Coach';
+    if (!['starters', 'subs'].includes(normalizedType)) return '';
+
+    const roleFromRoster = String(team?.roster?.[normalizedType]?.[index]?.role || '').trim();
+    if (roleFromRoster) return roleFromRoster;
+
+    const game = String(team?.game || '').trim();
+    const roleTemplate = ROLE_TEMPLATES_BY_GAME[game] || [];
+    if (Number.isFinite(index) && index >= 0 && roleTemplate[index]) {
+        return roleTemplate[index];
+    }
+
+    if (!Number.isFinite(index) || index < 0) return '';
+    return normalizedType === 'subs' ? `Suplente ${index + 1}` : `Titular ${index + 1}`;
+};
 
 const normalizeText = (value = '') =>
     String(value || '')
@@ -447,6 +590,26 @@ const isMlbbGame = (game) => MLBB_GAMES.has(String(game || '').trim());
 const isFilledRosterPlayer = (slot) => Boolean(
     slot && (slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role)
 );
+const validateCaptainRoleUniquenessInCreate = ({ roster = {}, captainUserId, leaderRole = '', isUniversityTeam = false }) => {
+    if (isUniversityTeam) return { ok: true };
+
+    const normalizedCaptainRole = normalizeText(leaderRole);
+    if (!normalizedCaptainRole) return { ok: true };
+
+    const starters = Array.isArray(roster?.starters) ? roster.starters : [];
+    for (const slot of starters) {
+        if (!isFilledRosterPlayer(slot)) continue;
+        const isCaptainSlot = String(slot?.user || '') === String(captainUserId || '');
+        if (isCaptainSlot) continue;
+        if (normalizeText(slot?.role) === normalizedCaptainRole) {
+            return {
+                ok: false,
+                message: 'En equipos no universitarios, el rol del capitán queda reservado y no puede repetirse en otro titular.'
+            };
+        }
+    }
+    return { ok: true };
+};
 const normalizeUniversityText = (value = '') => String(value || '').trim();
 const isUniversityTeamLevel = (value = '') => normalizeText(value).includes(UNIVERSITY_TEAM_LEVEL);
 const getEmptyUniversityTeamSnapshot = () => ({
@@ -785,6 +948,12 @@ export const joinTeam = async (req, res) => {
         if (!player?.nickname) {
             return res.status(400).json({ message: "Nickname requerido" });
         }
+        playerPayload.role = resolveSlotRole({
+            team,
+            slotType,
+            slotIndex,
+            explicitRole: playerPayload?.role
+        });
         const applied = applyRosterSlot(team, slotType, slotIndex, playerPayload);
         if (!applied.ok) return res.status(400).json({ message: applied.message });
         if (team?.university?.isUniversityTeam) {
@@ -807,6 +976,10 @@ export const joinTeam = async (req, res) => {
             status: 'unread',
             visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
         });
+        await Promise.all([
+            resolveTeamInviteNotificationsForInvitee(req.userId, team._id),
+            resolveTeamInviteSentNotificationsByTarget(team._id, req.userId)
+        ]);
         res.status(200).json({ message: "Te has unido al equipo", team });
     } catch (error) {
         res.status(500).json({ message: "Error al unirse al equipo" });
@@ -1096,6 +1269,11 @@ export const inviteFriendToTeam = async (req, res) => {
         const slotLabel = normalizedSlotType === 'coach'
             ? 'Coach'
             : `${normalizedSlotType === 'starters' ? 'Titular' : 'Suplente'} #${resolvedSlotIndex + 1}`;
+        const slotRole = resolveSlotRole({
+            team,
+            slotType: normalizedSlotType,
+            slotIndex: resolvedSlotIndex
+        });
         const trimmedNote = String(note || '').trim().slice(0, 120);
         const noteSuffix = trimmedNote ? ` Nota: ${trimmedNote}` : '';
 
@@ -1104,7 +1282,7 @@ export const inviteFriendToTeam = async (req, res) => {
             category: 'team',
             title: 'Invitación de equipo',
             source: team.name,
-            message: `${inviterName} te invitó a ${team.name} (${slotLabel}). Usa el código ${team.inviteCode} para solicitar ingreso.${noteSuffix}`,
+            message: `${inviterName} te invitó a ${team.name} (${slotLabel}). Puedes aceptar directo desde Notificaciones o usar el código ${team.inviteCode}.${noteSuffix}`,
             status: 'unread',
             meta: {
                 action: 'team_invite',
@@ -1114,6 +1292,7 @@ export const inviteFriendToTeam = async (req, res) => {
                 inviteCode: team.inviteCode,
                 slotType: normalizedSlotType,
                 slotIndex: resolvedSlotIndex,
+                slotRole,
                 invitedBy: String(req.userId),
                 invitedByName: inviterName,
                 game: team.game,
@@ -1127,13 +1306,19 @@ export const inviteFriendToTeam = async (req, res) => {
             category: 'team',
             title: 'Invitación enviada',
             source: team.name,
-            message: `Invitación enviada a ${targetName} para ${slotLabel}.`,
+            message: `Invitación enviada a ${targetName} para ${slotLabel}${slotRole ? ` · Rol ${slotRole}` : ''}.`,
             status: 'unread',
             meta: {
                 action: 'team_invite_sent',
                 teamId: String(team._id),
+                teamName: team.name,
+                teamCode: team.teamCode || '',
                 targetUserId: String(target._id),
-                targetName
+                targetName,
+                slotType: normalizedSlotType,
+                slotIndex: resolvedSlotIndex,
+                slotRole,
+                game: team.game
             },
             visuals: { icon: 'bx-send', color: '#8EDB15', glow: false }
         });
@@ -1144,7 +1329,8 @@ export const inviteFriendToTeam = async (req, res) => {
                 teamId: String(team._id),
                 targetUserId: String(target._id),
                 slotType: normalizedSlotType,
-                slotIndex: resolvedSlotIndex
+                slotIndex: resolvedSlotIndex,
+                slotRole
             }
         });
     } catch (error) {
@@ -1277,6 +1463,12 @@ export const requestJoinTeam = async (req, res) => {
         if (!player?.nickname) {
             return res.status(400).json({ message: "Nickname requerido" });
         }
+        requestPlayer.role = resolveSlotRole({
+            team,
+            slotType,
+            slotIndex,
+            explicitRole: requestPlayer?.role
+        });
         team.joinRequests.push({
             user: req.userId,
             slotType,
@@ -1297,6 +1489,7 @@ export const requestJoinTeam = async (req, res) => {
             message: `${requestPlayer?.nickname || 'Un jugador'} quiere unirse a tu equipo.${rolePart}${regionPart}`,
             status: 'unread',
             meta: {
+                action: 'team_join_request',
                 teamId: team._id,
                 requestId: team.joinRequests[team.joinRequests.length - 1]?._id,
                 applicant: {
@@ -1310,6 +1503,10 @@ export const requestJoinTeam = async (req, res) => {
             },
             visuals: { icon: 'bx-user-plus', color: '#4facfe', glow: true }
         });
+        await Promise.all([
+            resolveTeamInviteNotificationsForInvitee(req.userId, team._id),
+            resolveTeamInviteSentNotificationsByTarget(team._id, req.userId)
+        ]);
         res.status(200).json({ message: "Solicitud enviada" });
     } catch (error) {
         console.error("Error en requestJoinTeam:", error);
@@ -1332,6 +1529,7 @@ export const handleJoinRequest = async (req, res) => {
         if (!Array.isArray(team.joinRequests)) team.joinRequests = [];
         const reqDoc = team.joinRequests.id(requestId);
         if (!reqDoc) return res.status(404).json({ message: "Solicitud no encontrada" });
+        const handledRequestId = String(reqDoc?._id || requestId || '');
 
         if (action === 'approve') {
             const uniqueCheck = await ensureUserNotInOtherTeam(team.game, reqDoc.user, team._id, team);
@@ -1377,6 +1575,13 @@ export const handleJoinRequest = async (req, res) => {
                 await team.save();
                 return res.status(400).json({ message: "El jugador ya está en el equipo" });
             }
+            reqDoc.player = reqDoc.player || {};
+            reqDoc.player.role = resolveSlotRole({
+                team,
+                slotType: reqDoc.slotType,
+                slotIndex: reqDoc.slotIndex,
+                explicitRole: reqDoc.player?.role
+            });
             let applied = applyRosterSlot(team, reqDoc.slotType, reqDoc.slotIndex, reqDoc.player || {});
             if (!applied.ok) {
                 // Si el slot solicitado está ocupado, intenta el primero disponible
@@ -1406,7 +1611,7 @@ export const handleJoinRequest = async (req, res) => {
             source: team.name,
             message: `Tu solicitud para unirte a ${team.name} fue aprobada.`,
             status: 'unread',
-            meta: { teamId: team._id, requestId: reqDoc._id, action: 'approve' },
+            meta: { teamId: team._id, requestId: handledRequestId, action: 'approve' },
             visuals: { icon: 'bx-group', color: '#4facfe', glow: true }
         });
         } else if (action === 'reject') {
@@ -1419,12 +1624,23 @@ export const handleJoinRequest = async (req, res) => {
                 source: team.name,
                 message: `Tu solicitud para unirte a ${team.name} fue rechazada.`,
                 status: 'unread',
-                meta: { teamId: team._id, requestId: reqDoc._id, action: 'reject' },
+                meta: { teamId: team._id, requestId: handledRequestId, action: 'reject' },
                 visuals: { icon: 'bx-error-circle', color: '#ff6b6b', glow: false }
             });
         } else {
             return res.status(400).json({ message: "Acción inválida" });
         }
+
+        const joinRequestOwners = Array.from(
+            new Set([String(req.userId || ''), String(team?.captain || '')])
+        ).filter(isValidObjectIdLike);
+        await Promise.all([
+            resolveTeamInviteNotificationsForInvitee(reqDoc.user, team._id),
+            resolveTeamInviteSentNotificationsByTarget(team._id, reqDoc.user),
+            ...joinRequestOwners.map((ownerId) =>
+                resolveTeamJoinRequestNotification(ownerId, team._id, handledRequestId)
+            )
+        ]);
 
         await team.save();
         res.status(200).json({ message: "Solicitud actualizada", team });
