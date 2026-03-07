@@ -4,9 +4,16 @@ import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
     // --- Identidad Visual ---
+    userCode: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     avatar: { type: String, default: "" },
     bio: { type: String, default: "" },
     teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isOrganizer: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
 
@@ -25,6 +32,17 @@ const UserSchema = new mongoose.Schema({
     experience: { type: [String], default: [] },
     platforms: { type: [String], default: [] },
     goals: { type: [String], default: [] },
+    languages: { type: [String], default: [] },
+    preferredRoles: { type: [String], default: [] },
+    lookingForTeam: { type: Boolean, default: false },
+    isProfileHidden: { type: Boolean, default: false },
+    socialLinks: {
+        twitch: { type: String, default: '' },
+        youtube: { type: String, default: '' },
+        twitter: { type: String, default: '' },
+        instagram: { type: String, default: '' },
+        tiktok: { type: String, default: '' }
+    },
 
     // --- Etapa 4: Credenciales ---
     username: { type: String, required: true, unique: true }, // unique para que no se repitan gamertags
@@ -149,7 +167,8 @@ const UserSchema = new mongoose.Schema({
     privacy: {
         allowTeamInvites: { type: Boolean, default: true },
         showOnlineStatus: { type: Boolean, default: true },
-        allowTournamentInvites: { type: Boolean, default: true }
+        allowTournamentInvites: { type: Boolean, default: true },
+        showPublicUserCode: { type: Boolean, default: true }
     },
     university: {
         universityId: { type: String, default: '' },
@@ -240,5 +259,30 @@ UserSchema.index(
         }
     }
 );
+
+UserSchema.pre('validate', async function(next) {
+    if (this.userCode) return next();
+
+    const UserModel = this.constructor;
+    let isUnique = false;
+    let attempts = 0;
+
+    while (!isUnique && attempts < 40) {
+        attempts += 1;
+        const randomDigits = Math.floor(100000 + Math.random() * 900000);
+        const candidate = `${randomDigits}`;
+        const existing = await UserModel.findOne({ userCode: candidate }).select('_id').lean();
+        if (!existing) {
+            this.userCode = candidate;
+            isUnique = true;
+        }
+    }
+
+    if (!isUnique) {
+        return next(new Error('No se pudo generar un ID único.'));
+    }
+
+    return next();
+});
 
 export default mongoose.model('User', UserSchema);

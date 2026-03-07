@@ -2,7 +2,7 @@
 
 import express from "express";
 import { upload } from "../controllers/team.controller.js";
-import { createTeam, joinTeam, getTeams, leaveTeam, requestJoinTeam, handleJoinRequest, updateTeam, deleteTeam, addMemberDirect, removeMemberFromRoster, updateTeamLogo, getTeamByInviteCode, seedDemoTeams, seedThirdPartyTeams } from "../controllers/team.controller.js";
+import { createTeam, joinTeam, getTeams, leaveTeam, requestJoinTeam, handleJoinRequest, updateTeam, deleteTeam, addMemberDirect, removeMemberFromRoster, updateTeamLogo, getTeamByInviteCode, seedDemoTeams, seedThirdPartyTeams, inviteFriendToTeam } from "../controllers/team.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js"; // Tu middleware existente
 import { createRateLimiter } from "../middlewares/rateLimit.js";
 
@@ -18,6 +18,7 @@ router.post('/seed-third-party', verifyToken, seedThirdPartyTeams);
 router.post('/create', verifyToken, rlCreate, upload.single('logo'), createTeam);
 router.post("/join", verifyToken, rlJoin, joinTeam);
 router.post("/:teamId/roster", verifyToken, rlManage, addMemberDirect);
+router.post("/:teamId/invite-friend", verifyToken, rlManage, inviteFriendToTeam);
 router.patch("/:teamId/roster/remove", verifyToken, rlManage, removeMemberFromRoster);
 router.post("/:teamId/requests", verifyToken, rlJoin, requestJoinTeam);
 router.patch("/:teamId/requests/:requestId", verifyToken, rlManage, handleJoinRequest);

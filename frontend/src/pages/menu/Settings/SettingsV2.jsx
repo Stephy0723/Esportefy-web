@@ -5,6 +5,7 @@ import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { useTheme, THEMES } from '../../../context/ThemeContext';
 import SecurityCenterUI from './SecurityCenterUI';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import './SettingsV2.css';
 
 // Icons
@@ -58,9 +59,18 @@ export default function SettingsV2() {
     // MLBB State
     const [mlbbPlayerId, setMlbbPlayerId] = useState('');
     const [mlbbZoneId, setMlbbZoneId] = useState('');
+    const [mlbbIgn, setMlbbIgn] = useState('');
     const [mlbbLoading, setMlbbLoading] = useState(false);
+    const [mlbbValidating, setMlbbValidating] = useState(false);
     const [mlbbMsg, setMlbbMsg] = useState('');
     const [mlbbStatus, setMlbbStatus] = useState(null);
+    const [mlbbPendingReviews, setMlbbPendingReviews] = useState([]);
+    const [mlbbReviewLoading, setMlbbReviewLoading] = useState(false);
+    const [mlbbReviewMsg, setMlbbReviewMsg] = useState('');
+    const [mlbbReviewActionUserId, setMlbbReviewActionUserId] = useState('');
+    const [mlbbRejectReasons, setMlbbRejectReasons] = useState({});
+    const [mlbbOpsLoading, setMlbbOpsLoading] = useState(false);
+    const [mlbbOpsStatus, setMlbbOpsStatus] = useState(null);
 
     // Support Section State
     const [systemStatus, setSystemStatus] = useState({
@@ -76,11 +86,13 @@ export default function SettingsV2() {
     const [supportToast, setSupportToast] = useState({ show: false, message: '', type: 'success' });
     const [feedbackModal, setFeedbackModal] = useState({ open: false, type: 'suggestion', message: '', submitting: false });
 
-    const token = localStorage.getItem('token');
-    const mlbbVerificationStatus = String(
-        connections?.mlbb?.verificationStatus || (connections?.mlbb?.verified ? 'verified' : 'unlinked')
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+    const mlbbVerificationStatus = normalizeMlbbVerificationStatus(
+        connections?.mlbb?.verificationStatus,
+        connections?.mlbb?.verified
     );
-    const mlbbLinked = mlbbVerificationStatus === 'verified';
+    const mlbbLinked = isMlbbVerifiedStatus(mlbbVerificationStatus, connections?.mlbb?.verified);
     const riotProfileIconId = gameProfiles?.lol?.profileIconId ?? 0;
     const riotSummonerLevel = gameProfiles?.lol?.summonerLevel;
     const riotRank = gameProfiles?.lol?.rank;
@@ -126,9 +138,9 @@ export default function SettingsV2() {
     const fetchSettings = async () => {
         try {
             const res = await axios.get(`${API_URL}/api/auth/profile`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
-            setConnections(res.data.connections);
+            setConnections(res.data.connections || { discord: {}, riot: {}, mlbb: {}, steam: {} });
             setPrivacy(res.data.privacy);
             setGameProfiles(res.data.gameProfiles || {});
             setIsAdmin(res.data?.isAdmin === true);
@@ -142,7 +154,7 @@ export default function SettingsV2() {
     const fetchRiotStatus = async () => {
         try {
             const res = await axios.get(`${API_URL}/api/auth/riot/status`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
             setRiotStatus(res.data);
         } catch { setRiotStatus(null); }
@@ -151,7 +163,7 @@ export default function SettingsV2() {
     const fetchMlbbStatus = async () => {
         try {
             const res = await axios.get(`${API_URL}/api/auth/mlbb/status`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
             setMlbbStatus(res.data);
         } catch { setMlbbStatus(null); }
@@ -164,6 +176,13 @@ export default function SettingsV2() {
             fetchMlbbStatus();
         }
     }, [token]);
+
+    useEffect(() => {
+        if (!token || !isAdmin) return;
+        if (activeTab !== 'mlbb-review') return;
+        fetchMlbbPendingReviews();
+        fetchMlbbOpsStatus();
+    }, [token, isAdmin, activeTab]);
 
     // Simulate system status check
     useEffect(() => {
@@ -259,7 +278,7 @@ export default function SettingsV2() {
     const updatePrivacy = async (newPrivacy) => {
         try {
             await axios.put(`${API_URL}/api/settings/privacy`, { privacy: newPrivacy }, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
             setPrivacy(newPrivacy);
         } catch (error) {
@@ -271,7 +290,7 @@ export default function SettingsV2() {
     const startDiscordLink = async () => {
         try {
             const res = await axios.post(`${API_URL}/api/auth/discord/start`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
             if (res?.data?.authorizeUrl) {
                 window.location.href = res.data.authorizeUrl;
@@ -284,7 +303,7 @@ export default function SettingsV2() {
     const unlinkDiscord = async () => {
         try {
             await axios.delete(`${API_URL}/api/auth/discord`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
             await fetchSettings();
         } catch (error) {
@@ -303,7 +322,7 @@ export default function SettingsV2() {
             setRiotMsg('');
             await axios.post(`${API_URL}/api/auth/riot/link/init`, 
                 { riotId: `${riotGameName}#${riotTagLine}` },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: authHeaders }
             );
             setRiotStep('otpSent');
             setRiotMsg('Código enviado a tu correo');
@@ -323,7 +342,7 @@ export default function SettingsV2() {
             setRiotLoading(true);
             await axios.post(`${API_URL}/api/auth/riot/link/confirm`, 
                 { otp: riotOtp },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: authHeaders }
             );
             await fetchSettings();
             await fetchRiotStatus();
@@ -342,7 +361,7 @@ export default function SettingsV2() {
     const unlinkRiot = async () => {
         try {
             await axios.delete(`${API_URL}/api/auth/riot`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
             await fetchSettings();
             await fetchRiotStatus();
@@ -352,23 +371,61 @@ export default function SettingsV2() {
     };
 
     // MLBB
-    const initMlbbLink = async () => {
+    const validateMlbbDraft = async () => {
         if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
-            setMlbbMsg('Completa Player ID y Zone ID');
+            setMlbbMsg('Completa User ID y Zone ID');
+            return;
+        }
+        try {
+            setMlbbValidating(true);
+            setMlbbMsg('');
+            const res = await axios.post(
+                `${API_URL}/api/auth/mlbb/validate`,
+                {
+                    playerId: mlbbPlayerId.trim(),
+                    zoneId: mlbbZoneId.trim(),
+                    ign: mlbbIgn.trim()
+                },
+                { headers: authHeaders }
+            );
+            setMlbbMsg(res?.data?.message || 'ID válido');
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'No se pudo validar el ID');
+        } finally {
+            setMlbbValidating(false);
+        }
+    };
+
+    const linkMlbb = async () => {
+        if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
+            setMlbbMsg('Completa User ID y Zone ID');
             return;
         }
         try {
             setMlbbLoading(true);
             setMlbbMsg('');
-            await axios.post(`${API_URL}/api/auth/mlbb/link/init`,
-                { playerId: mlbbPlayerId, zoneId: mlbbZoneId },
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await axios.post(
+                `${API_URL}/api/auth/mlbb/link`,
+                {
+                    playerId: mlbbPlayerId.trim(),
+                    zoneId: mlbbZoneId.trim(),
+                    ign: mlbbIgn.trim()
+                },
+                { headers: authHeaders }
             );
-            setMlbbMsg('Solicitud enviada. Espera la verificación.');
             await fetchSettings();
             await fetchMlbbStatus();
+            const nextStatus = String(res?.data?.status || '');
+            setMlbbMsg(
+                nextStatus === 'pending'
+                    ? 'Solicitud enviada. Quedó en revisión.'
+                    : 'Cuenta MLBB vinculada correctamente.'
+            );
+            setMlbbPlayerId('');
+            setMlbbZoneId('');
+            setMlbbIgn('');
         } catch (error) {
-            setMlbbMsg(error.response?.data?.message || 'Error iniciando vinculación');
+            setMlbbMsg(error.response?.data?.message || 'Error vinculando MLBB');
         } finally {
             setMlbbLoading(false);
         }
@@ -377,12 +434,89 @@ export default function SettingsV2() {
     const unlinkMlbb = async () => {
         try {
             await axios.delete(`${API_URL}/api/auth/mlbb`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: authHeaders
             });
             await fetchSettings();
             await fetchMlbbStatus();
+            setMlbbMsg('Cuenta MLBB desvinculada.');
         } catch (error) {
-            console.error('MLBB unlink error:', error);
+            setMlbbMsg(error.response?.data?.message || 'No se pudo desvincular MLBB.');
+        }
+    };
+
+    const fetchMlbbPendingReviews = async () => {
+        try {
+            setMlbbReviewLoading(true);
+            setMlbbReviewMsg('');
+            const res = await axios.get(`${API_URL}/api/auth/mlbb/review/pending`, {
+                headers: authHeaders
+            });
+            setMlbbPendingReviews(Array.isArray(res.data?.items) ? res.data.items : []);
+        } catch (error) {
+            setMlbbPendingReviews([]);
+            setMlbbReviewMsg(error.response?.data?.message || 'No se pudo cargar la revisión MLBB.');
+        } finally {
+            setMlbbReviewLoading(false);
+        }
+    };
+
+    const fetchMlbbOpsStatus = async () => {
+        try {
+            setMlbbOpsLoading(true);
+            const res = await axios.get(`${API_URL}/api/auth/mlbb/ops/status`, {
+                headers: authHeaders
+            });
+            setMlbbOpsStatus(res.data || null);
+        } catch (error) {
+            setMlbbOpsStatus(null);
+            setMlbbReviewMsg(error.response?.data?.message || 'No se pudo cargar estado operativo MLBB.');
+        } finally {
+            setMlbbOpsLoading(false);
+        }
+    };
+
+    const processMlbbQueueNow = async () => {
+        try {
+            setMlbbOpsLoading(true);
+            setMlbbReviewMsg('');
+            await axios.post(`${API_URL}/api/auth/mlbb/ops/process`, {}, {
+                headers: authHeaders
+            });
+            await fetchMlbbOpsStatus();
+            setMlbbReviewMsg('Cola MLBB procesada correctamente.');
+        } catch (error) {
+            setMlbbReviewMsg(error.response?.data?.message || 'No se pudo procesar cola MLBB.');
+        } finally {
+            setMlbbOpsLoading(false);
+        }
+    };
+
+    const reviewMlbbRequest = async (targetUserId, action) => {
+        if (!targetUserId) return;
+        const reason = String(mlbbRejectReasons[targetUserId] || '').trim();
+        if (action === 'reject' && !reason) {
+            setMlbbReviewMsg('Debes escribir un motivo para rechazar la solicitud.');
+            return;
+        }
+        try {
+            setMlbbReviewActionUserId(targetUserId);
+            setMlbbReviewMsg('');
+            await axios.patch(
+                `${API_URL}/api/auth/mlbb/review/${targetUserId}`,
+                action === 'reject' ? { action: 'reject', reason } : { action: 'approve' },
+                { headers: authHeaders }
+            );
+            setMlbbPendingReviews((prev) => prev.filter((item) => String(item.userId) !== String(targetUserId)));
+            setMlbbRejectReasons((prev) => {
+                const next = { ...prev };
+                delete next[targetUserId];
+                return next;
+            });
+            setMlbbReviewMsg(action === 'approve' ? 'Solicitud aprobada.' : 'Solicitud rechazada.');
+        } catch (error) {
+            setMlbbReviewMsg(error.response?.data?.message || 'No se pudo procesar la solicitud.');
+        } finally {
+            setMlbbReviewActionUserId('');
         }
     };
 
@@ -476,17 +610,17 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Mobile Legends</h4>
-                                        {mlbbLinked ? (
-                                            <span>ID: {connections.mlbb.playerId}</span>
-                                        ) : (
-                                            <span>Sin vincular</span>
-                                        )}
+                                        {(mlbbLinked || mlbbVerificationStatus === 'pending' || mlbbVerificationStatus === 'rejected')
+                                            ? <span>ID: {connections?.mlbb?.playerId || '-'} ({connections?.mlbb?.zoneId || '-'})</span>
+                                            : <span>Sin vincular</span>}
                                     </div>
                                     <div className="stv2-connection__status">
                                         {mlbbLinked ? (
                                             <span className="stv2-badge stv2-badge--success">Verificado</span>
                                         ) : mlbbVerificationStatus === 'pending' ? (
                                             <span className="stv2-badge stv2-badge--warning">En revisión</span>
+                                        ) : mlbbVerificationStatus === 'rejected' ? (
+                                            <span className="stv2-badge stv2-badge--danger">Rechazado</span>
                                         ) : (
                                             <span className="stv2-badge stv2-badge--muted">Pendiente</span>
                                         )}
@@ -496,7 +630,11 @@ export default function SettingsV2() {
                                             <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb}>
                                                 Desvincular
                                             </button>
-                                        ) : mlbbVerificationStatus !== 'pending' && (
+                                        ) : mlbbVerificationStatus === 'pending' ? (
+                                            <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb}>
+                                                Cancelar
+                                            </button>
+                                        ) : (
                                             <button className="stv2-btn stv2-btn--primary" onClick={() => setActiveTab('mlbb-link')}>
                                                 Vincular
                                             </button>
@@ -753,42 +891,88 @@ export default function SettingsV2() {
                                 <i className="bx bx-arrow-left"></i> Volver a Conexiones
                             </button>
                             <h2 className="stv2-section__title">Vincular Mobile Legends</h2>
-                            <p className="stv2-section__desc">Ingresa tu Player ID y Zone ID de MLBB.</p>
+                            <p className="stv2-section__desc">Ingresa tu User ID + Zone ID de MLBB para vincular tu cuenta.</p>
 
-                            <div className="stv2-form">
-                                <div className="stv2-form__row">
-                                    <div className="stv2-input-group">
-                                        <label>Player ID</label>
-                                        <input 
-                                            type="text" 
-                                            value={mlbbPlayerId} 
-                                            onChange={(e) => setMlbbPlayerId(e.target.value)}
-                                            placeholder="Tu ID de jugador"
-                                        />
-                                    </div>
-                                    <div className="stv2-input-group">
-                                        <label>Zone ID</label>
-                                        <input 
-                                            type="text" 
-                                            value={mlbbZoneId} 
-                                            onChange={(e) => setMlbbZoneId(e.target.value)}
-                                            placeholder="ID de zona/servidor"
-                                        />
-                                    </div>
+                            {mlbbVerificationStatus === 'rejected' && (
+                                <div className="stv2-notice stv2-notice--danger">
+                                    <i className="bx bx-error"></i>
+                                    <p>{connections?.mlbb?.rejectReason || 'La solicitud fue rechazada. Corrige y vuelve a enviar.'}</p>
                                 </div>
-                                <button 
-                                    className="stv2-btn stv2-btn--primary stv2-btn--lg"
-                                    onClick={initMlbbLink}
-                                    disabled={mlbbLoading}
-                                >
-                                    {mlbbLoading ? 'Enviando...' : 'Enviar Solicitud'}
-                                </button>
-                                {mlbbMsg && <p className="stv2-form__msg">{mlbbMsg}</p>}
-                            </div>
+                            )}
+
+                            {mlbbVerificationStatus === 'pending' ? (
+                                <div className="stv2-notice stv2-notice--warning">
+                                    <i className="bx bx-time"></i>
+                                    <p>Tienes una solicitud en revisión. Puedes cancelarla para volver a enviarla.</p>
+                                    <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb} disabled={mlbbLoading}>
+                                        {mlbbLoading ? 'Procesando...' : 'Cancelar solicitud'}
+                                    </button>
+                                </div>
+                            ) : mlbbLinked ? (
+                                <div className="stv2-notice stv2-notice--success">
+                                    <i className="bx bx-check-circle"></i>
+                                    <p>Cuenta vinculada: ID {connections?.mlbb?.playerId} ({connections?.mlbb?.zoneId})</p>
+                                    <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb} disabled={mlbbLoading}>
+                                        {mlbbLoading ? 'Procesando...' : 'Desvincular'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="stv2-form">
+                                    <div className="stv2-form__row">
+                                        <div className="stv2-input-group">
+                                            <label>User ID</label>
+                                            <input
+                                                type="text"
+                                                value={mlbbPlayerId}
+                                                onChange={(e) => setMlbbPlayerId(e.target.value)}
+                                                placeholder="Tu User ID"
+                                                disabled={mlbbLoading || mlbbValidating}
+                                            />
+                                        </div>
+                                        <div className="stv2-input-group">
+                                            <label>Zone ID</label>
+                                            <input
+                                                type="text"
+                                                value={mlbbZoneId}
+                                                onChange={(e) => setMlbbZoneId(e.target.value)}
+                                                placeholder="ID de zona/servidor"
+                                                disabled={mlbbLoading || mlbbValidating}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="stv2-input-group">
+                                        <label>IGN (opcional)</label>
+                                        <input
+                                            type="text"
+                                            value={mlbbIgn}
+                                            onChange={(e) => setMlbbIgn(e.target.value)}
+                                            placeholder="Tu nick en juego"
+                                            disabled={mlbbLoading || mlbbValidating}
+                                        />
+                                    </div>
+                                    <div className="stv2-form__actions">
+                                        <button
+                                            className="stv2-btn stv2-btn--outline"
+                                            onClick={validateMlbbDraft}
+                                            disabled={mlbbLoading || mlbbValidating}
+                                        >
+                                            {mlbbValidating ? 'Validando...' : 'Validar ID'}
+                                        </button>
+                                        <button
+                                            className="stv2-btn stv2-btn--primary stv2-btn--lg"
+                                            onClick={linkMlbb}
+                                            disabled={mlbbLoading || mlbbValidating}
+                                        >
+                                            {mlbbLoading ? 'Enviando...' : 'Enviar Solicitud'}
+                                        </button>
+                                    </div>
+                                    {mlbbMsg && <p className="stv2-form__msg">{mlbbMsg}</p>}
+                                </div>
+                            )}
 
                             <div className="stv2-notice stv2-notice--warning">
-                                <i className="bx bx-time"></i>
-                                <p>La verificación de MLBB requiere revisión manual y puede tardar hasta 24 horas.</p>
+                                <i className="bx bx-info-circle"></i>
+                                <p>La verificación de MLBB es interna y puede pasar por revisión manual.</p>
                             </div>
                         </div>
                     </motion.div>
@@ -1318,12 +1502,113 @@ export default function SettingsV2() {
                     </motion.div>
                 );
 
+            case 'mlbb-review':
+                return (
+                    <motion.div key="mlbb-review" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <h2 className="stv2-section__title">Revisión MLBB (Admin)</h2>
+                            <p className="stv2-section__desc">Aprueba o rechaza solicitudes pendientes de vinculación Mobile Legends.</p>
+
+                            {mlbbReviewMsg && (
+                                <div className="stv2-notice stv2-notice--warning">
+                                    <i className="bx bx-info-circle" />
+                                    <p>{mlbbReviewMsg}</p>
+                                </div>
+                            )}
+
+                            <div className="stv2-admin-toolbar">
+                                <button
+                                    className="stv2-btn stv2-btn--outline"
+                                    onClick={fetchMlbbPendingReviews}
+                                    disabled={mlbbReviewLoading}
+                                >
+                                    {mlbbReviewLoading ? 'Cargando...' : 'Actualizar pendientes'}
+                                </button>
+                                <button
+                                    className="stv2-btn stv2-btn--outline"
+                                    onClick={fetchMlbbOpsStatus}
+                                    disabled={mlbbOpsLoading}
+                                >
+                                    {mlbbOpsLoading ? 'Consultando...' : 'Actualizar estado cola'}
+                                </button>
+                                <button
+                                    className="stv2-btn stv2-btn--primary"
+                                    onClick={processMlbbQueueNow}
+                                    disabled={mlbbOpsLoading}
+                                >
+                                    {mlbbOpsLoading ? 'Procesando...' : 'Procesar cola ahora'}
+                                </button>
+                            </div>
+
+                            <div className="stv2-admin-queue">
+                                <span>Modo: {mlbbOpsStatus?.mode || '-'}</span>
+                                <span>Pendientes cola: {mlbbOpsStatus?.queue?.byStatus?.pending ?? 0}</span>
+                                <span>Errores cola: {mlbbOpsStatus?.queue?.byStatus?.failed ?? 0}</span>
+                                <span>SMTP: {mlbbOpsStatus?.queue?.smtpConfigured ? 'OK' : 'No configurado'}</span>
+                            </div>
+
+                            {mlbbReviewLoading ? (
+                                <div className="stv2-empty-state">Cargando solicitudes...</div>
+                            ) : mlbbPendingReviews.length === 0 ? (
+                                <div className="stv2-empty-state">No hay solicitudes pendientes.</div>
+                            ) : (
+                                <div className="stv2-admin-grid">
+                                    {mlbbPendingReviews.map((item) => (
+                                        <article className="stv2-admin-card" key={item.userId}>
+                                            <div className="stv2-admin-card__head">
+                                                <h4>{item.fullName || item.username || 'Usuario'}</h4>
+                                                <span>{item.email || 'Sin correo'}</span>
+                                            </div>
+                                            <div className="stv2-admin-card__meta">
+                                                <strong>ID:</strong> {item.playerId} ({item.zoneId})<br />
+                                                <strong>IGN:</strong> {item.ign || 'N/D'}<br />
+                                                <strong>Solicitado:</strong> {item.reviewRequestedAt ? new Date(item.reviewRequestedAt).toLocaleString() : 'N/D'}
+                                            </div>
+                                            {Array.isArray(item.riskFlags) && item.riskFlags.length > 0 && (
+                                                <div className="stv2-admin-card__risk">
+                                                    Riesgo: {item.riskFlags.join(', ')}
+                                                </div>
+                                            )}
+                                            <input
+                                                type="text"
+                                                placeholder="Motivo de rechazo (requerido para rechazar)"
+                                                value={mlbbRejectReasons[item.userId] || ''}
+                                                onChange={(e) => setMlbbRejectReasons((prev) => ({ ...prev, [item.userId]: e.target.value }))}
+                                                disabled={mlbbReviewActionUserId === item.userId}
+                                            />
+                                            <div className="stv2-admin-card__actions">
+                                                <button
+                                                    className="stv2-btn stv2-btn--primary"
+                                                    onClick={() => reviewMlbbRequest(item.userId, 'approve')}
+                                                    disabled={mlbbReviewActionUserId === item.userId}
+                                                >
+                                                    {mlbbReviewActionUserId === item.userId ? 'Procesando...' : 'Aprobar'}
+                                                </button>
+                                                <button
+                                                    className="stv2-btn stv2-btn--ghost stv2-btn--danger"
+                                                    onClick={() => reviewMlbbRequest(item.userId, 'reject')}
+                                                    disabled={mlbbReviewActionUserId === item.userId}
+                                                >
+                                                    {mlbbReviewActionUserId === item.userId ? 'Procesando...' : 'Rechazar'}
+                                                </button>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                );
+
             default:
                 return null;
         }
     };
 
-    const currentTab = TABS.find(t => t.id === activeTab) || TABS[0];
+    const currentTab =
+        activeTab === 'mlbb-review'
+            ? { label: 'Revisión MLBB', description: 'Gestión de solicitudes pendientes.' }
+            : (TABS.find(t => t.id === activeTab) || TABS[0]);
     const isSubPage = ['riot-link', 'mlbb-link'].includes(activeTab);
 
     return (

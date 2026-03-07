@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -10,7 +10,7 @@ import {
     FaTwitter, FaInstagram, FaTiktok, FaDiscord, FaStar,
     FaCalendarAlt, FaChartLine, FaHeart, FaComment, FaPaperPlane,
     FaEllipsisH, FaUserPlus, FaUserFriends, FaGem, FaGlobe,
-    FaRegHeart, FaRegComment, FaTimes
+    FaRegHeart, FaRegComment, FaTimes, FaSearch
 } from 'react-icons/fa';
 import { GAME_IMAGES } from '../../../data/gameImages';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
@@ -21,76 +21,6 @@ import PageHud from '../../../components/PageHud/PageHud';
 import { resolveMediaUrl } from '../../../utils/media';
 import './Profile.css';
 
-/* ═══════════════════════════════
-   MOCK DATA - Datos de ejemplo
-   ═══════════════════════════════ */
-
-// Logros destacados
-const MOCK_ACHIEVEMENTS = [
-    { id: 1, name: "Campeón Nacional", icon: "🏆", tournament: "Copa RD 2025", game: "MLBB", date: "Feb 2025", verified: true },
-    { id: 2, name: "MVP del Torneo", icon: "⭐", tournament: "Liga Caribe", game: "MLBB", date: "Ene 2025", verified: true },
-    { id: 3, name: "Top 10 Nacional", icon: "🔥", tournament: "Ranking MLBB", game: "MLBB", date: "2024", verified: true },
-    { id: 4, name: "Racha de 15 Wins", icon: "💀", tournament: "Ranked Solo", game: "MLBB", date: "Dic 2024", verified: false },
-];
-
-// Estadísticas principales
-const MOCK_STATS = {
-    matches: 1247,
-    wins: 891,
-    winRate: 71,
-    tournaments: 34,
-    tournamentsWon: 12,
-    mvps: 23,
-};
-
-// Amigos
-const MOCK_FRIENDS = [
-    { id: 1, name: "DragonSlayer", avatar: null, status: "online", rank: "Mythic Glory" },
-    { id: 2, name: "NightHawk99", avatar: null, status: "ingame", rank: "Mythical Honor" },
-    { id: 3, name: "ShadowBlade", avatar: null, status: "online", rank: "Mythic" },
-    { id: 4, name: "CyberNinja", avatar: null, status: "offline", rank: "Legend" },
-    { id: 5, name: "PhoenixFire", avatar: null, status: "online", rank: "Mythic Glory" },
-    { id: 6, name: "StormRider", avatar: null, status: "away", rank: "Mythical Honor" },
-    { id: 7, name: "BlazeMaster", avatar: null, status: "online", rank: "Mythic" },
-    { id: 8, name: "IceQueen", avatar: null, status: "ingame", rank: "Mythic Glory" },
-];
-
-// Comentarios del muro
-const MOCK_COMMENTS = [
-    { 
-        id: 1, 
-        user: { name: "DragonSlayer", avatar: null }, 
-        text: "GG bro! Ese último torneo estuvo increíble 🔥", 
-        time: "Hace 2 horas",
-        likes: 12,
-        liked: false
-    },
-    { 
-        id: 2, 
-        user: { name: "NightHawk99", avatar: null }, 
-        text: "Cuando jugamos ranked? Te debo la revancha 💪", 
-        time: "Hace 5 horas",
-        likes: 8,
-        liked: true
-    },
-    { 
-        id: 3, 
-        user: { name: "ShadowBlade", avatar: null }, 
-        text: "El mejor jungler de RD sin dudas! 🏆", 
-        time: "Ayer",
-        likes: 24,
-        liked: false
-    },
-    { 
-        id: 4, 
-        user: { name: "PhoenixFire", avatar: null }, 
-        text: "Ese pentakill con Ling fue legendario hermano", 
-        time: "Hace 2 días",
-        likes: 31,
-        liked: true
-    },
-];
-
 /* ════════════════════════════════════════
    MAIN COMPONENT
    ════════════════════════════════════════ */
@@ -98,30 +28,217 @@ const Profile = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [profileStats, setProfileStats] = useState({
+        matches: 0,
+        wins: 0,
+        winRate: 0,
+        tournaments: 0,
+        tournamentsWon: 0,
+        mvps: 0,
+    });
+    const [achievements, setAchievements] = useState([]);
+    const [friends, setFriends] = useState([]);
+    const [activities, setActivities] = useState([]);
     const [copiedLink, setCopiedLink] = useState(false);
     const [newComment, setNewComment] = useState('');
-    const [comments, setComments] = useState(MOCK_COMMENTS);
+    const [comments, setComments] = useState([]);
+    const [postingComment, setPostingComment] = useState(false);
+    const [commentError, setCommentError] = useState('');
     const [isOwnProfile, setIsOwnProfile] = useState(true); // Para determinar si es el perfil propio
+    const [socialModalOpen, setSocialModalOpen] = useState(false);
+    const [socialTab, setSocialTab] = useState('friends');
+    const [socialData, setSocialData] = useState({ friends: [], followers: [], following: [], counts: { friends: 0, followers: 0, following: 0 } });
+    const [socialLoading, setSocialLoading] = useState(false);
+    const [socialError, setSocialError] = useState('');
+    const [socialSearch, setSocialSearch] = useState('');
+    const [socialSearchResults, setSocialSearchResults] = useState([]);
+    const [socialSearchLoading, setSocialSearchLoading] = useState(false);
+    const [followBusyIds, setFollowBusyIds] = useState({});
     const navigate = useNavigate();
 
+    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    const loadProfileData = useCallback(async ({ showLoader = true } = {}) => {
+        try {
+            if (showLoader) setLoading(true);
+            const token = getToken();
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            const [profileResult, overviewResult] = await Promise.allSettled([
+                axios.get(`${API_URL}/api/auth/profile`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                axios.get(`${API_URL}/api/auth/profile/overview`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+            ]);
+
+            if (profileResult.status !== 'fulfilled') {
+                const profileError = profileResult.reason;
+                setError("No se pudo cargar el perfil.");
+                if (profileError?.response?.status === 401) navigate('/login');
+                if (showLoader) setLoading(false);
+                return;
+            }
+
+            setError(null);
+            setUser(profileResult.value.data);
+
+            if (overviewResult.status === 'fulfilled') {
+                const overview = overviewResult.value?.data || {};
+                const stats = overview?.stats || {};
+                setProfileStats({
+                    matches: Number(stats.matches || 0),
+                    wins: Number(stats.wins || 0),
+                    winRate: Number(stats.winRate || 0),
+                    tournaments: Number(stats.tournaments || 0),
+                    tournamentsWon: Number(stats.tournamentsWon || 0),
+                    mvps: Number(stats.mvps || 0),
+                });
+                setAchievements(Array.isArray(overview?.achievements) ? overview.achievements : []);
+                setFriends(Array.isArray(overview?.friends) ? overview.friends : []);
+                setActivities(Array.isArray(overview?.activity) ? overview.activity : []);
+                setComments(Array.isArray(overview?.wallComments) ? overview.wallComments : []);
+            } else {
+                console.warn('No se pudo cargar profile/overview:', overviewResult.reason);
+                setAchievements([]);
+                setFriends([]);
+                setActivities([]);
+                setComments([]);
+            }
+        } catch (err) {
+            setError("No se pudo cargar el perfil.");
+            if (err?.response?.status === 401) navigate('/login');
+        } finally {
+            if (showLoader) setLoading(false);
+        }
+    }, [navigate]);
+
+    const loadSocialData = useCallback(async () => {
+        try {
+            setSocialLoading(true);
+            setSocialError('');
+            const token = getToken();
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            const response = await axios.get(`${API_URL}/api/auth/social`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const payload = response?.data || {};
+            setSocialData({
+                friends: Array.isArray(payload?.friends) ? payload.friends : [],
+                followers: Array.isArray(payload?.followers) ? payload.followers : [],
+                following: Array.isArray(payload?.following) ? payload.following : [],
+                counts: payload?.counts || { friends: 0, followers: 0, following: 0 }
+            });
+        } catch (err) {
+            if (err?.response?.status === 401) {
+                navigate('/login');
+                return;
+            }
+            setSocialError(err?.response?.data?.message || 'No se pudo cargar la lista social.');
+        } finally {
+            setSocialLoading(false);
+        }
+    }, [navigate]);
+
     useEffect(() => {
-        const fetchUserProfile = async () => {
+        loadProfileData({ showLoader: true });
+    }, [loadProfileData]);
+
+    useEffect(() => {
+        if (!socialModalOpen || socialTab !== 'discover') return undefined;
+        const searchValue = String(socialSearch || '').trim();
+        if (searchValue.length < 2) {
+            setSocialSearchResults([]);
+            setSocialSearchLoading(false);
+            return undefined;
+        }
+
+        const timeoutId = setTimeout(async () => {
             try {
-                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-                if (!token) { navigate('/login'); return; }
-                const res = await axios.get(`${API_URL}/api/auth/profile`, {
+                setSocialSearchLoading(true);
+                const token = getToken();
+                if (!token) return;
+                const response = await axios.get(`${API_URL}/api/auth/users/search`, {
+                    params: { q: searchValue, limit: 20 },
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setUser(res.data);
-                setLoading(false);
+                setSocialSearchResults(Array.isArray(response?.data?.users) ? response.data.users : []);
             } catch (err) {
-                setError("No se pudo cargar el perfil.");
-                setLoading(false);
-                if (err.response?.status === 401) navigate('/login');
+                setSocialSearchResults([]);
+            } finally {
+                setSocialSearchLoading(false);
+            }
+        }, 280);
+
+        return () => clearTimeout(timeoutId);
+    }, [socialModalOpen, socialTab, socialSearch]);
+
+    useEffect(() => {
+        if (!socialModalOpen) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const handleEscClose = (event) => {
+            if (event.key === 'Escape') {
+                setSocialModalOpen(false);
             }
         };
-        fetchUserProfile();
-    }, [navigate]);
+
+        window.addEventListener('keydown', handleEscClose);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleEscClose);
+        };
+    }, [socialModalOpen]);
+
+    const handleOpenSocialModal = async (tab = 'friends') => {
+        setSocialTab(tab);
+        setSocialModalOpen(true);
+        await loadSocialData();
+    };
+
+    const handleToggleFollowUser = async (targetUserId) => {
+        const targetId = String(targetUserId || '').trim();
+        if (!targetId || followBusyIds[targetId]) return;
+
+        setFollowBusyIds((prev) => ({ ...prev, [targetId]: true }));
+        try {
+            const token = getToken();
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            await axios.post(`${API_URL}/api/auth/follow/${targetId}`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            await Promise.all([
+                loadSocialData(),
+                loadProfileData({ showLoader: false })
+            ]);
+            if (socialTab === 'discover' && String(socialSearch || '').trim().length >= 2) {
+                const response = await axios.get(`${API_URL}/api/auth/users/search`, {
+                    params: { q: String(socialSearch || '').trim(), limit: 20 },
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setSocialSearchResults(Array.isArray(response?.data?.users) ? response.data.users : []);
+            }
+        } catch (err) {
+            setSocialError(err?.response?.data?.message || 'No se pudo actualizar el seguimiento.');
+        } finally {
+            setFollowBusyIds((prev) => ({ ...prev, [targetId]: false }));
+        }
+    };
 
     const handleShareProfile = () => {
         navigator.clipboard.writeText(window.location.href);
@@ -129,20 +246,33 @@ const Profile = () => {
         setTimeout(() => setCopiedLink(false), 2000);
     };
 
-    const handleSubmitComment = (e) => {
+    const handleSubmitComment = async (e) => {
         e.preventDefault();
-        if (!newComment.trim()) return;
-        
-        const comment = {
-            id: Date.now(),
-            user: { name: user?.username || "Tú", avatar: null },
-            text: newComment,
-            time: "Ahora",
-            likes: 0,
-            liked: false
-        };
-        setComments([comment, ...comments]);
-        setNewComment('');
+        const text = String(newComment || '').trim();
+        if (!text || postingComment) return;
+
+        const token = getToken();
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        setCommentError('');
+        setPostingComment(true);
+        try {
+            await axios.post(
+                `${API_URL}/api/community/posts`,
+                { text, privacy: 'Public' },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setNewComment('');
+            await loadProfileData({ showLoader: false });
+        } catch (err) {
+            const message = err?.response?.data?.message || 'No se pudo publicar en tu muro.';
+            setCommentError(message);
+        } finally {
+            setPostingComment(false);
+        }
     };
 
     const toggleLike = (commentId) => {
@@ -151,6 +281,20 @@ const Profile = () => {
                 ? { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 }
                 : c
         ));
+    };
+
+    const formatRelativeTime = (value) => {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value || '');
+        const diffMs = Date.now() - date.getTime();
+        const minute = 60 * 1000;
+        const hour = 60 * minute;
+        const day = 24 * hour;
+        if (diffMs < minute) return 'Ahora';
+        if (diffMs < hour) return `Hace ${Math.max(1, Math.floor(diffMs / minute))} min`;
+        if (diffMs < day) return `Hace ${Math.max(1, Math.floor(diffMs / hour))} h`;
+        if (diffMs < 7 * day) return `Hace ${Math.max(1, Math.floor(diffMs / day))} días`;
+        return date.toLocaleDateString('es-ES');
     };
 
     if (loading) {
@@ -164,9 +308,27 @@ const Profile = () => {
     if (error) return <div className="pf-error">{error}</div>;
     if (!user) return null;
 
+    const toArray = (value) => (Array.isArray(value) ? value : (value ? [value] : []));
+    const normalizeSocialValue = (value) => String(value || '').trim();
+    const buildSocialUrl = (key, value) => {
+        const raw = normalizeSocialValue(value);
+        if (!raw) return '';
+        if (/^https?:\/\//i.test(raw)) return raw;
+        if (key === 'twitter') return `https://x.com/${raw.replace(/^@/, '')}`;
+        if (key === 'twitch') return `https://twitch.tv/${raw}`;
+        if (key === 'youtube') return `https://youtube.com/${raw}`;
+        if (key === 'instagram') return `https://instagram.com/${raw.replace(/^@/, '')}`;
+        if (key === 'tiktok') return `https://tiktok.com/@${raw.replace(/^@/, '')}`;
+        return `https://${raw}`;
+    };
+
     const normalizedGames = Array.isArray(user.selectedGames)
         ? user.selectedGames
         : (user.selectedGames ? user.selectedGames.split(',').map(g => g.trim()) : []);
+    const normalizedPlatforms = toArray(user.platforms);
+    const normalizedGoals = toArray(user.goals);
+    const normalizedLanguages = toArray(user.languages);
+    const normalizedPreferredRoles = toArray(user.preferredRoles);
     const currentFrame = FRAMES.find(f => f.id === user?.selectedFrameId) || FRAMES[0];
     const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0];
     const userStatus = STATUS_LIST.find(s => s.id === user.status) || STATUS_LIST[0];
@@ -177,10 +339,108 @@ const Profile = () => {
         { key: 'youtube', icon: <FaYoutube />, color: '#FF0000' },
         { key: 'twitter', icon: <FaTwitter />, color: '#1DA1F2' },
         { key: 'instagram', icon: <FaInstagram />, color: '#E4405F' },
-        { key: 'tiktok', icon: <FaTiktok />, color: '#00f2ea' },
+        { key: 'tiktok', icon: <FaTiktok />, color: '#00f2ea' }
     ];
-    const activeSocials = socialIcons.filter(s => user.socialLinks?.[s.key]);
-    const onlineFriends = MOCK_FRIENDS.filter(f => f.status === 'online' || f.status === 'ingame');
+    const activeSocials = socialIcons
+        .map((social) => ({
+            ...social,
+            value: normalizeSocialValue(user.socialLinks?.[social.key]),
+            href: buildSocialUrl(social.key, user.socialLinks?.[social.key])
+        }))
+        .filter((social) => social.value && social.href);
+    const onlineFriends = friends.filter((friend) =>
+        ['online', 'gaming', 'tournament', 'streaming', 'searching'].includes(String(friend?.status || '').toLowerCase())
+    );
+    const socialCounts = socialData?.counts || {
+        friends: socialData?.friends?.length || 0,
+        followers: socialData?.followers?.length || 0,
+        following: socialData?.following?.length || 0
+    };
+    const socialTabs = [
+        { id: 'friends', label: 'Amigos', count: Number(socialCounts.friends || 0) },
+        { id: 'followers', label: 'Seguidores', count: Number(socialCounts.followers || 0) },
+        { id: 'following', label: 'Siguiendo', count: Number(socialCounts.following || 0) },
+        { id: 'discover', label: 'Buscar', count: null }
+    ];
+    const activeSocialList = socialTab === 'discover'
+        ? socialSearchResults
+        : (Array.isArray(socialData?.[socialTab]) ? socialData[socialTab] : []);
+    const socialEmptyText = socialTab === 'discover'
+        ? 'Escribe al menos 2 caracteres para buscar por nombre, username o número.'
+        : (socialTab === 'followers'
+            ? 'Aún no tienes seguidores.'
+            : (socialTab === 'following'
+                ? 'Aún no sigues a nadie.'
+                : 'Aún no tienes amigos mutuos.'));
+    const normalizeId = (value) => {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object') {
+            if (value._id) return String(value._id);
+            if (value.id) return String(value.id);
+        }
+        return String(value);
+    };
+    const currentUserId = normalizeId(user?._id || user?.id);
+    const getTeamRoleForCurrentUser = (team) => {
+        if (!team || !currentUserId) return 'Miembro';
+        if (normalizeId(team?.captain) === currentUserId) return 'Capitán';
+
+        const coach = team?.roster?.coach || null;
+        if (coach?.user && normalizeId(coach.user) === currentUserId) {
+            const coachRole = String(coach?.role || '').trim();
+            return coachRole ? `Coach (${coachRole})` : 'Coach';
+        }
+
+        const starters = Array.isArray(team?.roster?.starters) ? team.roster.starters : [];
+        const starterSlot = starters.find((slot) => normalizeId(slot?.user) === currentUserId);
+        if (starterSlot) {
+            const slotRole = String(starterSlot?.role || '').trim();
+            return slotRole ? `Titular (${slotRole})` : 'Titular';
+        }
+
+        const subs = Array.isArray(team?.roster?.subs) ? team.roster.subs : [];
+        const subSlot = subs.find((slot) => normalizeId(slot?.user) === currentUserId);
+        if (subSlot) {
+            const slotRole = String(subSlot?.role || '').trim();
+            return slotRole ? `Suplente (${slotRole})` : 'Suplente';
+        }
+
+        return 'Miembro';
+    };
+    const getTeamRosterSummary = (team) => {
+        const starters = Array.isArray(team?.roster?.starters) ? team.roster.starters : [];
+        const subs = Array.isArray(team?.roster?.subs) ? team.roster.subs : [];
+        const coach = team?.roster?.coach || null;
+
+        const startersFilled = starters.filter((slot) => Boolean(normalizeId(slot?.user))).length;
+        const subsFilled = subs.filter((slot) => Boolean(normalizeId(slot?.user))).length;
+        const coachFilled = coach?.user ? 1 : 0;
+
+        const startersCapRaw = Number(team?.maxMembers);
+        const subsCapRaw = Number(team?.maxSubstitutes);
+        const startersCap = Number.isFinite(startersCapRaw) && startersCapRaw > 0 ? startersCapRaw : starters.length;
+        const subsCap = Number.isFinite(subsCapRaw) && subsCapRaw > 0 ? subsCapRaw : subs.length;
+        const coachCap = coach ? 1 : 0;
+
+        const segments = [];
+        if (startersCap > 0 || startersFilled > 0) {
+            segments.push(`Titulares ${startersFilled}/${Math.max(startersCap, startersFilled)}`);
+        }
+        if (subsCap > 0 || subsFilled > 0) {
+            segments.push(`Subs ${subsFilled}/${Math.max(subsCap, subsFilled)}`);
+        }
+        if (coachCap > 0 || coachFilled > 0) {
+            segments.push(`Coach ${coachFilled}/${Math.max(coachCap, coachFilled)}`);
+        }
+        return segments.join(' · ');
+    };
+    const getTeamCodeDisplay = (rawCode) => {
+        const raw = String(rawCode || '').trim();
+        if (!raw) return '';
+        const numeric = raw.replace(/[^\d]/g, '');
+        return numeric || raw;
+    };
 
     return (
         <div className="pf">
@@ -233,6 +493,9 @@ const Profile = () => {
                         <div className="pf-hero-info__meta">
                             {user.country && <span><FaFlag /> {user.country}</span>}
                             <span><FaCalendarAlt /> Miembro desde {new Date(user.createdAt || Date.now()).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}</span>
+                            {user.userCode && (
+                                <span className="pf-hero-info__meta--id">#{user.userCode}</span>
+                            )}
                             {user.connections?.discord?.verified && (
                                 <span className="pf-hero-info__meta--discord"><FaDiscord /> {user.connections.discord.username}</span>
                             )}
@@ -246,7 +509,7 @@ const Profile = () => {
                                 {activeSocials.map(s => (
                                     <a
                                         key={s.key}
-                                        href={`https://${s.key === 'twitter' ? 'x' : s.key}.com/${user.socialLinks[s.key]}`}
+                                        href={s.href}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="pf-social-link"
@@ -291,28 +554,28 @@ const Profile = () => {
                 <div className="pf-highlight">
                     <FaCrosshairs className="pf-highlight__icon" />
                     <div className="pf-highlight__data">
-                        <span className="pf-highlight__value">{MOCK_STATS.matches.toLocaleString()}</span>
+                        <span className="pf-highlight__value">{Number(profileStats.matches || 0).toLocaleString()}</span>
                         <span className="pf-highlight__label">Partidas</span>
                     </div>
                 </div>
                 <div className="pf-highlight">
                     <FaTrophy className="pf-highlight__icon pf-highlight__icon--gold" />
                     <div className="pf-highlight__data">
-                        <span className="pf-highlight__value">{MOCK_STATS.tournamentsWon}</span>
+                        <span className="pf-highlight__value">{Number(profileStats.tournamentsWon || 0)}</span>
                         <span className="pf-highlight__label">Torneos Ganados</span>
                     </div>
                 </div>
                 <div className="pf-highlight">
                     <FaChartLine className="pf-highlight__icon pf-highlight__icon--green" />
                     <div className="pf-highlight__data">
-                        <span className="pf-highlight__value">{MOCK_STATS.winRate}%</span>
+                        <span className="pf-highlight__value">{Number(profileStats.winRate || 0)}%</span>
                         <span className="pf-highlight__label">Win Rate</span>
                     </div>
                 </div>
                 <div className="pf-highlight">
                     <FaStar className="pf-highlight__icon pf-highlight__icon--purple" />
                     <div className="pf-highlight__data">
-                        <span className="pf-highlight__value">{MOCK_STATS.mvps}</span>
+                        <span className="pf-highlight__value">{Number(profileStats.mvps || 0)}</span>
                         <span className="pf-highlight__label">MVPs</span>
                     </div>
                 </div>
@@ -351,28 +614,97 @@ const Profile = () => {
                         </div>
                     </section>
 
+                    {/* Gamer Profile Hub */}
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaCrosshairs /> Perfil Gamer</h3>
+                        </div>
+                        <div className="pf-profile-details">
+                            <div className="pf-profile-details__row">
+                                <span className="pf-profile-details__label">Roles</span>
+                                <div className="pf-profile-details__chips">
+                                    {normalizedPreferredRoles.length > 0
+                                        ? normalizedPreferredRoles.map((role) => (
+                                            <span key={role} className="pf-chip">{role}</span>
+                                        ))
+                                        : <span className="pf-empty-sm">Sin roles</span>}
+                                </div>
+                            </div>
+                            <div className="pf-profile-details__row">
+                                <span className="pf-profile-details__label">Idiomas</span>
+                                <div className="pf-profile-details__chips">
+                                    {normalizedLanguages.length > 0
+                                        ? normalizedLanguages.map((lang) => (
+                                            <span key={lang} className="pf-chip">{lang}</span>
+                                        ))
+                                        : <span className="pf-empty-sm">Sin idiomas</span>}
+                                </div>
+                            </div>
+                            <div className="pf-profile-details__row">
+                                <span className="pf-profile-details__label">Plataformas</span>
+                                <div className="pf-profile-details__chips">
+                                    {normalizedPlatforms.length > 0
+                                        ? normalizedPlatforms.map((platform) => (
+                                            <span key={platform} className="pf-chip">{platform}</span>
+                                        ))
+                                        : <span className="pf-empty-sm">Sin plataformas</span>}
+                                </div>
+                            </div>
+                            <div className="pf-profile-details__row">
+                                <span className="pf-profile-details__label">Objetivos</span>
+                                <div className="pf-profile-details__chips">
+                                    {normalizedGoals.length > 0
+                                        ? normalizedGoals.map((goal) => (
+                                            <span key={goal} className="pf-chip">{goal}</span>
+                                        ))
+                                        : <span className="pf-empty-sm">Sin objetivos</span>}
+                                </div>
+                            </div>
+                            <div className="pf-profile-details__flags">
+                                <span className={`pf-flag ${user.lookingForTeam ? 'is-active' : ''}`}>
+                                    <FaUsers /> {user.lookingForTeam ? 'Buscando equipo' : 'No busca equipo'}
+                                </span>
+                                <span className={`pf-flag ${user.isProfileHidden ? 'is-active' : ''}`}>
+                                    <FaShieldAlt /> {user.isProfileHidden ? 'Perfil privado' : 'Perfil visible'}
+                                </span>
+                            </div>
+                        </div>
+                    </section>
+
                     {/* Friends Hub */}
                     <section className="pf-hub">
                         <div className="pf-hub__header">
                             <h3><FaUserFriends /> Amigos</h3>
                             <span className="pf-hub__count">{onlineFriends.length} en línea</span>
                         </div>
-                        <div className="pf-friends">
-                            {MOCK_FRIENDS.slice(0, 6).map(friend => (
-                                <div key={friend.id} className="pf-friend">
-                                    <div className="pf-friend__avatar">
-                                        <img src={`https://ui-avatars.com/api/?name=${friend.name}&background=1a1a2e&color=8EDB15`} alt={friend.name} />
-                                        <span className={`pf-friend__status pf-friend__status--${friend.status}`} />
-                                    </div>
-                                    <div className="pf-friend__info">
-                                        <span className="pf-friend__name">{friend.name}</span>
-                                        <span className="pf-friend__rank">{friend.rank}</span>
-                                    </div>
+                        {friends.length > 0 ? (
+                            <>
+                                <div className="pf-friends">
+                                    {friends.slice(0, 6).map(friend => (
+                                        <div key={friend.id} className="pf-friend">
+                                            <div className="pf-friend__avatar">
+                                                <img
+                                                    src={resolveMediaUrl(friend.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.name)}&background=1a1a2e&color=8EDB15`}
+                                                    alt={friend.name}
+                                                />
+                                                <span className={`pf-friend__status pf-friend__status--${String(friend.status || '').toLowerCase()}`} />
+                                            </div>
+                                            <div className="pf-friend__info">
+                                                <span className="pf-friend__name">{friend.name}</span>
+                                                {friend.userCode && (
+                                                    <span className="pf-friend__code">#{friend.userCode}</span>
+                                                )}
+                                                <span className="pf-friend__rank">{friend.rank || 'Jugador'}</span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                        <button className="pf-hub__more">
-                            Ver todos ({MOCK_FRIENDS.length}) <FaChevronRight />
+                            </>
+                        ) : (
+                            <div className="pf-empty-sm">Aún no tienes compañeros sincronizados.</div>
+                        )}
+                        <button className="pf-hub__more pf-hub__more--social" onClick={() => navigate('/friends')}>
+                            Ver todos ({Math.max(Number(socialCounts.friends || 0), friends.length)}) <FaChevronRight />
                         </button>
                     </section>
 
@@ -385,12 +717,33 @@ const Profile = () => {
                             <div className="pf-teams">
                                 {user.teams.slice(0, 3).map(team => {
                                     const defaultLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(team.name || 'T')}&background=1a1a2e&color=8EDB15&size=128&bold=true`;
+                                    const teamRole = getTeamRoleForCurrentUser(team);
+                                    const rosterSummary = getTeamRosterSummary(team);
+                                    const teamLevel = String(team?.teamLevel || '').trim() || 'Sin nivel';
+                                    const teamCountry = String(team?.teamCountry || '').trim() || 'Sin país';
+                                    const universityName = String(team?.university?.universityName || '').trim();
+                                    const teamType = team?.university?.isUniversityTeam
+                                        ? (universityName ? `Universitario (${universityName})` : 'Universitario')
+                                        : 'Club';
+                                    const teamCodeDisplay = getTeamCodeDisplay(team?.teamCode);
                                     return (
-                                        <div key={team._id} className="pf-team">
-                                            <img src={resolveMediaUrl(team.logo) || defaultLogo} alt={team.name} onError={e => e.target.src = defaultLogo} />
+                                        <div
+                                            key={team._id}
+                                            className="pf-team"
+                                            onClick={() => navigate('/teams', {
+                                                state: {
+                                                    teamId: team?._id,
+                                                    openPreview: true
+                                                }
+                                            })}
+                                        >
+                                            <img src={resolveMediaUrl(team.logo || team.avatar) || defaultLogo} alt={team.name} onError={e => e.target.src = defaultLogo} />
                                             <div className="pf-team__info">
                                                 <h4>{team.name}</h4>
-                                                <span>{team.game}</span>
+                                                <span>{team.game || 'Sin juego'} · {teamLevel}</span>
+                                                <small className="pf-team__meta">{teamCountry} · {teamType} · {teamRole}</small>
+                                                {rosterSummary && <small className="pf-team__roster">{rosterSummary}</small>}
+                                                {teamCodeDisplay && <small className="pf-team__code">{teamCodeDisplay}</small>}
                                             </div>
                                             <FaChevronRight />
                                         </div>
@@ -427,50 +780,55 @@ const Profile = () => {
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                             />
-                            <button type="submit" disabled={!newComment.trim()}>
+                            <button type="submit" disabled={!newComment.trim() || postingComment}>
                                 <FaPaperPlane />
                             </button>
                         </form>
+                        {commentError && <div className="pf-comment-error">{commentError}</div>}
 
                         {/* Comments List */}
-                        <div className="pf-comments">
-                            {comments.map(comment => (
-                                <motion.div 
-                                    key={comment.id} 
-                                    className="pf-comment"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                >
-                                    <img 
-                                        src={`https://ui-avatars.com/api/?name=${comment.user.name}&background=1a1a2e&color=8EDB15`} 
-                                        alt={comment.user.name}
-                                        className="pf-comment__avatar"
-                                    />
-                                    <div className="pf-comment__content">
-                                        <div className="pf-comment__header">
-                                            <span className="pf-comment__name">{comment.user.name}</span>
-                                            <span className="pf-comment__time">{comment.time}</span>
+                        {comments.length > 0 ? (
+                            <div className="pf-comments">
+                                {comments.map(comment => (
+                                    <motion.div 
+                                        key={comment.id} 
+                                        className="pf-comment"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                    >
+                                        <img 
+                                            src={resolveMediaUrl(comment?.user?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment?.user?.name || 'U')}&background=1a1a2e&color=8EDB15`} 
+                                            alt={comment?.user?.name || 'Usuario'}
+                                            className="pf-comment__avatar"
+                                        />
+                                        <div className="pf-comment__content">
+                                            <div className="pf-comment__header">
+                                                <span className="pf-comment__name">{comment?.user?.name || 'Usuario'}</span>
+                                                <span className="pf-comment__time">{formatRelativeTime(comment?.time)}</span>
+                                            </div>
+                                            <p className="pf-comment__text">{comment?.text || ''}</p>
+                                            <div className="pf-comment__actions">
+                                                <button 
+                                                    className={`pf-comment__like ${comment.liked ? 'pf-comment__like--active' : ''}`}
+                                                    onClick={() => toggleLike(comment.id)}
+                                                >
+                                                    {comment.liked ? <FaHeart /> : <FaRegHeart />}
+                                                    <span>{comment.likes}</span>
+                                                </button>
+                                                <button className="pf-comment__reply">
+                                                    <FaRegComment /> Responder
+                                                </button>
+                                            </div>
                                         </div>
-                                        <p className="pf-comment__text">{comment.text}</p>
-                                        <div className="pf-comment__actions">
-                                            <button 
-                                                className={`pf-comment__like ${comment.liked ? 'pf-comment__like--active' : ''}`}
-                                                onClick={() => toggleLike(comment.id)}
-                                            >
-                                                {comment.liked ? <FaHeart /> : <FaRegHeart />}
-                                                <span>{comment.likes}</span>
-                                            </button>
-                                            <button className="pf-comment__reply">
-                                                <FaRegComment /> Responder
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <button className="pf-comment__menu">
-                                        <FaEllipsisH />
-                                    </button>
-                                </motion.div>
-                            ))}
-                        </div>
+                                        <button className="pf-comment__menu">
+                                            <FaEllipsisH />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="pf-empty-sm">Aún no tienes publicaciones para mostrar.</div>
+                        )}
                     </section>
                 </div>
 
@@ -481,24 +839,30 @@ const Profile = () => {
                         <div className="pf-hub__header">
                             <h3><FaTrophy /> Logros Destacados</h3>
                         </div>
-                        <div className="pf-achievements">
-                            {MOCK_ACHIEVEMENTS.map(ach => (
-                                <div key={ach.id} className={`pf-achievement ${ach.verified ? 'pf-achievement--verified' : ''}`}>
-                                    <span className="pf-achievement__icon">{ach.icon}</span>
-                                    <div className="pf-achievement__info">
-                                        <h4>{ach.name}</h4>
-                                        <span>{ach.tournament}</span>
-                                        <span className="pf-achievement__date">{ach.game} • {ach.date}</span>
-                                    </div>
-                                    {ach.verified && (
-                                        <span className="pf-achievement__badge"><FaCheck /></span>
-                                    )}
+                        {achievements.length > 0 ? (
+                            <>
+                                <div className="pf-achievements">
+                                    {achievements.slice(0, 6).map(ach => (
+                                        <div key={ach.id} className={`pf-achievement ${ach.verified ? 'pf-achievement--verified' : ''}`}>
+                                            <span className="pf-achievement__icon">{ach.icon}</span>
+                                            <div className="pf-achievement__info">
+                                                <h4>{ach.name}</h4>
+                                                <span>{ach.tournament}</span>
+                                                <span className="pf-achievement__date">{ach.game} • {ach.date}</span>
+                                            </div>
+                                            {ach.verified && (
+                                                <span className="pf-achievement__badge"><FaCheck /></span>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                        <button className="pf-hub__more">
-                            Ver todos los logros <FaChevronRight />
-                        </button>
+                                <button className="pf-hub__more">
+                                    Ver todos los logros <FaChevronRight />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="pf-empty-sm">Aún no hay logros registrados.</div>
+                        )}
                     </section>
 
                     {/* Recent Activity */}
@@ -506,39 +870,122 @@ const Profile = () => {
                         <div className="pf-hub__header">
                             <h3><FaFire /> Actividad Reciente</h3>
                         </div>
-                        <div className="pf-activity">
-                            <div className="pf-activity__item pf-activity__item--win">
-                                <div className="pf-activity__dot" />
-                                <div className="pf-activity__content">
-                                    <p>Ganó torneo <strong>Copa Caribe</strong></p>
-                                    <span>Hace 2 días</span>
-                                </div>
+                        {activities.length > 0 ? (
+                            <div className="pf-activity">
+                                {activities.slice(0, 8).map((item) => (
+                                    <div key={item.id} className={`pf-activity__item pf-activity__item--${item.type || 'rank'}`}>
+                                        <div className="pf-activity__dot" />
+                                        <div className="pf-activity__content">
+                                            <p>
+                                                <strong>{item.title || 'Actividad'}</strong>
+                                                {item.text ? ` · ${item.text}` : ''}
+                                            </p>
+                                            <span>{formatRelativeTime(item.createdAt)}</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="pf-activity__item pf-activity__item--team">
-                                <div className="pf-activity__dot" />
-                                <div className="pf-activity__content">
-                                    <p>Se unió a <strong>Hispaniola Esports</strong></p>
-                                    <span>Hace 1 semana</span>
-                                </div>
-                            </div>
-                            <div className="pf-activity__item pf-activity__item--rank">
-                                <div className="pf-activity__dot" />
-                                <div className="pf-activity__content">
-                                    <p>Subió a <strong>Mythic Glory</strong></p>
-                                    <span>Hace 2 semanas</span>
-                                </div>
-                            </div>
-                            <div className="pf-activity__item pf-activity__item--achievement">
-                                <div className="pf-activity__dot" />
-                                <div className="pf-activity__content">
-                                    <p>Desbloqueó <strong>MVP del Torneo</strong></p>
-                                    <span>Hace 3 semanas</span>
-                                </div>
-                            </div>
-                        </div>
+                        ) : (
+                            <div className="pf-empty-sm">Sin actividad reciente.</div>
+                        )}
                     </section>
                 </div>
             </main>
+
+            <AnimatePresence>
+                {socialModalOpen && (
+                    <motion.div
+                        className="pf-social-modal"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSocialModalOpen(false)}
+                    >
+                        <motion.div
+                            className="pf-social-modal__panel"
+                            initial={{ y: 24, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 24, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <div className="pf-social-modal__header">
+                                <h3><FaUserFriends /> Centro de Amigos</h3>
+                                <button onClick={() => setSocialModalOpen(false)}><FaTimes /></button>
+                            </div>
+
+                            <div className="pf-social-tabs">
+                                {socialTabs.map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        className={`pf-social-tab ${socialTab === tab.id ? 'is-active' : ''}`}
+                                        onClick={() => {
+                                            setSocialTab(tab.id);
+                                            setSocialError('');
+                                        }}
+                                    >
+                                        <span>{tab.label}</span>
+                                        {tab.count !== null && <small>{tab.count}</small>}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {socialTab === 'discover' && (
+                                <div className="pf-social-search">
+                                    <FaSearch />
+                                    <input
+                                        type="text"
+                                        value={socialSearch}
+                                        onChange={(event) => setSocialSearch(event.target.value)}
+                                        placeholder="Buscar por username, nombre o número..."
+                                    />
+                                </div>
+                            )}
+
+                            {socialError && <div className="pf-social-error">{socialError}</div>}
+
+                            <div className="pf-social-list">
+                                {(socialLoading || socialSearchLoading) ? (
+                                    <div className="pf-empty-sm">Cargando...</div>
+                                ) : activeSocialList.length > 0 ? (
+                                    activeSocialList.map((entry) => {
+                                        const targetId = String(entry?.id || '');
+                                        return (
+                                            <div key={targetId} className="pf-social-item">
+                                                <div className="pf-social-item__left">
+                                                    <img
+                                                        src={resolveMediaUrl(entry?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(entry?.name || 'U')}&background=1a1a2e&color=8EDB15`}
+                                                        alt={entry?.name || 'Usuario'}
+                                                    />
+                                                    <div>
+                                                        <strong>{entry?.name || 'Jugador'}</strong>
+                                                        <span>@{entry?.username || 'usuario'}</span>
+                                                        {entry?.userCode && (
+                                                            <span className="pf-social-item__code">#{entry.userCode}</span>
+                                                        )}
+                                                        <small>{entry?.rank || 'Jugador'} · {entry?.status || 'offline'}</small>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    className={`pf-social-item__follow ${entry?.isFollowing ? 'is-following' : ''}`}
+                                                    onClick={() => handleToggleFollowUser(targetId)}
+                                                    disabled={Boolean(followBusyIds[targetId])}
+                                                >
+                                                    {followBusyIds[targetId]
+                                                        ? '...'
+                                                        : (entry?.isFollowing ? 'Siguiendo' : 'Seguir')}
+                                                </button>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="pf-empty-sm">{socialEmptyText}</div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

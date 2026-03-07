@@ -45,7 +45,7 @@ function parseMlbbPayload(body = {}) {
 }
 
 const getMlbbVerificationMode = () => {
-  const mode = String(process.env.MLBB_VERIFICATION_MODE || 'manual').trim().toLowerCase();
+  const mode = String(process.env.MLBB_VERIFICATION_MODE || 'auto').trim().toLowerCase();
   return mode === 'auto' ? 'auto' : 'manual';
 };
 

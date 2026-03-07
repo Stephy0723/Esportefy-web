@@ -15,6 +15,8 @@ const ROUTE_NAMES = {
   '/tournaments': 'Torneos',
   '/equipos': 'Equipos',
   '/comunidad': 'Comunidad',
+  '/friends': 'Amigos',
+  '/amigos': 'Amigos',
   '/rankings': 'Rankings',
   '/noticias': 'Noticias',
   '/chats': 'Mensajes',
@@ -243,6 +245,13 @@ const Navbar = () => {
                   <span>Explorar comunidades</span>
                   <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                 </Link>
+                {activeUser && (
+                  <Link to="/friends" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
+                    <i className="bx bx-user-plus"></i>
+                    <span>Centro de amigos</span>
+                    <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
+                  </Link>
+                )}
                 {activeUser && (
                   <Link to="/chats" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                     <i className="bx bx-message-rounded-dots"></i>

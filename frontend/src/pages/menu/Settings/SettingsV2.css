@@ -387,6 +387,11 @@
     color: var(--stv2-text-dim);
 }
 
+.stv2-badge--danger {
+    background: color-mix(in srgb, var(--stv2-danger) 14%, transparent);
+    color: var(--stv2-danger);
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    BUTTONS
    ───────────────────────────────────────────────────────────────────────────── */
@@ -503,6 +508,11 @@
     font-size: 0.85rem;
     color: var(--stv2-primary);
     margin: 0;
+}
+
+.stv2-form__actions {
+    display: flex;
+    gap: 0.75rem;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -1498,6 +1508,123 @@
 
 .stv2-notice--warning i {
     color: var(--stv2-warning);
+}
+
+.stv2-notice--success {
+    background: color-mix(in srgb, var(--stv2-success) 7%, transparent);
+    border-color: color-mix(in srgb, var(--stv2-success) 20%, transparent);
+}
+
+.stv2-notice--success i {
+    color: var(--stv2-success);
+}
+
+.stv2-notice--danger {
+    background: color-mix(in srgb, var(--stv2-danger) 8%, transparent);
+    border-color: color-mix(in srgb, var(--stv2-danger) 24%, transparent);
+}
+
+.stv2-notice--danger i {
+    color: var(--stv2-danger);
+}
+
+.stv2-notice .stv2-btn {
+    margin-left: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ADMIN MLBB REVIEW
+   ───────────────────────────────────────────────────────────────────────────── */
+.stv2-admin-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.stv2-admin-queue {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+}
+
+.stv2-admin-queue span {
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--stv2-border);
+    background: var(--stv2-bg-card);
+    color: var(--stv2-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.stv2-empty-state {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: var(--stv2-radius-sm);
+    border: 1px dashed var(--stv2-border);
+    background: var(--stv2-bg-card);
+    color: var(--stv2-text-muted);
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.stv2-admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.85rem;
+    margin-top: 1rem;
+}
+
+.stv2-admin-card {
+    border: 1px solid var(--stv2-border);
+    background: var(--stv2-bg-card);
+    border-radius: var(--stv2-radius);
+    padding: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.stv2-admin-card__head h4 {
+    margin: 0;
+    color: var(--stv2-text);
+    font-size: 0.95rem;
+}
+
+.stv2-admin-card__head span {
+    color: var(--stv2-text-muted);
+    font-size: 0.78rem;
+}
+
+.stv2-admin-card__meta {
+    color: var(--stv2-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.stv2-admin-card__risk {
+    color: var(--stv2-warning);
+    background: color-mix(in srgb, var(--stv2-warning) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--stv2-warning) 20%, transparent);
+    border-radius: var(--stv2-radius-sm);
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.stv2-admin-card input {
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--stv2-border);
+    border-radius: var(--stv2-radius-sm);
+    background: var(--stv2-bg-main);
+    color: var(--stv2-text);
+    font-size: 0.8rem;
+}
+
+.stv2-admin-card__actions {
+    display: flex;
+    gap: 0.55rem;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

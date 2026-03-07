@@ -36,7 +36,7 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   // --- NOTIFY (para uso local) ---
-  const notify = (type, title, message) => {
+  const notify = useCallback((type, title, message) => {
     let config = { icon: 'bx-bell', color: '#8EDB15', category: 'system' };
     const configMap = {
       team: { icon: 'bx-group', color: '#4facfe', category: 'team' },
@@ -60,13 +60,13 @@ export const NotificationProvider = ({ children }) => {
 
     setNotifications((prev) => [newNote, ...prev]);
     addToast(title, type === 'danger' ? 'error' : 'success');
-  };
+  }, [addToast]);
 
-  const removeNotification = (id) => {
+  const removeNotification = useCallback((id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
+  }, []);
 
-  const loadNotifications = (list) => {
+  const loadNotifications = useCallback((list) => {
     if (!Array.isArray(list)) return;
     setNotifications(list.map((n) => ({
       id: n._id || n.id,
@@ -80,9 +80,10 @@ export const NotificationProvider = ({ children }) => {
       createdAt: n.createdAt,
       status: n.status || 'unread',
       visuals: n.visuals || { icon: 'bx-bell', color: '#8EDB15', glow: false },
+      meta: n.meta || {},
       isArchived: n.isArchived || false
     })));
-  };
+  }, []);
 
   const unreadCount = notifications.filter(n => n.status === 'unread').length;
 

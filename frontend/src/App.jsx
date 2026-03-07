@@ -35,6 +35,7 @@ import CalendarPage from './components/Calendar/CalendarPage/CalendarPage';
 import TeamRegistration from './pages/menu/Tournaments/TeamRegistration/TeamRegistration';
 import CreateTournament from './pages/menu/Tournaments/CreateTournament/CreateTournament';
 import OrganizerApplication from './pages/menu/Tournaments/OrganizerApplication/OrganizerApplication';
+import FriendsPage from './pages/menu/Friends/Friends';
 import TournamentAdminHub from './pages/menu/Tournaments/Admin/TournamentAdminHub';
 import TournamentManagePage from './pages/menu/Tournaments/Admin/TournamentManagePage';
 import TournamentBracketPage from './pages/menu/Tournaments/Admin/TournamentBracketPage';
@@ -124,12 +125,15 @@ const AppRouterContent = () => {
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chats" element={<Chats />} />
+            <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/amigos" element={<Navigate to="/friends" replace />} />
             <Route path="/tv" element={<Tv />} />
             <Route path="/settings" element={<SettingsV2 />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/torneos" element={<Tournaments />} />
             <Route path="/comunidad" element={<Community />} />
             <Route path="/equipos" element={<Teams />} />
+            <Route path="/teams" element={<Teams />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/perfil" element={<Navigate to="/profile" replace />} />

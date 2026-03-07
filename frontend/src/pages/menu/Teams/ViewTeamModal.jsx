@@ -52,12 +52,21 @@ const TABS = [
     { key: 'settings', icon: 'bx-cog', label: 'Ajustes' },
 ];
 
-const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, initialInviteCode }) => {
+const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, initialInviteCode, initialTab = 'info' }) => {
     if (!isOpen || !team) return null;
 
     /* ── helpers ── */
     const normalizeGame = (v) => String(v || '').trim().toLowerCase();
     const isRiotGame = (g) => RIOT_GAMES.has(String(g || '').trim());
+    const formatRosterGameId = (entry) => {
+        const gameId = String(entry?.gameId || '').trim();
+        if (!gameId) return '';
+        if (!isRiotGame(team?.game)) return gameId;
+        const nick = String(entry?.name || '').trim();
+        const cleanedTag = gameId.replace(/^#/, '');
+        if (!nick || !cleanedTag) return gameId;
+        return `${nick}#${cleanedTag}`;
+    };
     const getGameRules = (game) => {
         const target = normalizeGame(game);
         if (!target) return null;
@@ -97,7 +106,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     );
 
     /* ── state ── */
-    const [activeTab, setActiveTab] = useState('info');
+    const [activeTab, setActiveTab] = useState(initialTab === 'roster' ? 'roster' : 'info');
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null);
 
@@ -116,11 +125,26 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const [slotType, setSlotType] = useState('starters');
     const [slotIndex, setSlotIndex] = useState(0);
     const [player, setPlayer] = useState({ nickname: '', gameId: '', region: '', email: '', role: '' });
+    const [friendsLoading, setFriendsLoading] = useState(false);
+    const [friendsOptions, setFriendsOptions] = useState([]);
+    const [inviteSubmitting, setInviteSubmitting] = useState(false);
+    const [inviteFriendSearch, setInviteFriendSearch] = useState('');
+    const [inviteForm, setInviteForm] = useState({
+        targetUserId: '',
+        slotType: 'starters',
+        slotIndex: 0,
+        note: ''
+    });
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 3000);
     };
+
+    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+    const slotHasMember = (slot) => Boolean(slot?.user || slot?.nickname || slot?.gameId || slot?.email || slot?.role);
+    const normalizeRoleKey = (value = '') => String(value || '').trim().toLowerCase();
+    const gameRoles = useMemo(() => ROLE_NAMES[team.game] || [], [team.game]);
 
     /* ── Edit handlers ── */
     const startEdit = () => {
@@ -148,7 +172,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const saveEdit = async () => {
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
+            const token = getToken();
             let updated = team;
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}`, editForm, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -187,7 +211,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         if (!player.nickname.trim()) return showToast('Nickname requerido', 'error');
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await axios.post(`${API_URL}/api/teams/${team._id}/roster`,
                 { slotType, slotIndex, player },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -205,7 +229,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleRemovePlayer = async (entry) => {
         if (!window.confirm(`Remover a ${entry.name}?`)) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}/roster/remove`,
                 { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -219,7 +243,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
     const handleRequestAction = async (requestId, action) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}/requests/${requestId}`,
                 { action },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -231,10 +255,167 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         }
     };
 
+    const fetchFriends = async () => {
+        if (!canManage) return;
+        try {
+            setFriendsLoading(true);
+            const token = getToken();
+            if (!token) return;
+            const res = await axios.get(`${API_URL}/api/auth/social`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const items = Array.isArray(res?.data?.friends) ? res.data.friends : [];
+            setFriendsOptions(items);
+            setInviteForm((prev) => ({
+                ...prev,
+                targetUserId: prev.targetUserId || items[0]?.id || ''
+            }));
+        } catch (_) {
+            setFriendsOptions([]);
+        } finally {
+            setFriendsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!isOpen || !canManage) return;
+        fetchFriends();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, canManage, team?._id]);
+
+    useEffect(() => {
+        if (!Array.isArray(friendsOptions) || friendsOptions.length === 0) return;
+        setInviteForm((prev) => {
+            if (prev.targetUserId && friendsOptions.some((friend) => String(friend?.id) === String(prev.targetUserId))) {
+                return prev;
+            }
+            return { ...prev, targetUserId: String(friendsOptions[0]?.id || '') };
+        });
+    }, [friendsOptions]);
+
+    useEffect(() => {
+        setInviteForm((prev) => {
+            if (prev.slotType === 'coach') {
+                return prev.slotIndex === 0 ? prev : { ...prev, slotIndex: 0 };
+            }
+            const max = prev.slotType === 'starters' ? starterSlots : subSlots;
+            if (!Number.isFinite(max) || max <= 0) return { ...prev, slotIndex: 0 };
+            const nextIndex = Number(prev.slotIndex);
+            if (nextIndex >= 0 && nextIndex < max) return prev;
+            return { ...prev, slotIndex: 0 };
+        });
+    }, [starterSlots, subSlots]);
+
+    const roleHintsByType = useMemo(() => {
+        const starters = Array.isArray(team?.roster?.starters) ? team.roster.starters : [];
+        const subs = Array.isArray(team?.roster?.subs) ? team.roster.subs : [];
+        const coach = team?.roster?.coach || null;
+
+        const usedRoles = new Set();
+        [...starters, ...subs, coach].forEach((member) => {
+            if (!slotHasMember(member)) return;
+            const key = normalizeRoleKey(member?.role);
+            if (key) usedRoles.add(key);
+        });
+
+        const availableRoles = gameRoles.filter((role) => !usedRoles.has(normalizeRoleKey(role)));
+        let roleCursor = 0;
+
+        const startersHints = {};
+        const subsHints = {};
+
+        for (let idx = 0; idx < starterSlots; idx += 1) {
+            if (slotHasMember(starters[idx])) continue;
+            if (availableRoles[roleCursor]) {
+                startersHints[idx] = availableRoles[roleCursor];
+                roleCursor += 1;
+            }
+        }
+
+        for (let idx = 0; idx < subSlots; idx += 1) {
+            if (slotHasMember(subs[idx])) continue;
+            if (availableRoles[roleCursor]) {
+                subsHints[idx] = availableRoles[roleCursor];
+                roleCursor += 1;
+            }
+        }
+
+        return { starters: startersHints, subs: subsHints };
+    }, [team?.roster, starterSlots, subSlots, gameRoles]);
+
+    const inviteSlotOptions = useMemo(() => {
+        if (inviteForm.slotType === 'coach') {
+            return [{ value: 0, label: 'Coach', disabled: slotHasMember(team?.roster?.coach) }];
+        }
+        const max = inviteForm.slotType === 'starters' ? starterSlots : subSlots;
+        const list = Array.isArray(team?.roster?.[inviteForm.slotType]) ? team.roster[inviteForm.slotType] : [];
+        return Array.from({ length: Math.max(0, max) }).map((_, idx) => {
+            const current = list[idx];
+            const currentLabel = current?.nickname || current?.role;
+            const roleHint = inviteForm.slotType === 'starters'
+                ? roleHintsByType.starters?.[idx]
+                : roleHintsByType.subs?.[idx];
+            return {
+                value: idx,
+                disabled: slotHasMember(current),
+                label: currentLabel
+                    ? `${inviteForm.slotType === 'starters' ? 'Titular' : 'Suplente'} #${idx + 1} · ${currentLabel}`
+                    : `${inviteForm.slotType === 'starters' ? 'Titular' : 'Suplente'} #${idx + 1}${roleHint ? ` · ${roleHint}` : ''} (Disponible)`
+            };
+        });
+    }, [inviteForm.slotType, starterSlots, subSlots, team?.roster, roleHintsByType]);
+
+    const filteredFriendsOptions = useMemo(() => {
+        const q = String(inviteFriendSearch || '').trim().toLowerCase();
+        if (!q) return friendsOptions;
+        return friendsOptions.filter((friend) => {
+            const name = String(friend?.name || '').toLowerCase();
+            const username = String(friend?.username || '').toLowerCase();
+            const code = String(friend?.userCode || '').toLowerCase();
+            return name.includes(q) || username.includes(q) || code.includes(q);
+        });
+    }, [friendsOptions, inviteFriendSearch]);
+
+    const handleInviteFriend = async (event) => {
+        event.preventDefault();
+        if (inviteSubmitting) return;
+        if (!inviteForm.targetUserId) return showToast('Selecciona un amigo para invitar.', 'error');
+        if (inviteForm.slotType !== 'coach') {
+            const chosen = inviteSlotOptions.find((option) => Number(option.value) === Number(inviteForm.slotIndex));
+            if (!chosen || chosen.disabled) {
+                return showToast('Selecciona un slot disponible para invitar.', 'error');
+            }
+        }
+
+        try {
+            setInviteSubmitting(true);
+            const token = getToken();
+            if (!token) return showToast('Debes iniciar sesión.', 'error');
+
+            await axios.post(
+                `${API_URL}/api/teams/${team._id}/invite-friend`,
+                {
+                    targetUserId: inviteForm.targetUserId,
+                    slotType: inviteForm.slotType,
+                    slotIndex: inviteForm.slotType === 'coach' ? 0 : Number(inviteForm.slotIndex),
+                    note: inviteForm.note
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setInviteForm((prev) => ({ ...prev, note: '' }));
+            showToast('Invitación enviada por notificación.');
+        } catch (err) {
+            showToast(err?.response?.data?.message || 'No se pudo enviar la invitación.', 'error');
+        } finally {
+            setInviteSubmitting(false);
+        }
+    };
+
     const handleLeaveTeam = async () => {
         if (!window.confirm('¿Seguro que quieres salir del equipo?')) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             await axios.post(`${API_URL}/api/teams/leave/${team._id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -249,13 +430,16 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleDeleteTeam = async () => {
         if (!window.confirm('¿ELIMINAR este equipo permanentemente? Esta acción no se puede deshacer.')) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             await axios.delete(`${API_URL}/api/teams/${team._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             showToast('Equipo eliminado');
             window.dispatchEvent(new Event('user-update'));
-            setTimeout(() => onClose(), 600);
+            setTimeout(() => {
+                onClose();
+                window.location.reload();
+            }, 250);
         } catch (err) {
             showToast(err.response?.data?.message || 'Error', 'error');
         }
@@ -273,7 +457,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         const list = [];
         const starters = team.roster?.starters || [];
         const subs = team.roster?.subs || [];
-        const roles = ROLE_NAMES[team.game] || [];
+        const roles = gameRoles;
         const isMlbbTeam = MLBB_GAMES.has(String(team?.game || '').trim());
         const getSyncMeta = (member) => {
             if (!isMlbbTeam || !member) return null;
@@ -287,7 +471,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         for (let i = 0; i < starterSlots; i++) {
             const m = starters[i];
             list.push({
-                id: m?._id || `s-${i}`, name: m?.nickname || '', role: m?.role || roles[i] || `Titular ${i + 1}`,
+                id: m?._id || `s-${i}`, name: m?.nickname || '', role: m?.role || roleHintsByType.starters?.[i] || roles[i] || `Titular ${i + 1}`,
                 userId: m?.user || null, gameId: m?.gameId || '', email: m?.email || '', region: m?.region || '',
                 photo: m?.photo || '', slotType: 'starters', slotIndex: i, filled: Boolean(m?.nickname || m?.user),
                 syncMeta: getSyncMeta(m)
@@ -296,7 +480,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         for (let i = 0; i < subSlots; i++) {
             const m = subs[i];
             list.push({
-                id: m?._id || `sub-${i}`, name: m?.nickname || '', role: m?.role || `Suplente ${i + 1}`,
+                id: m?._id || `sub-${i}`, name: m?.nickname || '', role: m?.role || roleHintsByType.subs?.[i] || `Suplente ${i + 1}`,
                 userId: m?.user || null, gameId: m?.gameId || '', email: m?.email || '', region: m?.region || '',
                 photo: m?.photo || '', slotType: 'subs', slotIndex: i, filled: Boolean(m?.nickname || m?.user),
                 syncMeta: getSyncMeta(m)
@@ -310,7 +494,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
             syncMeta: getSyncMeta(c)
         });
         return list;
-    }, [team, starterSlots, subSlots]);
+    }, [team, starterSlots, subSlots, gameRoles, roleHintsByType]);
 
     const filledCount = rosterEntries.filter(e => e.filled).length;
     const totalSlots = rosterEntries.length;
@@ -566,7 +750,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                     <span className={`vtm-player-sync vtm-player-sync--${entry.syncMeta.tone}`}>{entry.syncMeta.label}</span>
                                                 )}
                                                 {entry.filled && entry.gameId && !hideGameId && (
-                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {entry.gameId}</span>
+                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {formatRosterGameId(entry)}</span>
                                                 )}
                                                 {entry.filled && entry.region && (
                                                     <span className="vtm-player-meta"><i className='bx bx-map-pin'></i> {entry.region}</span>
@@ -612,7 +796,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                         <span className={`vtm-player-sync vtm-player-sync--${entry.syncMeta.tone}`}>{entry.syncMeta.label}</span>
                                                     )}
                                                     {entry.filled && entry.gameId && !hideGameId && (
-                                                        <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {entry.gameId}</span>
+                                                        <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {formatRosterGameId(entry)}</span>
                                                     )}
                                                     {entry.filled && entry.region && (
                                                         <span className="vtm-player-meta"><i className='bx bx-map-pin'></i> {entry.region}</span>
@@ -657,7 +841,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                     <span className={`vtm-player-sync vtm-player-sync--${coach.syncMeta.tone}`}>{coach.syncMeta.label}</span>
                                                 )}
                                                 {coach.filled && coach.gameId && !hideGameId && (
-                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {coach.gameId}</span>
+                                                    <span className="vtm-player-meta"><i className='bx bx-id-card'></i> {formatRosterGameId(coach)}</span>
                                                 )}
                                             </div>
                                             {canManage && coach.filled && (
@@ -689,7 +873,12 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                     <select value={slotIndex} onChange={e => setSlotIndex(Number(e.target.value))}>
                                                         {Array.from({ length: slotType === 'starters' ? starterSlots : subSlots }).map((_, i) => {
                                                             const current = slotType === 'starters' ? team.roster?.starters?.[i] : team.roster?.subs?.[i];
-                                                            const label = current?.nickname || current?.role || `Slot ${i + 1}`;
+                                                            const roleHint = slotType === 'starters'
+                                                                ? roleHintsByType.starters?.[i]
+                                                                : roleHintsByType.subs?.[i];
+                                                            const label = current?.nickname
+                                                                || current?.role
+                                                                || `${slotType === 'starters' ? 'Titular' : 'Suplente'} #${i + 1}${roleHint ? ` · ${roleHint}` : ''}`;
                                                             return <option key={i} value={i} disabled={Boolean(current?.nickname)}>{label}{current?.nickname ? ' ✓' : ''}</option>;
                                                         })}
                                                     </select>
@@ -711,13 +900,13 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                                     {REGION_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
                                                 </select>
                                             </div>
-                                            <div className="vtm-form-group">
+                                            {/* <div className="vtm-form-group">
                                                 <select value={player.role} onChange={e => setPlayer({ ...player, role: e.target.value })}>
                                                     <option value="">Rol...</option>
                                                     {(ROLE_NAMES[team.game] || []).map(r => <option key={r} value={r}>{r}</option>)}
                                                     <option value="Coach">Coach</option>
                                                 </select>
-                                            </div>
+                                            </div> */}
                                         </div>
                                         <div className="vtm-form-group">
                                             <input value={player.email} onChange={e => setPlayer({ ...player, email: e.target.value })} placeholder="Email (opcional)" type="email" />
@@ -726,6 +915,100 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                             <i className='bx bx-plus'></i> {submitting ? 'Agregando...' : 'Agregar al Roster'}
                                         </button>
                                     </form>
+                                </div>
+                            )}
+
+                            {canManage && (
+                                <div className="vtm-invite-friends">
+                                    <h4><i className='bx bx-user-plus'></i> Invitar amigo por notificación</h4>
+                                    <p className="vtm-invite-friends__hint">
+                                        Solo puedes invitar amigos con seguimiento mutuo. La invitación se envía por notificación, no por chat.
+                                    </p>
+
+                                    {friendsLoading ? (
+                                        <div className="vtm-empty vtm-empty--compact">
+                                            <p>Cargando amigos...</p>
+                                        </div>
+                                    ) : friendsOptions.length === 0 ? (
+                                        <div className="vtm-empty vtm-empty--compact">
+                                            <p>No tienes amigos mutuos disponibles para invitar.</p>
+                                            <span>Síganse mutuamente en el módulo de Amigos para habilitar invitaciones.</span>
+                                        </div>
+                                    ) : (
+                                        <form className="vtm-add-form" onSubmit={handleInviteFriend}>
+                                            {friendsOptions.length > 6 && (
+                                                <div className="vtm-form-group">
+                                                    <label>Buscar amigo</label>
+                                                    <input
+                                                        type="text"
+                                                        value={inviteFriendSearch}
+                                                        onChange={(e) => setInviteFriendSearch(e.target.value)}
+                                                        placeholder="Buscar por nombre, @username o #número"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="vtm-form-group">
+                                                <label>Amigo</label>
+                                                <select
+                                                    value={inviteForm.targetUserId}
+                                                    onChange={(e) => setInviteForm((prev) => ({ ...prev, targetUserId: e.target.value }))}
+                                                >
+                                                    <option value="">Seleccionar amigo...</option>
+                                                    {filteredFriendsOptions.map((friend) => (
+                                                        <option key={friend.id} value={friend.id}>
+                                                            {friend.name} @{friend.username || 'user'}{friend.userCode ? ` · #${friend.userCode}` : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {inviteFriendSearch && filteredFriendsOptions.length === 0 && (
+                                                    <small className="vtm-muted">No hay amigos que coincidan con esa búsqueda.</small>
+                                                )}
+                                            </div>
+                                            <div className="vtm-form-row">
+                                                <div className="vtm-form-group">
+                                                    <label>Tipo de slot</label>
+                                                    <select
+                                                        value={inviteForm.slotType}
+                                                        onChange={(e) => setInviteForm((prev) => ({
+                                                            ...prev,
+                                                            slotType: e.target.value,
+                                                            slotIndex: 0
+                                                        }))}
+                                                    >
+                                                        <option value="starters">Titular</option>
+                                                        {subSlots > 0 && <option value="subs">Suplente</option>}
+                                                        <option value="coach">Coach</option>
+                                                    </select>
+                                                </div>
+                                                <div className="vtm-form-group">
+                                                    <label>Slot</label>
+                                                    <select
+                                                        value={inviteForm.slotType === 'coach' ? 0 : inviteForm.slotIndex}
+                                                        onChange={(e) => setInviteForm((prev) => ({ ...prev, slotIndex: Number(e.target.value) }))}
+                                                        disabled={inviteForm.slotType === 'coach'}
+                                                    >
+                                                        {inviteSlotOptions.map((option) => (
+                                                            <option key={`${option.value}-${option.label}`} value={option.value} disabled={option.disabled}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="vtm-form-group">
+                                                <label>Nota (opcional)</label>
+                                                <input
+                                                    value={inviteForm.note}
+                                                    onChange={(e) => setInviteForm((prev) => ({ ...prev, note: e.target.value.slice(0, 120) }))}
+                                                    placeholder="Ej: Te necesito para el roster titular"
+                                                    maxLength={120}
+                                                />
+                                            </div>
+                                            <button type="submit" className="vtm-btn vtm-btn--primary vtm-btn--full" disabled={inviteSubmitting}>
+                                                <i className='bx bx-send'></i> {inviteSubmitting ? 'Enviando...' : 'Enviar invitación'}
+                                            </button>
+                                        </form>
+                                    )}
                                 </div>
                             )}
                         </div>

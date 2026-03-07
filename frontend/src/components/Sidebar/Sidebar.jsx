@@ -17,6 +17,7 @@ const MAIN_LINKS = [
 
 const EXTRA_LINKS = [
   { to: '/comunidad', icon: 'bx-world', label: 'Comunidad', section: 'SOCIAL' },
+  { to: '/friends', icon: 'bx-user-plus', label: 'Amigos' },
   { to: '/chats', icon: 'bx-chat', label: 'Chats' },
   { to: '/settings', icon: 'bx-cog', label: 'Ajustes', section: 'CONFIG' },
   { to: '/profile', icon: 'bx-user', label: 'Mi Perfil' },

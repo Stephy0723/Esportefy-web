@@ -116,6 +116,7 @@ const EditProfile = () => {
 
     const [formData, setFormData] = useState({
         username: '',
+        userCode: '',
         fullName: '',
         country: '',
         phone: '',
@@ -132,6 +133,7 @@ const EditProfile = () => {
         lookingForTeam: false,
         socialLinks: { twitch: '', youtube: '', twitter: '', instagram: '', tiktok: '' },
         isProfileHidden: false,
+        showPublicUserCode: true,
         selectedFrameId: 'none',
         selectedBgId: 'bg-1',
         status: 'online',
@@ -158,6 +160,7 @@ const EditProfile = () => {
             setCurrentUserId(u?._id || u?.id || '');
             setFormData({
                 username: u.username || '',
+                userCode: u.userCode || '',
                 fullName: u.fullName || '',
                 country: u.country || '',
                 phone: u.phone || '',
@@ -180,6 +183,7 @@ const EditProfile = () => {
                     tiktok: u.socialLinks?.tiktok || ''
                 },
                 isProfileHidden: u.isProfileHidden || false,
+                showPublicUserCode: u?.privacy?.showPublicUserCode !== false,
                 selectedFrameId: u.selectedFrameId || 'none',
                 selectedBgId: u.selectedBgId || 'bg-1',
                 status: u.status || 'online',
@@ -415,13 +419,34 @@ const EditProfile = () => {
         }
 
         // Array fields — send as comma-separated (backend splits on comma)
-        const arrayFields = ['selectedGames', 'platforms', 'goals', 'experience'];
+        const arrayFields = [
+            'selectedGames',
+            'platforms',
+            'goals',
+            'experience',
+            'languages',
+            'preferredRoles'
+        ];
         arrayFields.forEach(key => {
             const val = formData[key];
-            if (Array.isArray(val) && val.length > 0) {
+            if (Array.isArray(val)) {
                 data.append(key, val.join(','));
             }
         });
+
+        // Boolean fields — always send, so user can also disable them
+        data.append('lookingForTeam', String(Boolean(formData.lookingForTeam)));
+        data.append('isProfileHidden', String(Boolean(formData.isProfileHidden)));
+        data.append('showPublicUserCode', String(Boolean(formData.showPublicUserCode)));
+
+        // Social links — send as JSON payload
+        data.append('socialLinks', JSON.stringify({
+            twitch: formData.socialLinks?.twitch || '',
+            youtube: formData.socialLinks?.youtube || '',
+            twitter: formData.socialLinks?.twitter || '',
+            instagram: formData.socialLinks?.instagram || '',
+            tiktok: formData.socialLinks?.tiktok || ''
+        }));
 
         if (file) data.append('avatarFile', file);
 
@@ -433,6 +458,8 @@ const EditProfile = () => {
             });
             // Sync localStorage for other components
             localStorage.setItem('esportefyUser', JSON.stringify(res.data));
+            sessionStorage.setItem('esportefyUser', JSON.stringify(res.data));
+            window.dispatchEvent(new Event('user-update'));
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
             setHasChanges(false);
             setFile(null);
@@ -441,6 +468,30 @@ const EditProfile = () => {
             setFormData(prev => ({
                 ...prev,
                 avatar: resolveMediaUrl(u.avatar) || prev.avatar,
+                bio: u.bio ?? prev.bio,
+                fullName: u.fullName ?? prev.fullName,
+                username: u.username ?? prev.username,
+                userCode: u.userCode ?? prev.userCode,
+                country: u.country ?? prev.country,
+                phone: u.phone ?? prev.phone,
+                gender: u.gender ?? prev.gender,
+                birthDate: u.birthDate ? String(u.birthDate).split('T')[0] : prev.birthDate,
+                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : prev.selectedGames,
+                platforms: Array.isArray(u.platforms) ? u.platforms : prev.platforms,
+                goals: Array.isArray(u.goals) ? u.goals : prev.goals,
+                experience: Array.isArray(u.experience) ? u.experience : prev.experience,
+                languages: Array.isArray(u.languages) ? u.languages : prev.languages,
+                preferredRoles: Array.isArray(u.preferredRoles) ? u.preferredRoles : prev.preferredRoles,
+                lookingForTeam: typeof u.lookingForTeam === 'boolean' ? u.lookingForTeam : prev.lookingForTeam,
+                isProfileHidden: typeof u.isProfileHidden === 'boolean' ? u.isProfileHidden : prev.isProfileHidden,
+                showPublicUserCode: u?.privacy?.showPublicUserCode !== false,
+                socialLinks: {
+                    twitch: u.socialLinks?.twitch ?? prev.socialLinks.twitch,
+                    youtube: u.socialLinks?.youtube ?? prev.socialLinks.youtube,
+                    twitter: u.socialLinks?.twitter ?? prev.socialLinks.twitter,
+                    instagram: u.socialLinks?.instagram ?? prev.socialLinks.instagram,
+                    tiktok: u.socialLinks?.tiktok ?? prev.socialLinks.tiktok
+                },
                 selectedFrameId: u.selectedFrameId || prev.selectedFrameId,
                 selectedBgId: u.selectedBgId || prev.selectedBgId,
                 selectedTagId: u.selectedTagId || prev.selectedTagId,
@@ -891,6 +942,28 @@ const EditProfile = () => {
                         {activeTab === 'privacy' && (
                             <div className="ep__tab fade-in">
                                 <h3>Privacidad</h3>
+                                <div className="ep__privacy-option ep__privacy-option--id">
+                                    <div>
+                                        <h4>Tu código de usuario</h4>
+                                        <p>
+                                            Este código único te permite que otros te encuentren rápido:
+                                            <strong className="ep__user-code-label"> #{formData.userCode || 'Generando...'}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="ep__privacy-option">
+                                    <div>
+                                        <h4>Mostrar código públicamente</h4>
+                                        <p>Si lo desactivas, tu número no aparecerá en búsquedas ni listados públicos.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className={`ep__toggle-btn ${formData.showPublicUserCode ? 'is-on' : 'is-off'}`}
+                                        onClick={() => updateField('showPublicUserCode', !formData.showPublicUserCode)}
+                                    >
+                                        {formData.showPublicUserCode ? 'Visible' : 'Oculto'}
+                                    </button>
+                                </div>
                                 <div className="ep__privacy-option">
                                     <div>
                                         <h4>Ocultar Perfil</h4>
