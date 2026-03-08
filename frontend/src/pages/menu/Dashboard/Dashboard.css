@@ -120,6 +120,10 @@
     font-size: 1.05rem;
     flex-shrink: 0;
 }
+.db__conn-panel-title-icon .db__conn-provider-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+}
 .db__conn-panel-header h3 {
     font-size: 1rem; font-weight: 800; color: var(--text-main); margin: 0;
 }
@@ -147,6 +151,10 @@
     display: grid; place-items: center; font-size: 2.8rem;
     border: 3px solid; position: relative;
 }
+.db__conn-panel-avatar .db__conn-provider-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+}
 .db__conn-panel-avatar::after {
     content: ''; position: absolute; inset: -6px; border-radius: 50%;
     border: 2px solid; opacity: .15;
@@ -156,6 +164,10 @@
     width: 22px; height: 22px; border-radius: 50%;
     background: #4ade80; display: grid; place-items: center;
     font-size: .7rem; color: #000; border: 2px solid var(--bg-card);
+}
+.db__conn-panel-badge svg {
+    width: .78rem;
+    height: .78rem;
 }
 .db__conn-panel-gamertag {
     font-size: 1.3rem; font-weight: 900; color: var(--text-main); margin: 0;
@@ -885,6 +897,11 @@
 .db__conn-card-icon i {
     font-size: 1.3rem; color: var(--cc, var(--text-muted));
 }
+.db__conn-card-icon .db__conn-provider-icon {
+    width: 1.3rem;
+    height: 1.3rem;
+    color: var(--cc, var(--text-muted));
+}
 .db__conn-card-info { flex: 1; min-width: 0; }
 .db__conn-card-info strong {
     display: block; font-size: .82rem; font-weight: 700; color: var(--text-main);
@@ -893,6 +910,10 @@
     font-size: .68rem; color: var(--text-muted);
 }
 .db__conn-card-status { flex-shrink: 0; font-size: 1.2rem; }
+.db__conn-card-status svg {
+    width: 1.2rem;
+    height: 1.2rem;
+}
 
 .db__conn-footer { text-align: center; margin-top: 18px; }
 

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useNotification } from '../../context/NotificationContext';
+import { getAuthToken } from '../../utils/authSession';
 import './Notifications.css';
 
 const FILTERS = [
@@ -55,8 +56,6 @@ const Notifications = () => {
   const [acceptingById, setAcceptingById] = useState({});
   const rateLimitedUntilRef = useRef(0);
   const lastRateLimitToastAtRef = useRef(0);
-
-  const getAuthToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
   const fetchNotifications = useCallback(async (withLoading = false, silent = false) => {
     if (withLoading) setLoading(true);

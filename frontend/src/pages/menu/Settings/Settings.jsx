@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import SecurityCenterUI from './SecurityCenterUI';
 import PageHud from '../../../components/PageHud/PageHud';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
+import { getAuthToken } from '../../../utils/authSession';
 
 // Animation variants
 const pageVariants = {
@@ -112,7 +113,7 @@ export default function Settings() {
     const [mlbbOpsLoading, setMlbbOpsLoading] = useState(false);
     const [mlbbOpsStatus, setMlbbOpsStatus] = useState(null);
 
-    const token = localStorage.getItem("token");
+    const token = getAuthToken();
 
     const updatePrivacy = async (newPrivacy) => {
         try {
@@ -372,7 +373,7 @@ export default function Settings() {
 
     const unlinkRiot = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getAuthToken();
 
             await axios.delete(
                 `${API_URL}/api/auth/riot`,

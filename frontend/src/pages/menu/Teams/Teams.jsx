@@ -7,6 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import ViewTeamModal from './ViewTeamModal';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import { formatTeamPublicId, getPublicTeamCode, matchesTeamPublicId } from '../../../utils/publicIds';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import './Teams.css';
@@ -150,8 +151,6 @@ const Team = () => {
     const currentUserMlbbZoneId = String(mlbbConnection?.zoneId || '').trim();
     const currentUserUniversity = currentUser?.university || {};
     const currentUserUniversityVerified = Boolean(currentUserUniversity?.verified && currentUserUniversity?.universityId);
-    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-
     /* ── helpers ── */
     const isUserMember = (team) => {
         if (!currentUser?._id || !team) return false;
@@ -241,7 +240,7 @@ const Team = () => {
         }
         try {
             setJoinSubmitting(true);
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) return addToast('Debes iniciar sesión', 'error');
 
             // Convert photo to base64 if provided
@@ -319,7 +318,7 @@ const Team = () => {
 
     const handleRequestAction = async (teamId, requestId, action) => {
         try {
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) return addToast('Debes iniciar sesion', 'error');
             const res = await axios.patch(
                 `${API_URL}/api/teams/${teamId}/requests/${requestId}`,
@@ -493,7 +492,7 @@ const Team = () => {
                             className="th__btn-create th__btn-create--demo"
                             onClick={async () => {
                                 try {
-                                    const token = getToken();
+                                    const token = getAuthToken();
                                     const res = await axios.post(`${API_URL}/api/teams/seed-demo`, {}, {
                                         headers: { Authorization: `Bearer ${token}` }
                                     });
@@ -513,7 +512,7 @@ const Team = () => {
                             className="th__btn-create th__btn-create--third"
                             onClick={async () => {
                                 try {
-                                    const token = getToken();
+                                    const token = getAuthToken();
                                     const res = await axios.post(`${API_URL}/api/teams/seed-third-party`, {}, {
                                         headers: { Authorization: `Bearer ${token}` }
                                     });

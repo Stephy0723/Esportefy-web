@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { getAuthToken } from '../../../../utils/authSession';
 import {
   getTournamentServerOptions,
   isValidTournamentServer,
@@ -105,6 +106,11 @@ const MLBB_TITLES = new Set([
 ]);
 
 const MLBB_BETA_MODE = String(import.meta.env.VITE_MLBB_BETA_MODE ?? 'true').trim().toLowerCase() !== 'false';
+const RIOT_REVIEW_MODE = String(import.meta.env.VITE_RIOT_REVIEW_MODE ?? 'false').trim().toLowerCase() === 'true';
+const RIOT_MIN_ACTIVE_PARTICIPANTS = (() => {
+  const parsed = Number.parseInt(String(import.meta.env.VITE_RIOT_MIN_ACTIVE_PARTICIPANTS ?? '20'), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 20;
+})();
 const MLBB_BANNED_TERMS = ['apuesta', 'apuestas', 'bet', 'bets', 'betting', 'wager', 'wagering', 'gambling', 'casino', 'odds', 'parlay', 'cuota', 'cuotas'];
 
 const normalizeText = (value = '') =>
@@ -173,12 +179,13 @@ const resolveMaxSlotsSelection = (value = '') => {
   if (BRACKET_SLOT_PRESETS.includes(normalized)) return normalized;
   return 'custom';
 };
+const isFreeEntryFee = (value = '') => String(value || '').trim().toLowerCase() === 'gratis';
 
 const CreateTournament = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   const [isPublished, setIsPublished] = useState(false);
   const [tournament, setTournament] = useState(baseState(user?.username || 'Organizador Oficial'));
   const editTournament = location.state?.editTournament;
@@ -275,10 +282,20 @@ const CreateTournament = () => {
     () => MLBB_TITLES.has(String(tournament.game || '').trim()),
     [tournament.game]
   );
+  const isRiotTournament = useMemo(
+    () => RIOT_TITLES.has(String(tournament.game || '').trim()),
+    [tournament.game]
+  );
   const serverOptions = useMemo(
     () => getTournamentServerOptions(tournament.game, tournament.server),
     [tournament.game, tournament.server]
   );
+  const projectedActiveParticipants = useMemo(() => {
+    const maxSlots = parsePositiveInt(tournament.maxSlots, 0);
+    const teamSize = parseTeamSizeFromModality(tournament.modality);
+    return maxSlots * teamSize;
+  }, [tournament.maxSlots, tournament.modality]);
+  const riotReviewLocked = RIOT_REVIEW_MODE && isRiotTournament;
 
   const identityReady = Boolean(tournament.title?.trim() && tournament.game && tournament.description?.trim() && tournament.date && tournament.time);
   const formatReady = Boolean(tournament.maxSlots && tournament.modality && tournament.format);
@@ -341,6 +358,12 @@ const CreateTournament = () => {
       return { ...p, sponsors };
     });
   };
+
+  useEffect(() => {
+    if (!riotReviewLocked) return;
+    if (isFreeEntryFee(tournament.entryFee)) return;
+    setField('entryFee', 'Gratis');
+  }, [riotReviewLocked, tournament.entryFee]);
 
   const buildMlbbDemoTournament = () => ({
       title: 'MLBB Caribbean Clash 2026',
@@ -588,6 +611,33 @@ const CreateTournament = () => {
       return;
     }
 
+    if (isRiotTournament) {
+      const formatAllowed = [
+        'Eliminacion Directa',
+        'Doble Eliminacion',
+        'Swiss',
+        'Round Robin',
+        'single_elimination',
+        'double_elimination',
+        'swiss',
+        'round_robin'
+      ].includes(String(tournament.format || '').trim());
+      if (!formatAllowed) {
+        alert('En torneos Riot solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
+        return;
+      }
+
+      if (riotReviewLocked && !isFreeEntryFee(tournament.entryFee)) {
+        alert('En modo review de Riot solo se permiten torneos gratuitos.');
+        return;
+      }
+
+      if (projectedActiveParticipants < RIOT_MIN_ACTIVE_PARTICIPANTS) {
+        alert(`La configuración actual no llega al mínimo de ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos para torneos Riot.`);
+        return;
+      }
+    }
+
     if (isMlbbTournament) {
       const formatAllowed = [
         'Eliminacion Directa',
@@ -744,8 +794,23 @@ const CreateTournament = () => {
             <div className="ct-grid three">
               <label className="ct-field"><span>Edad minima</span><input type="number" min="13" value={tournament.eligibility.minAge} onChange={(e) => setNested('eligibility', 'minAge', e.target.value)} /></label>
               <label className="ct-field"><span>Paises permitidos</span><input placeholder="Global, Republica Dominicana, Mexico, Espana" value={tournament.eligibility.allowedCountries} onChange={(e) => setNested('eligibility', 'allowedCountries', e.target.value)} /></label>
-              <label className="ct-field"><span>Tipo de registro</span><select value={tournament.entryFee} onChange={(e) => setField('entryFee', e.target.value)}><option>Gratis</option><option>Invitacion</option><option>Password</option><option>Pago</option></select></label>
+              <label className="ct-field">
+                <span>Tipo de registro</span>
+                <select value={tournament.entryFee} onChange={(e) => setField('entryFee', e.target.value)}>
+                  <option>Gratis</option>
+                  {!riotReviewLocked && <option>Invitacion</option>}
+                  {!riotReviewLocked && <option>Password</option>}
+                  {!riotReviewLocked && <option>Pago</option>}
+                </select>
+              </label>
             </div>
+            {isRiotTournament && (
+              <p className="ct-inline-help">
+                {riotReviewLocked
+                  ? `Modo review Riot activo: solo se permite inscripción gratis y un mínimo de ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos.`
+                  : `Recomendación Riot: usa formato tradicional y configura al menos ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos.`}
+              </p>
+            )}
             <label className="ct-field"><span>Notas de elegibilidad</span><textarea rows="2" value={tournament.eligibility.notes} onChange={(e) => setNested('eligibility', 'notes', e.target.value)} /></label>
             <label className="ct-checkline">
               <input

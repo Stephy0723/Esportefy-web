@@ -2,38 +2,21 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/api';
+import { cacheAuthUser, clearAuthSession, getStoredUser } from '../utils/authSession';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const clearClientSession = () => {
-        localStorage.removeItem('esportefyUser');
-        localStorage.removeItem('token');
-        sessionStorage.removeItem('esportefyUser');
-        sessionStorage.removeItem('token');
-    };
 
     useEffect(() => {
         const checkAuth = async () => {
-            const storedUser = localStorage.getItem('esportefyUser');
-            const currentPath = window.location.pathname || '/';
-            const isPublicAuthRoute = (
-                currentPath === '/'
-                || currentPath === '/login'
-                || currentPath === '/register'
-                || currentPath === '/reset-password'
-                || currentPath.startsWith('/legal/')
-            );
+            const storedUser = getStoredUser();
 
             // 1. Carga inicial rápida desde LocalStorage para no mostrar la App vacía
             if (storedUser) {
-                try {
-                    setUser(JSON.parse(storedUser));
-                } catch (e) {
-                    localStorage.removeItem('esportefyUser');
-                }
+                setUser(storedUser);
             }
 
             // 2. Sincronizar con la BD usando cookies (HttpOnly auth_token)
@@ -41,11 +24,11 @@ export const AuthProvider = ({ children }) => {
                 const response = await axios.get(`${API_URL}/api/auth/profile`);
                 const freshUserData = response.data;
                 setUser(freshUserData);
-                localStorage.setItem('esportefyUser', JSON.stringify(freshUserData));
+                cacheAuthUser(freshUserData);
             } catch (error) {
                 if (error.response?.status === 401 || error.response?.status === 403) {
                     // Cookie expirada o no existe — limpiar sesión sin redirect loop
-                    clearClientSession();
+                    clearAuthSession();
                     setUser(null);
                 } else {
                     // Error de red — mantener datos cacheados si existen
@@ -70,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = (userData) => {
-        localStorage.setItem('esportefyUser', JSON.stringify(userData));
+        cacheAuthUser(userData);
         setUser(userData);
     };
 
@@ -78,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         try {
             await axios.post(`${API_URL}/api/auth/logout`);
         } catch (_) { /* ignore */ }
-        clearClientSession();
+        clearAuthSession();
         setUser(null);
         window.location.href = '/'; 
     };

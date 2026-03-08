@@ -12,6 +12,7 @@ import { FRAMES } from '../../data/profileOptions';
 import { STATUS_LIST } from '../../data/defaultAvatars';
 import { GAME_IMAGES } from '../../data/gameImages';
 import { resolveMediaUrl } from '../../utils/media';
+import { getAuthToken } from '../../utils/authSession';
 import './UserCard.css';
 
 /**
@@ -30,14 +31,12 @@ const UserCard = ({ userId, children }) => {
     const triggerRef = useRef(null);
     const navigate = useNavigate();
 
-    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-
     const fetchCard = useCallback(async () => {
         if (!userId) return;
         setLoading(true);
         try {
             const res = await axios.get(`${API_URL}/api/auth/user-card/${userId}`, {
-                headers: { Authorization: `Bearer ${getToken()}` }
+                headers: { Authorization: `Bearer ${getAuthToken()}` }
             });
             setData(res.data);
         } catch (err) {
@@ -62,7 +61,7 @@ const UserCard = ({ userId, children }) => {
         setFollowLoading(true);
         try {
             const res = await axios.post(`${API_URL}/api/auth/follow/${userId}`, {}, {
-                headers: { Authorization: `Bearer ${getToken()}` }
+                headers: { Authorization: `Bearer ${getAuthToken()}` }
             });
             const followed = Boolean(res?.data?.followed);
             const followersCount = Number(res?.data?.followersCount);

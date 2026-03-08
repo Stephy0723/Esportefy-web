@@ -13,6 +13,7 @@ import { useNotification } from '../../../../context/NotificationContext';
 import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
+import { getAuthToken as readAuthToken } from '../../../../utils/authSession';
 import './CreateTeamPage.css';
 
 // Configuración de Roles Visuales
@@ -646,8 +647,6 @@ const CreateTeamPage = () => {
         setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
     };
 
-    const getAuthToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-
     const isRosterSlotFilled = (slot) => Boolean(
         slot && (slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role)
     );
@@ -695,7 +694,7 @@ const CreateTeamPage = () => {
     };
 
     const loadFriendsForInvites = async () => {
-        const token = getAuthToken();
+        const token = readAuthToken();
         if (!token) return;
         setFriendsLoading(true);
         try {
@@ -732,7 +731,7 @@ const CreateTeamPage = () => {
         if (!targetUserId) return;
         if (inviteBusyByUser[targetUserId] || invitedUserIds.has(targetUserId)) return;
 
-        const token = getAuthToken();
+        const token = readAuthToken();
         if (!token) {
             addToast('Debes iniciar sesión para invitar amigos.', 'error');
             return;
