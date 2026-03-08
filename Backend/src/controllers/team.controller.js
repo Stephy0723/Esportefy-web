@@ -319,6 +319,15 @@ const applyRosterSlot = (team, slotType, slotIndex, player) => {
     const list = Array.isArray(team.roster[slotType]) ? team.roster[slotType] : [];
     const idx = Number(slotIndex);
     if (Number.isNaN(idx) || idx < 0) return { ok: false, message: 'Índice inválido' };
+    const max = slotType === 'starters' ? Number(team.maxMembers) : Number(team.maxSubstitutes);
+    if (Number.isFinite(max) && max > 0 && idx >= max) {
+        return {
+            ok: false,
+            message: slotType === 'starters'
+                ? 'Slot fuera del límite de titulares'
+                : 'Slot fuera del límite de suplentes'
+        };
+    }
     if (isSlotFilled(list[idx])) return { ok: false, message: 'Ese slot ya está ocupado' };
     list[idx] = { ...(list[idx] || {}), ...playerPayload };
     team.roster[slotType] = list;
@@ -560,11 +569,11 @@ const ROLE_TEMPLATES_BY_GAME = {
 };
 const resolveSlotRole = ({ team, slotType, slotIndex, explicitRole = '' }) => {
     const roleFromInput = String(explicitRole || '').trim();
-    if (roleFromInput) return roleFromInput;
-
     const normalizedType = String(slotType || '').trim();
     const index = Number(slotIndex);
-    if (normalizedType === 'coach') return 'Coach';
+    if (normalizedType === 'coach') {
+        return roleFromInput || String(team?.roster?.coach?.role || '').trim() || 'Coach';
+    }
     if (!['starters', 'subs'].includes(normalizedType)) return '';
 
     const roleFromRoster = String(team?.roster?.[normalizedType]?.[index]?.role || '').trim();
@@ -576,6 +585,7 @@ const resolveSlotRole = ({ team, slotType, slotIndex, explicitRole = '' }) => {
         return roleTemplate[index];
     }
 
+    if (roleFromInput) return roleFromInput;
     if (!Number.isFinite(index) || index < 0) return '';
     return normalizedType === 'subs' ? `Suplente ${index + 1}` : `Titular ${index + 1}`;
 };
@@ -607,6 +617,32 @@ const validateCaptainRoleUniquenessInCreate = ({ roster = {}, captainUserId, lea
                 message: 'En equipos no universitarios, el rol del capitán queda reservado y no puede repetirse en otro titular.'
             };
         }
+    }
+    return { ok: true };
+};
+const validateCaptainRoleReservationInTeam = (teamLike = {}) => {
+    const isUniversity = Boolean(teamLike?.university?.isUniversityTeam) || isUniversityTeamLevel(teamLike?.teamLevel);
+    if (isUniversity) return { ok: true };
+
+    const captainId = String(teamLike?.captain || '');
+    if (!captainId) return { ok: true };
+
+    const starters = Array.isArray(teamLike?.roster?.starters) ? teamLike.roster.starters : [];
+    const captainSlot = starters.find((slot) => String(slot?.user || '') === captainId);
+    const captainRole = normalizeText(captainSlot?.role || '');
+    if (!captainRole) return { ok: true };
+
+    const duplicated = starters.some((slot) => {
+        if (!isFilledRosterPlayer(slot)) return false;
+        if (String(slot?.user || '') === captainId) return false;
+        return normalizeText(slot?.role) === captainRole;
+    });
+
+    if (duplicated) {
+        return {
+            ok: false,
+            message: 'En equipos no universitarios, el rol del capitán queda reservado y no puede repetirse en otro titular.'
+        };
     }
     return { ok: true };
 };
@@ -898,15 +934,28 @@ const validateRiotAccount = async (gameName, tagLine) => {
 export const joinTeam = async (req, res) => {
     try {
         const { teamId, inviteCode, slotType, slotIndex, player } = req.body;
+        const normalizedSlotType = ['starters', 'subs', 'coach'].includes(String(slotType || '').trim())
+            ? String(slotType).trim()
+            : 'starters';
+        const parsedSlotIndex = Number(slotIndex);
+        const normalizedSlotIndex = normalizedSlotType === 'coach'
+            ? 0
+            : (Number.isFinite(parsedSlotIndex) ? parsedSlotIndex : 0);
         const team = await Team.findById(teamId);
         let playerPayload = { ...player, user: req.userId };
 
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
+        if (normalizedSlotType === 'starters' && Number.isFinite(Number(team.maxMembers)) && normalizedSlotIndex >= Number(team.maxMembers)) {
+            return res.status(400).json({ message: "Slot fuera del límite de titulares" });
+        }
+        if (normalizedSlotType === 'subs' && Number.isFinite(Number(team.maxSubstitutes)) && normalizedSlotIndex >= Number(team.maxSubstitutes)) {
+            return res.status(400).json({ message: "Slot fuera del límite de suplentes" });
+        }
         const uniqueCheck = await ensureUserNotInOtherTeam(team.game, req.userId, team._id, team);
         if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
-        if (team?.university?.isUniversityTeam && slotType !== 'coach') {
+        if (team?.university?.isUniversityTeam && normalizedSlotType !== 'coach') {
             const universityCheck = await ensureUserMatchesUniversityTeam(req.userId, team.university.universityId);
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
@@ -950,11 +999,11 @@ export const joinTeam = async (req, res) => {
         }
         playerPayload.role = resolveSlotRole({
             team,
-            slotType,
-            slotIndex,
+            slotType: normalizedSlotType,
+            slotIndex: normalizedSlotIndex,
             explicitRole: playerPayload?.role
         });
-        const applied = applyRosterSlot(team, slotType, slotIndex, playerPayload);
+        const applied = applyRosterSlot(team, normalizedSlotType, normalizedSlotIndex, playerPayload);
         if (!applied.ok) return res.status(400).json({ message: applied.message });
         if (team?.university?.isUniversityTeam) {
             const universityRosterValidation = await validateUniversityTeamRoster(team, team.university.universityId);
@@ -964,6 +1013,8 @@ export const joinTeam = async (req, res) => {
             const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id, team);
             if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
         }
+        const captainRoleReservation = validateCaptainRoleReservationInTeam(team);
+        if (!captainRoleReservation.ok) return res.status(400).json({ message: captainRoleReservation.message });
 
         await team.save();
         await User.updateOne({ _id: req.userId }, { $addToSet: { teams: team._id } });
@@ -1082,6 +1133,8 @@ export const addMemberDirect = async (req, res) => {
             const mlbbRosterValidation = await validateMlbbRosterEntries(team.game, team.roster, team._id, team);
             if (!mlbbRosterValidation.ok) return res.status(400).json({ message: mlbbRosterValidation.message });
         }
+        const captainRoleReservation = validateCaptainRoleReservationInTeam(team);
+        if (!captainRoleReservation.ok) return res.status(400).json({ message: captainRoleReservation.message });
 
         await team.save();
         return res.status(200).json({ message: "Jugador agregado", team });
@@ -1401,9 +1454,22 @@ export const requestJoinTeam = async (req, res) => {
     try {
         const { teamId } = req.params;
         const { slotType, slotIndex, player, inviteCode } = req.body;
+        const normalizedSlotType = ['starters', 'subs', 'coach'].includes(String(slotType || '').trim())
+            ? String(slotType).trim()
+            : 'starters';
+        const parsedSlotIndex = Number(slotIndex);
+        const normalizedSlotIndex = normalizedSlotType === 'coach'
+            ? 0
+            : (Number.isFinite(parsedSlotIndex) ? parsedSlotIndex : 0);
         const team = await Team.findById(teamId);
         let requestPlayer = { ...player, user: req.userId };
         if (!team) return res.status(404).json({ message: "Equipo no encontrado" });
+        if (normalizedSlotType === 'starters' && Number.isFinite(Number(team.maxMembers)) && normalizedSlotIndex >= Number(team.maxMembers)) {
+            return res.status(400).json({ message: "Slot fuera del límite de titulares" });
+        }
+        if (normalizedSlotType === 'subs' && Number.isFinite(Number(team.maxSubstitutes)) && normalizedSlotIndex >= Number(team.maxSubstitutes)) {
+            return res.status(400).json({ message: "Slot fuera del límite de suplentes" });
+        }
 
         // Invite code verification
         if (!inviteCode || inviteCode !== team.inviteCode) {
@@ -1414,7 +1480,7 @@ export const requestJoinTeam = async (req, res) => {
         if (!uniqueCheck.ok) return res.status(400).json({ message: uniqueCheck.message });
         const genderCheck = await canJoinByGender(team, req.userId);
         if (!genderCheck.ok) return res.status(400).json({ message: genderCheck.message });
-        if (team?.university?.isUniversityTeam && slotType !== 'coach') {
+        if (team?.university?.isUniversityTeam && normalizedSlotType !== 'coach') {
             const universityCheck = await ensureUserMatchesUniversityTeam(req.userId, team.university.universityId);
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
@@ -1465,14 +1531,14 @@ export const requestJoinTeam = async (req, res) => {
         }
         requestPlayer.role = resolveSlotRole({
             team,
-            slotType,
-            slotIndex,
+            slotType: normalizedSlotType,
+            slotIndex: normalizedSlotIndex,
             explicitRole: requestPlayer?.role
         });
         team.joinRequests.push({
             user: req.userId,
-            slotType,
-            slotIndex: Number(slotIndex) || 0,
+            slotType: normalizedSlotType,
+            slotIndex: normalizedSlotIndex,
             player: requestPlayer,
             status: 'pending'
         });
@@ -1602,6 +1668,8 @@ export const handleJoinRequest = async (req, res) => {
                 const universityRosterValidation = await validateUniversityTeamRoster(team, team.university.universityId);
                 if (!universityRosterValidation.ok) return res.status(400).json({ message: universityRosterValidation.message });
             }
+            const captainRoleReservation = validateCaptainRoleReservationInTeam(team);
+            if (!captainRoleReservation.ok) return res.status(400).json({ message: captainRoleReservation.message });
             await User.updateOne({ _id: reqDoc.user }, { $addToSet: { teams: team._id } });
             team.joinRequests = team.joinRequests.filter(r => String(r._id) !== String(requestId));
         await pushNotification(reqDoc.user, {
@@ -1724,7 +1792,7 @@ export const leaveTeam = async (req, res) => {
             });
         }
 
-        const removeUserFromList = (list) => list.map(p => (String(p?.user) === String(userId) ? null : p)).filter(Boolean);
+        const removeUserFromList = (list) => list.map((p) => (String(p?.user) === String(userId) ? null : p));
         if (Array.isArray(team.roster?.starters)) team.roster.starters = removeUserFromList(team.roster.starters);
         if (Array.isArray(team.roster?.subs)) team.roster.subs = removeUserFromList(team.roster.subs);
         if (team.roster?.coach && String(team.roster.coach.user) === String(userId)) team.roster.coach = null;

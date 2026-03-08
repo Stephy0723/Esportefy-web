@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import Chart from 'react-apexcharts';
+import { FaCheck, FaCheckCircle, FaDiscord, FaGamepad, FaPlusCircle, FaSteam, FaTwitch } from 'react-icons/fa';
+import { SiEpicgames, SiRiotgames } from 'react-icons/si';
 import { API_URL } from '../../../config/api';
 import PageHud from '../../../components/PageHud/PageHud';
 import Footer from '../../../components/Home/Footer';
@@ -13,6 +15,7 @@ import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import SponsorMotion from '../../../components/SponsorMotion/SponsorMotion';
 import { applyImageFallback, getAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import { useAuth } from '../../../context/AuthContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 
@@ -64,13 +67,19 @@ const SECTIONS = [
 
 /* ── Connection providers ── */
 const CONNECTION_PROVIDERS = [
-    { id: 'riot',    icon: 'bx bxs-shield-alt-2', name: 'Riot Games',    color: '#ff4655', fields: ['gameName','tagLine'], verifiedKey: 'riot' },
-    { id: 'discord', icon: 'bx bxl-discord-alt',  name: 'Discord',       color: '#5865F2', fields: ['username'],           verifiedKey: 'discord' },
-    { id: 'moonton', icon: 'bx bx-game',           name: 'Moonton (MLBB)', color: '#00b4d8', fields: ['gameId'],            verifiedKey: 'moonton' },
-    { id: 'steam',   icon: 'bx bxl-steam',         name: 'Steam',         color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam' },
-    { id: 'epic',    icon: 'bx bx-cube',           name: 'Epic Games',    color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic' },
-    { id: 'twitch',  icon: 'bx bxl-twitch',        name: 'Twitch',        color: '#9146ff', fields: ['twitchId'],           verifiedKey: 'twitch' },
+    { id: 'riot',    icon: 'bx bxs-shield-alt-2', iconComponent: SiRiotgames, name: 'Riot Games',      color: '#ff4655', fields: ['gameName','tagLine'], verifiedKey: 'riot' },
+    { id: 'discord', icon: 'bx bxl-discord-alt',  iconComponent: FaDiscord,   name: 'Discord',         color: '#5865F2', fields: ['username'],           verifiedKey: 'discord' },
+    { id: 'moonton', icon: 'bx bx-game',          iconComponent: FaGamepad,   name: 'Moonton (MLBB)',  color: '#00b4d8', fields: ['gameId'],             verifiedKey: 'moonton' },
+    { id: 'steam',   icon: 'bx bxl-steam',        iconComponent: FaSteam,     name: 'Steam',           color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam' },
+    { id: 'epic',    icon: 'bx bx-cube',          iconComponent: SiEpicgames, name: 'Epic Games',      color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic' },
+    { id: 'twitch',  icon: 'bx bxl-twitch',       iconComponent: FaTwitch,    name: 'Twitch',          color: '#9146ff', fields: ['twitchId'],           verifiedKey: 'twitch' },
 ];
+
+const renderConnectionIcon = (provider, className = 'db__conn-provider-icon') => {
+    const Icon = provider?.iconComponent;
+    if (Icon) return <Icon className={className} aria-hidden="true" />;
+    return <span className={className} aria-hidden="true">•</span>;
+};
 
 /* ── Framer variants ── */
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
@@ -112,10 +121,6 @@ const Dashboard = () => {
     const [activeGameIdx, setActiveGameIdx] = useState(0);
     const [teamPanel, setTeamPanel] = useState(null);
     const [teamPanelLoading, setTeamPanelLoading] = useState(false);
-    const getToken = useCallback(
-        () => localStorage.getItem('token') || sessionStorage.getItem('token'),
-        []
-    );
 
     /* ── Reloj ── */
     useEffect(() => {
@@ -127,21 +132,11 @@ const Dashboard = () => {
        FETCH PROFILE  (DB — NO TOCAR)
        ══════════════════════════════════════════════ */
     const fetchProfile = useCallback(async () => {
-        const token = getToken();
         if (authUser?._id) {
             setUser(authUser);
         }
-        if (!token) {
-            if (!authUser?._id) {
-                navigate('/login');
-            }
-            setLoading(false);
-            return null;
-        }
         try {
-            const response = await axios.get(`${API_URL}/api/auth/profile`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await axios.get(`${API_URL}/api/auth/profile`);
             setUser(response.data);
             return response.data;
         } catch (error) {
@@ -154,7 +149,7 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-    }, [authUser, getToken, navigate]);
+    }, [authUser, navigate]);
 
     useEffect(() => {
         fetchProfile();
@@ -213,12 +208,9 @@ const Dashboard = () => {
        ══════════════════════════════════════════════ */
     useEffect(() => {
         const fetchNotifs = async () => {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) return;
+            if (!getAuthToken()) return;
             try {
-                const res = await axios.get(`${API_URL}/api/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await axios.get(`${API_URL}/api/notifications`);
                 setNotifications(res.data || []);
             } catch (err) {
                 console.error('Error cargando notificaciones:', err);
@@ -232,12 +224,9 @@ const Dashboard = () => {
        ══════════════════════════════════════════════ */
     useEffect(() => {
         const fetchComms = async () => {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) return;
+            if (!getAuthToken()) return;
             try {
-                const res = await axios.get(`${API_URL}/api/community/communities/mine`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await axios.get(`${API_URL}/api/community/communities/mine`);
                 setMyCommunities(Array.isArray(res.data) ? res.data : []);
             } catch (err) {
                 console.error('Error cargando comunidades:', err);
@@ -288,13 +277,10 @@ const Dashboard = () => {
 
     const fetchTeamDetail = useCallback(async (teamId) => {
         if (!teamId) return null;
-        const token = getToken();
-        const res = await axios.get(`${API_URL}/api/teams`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined
-        });
+        const res = await axios.get(`${API_URL}/api/teams`);
         const teams = Array.isArray(res.data) ? res.data : [];
         return teams.find((team) => String(team._id) === String(teamId)) || null;
-    }, [getToken]);
+    }, []);
 
     const openTeamPanel = useCallback(async (team) => {
         if (!team?._id) return;
@@ -537,8 +523,7 @@ const Dashboard = () => {
     };
 
     const validateMlbbDraft = useCallback(async () => {
-        const token = getToken();
-        if (!token) {
+        if (!getAuthToken()) {
             setMlbbMsg('Debes iniciar sesión nuevamente.');
             return;
         }
@@ -555,8 +540,7 @@ const Dashboard = () => {
                     playerId: mlbbPlayerId.trim(),
                     zoneId: mlbbZoneId.trim(),
                     ign: mlbbIgn.trim()
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
+                }
             );
             setMlbbMsg(res.data?.message || 'MLBB ID válido.');
         } catch (error) {
@@ -564,11 +548,10 @@ const Dashboard = () => {
         } finally {
             setMlbbValidating(false);
         }
-    }, [getToken, mlbbIgn, mlbbPlayerId, mlbbZoneId]);
+    }, [mlbbIgn, mlbbPlayerId, mlbbZoneId]);
 
     const linkMlbb = useCallback(async () => {
-        const token = getToken();
-        if (!token) {
+        if (!getAuthToken()) {
             setMlbbMsg('Debes iniciar sesión nuevamente.');
             return;
         }
@@ -585,8 +568,7 @@ const Dashboard = () => {
                     playerId: mlbbPlayerId.trim(),
                     zoneId: mlbbZoneId.trim(),
                     ign: mlbbIgn.trim()
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
+                }
             );
             await fetchProfile();
             const nextStatus = String(res?.data?.status || '');
@@ -600,20 +582,17 @@ const Dashboard = () => {
         } finally {
             setMlbbLoading(false);
         }
-    }, [fetchProfile, getToken, mlbbIgn, mlbbPlayerId, mlbbZoneId]);
+    }, [fetchProfile, mlbbIgn, mlbbPlayerId, mlbbZoneId]);
 
     const unlinkMlbb = useCallback(async () => {
-        const token = getToken();
-        if (!token) {
+        if (!getAuthToken()) {
             setMlbbMsg('Debes iniciar sesión nuevamente.');
             return;
         }
         try {
             setMlbbLoading(true);
             setMlbbMsg('');
-            await axios.delete(`${API_URL}/api/auth/mlbb`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await axios.delete(`${API_URL}/api/auth/mlbb`);
             await fetchProfile();
             setMlbbMsg('Cuenta MLBB desvinculada.');
         } catch (error) {
@@ -621,7 +600,7 @@ const Dashboard = () => {
         } finally {
             setMlbbLoading(false);
         }
-    }, [fetchProfile, getToken]);
+    }, [fetchProfile]);
 
     /* ── Active game for library ── */
     const activeGame = enrichedGames[activeGameIdx] || null;
@@ -807,8 +786,8 @@ const Dashboard = () => {
             return (
                 <div className="db__conn-panel-linked">
                     <div className="db__conn-panel-avatar" style={{ color: connectionPanel.color, borderColor: connectionPanel.color }}>
-                        <i className={connectionPanel.icon}></i>
-                        <span className="db__conn-panel-badge"><i className="bx bx-check"></i></span>
+                        {renderConnectionIcon(connectionPanel)}
+                        <span className="db__conn-panel-badge"><FaCheck /></span>
                     </div>
                     <p className="db__conn-panel-gamertag" style={{ color: connectionPanel.color }}>
                         ID {mlbbConn.playerId} ({mlbbConn.zoneId})
@@ -960,7 +939,7 @@ const Dashboard = () => {
                                         className="db__conn-panel-title-icon"
                                         style={{ color: connectionPanel.color }}
                                     >
-                                        <i className={connectionPanel.icon}></i>
+                                        {renderConnectionIcon(connectionPanel)}
                                     </span>
                                     <h3>{connectionPanel.name}</h3>
                                 </div>
@@ -977,8 +956,8 @@ const Dashboard = () => {
                                         return (
                                             <div className="db__conn-panel-linked">
                                                 <div className="db__conn-panel-avatar" style={{ color: connectionPanel.color, borderColor: connectionPanel.color }}>
-                                                    <i className={connectionPanel.icon}></i>
-                                                    <span className="db__conn-panel-badge"><i className="bx bx-check"></i></span>
+                                                    {renderConnectionIcon(connectionPanel)}
+                                                    <span className="db__conn-panel-badge"><FaCheck /></span>
                                                 </div>
                                                 <p className="db__conn-panel-gamertag" style={{ color: connectionPanel.color }}>{info.tag}</p>
                                                 <p className="db__conn-panel-sub">Cuenta verificada en {connectionPanel.name}</p>
@@ -1015,7 +994,7 @@ const Dashboard = () => {
                                                 {/* Preview mockup of what it looks like linked */}
                                                 <div className="db__conn-panel-preview">
                                                     <div className="db__conn-panel-avatar" style={{ color: connectionPanel.color, borderColor: connectionPanel.color }}>
-                                                        <i className={connectionPanel.icon}></i>
+                                                        {renderConnectionIcon(connectionPanel)}
                                                     </div>
                                                     <span style={{ fontWeight: 800, color: 'var(--text-main)' }}>Tu Gamertag#0000</span>
                                                     <div className="db__conn-panel-stats" style={{ width: '100%' }}>
@@ -1191,7 +1170,7 @@ const Dashboard = () => {
 
                 <motion.div className="db__hero-content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}>
                     <div className="db__hero-avatar">
-                        <AvatarCircle src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`} frameConfig={currentFrame} size="150px" status={user.status} />
+                        <AvatarCircle src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${user.username}`} frameConfig={currentFrame} size="150px" status={user.status} />
                     </div>
                     <span className="db__hero-greeting">{greeting}</span>
                     <PlayerTag name={userData.username.toUpperCase()} tagId={user.selectedTagId} size="normal" fontTag="2.8rem" />
@@ -1485,15 +1464,15 @@ const Dashboard = () => {
                                     onClick={() => setConnectionPanel(p)}
                                     style={{ '--cc': p.color }}
                                 >
-                                    <div className="db__conn-card-icon"><i className={p.icon}></i></div>
+                                    <div className="db__conn-card-icon">{renderConnectionIcon(p)}</div>
                                     <div className="db__conn-card-info">
                                         <strong>{p.name}</strong>
                                         <span>{getProviderStatusLabel(p.id)}</span>
                                     </div>
                                     <div className="db__conn-card-status">
                                         {linked
-                                            ? <i className="bx bx-check-circle" style={{ color: '#4ade80' }}></i>
-                                            : <i className="bx bx-plus-circle" style={{ color: 'var(--text-muted)' }}></i>
+                                            ? <FaCheckCircle style={{ color: '#4ade80' }} />
+                                            : <FaPlusCircle style={{ color: 'var(--text-muted)' }} />
                                         }
                                     </div>
                                 </motion.div>

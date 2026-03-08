@@ -111,11 +111,21 @@ Policy 6 (no custom currency with monetary value in Riot flows):
   - `Backend/src/controllers/tournament.controller.js:1880`
 
 ## 5) Quick test script before submission
+Comando automatizado:
+
+```bash
+cd Backend
+npm run test:e2e:riot
+```
+
+Casos cubiertos:
 1. Create Riot tournament with `entryFee=Pago` -> should return 400.
 2. Create Riot tournament with low participant capacity (ex: `1v1`, `maxSlots=8`) -> should return 400.
 3. Generate Riot bracket with `seedingMode=custom` while open -> should return 400.
-4. Start Riot tournament with fewer than 20 active participants -> should return 400.
-5. Register a team with repeated Riot IDs -> should return 400.
+4. Register a team with repeated Riot IDs -> should return 400.
+
+Validación manual recomendada adicional:
+1. Start Riot tournament with fewer than 20 active participants -> should return 400.
 
 ## 6) Final pending checks
 - Confirm `riot-icon.svg` is not an official Riot logo (replace if needed).

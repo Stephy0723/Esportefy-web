@@ -13,3 +13,4 @@ const DEFAULT_CHAT_URL = import.meta.env.DEV ? 'http://localhost:5000' : 'http:/
 
 export const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 export const CHAT_URL = import.meta.env.VITE_CHAT_URL || DEFAULT_CHAT_URL;
+export const MEDIA_URL = import.meta.env.VITE_MEDIA_URL || API_URL;

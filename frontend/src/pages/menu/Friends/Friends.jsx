@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FaSearch, FaUserFriends, FaUsers, FaUserPlus } from 'react-icons/fa';
 import { API_URL } from '../../../config/api';
 import { resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import PageHud from '../../../components/PageHud/PageHud';
 import './Friends.css';
 
@@ -34,15 +35,13 @@ const FriendsPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-
     const loadSocialData = useCallback(async ({ silent = false } = {}) => {
         try {
             if (!silent) {
                 setLoading(true);
             }
             setError('');
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;
@@ -73,7 +72,7 @@ const FriendsPage = () => {
 
     const loadUserCodeVisibility = useCallback(async () => {
         try {
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;
@@ -114,7 +113,7 @@ const FriendsPage = () => {
         const refreshSocial = async () => {
             if (canceled) return;
             if (document.visibilityState !== 'visible') return;
-            if (!getToken()) return;
+            if (!getAuthToken()) return;
             await loadSocialData({ silent: true });
         };
 
@@ -151,7 +150,7 @@ const FriendsPage = () => {
         const timeoutId = setTimeout(async () => {
             try {
                 setSearchLoading(true);
-                const token = getToken();
+                const token = getAuthToken();
                 if (!token) return;
                 const response = await axios.get(`${API_URL}/api/auth/users/search`, {
                     params: { q, limit: 24 },
@@ -174,7 +173,7 @@ const FriendsPage = () => {
 
         setFollowBusyIds((prev) => ({ ...prev, [id]: true }));
         try {
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;
@@ -206,7 +205,7 @@ const FriendsPage = () => {
         setError('');
 
         try {
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;

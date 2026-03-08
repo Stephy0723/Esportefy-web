@@ -15,6 +15,7 @@ import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import './EditProfile.css';
 
 // ─── Game assets ───
@@ -140,7 +141,6 @@ const EditProfile = () => {
         selectedTagId: 'tag-obsidian'
     });
 
-    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
     const normalizePhone = (value = '') => String(value).replace(/[^\d]/g, '');
     const isValidPhone = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
 
@@ -151,7 +151,7 @@ const EditProfile = () => {
     // ─── Fetch profile from API (not stale localStorage) ───
     const fetchProfile = useCallback(async () => {
         try {
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) { navigate('/login'); return; }
             const res = await axios.get(`${API_URL}/api/auth/profile`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -311,7 +311,7 @@ const EditProfile = () => {
         });
 
         try {
-            const token = getToken();
+            const token = getAuthToken();
             const endpoints = [
                 `${API_URL}/api/auth/check-phone`,
                 `${API_URL}/auth/check-phone`,
@@ -397,7 +397,7 @@ const EditProfile = () => {
 
         setSaving(true);
         setSaveMsg(null);
-        const token = getToken();
+        const token = getAuthToken();
         // Only send fields that the backend allowedFields supports
         const data = new FormData();
 

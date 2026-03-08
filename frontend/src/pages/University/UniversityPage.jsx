@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { getAuthToken } from '../../utils/authSession';
 import './UniversityPage.scss';
 
 /* ═══════════════════════════════════════════════════════════
@@ -125,7 +126,7 @@ const getEmailDomain = (value) => {
    ═══════════════════════════════════════════════════════════ */
 const UniversityPage = () => {
   const navigate = useNavigate();
-  const token = useMemo(() => localStorage.getItem('token') || sessionStorage.getItem('token') || '', []);
+  const token = getAuthToken() || '';
   const [currentUser, setCurrentUser] = useState(null);
   const [catalogUniversities, setCatalogUniversities] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(true);

@@ -6,6 +6,7 @@ import { API_URL } from '../../../config/api';
 import { useTheme, THEMES } from '../../../context/ThemeContext';
 import SecurityCenterUI from './SecurityCenterUI';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
+import { getAuthToken } from '../../../utils/authSession';
 import './SettingsV2.css';
 
 // Icons
@@ -86,7 +87,7 @@ export default function SettingsV2() {
     const [supportToast, setSupportToast] = useState({ show: false, message: '', type: 'success' });
     const [feedbackModal, setFeedbackModal] = useState({ open: false, type: 'suggestion', message: '', submitting: false });
 
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = getAuthToken();
     const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     const mlbbVerificationStatus = normalizeMlbbVerificationStatus(
         connections?.mlbb?.verificationStatus,

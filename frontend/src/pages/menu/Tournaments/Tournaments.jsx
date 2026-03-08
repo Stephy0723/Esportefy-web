@@ -9,6 +9,7 @@ import { GAME_IMAGES } from '../../../data/gameImages';
 import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
@@ -918,7 +919,7 @@ useEffect(() => {
 
   const updateRegistrationStatus = async (torneo, registrationId, status) => {
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const token = getAuthToken();
       await axios.patch(
         `${API_URL}/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
         { status },
@@ -935,7 +936,7 @@ useEffect(() => {
 
   const removeRegistration = async (torneo, registrationId) => {
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const token = getAuthToken();
       await axios.delete(
         `${API_URL}/api/tournaments/${torneo.tournamentId}/registrations/${registrationId}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -963,7 +964,7 @@ useEffect(() => {
     if (confirmations[action] && !window.confirm(confirmations[action])) return;
 
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         notify('danger', 'Sesión expirada', 'Inicia sesión nuevamente para gestionar el torneo.');
         return;
@@ -1062,7 +1063,7 @@ useEffect(() => {
 
     try {
       setBracketLoading(true);
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const token = getAuthToken();
       const payload = { seedingMode: mode, previewOnly };
       if (mode === 'custom') {
         const customOrder = customSeedSlots.map((slot) => slot.refId);
@@ -1127,7 +1128,7 @@ useEffect(() => {
     if (!torneo || !match?.matchId || !winnerRefId) return;
     try {
       setMatchActionLoadingId(match.matchId);
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const token = getAuthToken();
       const response = await axios.post(
         `${API_URL}/api/tournaments/${torneo.tournamentId}/bracket/matches/${match.matchId}/submit`,
         { winnerRefId },
@@ -1150,7 +1151,7 @@ useEffect(() => {
     if (!torneo || !match?.matchId || !winnerRefId) return;
     try {
       setMatchActionLoadingId(match.matchId);
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const token = getAuthToken();
       const response = await axios.patch(
         `${API_URL}/api/tournaments/${torneo.tournamentId}/bracket/matches/${match.matchId}/resolve`,
         { winnerRefId },
@@ -1218,7 +1219,7 @@ useEffect(() => {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       await axios.delete(`${API_URL}/api/tournaments/${torneo.tournamentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });

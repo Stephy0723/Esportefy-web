@@ -5,6 +5,7 @@ import { API_URL } from '../../../../config/api';
 import PageHud from '../../../../components/PageHud/PageHud';
 import { resolveMediaUrl } from '../../../../utils/media';
 import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/publicIds';
+import { getAuthToken } from '../../../../utils/authSession';
 import { useAuth } from '../../../../context/AuthContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import './TeamRegistration.css';
@@ -219,7 +220,7 @@ const TeamRegistration = () => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         alert('Debes iniciar sesion para registrar tu equipo.');
         return;

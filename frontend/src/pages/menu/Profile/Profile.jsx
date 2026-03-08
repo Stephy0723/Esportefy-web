@@ -19,6 +19,7 @@ import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { STATUS_LIST } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import './Profile.css';
 
 /* ════════════════════════════════════════
@@ -56,12 +57,10 @@ const Profile = () => {
     const [followBusyIds, setFollowBusyIds] = useState({});
     const navigate = useNavigate();
 
-    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
-
     const loadProfileData = useCallback(async ({ showLoader = true } = {}) => {
         try {
             if (showLoader) setLoading(true);
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;
@@ -121,7 +120,7 @@ const Profile = () => {
         try {
             setSocialLoading(true);
             setSocialError('');
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;
@@ -164,7 +163,7 @@ const Profile = () => {
         const timeoutId = setTimeout(async () => {
             try {
                 setSocialSearchLoading(true);
-                const token = getToken();
+                const token = getAuthToken();
                 if (!token) return;
                 const response = await axios.get(`${API_URL}/api/auth/users/search`, {
                     params: { q: searchValue, limit: 20 },
@@ -212,7 +211,7 @@ const Profile = () => {
 
         setFollowBusyIds((prev) => ({ ...prev, [targetId]: true }));
         try {
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;
@@ -251,7 +250,7 @@ const Profile = () => {
         const text = String(newComment || '').trim();
         if (!text || postingComment) return;
 
-        const token = getToken();
+        const token = getAuthToken();
         if (!token) {
             navigate('/login');
             return;

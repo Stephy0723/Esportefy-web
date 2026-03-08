@@ -3,6 +3,7 @@ import axios from 'axios';
 import { esportsCatalog } from '../../../data/esportsCatalog.jsx';
 import { API_URL } from '../../../config/api';
 import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import { formatTeamPublicId } from '../../../utils/publicIds';
 import './ViewTeamModal.css';
 
@@ -141,7 +142,6 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         setTimeout(() => setToast(null), 3000);
     };
 
-    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
     const slotHasMember = (slot) => Boolean(slot?.user || slot?.nickname || slot?.gameId || slot?.email || slot?.role);
     const normalizeRoleKey = (value = '') => String(value || '').trim().toLowerCase();
     const gameRoles = useMemo(() => ROLE_NAMES[team.game] || [], [team.game]);
@@ -172,7 +172,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const saveEdit = async () => {
         try {
             setSubmitting(true);
-            const token = getToken();
+            const token = getAuthToken();
             let updated = team;
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}`, editForm, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -211,7 +211,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         if (!player.nickname.trim()) return showToast('Nickname requerido', 'error');
         try {
             setSubmitting(true);
-            const token = getToken();
+            const token = getAuthToken();
             const res = await axios.post(`${API_URL}/api/teams/${team._id}/roster`,
                 { slotType, slotIndex, player },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -229,7 +229,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleRemovePlayer = async (entry) => {
         if (!window.confirm(`Remover a ${entry.name}?`)) return;
         try {
-            const token = getToken();
+            const token = getAuthToken();
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}/roster/remove`,
                 { slotType: entry.slotType, slotIndex: entry.slotIndex, userId: entry.userId },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -243,7 +243,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
     const handleRequestAction = async (requestId, action) => {
         try {
-            const token = getToken();
+            const token = getAuthToken();
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}/requests/${requestId}`,
                 { action },
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -259,7 +259,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         if (!canManage) return;
         try {
             setFriendsLoading(true);
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) return;
             const res = await axios.get(`${API_URL}/api/auth/social`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -389,7 +389,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
         try {
             setInviteSubmitting(true);
-            const token = getToken();
+            const token = getAuthToken();
             if (!token) return showToast('Debes iniciar sesión.', 'error');
 
             await axios.post(
@@ -415,7 +415,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleLeaveTeam = async () => {
         if (!window.confirm('¿Seguro que quieres salir del equipo?')) return;
         try {
-            const token = getToken();
+            const token = getAuthToken();
             await axios.post(`${API_URL}/api/teams/leave/${team._id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -430,7 +430,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
     const handleDeleteTeam = async () => {
         if (!window.confirm('¿ELIMINAR este equipo permanentemente? Esta acción no se puede deshacer.')) return;
         try {
-            const token = getToken();
+            const token = getAuthToken();
             await axios.delete(`${API_URL}/api/teams/${team._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

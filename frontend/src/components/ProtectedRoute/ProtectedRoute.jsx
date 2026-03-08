@@ -6,11 +6,17 @@
 // redirige al login.
 
 import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { hasClientSession } from '../../utils/authSession';
 
 const ProtectedRoute = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    
-    if (!token) {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return null;
+    }
+
+    if (!user && !hasClientSession()) {
         return <Navigate to="/login" replace />;
     }
 
