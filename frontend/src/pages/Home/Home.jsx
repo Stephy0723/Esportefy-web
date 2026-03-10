@@ -18,16 +18,7 @@ import videoInicio from '../../assets/video/inicio.mp4';
 // Game images for marquee
 import lolImg from '../../assets/games/lol.jpg';
 import valorantImg from '../../assets/games/valorant.jpg';
-import cs2Img from '../../assets/games/cs2.jpg';
 import mlbbImg from '../../assets/games/mlbb.jpg';
-import fortniteImg from '../../assets/games/fornite.jpg';
-import freeFireImg from '../../assets/games/freefire.jpg';
-import hokImg from '../../assets/games/hok.jpg';
-import dota2Img from '../../assets/games/dota2.jpg';
-import apexImg from '../../assets/games/apex.jpg';
-import overwatchImg from '../../assets/games/Overwhat2.jpg';
-import rocketImg from '../../assets/games/rocket.jpg';
-import tekkenImg from '../../assets/games/tekken8.jpg';
 
 import './Home.css';
 
@@ -35,16 +26,7 @@ import './Home.css';
 const MARQUEE_GAMES = [
   { name: 'League of Legends', img: lolImg },
   { name: 'Valorant', img: valorantImg },
-  { name: 'CS2', img: cs2Img },
   { name: 'Mobile Legends', img: mlbbImg },
-  { name: 'Fortnite', img: fortniteImg },
-  { name: 'Free Fire', img: freeFireImg },
-  { name: 'Honor of Kings', img: hokImg },
-  { name: 'Dota 2', img: dota2Img },
-  { name: 'Apex Legends', img: apexImg },
-  { name: 'Overwatch 2', img: overwatchImg },
-  { name: 'Rocket League', img: rocketImg },
-  { name: 'Tekken 8', img: tekkenImg },
 ];
 
 const ABOUT_CARDS = [
@@ -248,4 +230,3 @@ const Home = () => {
 };
 
 export default Home;
-

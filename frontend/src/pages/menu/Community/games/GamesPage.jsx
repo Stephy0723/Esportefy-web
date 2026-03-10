@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaHeart, FaRegHeart, FaUserPlus, FaUserCheck, FaGamepad, FaGlobe, FaLayerGroup, FaUsers, FaBolt, FaShareAlt, FaCopy, FaCheck, FaTwitter, FaWhatsapp } from 'react-icons/fa';
 import { gamesList } from '../../../../data/gamesData';
 import { COMMUNITY_GAMES } from '../../../../data/communityData';
-import { gamesDetailedData } from '../../../../data/gamesDetailedData';
+import { supportedGamesDetailedData as gamesDetailedData } from '../../../../data/supportedGamesDetailedData';
 import { useTheme, THEMES } from '../../../../context/ThemeContext';
 import './GameCard.css';
 

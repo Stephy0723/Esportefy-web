@@ -218,7 +218,7 @@ export const sendTestAllNotifications = async (req, res) => {
                 type: 'tournament', category: 'tournament',
                 title: 'Nuevo torneo disponible',
                 source: 'Torneos',
-                message: 'Se ha abierto la inscripción para "Clash Regional LATAM" (CS2). Formato: Eliminación directa. Cupo limitado a 32 equipos.',
+                message: 'Se ha abierto la inscripción para "Valorant Caribe Open" (Valorant). Formato: Eliminación directa. Cupo limitado a 32 equipos.',
                 visuals: { icon: 'bx-calendar-event', color: '#4facfe', glow: false }
             },
             {

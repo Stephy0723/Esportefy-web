@@ -5,41 +5,8 @@ import { API_URL } from '../../../config/api';
 import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
 import { formatTeamPublicId } from '../../../utils/publicIds';
+import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
 import './ViewTeamModal.css';
-
-/* ── Role names per game ── */
-const ROLE_NAMES = {
-    "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
-    "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
-    "Wild Rift": ["Baron", "Jungle", "Mid", "Dragon", "Supp"],
-    "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
-    "CS2": ["Entry", "AWPer", "Lurker", "Support", "IGL"],
-    "Overwatch 2": ["Tank", "DPS", "DPS", "Support", "Support"],
-    "Rainbow Six Siege": ["Entry", "Support", "Flex", "Hard Breach", "Anchor"],
-    "TFT": ["Tactician"],
-    "FIFA / EA FC": ["Player"],
-    "NBA 2K": ["Player"],
-    "F1 2024": ["Driver"],
-    "Rocket League": ["Striker", "Midfielder", "Defender"],
-    "Free Fire": ["Rusher", "Support", "Sniper", "IGL"],
-    "Fortnite": ["Fragger", "IGL", "Support", "Builder"],
-    "PUBG": ["Fragger", "IGL", "Support", "Scout"],
-    "Apex Legends": ["Fragger", "IGL", "Support"],
-    "Warzone": ["Slayer", "IGL", "Scout", "Support"],
-    "Call of Duty": ["Slayer", "OBJ", "Support", "Flex"],
-    "Dota 2": ["Carry", "Mid", "Offlane", "Soft Supp", "Hard Supp"],
-    "Smite 2": ["Carry", "Mid", "Solo", "Jungle", "Support"],
-    "Street Fighter 6": ["Fighter"],
-    "Tekken 8": ["Fighter"],
-    "Super Smash Bros": ["Fighter"],
-    "Mortal Kombat 1": ["Fighter"],
-    "Clash Royale": ["Player"],
-    "Hearthstone": ["Player"],
-    "Legends of Runeterra": ["Player"]
-};
-
-const RIOT_GAMES = new Set(['Valorant', 'League of Legends', 'Wild Rift', 'Teamfight Tactics', 'Legends of Runeterra']);
-const MLBB_GAMES = new Set(['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB']);
 const REGION_OPTIONS = ["LAN", "LAS", "NA", "BR", "EUW", "EUNE", "TR", "RU", "OCE", "KR", "JP", "PH", "SG", "TH", "TW", "VN", "LATAM", "GLOBAL"];
 
 const LEVEL_OPTIONS = ['Casual', 'Amateur', 'Semi-Pro', 'Universitario', 'Profesional', 'Leyenda (Elite)'];
@@ -58,7 +25,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
     /* ── helpers ── */
     const normalizeGame = (v) => String(v || '').trim().toLowerCase();
-    const isRiotGame = (g) => RIOT_GAMES.has(String(g || '').trim());
+    const isRiotGame = (g) => isSupportedRiotGame(g);
     const formatRosterGameId = (entry) => {
         const gameId = String(entry?.gameId || '').trim();
         if (!gameId) return '';
@@ -144,7 +111,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
     const slotHasMember = (slot) => Boolean(slot?.user || slot?.nickname || slot?.gameId || slot?.email || slot?.role);
     const normalizeRoleKey = (value = '') => String(value || '').trim().toLowerCase();
-    const gameRoles = useMemo(() => ROLE_NAMES[team.game] || [], [team.game]);
+    const gameRoles = useMemo(() => getSupportedGameRoles(team.game), [team.game]);
 
     /* ── Edit handlers ── */
     const startEdit = () => {
@@ -458,7 +425,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
         const starters = team.roster?.starters || [];
         const subs = team.roster?.subs || [];
         const roles = gameRoles;
-        const isMlbbTeam = MLBB_GAMES.has(String(team?.game || '').trim());
+        const isMlbbTeam = isSupportedMlbbGame(team?.game);
         const getSyncMeta = (member) => {
             if (!isMlbbTeam || !member) return null;
             const hasUser = Boolean(member?.user);
@@ -498,7 +465,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
 
     const filledCount = rosterEntries.filter(e => e.filled).length;
     const totalSlots = rosterEntries.length;
-    const isMlbbTeam = MLBB_GAMES.has(String(team?.game || '').trim());
+    const isMlbbTeam = isSupportedMlbbGame(team?.game);
     const mlbbSyncSummary = useMemo(() => {
         if (!isMlbbTeam) return null;
         const active = rosterEntries.filter((entry) => entry.filled && entry.slotType !== 'coach');
@@ -903,7 +870,7 @@ const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, init
                                             {/* <div className="vtm-form-group">
                                                 <select value={player.role} onChange={e => setPlayer({ ...player, role: e.target.value })}>
                                                     <option value="">Rol...</option>
-                                                    {(ROLE_NAMES[team.game] || []).map(r => <option key={r} value={r}>{r}</option>)}
+                                                    {getSupportedGameRoles(team.game).map(r => <option key={r} value={r}>{r}</option>)}
                                                     <option value="Coach">Coach</option>
                                                 </select>
                                             </div> */}

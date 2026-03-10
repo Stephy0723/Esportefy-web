@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -30,6 +30,7 @@ const TABS = [
 
 export default function SettingsV2() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { theme, setTheme } = useTheme();
     const [activeTab, setActiveTab] = useState('security');
     const [loading, setLoading] = useState(true);
@@ -45,8 +46,9 @@ export default function SettingsV2() {
         showOnlineStatus: false,
         allowTournamentInvites: false
     });
-    const [connections, setConnections] = useState({ discord: {}, riot: {}, mlbb: {}, steam: {} });
+    const [connections, setConnections] = useState({ discord: {}, riot: {}, mlbb: {}, steam: {}, epic: {} });
     const [gameProfiles, setGameProfiles] = useState({});
+    const [oauthNotice, setOauthNotice] = useState({ provider: '', status: '', message: '' });
 
     // Riot State
     const [riotGameName, setRiotGameName] = useState('');
@@ -109,6 +111,33 @@ export default function SettingsV2() {
         })), []
     );
 
+    const normalizeConnections = (value = {}) => ({
+        discord: {},
+        riot: {},
+        mlbb: {},
+        steam: {},
+        epic: {},
+        ...(value || {})
+    });
+
+    const providerLabel = (provider) => {
+        const normalized = String(provider || '').trim().toLowerCase();
+        if (normalized === 'steam') return 'Steam';
+        if (normalized === 'discord') return 'Discord';
+        return 'la plataforma';
+    };
+
+    const defaultOauthMessage = (provider, status) => {
+        const label = providerLabel(provider);
+        if (status === 'connected') return `${label} se vinculó correctamente.`;
+        if (status === 'error') return `No se pudo completar la vinculación con ${label}.`;
+        return '';
+    };
+
+    const emitUserUpdate = () => {
+        window.dispatchEvent(new Event('user-update'));
+    };
+
     // Handle appearance toggles
     const handleStreamerModeToggle = () => {
         const newValue = !streamerMode;
@@ -141,14 +170,16 @@ export default function SettingsV2() {
             const res = await axios.get(`${API_URL}/api/auth/profile`, {
                 headers: authHeaders
             });
-            setConnections(res.data.connections || { discord: {}, riot: {}, mlbb: {}, steam: {} });
+            setConnections(normalizeConnections(res.data.connections));
             setPrivacy(res.data.privacy);
             setGameProfiles(res.data.gameProfiles || {});
             setIsAdmin(res.data?.isAdmin === true);
             setLoading(false);
+            return res.data;
         } catch (error) {
             console.error('Error loading settings:', error);
             setLoading(false);
+            return null;
         }
     };
 
@@ -177,6 +208,27 @@ export default function SettingsV2() {
             fetchMlbbStatus();
         }
     }, [token]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const provider = String(params.get('oauthProvider') || '').trim().toLowerCase();
+        const status = String(params.get('oauthStatus') || '').trim().toLowerCase();
+        const message = String(params.get('oauthMessage') || '').trim();
+
+        if (!provider || !status) return;
+
+        setActiveTab('connections');
+        setOauthNotice({
+            provider,
+            status,
+            message: message || defaultOauthMessage(provider, status)
+        });
+
+        if (status === 'connected' && token) {
+            fetchSettings();
+            emitUserUpdate();
+        }
+    }, [location.search, token]);
 
     useEffect(() => {
         if (!token || !isAdmin) return;
@@ -307,6 +359,7 @@ export default function SettingsV2() {
                 headers: authHeaders
             });
             await fetchSettings();
+            emitUserUpdate();
         } catch (error) {
             console.error('Discord unlink error:', error);
         }
@@ -366,6 +419,7 @@ export default function SettingsV2() {
             });
             await fetchSettings();
             await fetchRiotStatus();
+            emitUserUpdate();
         } catch (error) {
             console.error('Riot unlink error:', error);
         }
@@ -440,9 +494,15 @@ export default function SettingsV2() {
             await fetchSettings();
             await fetchMlbbStatus();
             setMlbbMsg('Cuenta MLBB desvinculada.');
+            emitUserUpdate();
         } catch (error) {
             setMlbbMsg(error.response?.data?.message || 'No se pudo desvincular MLBB.');
         }
+    };
+
+    const dismissOauthNotice = () => {
+        setOauthNotice({ provider: '', status: '', message: '' });
+        navigate('/settings', { replace: true });
     };
 
     const fetchMlbbPendingReviews = async () => {
@@ -538,6 +598,18 @@ export default function SettingsV2() {
                         <div className="stv2-section">
                             <h2 className="stv2-section__title">Conexiones de Plataformas</h2>
                             <p className="stv2-section__desc">Vincula tus cuentas de juego y servicios para potenciar tu experiencia competitiva.</p>
+
+                            {oauthNotice.message && (
+                                <div className={`stv2-oauth-notice stv2-oauth-notice--${oauthNotice.status === 'error' ? 'error' : 'success'}`}>
+                                    <div className="stv2-oauth-notice__content">
+                                        <FaInfoCircle />
+                                        <span>{oauthNotice.message}</span>
+                                    </div>
+                                    <button type="button" className="stv2-oauth-notice__close" onClick={dismissOauthNotice} aria-label="Cerrar aviso">
+                                        <FaTimes />
+                                    </button>
+                                </div>
+                            )}
                             
                             {/* Gaming Platforms */}
                             <h3 className="stv2-section__subtitle">Plataformas de Juego</h3>
@@ -644,20 +716,16 @@ export default function SettingsV2() {
                                 </div>
 
                                 {/* Steam */}
-                                <div className={`stv2-connection ${connections?.steam?.id ? 'stv2-connection--active' : ''}`}>
+                                <div className="stv2-connection stv2-connection--soon">
                                     <div className="stv2-connection__icon stv2-connection__icon--steam">
                                         <FaSteam />
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Steam</h4>
-                                        <span>{connections?.steam?.username || 'Sin vincular'}</span>
+                                        <span>Sin vincular</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        {connections?.steam?.id ? (
-                                            <span className="stv2-badge stv2-badge--success">Conectado</span>
-                                        ) : (
-                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
-                                        )}
+                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
                                     </div>
                                     <div className="stv2-connection__action">
                                         <button className="stv2-btn stv2-btn--outline" disabled>
@@ -667,7 +735,7 @@ export default function SettingsV2() {
                                 </div>
 
                                 {/* Epic Games */}
-                                <div className="stv2-connection">
+                                <div className="stv2-connection stv2-connection--soon">
                                     <div className="stv2-connection__icon stv2-connection__icon--epic">
                                         <SiEpicgames />
                                     </div>
@@ -684,6 +752,7 @@ export default function SettingsV2() {
                                         </button>
                                     </div>
                                 </div>
+
                             </div>
 
                             {/* Streaming & Social */}
@@ -804,7 +873,7 @@ export default function SettingsV2() {
                                     </p>
                                     <p>
                                         Todas las marcas comerciales, logotipos e imágenes son propiedad de sus respectivos dueños.
-                                        League of Legends, Valorant y Wild Rift son marcas registradas de Riot Games, Inc.
+                                        League of Legends y Valorant son marcas registradas de Riot Games, Inc.
                                         Mobile Legends: Bang Bang es una marca registrada de Moonton.
                                     </p>
                                     <p className="stv2-disclaimer__privacy">

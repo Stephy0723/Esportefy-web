@@ -18,26 +18,19 @@ import './Rankings.css';
 
 // All supported games
 const SUPPORTED_GAMES = [
-    { id: 'mlbb', name: 'Mobile Legends: Bang Bang', short: 'MLBB' },
-    { id: 'freefire', name: 'Free Fire', short: 'Free Fire' },
+    { id: 'mlbb', name: 'Mobile Legends', short: 'MLBB' },
     { id: 'valorant', name: 'Valorant', short: 'Valorant' },
     { id: 'lol', name: 'League of Legends', short: 'LoL' },
-    { id: 'eafc', name: 'EA Sports FC', short: 'EA FC' },
-    { id: 'fortnite', name: 'Fortnite', short: 'Fortnite' },
-    { id: 'pubgm', name: 'PUBG Mobile', short: 'PUBG Mobile' },
-    { id: 'codm', name: 'Call of Duty Mobile', short: 'COD Mobile' },
-    { id: 'apexmobile', name: 'Apex Legends Mobile', short: 'Apex Mobile' },
-    { id: 'clashofclans', name: 'Clash of Clans', short: 'CoC' },
-    { id: 'clashroyale', name: 'Clash Royale', short: 'Clash Royale' },
-    { id: 'rocketleague', name: 'Rocket League', short: 'Rocket League' },
-    { id: 'csgo', name: 'Counter-Strike 2', short: 'CS2' },
-    { id: 'dota2', name: 'Dota 2', short: 'Dota 2' },
-    { id: 'overwatch', name: 'Overwatch 2', short: 'OW2' },
-    { id: 'smashbros', name: 'Super Smash Bros', short: 'Smash' },
-    { id: 'tekken', name: 'Tekken 8', short: 'Tekken' },
-    { id: 'sf6', name: 'Street Fighter 6', short: 'SF6' },
-    { id: 'other', name: 'Otro Juego', short: 'Otro' },
 ];
+
+const RANKINGS_VISIBLE_GAMES = new Set([
+    'Mobile Legends',
+    'Mobile Legends: Bang Bang',
+    'MLBB',
+    'Valorant',
+    'League of Legends',
+    'LoL',
+]);
 
 // Bubbles component
 const Bubbles = () => (
@@ -204,7 +197,7 @@ export default function Rankings() {
     // PLAYERS TAB
     // ═══════════════════════════════════════════════════════════
     const filteredPlayers = useMemo(() => {
-        let rows = [...PLAYERS_DATA];
+        let rows = [...PLAYERS_DATA].filter((player) => RANKINGS_VISIBLE_GAMES.has(player.game));
 
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -231,7 +224,9 @@ export default function Rankings() {
     // TEAMS TAB
     // ═══════════════════════════════════════════════════════════
     const filteredTeams = useMemo(() => {
-        let rows = [...TEAMS_DATA];
+        let rows = [...TEAMS_DATA].filter((team) =>
+            Array.isArray(team.games) && team.games.some((gameName) => RANKINGS_VISIBLE_GAMES.has(gameName))
+        );
 
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -250,7 +245,7 @@ export default function Rankings() {
     // TOURNAMENTS TAB
     // ═══════════════════════════════════════════════════════════
     const filteredTournaments = useMemo(() => {
-        let rows = [...TOURNAMENTS_DATA];
+        let rows = [...TOURNAMENTS_DATA].filter((tournament) => RANKINGS_VISIBLE_GAMES.has(tournament.game));
 
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -267,11 +262,11 @@ export default function Rankings() {
 
     // Stats
     const stats = useMemo(() => ({
-        totalPlayers: PLAYERS_DATA.length,
-        totalTeams: TEAMS_DATA.length,
-        activeTournaments: TOURNAMENTS_DATA.filter(t => t.status === 'active').length,
-        totalPrize: TOURNAMENTS_DATA.reduce((acc, t) => acc + t.prize, 0),
-    }), []);
+        totalPlayers: filteredPlayers.length,
+        totalTeams: filteredTeams.length,
+        activeTournaments: filteredTournaments.filter(t => t.status === 'active').length,
+        totalPrize: filteredTournaments.reduce((acc, t) => acc + t.prize, 0),
+    }), [filteredPlayers, filteredTeams, filteredTournaments]);
 
     // Animation variants
     const containerVariants = {

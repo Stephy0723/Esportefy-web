@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY } from '../../../../data/communityData';
-import { gamesDetailedData } from '../../../../data/gamesDetailedData';
+import { supportedGamesDetailedData as gamesDetailedData } from '../../../../data/supportedGamesDetailedData';
 import HeroTagSection from './HeroTagSection';
 import './GamesFilterTemplate.css';
 
@@ -46,7 +46,6 @@ const TAG_DESCRIPTIONS = {
   'wb games': 'Warner Bros gaming division behind Mortal Kombat, MultiVersus and Hogwarts Legacy.',
   'hello games': 'Independent studio that built No Mans Sky into a massive procedural universe.',
   'bandai namco': 'Japanese publisher behind Tekken, Dragon Ball and a legacy of arcade fighting games.',
-  'ea sports': 'Global sports gaming giant behind EA FC, Madden and NHL series.',
   supercell: 'Finnish studio behind Clash Royale and Brawl Stars, leaders in mobile competitive gaming.',
   nintendo: 'Legendary Japanese studio behind Mario, Zelda and the most iconic gaming franchises.',
 };

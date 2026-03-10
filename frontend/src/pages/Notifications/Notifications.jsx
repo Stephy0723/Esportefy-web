@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useNotification } from '../../context/NotificationContext';
 import { getAuthToken } from '../../utils/authSession';
+import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../shared/supportedGames.js';
 import './Notifications.css';
 
 const FILTERS = [
@@ -13,39 +14,6 @@ const FILTERS = [
   { key: 'tournament', label: 'Torneos', icon: 'bx-trophy', dot: '#FFD700' },
   { key: 'social', label: 'Social', icon: 'bx-user-plus', dot: '#f093fb' },
 ];
-
-const RIOT_GAMES = new Set([
-  'League of Legends',
-  'Valorant',
-  'Wild Rift',
-  'Teamfight Tactics',
-  'Legends of Runeterra'
-]);
-
-const MLBB_GAMES = new Set([
-  'Mobile Legends',
-  'Mobile Legends: Bang Bang',
-  'MLBB'
-]);
-
-const ROLE_TEMPLATES_BY_GAME = {
-  'Mobile Legends': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
-  'Mobile Legends: Bang Bang': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
-  'MLBB': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
-  'League of Legends': ['Top', 'Jungle', 'Mid', 'ADC', 'Supp'],
-  'Wild Rift': ['Baron', 'Jungle', 'Mid', 'Dragon', 'Supp'],
-  'Valorant': ['Duelist', 'Sentinel', 'Controller', 'Initiator', 'Flex'],
-  'CS2': ['Entry', 'AWPer', 'Lurker', 'Support', 'IGL'],
-  'Overwatch 2': ['Tank', 'DPS', 'DPS', 'Support', 'Support'],
-  'Rainbow Six Siege': ['Entry', 'Support', 'Flex', 'Hard Breach', 'Anchor'],
-  'Free Fire': ['Rusher', 'Support', 'Sniper', 'IGL'],
-  'Fortnite': ['Fragger', 'IGL', 'Support', 'Builder'],
-  'PUBG': ['Fragger', 'IGL', 'Support', 'Scout'],
-  'Apex Legends': ['Fragger', 'IGL', 'Support'],
-  'Call of Duty': ['Slayer', 'OBJ', 'Support', 'Flex'],
-  'Dota 2': ['Carry', 'Mid', 'Offlane', 'Soft Supp', 'Hard Supp'],
-  'Rocket League': ['Striker', 'Midfielder', 'Defender']
-};
 
 const Notifications = () => {
   const { notifications, addToast, loadNotifications } = useNotification();
@@ -264,7 +232,7 @@ const Notifications = () => {
       || 'Jugador'
     ).trim();
 
-    if (RIOT_GAMES.has(game)) {
+    if (isSupportedRiotGame(game)) {
       return {
         nickname: String(profile?.connections?.riot?.gameName || '').trim() || fallbackName,
         gameId: String(profile?.connections?.riot?.tagLine || '').trim(),
@@ -279,7 +247,7 @@ const Notifications = () => {
       };
     }
 
-    if (MLBB_GAMES.has(game)) {
+    if (isSupportedMlbbGame(game)) {
       return {
         nickname: String(profile?.gameProfiles?.mlbb?.ign || profile?.connections?.mlbb?.ign || '').trim() || fallbackName,
         gameId: String(profile?.connections?.mlbb?.playerId || '').trim(),
@@ -324,7 +292,7 @@ const Notifications = () => {
     const rosterRole = String(team?.roster?.[normalizedType]?.[idx]?.role || '').trim();
     if (rosterRole) return rosterRole;
     const game = String(resolvedGame || team?.game || '').trim();
-    const templates = ROLE_TEMPLATES_BY_GAME[game] || [];
+    const templates = getSupportedGameRoles(game);
     if (templates[idx]) return templates[idx];
     return normalizedType === 'subs' ? `Suplente ${idx + 1}` : `Titular ${idx + 1}`;
   };
@@ -376,12 +344,12 @@ const Notifications = () => {
         resolvedGame
       );
 
-      if (RIOT_GAMES.has(resolvedGame) && (!player?.nickname || !player?.gameId)) {
+      if (isSupportedRiotGame(resolvedGame) && (!player?.nickname || !player?.gameId)) {
         addToast('Te falta sincronizar Riot ID para aceptar esta invitación.', 'error');
         navigate('/settings');
         return;
       }
-      if (MLBB_GAMES.has(resolvedGame) && (!player?.gameId || !player?.region)) {
+      if (isSupportedMlbbGame(resolvedGame) && (!player?.gameId || !player?.region)) {
         addToast('Te falta verificar MLBB para aceptar esta invitación.', 'error');
         navigate('/settings');
         return;

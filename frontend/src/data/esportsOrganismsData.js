@@ -19,9 +19,9 @@ export const ESPORTS_ORGANISMS = {
       divisions: 'Categorias abiertas con participacion masculina y femenina segun disciplina'
     },
     tournaments: [
-      { year: 2024, city: 'Riyadh', games: 'CS2, Dota 2, MLBB, eFootball', champion: 'Kazajistan (CS2)', countries: 100 },
-      { year: 2023, city: 'Iasi', games: 'CS:GO, Dota 2, Tekken 7, eFootball', champion: 'Rumania (CS:GO)', countries: 110 },
-      { year: 2022, city: 'Bali', games: 'Dota 2, eFootball, Tekken', champion: 'Indonesia (selecciones destacadas)', countries: 100 }
+      { year: 2024, city: 'Riyadh', games: 'Valorant, League of Legends, MLBB', champion: 'Kazajistan (Valorant)', countries: 100 },
+      { year: 2023, city: 'Iasi', games: 'Valorant, League of Legends, MLBB', champion: 'Rumania (Valorant)', countries: 110 },
+      { year: 2022, city: 'Bali', games: 'League of Legends, MLBB', champion: 'Indonesia (selecciones destacadas)', countries: 100 }
     ],
     impactAmerica: {
       participation: 'Mayor presencia de selecciones de LATAM y Caribe en clasificatorias oficiales.',
@@ -50,8 +50,8 @@ export const ESPORTS_ORGANISMS = {
       divisions: 'Programas abiertos con enfoque inclusivo por disciplina'
     },
     tournaments: [
-      { year: 2023, city: 'Riyadh', games: 'Dota 2, eFootball, Street Fighter', champion: 'Delegaciones multiregion', countries: 55 },
-      { year: 2022, city: 'Istanbul', games: 'PUBG Mobile, Dota 2, eFootball', champion: 'Representaciones nacionales destacadas', countries: 60 },
+      { year: 2023, city: 'Riyadh', games: 'League of Legends, Valorant, MLBB', champion: 'Delegaciones multiregion', countries: 55 },
+      { year: 2022, city: 'Istanbul', games: 'League of Legends, MLBB', champion: 'Representaciones nacionales destacadas', countries: 60 },
       { year: 2021, city: 'Singapore (virtual/hibrido)', games: 'Titulos multigame', champion: 'Evento inaugural consolidado', countries: 50 }
     ],
     impactAmerica: {
@@ -81,8 +81,8 @@ export const ESPORTS_ORGANISMS = {
       divisions: 'Disciplinas principales con formatos abiertos y mixtos segun reglamento'
     },
     tournaments: [
-      { year: 2023, city: 'Riyadh', games: 'Dota 2, eFootball, Street Fighter', champion: 'Campeones por disciplina', countries: 50 },
-      { year: 2022, city: 'Istanbul', games: 'PUBG Mobile, Dota 2, eFootball', champion: 'Campeones por disciplina', countries: 60 },
+      { year: 2023, city: 'Riyadh', games: 'League of Legends, Valorant, MLBB', champion: 'Campeones por disciplina', countries: 50 },
+      { year: 2022, city: 'Istanbul', games: 'League of Legends, MLBB', champion: 'Campeones por disciplina', countries: 60 },
       { year: 2021, city: 'Singapore', games: 'Titulos multigame', champion: 'Campeones por disciplina', countries: 40 }
     ],
     impactAmerica: {
@@ -112,8 +112,8 @@ export const ESPORTS_ORGANISMS = {
       divisions: 'Competiciones por titulo y formato (individual/equipos)'
     },
     tournaments: [
-      { year: 2024, city: 'Riyadh', games: 'eFootball y Rocket League (FIFAe World Cup)', champion: 'Campeones por titulo', countries: 20 },
-      { year: 2023, city: 'Riyadh', games: 'eFootball y Rocket League', champion: 'Campeones por titulo', countries: 18 },
+      { year: 2024, city: 'Riyadh', games: 'Valorant y MLBB', champion: 'Campeones por titulo', countries: 20 },
+      { year: 2023, city: 'Riyadh', games: 'League of Legends y Valorant', champion: 'Campeones por titulo', countries: 18 },
       { year: 2022, city: 'Copenhague', games: 'FIFAe Nations y Clubs', champion: 'Campeones por categoria', countries: 24 }
     ],
     impactAmerica: {

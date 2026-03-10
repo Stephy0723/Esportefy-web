@@ -131,6 +131,27 @@ const UserSchema = new mongoose.Schema({
             rejectReason: { type: String, default: '' },
             linkAttempts: { type: [Date], default: [] },
             riskFlags: { type: [String], default: [] }
+        },
+
+        steam: {
+            id: { type: String, default: '' },
+            steamId: { type: String, default: '' },
+            username: { type: String, default: '' },
+            displayName: { type: String, default: '' },
+            avatar: { type: String, default: '' },
+            profileUrl: { type: String, default: '' },
+            verified: { type: Boolean, default: false },
+            linkedAt: { type: Date, default: null }
+        },
+
+        epic: {
+            id: { type: String, default: '' },
+            epicId: { type: String, default: '' },
+            username: { type: String, default: '' },
+            displayName: { type: String, default: '' },
+            email: { type: String, default: '' },
+            verified: { type: Boolean, default: false },
+            linkedAt: { type: Date, default: null }
         }
     },
 
@@ -234,6 +255,28 @@ UserSchema.index(
             'connections.mlbb.verified': true,
             'connections.mlbb.playerId': { $exists: true, $type: 'string' },
             'connections.mlbb.zoneId': { $exists: true, $type: 'string' }
+        }
+    }
+);
+
+UserSchema.index(
+    { 'connections.steam.id': 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'connections.steam.id': { $exists: true, $type: 'string' },
+            'connections.steam.verified': true
+        }
+    }
+);
+
+UserSchema.index(
+    { 'connections.epic.id': 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'connections.epic.id': { $exists: true, $type: 'string' },
+            'connections.epic.verified': true
         }
     }
 );

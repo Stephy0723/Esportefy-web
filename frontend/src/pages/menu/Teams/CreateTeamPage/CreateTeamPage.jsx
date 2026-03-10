@@ -14,51 +14,8 @@ import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import { getAuthToken as readAuthToken } from '../../../../utils/authSession';
+import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../../shared/supportedGames.js';
 import './CreateTeamPage.css';
-
-// Configuración de Roles Visuales
-const ROLE_NAMES = {
-    "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
-    "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
-    "Wild Rift": ["Baron", "Jungle", "Mid", "Dragon", "Supp"],
-    "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
-    "CS2": ["Entry", "AWPer", "Lurker", "Support", "IGL"],
-    "Overwatch 2": ["Tank", "DPS", "DPS", "Support", "Support"],
-    "Rainbow Six Siege": ["Entry", "Support", "Flex", "Hard Breach", "Anchor"],
-    "TFT": ["Tactician"],
-    "FIFA / EA FC": ["Player"],
-    "NBA 2K": ["Player"],
-    "F1 2024": ["Driver"],
-    "Rocket League": ["Striker", "Midfielder", "Defender"],
-    "Free Fire": ["Rusher", "Support", "Sniper", "IGL"],
-    "Fortnite": ["Fragger", "IGL", "Support", "Builder"],
-    "PUBG": ["Fragger", "IGL", "Support", "Scout"],
-    "Apex Legends": ["Fragger", "IGL", "Support"],
-    "Warzone": ["Slayer", "IGL", "Scout", "Support"],
-    "Call of Duty": ["Slayer", "OBJ", "Support", "Flex"],
-    "Dota 2": ["Carry", "Mid", "Offlane", "Soft Supp", "Hard Supp"],
-    "Smite 2": ["Carry", "Mid", "Solo", "Jungle", "Support"],
-    "Street Fighter 6": ["Fighter"],
-    "Tekken 8": ["Fighter"],
-    "Super Smash Bros": ["Fighter"],
-    "Mortal Kombat 1": ["Fighter"],
-    "Clash Royale": ["Player"],
-    "Hearthstone": ["Player"],
-    "Legends of Runeterra": ["Player"]
-};
-
-const RIOT_GAMES = new Set([
-    'Valorant',
-    'League of Legends',
-    'Wild Rift',
-    'Teamfight Tactics',
-    'Legends of Runeterra'
-]);
-const MLBB_GAMES = new Set([
-    'Mobile Legends',
-    'Mobile Legends: Bang Bang',
-    'MLBB'
-]);
 
 const CUSTOM_OPTION = '__custom__';
 
@@ -226,8 +183,8 @@ const CreateTeamPage = () => {
 
     const getRegionOptionsByGame = (gameName) => {
         const normalized = String(gameName || '').trim();
-        if (RIOT_GAMES.has(normalized)) return RIOT_REGION_OPTIONS;
-        if (MLBB_GAMES.has(normalized)) return MLBB_REGION_OPTIONS;
+        if (isSupportedRiotGame(normalized)) return RIOT_REGION_OPTIONS;
+        if (isSupportedMlbbGame(normalized)) return MLBB_REGION_OPTIONS;
         return DEFAULT_REGION_OPTIONS;
     };
 
@@ -238,7 +195,7 @@ const CreateTeamPage = () => {
         }
         return base;
     }, [formData.game, formData.leaderRegion]);
-    const selectedGameRoles = useMemo(() => ROLE_NAMES[formData.game] || [], [formData.game]);
+    const selectedGameRoles = useMemo(() => getSupportedGameRoles(formData.game), [formData.game]);
 
     const mapRiotRegion = (raw) => {
         const value = String(raw || '').toLowerCase().trim();
@@ -269,7 +226,7 @@ const CreateTeamPage = () => {
     };
 
     useEffect(() => {
-        if (!RIOT_GAMES.has(String(formData.game || '').trim())) return;
+        if (!isSupportedRiotGame(formData.game)) return;
         if (!riotVerified) return;
         const gameName = riotGameName;
         const tagLine = riotTagLine;
@@ -297,7 +254,7 @@ const CreateTeamPage = () => {
     }, [formData.game, riotVerified, riotGameName, riotTagLine, riotRegionRaw]);
 
     useEffect(() => {
-        if (!MLBB_GAMES.has(String(formData.game || '').trim())) return;
+        if (!isSupportedMlbbGame(formData.game)) return;
         if (!mlbbVerified) return;
         const playerId = mlbbPlayerId;
         const zoneId = mlbbZoneId;
@@ -315,7 +272,7 @@ const CreateTeamPage = () => {
     }, [formData.game, mlbbVerified, mlbbPlayerId, mlbbZoneId]);
 
     const lockMlbbIdentity = useMemo(
-        () => MLBB_GAMES.has(String(formData.game || '').trim()) && mlbbVerified,
+        () => isSupportedMlbbGame(formData.game) && mlbbVerified,
         [formData.game, mlbbVerified]
     );
     const riotLinked = useMemo(
@@ -333,11 +290,11 @@ const CreateTeamPage = () => {
         [currentUser]
     );
     const isRiotGame = useMemo(
-        () => RIOT_GAMES.has(String(formData.game || '').trim()),
+        () => isSupportedRiotGame(formData.game),
         [formData.game]
     );
     const isMlbbGameSelected = useMemo(
-        () => MLBB_GAMES.has(String(formData.game || '').trim()),
+        () => isSupportedMlbbGame(formData.game),
         [formData.game]
     );
     const isUniversityTeamSelected = useMemo(
@@ -455,7 +412,7 @@ const CreateTeamPage = () => {
         }
         
         const rules = esportsCatalog[selectedCategory][gameName];
-        const defaultRole = (ROLE_NAMES[gameName] && ROLE_NAMES[gameName][0]) ? ROLE_NAMES[gameName][0] : '';
+        const defaultRole = getSupportedGameRoles(gameName)[0] || '';
         setFormData(prev => ({
             ...prev, game: gameName, 
             maxMembers: rules.maxPlayers, 
@@ -535,7 +492,7 @@ const CreateTeamPage = () => {
         
         let suggestedRole = '';
         if (type === 'starters' && !existingData) {
-            const roles = ROLE_NAMES[formData.game];
+            const roles = getSupportedGameRoles(formData.game);
             if (roles && roles[index]) suggestedRole = roles[index];
         }
 
@@ -784,7 +741,7 @@ const CreateTeamPage = () => {
     };
 
     const getRoleLabel = (index) => {
-        const roles = ROLE_NAMES[formData.game];
+        const roles = getSupportedGameRoles(formData.game);
         return roles ? roles[index] : `Player ${index + 1}`;
     };
 

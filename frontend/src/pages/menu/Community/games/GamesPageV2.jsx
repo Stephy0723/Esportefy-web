@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { gamesList } from '../../../../data/gamesData';
 import { COMMUNITY_GAMES, COMMUNITY_LIST } from '../../../../data/communityData';
-import { gamesDetailedData } from '../../../../data/gamesDetailedData';
+import { supportedGamesDetailedData as gamesDetailedData } from '../../../../data/supportedGamesDetailedData';
 import './GamesPageV2.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════

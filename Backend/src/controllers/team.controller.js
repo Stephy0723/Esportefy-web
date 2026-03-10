@@ -10,6 +10,13 @@ import path from 'path';
 import fs from 'fs';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
+import {
+    getSupportedGameRoles,
+    isSupportedGameName,
+    isSupportedMlbbGame,
+    isSupportedRiotGame,
+    normalizeSupportedGameName
+} from '../../../shared/supportedGames.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -80,6 +87,12 @@ export const createTeam = async (req, res) => {
         const parsedFormData = typeof formData === 'string' ? JSON.parse(formData) : formData;
         const parsedRoster = typeof roster === 'string' ? JSON.parse(roster) : roster;
 
+        const normalizedGame = normalizeSupportedGameName(parsedFormData?.game);
+        if (!normalizedGame) {
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+        }
+        parsedFormData.game = normalizedGame;
+
         const logoPath = req.file
             ? `/uploads/teams/${req.file.filename}`
             : '/uploads/teams/default.png';
@@ -132,7 +145,7 @@ export const createTeam = async (req, res) => {
             universitySnapshot = universityResult.snapshot;
         }
 
-        if (RIOT_GAMES.has(parsedFormData.game)) {
+        if (isSupportedRiotGame(parsedFormData.game)) {
             const linked = await requireRiotLinked(req.userId);
             if (!linked) {
                 return res.status(400).json({ message: "Debes vincular tu cuenta Riot en Conexiones para crear equipo" });
@@ -355,8 +368,12 @@ const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g,
 
 const ensureUserNotInOtherTeam = async (game, userId, currentTeamId, targetTeamLike = null) => {
     if (!userId) return { ok: true };
+    const normalizedGame = normalizeSupportedGameName(game);
+    if (!normalizedGame) {
+        return { ok: false, message: 'Ese juego todavía no está soportado en Esportefy.' };
+    }
     const query = {
-        game,
+        game: normalizedGame,
         _id: { $ne: currentTeamId },
         $or: [
             { captain: userId },
@@ -389,13 +406,17 @@ const ensureUserNotInOtherTeam = async (game, userId, currentTeamId, targetTeamL
 
 const ensureRiotIdNotInOtherTeam = async (game, nickname, gameId, currentTeamId, options = {}) => {
     const { targetTeamLike = null, targetUserId = null } = options;
+    const normalizedGame = normalizeSupportedGameName(game);
+    if (!normalizedGame) {
+        return { ok: false, message: 'Ese juego todavía no está soportado en Esportefy.' };
+    }
     const gn = String(nickname || '').trim();
     const tl = String(gameId || '').trim();
     if (!gn || !tl) return { ok: true };
     const nickRegex = new RegExp(`^${escapeRegex(gn)}$`, 'i');
     const tagRegex = new RegExp(`^${escapeRegex(tl)}$`, 'i');
     const query = {
-        game,
+        game: normalizedGame,
         _id: { $ne: currentTeamId },
         $or: [
             { 'roster.starters': { $elemMatch: { nickname: nickRegex, gameId: tagRegex } } },
@@ -536,37 +557,7 @@ const toIdArray = (value) => (
         : []
 );
 
-const RIOT_GAMES = new Set([
-    'Valorant',
-    'League of Legends',
-    'Wild Rift',
-    'Teamfight Tactics',
-    'Legends of Runeterra'
-]);
-const MLBB_GAMES = new Set([
-    'Mobile Legends',
-    'Mobile Legends: Bang Bang',
-    'MLBB'
-]);
 const UNIVERSITY_TEAM_LEVEL = 'universitario';
-const ROLE_TEMPLATES_BY_GAME = {
-    'Mobile Legends': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
-    'Mobile Legends: Bang Bang': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
-    'MLBB': ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
-    'League of Legends': ['Top', 'Jungle', 'Mid', 'ADC', 'Supp'],
-    'Wild Rift': ['Baron', 'Jungle', 'Mid', 'Dragon', 'Supp'],
-    'Valorant': ['Duelist', 'Sentinel', 'Controller', 'Initiator', 'Flex'],
-    'CS2': ['Entry', 'AWPer', 'Lurker', 'Support', 'IGL'],
-    'Overwatch 2': ['Tank', 'DPS', 'DPS', 'Support', 'Support'],
-    'Rainbow Six Siege': ['Entry', 'Support', 'Flex', 'Hard Breach', 'Anchor'],
-    'Free Fire': ['Rusher', 'Support', 'Sniper', 'IGL'],
-    'Fortnite': ['Fragger', 'IGL', 'Support', 'Builder'],
-    'PUBG': ['Fragger', 'IGL', 'Support', 'Scout'],
-    'Apex Legends': ['Fragger', 'IGL', 'Support'],
-    'Call of Duty': ['Slayer', 'OBJ', 'Support', 'Flex'],
-    'Dota 2': ['Carry', 'Mid', 'Offlane', 'Soft Supp', 'Hard Supp'],
-    'Rocket League': ['Striker', 'Midfielder', 'Defender']
-};
 const resolveSlotRole = ({ team, slotType, slotIndex, explicitRole = '' }) => {
     const roleFromInput = String(explicitRole || '').trim();
     const normalizedType = String(slotType || '').trim();
@@ -579,8 +570,7 @@ const resolveSlotRole = ({ team, slotType, slotIndex, explicitRole = '' }) => {
     const roleFromRoster = String(team?.roster?.[normalizedType]?.[index]?.role || '').trim();
     if (roleFromRoster) return roleFromRoster;
 
-    const game = String(team?.game || '').trim();
-    const roleTemplate = ROLE_TEMPLATES_BY_GAME[game] || [];
+    const roleTemplate = getSupportedGameRoles(team?.game);
     if (Number.isFinite(index) && index >= 0 && roleTemplate[index]) {
         return roleTemplate[index];
     }
@@ -596,7 +586,7 @@ const normalizeText = (value = '') =>
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .trim();
-const isMlbbGame = (game) => MLBB_GAMES.has(String(game || '').trim());
+const isMlbbGame = (game) => isSupportedMlbbGame(game);
 const isFilledRosterPlayer = (slot) => Boolean(
     slot && (slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role)
 );
@@ -812,13 +802,17 @@ const buildMlbbLinkedPlayerPayload = async (userId, player = {}) => {
 
 const ensureMlbbIdNotInOtherTeam = async (game, playerId, zoneId, currentTeamId, options = {}) => {
     const { targetTeamLike = null, targetUserId = null } = options;
+    const normalizedGame = normalizeSupportedGameName(game);
+    if (!normalizedGame) {
+        return { ok: false, message: 'Ese juego todavía no está soportado en Esportefy.' };
+    }
     const pid = String(playerId || '').trim();
     const zid = String(zoneId || '').trim();
     if (!pid || !zid) return { ok: true };
     const playerRegex = new RegExp(`^${escapeRegex(pid)}$`, 'i');
     const zoneRegex = new RegExp(`^${escapeRegex(zid)}$`, 'i');
     const query = {
-        game,
+        game: normalizedGame,
         _id: { $ne: currentTeamId },
         $or: [
             { 'roster.starters': { $elemMatch: { gameId: playerRegex, region: zoneRegex } } },
@@ -959,7 +953,7 @@ export const joinTeam = async (req, res) => {
             const universityCheck = await ensureUserMatchesUniversityTeam(req.userId, team.university.universityId);
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
-        if (RIOT_GAMES.has(team.game)) {
+        if (isSupportedRiotGame(team.game)) {
             const ok = await requireRiotLinked(req.userId);
             if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para unirte a este equipo" });
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
@@ -1084,7 +1078,7 @@ export const addMemberDirect = async (req, res) => {
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
 
-        if (RIOT_GAMES.has(team.game)) {
+        if (isSupportedRiotGame(team.game)) {
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
             const riotUnique = await ensureRiotIdNotInOtherTeam(
@@ -1215,7 +1209,7 @@ export const inviteFriendToTeam = async (req, res) => {
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
 
-        if (RIOT_GAMES.has(team.game) && normalizedSlotType !== 'coach') {
+        if (isSupportedRiotGame(team.game) && normalizedSlotType !== 'coach') {
             const riotLinked = await requireRiotLinked(target._id);
             if (!riotLinked) {
                 return res.status(400).json({
@@ -1484,7 +1478,7 @@ export const requestJoinTeam = async (req, res) => {
             const universityCheck = await ensureUserMatchesUniversityTeam(req.userId, team.university.universityId);
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
-        if (RIOT_GAMES.has(team.game)) {
+        if (isSupportedRiotGame(team.game)) {
             const ok = await requireRiotLinked(req.userId);
             if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para solicitar ingreso" });
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
@@ -1604,7 +1598,7 @@ export const handleJoinRequest = async (req, res) => {
                 const universityCheck = await ensureUserMatchesUniversityTeam(reqDoc.user, team.university.universityId);
                 if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
             }
-            if (RIOT_GAMES.has(team.game)) {
+            if (isSupportedRiotGame(team.game)) {
                 const ok = await requireRiotLinked(reqDoc.user);
                 if (!ok) return res.status(400).json({ message: "El jugador debe vincular su cuenta Riot" });
                 const riotCheck = await validateRiotAccount(reqDoc.player?.nickname, reqDoc.player?.gameId);
@@ -1724,7 +1718,9 @@ export const getTeams = async (req, res) => {
             .populate('captain', 'fullName avatar')
             .sort({ createdAt: -1 });
 
-        for (const team of teams) {
+        const supportedTeams = teams.filter((team) => isSupportedGameName(team?.game));
+
+        for (const team of supportedTeams) {
             if (!team.teamCode) {
                 await team.save();
             }
@@ -1736,7 +1732,7 @@ export const getTeams = async (req, res) => {
             if (id && !slot?.photo) neededUserIds.add(id);
         };
 
-        teams.forEach((team) => {
+        supportedTeams.forEach((team) => {
             (team?.roster?.starters || []).forEach(collectUserId);
             (team?.roster?.subs || []).forEach(collectUserId);
             collectUserId(team?.roster?.coach);
@@ -1756,7 +1752,7 @@ export const getTeams = async (req, res) => {
             return { ...slot, photo: avatar };
         };
 
-        const normalized = teams.map((teamDoc) => {
+        const normalized = supportedTeams.map((teamDoc) => {
             const team = teamDoc.toObject();
             if (!team.roster) return team;
             team.roster.starters = (team.roster.starters || []).map(fillSlotPhoto);
@@ -2092,9 +2088,10 @@ export const seedDemoTeams = async (req, res) => {
         await Team.deleteMany({ slogan: { $in: DEMO_TEAMS.map(t => t.slogan) } });
 
         const created = [];
-        for (const teamData of DEMO_TEAMS) {
+        for (const teamData of DEMO_TEAMS.filter((team) => isSupportedGameName(team?.game))) {
             const team = new Team({
                 ...teamData,
+                game: normalizeSupportedGameName(teamData.game),
                 captain: req.userId, // assign to the calling user
                 inviteCode: buildCode()
             });
@@ -2267,9 +2264,10 @@ export const seedThirdPartyTeams = async (req, res) => {
         await Team.deleteMany({ slogan: { $in: THIRD_PARTY_TEAMS.map(t => t.slogan) } });
 
         const created = [];
-        for (const teamData of THIRD_PARTY_TEAMS) {
+        for (const teamData of THIRD_PARTY_TEAMS.filter((team) => isSupportedGameName(team?.game))) {
             const team = new Team({
                 ...teamData,
+                game: normalizeSupportedGameName(teamData.game),
                 captain: phantom._id, // NOT the calling user
                 inviteCode: buildCode()
             });

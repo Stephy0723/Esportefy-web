@@ -48,6 +48,7 @@ import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
 import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
 import TermsConditions from './pages/menu/Legal/TermsConditions';
 import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
+import SteamOAuthCallback from './pages/Auth/OAuth/SteamOAuthCallback';
 import GamesPageV2 from './pages/menu/Community/games/GamesPageV2';
 import GamesFilterTemplate from './pages/menu/Community/games/GamesFilterTemplate';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
@@ -105,6 +106,7 @@ const AppRouterContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/oauth/steam/callback" element={<SteamOAuthCallback />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} />

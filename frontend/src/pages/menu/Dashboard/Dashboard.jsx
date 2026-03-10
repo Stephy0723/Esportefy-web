@@ -9,7 +9,7 @@ import { API_URL } from '../../../config/api';
 import PageHud from '../../../components/PageHud/PageHud';
 import Footer from '../../../components/Home/Footer';
 import './Dashboard.css';
-import { gamesDetailedData } from '../../../data/gamesDetailedData';
+import { supportedGamesDetailedData as gamesDetailedData } from '../../../data/supportedGamesDetailedData';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
@@ -70,8 +70,8 @@ const CONNECTION_PROVIDERS = [
     { id: 'riot',    icon: 'bx bxs-shield-alt-2', iconComponent: SiRiotgames, name: 'Riot Games',      color: '#ff4655', fields: ['gameName','tagLine'], verifiedKey: 'riot' },
     { id: 'discord', icon: 'bx bxl-discord-alt',  iconComponent: FaDiscord,   name: 'Discord',         color: '#5865F2', fields: ['username'],           verifiedKey: 'discord' },
     { id: 'moonton', icon: 'bx bx-game',          iconComponent: FaGamepad,   name: 'Moonton (MLBB)',  color: '#00b4d8', fields: ['gameId'],             verifiedKey: 'moonton' },
-    { id: 'steam',   icon: 'bx bxl-steam',        iconComponent: FaSteam,     name: 'Steam',           color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam' },
-    { id: 'epic',    icon: 'bx bx-cube',          iconComponent: SiEpicgames, name: 'Epic Games',      color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic' },
+    { id: 'steam',   icon: 'bx bxl-steam',        iconComponent: FaSteam,     name: 'Steam',           color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam', comingSoon: true },
+    { id: 'epic',    icon: 'bx bx-cube',          iconComponent: SiEpicgames, name: 'Epic Games',      color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic', comingSoon: true },
     { id: 'twitch',  icon: 'bx bxl-twitch',       iconComponent: FaTwitch,    name: 'Twitch',          color: '#9146ff', fields: ['twitchId'],           verifiedKey: 'twitch' },
 ];
 
@@ -79,6 +79,11 @@ const renderConnectionIcon = (provider, className = 'db__conn-provider-icon') =>
     const Icon = provider?.iconComponent;
     if (Icon) return <Icon className={className} aria-hidden="true" />;
     return <span className={className} aria-hidden="true">•</span>;
+};
+
+const getProviderName = (providerId) => {
+    const normalizedProviderId = String(providerId || '').trim().toLowerCase();
+    return CONNECTION_PROVIDERS.find((provider) => provider.id === normalizedProviderId)?.name || normalizedProviderId;
 };
 
 /* ── Framer variants ── */
@@ -109,6 +114,7 @@ const Dashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [activeSection, setActiveSection] = useState('hero');
     const [connectionPanel, setConnectionPanel] = useState(null);
+    const [oauthPanelMsg, setOauthPanelMsg] = useState('');
     const [mlbbPlayerId, setMlbbPlayerId] = useState('');
     const [mlbbZoneId, setMlbbZoneId] = useState('');
     const [mlbbIgn, setMlbbIgn] = useState('');
@@ -268,6 +274,10 @@ const Dashboard = () => {
         user?.connections?.mlbb?.zoneId,
         user?.connections?.mlbb?.ign
     ]);
+
+    useEffect(() => {
+        setOauthPanelMsg('');
+    }, [connectionPanel?.id]);
 
     const scrollTeams = useCallback((dir) => {
         const track = teamsTrackRef.current;
@@ -464,6 +474,8 @@ const Dashboard = () => {
     );
 
     const isConnected = (providerId) => {
+        const provider = CONNECTION_PROVIDERS.find((item) => item.id === providerId);
+        if (provider?.comingSoon) return false;
         if (providerId === 'moonton') {
             const status = getMlbbVerificationStatus();
             return Boolean(
@@ -478,6 +490,8 @@ const Dashboard = () => {
     const connectedCount = CONNECTION_PROVIDERS.filter(p => isConnected(p.id)).length;
 
     const getProviderStatusLabel = (providerId) => {
+        const provider = CONNECTION_PROVIDERS.find((item) => item.id === providerId);
+        if (provider?.comingSoon) return 'Pendiente';
         if (providerId === 'moonton') {
             const status = getMlbbVerificationStatus();
             if (isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified)) return 'Vinculada';
@@ -490,6 +504,7 @@ const Dashboard = () => {
 
     /* ── Get connected account display info ── */
     const getConnectionInfo = (provider) => {
+        if (provider?.comingSoon) return null;
         const conn = getProviderConnection(provider.id);
         if (provider.id === 'moonton') {
             const status = getMlbbVerificationStatus();
@@ -950,6 +965,22 @@ const Dashboard = () => {
                                     if (connectionPanel.id === 'moonton') {
                                         return renderMlbbConnectionPanel();
                                     }
+
+                                    if (connectionPanel.comingSoon) {
+                                        return (
+                                            <div className="db__conn-panel-status db__conn-panel-status--pending">
+                                                <i className="bx bx-time-five"></i>
+                                                <span>Próximamente</span>
+                                                <p className="db__conn-panel-desc">
+                                                    La integración con {connectionPanel.name} está pausada por ahora. La retomaremos cuando esté lista para producción.
+                                                </p>
+                                                <button className="db__btn db__btn--ghost" disabled>
+                                                    Próximamente
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+
                                     const info = getConnectionInfo(connectionPanel);
                                     if (info) {
                                         /* ── Connected: rich account view ── */
@@ -973,10 +1004,8 @@ const Dashboard = () => {
                                                     <button className="db__btn db__btn--outline" onClick={() => navigate('/settings')}>
                                                         <i className="bx bx-cog"></i> Configurar
                                                     </button>
-                                                    <button className="db__btn db__btn--danger-ghost">
-                                                        <i className="bx bx-unlink"></i> Desvincular
-                                                    </button>
                                                 </div>
+                                                {oauthPanelMsg ? <p className="db__conn-panel-msg">{oauthPanelMsg}</p> : null}
                                             </div>
                                         );
                                     } else {
@@ -987,9 +1016,13 @@ const Dashboard = () => {
                                                     <i className="bx bx-link-external"></i>
                                                     <span>No vinculada</span>
                                                     <p className="db__conn-panel-desc">Vincula tu cuenta de {connectionPanel.name} para acceder a estadísticas y funciones exclusivas.</p>
-                                                    <button className="db__btn db__btn--primary" onClick={() => navigate('/settings')}>
+                                                    <button
+                                                        className="db__btn db__btn--primary"
+                                                        onClick={() => navigate('/settings')}
+                                                    >
                                                         <i className="bx bx-link-alt"></i> Vincular ahora
                                                     </button>
+                                                    {oauthPanelMsg ? <p className="db__conn-panel-msg">{oauthPanelMsg}</p> : null}
                                                 </div>
                                                 {/* Preview mockup of what it looks like linked */}
                                                 <div className="db__conn-panel-preview">

@@ -8,25 +8,11 @@ import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/
 import { getAuthToken } from '../../../../utils/authSession';
 import { useAuth } from '../../../../context/AuthContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
+import { isSupportedMlbbGame, isSupportedRiotGame, normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
 import './TeamRegistration.css';
 
-const RIOT_GAMES = new Set([
-  'valorant',
-  'league of legends',
-  'wild rift',
-  'teamfight tactics',
-  'legends of runeterra',
-]);
-
 const normalizeGame = (value) => {
-  const raw = String(value || '').trim().toLowerCase();
-  if (!raw) return '';
-  const aliases = {
-    mlbb: 'mobile legends',
-    'mobile legends: bang bang': 'mobile legends',
-    'mobile legends bang bang': 'mobile legends',
-  };
-  return aliases[raw] || raw;
+  return String(normalizeSupportedGameName(value) || value || '').trim().toLowerCase();
 };
 
 const TeamRegistration = () => {
@@ -73,9 +59,9 @@ const TeamRegistration = () => {
     .filter((p) => p && (p.nickname || p.user)).length;
   const teamComplete = expectedStarters > 0 && filledStarters >= expectedStarters;
   const gameMatches = !tournamentGameNormalized || normalizeGame(selectedTeam?.game) === tournamentGameNormalized;
-  const requiresRiot = Boolean(tournament.riotRequirements?.required) || RIOT_GAMES.has(tournamentGameNormalized);
+  const requiresRiot = Boolean(tournament.riotRequirements?.required) || isSupportedRiotGame(tournament.game);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
-  const requiresMlbb = ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(tournament.game);
+  const requiresMlbb = isSupportedMlbbGame(tournament.game);
   const hasMlbbLinked = isMlbbVerifiedStatus(
     normalizeMlbbVerificationStatus(
       currentUser?.connections?.mlbb?.verificationStatus,

@@ -5,29 +5,15 @@ import { recordAdminAudit } from '../services/auditLogger.js';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import { normalizeTournamentServer } from '../../../shared/tournamentServerOptions.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
+import {
+    filterSupportedGameNames,
+    getSupportedGameRoles,
+    isSupportedGameName,
+    isSupportedMlbbGame,
+    isSupportedRiotGame,
+    normalizeSupportedGameName
+} from '../../../shared/supportedGames.js';
 
-const ROLE_NAMES = {
-    "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
-    "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
-    "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
-    "Overwatch 2": ["Tank", "DPS", "Support"],
-    "TFT": ["Tactician"],
-    "FIFA / EA FC": ["Player"],
-    "Free Fire": ["Rusher", "Support", "Sniper", "IGL"]
-};
-
-const RIOT_GAMES = new Set([
-    'Valorant',
-    'League of Legends',
-    'Wild Rift',
-    'Teamfight Tactics',
-    'Legends of Runeterra'
-]);
-const MLBB_GAMES = new Set([
-    'Mobile Legends',
-    'Mobile Legends: Bang Bang',
-    'MLBB'
-]);
 import fs from 'fs';
 
 const parseBooleanEnv = (value, fallback = false) => {
@@ -133,7 +119,7 @@ const normalizeRiotIdentity = (value = '') => normalizeText(value).trim();
 const isValidMlbbId = (value = '') => /^\d{5,15}$/.test(normalizeMlbbIdentity(value));
 const isValidMlbbZone = (value = '') => /^\d{3,6}$/.test(normalizeMlbbIdentity(value));
 const getRiotMinActiveParticipants = () => Math.max(2, RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS);
-const isRiotTournamentGame = (game = '') => RIOT_GAMES.has(String(game || '').trim());
+const isRiotTournamentGame = (game = '') => isSupportedRiotGame(game);
 const isFreeEntryFeeValue = (entryFee = '') => ['gratis', 'free', '0', '0.0', '0.00'].includes(normalizeEntryFee(entryFee));
 const parseTeamSizeFromModality = (modality = '') => {
     const raw = String(modality || '').trim().toLowerCase();
@@ -567,7 +553,9 @@ const pushNotificationMany = async (userIds, payload) => {
 };
 
 const getInterestedUsers = async (game, excludeIds = []) => {
-    const keys = [String(game || ''), String(game || '').toLowerCase()].filter(Boolean);
+    const normalizedGame = normalizeSupportedGameName(game);
+    if (!normalizedGame) return [];
+    const keys = filterSupportedGameNames([game, normalizedGame]);
     const since = new Date(Date.now() - ACTIVE_DAYS * 24 * 60 * 60 * 1000);
     const users = await User.find({
         selectedGames: { $in: keys },
@@ -598,6 +586,11 @@ const generateUniqueTournamentId = async () => {
 export const createTournament = async (req, res) => {
     try {
         const data = req.body;
+        const normalizedGame = normalizeSupportedGameName(data.game);
+        if (!normalizedGame) {
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+        }
+        data.game = normalizedGame;
         const organizer = await User.findById(req.userId).select('isOrganizer');
         if (!organizer || organizer.isOrganizer !== true) {
             return res.status(403).json({ message: 'Solo organizadores verificados pueden crear torneos' });
@@ -766,7 +759,7 @@ export const createTournament = async (req, res) => {
             return res.status(400).json({ message: 'Debes aceptar los términos, privacidad y declaración de organizador' });
         }
 
-        if (MLBB_GAMES.has(String(data.game || '').trim())) {
+        if (isSupportedMlbbGame(data.game)) {
             const mlbbIssues = getMlbbComplianceIssues({
                 title: data.title,
                 description: data.description,
@@ -904,11 +897,19 @@ export const updateTournament = async (req, res) => {
             return res.status(400).json({ message: 'Los cupos no pueden ser menores a los inscritos' });
         }
 
+        const normalizedUpdateGame = data.game !== undefined ? normalizeSupportedGameName(data.game) : '';
+        if (data.game !== undefined && !normalizedUpdateGame) {
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+        }
+
         const update = {
             ...data,
             prizesByRank: parsedPrizesByRank,
             staff: parsedStaff
         };
+        if (normalizedUpdateGame) {
+            update.game = normalizedUpdateGame;
+        }
 
         if (data.timezone) {
             update.timezone = data.timezone;
@@ -1013,7 +1014,7 @@ export const updateTournament = async (req, res) => {
         const targetTitle = update.title !== undefined ? update.title : tournament.title;
         const targetPrizeDetails = update.prizeDetails !== undefined ? update.prizeDetails : tournament.prizeDetails;
 
-        if (MLBB_GAMES.has(targetGame)) {
+        if (isSupportedMlbbGame(targetGame)) {
             const mlbbIssues = getMlbbComplianceIssues({
                 title: targetTitle,
                 description: targetDescription,
@@ -1069,7 +1070,7 @@ export const getTournaments = async (req, res) => {
         })
             .populate('organizer', 'username email');
 
-        res.status(200).json(tournaments);
+        res.status(200).json(tournaments.filter((tournament) => isSupportedGameName(tournament?.game)));
     } catch (error) {
         console.error("Error al obtener torneos:", error);
         res.status(500).json({
@@ -1086,7 +1087,7 @@ export const getTournamentByCode = async (req, res) => {
         const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() })
             .populate('organizer', 'username avatar');
 
-        if (!tournament) {
+        if (!tournament || !isSupportedGameName(tournament?.game)) {
             return res.status(404).json({ message: "No se encontró ningún torneo con ese código" });
         }
 
@@ -1107,7 +1108,7 @@ export const getManageableTournaments = async (req, res) => {
             .sort({ createdAt: -1 })
             .select('tournamentId title game status date organizer publicSettings');
 
-        return res.status(200).json(tournaments);
+        return res.status(200).json(tournaments.filter((tournament) => isSupportedGameName(tournament?.game)));
     } catch (error) {
         console.error('Error al obtener torneos gestionables:', error);
         return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
@@ -1146,7 +1147,7 @@ export const searchPublicTournaments = async (req, res) => {
                 time: pub.time,
                 bannerImage: pub.bannerImage
             };
-        });
+        }).filter((item) => isSupportedGameName(item?.game));
 
         return res.status(200).json(items);
     } catch (error) {
@@ -1160,6 +1161,9 @@ export const getPublicTournamentByCode = async (req, res) => {
         const { code } = req.params;
         const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
         if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+        if (!isSupportedGameName(tournament?.game)) {
             return res.status(404).json({ message: 'Torneo no encontrado' });
         }
 
@@ -1313,8 +1317,8 @@ export const registerTeam = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
         const requesterIsAdmin = requester.isAdmin === true;
-        const requiresRiot = tournament.riotRequirements?.required === true || RIOT_GAMES.has(tournament.game);
-        const requiresMlbb = MLBB_GAMES.has(String(tournament.game || '').trim());
+        const requiresRiot = tournament.riotRequirements?.required === true || isSupportedRiotGame(tournament.game);
+        const requiresMlbb = isSupportedMlbbGame(tournament.game);
         // Requisitos Riot (si aplica)
         if (requiresRiot) {
             if (!requester?.connections?.riot?.verified) {
@@ -1382,7 +1386,7 @@ export const registerTeam = async (req, res) => {
             if (String(team.captain) !== String(req.userId) && !requesterIsCoach && !requesterIsAdmin) {
                 return res.status(403).json({ message: 'Solo el capitán, coach o un admin puede inscribir al equipo' });
             }
-            if (String(team.game) !== String(tournament.game)) {
+            if (normalizeSupportedGameName(team.game) !== normalizeSupportedGameName(tournament.game)) {
                 return res.status(400).json({ message: 'El juego del equipo no coincide con el torneo' });
             }
             if (isUniversityOnlyTournament(tournament)) {
@@ -1403,7 +1407,7 @@ export const registerTeam = async (req, res) => {
             }
 
             // Validar roles según juego (solo titulares)
-            const allowedRoles = ROLE_NAMES[tournament.game] || ROLE_NAMES[team.game] || [];
+            const allowedRoles = getSupportedGameRoles(tournament.game || team.game);
             if (allowedRoles.length > 0) {
                 const invalidRole = starters.slice(0, expected).find(p => p?.role && !allowedRoles.includes(p.role));
                 if (invalidRole) {
@@ -1645,7 +1649,7 @@ export const updateRegistrationStatus = async (req, res) => {
         }
 
         const isRiotTournament = isRiotTournamentGame(tournament.game);
-        const isMlbbTournament = MLBB_GAMES.has(String(tournament.game || '').trim());
+        const isMlbbTournament = isSupportedMlbbGame(tournament.game);
         const universityOnly = isUniversityOnlyTournament(tournament);
         if (status === 'approved' && universityOnly) {
             if (!reg?.teamId) {
@@ -1830,7 +1834,7 @@ export const getTournamentCompliance = async (req, res) => {
 
         const game = String(tournament.game || '').trim();
         const isRiotTournament = isRiotTournamentGame(game);
-        const isMlbbTournament = MLBB_GAMES.has(game);
+        const isMlbbTournament = isSupportedMlbbGame(game);
         const checks = [];
 
         if (isRiotTournament) {
@@ -2060,7 +2064,7 @@ export const updateTournamentStatus = async (req, res) => {
                         return res.status(400).json({ message: duplicateCheck.message });
                     }
                 }
-                if (MLBB_GAMES.has(String(tournament.game || '').trim())) {
+                if (isSupportedMlbbGame(tournament.game)) {
                     const approved = getApprovedRegistrations(tournament);
                     if (approved.length < MLBB_MIN_APPROVED_TEAMS) {
                         return res.status(400).json({

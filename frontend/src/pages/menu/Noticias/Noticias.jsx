@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import PageHud from '../../../components/PageHud/PageHud';
 import { NEWS } from '../../../data/newsData';
+import { isSupportedGameName } from '../../../../../shared/supportedGames.js';
 import './Noticias.css';
 
 // Categories
@@ -21,7 +22,8 @@ const CATEGORIES = [
     { id: 'Equipos', label: 'Equipos', icon: FaUsers },
 ];
 
-const GAMES = ['Todos', 'MLBB', 'Valorant', 'LoL', 'EA FC', 'Multigame'];
+const GAMES = ['Todos', 'MLBB', 'Valorant', 'LoL', 'Multigame'];
+const VISIBLE_NEWS = NEWS.filter((item) => item?.game === 'Multigame' || isSupportedGameName(item?.game));
 
 // Format date helper
 const formatDate = (iso) => {
@@ -115,7 +117,7 @@ export default function Noticias() {
 
     // Filter and sort news
     const filtered = useMemo(() => {
-        let rows = [...NEWS];
+        let rows = [...VISIBLE_NEWS];
         
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -141,20 +143,20 @@ export default function Noticias() {
 
     // Featured news
     const featuredNews = useMemo(() => {
-        const featured = NEWS.find(n => n.featured);
-        return featured || NEWS[0];
+        const featured = VISIBLE_NEWS.find(n => n.featured);
+        return featured || VISIBLE_NEWS[0];
     }, []);
 
     // Trending news (top 5)
     const trendingNews = useMemo(() => {
-        return [...NEWS].sort((a, b) => b.views - a.views).slice(0, 5);
+        return [...VISIBLE_NEWS].sort((a, b) => b.views - a.views).slice(0, 5);
     }, []);
 
     // Stats
     const stats = useMemo(() => ({
-        total: NEWS.length,
-        views: NEWS.reduce((acc, n) => acc + n.views, 0),
-        comments: NEWS.reduce((acc, n) => acc + n.comments, 0),
+        total: VISIBLE_NEWS.length,
+        views: VISIBLE_NEWS.reduce((acc, n) => acc + n.views, 0),
+        comments: VISIBLE_NEWS.reduce((acc, n) => acc + n.comments, 0),
     }), []);
 
     // Animation variants

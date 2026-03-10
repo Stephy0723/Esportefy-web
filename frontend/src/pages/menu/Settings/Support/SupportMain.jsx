@@ -14,25 +14,9 @@ import './SupportPage.css';
 
 // All supported games
 const SUPPORTED_GAMES = [
-    { id: 'mlbb', name: 'Mobile Legends: Bang Bang', short: 'MLBB' },
-    { id: 'freefire', name: 'Free Fire', short: 'Free Fire' },
+    { id: 'mlbb', name: 'Mobile Legends', short: 'MLBB' },
     { id: 'valorant', name: 'Valorant', short: 'Valorant' },
     { id: 'lol', name: 'League of Legends', short: 'LoL' },
-    { id: 'eafc', name: 'EA Sports FC', short: 'EA FC' },
-    { id: 'fortnite', name: 'Fortnite', short: 'Fortnite' },
-    { id: 'pubgm', name: 'PUBG Mobile', short: 'PUBG Mobile' },
-    { id: 'codm', name: 'Call of Duty Mobile', short: 'COD Mobile' },
-    { id: 'apexmobile', name: 'Apex Legends Mobile', short: 'Apex Mobile' },
-    { id: 'clashofclans', name: 'Clash of Clans', short: 'CoC' },
-    { id: 'clashroyale', name: 'Clash Royale', short: 'Clash Royale' },
-    { id: 'rocketleague', name: 'Rocket League', short: 'Rocket League' },
-    { id: 'csgo', name: 'Counter-Strike 2', short: 'CS2' },
-    { id: 'dota2', name: 'Dota 2', short: 'Dota 2' },
-    { id: 'overwatch', name: 'Overwatch 2', short: 'OW2' },
-    { id: 'smashbros', name: 'Super Smash Bros', short: 'Smash' },
-    { id: 'tekken', name: 'Tekken 8', short: 'Tekken' },
-    { id: 'sf6', name: 'Street Fighter 6', short: 'SF6' },
-    { id: 'other', name: 'Otro Juego', short: 'Otro' },
 ];
 
 // FAQ Categories with icons

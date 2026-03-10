@@ -16,32 +16,25 @@ import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
+import { SUPPORTED_GAMES, filterSupportedGameNames } from '../../../../../shared/supportedGames.js';
 import './EditProfile.css';
 
 // ─── Game assets ───
 import imgLol from '../../../assets/gameImages/lol.png';
 import imgMlbb from '../../../assets/gameImages/mlbb.png';
-import imgHok from '../../../assets/gameImages/hok.png';
-import imgMoco from '../../../assets/gameImages/moco.png';
-import imgMarvel from '../../../assets/gameImages/marvel.png';
-import imgFreeFire from '../../../assets/gameImages/freefire.png';
-import imgFortnite from '../../../assets/gameImages/fortnite.png';
-import imgCodm from '../../../assets/gameImages/codm.png';
-import imgMk11 from '../../../assets/gameImages/mk11.png';
-import imgMarioKart from '../../../assets/gameImages/mariokart.png';
+import imgValorant from '../../../assets/comunidad/valorant.jpg';
 
-const mobaGames = [
-    { id: 'lol', name: 'League of Legends', img: imgLol },
-    { id: 'mlbb', name: 'Mobile Legends', img: imgMlbb },
-    { id: 'hok', name: 'Honor of Kings', img: imgHok },
-    { id: 'marvel', name: 'Marvel Rivals', img: imgMarvel },
-    { id: 'moco', name: 'Mo.co', img: imgMoco },
-    { id: 'freefire', name: 'Free Fire', img: imgFreeFire },
-    { id: 'fortnite', name: 'Fortnite', img: imgFortnite },
-    { id: 'codm', name: 'CoD Mobile', img: imgCodm },
-    { id: 'mk11', name: 'Mortal Kombat', img: imgMk11 },
-    { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart }
-];
+const GAME_IMAGE_MAP = {
+    lol: imgLol,
+    mlbb: imgMlbb,
+    valorant: imgValorant,
+};
+
+const mobaGames = SUPPORTED_GAMES.map((game) => ({
+    id: game.id,
+    name: game.name,
+    img: GAME_IMAGE_MAP[game.id] || imgValorant,
+}));
 
 const platformsList = [
     { id: 'pc', name: 'PC', icon: 'bx-laptop' },
@@ -168,7 +161,7 @@ const EditProfile = () => {
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
                 avatar: resolveMediaUrl(u.avatar) || '',
                 bio: u.bio || '',
-                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : [],
+                selectedGames: filterSupportedGameNames(Array.isArray(u.selectedGames) ? u.selectedGames : []),
                 platforms: Array.isArray(u.platforms) ? u.platforms : [],
                 goals: Array.isArray(u.goals) ? u.goals : [],
                 experience: Array.isArray(u.experience) ? u.experience : (u.experience ? [u.experience] : []),
@@ -476,7 +469,7 @@ const EditProfile = () => {
                 phone: u.phone ?? prev.phone,
                 gender: u.gender ?? prev.gender,
                 birthDate: u.birthDate ? String(u.birthDate).split('T')[0] : prev.birthDate,
-                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : prev.selectedGames,
+                selectedGames: filterSupportedGameNames(Array.isArray(u.selectedGames) ? u.selectedGames : prev.selectedGames),
                 platforms: Array.isArray(u.platforms) ? u.platforms : prev.platforms,
                 goals: Array.isArray(u.goals) ? u.goals : prev.goals,
                 experience: Array.isArray(u.experience) ? u.experience : prev.experience,

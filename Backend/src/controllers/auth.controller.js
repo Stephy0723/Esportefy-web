@@ -11,6 +11,7 @@ import nodemailer from "nodemailer";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { filterSupportedGameNames, isSupportedGameName, SUPPORTED_GAME_NAMES } from '../../../shared/supportedGames.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -255,6 +256,38 @@ export const checkPhoneAvailability = async (req, res) => {
     }
 };
 
+export const checkUsernameAvailability = async (req, res) => {
+    try {
+        const rawUsername = String(req.query.username || '').trim();
+        const excludeUserId = String(req.query.excludeUserId || '').trim();
+
+        if (!rawUsername) {
+            return res.status(400).json({ available: false, message: 'El GamerTag es obligatorio' });
+        }
+
+        if (!USERNAME_REGEX.test(rawUsername)) {
+            return res.status(400).json({ available: false, message: 'El GamerTag debe tener entre 3 y 20 caracteres válidos.' });
+        }
+
+        const query = {
+            username: { $regex: `^${escapeRegex(rawUsername)}$`, $options: 'i' }
+        };
+
+        if (excludeUserId) {
+            if (!isValidObjectIdLike(excludeUserId)) {
+                return res.status(400).json({ available: false, message: 'ID de usuario inválido para exclusión' });
+            }
+            query._id = { $ne: excludeUserId };
+        }
+
+        const existingUser = await User.findOne(query).select('_id');
+        return res.status(200).json({ available: !existingUser });
+    } catch (error) {
+        console.error('Error verificando GamerTag:', error);
+        return res.status(500).json({ available: false, message: 'Error verificando disponibilidad del GamerTag' });
+    }
+};
+
 export const register = async (req, res) => {
     try {
         const payload = req.body || {};
@@ -285,12 +318,26 @@ export const register = async (req, res) => {
             return res.status(400).json({ message: 'Correo inválido.' });
         }
 
+        if (!isValidNonNegativeNumberString(phone)) {
+            return res.status(400).json({ message: 'El teléfono debe contener solo números y no puede ser negativo.' });
+        }
+
+        if (!USERNAME_REGEX.test(username)) {
+            return res.status(400).json({ message: 'El GamerTag debe tener entre 3 y 20 caracteres válidos.' });
+        }
+
         // 1. Validaciones básicas antes de tocar la DB
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'El correo ya está registrado' });
         }
-        const usernameExists = await User.findOne({ username });
+        const phoneExists = await User.findOne({ phone });
+        if (phoneExists) {
+            return res.status(400).json({ message: 'El teléfono ya está registrado' });
+        }
+        const usernameExists = await User.findOne({
+            username: { $regex: `^${escapeRegex(username)}$`, $options: 'i' }
+        });
         if (usernameExists) {
             return res.status(400).json({ message: 'El nombre de usuario ya está en uso' });
         }
@@ -309,7 +356,7 @@ export const register = async (req, res) => {
             gender: payload.gender,
             country,
             birthDate,
-            selectedGames: normalizeStringArray(payload.selectedGames),
+            selectedGames: filterSupportedGameNames(normalizeStringArray(payload.selectedGames)),
             experience: normalizeStringArray(payload.experience),
             platforms: normalizeStringArray(payload.platforms),
             goals: normalizeStringArray(payload.goals),
@@ -434,7 +481,12 @@ export const getProfile = async (req, res) => {
         if (!user.userCode) {
             await user.save();
         }
-        res.status(200).json(user);
+        const payload = user.toObject();
+        payload.selectedGames = filterSupportedGameNames(payload.selectedGames);
+        payload.teams = Array.isArray(payload.teams)
+            ? payload.teams.filter((team) => isSupportedGameName(team?.game))
+            : [];
+        res.status(200).json(payload);
 
     } catch (error) {
         console.error("Error en getProfile:", error);
@@ -484,7 +536,9 @@ export const getUserCard = async (req, res) => {
                     tagLine: target?.connections?.riot?.tagLine || ''
                 }
             },
-            teams: Array.isArray(target?.teams) ? target.teams : [],
+            teams: Array.isArray(target?.teams)
+                ? target.teams.filter((team) => isSupportedGameName(team?.game))
+                : [],
             followers: toIdArray(target?.followers),
             following: toIdArray(target?.following),
             isFollowing
@@ -741,6 +795,7 @@ export const getProfileOverview = async (req, res) => {
 
         const userIdStr = String(req.userId);
         const teams = await Team.find({
+            game: { $in: SUPPORTED_GAME_NAMES },
             $or: [
                 { captain: req.userId },
                 { 'roster.starters.user': req.userId },
@@ -1190,6 +1245,9 @@ export const updateProfile = async (req, res) => {
                 updateData[field] = normalizeStringArray(updateData[field]);
             }
         });
+        if (updateData.selectedGames !== undefined) {
+            updateData.selectedGames = filterSupportedGameNames(updateData.selectedGames);
+        }
 
         // 2.1 Social links (JSON, dot notation o bracket notation)
         const parsedSocialLinks = {};

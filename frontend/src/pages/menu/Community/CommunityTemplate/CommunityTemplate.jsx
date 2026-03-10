@@ -46,13 +46,13 @@ const TOURNAMENTS_DATA = [
     },
     {
         id: 2,
-        name: 'Liga Rocket League',
+        name: 'Liga Mobile Legends',
         status: 'finished',
         participants: '8/8',
         logo: 'https://cdn-icons-png.flaticon.com/512/1693/1693244.png',
-        banner: 'https://via.placeholder.com/800x300/111827/9ca3af?text=RL+WEEKLY',
+        banner: 'https://via.placeholder.com/800x300/111827/9ca3af?text=MLBB+WEEKLY',
         date: 'Finalizado',
-        organizer: 'RL Community'
+        organizer: 'MLBB Community'
     }
 ];
 
@@ -124,7 +124,7 @@ const normalizeCommunity = (stateData, catalogCommunity, slugParam) => {
         admins: stateData?.admins || ['Admin', 'TournamentLead'],
         region: stateData?.region || 'Global',
         language: stateData?.language || 'Español',
-        games: Array.isArray(games) && games.length > 0 ? games : ['Valorant', 'LoL', 'CS2', 'Minecraft'],
+        games: Array.isArray(games) && games.length > 0 ? games : ['Valorant', 'League of Legends', 'Mobile Legends'],
         slug: stateData?.slug || catalogCommunity?.slug || slugParam || slugify(source.name || 'community')
     };
 };

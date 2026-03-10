@@ -34,50 +34,6 @@ export const TOURNAMENT_SERVER_OPTIONS_BY_GAME = {
     { value: 'MYSG', label: 'Malaysia / Singapore (MYSG)' },
     { value: 'MENA', label: 'MENA' },
     { value: 'GLOBAL', label: 'Global / Internacional' }
-  ],
-  'CS:GO 2': [
-    { value: 'LATAM', label: 'LATAM' },
-    { value: 'NA', label: 'Norteamerica (NA)' },
-    { value: 'EU', label: 'Europa (EU)' },
-    { value: 'BR', label: 'Brasil (BR)' },
-    { value: 'ASIA', label: 'Asia' }
-  ],
-  Fortnite: [
-    { value: 'NA', label: 'Norteamerica (NA)' },
-    { value: 'EU', label: 'Europa (EU)' },
-    { value: 'BR', label: 'Brasil (BR)' },
-    { value: 'ASIA', label: 'Asia' },
-    { value: 'OCE', label: 'Oceania (OCE)' },
-    { value: 'MIDDLE_EAST', label: 'Middle East' }
-  ],
-  'Free Fire': [
-    { value: 'LATAM', label: 'LATAM' },
-    { value: 'BR', label: 'Brasil (BR)' },
-    { value: 'INDIA', label: 'India' },
-    { value: 'SEA', label: 'Sudeste Asiatico (SEA)' },
-    { value: 'MENA', label: 'MENA' }
-  ],
-  'Dota 2': [
-    { value: 'NA', label: 'Norteamerica (NA)' },
-    { value: 'SA', label: 'Sudamerica (SA)' },
-    { value: 'WEU', label: 'Europa Oeste (WEU)' },
-    { value: 'EEU', label: 'Europa Este (EEU)' },
-    { value: 'SEA', label: 'Sudeste Asiatico (SEA)' },
-    { value: 'CN', label: 'China (CN)' }
-  ],
-  'FIFA 24': [
-    { value: 'LATAM', label: 'LATAM' },
-    { value: 'NA', label: 'Norteamerica (NA)' },
-    { value: 'EU', label: 'Europa (EU)' },
-    { value: 'GLOBAL', label: 'Global / Internacional' }
-  ],
-  'Rocket League': [
-    { value: 'SAM', label: 'Sudamerica (SAM)' },
-    { value: 'NA', label: 'Norteamerica (NA)' },
-    { value: 'EU', label: 'Europa (EU)' },
-    { value: 'OCE', label: 'Oceania (OCE)' },
-    { value: 'APAC', label: 'Asia Pacifico (APAC)' },
-    { value: 'MENA', label: 'MENA' }
   ]
 };
 

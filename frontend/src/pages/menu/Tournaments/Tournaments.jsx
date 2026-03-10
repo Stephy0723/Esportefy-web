@@ -11,37 +11,15 @@ import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
+import { filterSupportedGameObjects, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
   "Valorant": { color: "#ff4655", icon: "bx-crosshair" },
-  "CS:GO 2": { color: "#de9b35", icon: "bx-target-lock" },
-  "Call of Duty": { color: "#54b946", icon: "bx-run" },
-  "Warzone": { color: "#54b946", icon: "bx-radar" },
-  "Fortnite": { color: "#a349a4", icon: "bx-building" },
-  "Free Fire": { color: "#f39c12", icon: "bx-flame" },
-  "PUBG": { color: "#f1c40f", icon: "bx-target-lock" },
-  "Apex Legends": { color: "#e74c3c", icon: "bx-shield-quarter" },
-  "Overwatch 2": { color: "#f39c12", icon: "bx-shield" },
-  "Rainbow Six Siege": { color: "#3498db", icon: "bx-window" },
   "League of Legends": { color: "#c1a05e", icon: "bx-world" },
-  "Dota 2": { color: "#e74c3c", icon: "bx-map-alt" },
   "Mobile Legends": { color: "#ffbf00", icon: "bx-mobile-landscape" },
-  "Honor of Kings": { color: "#e6b333", icon: "bx-crown" },
-  "Smite": { color: "#f1c40f", icon: "bx-bolt-circle" },
-  "Wild Rift": { color: "#00a8ff", icon: "bx-mobile" },
-  "FIFA 24": { color: "#2ecc71", icon: "bx-football" },
-  "NBA 2K24": { color: "#e67e22", icon: "bx-basketball" },
-  "Rocket League": { color: "#0088ff", icon: "bx-car" },
-  "Street Fighter 6": { color: "#f39c12", icon: "bx-walk" },
-  "Tekken 8": { color: "#c0392b", icon: "bx-angry" },
-  "Clash Royale": { color: "#3498db", icon: "bx-crown" },
-  "Teamfight Tactics": { color: "#f1c40f", icon: "bx-grid" },
-  "Hearthstone": { color: "#f39c12", icon: "bx-book" },
-  "Legends of Runeterra": { color: "#3498db", icon: "bx-book-open" },
-  "StarCraft II": { color: "#00a8ff", icon: "bx-planet" }
 };
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -310,21 +288,8 @@ const formatTournamentFromApi = (t) => ({
   __local: t.__local === true
 });
 
-const RIOT_GAMES = new Set([
-  'Valorant',
-  'League of Legends',
-  'Wild Rift',
-  'Teamfight Tactics',
-  'Legends of Runeterra'
-]);
-const MLBB_GAMES = new Set([
-  'Mobile Legends',
-  'Mobile Legends: Bang Bang',
-  'MLBB'
-]);
-
-const isRiotGame = (game) => RIOT_GAMES.has(game);
-const isMlbbGame = (game) => MLBB_GAMES.has(String(game || '').trim());
+const isRiotGame = (game) => isSupportedRiotGame(game);
+const isMlbbGame = (game) => isSupportedMlbbGame(game);
 
 const getMlbbEntryStatus = (player) => {
   if (!player) return null;
@@ -590,51 +555,6 @@ const Tournaments = () => {
   const getGameImage = (gameName) => {
     return GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
   };
-/*
-  // --- DATOS COMPLETOS DE TORNEOS ---
-  const [tournaments] = useState([
-    { 
-        id: 1, game: 'Valorant', title: 'Valorant Masters: Tokyo', date: '2024-10-24', prize: '$50,000', slots: '12/16', 
-        time: '18:00 EST', entry: '$10 USD', organizer: 'Riot Games', format: '5v5 - Elim. Simple',
-        desc: 'El torneo más competitivo de la temporada. Requiere rango Ascendente o superior. Anti-cheat Vanguard obligatorio. Mapas: Bind, Haven, Split.'
-    },
-    { 
-        id: 2, game: 'League of Legends', title: "Summoner's Cup: Regional", date: '2024-10-25', prize: '$10,000', slots: '32/32', 
-        time: '20:00 EST', entry: 'Gratis', organizer: 'Esportefy Latam', format: '5v5 - Grieta',
-        desc: 'Torneo abierto para toda la comunidad. Ideal para equipos amateur que buscan su primera experiencia competitiva. Modo Draft con 3 baneos.'
-    },
-    { 
-        id: 3, game: 'CS:GO 2', title: 'Blast Premier Fall Showdown', date: '2024-11-05', prize: '$100,000', slots: '15/16', 
-        time: '21:00 EST', entry: '$50 USD', organizer: 'BLAST Premier', format: '5v5 - BO3',
-        desc: 'Clasificatorio directo para la Major. Solo equipos verificados con Prime Status activo. Se requiere check-in 1 hora antes.'
-    },
-    { 
-        id: 4, game: 'Free Fire', title: 'Copa Survivors Latam', date: '2024-11-08', prize: '$5,000', slots: '45/48', 
-        time: '19:00 EST', entry: 'Gratis', organizer: 'Garena', format: 'Squads - Battle Royale',
-        desc: 'Demuestra quién manda en Bermuda. 3 mapas rotativos. Puntos por kill y posicionamiento. ¡Booyah garantizado para el ganador!'
-    },
-    { 
-        id: 5, game: 'FIFA 24', title: 'Ultimate Team Championship', date: '2024-11-12', prize: '$2,000', slots: '60/64', 
-        time: '14:00 EST', entry: '$5 USD', organizer: 'EA Sports', format: '1v1 - Global Series',
-        desc: 'Torneo oficial de fin de semana. Prohibido el uso de jugadores cedidos. Formato de ida y vuelta con gol de oro en desempate.'
-    },
-    { 
-        id: 6, game: 'Rocket League', title: 'Nitro League 3v3', date: '2024-11-15', prize: '$1,500', slots: '8/16', 
-        time: '17:30 EST', entry: 'Gratis', organizer: 'Psyonix Community', format: '3v3 - Estándar',
-        desc: 'Acelera y vuela hacia la victoria. Torneo rápido de eliminación doble. Se permiten suplentes registrados previamente.'
-    },
-    { 
-        id: 7, game: 'Call of Duty', title: 'Warfare Elite Ops', date: '2024-11-20', prize: '$15,000', slots: '10/12', 
-        time: '22:00 EST', entry: '$20 USD', organizer: 'Activision', format: '4v4 - Hardpoint/S&D',
-        desc: 'Rotación de modos competitivos (CDL Ruleset). Prohibidas las armas restringidas por la liga oficial. Solo PC y Consola (Crossplay ON).'
-    },
-    { 
-        id: 8, game: 'Rainbow Six Siege', title: 'Operator League: Six Invite', date: '2024-11-25', prize: '$8,000', slots: '4/8', 
-        time: '16:00 EST', entry: '$15 USD', organizer: 'Ubisoft', format: '5v5 - Bomb',
-        desc: 'Táctica y destrucción. Mapas competitivos oficiales. Se requiere Moss Anti-Cheat ejecutándose en segundo plano.'
-    }
-  ]);*///juegos de ejemplo
-
   // --- LOGICA CARRUSEL ---
   useEffect(() => {
     const timer = setInterval(() => {
@@ -652,12 +572,15 @@ useEffect(() => {
             const response = await axios.get(`${API_URL}/api/tournaments`);
             
             // Adaptamos los datos de la base de datos al formato que usa tu diseño
-            const formattedTournaments = response.data.map(formatTournamentFromApi);
+            const formattedTournaments = filterSupportedGameObjects(
+              response.data.map(formatTournamentFromApi),
+              { nameKey: 'game', allowMissingId: true }
+            );
 
-            setTournaments([...localFormatted, ...formattedTournaments]);
+            setTournaments(filterSupportedGameObjects([...localFormatted, ...formattedTournaments], { nameKey: 'game', allowMissingId: true }));
         } catch (err) {
             console.error("Error cargando torneos:", err);
-            setTournaments(localFormatted);
+            setTournaments(filterSupportedGameObjects(localFormatted, { nameKey: 'game', allowMissingId: true }));
             if (!localFormatted.length) {
               notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
             }
@@ -677,6 +600,7 @@ useEffect(() => {
         const res = await axios.get(`${API_URL}/api/teams`);
         const uid = String(user._id);
         const ids = (res.data || [])
+          .filter((team) => isSupportedGameName(team?.game))
           .filter((t) => {
             const starters = Array.isArray(t.roster?.starters) ? t.roster.starters : [];
             const subs = Array.isArray(t.roster?.subs) ? t.roster.subs : [];

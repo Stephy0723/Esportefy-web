@@ -10,6 +10,7 @@ import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMedia
 import { getAuthToken } from '../../../utils/authSession';
 import { formatTeamPublicId, getPublicTeamCode, matchesTeamPublicId } from '../../../utils/publicIds';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
+import { getSupportedGameRoles, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
 import './Teams.css';
 
 /* ═══════════════════════════════════════
@@ -50,24 +51,10 @@ const isNewTeam = (team) => {
     return diff < NEW_TEAM_DAYS * 86_400_000;
 };
 
-const MLBB_GAMES = new Set([
-    'Mobile Legends',
-    'Mobile Legends: Bang Bang',
-    'MLBB'
-]);
-
-const RIOT_GAMES = new Set([
-    'League of Legends',
-    'Valorant',
-    'Wild Rift',
-    'Teamfight Tactics',
-    'Legends of Runeterra'
-]);
-
 const formatRosterGameId = (game, player = {}) => {
     const gameId = String(player?.gameId || '').trim();
     if (!gameId) return '';
-    if (!RIOT_GAMES.has(String(game || '').trim())) return gameId;
+    if (!isSupportedRiotGame(game)) return gameId;
     const nick = String(player?.nickname || '').trim();
     const cleanedTag = gameId.replace(/^#/, '');
     if (!nick || !cleanedTag) return gameId;
@@ -168,7 +155,7 @@ const Team = () => {
         if (!team) return [];
         return (team.joinRequests || []).filter(r => r.status === 'pending');
     };
-    const isMlbbTeam = (team) => MLBB_GAMES.has(String(team?.game || '').trim());
+    const isMlbbTeam = (team) => isSupportedMlbbGame(team?.game);
     const isUniversityTeam = (team) => team?.university?.isUniversityTeam === true || String(team?.teamLevel || '').trim().toLowerCase().includes('universitario');
     const openManageTeamModal = (team, initialTab = 'info') => {
         if (!team?._id) return;
@@ -179,22 +166,6 @@ const Team = () => {
         setIsViewModalOpen(true);
     };
 
-    const ROLE_NAMES_JOIN = {
-        "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
-        "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
-        "Wild Rift": ["Baron", "Jungle", "Mid", "Dragon", "Supp"],
-        "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
-        "CS2": ["Entry", "AWPer", "Lurker", "Support", "IGL"],
-        "Overwatch 2": ["Tank", "DPS", "DPS", "Support", "Support"],
-        "Rainbow Six Siege": ["Entry", "Support", "Flex", "Hard Breach", "Anchor"],
-        "Free Fire": ["Rusher", "Support", "Sniper", "IGL"],
-        "Fortnite": ["Fragger", "IGL", "Support", "Builder"],
-        "PUBG": ["Fragger", "IGL", "Support", "Scout"],
-        "Apex Legends": ["Fragger", "IGL", "Support"],
-        "Call of Duty": ["Slayer", "OBJ", "Support", "Flex"],
-        "Dota 2": ["Carry", "Mid", "Offlane", "Soft Supp", "Hard Supp"],
-        "Rocket League": ["Striker", "Midfielder", "Defender"],
-    };
     const REGION_OPTIONS_JOIN = ["LAN", "LAS", "NA", "BR", "EUW", "EUNE", "TR", "RU", "OCE", "KR", "JP", "LATAM", "GLOBAL"];
 
     const resolveJoinSlotRole = (team, slotType, slotIndex, explicitRole = '') => {
@@ -213,7 +184,7 @@ const Team = () => {
         const rosterRole = String(team?.roster?.[normalizedType]?.[index]?.role || '').trim();
         if (rosterRole) return rosterRole;
 
-        const templates = ROLE_NAMES_JOIN[String(team?.game || '').trim()] || [];
+        const templates = getSupportedGameRoles(team?.game);
         if (templates[index]) return templates[index];
 
         return normalizedType === 'subs' ? `Suplente ${index + 1}` : `Titular ${index + 1}`;
@@ -342,7 +313,7 @@ const Team = () => {
             try {
                 setLoading(true);
                 const res = await axios.get(`${API_URL}/api/teams`);
-                setTeams(res.data);
+                setTeams((res.data || []).filter((team) => isSupportedGameName(team?.game)));
                 setError(false);
             } catch (_) {
                 setError(true);
@@ -498,7 +469,7 @@ const Team = () => {
                                     });
                                     addToast(res.data.message || 'Equipos demo creados', 'success');
                                     const teamsRes = await axios.get(`${API_URL}/api/teams`);
-                                    setTeams(teamsRes.data);
+                                    setTeams((teamsRes.data || []).filter((team) => isSupportedGameName(team?.game)));
                                 } catch (err) {
                                     addToast(err.response?.data?.message || 'Error al crear equipos demo', 'error');
                                 }
@@ -518,7 +489,7 @@ const Team = () => {
                                     });
                                     addToast(res.data.message || 'Equipos de terceros creados', 'success');
                                     const teamsRes = await axios.get(`${API_URL}/api/teams`);
-                                    setTeams(teamsRes.data);
+                                    setTeams((teamsRes.data || []).filter((team) => isSupportedGameName(team?.game)));
                                 } catch (err) {
                                     addToast(err.response?.data?.message || 'Error al crear equipos de terceros', 'error');
                                 }
@@ -1043,7 +1014,7 @@ const Team = () => {
                             const st = selectedTeam;
                             const maxS = st.maxMembers || st.roster?.starters?.length || 5;
                             const maxSb = st.maxSubstitutes || st.roster?.subs?.length || 0;
-                            const roles = ROLE_NAMES_JOIN[st.game] || [];
+                            const roles = getSupportedGameRoles(st.game);
                             const starterList = Array.isArray(st?.roster?.starters) ? st.roster.starters : [];
                             const subList = Array.isArray(st?.roster?.subs) ? st.roster.subs : [];
                             const coach = st?.roster?.coach || null;

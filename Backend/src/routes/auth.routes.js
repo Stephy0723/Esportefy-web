@@ -4,6 +4,7 @@ import { Router } from 'express';
 import {
   register,
   checkPhoneAvailability,
+  checkUsernameAvailability,
   login,
   logout,
   getProfile,
@@ -54,6 +55,7 @@ const router = Router();
 const rlLogin = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: 'login' });
 const rlRegister = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'register' });
 const rlCheckPhone = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'check-phone' });
+const rlCheckUsername = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'check-username' });
 const rlForgot = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'forgot' });
 const rlReset = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'reset' });
 const rlRiot = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 6, keyPrefix: 'riot' });
@@ -79,6 +81,7 @@ router.delete('/discord', verifyToken, unlinkDiscord);
 ========================= */
 router.post('/register', rlRegister, register);
 router.get('/check-phone', rlCheckPhone, checkPhoneAvailability);
+router.get('/check-username', rlCheckUsername, checkUsernameAvailability);
 router.post('/login', rlLogin, login);
 router.post('/logout', logout);
 router.get('/profile', verifyToken, rlProfile, getProfile);

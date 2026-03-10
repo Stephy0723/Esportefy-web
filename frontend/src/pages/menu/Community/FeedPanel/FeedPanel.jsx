@@ -5,18 +5,7 @@ import './FeedPanel.css';
 const GAME_OPTIONS = [
     { id: 'valorant', name: 'Valorant', color: '#ff4655' },
     { id: 'lol', name: 'League of Legends', color: '#0ac8b9' },
-    { id: 'cs2', name: 'CS2', color: '#de9b35' },
-    { id: 'fortnite', name: 'Fortnite', color: '#22c55e' },
-    { id: 'warzone', name: 'Warzone', color: '#4caf50' },
-    { id: 'ow2', name: 'Overwatch 2', color: '#f99e1a' },
-    { id: 'dota2', name: 'Dota 2', color: '#e33935' },
-    { id: 'apex', name: 'Apex Legends', color: '#cd3333' },
-    { id: 'rl', name: 'Rocket League', color: '#0088ff' },
-    { id: 'r6', name: 'Rainbow Six', color: '#ff8c00' },
-    { id: 'sf6', name: 'Street Fighter 6', color: '#ff5e00' },
-    { id: 'tekken8', name: 'Tekken 8', color: '#ffd700' },
     { id: 'mlbb', name: 'Mobile Legends', color: '#00d2ff' },
-    { id: 'ff', name: 'Free Fire', color: '#ffaa00' },
 ];
 
 const DEMO_POSTS = [
@@ -44,21 +33,11 @@ const DEMO_POSTS = [
         likes: 89, comments: 52, shares: 23, liked: true,
     },
     {
-        id: 3, author: 'TeamAlpha', avatar: 'T', time: 'Hace 6h',
-        game: { id: 'cs2', name: 'CS2', color: '#de9b35' },
-        content: 'Documento de estrategias para el torneo de este fin de semana. Estudienlo bien equipo.',
-        document: { name: 'Strats_Torneo_CS2.pdf', size: '2.4 MB', type: 'pdf' },
+        id: 3, author: 'MLBB Coach', avatar: 'M', time: 'Hace 6h',
+        game: { id: 'mlbb', name: 'Mobile Legends', color: '#00d2ff' },
+        content: 'Nueva guía para rotaciones y prioridad de objetivos en MLBB. Revísenla antes del próximo scrim.',
+        document: { name: 'Guia_Rotaciones_MLBB.pdf', size: '1.8 MB', type: 'pdf' },
         likes: 67, comments: 15, shares: 44, liked: false,
-    },
-    {
-        id: 4, author: 'ClipMaster', avatar: 'C', time: 'Hace 8h',
-        game: { id: 'fortnite', name: 'Fortnite', color: '#22c55e' },
-        content: 'Este build battle fue INSANO. 200 IQ play al final.',
-        images: [
-            'https://via.placeholder.com/600x340/1a1a2e/22c55e?text=BUILD+BATTLE',
-            'https://via.placeholder.com/600x340/1a1a2e/22c55e?text=VICTORY+ROYALE',
-        ],
-        likes: 312, comments: 87, shares: 56, liked: false,
     },
 ];
 

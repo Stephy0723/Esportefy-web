@@ -41,11 +41,12 @@ const useCountUp = (target, duration = 2200, active = true) => {
 const HeroBanner = () => {
     const [heroIdx, setHeroIdx] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
-    const heroes = [GAMES[0], GAMES[1], GAMES[3], GAMES[4], GAMES[8]];
-    const hero = heroes[heroIdx];
+    const heroes = GAMES.slice(0, 3);
+    const hero = heroes[heroIdx] || heroes[0] || { name: 'Esportefy', img: '', color: '#8EDB15' };
 
     useEffect(() => {
         setIsLoaded(true);
+        if (!heroes.length) return undefined;
         const t = setInterval(() => setHeroIdx(i => (i + 1) % heroes.length), 6000);
         return () => clearInterval(t);
     }, [heroes.length]);

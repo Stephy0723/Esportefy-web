@@ -10,6 +10,11 @@ import {
   normalizeTournamentServer
 } from '../../../../../../shared/tournamentServerOptions.js';
 import {
+  SUPPORTED_GAME_NAMES,
+  SUPPORTED_MLBB_GAME_NAMES,
+  SUPPORTED_RIOT_GAME_NAMES,
+} from '../../../../../../shared/supportedGames.js';
+import {
   FaBullhorn,
   FaCheckCircle,
   FaDiscord,
@@ -29,10 +34,7 @@ import './CreateTournament.css';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
-const GAMES = [
-  'Valorant', 'CS:GO 2', 'Fortnite', 'Free Fire', 'League of Legends',
-  'Dota 2', 'Mobile Legends', 'FIFA 24', 'Rocket League'
-];
+const GAMES = [...SUPPORTED_GAME_NAMES];
 
 const baseState = (name) => ({
   title: '',
@@ -91,19 +93,8 @@ const BRACKET_SLOT_PRESETS = ['4', '8', '16', '32', '64'];
 const INTEGER_INPUT_REGEX = /^\d*$/;
 const MONEY_INPUT_REGEX = /^\d*(?:[.,]\d{0,2})?$/;
 
-const RIOT_TITLES = new Set([
-  'Valorant',
-  'League of Legends',
-  'Wild Rift',
-  'Teamfight Tactics',
-  'Legends of Runeterra'
-]);
-
-const MLBB_TITLES = new Set([
-  'Mobile Legends',
-  'Mobile Legends: Bang Bang',
-  'MLBB'
-]);
+const RIOT_TITLES = new Set(SUPPORTED_RIOT_GAME_NAMES);
+const MLBB_TITLES = new Set(SUPPORTED_MLBB_GAME_NAMES);
 
 const MLBB_BETA_MODE = String(import.meta.env.VITE_MLBB_BETA_MODE ?? 'true').trim().toLowerCase() !== 'false';
 const RIOT_REVIEW_MODE = String(import.meta.env.VITE_RIOT_REVIEW_MODE ?? 'false').trim().toLowerCase() === 'true';

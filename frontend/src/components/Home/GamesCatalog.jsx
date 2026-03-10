@@ -2,39 +2,21 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
-// Importar imÃ¡genes de juegos locales
+// Importar imágenes de juegos locales
 import lolImg from '../../assets/games/lol.jpg';
 import valorantImg from '../../assets/games/valorant.jpg';
-import cs2Img from '../../assets/games/cs2.jpg';
 import mlbbImg from '../../assets/games/mlbb.jpg';
-import fortniteImg from '../../assets/games/fornite.jpg';
-import freeFireImg from '../../assets/games/freefire.jpg';
-import hokImg from '../../assets/games/hok.jpg';
-import dota2Img from '../../assets/games/dota2.jpg';
-import apexImg from '../../assets/games/apex.jpg';
-import overwatchImg from '../../assets/games/Overwhat2.jpg';
-import rocketImg from '../../assets/games/rocket.jpg';
-import tekkenImg from '../../assets/games/tekken8.jpg';
 
 const FEATURED_GAMES = [
   { id: 'lol', name: 'League of Legends', img: lolImg, color: '#C1A058', tag: 'MOBA' },
   { id: 'valorant', name: 'Valorant', img: valorantImg, color: '#FF4655', tag: 'FPS' },
-  { id: 'cs2', name: 'CS:GO 2', img: cs2Img, color: '#F39C12', tag: 'FPS' },
   { id: 'mlbb', name: 'Mobile Legends', img: mlbbImg, color: '#2980B9', tag: 'MOBA' },
-  { id: 'fortnite', name: 'Fortnite', img: fortniteImg, color: '#A94DE3', tag: 'Battle Royale' },
-  { id: 'freefire', name: 'Free Fire', img: freeFireImg, color: '#FFA500', tag: 'Battle Royale' },
-  { id: 'hok', name: 'Honor of Kings', img: hokImg, color: '#E67E22', tag: 'MOBA' },
-  { id: 'dota2', name: 'Dota 2', img: dota2Img, color: '#C0392B', tag: 'MOBA' },
-  { id: 'apex', name: 'Apex Legends', img: apexImg, color: '#DA292A', tag: 'Battle Royale' },
-  { id: 'overwatch', name: 'Overwatch 2', img: overwatchImg, color: '#FA9C1E', tag: 'FPS' },
-  { id: 'rocket', name: 'Rocket League', img: rocketImg, color: '#3498DB', tag: 'Deportes' },
-  { id: 'tekken8', name: 'Tekken 8', img: tekkenImg, color: '#C0392B', tag: 'Fighting' },
 ];
 
 const GamesCatalog = () => {
   return (
     <section className="relative py-24 px-6 md:px-16 bg-[var(--bg-page)] overflow-hidden">
-      {/* DecoraciÃ³n de fondo */}
+      {/* Decoración de fondo */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-[var(--primary)] rounded-full blur-[150px]" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--primary)] rounded-full blur-[150px]" />
@@ -53,11 +35,11 @@ const GamesCatalog = () => {
             Ecosistema competitivo
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[var(--text-main)] mt-4 mb-6">
-            +25 Juegos Soportados
+            3 Juegos Soportados
           </h2>
           <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
-            Desde MOBAs hasta shooters tÃ¡cticos. Encuentra tu comunidad, 
-            compite en torneos y escala en el ranking de tu juego favorito.
+            Valorant, League of Legends y Mobile Legends son el foco actual de la plataforma.
+            El resto volverá cuando esté implementado.
           </p>
         </motion.div>
 
