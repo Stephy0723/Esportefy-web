@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { getAuthToken } from '../../../../utils/authSession';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../../utils/publicIds';
 import './TournamentAdmin.css';
 
@@ -28,7 +29,7 @@ const TournamentAdminHub = () => {
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const token = getAuthToken();
 
   useEffect(() => {
     const load = async () => {

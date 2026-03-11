@@ -12,6 +12,7 @@ Checklist manual para correr antes de enviar la solicitud en el Developer Portal
 - [ ] `RIOT_REVIEW_MODE=true`
 - [ ] `ALLOW_RIOT_DEV_KEY_IN_PROD=false`
 - [ ] `VITE_RIOT_REVIEW_MODE=true`
+- [ ] Smoke automatizado ejecutado: `npm --prefix Backend run test:e2e:riot`
 - [ ] Footer legal visible con disclaimer Riot
 - [ ] Paginas legales accesibles:
   - [ ] `Terms`

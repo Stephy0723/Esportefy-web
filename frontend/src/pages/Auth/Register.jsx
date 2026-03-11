@@ -10,46 +10,14 @@ import { useTheme } from '../../context/ThemeContext';
 import bgWhite from '../../assets/images/login-black.png'; // Imagen Oscura
 import bgBlack from '../../assets/images/login-white.png'; // Imagen Clara (Asegúrate que exista con este nombre)
 
-// --- IMPORTACIONES DE JUEGOS ---
-import imgMoco from '../../assets/gameImages/moco.png';
-import imgMarvel from '../../assets/gameImages/marvel.png';
-import imgCodm from '../../assets/gameImages/codm.png';
-import imgMk from '../../assets/gameImages/mk11.png';
-import imgMarioKart from '../../assets/gameImages/mariokart.png';
 import { GAME_IMAGES } from '../../data/gameImages';
+import { SUPPORTED_GAME_NAMES } from '../../../../shared/supportedGames.js';
 
-const REGISTER_GAMES = [
-  { id: 'League of Legends', name: 'League of Legends', imageKey: 'League of Legends' },
-  { id: 'Valorant', name: 'Valorant', imageKey: 'Valorant' },
-  { id: 'Dota 2', name: 'Dota 2', imageKey: 'Dota 2' },
-  { id: 'Mobile Legends', name: 'Mobile Legends', imageKey: 'Mobile Legends' },
-  { id: 'Honor of Kings', name: 'Honor of Kings', imageKey: 'Honor of Kings' },
-  { id: 'Wild Rift', name: 'Wild Rift', imageKey: 'Wild Rift' },
-  { id: 'Teamfight Tactics', name: 'Teamfight Tactics', imageKey: 'Teamfight Tactics' },
-  { id: 'Legends of Runeterra', name: 'Legends of Runeterra', imageKey: 'Legends of Runeterra' },
-  { id: 'CS:GO 2', name: 'CS:GO 2', imageKey: 'CS:GO 2' },
-  { id: 'Call of Duty', name: 'Call of Duty', imageKey: 'Call of Duty' },
-  { id: 'Call of Duty Mobile', name: 'Call of Duty Mobile', image: imgCodm },
-  { id: 'Warzone', name: 'Warzone', imageKey: 'Warzone' },
-  { id: 'Overwatch 2', name: 'Overwatch 2', imageKey: 'Overwatch 2' },
-  { id: 'Free Fire', name: 'Free Fire', imageKey: 'Free Fire' },
-  { id: 'Fortnite', name: 'Fortnite', imageKey: 'Fortnite' },
-  { id: 'PUBG', name: 'PUBG', imageKey: 'PUBG' },
-  { id: 'Apex Legends', name: 'Apex Legends', imageKey: 'Apex Legends' },
-  { id: 'Rainbow Six Siege', name: 'Rainbow Six Siege', imageKey: 'Rainbow Six Siege' },
-  { id: 'Rocket League', name: 'Rocket League', imageKey: 'Rocket League' },
-  { id: 'FIFA 24', name: 'FIFA 24', imageKey: 'FIFA 24' },
-  { id: 'NBA 2K24', name: 'NBA 2K24', imageKey: 'NBA 2K24' },
-  { id: 'Street Fighter 6', name: 'Street Fighter 6', imageKey: 'Street Fighter 6' },
-  { id: 'Tekken 8', name: 'Tekken 8', imageKey: 'Tekken 8' },
-  { id: 'Clash Royale', name: 'Clash Royale', imageKey: 'Clash Royale' },
-  { id: 'Hearthstone', name: 'Hearthstone', imageKey: 'Hearthstone' },
-  { id: 'StarCraft II', name: 'StarCraft II', imageKey: 'StarCraft II' },
-  { id: 'Mortal Kombat 11', name: 'Mortal Kombat 11', image: imgMk },
-  { id: 'Mario Kart', name: 'Mario Kart', image: imgMarioKart },
-  { id: 'Marvel Rivals', name: 'Marvel Rivals', image: imgMarvel },
-  { id: 'Mo.co', name: 'Mo.co', image: imgMoco }
-];
+const REGISTER_GAMES = SUPPORTED_GAME_NAMES.map((name) => ({
+  id: name,
+  name,
+  imageKey: name,
+}));
 
 const normalizeForCompare = (value = '') =>
   String(value)
@@ -174,6 +142,13 @@ const Register = () => {
     warning: false,
     message: ''
   });
+  const [usernameAvailability, setUsernameAvailability] = useState({
+    loading: false,
+    checked: false,
+    available: true,
+    warning: false,
+    message: ''
+  });
 
   const [formData, setFormData] = useState({
     fullName: '', phone: '', gender: 'Otro', country: '', birthDate: '',
@@ -187,6 +162,12 @@ const Register = () => {
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setError('');
+
+    const usernameResult = await checkUsernameAvailability(formData.username);
+    if (!usernameResult.available) {
+      setError(usernameResult.message || 'Este GamerTag ya está en uso.');
+      return;
+    }
 
     const validationError = getSubmitError(formData, passwordError);
     if (validationError) {
@@ -214,6 +195,9 @@ const Register = () => {
     const nextValue = name === 'phone' && type !== 'checkbox' ? normalizePhone(value) : value;
     if (name === 'phone') {
       setPhoneAvailability({ loading: false, checked: false, available: true, warning: false, message: '' });
+    }
+    if (name === 'username') {
+      setUsernameAvailability({ loading: false, checked: false, available: true, warning: false, message: '' });
     }
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : nextValue }));
   };
@@ -271,6 +255,57 @@ const Register = () => {
     }
   };
 
+  const checkUsernameAvailability = async (usernameValue) => {
+    const normalized = String(usernameValue || '').trim();
+    if (!normalized) {
+      setUsernameAvailability({ loading: false, checked: false, available: true, warning: false, message: '' });
+      return { available: true, checked: false };
+    }
+
+    setUsernameAvailability({ loading: true, checked: false, available: true, warning: false, message: '' });
+    try {
+      const endpointCandidates = [
+        `${API_URL}/api/auth/check-username`,
+        `${API_URL}/auth/check-username`,
+        `${API_URL}/check-username`
+      ];
+
+      let response = null;
+      let lastError = null;
+      for (const endpoint of endpointCandidates) {
+        try {
+          response = await axios.get(endpoint, { params: { username: normalized } });
+          break;
+        } catch (candidateError) {
+          const status = Number(candidateError?.response?.status || 0);
+          lastError = candidateError;
+          if (status === 404) continue;
+          throw candidateError;
+        }
+      }
+
+      if (!response) throw lastError || new Error('No se encontró endpoint de verificación de usuario');
+
+      const available = Boolean(response?.data?.available);
+      const message = available ? '' : 'Este GamerTag ya está en uso.';
+      setUsernameAvailability({ loading: false, checked: true, available, warning: false, message });
+      return { available, checked: true, message };
+    } catch (err) {
+      const status = Number(err?.response?.status || 0);
+      const backendMessage = String(err?.response?.data?.message || '').trim();
+      if (status === 400 && backendMessage) {
+        setUsernameAvailability({ loading: false, checked: true, available: false, warning: false, message: backendMessage });
+        return { available: false, checked: true, message: backendMessage };
+      }
+
+      const message = status === 429
+        ? 'Demasiadas verificaciones seguidas. Intenta de nuevo en unos minutos.'
+        : 'No se pudo verificar el GamerTag ahora. Puedes continuar y se validará al registrar.';
+      setUsernameAvailability({ loading: false, checked: false, available: true, warning: true, message });
+      return { available: true, checked: false, warning: true, message };
+    }
+  };
+
   const handleStep1Next = async () => {
     setError('');
     setStep1Attempted(true);
@@ -309,8 +344,13 @@ const Register = () => {
   );
   const canSubmit = Boolean(
     !loading &&
-    !getSubmitError(formData, passwordError)
+    !usernameAvailability.loading &&
+    !getSubmitError(formData, passwordError) &&
+    !(usernameAvailability.checked && !usernameAvailability.available)
   );
+  const submitErrorHint = usernameAvailability.checked && !usernameAvailability.available
+    ? (usernameAvailability.message || 'Este GamerTag ya está en uso.')
+    : getSubmitError(formData, passwordError);
 
   const platformsList = [
     { id: 'pc', name: 'PC', icon: 'bx-laptop' },
@@ -319,7 +359,7 @@ const Register = () => {
   ];
 
   const countries = [
-    'Argentina','Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba','Dominicana','Ecuador',
+    'Argentina','Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba','Republica Dominicana','Ecuador',
     'El Salvador','Guatemala','Honduras','México','Nicaragua','Panamá','Paraguay','Perú','Puerto Rico',
     'Uruguay','Venezuela','España','Estados Unidos'
   ];
@@ -500,12 +540,28 @@ const Register = () => {
               <div className="step-fade-in">
                 <h3 className="step-title">Credenciales</h3>
                 <div className="input-row">
-                  <div className="input-wrapper">
+                  <div className={`input-wrapper ${usernameAvailability.checked && !usernameAvailability.available ? 'input-error' : ''}`}>
                     <label>GamerTag</label>
-                    <input type="text" name="username" placeholder="ProGamer123" value={formData.username} onChange={handleChange} />
+                    <input
+                      type="text"
+                      name="username"
+                      placeholder="ProGamer123"
+                      value={formData.username}
+                      onChange={handleChange}
+                      onBlur={() => checkUsernameAvailability(formData.username)}
+                    />
                     <i className='bx bx-joystick'></i>
                   </div>
                 </div>
+                {usernameAvailability.loading && (
+                  <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando GamerTag...</span>
+                )}
+                {usernameAvailability.checked && !usernameAvailability.available && (
+                  <span className="error-text"><i className='bx bx-error-circle'></i> {usernameAvailability.message}</span>
+                )}
+                {usernameAvailability.warning && (
+                  <span className="helper-text"><i className='bx bx-info-circle'></i> {usernameAvailability.message}</span>
+                )}
                 <div className="input-row">
                   <div className="input-wrapper"><label>Email</label><input type="email" name="email" value={formData.email} onChange={handleChange} autoComplete="email" placeholder='Email'/><i className='bx bx-envelope'></i></div>
                 </div>
@@ -529,12 +585,18 @@ const Register = () => {
                     <span className="error-text"><i className='bx bx-error-circle'></i> No coinciden</span>
                   )}
                 </div>
-                <label className="remember-me mt-2">
+                <label className={`remember-me mt-2 ${submitErrorHint === 'Debes aceptar los términos para continuar.' ? 'input-error' : ''}`}>
                   <input type="checkbox" name="checkTerms" checked={formData.checkTerms} onChange={handleChange} />
                   <span className="terms-text">
                     He leído y acepto los <a href="/legal/terms" target="_blank" rel="noreferrer"> Términos de Servicio </a> y la <a href="/legal/privacy" target="_blank" rel="noreferrer"> Política de Privacidad</a>.
                   </span>
                 </label>
+
+                {!canSubmit && submitErrorHint && (
+                  <div className="error-alert" style={{ color: '#ff4d4d', marginTop: '10px' }}>
+                    {submitErrorHint}
+                  </div>
+                )}
 
                 {error && <div className="error-alert" style={{color: '#ff4d4d', marginTop: '10px'}}>{error}</div>}
 
@@ -544,6 +606,7 @@ const Register = () => {
                     type="button" 
                     className="btn-primary" 
                     disabled={!canSubmit}
+                    title={submitErrorHint || ''}
                     onClick={handleSubmit}
                   >
                     {loading ? 'PROCESANDO...' : 'FINALIZAR'}

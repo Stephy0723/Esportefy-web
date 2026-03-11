@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
 import { 
@@ -12,51 +12,10 @@ import { withCsrfHeaders } from '../../../../utils/csrf';
 import { useNotification } from '../../../../context/NotificationContext';
 import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
+import { getAuthToken as readAuthToken } from '../../../../utils/authSession';
+import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../../shared/supportedGames.js';
 import './CreateTeamPage.css';
-
-// Configuración de Roles Visuales
-const ROLE_NAMES = {
-    "Mobile Legends": ["EXP", "Gold", "Mid", "Jungla", "Roam"],
-    "League of Legends": ["Top", "Jungle", "Mid", "ADC", "Supp"],
-    "Wild Rift": ["Baron", "Jungle", "Mid", "Dragon", "Supp"],
-    "Valorant": ["Duelist", "Sentinel", "Controller", "Initiator", "Flex"],
-    "CS2": ["Entry", "AWPer", "Lurker", "Support", "IGL"],
-    "Overwatch 2": ["Tank", "DPS", "DPS", "Support", "Support"],
-    "Rainbow Six Siege": ["Entry", "Support", "Flex", "Hard Breach", "Anchor"],
-    "TFT": ["Tactician"],
-    "FIFA / EA FC": ["Player"],
-    "NBA 2K": ["Player"],
-    "F1 2024": ["Driver"],
-    "Rocket League": ["Striker", "Midfielder", "Defender"],
-    "Free Fire": ["Rusher", "Support", "Sniper", "IGL"],
-    "Fortnite": ["Fragger", "IGL", "Support", "Builder"],
-    "PUBG": ["Fragger", "IGL", "Support", "Scout"],
-    "Apex Legends": ["Fragger", "IGL", "Support"],
-    "Warzone": ["Slayer", "IGL", "Scout", "Support"],
-    "Call of Duty": ["Slayer", "OBJ", "Support", "Flex"],
-    "Dota 2": ["Carry", "Mid", "Offlane", "Soft Supp", "Hard Supp"],
-    "Smite 2": ["Carry", "Mid", "Solo", "Jungle", "Support"],
-    "Street Fighter 6": ["Fighter"],
-    "Tekken 8": ["Fighter"],
-    "Super Smash Bros": ["Fighter"],
-    "Mortal Kombat 1": ["Fighter"],
-    "Clash Royale": ["Player"],
-    "Hearthstone": ["Player"],
-    "Legends of Runeterra": ["Player"]
-};
-
-const RIOT_GAMES = new Set([
-    'Valorant',
-    'League of Legends',
-    'Wild Rift',
-    'Teamfight Tactics',
-    'Legends of Runeterra'
-]);
-const MLBB_GAMES = new Set([
-    'Mobile Legends',
-    'Mobile Legends: Bang Bang',
-    'MLBB'
-]);
 
 const CUSTOM_OPTION = '__custom__';
 
@@ -113,8 +72,14 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
 const CreateTeamPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { addToast } = useNotification();
     const { user: authUser } = useAuth();
+    const presetTeamLevel = useMemo(() => {
+        const params = new URLSearchParams(location.search || '');
+        const raw = String(params.get('teamLevel') || '').trim().toLowerCase();
+        return raw === 'universitario' ? 'Universitario' : '';
+    }, [location.search]);
     
     // --- ESTADOS Y DATOS ---
     const storedUser = useMemo(() => {
@@ -127,6 +92,7 @@ const CreateTeamPage = () => {
         }
     }, []);
     const currentUser = authUser || storedUser;
+    const currentUserId = String(currentUser?._id || currentUser?.id || '');
 
     const riotVerified = Boolean(currentUser?.connections?.riot?.verified);
     const riotGameName = String(currentUser?.connections?.riot?.gameName || '');
@@ -136,7 +102,13 @@ const CreateTeamPage = () => {
         currentUser?.gameProfiles?.valorant?.shard ||
         currentUser?.connections?.riot?.accountRegion ||
         '';
-    const mlbbVerified = Boolean(currentUser?.connections?.mlbb?.verified);
+    const mlbbVerified = isMlbbVerifiedStatus(
+        normalizeMlbbVerificationStatus(
+            currentUser?.connections?.mlbb?.verificationStatus,
+            currentUser?.connections?.mlbb?.verified
+        ),
+        currentUser?.connections?.mlbb?.verified
+    );
     const mlbbPlayerId = String(currentUser?.connections?.mlbb?.playerId || '');
     const mlbbZoneId = String(currentUser?.connections?.mlbb?.zoneId || '');
     const currentUserUniversity = currentUser?.university || {};
@@ -147,7 +119,13 @@ const CreateTeamPage = () => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
+    const [createdTeamId, setCreatedTeamId] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [friendsList, setFriendsList] = useState([]);
+    const [friendsLoading, setFriendsLoading] = useState(false);
+    const [inviteBusyByUser, setInviteBusyByUser] = useState({});
+    const [invitedUserIds, setInvitedUserIds] = useState(new Set());
+    const [reservedInviteSlots, setReservedInviteSlots] = useState([]);
     const [useCustomCountry, setUseCustomCountry] = useState(false);
     const [useCustomRegion, setUseCustomRegion] = useState(false);
 
@@ -161,7 +139,7 @@ const CreateTeamPage = () => {
         // Perfil de Escuadra
         teamGender: 'Mixto',      
         teamCountry: '',          
-        teamLevel: 'Amateur',     
+        teamLevel: presetTeamLevel || 'Amateur',     
         teamLanguage: 'Español',  
         // Lógica interna
         maxMembers: 0, 
@@ -189,13 +167,6 @@ const CreateTeamPage = () => {
         photo: null // Nuevo campo para la foto del jugador/coach
     });
 
-    // Mockup para buscador
-    const mockPlayers = [
-        { id: 1, name: "S1mple", tag: "#GOAT", status: "online", avatar: "S" },
-        { id: 2, name: "TenZ", tag: "#NA1", status: "busy", avatar: "T" },
-        { id: 3, name: "Faker", tag: "#T1", status: "online", avatar: "F" },
-    ];
-
     // --- FUNCIONES ---
 
     const getThemeClass = () => {
@@ -212,8 +183,8 @@ const CreateTeamPage = () => {
 
     const getRegionOptionsByGame = (gameName) => {
         const normalized = String(gameName || '').trim();
-        if (RIOT_GAMES.has(normalized)) return RIOT_REGION_OPTIONS;
-        if (MLBB_GAMES.has(normalized)) return MLBB_REGION_OPTIONS;
+        if (isSupportedRiotGame(normalized)) return RIOT_REGION_OPTIONS;
+        if (isSupportedMlbbGame(normalized)) return MLBB_REGION_OPTIONS;
         return DEFAULT_REGION_OPTIONS;
     };
 
@@ -224,7 +195,7 @@ const CreateTeamPage = () => {
         }
         return base;
     }, [formData.game, formData.leaderRegion]);
-    const selectedGameRoles = useMemo(() => ROLE_NAMES[formData.game] || [], [formData.game]);
+    const selectedGameRoles = useMemo(() => getSupportedGameRoles(formData.game), [formData.game]);
 
     const mapRiotRegion = (raw) => {
         const value = String(raw || '').toLowerCase().trim();
@@ -255,7 +226,7 @@ const CreateTeamPage = () => {
     };
 
     useEffect(() => {
-        if (!RIOT_GAMES.has(String(formData.game || '').trim())) return;
+        if (!isSupportedRiotGame(formData.game)) return;
         if (!riotVerified) return;
         const gameName = riotGameName;
         const tagLine = riotTagLine;
@@ -283,7 +254,7 @@ const CreateTeamPage = () => {
     }, [formData.game, riotVerified, riotGameName, riotTagLine, riotRegionRaw]);
 
     useEffect(() => {
-        if (!MLBB_GAMES.has(String(formData.game || '').trim())) return;
+        if (!isSupportedMlbbGame(formData.game)) return;
         if (!mlbbVerified) return;
         const playerId = mlbbPlayerId;
         const zoneId = mlbbZoneId;
@@ -301,7 +272,7 @@ const CreateTeamPage = () => {
     }, [formData.game, mlbbVerified, mlbbPlayerId, mlbbZoneId]);
 
     const lockMlbbIdentity = useMemo(
-        () => MLBB_GAMES.has(String(formData.game || '').trim()) && mlbbVerified,
+        () => isSupportedMlbbGame(formData.game) && mlbbVerified,
         [formData.game, mlbbVerified]
     );
     const riotLinked = useMemo(
@@ -310,20 +281,20 @@ const CreateTeamPage = () => {
     );
     const mlbbLinked = useMemo(
         () => {
-            const status = String(
-                currentUser?.connections?.mlbb?.verificationStatus
-                || (currentUser?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+            const status = normalizeMlbbVerificationStatus(
+                currentUser?.connections?.mlbb?.verificationStatus,
+                currentUser?.connections?.mlbb?.verified
             );
-            return status === 'verified';
+            return isMlbbVerifiedStatus(status, currentUser?.connections?.mlbb?.verified);
         },
         [currentUser]
     );
     const isRiotGame = useMemo(
-        () => RIOT_GAMES.has(String(formData.game || '').trim()),
+        () => isSupportedRiotGame(formData.game),
         [formData.game]
     );
     const isMlbbGameSelected = useMemo(
-        () => MLBB_GAMES.has(String(formData.game || '').trim()),
+        () => isSupportedMlbbGame(formData.game),
         [formData.game]
     );
     const isUniversityTeamSelected = useMemo(
@@ -384,6 +355,15 @@ const CreateTeamPage = () => {
     }, [isUniversityTeamSelected, roster, currentUser]);
 
     useEffect(() => {
+        if (!presetTeamLevel) return;
+        setFormData((prev) => (
+            prev.teamLevel === presetTeamLevel
+                ? prev
+                : { ...prev, teamLevel: presetTeamLevel }
+        ));
+    }, [presetTeamLevel]);
+
+    useEffect(() => {
         if (formData.teamCountry && !COUNTRY_OPTIONS.includes(formData.teamCountry)) {
             setUseCustomCountry(true);
         }
@@ -432,7 +412,7 @@ const CreateTeamPage = () => {
         }
         
         const rules = esportsCatalog[selectedCategory][gameName];
-        const defaultRole = (ROLE_NAMES[gameName] && ROLE_NAMES[gameName][0]) ? ROLE_NAMES[gameName][0] : '';
+        const defaultRole = getSupportedGameRoles(gameName)[0] || '';
         setFormData(prev => ({
             ...prev, game: gameName, 
             maxMembers: rules.maxPlayers, 
@@ -512,7 +492,7 @@ const CreateTeamPage = () => {
         
         let suggestedRole = '';
         if (type === 'starters' && !existingData) {
-            const roles = ROLE_NAMES[formData.game];
+            const roles = getSupportedGameRoles(formData.game);
             if (roles && roles[index]) suggestedRole = roles[index];
         }
 
@@ -581,6 +561,9 @@ const CreateTeamPage = () => {
 
         if (res.ok) {
             setInviteLink(result.inviteLink); 
+            setCreatedTeamId(String(result.teamId || ''));
+            setInvitedUserIds(new Set());
+            setReservedInviteSlots([]);
             setStep(3);
             addToast('Equipo creado exitosamente', 'success');
         } else {
@@ -621,12 +604,169 @@ const CreateTeamPage = () => {
         setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
     };
 
+    const isRosterSlotFilled = (slot) => Boolean(
+        slot && (slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role)
+    );
+
+    const getNextInviteSlot = () => {
+        const starters = Array.isArray(roster?.starters) ? roster.starters : [];
+        const subs = Array.isArray(roster?.subs) ? roster.subs : [];
+        const startersMaxRaw = Number(formData?.maxMembers);
+        const subsMaxRaw = Number(formData?.maxSubstitutes);
+        const startersMax = Number.isFinite(startersMaxRaw) && startersMaxRaw > 0 ? startersMaxRaw : starters.length;
+        const subsMax = Number.isFinite(subsMaxRaw) && subsMaxRaw > 0 ? subsMaxRaw : subs.length;
+        const reservedKeys = new Set(
+            (Array.isArray(reservedInviteSlots) ? reservedInviteSlots : [])
+                .map((entry) => `${String(entry?.slotType || '')}:${Number(entry?.slotIndex)}`)
+        );
+
+        for (let i = 0; i < startersMax; i += 1) {
+            const key = `starters:${i}`;
+            if (!isRosterSlotFilled(starters[i]) && !reservedKeys.has(key)) {
+                return { slotType: 'starters', slotIndex: i };
+            }
+        }
+        for (let i = 0; i < subsMax; i += 1) {
+            const key = `subs:${i}`;
+            if (!isRosterSlotFilled(subs[i]) && !reservedKeys.has(key)) {
+                return { slotType: 'subs', slotIndex: i };
+            }
+        }
+        return null;
+    };
+
+    const ensureCreatedTeamId = async () => {
+        if (createdTeamId) return createdTeamId;
+        if (!inviteCode) return '';
+
+        try {
+            const response = await axios.get(`${API_URL}/api/teams/invite/${inviteCode}`);
+            const id = String(response?.data?._id || '').trim();
+            if (id) {
+                setCreatedTeamId(id);
+                return id;
+            }
+        } catch (_) {}
+        return '';
+    };
+
+    const loadFriendsForInvites = async () => {
+        const token = readAuthToken();
+        if (!token) return;
+        setFriendsLoading(true);
+        try {
+            const response = await axios.get(`${API_URL}/api/auth/social`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setFriendsList(Array.isArray(response?.data?.friends) ? response.data.friends : []);
+        } catch (error) {
+            setFriendsList([]);
+            addToast('No se pudieron cargar tus amigos para invitación.', 'error');
+        } finally {
+            setFriendsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (step !== 3) return;
+        loadFriendsForInvites();
+    }, [step]);
+
+    const visibleFriends = useMemo(() => {
+        const q = String(searchQuery || '').trim().toLowerCase();
+        if (!q) return friendsList;
+        return friendsList.filter((friend) => {
+            const name = String(friend?.name || '').toLowerCase();
+            const code = String(friend?.userCode || '').toLowerCase();
+            const rank = String(friend?.rank || '').toLowerCase();
+            return name.includes(q) || code.includes(q) || rank.includes(q);
+        });
+    }, [friendsList, searchQuery]);
+
+    const handleInviteFriend = async (friend) => {
+        const targetUserId = String(friend?.id || '').trim();
+        if (!targetUserId) return;
+        if (inviteBusyByUser[targetUserId] || invitedUserIds.has(targetUserId)) return;
+
+        const token = readAuthToken();
+        if (!token) {
+            addToast('Debes iniciar sesión para invitar amigos.', 'error');
+            return;
+        }
+
+        setInviteBusyByUser((prev) => ({ ...prev, [targetUserId]: true }));
+        try {
+            const teamId = await ensureCreatedTeamId();
+            if (!teamId) {
+                addToast('No se pudo resolver el equipo para invitar.', 'error');
+                return;
+            }
+
+            const nextSlot = getNextInviteSlot();
+            if (!nextSlot) {
+                addToast('No quedan slots disponibles para enviar más invitaciones.', 'error');
+                return;
+            }
+            const { slotType, slotIndex } = nextSlot;
+            const response = await axios.post(
+                `${API_URL}/api/teams/${teamId}/invite-friend`,
+                { targetUserId, slotType, slotIndex },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setInvitedUserIds((prev) => {
+                const next = new Set(prev);
+                next.add(targetUserId);
+                return next;
+            });
+            const resolvedSlotType = String(response?.data?.invite?.slotType || slotType);
+            const resolvedSlotIndex = Number.isFinite(Number(response?.data?.invite?.slotIndex))
+                ? Number(response.data.invite.slotIndex)
+                : slotIndex;
+            setReservedInviteSlots((prev) => {
+                const current = Array.isArray(prev) ? prev : [];
+                const key = `${resolvedSlotType}:${resolvedSlotIndex}`;
+                const alreadyExists = current.some((entry) => (
+                    `${String(entry?.slotType || '')}:${Number(entry?.slotIndex)}` === key
+                ));
+                if (alreadyExists) return current;
+                return [...current, { slotType: resolvedSlotType, slotIndex: resolvedSlotIndex }];
+            });
+            addToast(response?.data?.message || 'Invitación enviada.', 'success');
+        } catch (error) {
+            addToast(error?.response?.data?.message || 'No se pudo enviar la invitación.', 'error');
+        } finally {
+            setInviteBusyByUser((prev) => ({ ...prev, [targetUserId]: false }));
+        }
+    };
+
     const getRoleLabel = (index) => {
-        const roles = ROLE_NAMES[formData.game];
+        const roles = getSupportedGameRoles(formData.game);
         return roles ? roles[index] : `Player ${index + 1}`;
     };
 
     const isRosterSlotLocked = (type) => (isMlbbGameSelected || isUniversityTeamSelected) && type !== 'coach';
+    const captainStarterIndex = useMemo(() => {
+        const starters = Array.isArray(roster?.starters) ? roster.starters : [];
+        if (!starters.length) return -1;
+
+        if (currentUserId) {
+            const byUser = starters.findIndex((slot) => String(slot?.user || '') === currentUserId);
+            if (byUser >= 0) return byUser;
+        }
+
+        if (selectedGameRoles.length > 0 && formData.leaderRole) {
+            const byRole = selectedGameRoles.findIndex((role) => normalizeText(role) === normalizeText(formData.leaderRole));
+            if (byRole >= 0) return byRole;
+        }
+
+        return -1;
+    }, [roster, currentUserId, selectedGameRoles, formData.leaderRole]);
+    const isCaptainRoleReserved = (type, index) =>
+        type === 'starters'
+        && !isUniversityTeamSelected
+        && captainStarterIndex >= 0
+        && Number(index) === Number(captainStarterIndex);
 
     // --- RENDERIZADO ---
     return (
@@ -746,6 +886,11 @@ const CreateTeamPage = () => {
                                         <option value="Profesional">Profesional (Tier 1)</option>
                                         <option value="Leyenda">Leyenda (Elite)</option>
                                     </select>
+                                    {presetTeamLevel === 'Universitario' && (
+                                        <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
+                                            Preseleccionado desde University como equipo institucional.
+                                        </small>
+                                    )}
                                     {isUniversityTeamSelected && (
                                         <small style={{ color: currentUserUniversityVerified ? 'var(--theme-color)' : '#ff6b6b', display: 'block', marginTop: '8px' }}>
                                             {currentUserUniversityVerified
@@ -995,14 +1140,16 @@ const CreateTeamPage = () => {
                         <div className="roles-section">
                             <label className="section-label">Titulares</label>
                             <div className="circles-grid">
-                                {roster.starters.map((slot, idx) => (
+                                {roster.starters.map((slot, idx) => {
+                                    const isLocked = isRosterSlotLocked('starters') || isCaptainRoleReserved('starters', idx);
+                                    return (
                                     <div
                                         key={idx}
-                                        className={`role-item ${isRosterSlotLocked('starters') ? 'disabled' : ''}`}
-                                        onClick={isRosterSlotLocked('starters') ? undefined : () => handleSlotClick('starters', idx)}
-                                        role={isRosterSlotLocked('starters') ? 'presentation' : 'button'}
+                                        className={`role-item ${isLocked ? 'disabled' : ''}`}
+                                        onClick={isLocked ? undefined : () => handleSlotClick('starters', idx)}
+                                        role={isLocked ? 'presentation' : 'button'}
                                     >
-                                        <div className={`role-circle ${slot ? 'filled' : 'empty'} ${isRosterSlotLocked('starters') ? 'locked' : ''}`}>
+                                        <div className={`role-circle ${slot ? 'filled' : 'empty'} ${isLocked ? 'locked' : ''}`}>
                                             {/* AQUÍ SE MUESTRA LA FOTO SI EXISTE */}
                                             {slot ? (
                                                 slot.photo ? (
@@ -1011,7 +1158,7 @@ const CreateTeamPage = () => {
                                                     <span className="initials">{slot.nickname.substring(0,2).toUpperCase()}</span>
                                                 )
                                             ) : (
-                                                isRosterSlotLocked('starters') ? <FaLock className="user-icon" /> : <FaUser className="user-icon" />
+                                                isLocked ? <FaLock className="user-icon" /> : <FaUser className="user-icon" />
                                             )}
                                         </div>
                                         <span className="role-label-text">
@@ -1022,8 +1169,12 @@ const CreateTeamPage = () => {
                                                 {slot ? 'Capitán validado' : 'Entra por invitación'}
                                             </span>
                                         )}
+                                        {!isUniversityTeamSelected && !isMlbbGameSelected && isCaptainRoleReserved('starters', idx) && (
+                                            <span className="role-slot-hint">Rol del capitán reservado</span>
+                                        )}
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -1171,23 +1322,67 @@ const CreateTeamPage = () => {
                                 </div>
 
                                 <div className="players-list-pro custom-scrollbar">
-                                    {mockPlayers
-                                        .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                        .map(player => (
-                                        <div key={player.id} className="player-row-pro fade-in-item">
+                                    {friendsLoading && (
+                                        <div className="player-row-pro fade-in-item">
                                             <div className="player-info-pro">
-                                                <div className={`avatar-mini-pro ${player.status}`}>
-                                                    {player.avatar}
-                                                    <span className="status-indicator"></span>
-                                                </div>
                                                 <div className="player-texts">
-                                                    <span className="p-name-pro">{player.name}</span>
-                                                    <span className="p-tag-pro">{player.tag}</span>
+                                                    <span className="p-name-pro">Cargando amigos...</span>
                                                 </div>
                                             </div>
-                                            <button className="btn-invite-pro">Invitar</button>
                                         </div>
-                                    ))}
+                                    )}
+
+                                    {!friendsLoading && visibleFriends.length === 0 && (
+                                        <div className="player-row-pro fade-in-item">
+                                            <div className="player-info-pro">
+                                                <div className="player-texts">
+                                                    <span className="p-name-pro">No hay amigos disponibles para invitar.</span>
+                                                    <span className="p-tag-pro">Solo aplica para amigos mutuos</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!friendsLoading && visibleFriends.map((friend) => {
+                                        const targetUserId = String(friend?.id || '');
+                                        const status = String(friend?.status || 'offline').toLowerCase();
+                                        const isOnline = ['online', 'gaming', 'tournament', 'streaming', 'searching'].includes(status);
+                                        const avatarUrl = resolveMediaUrl(friend?.avatar || '');
+                                        const initials = String(friend?.name || 'U').trim().slice(0, 2).toUpperCase();
+                                        const codeLabel = friend?.userCode ? `#${friend.userCode}` : '#USER';
+                                        const isBusy = Boolean(inviteBusyByUser[targetUserId]);
+                                        const alreadyInvited = invitedUserIds.has(targetUserId);
+
+                                        return (
+                                            <div key={targetUserId} className="player-row-pro fade-in-item">
+                                                <div className="player-info-pro">
+                                                    <div className={`avatar-mini-pro ${isOnline ? 'online' : 'busy'}`}>
+                                                        {avatarUrl ? (
+                                                            <img
+                                                                src={avatarUrl}
+                                                                alt={friend?.name || 'Amigo'}
+                                                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                                                            />
+                                                        ) : (
+                                                            initials
+                                                        )}
+                                                        <span className="status-indicator"></span>
+                                                    </div>
+                                                    <div className="player-texts">
+                                                        <span className="p-name-pro">{friend?.name || 'Jugador'}</span>
+                                                        <span className="p-tag-pro">{codeLabel}</span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    className="btn-invite-pro"
+                                                    onClick={() => handleInviteFriend(friend)}
+                                                    disabled={isBusy || alreadyInvited}
+                                                >
+                                                    {alreadyInvited ? 'ENVIADO' : (isBusy ? 'ENVIANDO...' : 'INVITAR')}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
                                 <label className="column-header-label" style={{marginTop: '1.5rem'}}>Comunidades</label>

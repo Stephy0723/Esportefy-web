@@ -1220,6 +1220,18 @@
     margin: 0;
 }
 
+.ep__privacy-option--id {
+    align-items: flex-start;
+}
+
+.ep__user-code-label {
+    display: inline-block;
+    margin-top: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: var(--primary);
+    letter-spacing: .03em;
+}
+
 /* Toggle switch */
 .ep__switch {
     position: relative;
@@ -1253,6 +1265,29 @@
 }
 .ep__switch input:checked + .ep__switch-slider::before {
     transform: translateX(20px);
+}
+
+.ep__toggle-btn {
+    min-width: 94px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 0 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+.ep__toggle-btn.is-on {
+    border-color: rgba(142,219,21,.45);
+    color: var(--primary);
+    background: rgba(142,219,21,.12);
+}
+
+.ep__toggle-btn.is-off {
+    color: var(--text-muted);
+    background: transparent;
 }
 
 /* Privacy alert */

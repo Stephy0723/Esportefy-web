@@ -364,11 +364,19 @@ const mapUniversityTeamCard = (team = {}) => ({
 });
 const buildStandingMap = (standings = []) =>
   new Map(standings.map((standing) => [String(standing?.universityId || '').trim().toLowerCase(), standing]));
-const mergeUniversityCatalogStats = (item = {}, standingMap = new Map(), teams = []) => {
+const buildVerifiedStudentMap = (users = []) =>
+  (Array.isArray(users) ? users : []).reduce((acc, user) => {
+    const universityId = normalizeText(user?.university?.universityId, 60).toLowerCase();
+    if (!universityId) return acc;
+    acc.set(universityId, (acc.get(universityId) || 0) + 1);
+    return acc;
+  }, new Map());
+const mergeUniversityCatalogStats = (item = {}, standingMap = new Map(), teams = [], verifiedStudentMap = new Map()) => {
   const standing = standingMap.get(String(item?.id || '').trim().toLowerCase()) || null;
   return {
     ...item,
     points: Number(standing?.points || 0),
+    verifiedStudentsCount: Number(verifiedStudentMap.get(String(item?.id || '').trim().toLowerCase()) || 0),
     stats: {
       tournamentsPlayed: Number(standing?.tournamentsPlayed || 0),
       matchWins: Number(standing?.matchWins || 0),
@@ -408,6 +416,13 @@ export const listUniversityCatalog = async (req, res) => {
     const standingsMap = buildStandingMap(
       calculateUniversityStandings(finishedUniversityTournaments.filter((tournament) => isUniversityGameAllowed(tournament?.game)))
     );
+    const verifiedStudents = await User.find({
+      'university.region': region,
+      'university.verificationStatus': 'verified'
+    })
+      .select('university.universityId')
+      .lean();
+    const verifiedStudentMap = buildVerifiedStudentMap(verifiedStudents);
 
     const teamsByUniversityId = filteredTeams.reduce((acc, team) => {
       const universityId = normalizeText(team?.university?.universityId, 60).toLowerCase();
@@ -418,7 +433,7 @@ export const listUniversityCatalog = async (req, res) => {
     }, {});
 
     return res.json(
-      catalog.map((item) => mergeUniversityCatalogStats(item, standingsMap, teamsByUniversityId[item.id] || []))
+      catalog.map((item) => mergeUniversityCatalogStats(item, standingsMap, teamsByUniversityId[item.id] || [], verifiedStudentMap))
     );
   } catch (error) {
     console.error('listUniversityCatalog error:', error);
@@ -454,8 +469,15 @@ export const getUniversityCatalogDetail = async (req, res) => {
     const standingsMap = buildStandingMap(
       calculateUniversityStandings(finishedUniversityTournaments.filter((tournament) => isUniversityGameAllowed(tournament?.game)))
     );
+    const verifiedStudents = await User.find({
+      'university.universityId': universityId,
+      'university.verificationStatus': 'verified'
+    })
+      .select('university.universityId')
+      .lean();
+    const verifiedStudentMap = buildVerifiedStudentMap(verifiedStudents);
 
-    return res.json(mergeUniversityCatalogStats(item, standingsMap, filteredTeams.map(mapUniversityTeamCard)));
+    return res.json(mergeUniversityCatalogStats(item, standingsMap, filteredTeams.map(mapUniversityTeamCard), verifiedStudentMap));
   } catch (error) {
     console.error('getUniversityCatalogDetail error:', error);
     return res.status(500).json({ message: 'No se pudo cargar la universidad.' });
@@ -475,9 +497,16 @@ export const getUniversityStandings = async (_req, res) => {
     const standings = calculateUniversityStandings(
       finishedUniversityTournaments.filter((tournament) => isUniversityGameAllowed(tournament?.game))
     );
+    const verifiedStudents = await User.find({
+      'university.region': 'rd',
+      'university.verificationStatus': 'verified'
+    })
+      .select('university.universityId')
+      .lean();
+    const verifiedStudentMap = buildVerifiedStudentMap(verifiedStudents);
     const standingMap = buildStandingMap(standings);
     const payload = catalog
-      .map((item) => mergeUniversityCatalogStats(item, standingMap, []))
+      .map((item) => mergeUniversityCatalogStats(item, standingMap, [], verifiedStudentMap))
       .sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         return String(a.tag || '').localeCompare(String(b.tag || ''));

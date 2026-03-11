@@ -4,9 +4,16 @@ import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
     // --- Identidad Visual ---
+    userCode: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     avatar: { type: String, default: "" },
     bio: { type: String, default: "" },
     teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isOrganizer: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
 
@@ -35,15 +42,6 @@ const UserSchema = new mongoose.Schema({
         twitter: { type: String, default: '' },
         instagram: { type: String, default: '' },
         tiktok: { type: String, default: '' }
-    },
-    gamingConnections: {
-        discord: { type: String, default: '' },
-        riotId: { type: String, default: '' },
-        steam: { type: String, default: '' },
-        epic: { type: String, default: '' },
-        playstation: { type: String, default: '' },
-        xbox: { type: String, default: '' },
-        nintendo: { type: String, default: '' }
     },
 
     // --- Etapa 4: Credenciales ---
@@ -103,6 +101,23 @@ const UserSchema = new mongoose.Schema({
             accountRegion: { type: String, default: 'americas' }, // para account-v1
             verified: { type: Boolean, default: false },
             linkedAt: Date,
+            products: {
+                lol: {
+                    linked: { type: Boolean, default: false },
+                    linkedAt: { type: Date, default: null },
+                    lastVerifiedAt: { type: Date, default: null }
+                },
+                valorant: {
+                    linked: { type: Boolean, default: false },
+                    linkedAt: { type: Date, default: null },
+                    consentRequired: { type: Boolean, default: true },
+                    consentGranted: { type: Boolean, default: false },
+                    consentedAt: { type: Date, default: null },
+                    lastVerifiedAt: { type: Date, default: null },
+                    rsoSubject: { type: String, default: '' },
+                    scopes: { type: [String], default: [] }
+                }
+            },
 
             // seguridad / verificación por OTP
             pendingLink: {
@@ -122,7 +137,7 @@ const UserSchema = new mongoose.Schema({
             ign: { type: String },
             verificationStatus: {
                 type: String,
-                enum: ['unlinked', 'pending', 'verified', 'rejected'],
+                enum: ['unlinked', 'pending', 'verified', 'verified_auto', 'verified_manual', 'rejected'],
                 default: 'unlinked'
             },
             verified: { type: Boolean, default: false },
@@ -130,7 +145,30 @@ const UserSchema = new mongoose.Schema({
             reviewRequestedAt: Date,
             reviewedAt: Date,
             reviewedBy: { type: String },
-            rejectReason: { type: String, default: '' }
+            rejectReason: { type: String, default: '' },
+            linkAttempts: { type: [Date], default: [] },
+            riskFlags: { type: [String], default: [] }
+        },
+
+        steam: {
+            id: { type: String, default: '' },
+            steamId: { type: String, default: '' },
+            username: { type: String, default: '' },
+            displayName: { type: String, default: '' },
+            avatar: { type: String, default: '' },
+            profileUrl: { type: String, default: '' },
+            verified: { type: Boolean, default: false },
+            linkedAt: { type: Date, default: null }
+        },
+
+        epic: {
+            id: { type: String, default: '' },
+            epicId: { type: String, default: '' },
+            username: { type: String, default: '' },
+            displayName: { type: String, default: '' },
+            email: { type: String, default: '' },
+            verified: { type: Boolean, default: false },
+            linkedAt: { type: Date, default: null }
         }
     },
 
@@ -167,7 +205,9 @@ const UserSchema = new mongoose.Schema({
     privacy: {
         allowTeamInvites: { type: Boolean, default: true },
         showOnlineStatus: { type: Boolean, default: true },
-        allowTournamentInvites: { type: Boolean, default: true }
+        allowTournamentInvites: { type: Boolean, default: true },
+        showPublicUserCode: { type: Boolean, default: true },
+        showPublicRiotHandle: { type: Boolean, default: false }
     },
     university: {
         universityId: { type: String, default: '' },
@@ -238,6 +278,28 @@ UserSchema.index(
 );
 
 UserSchema.index(
+    { 'connections.steam.id': 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'connections.steam.id': { $exists: true, $type: 'string' },
+            'connections.steam.verified': true
+        }
+    }
+);
+
+UserSchema.index(
+    { 'connections.epic.id': 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            'connections.epic.id': { $exists: true, $type: 'string' },
+            'connections.epic.verified': true
+        }
+    }
+);
+
+UserSchema.index(
     { 'university.studentId': 1 },
     {
         unique: true,
@@ -258,5 +320,30 @@ UserSchema.index(
         }
     }
 );
+
+UserSchema.pre('validate', async function(next) {
+    if (this.userCode) return next();
+
+    const UserModel = this.constructor;
+    let isUnique = false;
+    let attempts = 0;
+
+    while (!isUnique && attempts < 40) {
+        attempts += 1;
+        const randomDigits = Math.floor(100000 + Math.random() * 900000);
+        const candidate = `${randomDigits}`;
+        const existing = await UserModel.findOne({ userCode: candidate }).select('_id').lean();
+        if (!existing) {
+            this.userCode = candidate;
+            isUnique = true;
+        }
+    }
+
+    if (!isUnique) {
+        return next(new Error('No se pudo generar un ID único.'));
+    }
+
+    return next();
+});
 
 export default mongoose.model('User', UserSchema);

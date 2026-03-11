@@ -79,11 +79,24 @@ Variables para E2E:
 export API_BASE_URL=http://localhost:4000
 export E2E_PLAYER_EMAIL=player@mail.com
 export E2E_PLAYER_PASSWORD=tu_password
-export E2E_ADMIN_EMAIL=admin@mail.com
-export E2E_ADMIN_PASSWORD=tu_password
 export E2E_MLBB_PLAYER_ID=123456789
 export E2E_MLBB_ZONE_ID=1234
 export E2E_MLBB_IGN=ProPlayer
+```
+
+Si ya tienes token JWT, puedes usar:
+
+```bash
+export E2E_PLAYER_TOKEN=<TOKEN_JUGADOR>
+```
+
+Solo si el flujo cae en `pending` (modo manual o riesgo), agrega credenciales/token admin:
+
+```bash
+export E2E_ADMIN_EMAIL=admin@mail.com
+export E2E_ADMIN_PASSWORD=tu_password
+# o:
+export E2E_ADMIN_TOKEN=<TOKEN_ADMIN>
 ```
 
 Variables para carga:
@@ -95,6 +108,14 @@ export LOAD_PATH=/api/auth/mlbb/status
 export LOAD_METHOD=GET
 export LOAD_TOTAL_REQUESTS=500
 export LOAD_CONCURRENCY=100
+export LOAD_MAX_FAILURE_RATE=0.05
+```
+
+Si no quieres pasar token manual, usa login:
+
+```bash
+export LOAD_EMAIL=player@mail.com
+export LOAD_PASSWORD=tu_password
 ```
 
 Si usas `auto`, puedes generar el token de carga con una cuenta de prueba local y luego correr:

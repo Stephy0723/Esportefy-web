@@ -57,10 +57,10 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
     { id: 'd2', name: 'iPad Pro', lastUsed: 'Hace 3 días' },
   ]);
   
-  const [passkeys, setPasskeys] = useState([
-    { id: 'p1', name: 'FaceID', icon: FaApple, status: 'Activo' },
-    { id: 'p2', name: 'Windows Hello', icon: FaWindows, status: 'Activo' },
-  ]);
+  // const [passkeys, setPasskeys] = useState([
+  //   { id: 'p1', name: 'FaceID', icon: FaApple, status: 'Activo' },
+  //   { id: 'p2', name: 'Windows Hello', icon: FaWindows, status: 'Activo' },
+  // ]);
   
   // Activity Log
   const [activityLog] = useState([
@@ -123,9 +123,9 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
     setTrustedDevices(prev => prev.filter(d => d.id !== deviceId));
   }, []);
 
-  const handleRemovePasskey = useCallback((passkeyId) => {
-    setPasskeys(prev => prev.filter(p => p.id !== passkeyId));
-  }, []);
+  // const handleRemovePasskey = useCallback((passkeyId) => {
+  //   setPasskeys(prev => prev.filter(p => p.id !== passkeyId));
+  // }, []);
 
   const handleConfirmPassword = useCallback(async () => {
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -325,7 +325,7 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
       </article>
 
       {/* Passkeys */}
-      <article className="sc-card">
+      {/* <article className="sc-card">
         <div className="sc-card__header">
           <FaKey className="sc-card__icon" />
           <div>
@@ -360,7 +360,7 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
             <FaPlus /> Añadir Passkey
           </button>
         </div>
-      </article>
+      </article> */}
 
       {/* Activity Log */}
       <article className="sc-card">

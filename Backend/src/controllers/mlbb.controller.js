@@ -5,6 +5,11 @@ import {
   processMlbbMailQueueOnce
 } from '../services/mlbbMailQueue.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
+import {
+  MLBB_ACTIVE_STATUSES,
+  isMlbbVerifiedStatus,
+  normalizeMlbbVerificationStatus
+} from '../utils/mlbbStatus.js';
 
 function parseMlbbPayload(body = {}) {
   const playerIdRaw = String(body.playerId || body.userId || '').trim();
@@ -40,7 +45,7 @@ function parseMlbbPayload(body = {}) {
 }
 
 const getMlbbVerificationMode = () => {
-  const mode = String(process.env.MLBB_VERIFICATION_MODE || 'manual').trim().toLowerCase();
+  const mode = String(process.env.MLBB_VERIFICATION_MODE || 'auto').trim().toLowerCase();
   return mode === 'auto' ? 'auto' : 'manual';
 };
 
@@ -56,12 +61,78 @@ const getMlbbReviewInbox = () => {
   return String(process.env.EMAIL_USER || '').trim();
 };
 
+const getMlbbMaxAttempts24h = () => {
+  const raw = Number.parseInt(String(process.env.MLBB_RISK_MAX_ATTEMPTS_24H || '4').trim(), 10);
+  if (!Number.isFinite(raw) || raw < 1) return 4;
+  return Math.min(raw, 20);
+};
+
+const getMlbbRejectedRetryCooldownMs = () => {
+  const raw = Number.parseInt(String(process.env.MLBB_REJECT_RETRY_COOLDOWN_MINUTES || '120').trim(), 10);
+  if (!Number.isFinite(raw) || raw < 0) return 120 * 60 * 1000;
+  return raw * 60 * 1000;
+};
+
+const buildMlbbRiskContext = (user, payload) => {
+  const now = Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const maxAttempts24h = getMlbbMaxAttempts24h();
+  const retryCooldownMs = getMlbbRejectedRetryCooldownMs();
+  const current = user?.connections?.mlbb || {};
+
+  const recentAttempts = Array.isArray(current.linkAttempts)
+    ? current.linkAttempts
+      .map((value) => new Date(value).getTime())
+      .filter((time) => Number.isFinite(time) && now - time <= oneDayMs)
+    : [];
+
+  const nextAttemptCount24h = recentAttempts.length + 1;
+  const signals = [];
+
+  if (nextAttemptCount24h > maxAttempts24h) {
+    signals.push('too_many_attempts_24h');
+  }
+
+  const previousStatus = normalizeMlbbVerificationStatus(current.verificationStatus, current.verified);
+  const previousPlayerId = String(current.playerId || '').trim();
+  const previousZoneId = String(current.zoneId || '').trim();
+  const incomingPlayerId = String(payload?.playerId || '').trim();
+  const incomingZoneId = String(payload?.zoneId || '').trim();
+
+  if (isMlbbVerifiedStatus(previousStatus, current.verified)) {
+    if (previousPlayerId && previousZoneId && (previousPlayerId !== incomingPlayerId || previousZoneId !== incomingZoneId)) {
+      signals.push('identity_change_after_verified');
+    }
+  }
+
+  if (previousStatus === 'rejected' && current.reviewedAt) {
+    const lastReviewedAt = new Date(current.reviewedAt).getTime();
+    if (Number.isFinite(lastReviewedAt) && now - lastReviewedAt < retryCooldownMs) {
+      signals.push('retry_after_reject_too_soon');
+    }
+  }
+
+  recentAttempts.push(now);
+  const nextAttemptDates = recentAttempts
+    .slice(-20)
+    .map((time) => new Date(time));
+
+  return {
+    signals,
+    nextAttemptDates,
+    attemptCount24h: nextAttemptCount24h
+  };
+};
+
 async function ensureMlbbAccountNotLinkedElsewhere(playerId, zoneId, currentUserId) {
   const existing = await User.findOne({
     _id: { $ne: currentUserId },
     'connections.mlbb.playerId': playerId,
     'connections.mlbb.zoneId': zoneId,
-    'connections.mlbb.verificationStatus': { $in: ['pending', 'verified'] }
+    $or: [
+      { 'connections.mlbb.verificationStatus': { $in: [...MLBB_ACTIVE_STATUSES] } },
+      { 'connections.mlbb.verified': true }
+    ]
   }).select('_id username fullName connections.mlbb.verificationStatus');
 
   return existing;
@@ -126,24 +197,32 @@ export const linkMlbbAccount = async (req, res) => {
       });
     }
 
+    const riskContext = buildMlbbRiskContext(user, parsed);
+    const needsManualReview = !isAuto || riskContext.signals.length > 0;
+    const nextStatus = needsManualReview
+      ? 'pending'
+      : 'verified_auto';
+
     user.connections = user.connections || {};
     user.connections.mlbb = {
       ...(user.connections.mlbb || {}),
       playerId: parsed.playerId,
       zoneId: parsed.zoneId,
       ign: parsed.ign || user.connections?.mlbb?.ign || '',
-      verified: isAuto,
-      verificationStatus: isAuto ? 'verified' : 'pending',
+      verified: isMlbbVerifiedStatus(nextStatus),
+      verificationStatus: nextStatus,
       reviewRequestedAt: new Date(),
-      reviewedAt: isAuto ? new Date() : undefined,
-      reviewedBy: isAuto ? 'system:auto' : '',
+      reviewedAt: needsManualReview ? undefined : new Date(),
+      reviewedBy: needsManualReview ? '' : 'system:auto',
       rejectReason: '',
-      linkedAt: isAuto ? new Date() : undefined
+      linkedAt: needsManualReview ? undefined : new Date(),
+      linkAttempts: riskContext.nextAttemptDates,
+      riskFlags: riskContext.signals
     };
 
     await user.save();
 
-    if (!isAuto) {
+    if (needsManualReview) {
       await enqueueMlbbReviewEmail({
         userId: String(user._id),
         username: user?.username || '',
@@ -151,21 +230,29 @@ export const linkMlbbAccount = async (req, res) => {
         email: user?.email || '',
         playerId: parsed.playerId,
         zoneId: parsed.zoneId,
-        ign: parsed.ign || ''
+        ign: parsed.ign || '',
+        riskFlags: riskContext.signals
       });
     }
 
     return res.json({
-      message: isAuto
-        ? 'Cuenta de Mobile Legends vinculada automáticamente.'
-        : 'Solicitud enviada. Tu cuenta MLBB quedó en revisión.',
+      message: needsManualReview
+        ? (isAuto
+          ? 'Solicitud enviada a revisión MLBB por control de riesgo.'
+          : 'Solicitud enviada. Tu cuenta MLBB quedó en revisión.')
+        : 'Cuenta de Mobile Legends vinculada automáticamente.',
       status: user.connections.mlbb.verificationStatus,
       account: {
         playerId: parsed.playerId,
         zoneId: parsed.zoneId,
         ign: parsed.ign || ''
       },
-      mode
+      mode,
+      risk: {
+        manualReview: needsManualReview,
+        attemptCount24h: riskContext.attemptCount24h,
+        flags: riskContext.signals
+      }
     });
   } catch (error) {
     if (error?.code === 11000) {
@@ -225,11 +312,15 @@ export const mlbbStatus = async (req, res) => {
     const user = await User.findById(req.userId).select('connections.mlbb');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-    const status = String(
-      user?.connections?.mlbb?.verificationStatus
-      || (user?.connections?.mlbb?.verified ? 'verified' : 'unlinked')
+    const status = normalizeMlbbVerificationStatus(
+      user?.connections?.mlbb?.verificationStatus,
+      user?.connections?.mlbb?.verified
     );
-    const linked = Boolean(status === 'verified' && user?.connections?.mlbb?.playerId && user?.connections?.mlbb?.zoneId);
+    const linked = Boolean(
+      isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified)
+      && user?.connections?.mlbb?.playerId
+      && user?.connections?.mlbb?.zoneId
+    );
 
     return res.json({
       linked,
@@ -251,8 +342,12 @@ export const mlbbStatus = async (req, res) => {
       api: {
         keyConfigured: false,
         reachable: null,
-        message: linked
-          ? 'Cuenta MLBB verificada en Esportefy.'
+        message: status === 'verified_auto'
+            ? 'Cuenta MLBB verificada automáticamente por reglas de riesgo.'
+            : status === 'verified_manual'
+              ? 'Cuenta MLBB verificada manualmente por el equipo admin.'
+              : linked
+                ? 'Cuenta MLBB verificada en Esportefy.'
           : status === 'pending'
             ? 'Tu verificación MLBB está en revisión.'
             : status === 'rejected'
@@ -287,6 +382,7 @@ export const listPendingMlbbReviews = async (req, res) => {
         'connections.mlbb.zoneId': 1,
         'connections.mlbb.ign': 1,
         'connections.mlbb.reviewRequestedAt': 1,
+        'connections.mlbb.riskFlags': 1,
         createdAt: 1
       }
     )
@@ -301,6 +397,7 @@ export const listPendingMlbbReviews = async (req, res) => {
       playerId: u?.connections?.mlbb?.playerId || '',
       zoneId: u?.connections?.mlbb?.zoneId || '',
       ign: u?.connections?.mlbb?.ign || '',
+      riskFlags: Array.isArray(u?.connections?.mlbb?.riskFlags) ? u.connections.mlbb.riskFlags : [],
       reviewRequestedAt: u?.connections?.mlbb?.reviewRequestedAt || u.createdAt || null
     }));
 
@@ -340,11 +437,12 @@ export const reviewMlbbLink = async (req, res) => {
       target.connections.mlbb = {
         ...(target.connections.mlbb || {}),
         verified: true,
-        verificationStatus: 'verified',
+        verificationStatus: 'verified_manual',
         reviewedAt: new Date(),
         reviewedBy: String(req.userId),
         rejectReason: '',
-        linkedAt: new Date()
+        linkedAt: new Date(),
+        riskFlags: []
       };
     } else {
       target.connections.mlbb = {

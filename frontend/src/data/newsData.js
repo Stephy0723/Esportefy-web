@@ -26,11 +26,11 @@ export const NEWS = [
   },
   {
     id: 2,
-    title: 'FIFAe prepara calendario regional con cupos para America',
+    title: 'Riot refuerza ruta regional para League of Legends en Americas',
     excerpt:
-      'FIFAe anuncio ajustes en su ecosistema competitivo para reforzar clasificatorias y etapas finales de football esports.',
+      'Los circuitos regionales de League of Legends afinan su calendario competitivo para fortalecer el paso entre ligas locales y torneos mayores.',
     category: 'Competitivo',
-    game: 'EA FC',
+    game: 'LoL',
     author: 'Sara Molina',
     date: '2026-02-23',
     views: 12500,
@@ -39,8 +39,8 @@ export const NEWS = [
       'https://images.unsplash.com/photo-1522778526097-ce0a22ceb253?q=80&w=1400&auto=format&fit=crop',
     details: [
       'El nuevo formato prioriza rendimiento constante y puntos por fases, con mejor balance entre ligas emergentes y consolidadas.',
-      'Se habilitan ventanas de clasificacion para federaciones de LATAM con mayor visibilidad internacional.',
-      'La fase final contara con cobertura global y estandares de produccion alineados al calendario oficial.'
+      'Se habilitan ventanas de clasificacion regional con mayor visibilidad para equipos de LATAM.',
+      'La fase final contara con cobertura global y estandares de produccion alineados al calendario oficial de Riot.'
     ],
     gallery: [
       'https://images.unsplash.com/photo-1489945052260-4f21c52268b9?q=80&w=1400&auto=format&fit=crop',

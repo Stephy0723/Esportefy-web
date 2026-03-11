@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { useTheme, THEMES } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 import logoWhite from '../../assets/Logo/logo-black.png';
 import logoBlack from '../../assets/Logo/logo-white.png';
@@ -16,9 +17,10 @@ const MAIN_LINKS = [
 
 const EXTRA_LINKS = [
   { to: '/comunidad', icon: 'bx-world', label: 'Comunidad', section: 'SOCIAL' },
+  { to: '/friends', icon: 'bx-user-plus', label: 'Amigos' },
   { to: '/chats', icon: 'bx-chat', label: 'Chats' },
   { to: '/settings', icon: 'bx-cog', label: 'Ajustes', section: 'CONFIG' },
-  { to: '/perfil', icon: 'bx-user', label: 'Mi Perfil' },
+  { to: '/profile', icon: 'bx-user', label: 'Mi Perfil' },
 ];
 
 const SOCIALS = [
@@ -30,6 +32,7 @@ const SOCIALS = [
 
 const Sidebar = ({ isClosed, setIsClosed }) => {
   const { theme, setTheme, isDarkMode } = useTheme();
+  const { logout } = useAuth();
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
   const sidebarRef = useRef(null);
@@ -46,6 +49,10 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   }, [isClosed, setIsClosed]);
 
   const openIfClosed = () => { if (isClosed) setIsClosed(false); };
+  const handleLogout = async (event) => {
+    event.stopPropagation();
+    await logout();
+  };
 
   /* Helper: ¿esta ruta está activa? */
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -157,10 +164,10 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
         <div className="sb-footer-line" />
 
         {/* Cerrar sesión */}
-        <Link to="/login" className="sb-logout">
+        <button type="button" className="sb-logout" onClick={handleLogout}>
           <i className="bx bx-log-out" />
           <span className="sb-label">Cerrar Sesión</span>
-        </Link>
+        </button>
 
         {/* ─── THEME PICKER (2 grupos × 2 opciones) ─── */}
         {!isClosed ? (

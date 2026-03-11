@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { STATUS_LIST } from '../../data/defaultAvatars';
 import { applyImageFallback, getBotAvatarFallback, resolveMediaUrl } from '../../utils/media';
 import './Navbar.css';
@@ -14,6 +15,8 @@ const ROUTE_NAMES = {
   '/tournaments': 'Torneos',
   '/equipos': 'Equipos',
   '/comunidad': 'Comunidad',
+  '/friends': 'Amigos',
+  '/amigos': 'Amigos',
   '/rankings': 'Rankings',
   '/noticias': 'Noticias',
   '/chats': 'Mensajes',
@@ -49,6 +52,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
+  const { logout } = useAuth();
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const actionsRef = useRef(null);
@@ -162,12 +166,9 @@ const Navbar = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('esportefyUser');
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('user-update'));
+  const handleLogout = async () => {
     setProfileOpen(false);
-    navigate('/');
+    await logout();
   };
 
   const handleSearch = (e) => {
@@ -244,6 +245,13 @@ const Navbar = () => {
                   <span>Explorar comunidades</span>
                   <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                 </Link>
+                {activeUser && (
+                  <Link to="/friends" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
+                    <i className="bx bx-user-plus"></i>
+                    <span>Centro de amigos</span>
+                    <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
+                  </Link>
+                )}
                 {activeUser && (
                   <Link to="/chats" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                     <i className="bx bx-message-rounded-dots"></i>

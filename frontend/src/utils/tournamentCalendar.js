@@ -3,36 +3,14 @@ import { API_URL } from '../config/api';
 import { GAME_IMAGES } from '../data/gameImages';
 import { formatTournamentPublicId } from './publicIds';
 import { resolveMediaUrl } from './media';
+import { isSupportedGameName } from '../../../shared/supportedGames.js';
 
 export const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAME_CONFIG = {
   'Valorant': { color: '#ff4655', icon: 'bx-crosshair' },
-  'CS:GO 2': { color: '#de9b35', icon: 'bx-target-lock' },
-  'Call of Duty': { color: '#54b946', icon: 'bx-run' },
-  'Warzone': { color: '#54b946', icon: 'bx-radar' },
-  'Fortnite': { color: '#a349a4', icon: 'bx-building' },
-  'Free Fire': { color: '#f39c12', icon: 'bx-flame' },
-  'PUBG': { color: '#f1c40f', icon: 'bx-target-lock' },
-  'Apex Legends': { color: '#e74c3c', icon: 'bx-shield-quarter' },
-  'Overwatch 2': { color: '#f39c12', icon: 'bx-shield' },
-  'Rainbow Six Siege': { color: '#3498db', icon: 'bx-window' },
   'League of Legends': { color: '#c1a05e', icon: 'bx-world' },
-  'Dota 2': { color: '#e74c3c', icon: 'bx-map-alt' },
   'Mobile Legends': { color: '#ffbf00', icon: 'bx-mobile-landscape' },
-  'Honor of Kings': { color: '#e6b333', icon: 'bx-crown' },
-  'Smite': { color: '#f1c40f', icon: 'bx-bolt-circle' },
-  'Wild Rift': { color: '#00a8ff', icon: 'bx-mobile' },
-  'FIFA 24': { color: '#2ecc71', icon: 'bx-football' },
-  'NBA 2K24': { color: '#e67e22', icon: 'bx-basketball' },
-  'Rocket League': { color: '#0088ff', icon: 'bx-car' },
-  'Street Fighter 6': { color: '#f39c12', icon: 'bx-walk' },
-  'Tekken 8': { color: '#c0392b', icon: 'bx-angry' },
-  'Clash Royale': { color: '#3498db', icon: 'bx-crown' },
-  'Teamfight Tactics': { color: '#f1c40f', icon: 'bx-grid' },
-  'Hearthstone': { color: '#f39c12', icon: 'bx-book' },
-  'Legends of Runeterra': { color: '#3498db', icon: 'bx-book-open' },
-  'StarCraft II': { color: '#00a8ff', icon: 'bx-planet' }
 };
 
 const asString = (value = '') => String(value || '').trim();
@@ -82,7 +60,7 @@ const getLocationLabel = (tournament = {}) =>
 
 export const normalizeTournamentCalendarEntry = (tournament = {}) => {
   const dateKey = normalizeDateKey(tournament.dateRaw || tournament.date);
-  if (!dateKey || !tournament.tournamentId) return null;
+  if (!dateKey || !tournament.tournamentId || !isSupportedGameName(tournament.game)) return null;
   const color = getTournamentGameColor(tournament.game);
   return {
     id: tournament._id || tournament.id || tournament.tournamentId,

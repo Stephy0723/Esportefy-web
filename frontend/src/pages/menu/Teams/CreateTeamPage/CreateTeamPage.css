@@ -28,7 +28,7 @@
     --theme-glow: rgba(255, 71, 87, 0.5); 
 }
 
-/* MOBA (LoL, Dota 2) -> AZUL CIELO */
+/* MOBA (LoL, MLBB) -> AZUL CIELO */
 .theme-moba { 
     --theme-color: #00a8ff; 
     --theme-gradient: linear-gradient(135deg, #00a8ff, #0097e6); 
@@ -42,7 +42,7 @@
     --theme-glow: rgba(225, 177, 44, 0.5); 
 }
 
-/* BATTLE ROYALE (Fortnite, Warzone) -> MORADO */
+/* OTROS FORMATOS FUTUROS -> MORADO */
 .theme-br {
     --theme-color: #a55eea;
     --theme-gradient: linear-gradient(135deg, #a55eea, #8854d0);

@@ -4,6 +4,7 @@ import { useNotification } from '../../../../context/NotificationContext';
 import axios from 'axios';
 import PageHud from '../../../../components/PageHud/PageHud';
 import { API_URL } from '../../../../config/api';
+import { getAuthToken } from '../../../../utils/authSession';
 import './OrganizerApplication.css';
 
 const OrganizerApplication = () => {
@@ -45,7 +46,7 @@ const OrganizerApplication = () => {
         return notify('error', 'Archivo faltante', 'Por favor sube una foto de tu documento de identidad.');
     }
 
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = getAuthToken();
     if (!token) {
       return notify('error', 'Sesion requerida', 'Debes iniciar sesion para enviar la solicitud.');
     }

@@ -3,7 +3,11 @@ import User from '../models/User.js';
 export const getNotifications = async (req, res) => {
     try {
         const user = await User.findById(req.userId).select('notifications');
-        return res.status(200).json(user?.notifications || []);
+        const notifications = Array.isArray(user?.notifications) ? [...user.notifications] : [];
+        notifications.sort(
+            (a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+        );
+        return res.status(200).json(notifications);
     } catch (error) {
         return res.status(500).json({ message: 'Error al obtener notificaciones', error: error.message });
     }
@@ -214,7 +218,7 @@ export const sendTestAllNotifications = async (req, res) => {
                 type: 'tournament', category: 'tournament',
                 title: 'Nuevo torneo disponible',
                 source: 'Torneos',
-                message: 'Se ha abierto la inscripción para "Clash Regional LATAM" (CS2). Formato: Eliminación directa. Cupo limitado a 32 equipos.',
+                message: 'Se ha abierto la inscripción para "Valorant Caribe Open" (Valorant). Formato: Eliminación directa. Cupo limitado a 32 equipos.',
                 visuals: { icon: 'bx-calendar-event', color: '#4facfe', glow: false }
             },
             {

@@ -1,4 +1,4 @@
-import { API_URL } from '../config/api';
+import { API_URL, MEDIA_URL } from '../config/api';
 
 const normalizePath = (value = '') => String(value || '').trim().replace(/\\/g, '/');
 const sanitizeSeed = (value = '', fallback = 'Player') => {
@@ -11,24 +11,25 @@ export const resolveMediaUrl = (src) => {
   if (!raw) return '';
   if (/^(data:|blob:)/i.test(raw)) return raw;
 
-  const apiBaseRaw = String(API_URL || '').trim().replace(/\/+$/, '');
-  const apiBase = apiBaseRaw ? new URL(apiBaseRaw, window.location.origin) : null;
+  const mediaBaseRaw = String(MEDIA_URL || API_URL || '').trim().replace(/\/+$/, '');
+  const mediaBase = mediaBaseRaw ? new URL(mediaBaseRaw, window.location.origin) : null;
+  const isUploadPath = (pathname = '') => String(pathname || '').startsWith('/uploads/');
 
   if (/^https?:\/\//i.test(raw)) {
     try {
       const mediaUrl = new URL(raw);
       const shouldRewriteUpload =
-        apiBase &&
-        mediaUrl.pathname.startsWith('/uploads/') &&
+        mediaBase &&
+        isUploadPath(mediaUrl.pathname) &&
         (
-          mediaUrl.host !== apiBase.host ||
-          mediaUrl.protocol !== apiBase.protocol ||
+          mediaUrl.host !== mediaBase.host ||
+          mediaUrl.protocol !== mediaBase.protocol ||
           mediaUrl.hostname === 'localhost' ||
           mediaUrl.hostname === '127.0.0.1'
         );
 
       if (shouldRewriteUpload) {
-        return `${apiBase.protocol}//${apiBase.host}${mediaUrl.pathname}${mediaUrl.search}${mediaUrl.hash}`;
+        return `${mediaBase.protocol}//${mediaBase.host}${mediaUrl.pathname}${mediaUrl.search}${mediaUrl.hash}`;
       }
       return mediaUrl.toString();
     } catch (_) {
@@ -36,9 +37,14 @@ export const resolveMediaUrl = (src) => {
     }
   }
 
-  if (!apiBase) return raw;
   const normalized = raw.startsWith('/') ? raw : `/${raw}`;
-  return `${apiBase.protocol}//${apiBase.host}${normalized}`;
+  if (!mediaBase) return normalized;
+
+  if (isUploadPath(normalized)) {
+    return `${mediaBase.protocol}//${mediaBase.host}${normalized}`;
+  }
+
+  return `${mediaBase.protocol}//${mediaBase.host}${normalized}`;
 };
 
 export const getAvatarFallback = (seed = 'Player') =>

@@ -3,15 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import Chart from 'react-apexcharts';
+import { FaCheck, FaCheckCircle, FaDiscord, FaGamepad, FaPlusCircle, FaShieldAlt, FaSteam, FaTwitch } from 'react-icons/fa';
+import { SiEpicgames } from 'react-icons/si';
 import { API_URL } from '../../../config/api';
 import PageHud from '../../../components/PageHud/PageHud';
+import Footer from '../../../components/Home/Footer';
 import './Dashboard.css';
-import { gamesDetailedData } from '../../../data/gamesDetailedData';
+import { supportedGamesDetailedData as gamesDetailedData } from '../../../data/supportedGamesDetailedData';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle.jsx';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import SponsorMotion from '../../../components/SponsorMotion/SponsorMotion';
 import { applyImageFallback, getAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
+import { useAuth } from '../../../context/AuthContext';
+import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 
 /* ── Animated count-up ── */
 const AnimatedNumber = ({ target, duration = 1800 }) => {
@@ -61,13 +67,24 @@ const SECTIONS = [
 
 /* ── Connection providers ── */
 const CONNECTION_PROVIDERS = [
-    { id: 'riot',    icon: 'bx bxs-shield-alt-2', name: 'Riot Games',    color: '#ff4655', fields: ['gameName','tagLine'], verifiedKey: 'riot' },
-    { id: 'discord', icon: 'bx bxl-discord-alt',  name: 'Discord',       color: '#5865F2', fields: ['username'],           verifiedKey: 'discord' },
-    { id: 'moonton', icon: 'bx bx-game',           name: 'Moonton (MLBB)', color: '#00b4d8', fields: ['gameId'],            verifiedKey: 'moonton' },
-    { id: 'steam',   icon: 'bx bxl-steam',         name: 'Steam',         color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam' },
-    { id: 'epic',    icon: 'bx bx-cube',           name: 'Epic Games',    color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic' },
-    { id: 'twitch',  icon: 'bx bxl-twitch',        name: 'Twitch',        color: '#9146ff', fields: ['twitchId'],           verifiedKey: 'twitch' },
+    { id: 'riot',    icon: 'bx bxs-shield-alt-2', iconComponent: FaShieldAlt, name: 'Cuenta Riot',     color: '#ff4655', fields: ['gameName','tagLine'], verifiedKey: 'riot' },
+    { id: 'discord', icon: 'bx bxl-discord-alt',  iconComponent: FaDiscord,   name: 'Discord',         color: '#5865F2', fields: ['username'],           verifiedKey: 'discord' },
+    { id: 'moonton', icon: 'bx bx-game',          iconComponent: FaGamepad,   name: 'Moonton (MLBB)',  color: '#00b4d8', fields: ['gameId'],             verifiedKey: 'moonton' },
+    { id: 'steam',   icon: 'bx bxl-steam',        iconComponent: FaSteam,     name: 'Steam',           color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam', comingSoon: true },
+    { id: 'epic',    icon: 'bx bx-cube',          iconComponent: SiEpicgames, name: 'Epic Games',      color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic', comingSoon: true },
+    { id: 'twitch',  icon: 'bx bxl-twitch',       iconComponent: FaTwitch,    name: 'Twitch',          color: '#9146ff', fields: ['twitchId'],           verifiedKey: 'twitch' },
 ];
+
+const renderConnectionIcon = (provider, className = 'db__conn-provider-icon') => {
+    const Icon = provider?.iconComponent;
+    if (Icon) return <Icon className={className} aria-hidden="true" />;
+    return <span className={className} aria-hidden="true">•</span>;
+};
+
+const getProviderName = (providerId) => {
+    const normalizedProviderId = String(providerId || '').trim().toLowerCase();
+    return CONNECTION_PROVIDERS.find((provider) => provider.id === normalizedProviderId)?.name || normalizedProviderId;
+};
 
 /* ── Framer variants ── */
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
@@ -83,6 +100,7 @@ const slideRight = {
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const { user: authUser } = useAuth();
     const containerRef = useRef(null);
     const sectionRefs = useRef({});
     const teamsTrackRef = useRef(null);
@@ -96,6 +114,13 @@ const Dashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [activeSection, setActiveSection] = useState('hero');
     const [connectionPanel, setConnectionPanel] = useState(null);
+    const [oauthPanelMsg, setOauthPanelMsg] = useState('');
+    const [mlbbPlayerId, setMlbbPlayerId] = useState('');
+    const [mlbbZoneId, setMlbbZoneId] = useState('');
+    const [mlbbIgn, setMlbbIgn] = useState('');
+    const [mlbbMsg, setMlbbMsg] = useState('');
+    const [mlbbLoading, setMlbbLoading] = useState(false);
+    const [mlbbValidating, setMlbbValidating] = useState(false);
     const [myCommunities, setMyCommunities] = useState([]);
     const [currentMetricIdx, setCurrentMetricIdx] = useState(0);
     const [metricDetailOpen, setMetricDetailOpen] = useState(false);
@@ -112,24 +137,29 @@ const Dashboard = () => {
     /* ══════════════════════════════════════════════
        FETCH PROFILE  (DB — NO TOCAR)
        ══════════════════════════════════════════════ */
-    useEffect(() => {
-        const fetchProfile = async () => {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) { navigate('/login'); return; }
-            try {
-                const response = await axios.get(`${API_URL}/api/auth/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                setUser(response.data);
-            } catch (error) {
-                console.error(error);
+    const fetchProfile = useCallback(async () => {
+        if (authUser?._id) {
+            setUser(authUser);
+        }
+        try {
+            const response = await axios.get(`${API_URL}/api/auth/profile`);
+            setUser(response.data);
+            return response.data;
+        } catch (error) {
+            console.error(error);
+            const status = Number(error?.response?.status || 0);
+            if ((status === 401 || status === 403) && !authUser?._id) {
                 navigate('/login');
-            } finally {
-                setLoading(false);
             }
-        };
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, [authUser, navigate]);
+
+    useEffect(() => {
         fetchProfile();
-    }, [navigate]);
+    }, [fetchProfile]);
 
     /* ══════════════════════════════════════════════
        FETCH TEAMS  (DB — NO TOCAR)
@@ -184,12 +214,9 @@ const Dashboard = () => {
        ══════════════════════════════════════════════ */
     useEffect(() => {
         const fetchNotifs = async () => {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) return;
+            if (!getAuthToken()) return;
             try {
-                const res = await axios.get(`${API_URL}/api/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await axios.get(`${API_URL}/api/notifications`);
                 setNotifications(res.data || []);
             } catch (err) {
                 console.error('Error cargando notificaciones:', err);
@@ -203,12 +230,9 @@ const Dashboard = () => {
        ══════════════════════════════════════════════ */
     useEffect(() => {
         const fetchComms = async () => {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (!token) return;
+            if (!getAuthToken()) return;
             try {
-                const res = await axios.get(`${API_URL}/api/community/communities/mine`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await axios.get(`${API_URL}/api/community/communities/mine`);
                 setMyCommunities(Array.isArray(res.data) ? res.data : []);
             } catch (err) {
                 console.error('Error cargando comunidades:', err);
@@ -233,15 +257,27 @@ const Dashboard = () => {
         return () => observer.disconnect();
     }, [loading, user]);
 
-    const getToken = useCallback(
-        () => localStorage.getItem('token') || sessionStorage.getItem('token'),
-        []
-    );
-
     const scrollTo = useCallback((id) => {
         const el = sectionRefs.current[id];
         if (el) el.scrollIntoView({ behavior: 'smooth' });
     }, []);
+
+    useEffect(() => {
+        if (connectionPanel?.id !== 'moonton') return;
+        setMlbbPlayerId(user?.connections?.mlbb?.playerId || '');
+        setMlbbZoneId(user?.connections?.mlbb?.zoneId || '');
+        setMlbbIgn(user?.connections?.mlbb?.ign || '');
+        setMlbbMsg('');
+    }, [
+        connectionPanel?.id,
+        user?.connections?.mlbb?.playerId,
+        user?.connections?.mlbb?.zoneId,
+        user?.connections?.mlbb?.ign
+    ]);
+
+    useEffect(() => {
+        setOauthPanelMsg('');
+    }, [connectionPanel?.id]);
 
     const scrollTeams = useCallback((dir) => {
         const track = teamsTrackRef.current;
@@ -251,13 +287,10 @@ const Dashboard = () => {
 
     const fetchTeamDetail = useCallback(async (teamId) => {
         if (!teamId) return null;
-        const token = getToken();
-        const res = await axios.get(`${API_URL}/api/teams`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined
-        });
+        const res = await axios.get(`${API_URL}/api/teams`);
         const teams = Array.isArray(res.data) ? res.data : [];
         return teams.find((team) => String(team._id) === String(teamId)) || null;
-    }, [getToken]);
+    }, []);
 
     const openTeamPanel = useCallback(async (team) => {
         if (!team?._id) return;
@@ -430,15 +463,60 @@ const Dashboard = () => {
     }), [profileCompletion]);
 
     /* ── Connection status helper ── */
+    const getProviderConnection = (providerId) => {
+        if (providerId === 'moonton') return user?.connections?.mlbb || null;
+        return user?.connections?.[providerId] || null;
+    };
+
+    const getMlbbVerificationStatus = () => normalizeMlbbVerificationStatus(
+        user?.connections?.mlbb?.verificationStatus,
+        user?.connections?.mlbb?.verified
+    );
+
     const isConnected = (providerId) => {
+        const provider = CONNECTION_PROVIDERS.find((item) => item.id === providerId);
+        if (provider?.comingSoon) return false;
+        if (providerId === 'moonton') {
+            const status = getMlbbVerificationStatus();
+            return Boolean(
+                isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified)
+                && user?.connections?.mlbb?.playerId
+                && user?.connections?.mlbb?.zoneId
+            );
+        }
         return !!user?.connections?.[providerId]?.verified;
     };
 
     const connectedCount = CONNECTION_PROVIDERS.filter(p => isConnected(p.id)).length;
 
+    const getProviderStatusLabel = (providerId) => {
+        const provider = CONNECTION_PROVIDERS.find((item) => item.id === providerId);
+        if (provider?.comingSoon) return 'Pendiente';
+        if (providerId === 'moonton') {
+            const status = getMlbbVerificationStatus();
+            if (isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified)) return 'Vinculada';
+            if (status === 'pending') return 'En revisión';
+            if (status === 'rejected') return 'Rechazada';
+            return 'No vinculada';
+        }
+        return isConnected(providerId) ? 'Vinculada' : 'No vinculada';
+    };
+
     /* ── Get connected account display info ── */
     const getConnectionInfo = (provider) => {
-        const conn = user?.connections?.[provider.id];
+        if (provider?.comingSoon) return null;
+        const conn = getProviderConnection(provider.id);
+        if (provider.id === 'moonton') {
+            const status = getMlbbVerificationStatus();
+            if (!isMlbbVerifiedStatus(status, user?.connections?.mlbb?.verified) || !conn?.playerId || !conn?.zoneId) return null;
+            return {
+                tag: `ID ${conn.playerId} (${conn.zoneId})`,
+                stats: [
+                    { label: 'Estado', val: 'Verificada' },
+                    { label: 'IGN', val: conn.ign || 'Sin IGN' }
+                ]
+            };
+        }
         if (!conn?.verified) return null;
         switch (provider.id) {
             case 'riot':
@@ -458,6 +536,86 @@ const Dashboard = () => {
                 ] };
         }
     };
+
+    const validateMlbbDraft = useCallback(async () => {
+        if (!getAuthToken()) {
+            setMlbbMsg('Debes iniciar sesión nuevamente.');
+            return;
+        }
+        if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
+            setMlbbMsg('Debes completar User ID y Zone ID.');
+            return;
+        }
+        try {
+            setMlbbValidating(true);
+            setMlbbMsg('');
+            const res = await axios.post(
+                `${API_URL}/api/auth/mlbb/validate`,
+                {
+                    playerId: mlbbPlayerId.trim(),
+                    zoneId: mlbbZoneId.trim(),
+                    ign: mlbbIgn.trim()
+                }
+            );
+            setMlbbMsg(res.data?.message || 'MLBB ID válido.');
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'No se pudo validar la cuenta MLBB.');
+        } finally {
+            setMlbbValidating(false);
+        }
+    }, [mlbbIgn, mlbbPlayerId, mlbbZoneId]);
+
+    const linkMlbb = useCallback(async () => {
+        if (!getAuthToken()) {
+            setMlbbMsg('Debes iniciar sesión nuevamente.');
+            return;
+        }
+        if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
+            setMlbbMsg('Debes completar User ID y Zone ID.');
+            return;
+        }
+        try {
+            setMlbbLoading(true);
+            setMlbbMsg('');
+            const res = await axios.post(
+                `${API_URL}/api/auth/mlbb/link`,
+                {
+                    playerId: mlbbPlayerId.trim(),
+                    zoneId: mlbbZoneId.trim(),
+                    ign: mlbbIgn.trim()
+                }
+            );
+            await fetchProfile();
+            const nextStatus = String(res?.data?.status || '');
+            setMlbbMsg(
+                nextStatus === 'pending'
+                    ? 'Solicitud enviada. Tu cuenta MLBB quedó en revisión.'
+                    : 'Cuenta MLBB vinculada correctamente.'
+            );
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'No se pudo vincular la cuenta MLBB.');
+        } finally {
+            setMlbbLoading(false);
+        }
+    }, [fetchProfile, mlbbIgn, mlbbPlayerId, mlbbZoneId]);
+
+    const unlinkMlbb = useCallback(async () => {
+        if (!getAuthToken()) {
+            setMlbbMsg('Debes iniciar sesión nuevamente.');
+            return;
+        }
+        try {
+            setMlbbLoading(true);
+            setMlbbMsg('');
+            await axios.delete(`${API_URL}/api/auth/mlbb`);
+            await fetchProfile();
+            setMlbbMsg('Cuenta MLBB desvinculada.');
+        } catch (error) {
+            setMlbbMsg(error.response?.data?.message || 'No se pudo desvincular la cuenta MLBB.');
+        } finally {
+            setMlbbLoading(false);
+        }
+    }, [fetchProfile]);
 
     /* ── Active game for library ── */
     const activeGame = enrichedGames[activeGameIdx] || null;
@@ -634,6 +792,113 @@ const Dashboard = () => {
     const getFilledMemberCount = (team) => getTeamRoster(team).length;
     const getTeamCode = (team) => team?.teamCode ? `TEAM-${team.teamCode}` : (team?.inviteCode || team?._id?.slice(-6) || '—');
 
+    const renderMlbbConnectionPanel = () => {
+        const mlbbConn = user?.connections?.mlbb || {};
+        const mlbbStatus = getMlbbVerificationStatus();
+        const mlbbLinked = isConnected('moonton');
+
+        if (mlbbLinked) {
+            return (
+                <div className="db__conn-panel-linked">
+                    <div className="db__conn-panel-avatar" style={{ color: connectionPanel.color, borderColor: connectionPanel.color }}>
+                        {renderConnectionIcon(connectionPanel)}
+                        <span className="db__conn-panel-badge"><FaCheck /></span>
+                    </div>
+                    <p className="db__conn-panel-gamertag" style={{ color: connectionPanel.color }}>
+                        ID {mlbbConn.playerId} ({mlbbConn.zoneId})
+                    </p>
+                    <p className="db__conn-panel-sub">Cuenta MLBB verificada en Esportefy</p>
+                    <div className="db__conn-panel-stats">
+                        <div className="db__conn-panel-stat">
+                            <span className="db__conn-panel-stat-val">{mlbbConn.ign || 'Sin IGN'}</span>
+                            <span className="db__conn-panel-stat-lbl">IGN</span>
+                        </div>
+                        <div className="db__conn-panel-stat">
+                            <span className="db__conn-panel-stat-val">Verificada</span>
+                            <span className="db__conn-panel-stat-lbl">Estado</span>
+                        </div>
+                    </div>
+                    {mlbbMsg && <p className="db__conn-panel-msg">{mlbbMsg}</p>}
+                    <div className="db__conn-panel-actions">
+                        <button className="db__btn db__btn--outline" onClick={() => navigate('/settings')}>
+                            <i className="bx bx-cog"></i> Configurar
+                        </button>
+                        <button className="db__btn db__btn--danger-ghost" onClick={unlinkMlbb} disabled={mlbbLoading}>
+                            <i className="bx bx-unlink"></i> {mlbbLoading ? 'Procesando...' : 'Desvincular'}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="db__conn-panel-linked">
+                <div className={`db__conn-panel-status ${mlbbStatus === 'rejected' ? 'db__conn-panel-status--error' : 'db__conn-panel-status--pending'}`}>
+                    <i className={mlbbStatus === 'pending' ? 'bx bx-time-five' : mlbbStatus === 'rejected' ? 'bx bx-error-circle' : 'bx bx-link-external'}></i>
+                    <span>{getProviderStatusLabel('moonton')}</span>
+                    <p className="db__conn-panel-desc">Verificación interna de Esportefy. No es una validación oficial de Moonton/API pública de MLBB.</p>
+                    {mlbbStatus === 'pending' && (
+                        <p className="db__conn-panel-detail">Tu solicitud está en revisión.</p>
+                    )}
+                    {mlbbStatus === 'rejected' && (
+                        <p className="db__conn-panel-detail">{mlbbConn.rejectReason || 'La solicitud fue rechazada. Corrige los datos y vuelve a enviar.'}</p>
+                    )}
+                </div>
+
+                <div className="db__conn-panel-form">
+                    <label className="db__conn-panel-field">
+                        <span>User ID</span>
+                        <input
+                            type="text"
+                            value={mlbbPlayerId}
+                            onChange={(e) => setMlbbPlayerId(e.target.value)}
+                            disabled={mlbbLoading || mlbbValidating}
+                            placeholder="Ej: 853455730"
+                        />
+                    </label>
+                    <label className="db__conn-panel-field">
+                        <span>Zone ID</span>
+                        <input
+                            type="text"
+                            value={mlbbZoneId}
+                            onChange={(e) => setMlbbZoneId(e.target.value)}
+                            disabled={mlbbLoading || mlbbValidating}
+                            placeholder="Ej: 5280"
+                        />
+                    </label>
+                    <label className="db__conn-panel-field">
+                        <span>IGN (opcional)</span>
+                        <input
+                            type="text"
+                            value={mlbbIgn}
+                            onChange={(e) => setMlbbIgn(e.target.value)}
+                            disabled={mlbbLoading || mlbbValidating}
+                            placeholder="Tu nombre dentro del juego"
+                        />
+                    </label>
+                    {mlbbMsg && <p className="db__conn-panel-msg">{mlbbMsg}</p>}
+                </div>
+
+                <div className="db__conn-panel-actions">
+                    <button className="db__btn db__btn--outline" onClick={validateMlbbDraft} disabled={mlbbLoading || mlbbValidating}>
+                        <i className="bx bx-check-shield"></i> {mlbbValidating ? 'Validando...' : 'Validar ID'}
+                    </button>
+                    <button className="db__btn db__btn--primary" onClick={linkMlbb} disabled={mlbbLoading || mlbbValidating}>
+                        <i className="bx bx-link-alt"></i> {mlbbLoading ? 'Conectando...' : 'Conectar'}
+                    </button>
+                </div>
+
+                {(mlbbStatus === 'pending' || mlbbStatus === 'rejected') && (
+                    <div className="db__conn-panel-actions">
+                        <button className="db__btn db__btn--danger-ghost" onClick={unlinkMlbb} disabled={mlbbLoading}>
+                            <i className="bx bx-x-circle"></i> {mlbbLoading ? 'Procesando...' : mlbbStatus === 'pending' ? 'Cancelar solicitud' : 'Limpiar y volver a intentar'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     /* ── Loading ── */
     if (loading) {
         return (
@@ -671,9 +936,11 @@ const Dashboard = () => {
             </nav>
 
             {/* ═══════ SPONSOR SNAKE ═══════ */}
-            <div className="db__sponsor-wrap">
-                <SponsorMotion />
-            </div>
+            {!['library', 'account'].includes(activeSection) && (
+                <div className="db__sponsor-wrap">
+                    <SponsorMotion />
+                </div>
+            )}
 
             {/* ═══════ CONNECTION PANEL (slide right) ═══════ */}
             <AnimatePresence>
@@ -687,7 +954,7 @@ const Dashboard = () => {
                                         className="db__conn-panel-title-icon"
                                         style={{ color: connectionPanel.color }}
                                     >
-                                        <i className={connectionPanel.icon}></i>
+                                        {renderConnectionIcon(connectionPanel)}
                                     </span>
                                     <h3>{connectionPanel.name}</h3>
                                 </div>
@@ -695,14 +962,33 @@ const Dashboard = () => {
                             </div>
                             <div className="db__conn-panel-body">
                                 {(() => {
+                                    if (connectionPanel.id === 'moonton') {
+                                        return renderMlbbConnectionPanel();
+                                    }
+
+                                    if (connectionPanel.comingSoon) {
+                                        return (
+                                            <div className="db__conn-panel-status db__conn-panel-status--pending">
+                                                <i className="bx bx-time-five"></i>
+                                                <span>Próximamente</span>
+                                                <p className="db__conn-panel-desc">
+                                                    La integración con {connectionPanel.name} está pausada por ahora. La retomaremos cuando esté lista para producción.
+                                                </p>
+                                                <button className="db__btn db__btn--ghost" disabled>
+                                                    Próximamente
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+
                                     const info = getConnectionInfo(connectionPanel);
                                     if (info) {
                                         /* ── Connected: rich account view ── */
                                         return (
                                             <div className="db__conn-panel-linked">
                                                 <div className="db__conn-panel-avatar" style={{ color: connectionPanel.color, borderColor: connectionPanel.color }}>
-                                                    <i className={connectionPanel.icon}></i>
-                                                    <span className="db__conn-panel-badge"><i className="bx bx-check"></i></span>
+                                                    {renderConnectionIcon(connectionPanel)}
+                                                    <span className="db__conn-panel-badge"><FaCheck /></span>
                                                 </div>
                                                 <p className="db__conn-panel-gamertag" style={{ color: connectionPanel.color }}>{info.tag}</p>
                                                 <p className="db__conn-panel-sub">Cuenta verificada en {connectionPanel.name}</p>
@@ -718,10 +1004,8 @@ const Dashboard = () => {
                                                     <button className="db__btn db__btn--outline" onClick={() => navigate('/settings')}>
                                                         <i className="bx bx-cog"></i> Configurar
                                                     </button>
-                                                    <button className="db__btn db__btn--danger-ghost">
-                                                        <i className="bx bx-unlink"></i> Desvincular
-                                                    </button>
                                                 </div>
+                                                {oauthPanelMsg ? <p className="db__conn-panel-msg">{oauthPanelMsg}</p> : null}
                                             </div>
                                         );
                                     } else {
@@ -732,14 +1016,18 @@ const Dashboard = () => {
                                                     <i className="bx bx-link-external"></i>
                                                     <span>No vinculada</span>
                                                     <p className="db__conn-panel-desc">Vincula tu cuenta de {connectionPanel.name} para acceder a estadísticas y funciones exclusivas.</p>
-                                                    <button className="db__btn db__btn--primary" onClick={() => navigate('/settings')}>
+                                                    <button
+                                                        className="db__btn db__btn--primary"
+                                                        onClick={() => navigate('/settings')}
+                                                    >
                                                         <i className="bx bx-link-alt"></i> Vincular ahora
                                                     </button>
+                                                    {oauthPanelMsg ? <p className="db__conn-panel-msg">{oauthPanelMsg}</p> : null}
                                                 </div>
                                                 {/* Preview mockup of what it looks like linked */}
                                                 <div className="db__conn-panel-preview">
                                                     <div className="db__conn-panel-avatar" style={{ color: connectionPanel.color, borderColor: connectionPanel.color }}>
-                                                        <i className={connectionPanel.icon}></i>
+                                                        {renderConnectionIcon(connectionPanel)}
                                                     </div>
                                                     <span style={{ fontWeight: 800, color: 'var(--text-main)' }}>Tu Gamertag#0000</span>
                                                     <div className="db__conn-panel-stats" style={{ width: '100%' }}>
@@ -915,7 +1203,7 @@ const Dashboard = () => {
 
                 <motion.div className="db__hero-content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}>
                     <div className="db__hero-avatar">
-                        <AvatarCircle src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`} frameConfig={currentFrame} size="150px" status={user.status} />
+                        <AvatarCircle src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${user.username}`} frameConfig={currentFrame} size="150px" status={user.status} />
                     </div>
                     <span className="db__hero-greeting">{greeting}</span>
                     <PlayerTag name={userData.username.toUpperCase()} tagId={user.selectedTagId} size="normal" fontTag="2.8rem" />
@@ -1209,15 +1497,15 @@ const Dashboard = () => {
                                     onClick={() => setConnectionPanel(p)}
                                     style={{ '--cc': p.color }}
                                 >
-                                    <div className="db__conn-card-icon"><i className={p.icon}></i></div>
+                                    <div className="db__conn-card-icon">{renderConnectionIcon(p)}</div>
                                     <div className="db__conn-card-info">
                                         <strong>{p.name}</strong>
-                                        <span>{linked ? 'Vinculada' : 'No vinculada'}</span>
+                                        <span>{getProviderStatusLabel(p.id)}</span>
                                     </div>
                                     <div className="db__conn-card-status">
                                         {linked
-                                            ? <i className="bx bx-check-circle" style={{ color: '#4ade80' }}></i>
-                                            : <i className="bx bx-plus-circle" style={{ color: 'var(--text-muted)' }}></i>
+                                            ? <FaCheckCircle style={{ color: '#4ade80' }} />
+                                            : <FaPlusCircle style={{ color: 'var(--text-muted)' }} />
                                         }
                                     </div>
                                 </motion.div>
@@ -1322,7 +1610,13 @@ const Dashboard = () => {
                                 return (
                                     <motion.div key={t._id || t.tournamentId} className="db__tr-card" variants={fadeChild} onClick={() => navigate(`/tournaments/${t.tournamentId}`)}>
                                         <div className="db__tr-thumb">
-                                            {t.bannerImage ? <img src={`${API_URL}/${t.bannerImage}`} alt="" /> : <i className="bx bx-trophy"></i>}
+                                            {t.bannerImage ? (
+                                                <img
+                                                    src={resolveMediaUrl(t.bannerImage)}
+                                                    alt={t.title || 'Torneo'}
+                                                    onError={(e) => applyImageFallback(e, getTeamFallback(t.title || t.game || 'Torneo'))}
+                                                />
+                                            ) : <i className="bx bx-trophy"></i>}
                                         </div>
                                         <div className="db__tr-info">
                                             <strong>{t.title}</strong>
@@ -1378,10 +1672,22 @@ const Dashboard = () => {
                             {myCommunities.slice(0, 6).map(c => (
                                 <motion.div key={c._id || c.id} className="db__comm-card" variants={fadeChild} onClick={() => navigate(`/community/${c.shortUrl}`)}>
                                     <div className="db__comm-banner">
-                                        {c.bannerUrl ? <img src={c.bannerUrl} alt="" /> : <div className="db__comm-banner--ph"></div>}
+                                        {c.bannerUrl ? (
+                                            <img
+                                                src={resolveMediaUrl(c.bannerUrl)}
+                                                alt={c.name || 'Comunidad'}
+                                                onError={(e) => applyImageFallback(e, getTeamFallback(c.name || 'Comunidad'))}
+                                            />
+                                        ) : <div className="db__comm-banner--ph"></div>}
                                     </div>
                                     <div className="db__comm-avatar">
-                                        {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} /> : <i className="bx bx-buildings"></i>}
+                                        {c.avatarUrl ? (
+                                            <img
+                                                src={resolveMediaUrl(c.avatarUrl)}
+                                                alt={c.name}
+                                                onError={(e) => applyImageFallback(e, getTeamFallback(c.name || 'Comunidad'))}
+                                            />
+                                        ) : <i className="bx bx-buildings"></i>}
                                     </div>
                                     <div className="db__comm-info">
                                         <strong>{c.name}</strong>
@@ -1547,6 +1853,10 @@ const Dashboard = () => {
                     </motion.div>
                 </motion.div>
             </section>
+
+            <div className="db__footer-shell">
+                <Footer />
+            </div>
         </div>
     );
 };

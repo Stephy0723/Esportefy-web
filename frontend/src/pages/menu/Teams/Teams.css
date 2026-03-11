@@ -676,6 +676,25 @@
     font-size: 0.85rem;
 }
 
+.th__card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.th__card-btn--invite {
+    background: var(--bg-elevated, #242424);
+    color: var(--text-main, #e9e9e9);
+    border-color: color-mix(in srgb, var(--card-accent) 45%, transparent);
+    box-shadow: none;
+}
+
+.th__card-btn--invite:hover {
+    background: color-mix(in srgb, var(--card-accent) 22%, var(--bg-elevated, #242424));
+    color: #fff;
+}
+
 /* ── EMPTY STATE ── */
 .th__empty {
     display: flex;
@@ -1963,6 +1982,15 @@
     background: var(--bg-card);
     color: var(--text-main);
 }
+
+.th__join-role-locked-note {
+    margin-top: 6px;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgba(142, 219, 21, 0.9);
+}
+
 .th__join-mlbb-note {
     display: flex;
     align-items: flex-start;

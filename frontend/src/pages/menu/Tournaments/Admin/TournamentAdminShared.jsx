@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { getAuthToken } from '../../../../utils/authSession';
 
 export const createEmptyMatch = () => ({
   teamA: '',
@@ -61,7 +62,7 @@ export const useTournamentAdminData = (code) => {
     customMessage: '',
   });
   const [bracket, setBracket] = useState(createEmptyBracket());
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const token = getAuthToken();
   const authConfig = useMemo(
     () => ({
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,

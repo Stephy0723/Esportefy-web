@@ -36,7 +36,8 @@ import {
   FaLink,
 } from 'react-icons/fa';
 import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY } from '../../data/communityData';
-import { gamesDetailedData } from '../../data/gamesDetailedData';
+import { supportedGamesDetailedData as gamesDetailedData } from '../../data/supportedGamesDetailedData';
+import { isSupportedGameId } from '../../../../shared/supportedGames.js';
 import './CommunityGamePageTemplate.css';
 
 const fallbackArray = (arr, fb) => (Array.isArray(arr) && arr.length > 0 ? arr : fb);
@@ -98,6 +99,13 @@ const CommunityGamePageTemplate = () => {
 
   const id = String(rawId || '').toLowerCase().trim();
   const detailId = DATA_ALIASES[id] || id;
+  const isSupportedCommunityGame = isSupportedGameId(id) || isSupportedGameId(detailId);
+
+  useEffect(() => {
+    if (!isSupportedCommunityGame) {
+      navigate('/comunidad', { replace: true });
+    }
+  }, [isSupportedCommunityGame, navigate]);
 
   const data = gamesDetailedData?.[detailId] || gamesDetailedData?.[id] || null;
   const communityGame = COMMUNITY_GAMES.find((g) => g.id === id || g.id === detailId);

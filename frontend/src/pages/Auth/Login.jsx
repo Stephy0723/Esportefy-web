@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { persistAuthSession } from '../../utils/authSession';
 import './Login.css'; 
 
 // 1. IMPORTAR CONTEXTO DE TEMA
@@ -41,7 +42,8 @@ const Login = () => {
                 try {
                     response = await axios.post(endpoint, {
                         email,
-                        password
+                        password,
+                        rememberMe
                     });
                     break;
                 } catch (candidateError) {
@@ -60,11 +62,12 @@ const Login = () => {
                 throw new Error('Respuesta de login inválida');
             }
             
-            // Guardar datos iniciales en localStorage para carga rápida
-            // AuthContext sincronizará los datos completos desde /profile vía cookies
-            localStorage.setItem('esportefyUser', JSON.stringify(user));
-            // Flag de sesión — la auth real va por HttpOnly cookies
-            localStorage.setItem('token', token || 'cookie-session');
+            // Persistencia unificada de sesión (remember me => localStorage, caso contrario => sessionStorage)
+            persistAuthSession({
+                user,
+                token: token || 'cookie-session',
+                rememberMe
+            });
             
             window.dispatchEvent(new Event('user-update'));
 

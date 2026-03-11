@@ -4,9 +4,16 @@ import { Router } from 'express';
 import {
   register,
   checkPhoneAvailability,
+  checkUsernameAvailability,
   login,
   logout,
   getProfile,
+  getProfileOverview,
+  getUserCard,
+  getFriends,
+  getSocialOverview,
+  searchUsers,
+  toggleFollow,
   forgotPassword,
   resetPassword,
   updateProfile,
@@ -30,7 +37,10 @@ import {
   unlinkRiotAccount,
   syncRiotNow,
   validateRiotId,
-  riotStatus
+  riotStatus,
+  startValorantRso,
+  valorantRsoCallback,
+  valorantRsoStatus
 } from '../controllers/riot.controller.js';
 import {
   validateMlbbId,
@@ -48,6 +58,7 @@ const router = Router();
 const rlLogin = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: 'login' });
 const rlRegister = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'register' });
 const rlCheckPhone = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'check-phone' });
+const rlCheckUsername = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'check-username' });
 const rlForgot = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'forgot' });
 const rlReset = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'reset' });
 const rlRiot = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 6, keyPrefix: 'riot' });
@@ -57,6 +68,9 @@ const rlMlbbStatus = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 400, key
 const rlMlbbReview = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: 'mlbb-review' });
 const rlMlbbOps = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: 'mlbb-ops' });
 const rlDiscord = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8, keyPrefix: 'discord-oauth' });
+const rlProfile = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 120, keyPrefix: 'profile-read' });
+const rlSocialSearch = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 90, keyPrefix: 'social-search' });
+const rlFollowStrict = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 40, keyPrefix: 'social-follow' });
 
 /* =========================
    DISCORD
@@ -70,9 +84,16 @@ router.delete('/discord', verifyToken, unlinkDiscord);
 ========================= */
 router.post('/register', rlRegister, register);
 router.get('/check-phone', rlCheckPhone, checkPhoneAvailability);
+router.get('/check-username', rlCheckUsername, checkUsernameAvailability);
 router.post('/login', rlLogin, login);
 router.post('/logout', logout);
-router.get('/profile', verifyToken, getProfile);
+router.get('/profile', verifyToken, rlProfile, getProfile);
+router.get('/profile/overview', verifyToken, rlProfile, getProfileOverview);
+router.get('/user-card/:userId', verifyToken, rlProfile, getUserCard);
+router.get('/friends', verifyToken, rlProfile, getFriends);
+router.get('/social', verifyToken, rlProfile, getSocialOverview);
+router.get('/users/search', verifyToken, rlSocialSearch, searchUsers);
+router.post('/follow/:userId', verifyToken, rlFollowStrict, toggleFollow);
 router.put('/update-profile', verifyToken, upload.single('avatarFile'), updateProfile);
 router.post('/forgot-password', rlForgot, forgotPassword);
 router.post('/reset-password/:token', rlReset, resetPassword);
@@ -84,8 +105,11 @@ router.patch('/organizer/:userId/approve', verifyToken, verifyOrganizerAction);
 ========================= */
 router.post('/riot/link/init', verifyToken, rlRiot, initRiotLink);
 router.post('/riot/link/confirm', verifyToken, rlRiot, confirmRiotLink);
+router.post('/riot/valorant/start', verifyToken, rlRiot, startValorantRso);
 router.delete('/riot', verifyToken, unlinkRiotAccount);
 router.get('/riot/status', verifyToken, rlRiot, riotStatus);
+router.get('/riot/valorant/status', verifyToken, rlRiot, valorantRsoStatus);
+router.get('/riot/valorant/callback', valorantRsoCallback);
 
 // (Opcional) sync manual
 router.post('/riot/sync', verifyToken, rlRiot, syncRiotNow);
