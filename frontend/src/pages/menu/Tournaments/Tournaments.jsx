@@ -22,6 +22,9 @@ const GAME_CONFIG = {
   "Mobile Legends": { color: "#ffbf00", icon: "bx-mobile-landscape" },
 };
 
+const normalizeTournamentGame = (value) => String(value || '').trim().toLowerCase();
+const isValorantTournamentGame = (value) => normalizeTournamentGame(value) === 'valorant';
+
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PROMO SLIDES â€” platform-branded carousel
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
@@ -826,8 +829,10 @@ useEffect(() => {
   }, [isRightPanelOpen]);
 
   const goToRegistration = (torneo) => navigate('/team-registration', { state: { tournament: torneo } });
-  const needsRiot = (torneo) => isRiotGame(torneo.game) && torneo?.riotRequirements?.required;
+  const needsRiot = (torneo) => isRiotGame(torneo.game);
+  const needsValorantRso = (torneo) => isValorantTournamentGame(torneo?.game) && needsRiot(torneo);
   const hasRiotLinked = Boolean(user?.connections?.riot?.verified);
+  const hasValorantRso = user?.connections?.riot?.products?.valorant?.consentGranted === true;
 
   const canManageTournament = (torneo) => {
     if (!user) return false;
@@ -2305,6 +2310,9 @@ useEffect(() => {
                                 <h4><i className='bx bx-shield-quarter'></i> Requisitos Riot</h4>
                                 <div className="riot-requirements">
                                     <div><strong>Cuenta Riot vinculada:</strong> requerida</div>
+                                    {isValorantTournamentGame(selectedTournament.game) && (
+                                        <div><strong>Riot Sign On:</strong> autorización VALORANT requerida</div>
+                                    )}
                                     {selectedTournament.riotRequirements?.minTier && (
                                         <div><strong>Rango mínimo:</strong> {selectedTournament.riotRequirements.minTier}</div>
                                     )}
@@ -2315,6 +2323,9 @@ useEffect(() => {
                                         <div><strong>Solo Queue:</strong> {selectedTournament.riotRequirements.soloQueueOnly ? 'Sí' : 'No'}</div>
                                     )}
                                     <div className="riot-note">Se verifica tu perfil Riot para evitar trampas.</div>
+                                    {isValorantTournamentGame(selectedTournament.game) && (
+                                        <div className="riot-note">VALORANT requiere consentimiento del jugador mediante Riot Sign On antes de permitir la inscripción.</div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -2407,6 +2418,11 @@ useEffect(() => {
                                             navigate('/settings');
                                             return;
                                         }
+                                        if (needsValorantRso(selectedTournament) && !hasValorantRso) {
+                                            notify('danger', 'VALORANT requiere autorización', 'Debes autorizar VALORANT con Riot Sign On en Settings para inscribirte.');
+                                            navigate('/settings');
+                                            return;
+                                        }
                                         closeTournamentDetails();
                                         goToRegistration(selectedTournament);
                                     }}
@@ -2414,7 +2430,7 @@ useEffect(() => {
                                         background: GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15',
                                         boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color}40`
                                     }}
-                                    disabled={needsRiot(selectedTournament) && !hasRiotLinked}
+                                    disabled={(needsRiot(selectedTournament) && !hasRiotLinked) || (needsValorantRso(selectedTournament) && !hasValorantRso)}
                                 >
                                     {detailLoading ? 'Cargando...' : 'Inscribirse Ahora'} <i className='bx bx-right-arrow-alt'></i>
                                 </button>
@@ -2920,6 +2936,11 @@ useEffect(() => {
                                                         onClick={() => {
                                                             if (needsRiot(torneo) && !hasRiotLinked) {
                                                                 notify('danger', 'Riot requerido', 'Debes vincular tu cuenta Riot en Settings para inscribirte.');
+                                                                navigate('/settings');
+                                                                return;
+                                                            }
+                                                            if (needsValorantRso(torneo) && !hasValorantRso) {
+                                                                notify('danger', 'VALORANT requiere autorización', 'Debes autorizar VALORANT con Riot Sign On en Settings para inscribirte.');
                                                                 navigate('/settings');
                                                                 return;
                                                             }

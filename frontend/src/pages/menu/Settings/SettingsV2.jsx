@@ -17,7 +17,7 @@ import {
     FaEyeSlash, FaExternalLinkAlt, FaFlag, FaSteam, FaTwitch,
     FaXbox, FaPlaystation, FaGoogle, FaMicrosoft, FaLink, FaInfoCircle
 } from 'react-icons/fa';
-import { SiEpicgames, SiRiotgames } from 'react-icons/si';
+import { SiEpicgames } from 'react-icons/si';
 
 const TABS = [
     { id: 'security', label: 'Seguridad', icon: FaShieldAlt, description: 'Contraseña, sesiones y autenticación' },
@@ -41,11 +41,14 @@ export default function SettingsV2() {
     const [reduceAnimations, setReduceAnimations] = useState(() => localStorage.getItem('reduceAnimations') === 'true');
     
     // User data
-    const [privacy, setPrivacy] = useState({
-        allowTeamInvites: false,
-        showOnlineStatus: false,
-        allowTournamentInvites: false
+    const normalizePrivacy = (value = {}) => ({
+        allowTeamInvites: value?.allowTeamInvites !== false,
+        showOnlineStatus: value?.showOnlineStatus !== false,
+        allowTournamentInvites: value?.allowTournamentInvites !== false,
+        showPublicUserCode: value?.showPublicUserCode !== false,
+        showPublicRiotHandle: value?.showPublicRiotHandle === true
     });
+    const [privacy, setPrivacy] = useState(() => normalizePrivacy());
     const [connections, setConnections] = useState({ discord: {}, riot: {}, mlbb: {}, steam: {}, epic: {} });
     const [gameProfiles, setGameProfiles] = useState({});
     const [oauthNotice, setOauthNotice] = useState({ provider: '', status: '', message: '' });
@@ -58,6 +61,8 @@ export default function SettingsV2() {
     const [riotOtp, setRiotOtp] = useState('');
     const [riotMsg, setRiotMsg] = useState('');
     const [riotStatus, setRiotStatus] = useState(null);
+    const [valorantRsoLoading, setValorantRsoLoading] = useState(false);
+    const [valorantRsoMsg, setValorantRsoMsg] = useState('');
 
     // MLBB State
     const [mlbbPlayerId, setMlbbPlayerId] = useState('');
@@ -99,6 +104,9 @@ export default function SettingsV2() {
     const riotProfileIconId = gameProfiles?.lol?.profileIconId ?? 0;
     const riotSummonerLevel = gameProfiles?.lol?.summonerLevel;
     const riotRank = gameProfiles?.lol?.rank;
+    const valorantRso = riotStatus?.valorantRso || {};
+    const valorantConsentGranted = valorantRso?.consentGranted === true;
+    const valorantRsoEnabled = valorantRso?.enabled === true;
 
     // Particles
     const particles = useMemo(() => 
@@ -124,6 +132,7 @@ export default function SettingsV2() {
         const normalized = String(provider || '').trim().toLowerCase();
         if (normalized === 'steam') return 'Steam';
         if (normalized === 'discord') return 'Discord';
+        if (normalized === 'riot') return 'Riot Sign On';
         return 'la plataforma';
     };
 
@@ -171,7 +180,7 @@ export default function SettingsV2() {
                 headers: authHeaders
             });
             setConnections(normalizeConnections(res.data.connections));
-            setPrivacy(res.data.privacy);
+            setPrivacy(normalizePrivacy(res.data.privacy));
             setGameProfiles(res.data.gameProfiles || {});
             setIsAdmin(res.data?.isAdmin === true);
             setLoading(false);
@@ -226,6 +235,7 @@ export default function SettingsV2() {
 
         if (status === 'connected' && token) {
             fetchSettings();
+            fetchRiotStatus();
             emitUserUpdate();
         }
     }, [location.search, token]);
@@ -330,12 +340,15 @@ export default function SettingsV2() {
     // Privacy update
     const updatePrivacy = async (newPrivacy) => {
         try {
-            await axios.put(`${API_URL}/api/settings/privacy`, { privacy: newPrivacy }, {
+            const res = await axios.put(`${API_URL}/api/settings/privacy`, { privacy: newPrivacy }, {
                 headers: authHeaders
             });
-            setPrivacy(newPrivacy);
+            setPrivacy(normalizePrivacy(res.data?.privacy || newPrivacy));
+            emitUserUpdate();
+            showSupportToast('Privacidad actualizada');
         } catch (error) {
             console.error(error);
+            showSupportToast('No se pudo actualizar la privacidad', 'error');
         }
     };
 
@@ -422,6 +435,25 @@ export default function SettingsV2() {
             emitUserUpdate();
         } catch (error) {
             console.error('Riot unlink error:', error);
+        }
+    };
+
+    const startValorantRso = async () => {
+        try {
+            setValorantRsoLoading(true);
+            setValorantRsoMsg('');
+            const res = await axios.post(`${API_URL}/api/auth/riot/valorant/start`, {}, {
+                headers: authHeaders
+            });
+            if (res?.data?.authorizeUrl) {
+                window.location.assign(res.data.authorizeUrl);
+                return;
+            }
+            setValorantRsoMsg(res?.data?.message || 'No se pudo iniciar Riot Sign On para VALORANT.');
+        } catch (error) {
+            setValorantRsoMsg(error.response?.data?.message || 'No se pudo iniciar Riot Sign On para VALORANT.');
+        } finally {
+            setValorantRsoLoading(false);
         }
     };
 
@@ -643,22 +675,27 @@ export default function SettingsV2() {
                                     </div>
                                 </div>
 
-                                {/* Riot Games */}
+                                {/* Riot account */}
                                 <div className={`stv2-connection ${connections?.riot?.verified ? 'stv2-connection--active' : ''}`}>
                                     <div className="stv2-connection__icon stv2-connection__icon--riot">
-                                        <SiRiotgames />
+                                        <FaShieldAlt />
                                     </div>
                                     <div className="stv2-connection__info">
-                                        <h4>Riot Games</h4>
+                                        <h4>Cuenta Riot</h4>
                                         {connections?.riot?.verified ? (
-                                            <span>{connections.riot.gameName}#{connections.riot.tagLine}</span>
+                                            <span>
+                                                {connections.riot.gameName}#{connections.riot.tagLine}
+                                                {valorantConsentGranted ? ' · VALORANT autorizado' : ''}
+                                            </span>
                                         ) : (
                                             <span>Sin vincular</span>
                                         )}
                                     </div>
                                     <div className="stv2-connection__status">
                                         {connections?.riot?.verified ? (
-                                            <span className="stv2-badge stv2-badge--success">Verificado</span>
+                                            <span className="stv2-badge stv2-badge--success">
+                                                {valorantConsentGranted ? 'LoL + VAL' : 'Verificado'}
+                                            </span>
                                         ) : (
                                             <span className="stv2-badge stv2-badge--muted">Pendiente</span>
                                         )}
@@ -893,10 +930,40 @@ export default function SettingsV2() {
                             <button className="stv2-back" onClick={() => setActiveTab('connections')}>
                                 <i className="bx bx-arrow-left"></i> Volver a Conexiones
                             </button>
-                            <h2 className="stv2-section__title">Vincular Riot Games</h2>
-                            <p className="stv2-section__desc">Ingresa tu Riot ID para verificar tu cuenta.</p>
+                            <h2 className="stv2-section__title">Centro Riot</h2>
+                            <p className="stv2-section__desc">League of Legends usa tu identidad Riot actual. VALORANT requiere autorización explícita mediante Riot Sign On.</p>
+
+                            {riotStatus?.linked ? (
+                                <div className="stv2-notice stv2-notice--success">
+                                    <i className="bx bx-check-shield"></i>
+                                    <p>Identidad Riot lista para LoL: <strong>{riotStatus.riotId}</strong>.</p>
+                                </div>
+                            ) : (
+                                <div className="stv2-notice stv2-notice--warning">
+                                    <i className="bx bx-shield-quarter"></i>
+                                    <p>Primero puedes vincular tu cuenta Riot para usar LoL. Si autorizas VALORANT con RSO, esa misma cuenta también quedará validada como identidad base.</p>
+                                </div>
+                            )}
+
+                            {valorantConsentGranted ? (
+                                <div className="stv2-notice stv2-notice--success">
+                                    <i className="bx bx-badge-check"></i>
+                                    <p>{valorantRso?.message || 'VALORANT ya está autorizado mediante Riot Sign On.'}</p>
+                                </div>
+                            ) : valorantRsoEnabled ? (
+                                <div className="stv2-notice stv2-notice--warning">
+                                    <i className="bx bx-shield-quarter"></i>
+                                    <p>{valorantRso?.message || 'VALORANT necesita tu autorización por Riot Sign On antes de usar datos personales del juego.'}</p>
+                                </div>
+                            ) : (
+                                <div className="stv2-notice stv2-notice--danger">
+                                    <i className="bx bx-error-circle"></i>
+                                    <p>{valorantRso?.message || 'VALORANT RSO todavía no está configurado en este entorno.'}</p>
+                                </div>
+                            )}
 
                             <div className="stv2-form">
+                                <h3 className="stv2-section__subtitle">League of Legends / identidad base</h3>
                                 {riotStep === 'idle' ? (
                                     <>
                                         <div className="stv2-form__row">
@@ -948,6 +1015,23 @@ export default function SettingsV2() {
                                     </>
                                 )}
                                 {riotMsg && <p className="stv2-form__msg">{riotMsg}</p>}
+                            </div>
+
+                            <div className="stv2-form">
+                                <h3 className="stv2-section__subtitle">VALORANT / Riot Sign On</h3>
+                                <p className="stv2-section__desc">
+                                    Este flujo registra el consentimiento del jugador para VALORANT. No usa OTP por correo.
+                                </p>
+                                <button
+                                    className="stv2-btn stv2-btn--primary stv2-btn--lg"
+                                    onClick={startValorantRso}
+                                    disabled={valorantRsoLoading || valorantConsentGranted}
+                                >
+                                    {valorantConsentGranted
+                                        ? 'VALORANT autorizado'
+                                        : (valorantRsoLoading ? 'Redirigiendo a Riot...' : 'Autorizar VALORANT con Riot Sign On')}
+                                </button>
+                                {valorantRsoMsg && <p className="stv2-form__msg">{valorantRsoMsg}</p>}
                             </div>
                         </div>
                     </motion.div>
@@ -1096,6 +1180,36 @@ export default function SettingsV2() {
                                             type="checkbox" 
                                             checked={privacy.allowTournamentInvites}
                                             onChange={(e) => updatePrivacy({ ...privacy, allowTournamentInvites: e.target.checked })}
+                                        />
+                                        <span className="stv2-switch__slider"></span>
+                                    </label>
+                                </div>
+
+                                <div className="stv2-toggle">
+                                    <div className="stv2-toggle__info">
+                                        <h4>ID público</h4>
+                                        <p>Muestra tu #ID de usuario cuando otros te buscan o ven tarjetas sociales.</p>
+                                    </div>
+                                    <label className="stv2-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={privacy.showPublicUserCode !== false}
+                                            onChange={(e) => updatePrivacy({ ...privacy, showPublicUserCode: e.target.checked })}
+                                        />
+                                        <span className="stv2-switch__slider"></span>
+                                    </label>
+                                </div>
+
+                                <div className="stv2-toggle">
+                                    <div className="stv2-toggle__info">
+                                        <h4>Riot ID público</h4>
+                                        <p>Muestra tu Riot ID en tarjetas públicas de perfil. Para VALORANT conviene mantenerlo oculto hasta completar el flujo de consentimiento Riot.</p>
+                                    </div>
+                                    <label className="stv2-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={privacy.showPublicRiotHandle === true}
+                                            onChange={(e) => updatePrivacy({ ...privacy, showPublicRiotHandle: e.target.checked })}
                                         />
                                         <span className="stv2-switch__slider"></span>
                                     </label>

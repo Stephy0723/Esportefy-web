@@ -57,10 +57,10 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
     { id: 'd2', name: 'iPad Pro', lastUsed: 'Hace 3 días' },
   ]);
   
-  const [passkeys, setPasskeys] = useState([
-    { id: 'p1', name: 'FaceID', icon: FaApple, status: 'Activo' },
-    { id: 'p2', name: 'Windows Hello', icon: FaWindows, status: 'Activo' },
-  ]);
+  // const [passkeys, setPasskeys] = useState([
+  //   { id: 'p1', name: 'FaceID', icon: FaApple, status: 'Activo' },
+  //   { id: 'p2', name: 'Windows Hello', icon: FaWindows, status: 'Activo' },
+  // ]);
   
   // Activity Log
   const [activityLog] = useState([

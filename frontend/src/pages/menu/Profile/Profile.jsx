@@ -10,12 +10,13 @@ import {
     FaTwitter, FaInstagram, FaTiktok, FaDiscord, FaStar,
     FaCalendarAlt, FaChartLine, FaHeart, FaComment, FaPaperPlane,
     FaEllipsisH, FaUserPlus, FaUserFriends, FaGem, FaGlobe,
-    FaRegHeart, FaRegComment, FaTimes, FaSearch
+    FaRegHeart, FaRegComment, FaTimes, FaSearch, FaGraduationCap
 } from 'react-icons/fa';
 import { GAME_IMAGES } from '../../../data/gameImages';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
+import UserCard from '../../../components/UserCard/UserCard';
 import { STATUS_LIST } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { resolveMediaUrl } from '../../../utils/media';
@@ -484,6 +485,11 @@ const Profile = () => {
                             <div className="pf-badges">
                                 <span className="pf-badge pf-badge--verified"><FaCheck /> Verificado</span>
                                 <span className="pf-badge pf-badge--pro"><FaGem /> PRO</span>
+                                {user.university?.verified && (
+                                    <span className="pf-badge pf-badge--student">
+                                        <FaGraduationCap /> Estudiante verificado
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -494,6 +500,11 @@ const Profile = () => {
                             <span><FaCalendarAlt /> Miembro desde {new Date(user.createdAt || Date.now()).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}</span>
                             {user.userCode && (
                                 <span className="pf-hero-info__meta--id">#{user.userCode}</span>
+                            )}
+                            {user.university?.verified && user.university?.universityName && (
+                                <span className="pf-hero-info__meta--student">
+                                    <FaGraduationCap /> {user.university.universityName}
+                                </span>
                             )}
                             {user.connections?.discord?.verified && (
                                 <span className="pf-hero-info__meta--discord"><FaDiscord /> {user.connections.discord.username}</span>
@@ -663,6 +674,11 @@ const Profile = () => {
                                 <span className={`pf-flag ${user.lookingForTeam ? 'is-active' : ''}`}>
                                     <FaUsers /> {user.lookingForTeam ? 'Buscando equipo' : 'No busca equipo'}
                                 </span>
+                                {user.university?.verified && (
+                                    <span className="pf-flag is-active">
+                                        <FaGraduationCap /> Estudiante verificado
+                                    </span>
+                                )}
                                 <span className={`pf-flag ${user.isProfileHidden ? 'is-active' : ''}`}>
                                     <FaShieldAlt /> {user.isProfileHidden ? 'Perfil privado' : 'Perfil visible'}
                                 </span>
@@ -679,24 +695,36 @@ const Profile = () => {
                         {friends.length > 0 ? (
                             <>
                                 <div className="pf-friends">
-                                    {friends.slice(0, 6).map(friend => (
-                                        <div key={friend.id} className="pf-friend">
-                                            <div className="pf-friend__avatar">
-                                                <img
-                                                    src={resolveMediaUrl(friend.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.name)}&background=1a1a2e&color=8EDB15`}
-                                                    alt={friend.name}
-                                                />
-                                                <span className={`pf-friend__status pf-friend__status--${String(friend.status || '').toLowerCase()}`} />
+                                    {friends.slice(0, 6).map((friend, index) => {
+                                        const friendId = normalizeId(friend?.id || friend?._id || friend?.userId);
+                                        const fallbackKey = `${String(friend?.userCode || friend?.name || 'friend')}-${index}`;
+                                        const friendPreview = (
+                                            <div key={friendId || fallbackKey} className="pf-friend">
+                                                <div className="pf-friend__avatar">
+                                                    <img
+                                                        src={resolveMediaUrl(friend.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.name)}&background=1a1a2e&color=8EDB15`}
+                                                        alt={friend.name}
+                                                    />
+                                                    <span className={`pf-friend__status pf-friend__status--${String(friend.status || '').toLowerCase()}`} />
+                                                </div>
+                                                <div className="pf-friend__info">
+                                                    <span className="pf-friend__name">{friend.name}</span>
+                                                    {friend.userCode && (
+                                                        <span className="pf-friend__code">#{friend.userCode}</span>
+                                                    )}
+                                                    <span className="pf-friend__rank">{friend.rank || 'Jugador'}</span>
+                                                </div>
                                             </div>
-                                            <div className="pf-friend__info">
-                                                <span className="pf-friend__name">{friend.name}</span>
-                                                {friend.userCode && (
-                                                    <span className="pf-friend__code">#{friend.userCode}</span>
-                                                )}
-                                                <span className="pf-friend__rank">{friend.rank || 'Jugador'}</span>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+
+                                        if (!friendId) return friendPreview;
+
+                                        return (
+                                            <UserCard key={friendId} userId={friendId}>
+                                                {friendPreview}
+                                            </UserCard>
+                                        );
+                                    })}
                                 </div>
                             </>
                         ) : (

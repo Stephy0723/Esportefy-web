@@ -202,6 +202,55 @@ const extractVisibleUserCode = (candidate) => {
     return code;
 };
 
+const extractVisibleStatus = (candidate) => {
+    const isVisible = candidate?.privacy?.showOnlineStatus !== false;
+    if (!isVisible) return 'offline';
+    return String(candidate?.status || 'offline').trim() || 'offline';
+};
+
+const extractPublicRiotHandle = (candidate) => {
+    const isVisible = candidate?.privacy?.showPublicRiotHandle === true;
+    if (!isVisible || candidate?.connections?.riot?.verified !== true) return '';
+    const valorantLinked = candidate?.connections?.riot?.products?.valorant?.linked === true;
+    const valorantConsented = candidate?.connections?.riot?.products?.valorant?.consentGranted === true;
+    if (valorantLinked && !valorantConsented) return '';
+
+    const gameName = String(candidate?.connections?.riot?.gameName || '').trim();
+    const tagLine = String(candidate?.connections?.riot?.tagLine || '').trim();
+    if (!gameName || !tagLine) return '';
+    return `${gameName}#${tagLine}`;
+};
+
+const getPublicRiotProducts = (riot = {}) => {
+    const baseVerified = Boolean(riot?.verified && riot?.puuid);
+    const baseLinkedAt = riot?.linkedAt || null;
+
+    return {
+        lol: {
+            linked: Boolean(riot?.products?.lol?.linked || baseVerified),
+            linkedAt: riot?.products?.lol?.linkedAt || baseLinkedAt || null,
+            lastVerifiedAt: riot?.products?.lol?.lastVerifiedAt || baseLinkedAt || null
+        },
+        valorant: {
+            linked: Boolean(riot?.products?.valorant?.linked),
+            linkedAt: riot?.products?.valorant?.linkedAt || null,
+            consentRequired: riot?.products?.valorant?.consentRequired !== false,
+            consentGranted: Boolean(riot?.products?.valorant?.consentGranted),
+            consentedAt: riot?.products?.valorant?.consentedAt || null
+        }
+    };
+};
+
+const buildPublicRiotConnection = (candidate) => {
+    const publicHandle = extractPublicRiotHandle(candidate);
+    return {
+        verified: Boolean(candidate?.connections?.riot?.verified),
+        publicHandle,
+        publicHandleVisible: Boolean(publicHandle),
+        products: getPublicRiotProducts(candidate?.connections?.riot)
+    };
+};
+
 const mapFriendPreview = (candidate) => {
     const mainGame = Array.isArray(candidate?.selectedGames) && candidate.selectedGames.length > 0
         ? candidate.selectedGames[0]
@@ -211,7 +260,7 @@ const mapFriendPreview = (candidate) => {
         id: String(candidate?._id || ''),
         name: candidate?.fullName || candidate?.username || 'Jugador',
         avatar: candidate?.avatar || '',
-        status: candidate?.status || 'offline',
+        status: extractVisibleStatus(candidate),
         rank: mainGame,
         userCode: extractVisibleUserCode(candidate)
     };
@@ -504,7 +553,7 @@ export const getUserCard = async (req, res) => {
         const [viewer, target] = await Promise.all([
             User.findById(req.userId).select('following').lean(),
             User.findById(targetUserId)
-                .select('username fullName avatar status selectedGames country experience connections.riot isOrganizer teams followers following selectedTagId selectedFrameId userCode privacy.showPublicUserCode')
+                .select('username fullName avatar status selectedGames country experience connections.riot isOrganizer teams followers following selectedTagId selectedFrameId userCode university.universityName university.verified university.verifiedAt privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
                 .populate('teams', 'name logo game teamCode')
                 .lean()
         ]);
@@ -521,7 +570,7 @@ export const getUserCard = async (req, res) => {
             username: target?.username || 'Jugador',
             fullName: target?.fullName || '',
             avatar: target?.avatar || '',
-            status: target?.status || 'offline',
+            status: extractVisibleStatus(target),
             selectedGames: Array.isArray(target?.selectedGames) ? target.selectedGames : [],
             country: target?.country || '',
             experience: Array.isArray(target?.experience) ? target.experience : [],
@@ -529,12 +578,13 @@ export const getUserCard = async (req, res) => {
             selectedTagId: target?.selectedTagId || null,
             selectedFrameId: target?.selectedFrameId || null,
             userCode: extractVisibleUserCode(target),
+            university: {
+                verified: Boolean(target?.university?.verified),
+                universityName: target?.university?.verified ? String(target?.university?.universityName || '') : '',
+                verifiedAt: target?.university?.verified ? target?.university?.verifiedAt || null : null
+            },
             connections: {
-                riot: {
-                    verified: Boolean(target?.connections?.riot?.verified),
-                    gameName: target?.connections?.riot?.gameName || '',
-                    tagLine: target?.connections?.riot?.tagLine || ''
-                }
+                riot: buildPublicRiotConnection(target)
             },
             teams: Array.isArray(target?.teams)
                 ? target.teams.filter((team) => isSupportedGameName(team?.game))
@@ -632,7 +682,7 @@ export const getFriends = async (req, res) => {
         }
 
         const friendUsers = await User.find({ _id: { $in: mutualIds } })
-            .select('username fullName avatar status selectedGames userCode privacy.showPublicUserCode')
+            .select('username fullName avatar status selectedGames userCode privacy.showOnlineStatus privacy.showPublicUserCode')
             .lean();
 
         const friends = friendUsers
@@ -667,7 +717,7 @@ export const getSocialOverview = async (req, res) => {
         const userIdsToFetch = Array.from(new Set([...followingIds, ...followerIds]));
         const users = userIdsToFetch.length > 0
             ? await User.find({ _id: { $in: userIdsToFetch } })
-                .select('username fullName avatar status selectedGames userCode privacy.showPublicUserCode')
+                .select('username fullName avatar status selectedGames userCode privacy.showOnlineStatus privacy.showPublicUserCode')
                 .lean()
             : [];
 
@@ -767,13 +817,21 @@ export const searchUsers = async (req, res) => {
             isProfileHidden: { $ne: true },
             $or: orFilters
         })
-            .select('username fullName avatar status selectedGames userCode privacy.showPublicUserCode')
-            .sort({ status: 1, username: 1 })
+            .select('username fullName avatar status selectedGames userCode privacy.showOnlineStatus privacy.showPublicUserCode')
             .limit(limit)
             .lean();
 
+        const visibleUsers = users
+            .map((entry) => mapSocialPreview(entry, followingSet))
+            .sort((a, b) => {
+                const pa = PROFILE_STATUS_PRIORITY[String(a.status || '').toLowerCase()] ?? 99;
+                const pb = PROFILE_STATUS_PRIORITY[String(b.status || '').toLowerCase()] ?? 99;
+                if (pa !== pb) return pa - pb;
+                return String(a.name).localeCompare(String(b.name), 'es');
+            });
+
         return res.status(200).json({
-            users: users.map((entry) => mapSocialPreview(entry, followingSet))
+            users: visibleUsers
         });
     } catch (error) {
         console.error('Error en searchUsers:', error);
@@ -887,7 +945,7 @@ export const getProfileOverview = async (req, res) => {
 
         const teammateUsers = teammateIds.size > 0
             ? await User.find({ _id: { $in: Array.from(teammateIds) } })
-                .select('username fullName avatar status selectedGames userCode privacy.showPublicUserCode')
+                .select('username fullName avatar status selectedGames userCode privacy.showOnlineStatus privacy.showPublicUserCode')
                 .lean()
             : [];
 
@@ -897,7 +955,7 @@ export const getProfileOverview = async (req, res) => {
 
         const mutualFriendUsers = mutualFriendIds.length > 0
             ? await User.find({ _id: { $in: mutualFriendIds } })
-                .select('username fullName avatar status selectedGames userCode privacy.showPublicUserCode')
+                .select('username fullName avatar status selectedGames userCode privacy.showOnlineStatus privacy.showPublicUserCode')
                 .lean()
             : [];
 
@@ -1323,13 +1381,21 @@ export const updateProfile = async (req, res) => {
         const rawShowPublicUserCode = req.body.showPublicUserCode
             ?? req.body['privacy.showPublicUserCode']
             ?? req.body['privacy[showPublicUserCode]'];
-        if (rawShowPublicUserCode !== undefined) {
+        const rawShowPublicRiotHandle = req.body.showPublicRiotHandle
+            ?? req.body['privacy.showPublicRiotHandle']
+            ?? req.body['privacy[showPublicRiotHandle]'];
+        if (rawShowPublicUserCode !== undefined || rawShowPublicRiotHandle !== undefined) {
             const currentPrivacy = currentUser.privacy?.toObject
                 ? currentUser.privacy.toObject()
                 : (currentUser.privacy || {});
             updateData.privacy = {
                 ...currentPrivacy,
-                showPublicUserCode: normalizeBoolean(rawShowPublicUserCode, true)
+                showPublicUserCode: rawShowPublicUserCode !== undefined
+                    ? normalizeBoolean(rawShowPublicUserCode, currentPrivacy.showPublicUserCode !== false)
+                    : currentPrivacy.showPublicUserCode !== false,
+                showPublicRiotHandle: rawShowPublicRiotHandle !== undefined
+                    ? normalizeBoolean(rawShowPublicRiotHandle, currentPrivacy.showPublicRiotHandle === true)
+                    : currentPrivacy.showPublicRiotHandle === true
             };
         }
 

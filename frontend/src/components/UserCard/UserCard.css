@@ -138,6 +138,12 @@
     border: 1px solid rgba(241,196,15,.2);
 }
 
+.uc__role-tag--student {
+    background: rgba(59, 130, 246, .12);
+    color: #7dd3fc;
+    border: 1px solid rgba(125, 211, 252, .28);
+}
+
 /* Status */
 .uc__status {
     display: flex;
@@ -180,6 +186,10 @@
     opacity: .6;
 }
 .uc__info-item--riot svg { color: #eb0029; }
+.uc__info-item--student svg {
+    color: #7dd3fc;
+    opacity: 1;
+}
 
 .uc__usercode {
     margin: -2px 0 4px;

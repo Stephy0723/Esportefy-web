@@ -4,7 +4,7 @@ import { API_URL } from '../../config/api';
 import { useNavigate } from 'react-router-dom';
 import {
     FaGamepad, FaGlobeAmericas, FaBolt, FaShieldAlt,
-    FaUserPlus, FaUserCheck, FaUsers, FaTimes, FaTrophy
+    FaUserPlus, FaUserCheck, FaUsers, FaTimes, FaTrophy, FaGraduationCap
 } from 'react-icons/fa';
 import AvatarCircle from '../AvatarCircle/AvatarCircle';
 import PlayerTag from '../PlayerTag/PlayerTag';
@@ -105,6 +105,10 @@ const UserCard = ({ userId, children }) => {
     const userStatus = data ? (STATUS_LIST.find(s => s.id === data.status) || STATUS_LIST[0]) : null;
     const userFrame = data ? (FRAMES.find(f => f.id === data.selectedFrameId) || FRAMES[0]) : null;
     const normalizedGames = data?.selectedGames || [];
+    const riotConnection = data?.connections?.riot || null;
+    const riotLabel = riotConnection?.publicHandleVisible
+        ? riotConnection.publicHandle
+        : 'Cuenta Riot verificada';
 
     return (
         <div className="uc__wrap">
@@ -145,6 +149,11 @@ const UserCard = ({ userId, children }) => {
                                     <span className="uc__role-tag uc__role-tag--player">
                                         <FaGamepad /> Jugador
                                     </span>
+                                    {data.university?.verified && (
+                                        <span className="uc__role-tag uc__role-tag--student">
+                                            <FaGraduationCap /> Estudiante verificado
+                                        </span>
+                                    )}
                                     {data.isOrganizer && (
                                         <span className="uc__role-tag uc__role-tag--org">
                                             <FaTrophy /> Organizador
@@ -168,16 +177,22 @@ const UserCard = ({ userId, children }) => {
                                             <span>{data.country}</span>
                                         </div>
                                     )}
+                                    {data.university?.verified && data.university?.universityName && (
+                                        <div className="uc__info-item uc__info-item--student">
+                                            <FaGraduationCap />
+                                            <span>{data.university.universityName}</span>
+                                        </div>
+                                    )}
                                     {data.experience && (
                                         <div className="uc__info-item">
                                             <FaBolt />
                                             <span>{Array.isArray(data.experience) ? data.experience.join(', ') : data.experience}</span>
                                         </div>
                                     )}
-                                    {data.connections?.riot?.verified && (
+                                    {riotConnection?.verified && (
                                         <div className="uc__info-item uc__info-item--riot">
                                             <FaShieldAlt />
-                                            <span>{data.connections.riot.gameName}#{data.connections.riot.tagLine}</span>
+                                            <span>{riotLabel}</span>
                                         </div>
                                     )}
                                 </div>

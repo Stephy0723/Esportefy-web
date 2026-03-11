@@ -54,7 +54,24 @@ const createUser = async ({
         tagLine: riotTagLine,
         accountRegion: 'americas',
         verified: true,
-        linkedAt: new Date()
+        linkedAt: new Date(),
+        products: {
+          lol: {
+            linked: true,
+            linkedAt: new Date(),
+            lastVerifiedAt: new Date()
+          },
+          valorant: {
+            linked: true,
+            linkedAt: new Date(),
+            consentRequired: true,
+            consentGranted: true,
+            consentedAt: new Date(),
+            lastVerifiedAt: new Date(),
+            rsoSubject: `rso-${suffix}`,
+            scopes: ['openid', 'offline_access']
+          }
+        }
       }
     }
   });
