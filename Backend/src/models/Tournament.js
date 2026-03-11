@@ -94,10 +94,6 @@ const tournamentSchema = new mongoose.Schema({
         showBracket: { type: Boolean, default: true },
         customMessage: { type: String, default: '' }
     },
-    bracket: {
-        type: mongoose.Schema.Types.Mixed,
-        default: null
-    },
 
     // Archivos (Rutas guardadas por Multer)
     bannerImage: { type: String, default: '' },
@@ -111,9 +107,50 @@ const tournamentSchema = new mongoose.Schema({
         tier: String
     }],
     staff: {
-        moderators: [String],
-        casters: [String]
+        moderators: [{
+            user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+            username: { type: String, required: true },
+            role: { type: String, enum: ['moderator', 'caster', 'admin', 'referee', 'producer'], default: 'moderator' },
+            displayRole: { type: String, default: '' },
+            addedAt: { type: Date, default: Date.now }
+        }]
     },
+
+    // Reportes e incidencias
+    reports: [{
+        reportId: { type: String, required: true },
+        type: {
+            type: String,
+            enum: ['cheating', 'unsportsmanlike', 'impersonation', 'match_fixing', 'exploit', 'staff_misconduct', 'other'],
+            required: true
+        },
+        reportedTeam: { type: String, default: '' },
+        reportedPlayer: { type: String, default: '' },
+        reportedStaff: { type: String, default: '' },
+        matchId: { type: String, default: '' },
+        severity: {
+            type: String,
+            enum: ['low', 'medium', 'high', 'critical'],
+            default: 'medium'
+        },
+        evidence: { type: String, default: '' },
+        description: { type: String, required: true },
+        status: {
+            type: String,
+            enum: ['open', 'investigating', 'resolved', 'dismissed'],
+            default: 'open'
+        },
+        sanction: {
+            type: String,
+            enum: ['', 'warning', 'match_loss', 'disqualification', 'ban', 'staff_removal'],
+            default: ''
+        },
+        sanctionNote: { type: String, default: '' },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        createdAt: { type: Date, default: Date.now },
+        resolvedAt: { type: Date, default: null }
+    }],
 
     organizer: {
         type: mongoose.Schema.Types.ObjectId,

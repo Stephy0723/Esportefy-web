@@ -14,9 +14,19 @@ import {
   getPublicTournamentByCode,
   updateTournamentPublicSettings,
   updateTournamentBracket,
-  getTournamentCompliance
+  getTournamentCompliance,
+  getReports,
+  createReport,
+  updateReport,
+  deleteReport,
+  getStaff,
+  addStaffMember,
+  updateStaffMember,
+  removeStaffMember,
+  seedFakeTeams,
+  uploadMatchProofHandler
 } from '../controllers/tournament.controller.js';
-import { uploadTournamentFiles } from '../middlewares/multer.js';
+import { uploadTournamentFiles, uploadMatchProof } from '../middlewares/multer.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import { createRateLimiter } from '../middlewares/rateLimit.js';
 
@@ -42,5 +52,23 @@ router.post('/:code/register', verifyToken, rlRegister, registerTeam);
 router.patch('/:code/registrations/:registrationId', verifyToken, rlManage, updateRegistrationStatus);
 router.delete('/:code/registrations/:registrationId', verifyToken, rlManage, removeRegistration);
 router.patch('/:code/status', verifyToken, rlManage, updateTournamentStatus);
+
+// Seed (dev/demo)
+router.post('/:code/seed-teams', verifyToken, rlManage, seedFakeTeams);
+
+// Match proof upload
+router.post('/:code/match-proof', verifyToken, rlManage, uploadMatchProof, uploadMatchProofHandler);
+
+// Reports
+router.get('/:code/reports', verifyToken, rlManage, getReports);
+router.post('/:code/reports', verifyToken, rlManage, createReport);
+router.patch('/:code/reports/:reportId', verifyToken, rlManage, updateReport);
+router.delete('/:code/reports/:reportId', verifyToken, rlManage, deleteReport);
+
+// Staff
+router.get('/:code/staff', getStaff);
+router.post('/:code/staff', verifyToken, rlManage, addStaffMember);
+router.patch('/:code/staff/:username', verifyToken, rlManage, updateStaffMember);
+router.delete('/:code/staff/:username', verifyToken, rlManage, removeStaffMember);
 
 export default router;

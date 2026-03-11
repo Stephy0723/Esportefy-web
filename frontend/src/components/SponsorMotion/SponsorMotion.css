@@ -2,7 +2,7 @@
   position: fixed;
   right: 1rem;
   bottom: 5.15rem;
-  z-index: 1190;
+  z-index: 970;
   width: min(320px, calc(100vw - 2rem));
   border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border-color));
   background: color-mix(in srgb, var(--bg-card) 92%, transparent);
@@ -47,10 +47,10 @@
 
 .spx-snake-wrap {
   position: fixed;
-  left: 0;
+  left: 72px;
   right: 0;
   bottom: 0;
-  z-index: 1180;
+  z-index: 960;
   height: 72px;
   border-top: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border-color));
   background:
@@ -241,6 +241,7 @@
   }
 
   .spx-snake-wrap {
+    left: 0;
     height: 64px;
   }
 

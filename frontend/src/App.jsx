@@ -39,6 +39,11 @@ import TournamentAdminHub from './pages/menu/Tournaments/Admin/TournamentAdminHu
 import TournamentManagePage from './pages/menu/Tournaments/Admin/TournamentManagePage';
 import TournamentBracketPage from './pages/menu/Tournaments/Admin/TournamentBracketPage';
 import TournamentRoulettePage from './pages/menu/Tournaments/Admin/TournamentRoulettePage';
+import TournamentMatchCenter from './pages/menu/Tournaments/Admin/TournamentMatchCenter';
+import TournamentStandingsPage from './pages/menu/Tournaments/Admin/TournamentStandingsPage';
+import TournamentReportsPage from './pages/menu/Tournaments/Admin/TournamentReportsPage';
+import TournamentStaffPage from './pages/menu/Tournaments/Admin/TournamentStaffPage';
+import TournamentSimulatorPage from './pages/menu/Tournaments/Admin/TournamentSimulatorPage';
 import TournamentPublicExplorer from './pages/menu/Tournaments/Public/TournamentPublicExplorer';
 import TournamentPublicView from './pages/menu/Tournaments/Public/TournamentPublicView';
 import EditProfile from './pages/menu/Profile/EditProfile';
@@ -47,7 +52,7 @@ import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
 import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
 import TermsConditions from './pages/menu/Legal/TermsConditions';
 import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
-import GamesPageV2 from './pages/menu/Community/games/GamesPageV2';
+import GamesPage from './pages/menu/Community/games/GamesPage';
 import GamesFilterTemplate from './pages/menu/Community/games/GamesFilterTemplate';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
 import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
@@ -139,8 +144,13 @@ const AppRouterContent = () => {
             <Route path="/tournaments/admin" element={<TournamentAdminHub />} />
             <Route path="/tournaments/manage/:code" element={<TournamentManagePage />} />
             <Route path="/tournaments/manage/:code/bracket" element={<TournamentBracketPage />} />
+            <Route path="/tournaments/manage/:code/matches" element={<TournamentMatchCenter />} />
+            <Route path="/tournaments/manage/:code/standings" element={<TournamentStandingsPage />} />
+            <Route path="/tournaments/manage/:code/staff" element={<TournamentStaffPage />} />
+            <Route path="/tournaments/manage/:code/reports" element={<TournamentReportsPage />} />
             <Route path="/tournaments/manage/:code/roulette" element={<TournamentRoulettePage />} />
-            <Route path="/games/:gameId" element={<GamesPageV2 />} />
+            <Route path="/tournaments/simulator" element={<TournamentSimulatorPage />} />
+            <Route path="/games/:gameId" element={<GamesPage />} />
             <Route path="/games/filter/:type/:value" element={<GamesFilterTemplate />} />
             <Route path="/university" element={<UniversityPage />} />
             <Route path="/game/:gameId" element={<CommunityGamePageTemplate />} />

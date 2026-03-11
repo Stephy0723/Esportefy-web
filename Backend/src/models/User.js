@@ -25,6 +25,26 @@ const UserSchema = new mongoose.Schema({
     experience: { type: [String], default: [] },
     platforms: { type: [String], default: [] },
     goals: { type: [String], default: [] },
+    languages: { type: [String], default: [] },
+    preferredRoles: { type: [String], default: [] },
+    lookingForTeam: { type: Boolean, default: false },
+    isProfileHidden: { type: Boolean, default: false },
+    socialLinks: {
+        twitch: { type: String, default: '' },
+        youtube: { type: String, default: '' },
+        twitter: { type: String, default: '' },
+        instagram: { type: String, default: '' },
+        tiktok: { type: String, default: '' }
+    },
+    gamingConnections: {
+        discord: { type: String, default: '' },
+        riotId: { type: String, default: '' },
+        steam: { type: String, default: '' },
+        epic: { type: String, default: '' },
+        playstation: { type: String, default: '' },
+        xbox: { type: String, default: '' },
+        nintendo: { type: String, default: '' }
+    },
 
     // --- Etapa 4: Credenciales ---
     username: { type: String, required: true, unique: true }, // unique para que no se repitan gamertags

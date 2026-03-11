@@ -426,8 +426,9 @@ export const updateProfile = async (req, res) => {
         // Solo permitimos actualizar campos seguros del perfil
         const allowedFields = [
             'avatar', 'bio', 'fullName', 'phone', 'gender', 'country', 'birthDate',
-            'selectedGames', 'platforms', 'experience', 'goals',
-            'username', 'email', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'
+            'selectedGames', 'platforms', 'experience', 'goals', 'languages', 'preferredRoles',
+            'username', 'email', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId',
+            'lookingForTeam', 'isProfileHidden', 'socialLinks', 'gamingConnections'
         ];
         let updateData = {};
         allowedFields.forEach((field) => {
@@ -442,7 +443,7 @@ export const updateProfile = async (req, res) => {
         }
 
         // 2. Limpieza de Arrays de Texto (Juegos, Metas, etc.)
-        const arrayFields = ['selectedGames', 'platforms', 'experience', 'goals'];
+        const arrayFields = ['selectedGames', 'platforms', 'experience', 'goals', 'languages', 'preferredRoles'];
         arrayFields.forEach(field => {
             if (updateData[field]) {
                 // Si viene de FormData llega como string, lo convertimos a array y limpiamos
@@ -452,6 +453,34 @@ export const updateProfile = async (req, res) => {
                 updateData[field] = arr.map(s => s.trim()).filter(Boolean);
             }
         });
+        // 2.3 Booleans en multipart/form-data llegan como string
+        ['lookingForTeam', 'isProfileHidden'].forEach(field => {
+            if (updateData[field] !== undefined) {
+                if (typeof updateData[field] === 'string') {
+                    const normalized = updateData[field].toLowerCase().trim();
+                    updateData[field] = normalized === 'true' || normalized === '1' || normalized === 'on';
+                } else {
+                    updateData[field] = Boolean(updateData[field]);
+                }
+            }
+        });
+
+        // 2.4 socialLinks puede llegar como JSON string
+        if (updateData.socialLinks && typeof updateData.socialLinks === 'string') {
+            try {
+                updateData.socialLinks = JSON.parse(updateData.socialLinks);
+            } catch (e) {
+                delete updateData.socialLinks;
+            }
+        }
+        // 2.4b gamingConnections puede llegar como JSON string
+        if (updateData.gamingConnections && typeof updateData.gamingConnections === 'string') {
+            try {
+                updateData.gamingConnections = JSON.parse(updateData.gamingConnections);
+            } catch (e) {
+                delete updateData.gamingConnections;
+            }
+        }
         // 2.5 Normalización de campos simples
         const allowedSimpleFields = ['status', 'selectedFrameId', 'selectedBgId'];
 

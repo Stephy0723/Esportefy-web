@@ -67,6 +67,15 @@ const formatDate = (value) => {
   });
 };
 
+const getTeamLabel = (team) => {
+  if (!team) return '—';
+  if (typeof team === 'string') return team || '—';
+  if (team.teamName) return team.teamName;
+  if (team.isBye) return 'BYE';
+  if (team.isPlaceholder) return '—';
+  return '—';
+};
+
 const PublicBracketBoard = ({ bracket, game }) => (
   <div className="tpv-stage">
     <div className="tpv-stage__backdrop" />
@@ -84,22 +93,31 @@ const PublicBracketBoard = ({ bracket, game }) => (
           </div>
 
           <div className="tpv-stage__matches">
-            {(round.matches || []).map((match, matchIndex) => (
-              <article key={`match-${roundIndex}-${matchIndex}`} className="tpv-stage__match">
-                <div className="tpv-stage__match-top">
-                  <span>{`MATCH ${matchIndex + 1}`}</span>
-                  <small>{match.scheduledLabel || 'Sin horario'}</small>
-                </div>
-                <div className="tpv-stage__team-row">
-                  <strong>{match.teamA || 'TBD'}</strong>
-                  <span>{match.scoreA || 0}</span>
-                </div>
-                <div className="tpv-stage__team-row">
-                  <strong>{match.teamB || 'TBD'}</strong>
-                  <span>{match.scoreB || 0}</span>
-                </div>
-              </article>
-            ))}
+            {(round.matches || []).map((match, matchIndex) => {
+              const teamALabel = getTeamLabel(match.teamA);
+              const teamBLabel = getTeamLabel(match.teamB);
+              const hasWinner = match.status === 'finished' || match.winnerRefId;
+              const winnerIsA = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamA?.refId || match.teamA));
+              const winnerIsB = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamB?.refId || match.teamB));
+
+              return (
+                <article key={`match-${roundIndex}-${matchIndex}`} className={`tpv-stage__match ${hasWinner ? 'tpv-stage__match--done' : ''} ${match.status === 'live' ? 'tpv-stage__match--live' : ''}`}>
+                  <div className="tpv-stage__match-top">
+                    <span>{`MATCH ${matchIndex + 1}`}</span>
+                    {match.status === 'live' && <span className="tpv-live-badge">EN VIVO</span>}
+                    <small>{match.scheduledLabel || ''}</small>
+                  </div>
+                  <div className={`tpv-stage__team-row ${winnerIsA ? 'tpv-stage__team-row--winner' : ''}`}>
+                    <strong>{teamALabel}</strong>
+                    <span>{match.scoreA ?? '-'}</span>
+                  </div>
+                  <div className={`tpv-stage__team-row ${winnerIsB ? 'tpv-stage__team-row--winner' : ''}`}>
+                    <strong>{teamBLabel}</strong>
+                    <span>{match.scoreB ?? '-'}</span>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       ))}

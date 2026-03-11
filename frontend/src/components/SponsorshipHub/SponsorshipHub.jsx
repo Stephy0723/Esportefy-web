@@ -35,12 +35,31 @@ const INITIAL_AGENT_MESSAGES = [
 
 const MUSIC_STATE_KEY = 'spm-music-state';
 
+const MUSIC_ALBUMS = [
+  { id: 'rock-main', categoryId: 'rock', title: 'Rock Arena', game: 'Riffs pesados', accent: '#ff6b6b' },
+  { id: 'rock-alt', categoryId: 'rock', title: 'Alt Riot', game: 'Alt rock', accent: '#ff8f6b' },
+  { id: 'electro-main', categoryId: 'electro', title: 'Neon Circuit', game: 'Electro pulse', accent: '#4cc9f0' },
+  { id: 'electro-night', categoryId: 'electro', title: 'Midnight Drive', game: 'Synthwave', accent: '#7da1ff' },
+  { id: 'game-lol', categoryId: 'game', title: 'League of Legends OST', game: 'Original game music', accent: '#c9a227', locked: true },
+  { id: 'game-valorant', categoryId: 'game', title: 'Valorant OST', game: 'Original game music', accent: '#ff5c7a', locked: true },
+  { id: 'game-mlbb', categoryId: 'game', title: 'MLBB OST', game: 'Original game music', accent: '#f3c667', locked: true },
+];
+
+const MUSIC_CATEGORIES = [
+  { id: 'rock', title: 'Rock', color: '#ff6b6b' },
+  { id: 'electro', title: 'Electro', color: '#4cc9f0' },
+  { id: 'game', title: 'Game', color: '#c9a227' },
+];
+
 const TRACKS = [
-  { title: 'Neon Drift', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', accent: '#4cc9f0' },
-  { title: 'Cyber Calm', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', accent: '#89f7c8' },
-  { title: 'Arena Focus', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', accent: '#f3c667' },
-  { title: 'Pulse Runner', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', accent: '#f66dff' },
-  { title: 'Night Strategy', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', accent: '#7da1ff' },
+  { id: 'rock-01', albumId: 'rock-main', title: 'Iron Pulse', game: 'Rock', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', accent: '#ff6b6b' },
+  { id: 'rock-02', albumId: 'rock-main', title: 'Crowd Ignition', game: 'Rock', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', accent: '#ff7f50' },
+  { id: 'rock-03', albumId: 'rock-alt', title: 'Backstage Voltage', game: 'Alternative rock', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', accent: '#ff8f6b' },
+  { id: 'rock-04', albumId: 'rock-alt', title: 'Final Encore', game: 'Alternative rock', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', accent: '#ff9f80' },
+  { id: 'electro-01', albumId: 'electro-main', title: 'Neon Drift', game: 'Electro', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', accent: '#4cc9f0' },
+  { id: 'electro-02', albumId: 'electro-main', title: 'Pulse Runner', game: 'Electro', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', accent: '#53d8fb' },
+  { id: 'electro-03', albumId: 'electro-night', title: 'Midnight Grid', game: 'Synthwave', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3', accent: '#7da1ff' },
+  { id: 'electro-04', albumId: 'electro-night', title: 'Skyline Echo', game: 'Synthwave', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3', accent: '#9b8cff' },
 ];
 
 const HUB_ACTIONS = [
@@ -51,9 +70,9 @@ const HUB_ACTIONS = [
 ];
 
 const ACTION_LAYOUT = {
-  music: { x: '-54px', y: '-112px' },
-  agent: { x: '-104px', y: '-58px' },
-  sponsor: { x: '-6px', y: '-58px' },
+  music: { x: '-108px', y: '-64px' },
+  agent: { x: '-54px', y: '-64px' },
+  sponsor: { x: '0px', y: '-64px' },
 };
 
 const DEFAULT_MUSIC_STATE = { trackIndex: 0, volume: 0.42 };
@@ -106,8 +125,15 @@ const BubbleButton = ({ action, commandOpen, onClick }) => {
 const MusicPanel = ({
   currentTrack,
   currentTrackIndex,
+  selectedCategory,
+  selectedAlbum,
+  currentAlbum,
+  visibleAlbums,
+  visibleTracks,
   isPlaying,
   musicPanelOpen,
+  onCategorySelect,
+  onAlbumSelect,
   onClose,
   onNextTrack,
   onPlayPause,
@@ -131,6 +157,7 @@ const MusicPanel = ({
         <div>
           <span className="spm-mp__label">REPRODUCIENDO</span>
           <strong className="spm-mp__title">{currentTrack.title}</strong>
+          <span className="spm-mp__album-meta">{selectedCategory?.title} / {selectedAlbum?.title || currentAlbum?.title}</span>
         </div>
       </div>
       <button type="button" className="spm-mp__close" onClick={onClose} aria-label="Cerrar">
@@ -138,18 +165,57 @@ const MusicPanel = ({
       </button>
     </div>
 
-    <div className="spm-mp__tracks">
-      {TRACKS.map((track, index) => (
+    <div className="spm-mp__folders">
+      {MUSIC_CATEGORIES.map((category) => (
         <button
-          key={track.title}
+          key={category.id}
           type="button"
-          className={`spm-mp__track${currentTrackIndex === index ? ' is-active' : ''}`}
-          onClick={() => onSelectTrack(index)}
+          className={`spm-mp__folder${selectedCategory?.id === category.id ? ' is-active' : ''}`}
+          onClick={() => onCategorySelect(category.id)}
+          style={{ '--folder-c': category.color }}
+        >
+          <span className="spm-mp__folder-title">{category.title}</span>
+        </button>
+      ))}
+    </div>
+
+    <div className="spm-mp__albums">
+      {visibleAlbums.map((album) => (
+        <button
+          key={album.id}
+          type="button"
+          className={`spm-mp__album${selectedAlbum?.id === album.id ? ' is-active' : ''}${album.locked ? ' is-locked' : ''}`}
+          onClick={() => onAlbumSelect(album.id)}
+          style={{ '--album-c': album.accent }}
+        >
+          <span className="spm-mp__album-title">{album.title}</span>
+          <span className="spm-mp__album-game">{album.game}</span>
+          {album.locked && <span className="spm-mp__album-lock">Requiere licencia</span>}
+        </button>
+      ))}
+    </div>
+
+    <div className="spm-mp__tracks">
+      {!visibleTracks.length && (
+        <div className="spm-mp__empty">
+          <strong>{selectedAlbum?.title}</strong>
+          <span>Carpeta lista para OST original. Agrega archivos con derechos o licencia para habilitarla.</span>
+        </div>
+      )}
+      {visibleTracks.map((track, index) => (
+        <button
+          key={track.id}
+          type="button"
+          className={`spm-mp__track${currentTrackIndex === track.index ? ' is-active' : ''}`}
+          onClick={() => onSelectTrack(track.index)}
           style={{ '--t-c': track.accent }}
         >
           <span className="spm-mp__track-idx">{String(index + 1).padStart(2, '0')}</span>
-          <span className="spm-mp__track-name">{track.title}</span>
-          {currentTrackIndex === index && isPlaying && (
+          <span className="spm-mp__track-name-wrap">
+            <span className="spm-mp__track-name">{track.title}</span>
+            <span className="spm-mp__track-game">{track.game}</span>
+          </span>
+          {currentTrackIndex === track.index && isPlaying && (
             <span className="spm-mp__track-live">LIVE</span>
           )}
         </button>
@@ -337,12 +403,21 @@ const SponsorshipHub = () => {
   const [musicPanelOpen, setMusicPanelOpen] = useState(false);
   const [compactDiscVisible, setCompactDiscVisible] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(initialTrackIndex);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(MUSIC_ALBUMS.find((album) => album.id === TRACKS[initialTrackIndex]?.albumId)?.categoryId || MUSIC_CATEGORIES[0].id);
+  const [selectedAlbumId, setSelectedAlbumId] = useState(TRACKS[initialTrackIndex]?.albumId || MUSIC_ALBUMS[0].id);
   const [volume, setVolume] = useState(initialVolume);
   const [isPlaying, setIsPlaying] = useState(false);
   const [shouldAutoplay, setShouldAutoplay] = useState(false);
   const [hasActivatedMusic, setHasActivatedMusic] = useState(false);
 
   const currentTrack = TRACKS[currentTrackIndex];
+  const currentAlbum = MUSIC_ALBUMS.find((album) => album.id === currentTrack.albumId) || MUSIC_ALBUMS[0];
+  const selectedCategory = MUSIC_CATEGORIES.find((category) => category.id === selectedCategoryId) || MUSIC_CATEGORIES[0];
+  const selectedAlbum = MUSIC_ALBUMS.find((album) => album.id === selectedAlbumId) || currentAlbum;
+  const visibleAlbums = MUSIC_ALBUMS.filter((album) => album.categoryId === selectedCategoryId);
+  const visibleTracks = TRACKS
+    .map((track, index) => ({ ...track, index }))
+    .filter((track) => track.albumId === selectedAlbumId);
   const actions = HUB_ACTIONS
     .filter((action) => action.id !== 'quick')
     .map((action, index) => ({
@@ -417,8 +492,29 @@ const SponsorshipHub = () => {
     setCommandOpen((prev) => !prev);
   }, [triggerBurst]);
 
+  const handleCategorySelect = useCallback((categoryId) => {
+    setSelectedCategoryId(categoryId);
+    const firstAlbum = MUSIC_ALBUMS.find((album) => album.categoryId === categoryId);
+    if (!firstAlbum) return;
+    setSelectedAlbumId(firstAlbum.id);
+    const firstTrackIndex = TRACKS.findIndex((track) => track.albumId === firstAlbum.id);
+    if (firstTrackIndex >= 0) setCurrentTrackIndex(firstTrackIndex);
+  }, []);
+
+  const handleAlbumSelect = useCallback((albumId) => {
+    setSelectedAlbumId(albumId);
+    const album = MUSIC_ALBUMS.find((item) => item.id === albumId);
+    if (album) setSelectedCategoryId(album.categoryId);
+    const firstTrackIndex = TRACKS.findIndex((track) => track.albumId === albumId);
+    if (firstTrackIndex >= 0) setCurrentTrackIndex(firstTrackIndex);
+  }, []);
+
   const handleTrackSelect = useCallback((index) => {
+    const track = TRACKS[index];
+    const album = MUSIC_ALBUMS.find((item) => item.id === track?.albumId);
     setCurrentTrackIndex(index);
+    if (track) setSelectedAlbumId(track.albumId);
+    if (album) setSelectedCategoryId(album.categoryId);
     setHasActivatedMusic(true);
     setShouldAutoplay(true);
     setMusicPanelOpen(true);
@@ -443,8 +539,11 @@ const SponsorshipHub = () => {
   }, [hasActivatedMusic]);
 
   const handleNextTrack = useCallback(() => {
-    handleTrackSelect((currentTrackIndex + 1) % TRACKS.length);
-  }, [currentTrackIndex, handleTrackSelect]);
+    if (!visibleTracks.length) return;
+    const currentVisibleIndex = visibleTracks.findIndex((track) => track.index === currentTrackIndex);
+    const nextTrack = visibleTracks[(currentVisibleIndex + 1 + visibleTracks.length) % visibleTracks.length];
+    if (nextTrack) handleTrackSelect(nextTrack.index);
+  }, [currentTrackIndex, handleTrackSelect, visibleTracks]);
 
   const handleCloseMusicPanel = useCallback(() => {
     setMusicPanelOpen(false);
@@ -520,8 +619,15 @@ const SponsorshipHub = () => {
         <MusicPanel
           currentTrack={currentTrack}
           currentTrackIndex={currentTrackIndex}
+          selectedCategory={selectedCategory}
+          selectedAlbum={selectedAlbum}
+          currentAlbum={currentAlbum}
+          visibleAlbums={visibleAlbums}
+          visibleTracks={visibleTracks}
           isPlaying={isPlaying}
           musicPanelOpen={musicPanelOpen}
+          onCategorySelect={handleCategorySelect}
+          onAlbumSelect={handleAlbumSelect}
           onClose={handleCloseMusicPanel}
           onNextTrack={handleNextTrack}
           onPlayPause={handlePlayPause}

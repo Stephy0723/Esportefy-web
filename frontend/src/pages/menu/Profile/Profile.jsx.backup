@@ -1,0 +1,948 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { API_URL } from '../../../config/api';
+import {
+    FaUserEdit, FaGamepad, FaTrophy, FaShareAlt, FaCheck,
+    FaMedal, FaChevronRight, FaFire, FaFlag, FaCrosshairs,
+    FaShieldAlt, FaUsers, FaCrown, FaTwitch, FaYoutube,
+    FaTwitter, FaInstagram, FaTiktok, FaDiscord, FaStar,
+    FaCalendarAlt, FaChartLine, FaHeart, FaComment, FaPaperPlane,
+    FaEllipsisH, FaUserPlus, FaUserFriends, FaGem, FaGlobe,
+    FaRegHeart, FaRegComment, FaTimes, FaLink, FaSteam,
+    FaXbox, FaPlaystation, FaDesktop, FaMobileAlt, FaUser
+} from 'react-icons/fa';
+import { SiRiotgames, SiEpicgames } from 'react-icons/si';
+import { GAME_IMAGES } from '../../../data/gameImages';
+import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
+import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
+import PlayerTag from '../../../components/PlayerTag/PlayerTag';
+import { STATUS_LIST } from '../../../data/defaultAvatars';
+import PageHud from '../../../components/PageHud/PageHud';
+import { resolveMediaUrl } from '../../../utils/media';
+import './Profile.css';
+
+/* ═══════════════════════════════
+   MOCK DATA - Datos de ejemplo
+   ═══════════════════════════════ */
+
+// Logros destacados
+const MOCK_ACHIEVEMENTS = [
+    { id: 1, name: "Campeón Nacional", icon: "🏆", tournament: "Copa RD 2025", game: "MLBB", date: "Feb 2025", verified: true },
+    { id: 2, name: "MVP del Torneo", icon: "⭐", tournament: "Liga Caribe", game: "MLBB", date: "Ene 2025", verified: true },
+    { id: 3, name: "Top 10 Nacional", icon: "🔥", tournament: "Ranking MLBB", game: "MLBB", date: "2024", verified: true },
+    { id: 4, name: "Racha de 15 Wins", icon: "💀", tournament: "Ranked Solo", game: "MLBB", date: "Dic 2024", verified: false },
+];
+
+// Estadísticas principales
+const MOCK_STATS = {
+    matches: 1247,
+    wins: 891,
+    winRate: 71,
+    tournaments: 34,
+    tournamentsWon: 12,
+    mvps: 23,
+};
+
+// Amigos
+const MOCK_FRIENDS = [
+    { id: 1, name: "DragonSlayer", avatar: null, status: "online", rank: "Mythic Glory" },
+    { id: 2, name: "NightHawk99", avatar: null, status: "ingame", rank: "Mythical Honor" },
+    { id: 3, name: "ShadowBlade", avatar: null, status: "online", rank: "Mythic" },
+    { id: 4, name: "CyberNinja", avatar: null, status: "offline", rank: "Legend" },
+    { id: 5, name: "PhoenixFire", avatar: null, status: "online", rank: "Mythic Glory" },
+    { id: 6, name: "StormRider", avatar: null, status: "away", rank: "Mythical Honor" },
+    { id: 7, name: "BlazeMaster", avatar: null, status: "online", rank: "Mythic" },
+    { id: 8, name: "IceQueen", avatar: null, status: "ingame", rank: "Mythic Glory" },
+];
+
+// Comentarios del muro
+const MOCK_COMMENTS = [
+    { 
+        id: 1, 
+        user: { name: "DragonSlayer", avatar: null }, 
+        text: "GG bro! Ese último torneo estuvo increíble 🔥", 
+        time: "Hace 2 horas",
+        likes: 12,
+        liked: false
+    },
+    { 
+        id: 2, 
+        user: { name: "NightHawk99", avatar: null }, 
+        text: "Cuando jugamos ranked? Te debo la revancha 💪", 
+        time: "Hace 5 horas",
+        likes: 8,
+        liked: true
+    },
+    { 
+        id: 3, 
+        user: { name: "ShadowBlade", avatar: null }, 
+        text: "El mejor jungler de RD sin dudas! 🏆", 
+        time: "Ayer",
+        likes: 24,
+        liked: false
+    },
+    { 
+        id: 4, 
+        user: { name: "PhoenixFire", avatar: null }, 
+        text: "Ese pentakill con Ling fue legendario hermano", 
+        time: "Hace 2 días",
+        likes: 31,
+        liked: true
+    },
+];
+
+/* ════════════════════════════════════════
+   MAIN COMPONENT
+   ════════════════════════════════════════ */
+const Profile = () => {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [copiedLink, setCopiedLink] = useState(false);
+    const [newComment, setNewComment] = useState('');
+    const [comments, setComments] = useState(MOCK_COMMENTS);
+    const [isOwnProfile, setIsOwnProfile] = useState(true);
+    const [showTeamsModal, setShowTeamsModal] = useState(false);
+    const [showTournamentsModal, setShowTournamentsModal] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                if (!token) { navigate('/login'); return; }
+                const res = await axios.get(`${API_URL}/api/auth/profile`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUser(res.data);
+                setLoading(false);
+            } catch (err) {
+                setError("No se pudo cargar el perfil.");
+                setLoading(false);
+                if (err.response?.status === 401) navigate('/login');
+            }
+        };
+        fetchUserProfile();
+    }, [navigate]);
+
+    const handleShareProfile = () => {
+        navigator.clipboard.writeText(window.location.href);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+    };
+
+    const handleSubmitComment = (e) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+        
+        const comment = {
+            id: Date.now(),
+            user: { name: user?.username || "Tú", avatar: null },
+            text: newComment,
+            time: "Ahora",
+            likes: 0,
+            liked: false
+        };
+        setComments([comment, ...comments]);
+        setNewComment('');
+    };
+
+    const toggleLike = (commentId) => {
+        setComments(comments.map(c => 
+            c.id === commentId 
+                ? { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 }
+                : c
+        ));
+    };
+
+    if (loading) {
+        return (
+            <div className="pf-loading">
+                <div className="pf-loader"><span></span><span></span><span></span></div>
+            </div>
+        );
+    }
+
+    if (error) return <div className="pf-error">{error}</div>;
+    if (!user) return null;
+
+    const normalizedGames = Array.isArray(user.selectedGames)
+        ? user.selectedGames
+        : (user.selectedGames ? user.selectedGames.split(',').map(g => g.trim()) : []);
+    const normalizedPlatforms = Array.isArray(user.platforms) ? user.platforms : [];
+    const normalizedGoals = Array.isArray(user.goals) ? user.goals : [];
+    const normalizedLanguages = Array.isArray(user.languages) ? user.languages : [];
+    const normalizedRoles = Array.isArray(user.preferredRoles) ? user.preferredRoles : [];
+    const currentFrame = FRAMES.find(f => f.id === user?.selectedFrameId) || FRAMES[0];
+    const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0];
+    const userStatus = STATUS_LIST.find(s => s.id === user.status) || STATUS_LIST[0];
+    const resolvedUserAvatar = resolveMediaUrl(user.avatar);
+
+    const socialIcons = [
+        { key: 'twitch', icon: <FaTwitch />, color: '#9146FF' },
+        { key: 'youtube', icon: <FaYoutube />, color: '#FF0000' },
+        { key: 'twitter', icon: <FaTwitter />, color: '#1DA1F2' },
+        { key: 'instagram', icon: <FaInstagram />, color: '#E4405F' },
+        { key: 'tiktok', icon: <FaTiktok />, color: '#00f2ea' },
+    ];
+    const activeSocials = socialIcons.filter(s => user.socialLinks?.[s.key]);
+    const onlineFriends = MOCK_FRIENDS.filter(f => f.status === 'online' || f.status === 'ingame');
+    const lookingForTeam = Boolean(user.lookingForTeam);
+    const buildSocialUrl = (key, handle) => {
+        if (!handle) return '#';
+        const clean = String(handle).replace(/^@+/, '');
+        if (key === 'twitch') return `https://twitch.tv/${clean}`;
+        if (key === 'youtube') return `https://youtube.com/${clean}`;
+        if (key === 'twitter') return `https://x.com/${clean}`;
+        if (key === 'instagram') return `https://instagram.com/${clean}`;
+        if (key === 'tiktok') return `https://tiktok.com/@${clean}`;
+        return '#';
+    };
+
+    // Gaming connections config
+    const gamingConnections = [
+        { 
+            key: 'discord', 
+            icon: <FaDiscord />, 
+            label: 'Discord', 
+            color: '#5865F2',
+            connected: user.connections?.discord?.verified,
+            value: user.connections?.discord?.username
+        },
+        { 
+            key: 'riot', 
+            icon: <SiRiotgames />, 
+            label: 'Riot Games', 
+            color: '#D32936',
+            connected: user.connections?.riot?.verified,
+            value: user.connections?.riot?.gameName ? `${user.connections.riot.gameName}#${user.connections.riot.tagLine}` : null
+        },
+        { 
+            key: 'steam', 
+            icon: <FaSteam />, 
+            label: 'Steam', 
+            color: '#1b2838',
+            connected: user.connections?.steam?.verified,
+            value: user.connections?.steam?.username
+        },
+        { 
+            key: 'epic', 
+            icon: <SiEpicgames />, 
+            label: 'Epic Games', 
+            color: '#313131',
+            connected: user.connections?.epic?.verified,
+            value: user.connections?.epic?.username
+        },
+    ];
+
+    // Platform icons mapping
+    const platformIcons = {
+        'PC': <FaDesktop />,
+        'Mobile': <FaMobileAlt />,
+        'PlayStation': <FaPlaystation />,
+        'Xbox': <FaXbox />,
+    };
+
+    return (
+        <div className="pf">
+            {/* Dynamic animated background */}
+            <div className="pf__grid-overlay" />
+            
+            <PageHud page="PERFIL" />
+            
+            {/* ════════════════════════════════════════
+                HERO BANNER - Header Minimalista
+               ════════════════════════════════════════ */}
+            <section className="pf-hero">
+                {/* Background Layer */}
+                <div className="pf-hero__bg">
+                    <img src={currentBg.src} alt="" className="pf-hero__bg-img" />
+                    <div className="pf-hero__bg-overlay" />
+                    <div className="pf-hero__bg-gradient" />
+                </div>
+
+                {/* Main Content */}
+                <div className="pf-hero__container">
+                    {/* Top Actions Bar */}
+                    <div className="pf-hero__topbar">
+                        <div className="pf-hero__topbar-left">
+                            {lookingForTeam && (
+                                <div className="pf-lft-indicator">
+                                    <span className="pf-lft-indicator__pulse" />
+                                    <FaUsers /> Buscando equipo
+                                </div>
+                            )}
+                        </div>
+                        <div className="pf-hero__topbar-actions">
+                            {isOwnProfile ? (
+                                <>
+                                    <button className="pf-hero-btn pf-hero-btn--edit" onClick={() => navigate('/edit-profile')}>
+                                        <FaUserEdit /> Editar Perfil
+                                    </button>
+                                    <button className="pf-hero-btn pf-hero-btn--share" onClick={handleShareProfile}>
+                                        {copiedLink ? <><FaCheck /> Copiado!</> : <><FaShareAlt /> Compartir</>}
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button className="pf-hero-btn pf-hero-btn--follow">
+                                        <FaUserPlus /> Seguir
+                                    </button>
+                                    <button className="pf-hero-btn pf-hero-btn--message">
+                                        <FaComment /> Mensaje
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Profile Row - Horizontal */}
+                    <motion.div 
+                        className="pf-hero__row"
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        {/* Avatar */}
+                        <div className="pf-hero__avatar-wrap">
+                            <AvatarCircle
+                                src={resolvedUserAvatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                frameConfig={currentFrame}
+                                size="140px"
+                                status={user.status}
+                            />
+                            <div className="pf-hero__status" style={{ '--status-color': userStatus.color }}>
+                                <span className="pf-hero__status-dot" />
+                                {userStatus.label}
+                            </div>
+                        </div>
+
+                        {/* Name + Badges */}
+                        <div className="pf-hero__identity">
+                            <h1 className="pf-hero__username">
+                                <PlayerTag name={user.username || "Player"} tagId={user.selectedTagId} size="xlarge" />
+                            </h1>
+                            {user.fullName && <p className="pf-hero__realname">{user.fullName}</p>}
+                            
+                            {/* Role Tags */}
+                            <div className="pf-hero__tags">
+                                <span className="pf-hero-tag pf-hero-tag--player">
+                                    <FaGamepad /> Jugador
+                                </span>
+                                {user.isOrganizer && (
+                                    <span className="pf-hero-tag pf-hero-tag--organizer">
+                                        <FaCrown /> Organizador
+                                    </span>
+                                )}
+                                {user.verified && (
+                                    <span className="pf-hero-tag pf-hero-tag--verified">
+                                        <FaCheck /> Verificado
+                                    </span>
+                                )}
+                                {user.isPro && (
+                                    <span className="pf-hero-tag pf-hero-tag--pro">
+                                        <FaGem /> PRO
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Quick Stats */}
+                        <div className="pf-hero__quick-stats">
+                            <div className="pf-hero__qstat">
+                                <span className="pf-hero__qstat-value">{MOCK_STATS.winRate}%</span>
+                                <span className="pf-hero__qstat-label">Win Rate</span>
+                            </div>
+                            <div className="pf-hero__qstat">
+                                <span className="pf-hero__qstat-value">{MOCK_STATS.tournamentsWon}</span>
+                                <span className="pf-hero__qstat-label">Torneos</span>
+                            </div>
+                            <div className="pf-hero__qstat">
+                                <span className="pf-hero__qstat-value">{user.teams?.length || 0}</span>
+                                <span className="pf-hero__qstat-label">Equipos</span>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
+            {/* ════════════════════════════════════════
+                ABOUT SECTION - Info Personal
+               ════════════════════════════════════════ */}
+            <section className="pf-about">
+                <div className="pf-about__container">
+                    {/* Bio Card */}
+                    <div className="pf-about__card pf-about__card--bio">
+                        <h3 className="pf-about__title">
+                            <FaUser /> Sobre mí
+                        </h3>
+                        {user.bio ? (
+                            <p className="pf-about__bio">{user.bio}</p>
+                        ) : (
+                            <p className="pf-about__bio pf-about__bio--empty">Sin descripción</p>
+                        )}
+                        
+                        <div className="pf-about__details">
+                            {user.country && (
+                                <div className="pf-about__detail">
+                                    <FaFlag className="pf-about__detail-icon" />
+                                    <span>{user.country}</span>
+                                </div>
+                            )}
+                            {user.birthDate && (
+                                <div className="pf-about__detail">
+                                    <FaCalendarAlt className="pf-about__detail-icon" />
+                                    <span>{new Date(user.birthDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                </div>
+                            )}
+                            <div className="pf-about__detail">
+                                <FaCalendarAlt className="pf-about__detail-icon" />
+                                <span>Miembro desde {new Date(user.createdAt || Date.now()).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Social Links Card */}
+                    <div className="pf-about__card pf-about__card--socials">
+                        <h3 className="pf-about__title">
+                            <FaGlobe /> Redes Sociales
+                        </h3>
+                        {activeSocials.length > 0 ? (
+                            <div className="pf-about__socials">
+                                {activeSocials.map(s => (
+                                    <a
+                                        key={s.key}
+                                        href={buildSocialUrl(s.key, user.socialLinks[s.key])}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="pf-about__social"
+                                        style={{ '--social-color': s.color }}
+                                    >
+                                        <span className="pf-about__social-icon">{s.icon}</span>
+                                        <span className="pf-about__social-handle">@{user.socialLinks[s.key]}</span>
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="pf-about__empty">Sin redes sociales</p>
+                        )}
+                    </div>
+
+                    {/* Gaming Connections Card */}
+                    <div className="pf-about__card pf-about__card--connections">
+                        <h3 className="pf-about__title">
+                            <FaLink /> Conexiones Gaming
+                        </h3>
+                        <div className="pf-about__connections">
+                            {gamingConnections.map(conn => (
+                                <div 
+                                    key={conn.key} 
+                                    className={`pf-about__connection ${conn.connected ? 'pf-about__connection--active' : ''}`}
+                                    style={{ '--conn-color': conn.color }}
+                                >
+                                    <span className="pf-about__connection-icon">{conn.icon}</span>
+                                    <div className="pf-about__connection-info">
+                                        <span className="pf-about__connection-name">{conn.label}</span>
+                                        {conn.connected ? (
+                                            <span className="pf-about__connection-user">{conn.value}</span>
+                                        ) : (
+                                            <span className="pf-about__connection-status">No conectado</span>
+                                        )}
+                                    </div>
+                                    {conn.connected && <FaCheck className="pf-about__connection-check" />}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ════════════════════════════════════════
+                MAIN CONTENT GRID
+               ════════════════════════════════════════ */}
+            <main className="pf-main">
+                {/* LEFT COLUMN */}
+                <div className="pf-col pf-col--left">
+                    {/* Games Hub */}
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaGamepad /> Juegos</h3>
+                        </div>
+                        <div className="pf-games">
+                            {normalizedGames.length > 0 ? (
+                                normalizedGames.slice(0, 3).map((gameId, i) => {
+                                    const imgSrc = Object.entries(GAME_IMAGES).find(([key]) =>
+                                        key.toLowerCase().includes(gameId.toLowerCase())
+                                    )?.[1] || GAME_IMAGES.Default;
+                                    return (
+                                        <div key={i} className={`pf-game ${i === 0 ? 'pf-game--main' : ''}`}>
+                                            <img src={imgSrc} alt={gameId} />
+                                            <div className="pf-game__info">
+                                                <span className="pf-game__name">{gameId}</span>
+                                                {i === 0 && <span className="pf-game__badge"><FaStar /> MAIN</span>}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="pf-empty-sm">Sin juegos</div>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaGlobe /> Perfil competitivo</h3>
+                        </div>
+                        <div className="pf-profile-meta">
+                            <div className="pf-profile-meta__block">
+                                <p>Plataformas</p>
+                                <div className="pf-chips">
+                                    {normalizedPlatforms.length ? normalizedPlatforms.map(item => (
+                                        <span key={item} className="pf-chip">{item}</span>
+                                    )) : <span className="pf-empty-sm">Sin plataformas</span>}
+                                </div>
+                            </div>
+                            <div className="pf-profile-meta__block">
+                                <p>Roles</p>
+                                <div className="pf-chips">
+                                    {normalizedRoles.length ? normalizedRoles.map(item => (
+                                        <span key={item} className="pf-chip">{item}</span>
+                                    )) : <span className="pf-empty-sm">Sin roles</span>}
+                                </div>
+                            </div>
+                            <div className="pf-profile-meta__block">
+                                <p>Idiomas</p>
+                                <div className="pf-chips">
+                                    {normalizedLanguages.length ? normalizedLanguages.map(item => (
+                                        <span key={item} className="pf-chip">{item}</span>
+                                    )) : <span className="pf-empty-sm">Sin idiomas</span>}
+                                </div>
+                            </div>
+                            <div className="pf-profile-meta__block">
+                                <p>Objetivos</p>
+                                <div className="pf-chips">
+                                    {normalizedGoals.length ? normalizedGoals.map(item => (
+                                        <span key={item} className="pf-chip">{item}</span>
+                                    )) : <span className="pf-empty-sm">Sin objetivos</span>}
+                                </div>
+                            </div>
+                            {lookingForTeam && (
+                                <div className="pf-lft-badge">
+                                    <FaUsers /> Disponible para equipo / duo
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* Gaming Connections Hub */}
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaLink /> Conexiones Gaming</h3>
+                        </div>
+                        <div className="pf-connections">
+                            {gamingConnections.map(conn => (
+                                <div 
+                                    key={conn.key} 
+                                    className={`pf-connection ${conn.connected ? 'pf-connection--active' : ''}`}
+                                    style={{ '--conn-color': conn.color }}
+                                >
+                                    <span className="pf-connection__icon">{conn.icon}</span>
+                                    <div className="pf-connection__info">
+                                        <span className="pf-connection__label">{conn.label}</span>
+                                        {conn.connected ? (
+                                            <span className="pf-connection__value">{conn.value}</span>
+                                        ) : (
+                                            <span className="pf-connection__status">No conectado</span>
+                                        )}
+                                    </div>
+                                    {conn.connected && <FaCheck className="pf-connection__check" />}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Friends Hub */}
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaUserFriends /> Amigos</h3>
+                            <span className="pf-hub__count">{onlineFriends.length} en línea</span>
+                        </div>
+                        <div className="pf-friends">
+                            {MOCK_FRIENDS.slice(0, 6).map(friend => (
+                                <div key={friend.id} className="pf-friend">
+                                    <div className="pf-friend__avatar">
+                                        <img src={`https://ui-avatars.com/api/?name=${friend.name}&background=1a1a2e&color=8EDB15`} alt={friend.name} />
+                                        <span className={`pf-friend__status pf-friend__status--${friend.status}`} />
+                                    </div>
+                                    <div className="pf-friend__info">
+                                        <span className="pf-friend__name">{friend.name}</span>
+                                        <span className="pf-friend__rank">{friend.rank}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <button className="pf-hub__more">
+                            Ver todos ({MOCK_FRIENDS.length}) <FaChevronRight />
+                        </button>
+                    </section>
+
+                    {/* Teams Hub */}
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaShieldAlt /> Equipos</h3>
+                            {user.teams?.length > 0 && (
+                                <span className="pf-hub__count">{user.teams.length}</span>
+                            )}
+                        </div>
+                        {user.teams?.length > 0 ? (
+                            <>
+                                <div className="pf-teams">
+                                    {user.teams.slice(0, 2).map(team => {
+                                        const defaultLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(team.name || 'T')}&background=1a1a2e&color=8EDB15&size=128&bold=true`;
+                                        return (
+                                            <div key={team._id} className="pf-team" onClick={() => navigate(`/teams/${team._id}`)}>
+                                                <img src={resolveMediaUrl(team.logo) || defaultLogo} alt={team.name} onError={e => e.target.src = defaultLogo} />
+                                                <div className="pf-team__info">
+                                                    <h4>{team.name}</h4>
+                                                    <span>{team.game}</span>
+                                                </div>
+                                                <FaChevronRight />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <button className="pf-hub__more" onClick={() => setShowTeamsModal(true)}>
+                                    Ver todos los equipos <FaChevronRight />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="pf-empty">
+                                <FaShieldAlt />
+                                <p>Sin equipos</p>
+                                {isOwnProfile && (
+                                    <button className="pf-btn pf-btn--ghost pf-btn--sm" onClick={() => navigate('/teams')}>
+                                        Buscar equipos
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </section>
+                </div>
+
+                {/* CENTER COLUMN - Comments Wall */}
+                <div className="pf-col pf-col--center">
+                    <section className="pf-hub pf-hub--comments">
+                        <div className="pf-hub__header">
+                            <h3><FaComment /> Muro</h3>
+                            <span className="pf-hub__count">{comments.length} comentarios</span>
+                        </div>
+
+                        {/* Comment Input */}
+                        <form className="pf-comment-form" onSubmit={handleSubmitComment}>
+                            <img 
+                                src={resolvedUserAvatar || `https://ui-avatars.com/api/?name=${user.username}`} 
+                                alt="" 
+                                className="pf-comment-form__avatar"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Escribe un comentario..."
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                            />
+                            <button type="submit" disabled={!newComment.trim()}>
+                                <FaPaperPlane />
+                            </button>
+                        </form>
+
+                        {/* Comments List */}
+                        <div className="pf-comments">
+                            {comments.map(comment => (
+                                <motion.div 
+                                    key={comment.id} 
+                                    className="pf-comment"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                >
+                                    <img 
+                                        src={`https://ui-avatars.com/api/?name=${comment.user.name}&background=1a1a2e&color=8EDB15`} 
+                                        alt={comment.user.name}
+                                        className="pf-comment__avatar"
+                                    />
+                                    <div className="pf-comment__content">
+                                        <div className="pf-comment__header">
+                                            <span className="pf-comment__name">{comment.user.name}</span>
+                                            <span className="pf-comment__time">{comment.time}</span>
+                                        </div>
+                                        <p className="pf-comment__text">{comment.text}</p>
+                                        <div className="pf-comment__actions">
+                                            <button 
+                                                className={`pf-comment__like ${comment.liked ? 'pf-comment__like--active' : ''}`}
+                                                onClick={() => toggleLike(comment.id)}
+                                            >
+                                                {comment.liked ? <FaHeart /> : <FaRegHeart />}
+                                                <span>{comment.likes}</span>
+                                            </button>
+                                            <button className="pf-comment__reply">
+                                                <FaRegComment /> Responder
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button className="pf-comment__menu">
+                                        <FaEllipsisH />
+                                    </button>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+
+                {/* RIGHT COLUMN */}
+                <div className="pf-col pf-col--right">
+                    {/* Achievements Hub */}
+                    <section className="pf-hub pf-hub--achievements">
+                        <div className="pf-hub__header">
+                            <h3><FaTrophy /> Logros Destacados</h3>
+                        </div>
+                        <div className="pf-achievements">
+                            {MOCK_ACHIEVEMENTS.map(ach => (
+                                <div key={ach.id} className={`pf-achievement ${ach.verified ? 'pf-achievement--verified' : ''}`}>
+                                    <span className="pf-achievement__icon">{ach.icon}</span>
+                                    <div className="pf-achievement__info">
+                                        <h4>{ach.name}</h4>
+                                        <span>{ach.tournament}</span>
+                                        <span className="pf-achievement__date">{ach.game} • {ach.date}</span>
+                                    </div>
+                                    {ach.verified && (
+                                        <span className="pf-achievement__badge"><FaCheck /></span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <button className="pf-hub__more">
+                            Ver todos los logros <FaChevronRight />
+                        </button>
+                    </section>
+
+                    {/* Tournaments Hub */}
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaCrown /> Torneos</h3>
+                            {user.tournaments?.length > 0 && (
+                                <span className="pf-hub__count">{user.tournaments.length}</span>
+                            )}
+                        </div>
+                        {user.tournaments?.length > 0 ? (
+                            <>
+                                <div className="pf-tournaments-preview">
+                                    {user.tournaments.slice(0, 3).map(tournament => (
+                                        <div 
+                                            key={tournament._id} 
+                                            className="pf-tournament-item"
+                                            onClick={() => navigate(`/tournaments/${tournament._id}`)}
+                                        >
+                                            <div className="pf-tournament-item__icon">
+                                                {tournament.position === 1 ? '🥇' : 
+                                                 tournament.position === 2 ? '🥈' : 
+                                                 tournament.position === 3 ? '🥉' : 
+                                                 <FaTrophy />}
+                                            </div>
+                                            <div className="pf-tournament-item__info">
+                                                <span className="pf-tournament-item__name">{tournament.name}</span>
+                                                <span className="pf-tournament-item__game">{tournament.game}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button className="pf-hub__more" onClick={() => setShowTournamentsModal(true)}>
+                                    Ver todos los torneos <FaChevronRight />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="pf-empty">
+                                <FaCrown />
+                                <p>Sin torneos</p>
+                                {isOwnProfile && (
+                                    <button className="pf-btn pf-btn--ghost pf-btn--sm" onClick={() => navigate('/tournaments')}>
+                                        Ver torneos
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Recent Activity */}
+                    <section className="pf-hub">
+                        <div className="pf-hub__header">
+                            <h3><FaFire /> Actividad Reciente</h3>
+                        </div>
+                        <div className="pf-activity">
+                            <div className="pf-activity__item pf-activity__item--win">
+                                <div className="pf-activity__dot" />
+                                <div className="pf-activity__content">
+                                    <p>Ganó torneo <strong>Copa Caribe</strong></p>
+                                    <span>Hace 2 días</span>
+                                </div>
+                            </div>
+                            <div className="pf-activity__item pf-activity__item--team">
+                                <div className="pf-activity__dot" />
+                                <div className="pf-activity__content">
+                                    <p>Se unió a <strong>Hispaniola Esports</strong></p>
+                                    <span>Hace 1 semana</span>
+                                </div>
+                            </div>
+                            <div className="pf-activity__item pf-activity__item--rank">
+                                <div className="pf-activity__dot" />
+                                <div className="pf-activity__content">
+                                    <p>Subió a <strong>Mythic Glory</strong></p>
+                                    <span>Hace 2 semanas</span>
+                                </div>
+                            </div>
+                            <div className="pf-activity__item pf-activity__item--achievement">
+                                <div className="pf-activity__dot" />
+                                <div className="pf-activity__content">
+                                    <p>Desbloqueó <strong>MVP del Torneo</strong></p>
+                                    <span>Hace 3 semanas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            {/* ════════════════════════════════════════
+                MODAL - EQUIPOS
+               ════════════════════════════════════════ */}
+            <AnimatePresence>
+                {showTeamsModal && (
+                    <motion.div 
+                        className="pf-modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowTeamsModal(false)}
+                    >
+                        <motion.div 
+                            className="pf-modal"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="pf-modal__header">
+                                <h2><FaShieldAlt /> Mis Equipos</h2>
+                                <button className="pf-modal__close" onClick={() => setShowTeamsModal(false)}>
+                                    <FaTimes />
+                                </button>
+                            </div>
+                            <div className="pf-modal__content">
+                                {user.teams?.length > 0 ? (
+                                    <div className="pf-modal-teams">
+                                        {user.teams.map(team => {
+                                            const defaultLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(team.name || 'T')}&background=1a1a2e&color=8EDB15&size=128&bold=true`;
+                                            return (
+                                                <div key={team._id} className="pf-modal-team" onClick={() => navigate(`/teams/${team._id}`)}>
+                                                    <img src={resolveMediaUrl(team.logo) || defaultLogo} alt={team.name} onError={e => e.target.src = defaultLogo} />
+                                                    <div className="pf-modal-team__info">
+                                                        <h3>{team.name}</h3>
+                                                        <span className="pf-modal-team__game">{team.game}</span>
+                                                        <div className="pf-modal-team__meta">
+                                                            <span><FaUsers /> {team.members?.length || 0} miembros</span>
+                                                            {team.role && <span className="pf-modal-team__role">{team.role}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <FaChevronRight className="pf-modal-team__arrow" />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="pf-modal-empty">
+                                        <FaShieldAlt />
+                                        <p>No perteneces a ningún equipo</p>
+                                        <button className="pf-btn pf-btn--primary" onClick={() => navigate('/teams')}>
+                                            Buscar equipos
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ════════════════════════════════════════
+                MODAL - TORNEOS
+               ════════════════════════════════════════ */}
+            <AnimatePresence>
+                {showTournamentsModal && (
+                    <motion.div 
+                        className="pf-modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowTournamentsModal(false)}
+                    >
+                        <motion.div 
+                            className="pf-modal pf-modal--wide"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="pf-modal__header">
+                                <h2><FaTrophy /> Mis Torneos</h2>
+                                <button className="pf-modal__close" onClick={() => setShowTournamentsModal(false)}>
+                                    <FaTimes />
+                                </button>
+                            </div>
+                            <div className="pf-modal__content">
+                                {user.tournaments?.length > 0 ? (
+                                    <div className="pf-modal-tournaments">
+                                        {user.tournaments.map(tournament => (
+                                            <div key={tournament._id} className="pf-modal-tournament" onClick={() => navigate(`/tournaments/${tournament._id}`)}>
+                                                <div className="pf-modal-tournament__icon">
+                                                    <FaTrophy />
+                                                </div>
+                                                <div className="pf-modal-tournament__info">
+                                                    <h3>{tournament.name}</h3>
+                                                    <div className="pf-modal-tournament__meta">
+                                                        <span>{tournament.game}</span>
+                                                        <span>•</span>
+                                                        <span>{new Date(tournament.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                    </div>
+                                                    {tournament.position && (
+                                                        <div className={`pf-modal-tournament__position pf-modal-tournament__position--${tournament.position}`}>
+                                                            {tournament.position === 1 ? '🥇 1er Lugar' : 
+                                                             tournament.position === 2 ? '🥈 2do Lugar' : 
+                                                             tournament.position === 3 ? '🥉 3er Lugar' : 
+                                                             `Top ${tournament.position}`}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <FaChevronRight className="pf-modal-tournament__arrow" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="pf-modal-empty">
+                                        <FaTrophy />
+                                        <p>No has participado en torneos</p>
+                                        <button className="pf-btn pf-btn--primary" onClick={() => navigate('/tournaments')}>
+                                            Ver torneos disponibles
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+export default Profile;

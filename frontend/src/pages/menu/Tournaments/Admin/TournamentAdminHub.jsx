@@ -104,6 +104,7 @@ const TournamentAdminHub = () => {
           />
         </label>
         <button onClick={() => navigate('/create-tournament')}>Crear torneo</button>
+        <button className="ghost" onClick={() => navigate('/tournaments/simulator')}>Simular torneo</button>
       </div>
 
       {loading ? (

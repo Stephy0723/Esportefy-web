@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
@@ -69,7 +69,12 @@ export const useTournamentAdminData = (code) => {
     [token]
   );
 
+  const complianceFetchedRef = useRef(false);
+  const compliancePendingRef = useRef(false);
+
   useEffect(() => {
+    complianceFetchedRef.current = false;
+
     const load = async () => {
       try {
         setLoading(true);
@@ -87,27 +92,35 @@ export const useTournamentAdminData = (code) => {
     load();
   }, [code, authConfig]);
 
-  const refreshCompliance = async () => {
+  const refreshCompliance = useCallback(async () => {
     if (!code || !token) {
       setCompliance(null);
       return;
     }
+    if (compliancePendingRef.current) return;
 
     try {
+      compliancePendingRef.current = true;
       setComplianceLoading(true);
       const res = await axios.get(`${API_URL}/api/tournaments/${code}/compliance`, authConfig);
       setCompliance(res.data || null);
+      complianceFetchedRef.current = true;
     } catch (error) {
-      console.error('Error cargando cumplimiento:', error);
+      if (error.response?.status !== 429) {
+        console.error('Error cargando cumplimiento:', error);
+      }
       setCompliance(null);
     } finally {
+      compliancePendingRef.current = false;
       setComplianceLoading(false);
     }
-  };
+  }, [code, token, authConfig]);
 
   useEffect(() => {
-    refreshCompliance();
-  }, [code, authConfig]);
+    if (!complianceFetchedRef.current) {
+      refreshCompliance();
+    }
+  }, [refreshCompliance]);
 
   const registrations = useMemo(
     () => (Array.isArray(tournament?.registrations) ? tournament.registrations : []),
@@ -211,6 +224,16 @@ export const useTournamentAdminData = (code) => {
   };
 };
 
+const NAV_ITEMS = [
+  { key: 'overview', path: '', end: true, label: 'Operacion', desc: 'Equipos y visibilidad' },
+  { key: 'bracket', path: '/bracket', label: 'Bracket', desc: 'Escenario del cuadro' },
+  { key: 'matches', path: '/matches', label: 'Partidas', desc: 'Centro de partidas' },
+  { key: 'standings', path: '/standings', label: 'Clasificacion', desc: 'Tabla y puntos' },
+  { key: 'staff', path: '/staff', label: 'Staff', desc: 'Equipo de trabajo' },
+  { key: 'reports', path: '/reports', label: 'Reportes', desc: 'Anti-trampa y sanciones' },
+  { key: 'roulette', path: '/roulette', label: 'Ruleta', desc: 'Vista para directo' },
+];
+
 export const TournamentAdminShell = ({ tournament, currentTab, children }) => (
   <div className="ta-page">
     <header className="ta-manage-hero">
@@ -222,29 +245,18 @@ export const TournamentAdminShell = ({ tournament, currentTab, children }) => (
         </p>
       </div>
 
-      <nav className="ta-manage-nav">
-        <NavLink
-          to={`/tournaments/manage/${tournament.tournamentId}`}
-          end
-          className={({ isActive }) => `ta-manage-nav__item ${isActive || currentTab === 'overview' ? 'is-active' : ''}`}
-        >
-          <span>Operacion</span>
-          <strong>Equipos y visibilidad</strong>
-        </NavLink>
-        <NavLink
-          to={`/tournaments/manage/${tournament.tournamentId}/bracket`}
-          className={({ isActive }) => `ta-manage-nav__item ${isActive || currentTab === 'bracket' ? 'is-active' : ''}`}
-        >
-          <span>Bracket</span>
-          <strong>Escenario del cuadro</strong>
-        </NavLink>
-        <NavLink
-          to={`/tournaments/manage/${tournament.tournamentId}/roulette`}
-          className={({ isActive }) => `ta-manage-nav__item ${isActive || currentTab === 'roulette' ? 'is-active' : ''}`}
-        >
-          <span>Ruleta</span>
-          <strong>Vista para directo</strong>
-        </NavLink>
+      <nav className="ta-manage-nav ta-manage-nav--wide">
+        {NAV_ITEMS.map((item) => (
+          <NavLink
+            key={item.key}
+            to={`/tournaments/manage/${tournament.tournamentId}${item.path}`}
+            end={item.end}
+            className={({ isActive }) => `ta-manage-nav__item ${isActive || currentTab === item.key ? 'is-active' : ''}`}
+          >
+            <span>{item.label}</span>
+            <strong>{item.desc}</strong>
+          </NavLink>
+        ))}
       </nav>
     </header>
 

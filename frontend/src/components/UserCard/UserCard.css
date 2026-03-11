@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════
-   USER CARD — Popup Profile Mini Card
-   Uses CSS vars from index.css
+   USER CARD — Modern Profile Card
+   Inspired by dribbble reference design
    ═══════════════════════════════════════ */
 
 /* Wrapper */
@@ -19,278 +19,351 @@
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-top: 8px;
-    width: 300px;
+    margin-top: 12px;
+    width: 320px;
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255,255,255,.04);
+    border-radius: 20px;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
     overflow: hidden;
-    animation: ucSlideIn .2s ease-out;
-}
-@keyframes ucSlideIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(6px) scale(.96); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    animation: ucSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Close */
+@keyframes ucSlideIn {
+    from { 
+        opacity: 0; 
+        transform: translateX(-50%) translateY(10px) scale(0.95); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(-50%) translateY(0) scale(1); 
+    }
+}
+
+/* Close button */
 .uc__close {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 3;
-    background: rgba(0,0,0,.4);
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
     border: none;
-    color: rgba(255,255,255,.6);
-    width: 24px; height: 24px;
+    color: rgba(255, 255, 255, 0.8);
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: .65rem;
+    font-size: 0.7rem;
     cursor: pointer;
-    transition: all .2s;
-    backdrop-filter: blur(4px);
-}
-.uc__close:hover {
-    background: rgba(255,255,255,.15);
-    color: #fff;
+    transition: all 0.2s;
 }
 
-/* Loading */
+.uc__close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* Loading state */
 .uc__loading {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 3rem;
+    padding: 4rem;
 }
+
 .uc__spinner {
-    width: 28px; height: 28px;
+    width: 32px;
+    height: 32px;
     border: 3px solid var(--border-color);
     border-top-color: var(--primary);
     border-radius: 50%;
-    animation: spin .8s linear infinite;
+    animation: spin 0.8s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* Header */
-.uc__header {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.25rem 1rem .5rem;
-    background: linear-gradient(180deg, rgba(142,219,21,.06) 0%, transparent 100%);
+@keyframes spin { 
+    to { transform: rotate(360deg); } 
 }
-.uc__header-glow {
-    position: absolute;
-    top: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
+
+/* Banner */
+.uc__banner {
+    position: relative;
     height: 120px;
-    background: radial-gradient(circle, rgba(142,219,21,.12), transparent 70%);
-    pointer-events: none;
+    background-size: cover;
+    background-position: center;
+}
+
+.uc__org-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.uc__org-badge svg {
+    font-size: 0.65rem;
+}
+
+/* Avatar wrapper - overlapping banner */
+.uc__avatar-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: -40px;
+    position: relative;
+    z-index: 5;
 }
 
 /* Body */
 .uc__body {
-    padding: .5rem 1.1rem 1.1rem;
+    padding: 12px 20px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 12px;
+}
+
+/* Name row */
+.uc__name-row {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    width: 100%;
+    justify-content: center;
+}
+
+.uc__username {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.uc__verified {
+    color: #3b82f6;
+    font-size: 0.9rem;
+}
+
+.uc__favorite {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-left: auto;
+}
+
+.uc__favorite:hover {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.1);
+}
+
+.uc__favorite--active {
+    color: #f472b6;
+}
+
+/* Role */
+.uc__role {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: -8px 0 0;
     text-align: center;
 }
 
-.uc__realname {
-    font-size: .78rem;
-    color: var(--text-muted);
-    margin: -2px 0 0;
-}
-
-/* Role tags */
-.uc__role-tags {
+/* Tags */
+.uc__tags {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
     justify-content: center;
 }
-.uc__role-tag {
+
+.uc__tag {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    font-size: .62rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    padding: 3px 8px;
-    border-radius: 4px;
-}
-.uc__role-tag--player {
-    background: rgba(142,219,21,.1);
-    color: var(--primary);
-    border: 1px solid rgba(142,219,21,.2);
-}
-.uc__role-tag--org {
-    background: rgba(241,196,15,.1);
-    color: #f1c40f;
-    border: 1px solid rgba(241,196,15,.2);
-}
-
-/* Status */
-.uc__status {
-    display: flex;
-    align-items: center;
     gap: 5px;
-    font-size: .68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    color: var(--sc);
-}
-.uc__status-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--sc);
-    box-shadow: 0 0 6px var(--sc);
-}
-
-/* Info grid */
-.uc__info-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-    width: 100%;
-}
-.uc__info-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: .72rem;
-    color: var(--text-muted);
-    padding: 4px 8px;
-    background: var(--bg-elevated, rgba(255,255,255,.03));
-    border-radius: 4px;
-}
-.uc__info-item svg {
-    font-size: .65rem;
-    color: var(--primary);
-    opacity: .6;
-}
-.uc__info-item--riot svg { color: #eb0029; }
-
-/* Games */
-.uc__games {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 0;
-}
-.uc__game-thumb {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    object-fit: cover;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--bg-elevated);
     border: 1px solid var(--border-color);
-    transition: transform .2s;
-}
-.uc__game-thumb:hover {
-    transform: scale(1.15);
-    z-index: 1;
-}
-.uc__game-more {
-    font-size: .7rem;
-    color: var(--text-muted);
-    font-weight: 700;
-    padding: 0 4px;
+    color: var(--text-main);
 }
 
-/* Social counts */
-.uc__social {
+.uc__tag svg {
+    font-size: 0.65rem;
+    opacity: 0.7;
+}
+
+.uc__tag--team {
+    background: rgba(142, 219, 21, 0.1);
+    border-color: rgba(142, 219, 21, 0.2);
+    color: var(--primary);
+}
+
+.uc__tag--games {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+}
+
+/* Stats row */
+.uc__stats {
     display: flex;
     align-items: center;
-    gap: 0;
+    justify-content: center;
+    gap: 24px;
     width: 100%;
-    padding: 8px 0;
+    padding: 12px 0;
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
 }
-.uc__social > div:not(.uc__social-sep) {
-    flex: 1;
+
+.uc__stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
-}
-.uc__social strong {
-    font-size: .95rem;
-    font-weight: 800;
-    color: var(--text-main);
-}
-.uc__social span {
-    font-size: .6rem;
-    text-transform: uppercase;
-    letter-spacing: .6px;
-    color: var(--text-muted);
-    font-weight: 600;
-}
-.uc__social-sep {
-    width: 1px;
-    height: 24px;
-    background: var(--border-color);
-    flex-shrink: 0;
+    gap: 2px;
 }
 
-/* Follow button */
-.uc__follow-btn {
-    width: 100%;
+.uc__stat-value {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.uc__stat-icon {
+    font-size: 0.8rem;
+    color: var(--primary);
+}
+
+.uc__stat-icon--star {
+    color: #fbbf24;
+}
+
+.uc__stat-label {
+    font-size: 0.65rem;
+    text-transform: lowercase;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Action buttons row */
+.uc__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.uc__action-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    font-size: .82rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    cursor: pointer;
-    transition: all .25s;
-    background: var(--primary);
-    color: #111;
+    transition: all 0.2s;
 }
-.uc__follow-btn:hover {
-    filter: brightness(1.12);
-    box-shadow: 0 0 16px rgba(142,219,21,.3);
+
+.uc__action-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(142, 219, 21, 0.05);
+    transform: translateY(-2px);
 }
-.uc__follow-btn:disabled {
-    opacity: .6;
+
+.uc__action-btn:disabled {
+    opacity: 0.5;
     cursor: wait;
 }
-.uc__follow-btn--following {
-    background: rgba(142,219,21,.1);
+
+.uc__action-btn--active {
+    background: rgba(142, 219, 21, 0.1);
+    border-color: var(--primary);
     color: var(--primary);
-    border: 1px solid rgba(142,219,21,.2);
-}
-.uc__follow-btn--following:hover {
-    background: rgba(220,50,50,.1);
-    color: #e74c3c;
-    border-color: rgba(220,50,50,.2);
-    box-shadow: none;
 }
 
-/* Error */
+/* CTA Button */
+.uc__cta-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: var(--bg-elevated);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.uc__cta-btn:hover {
+    background: var(--primary);
+    color: #111;
+    box-shadow: 0 4px 20px rgba(142, 219, 21, 0.25);
+}
+
+/* Error state */
 .uc__error {
-    padding: 2rem;
+    padding: 3rem;
     text-align: center;
     color: var(--text-muted);
-    font-size: .85rem;
+    font-size: 0.85rem;
 }
 
-/* Responsive: on small screens, full-width at bottom */
+/* Light theme adjustments */
+[data-theme="light"] .uc__card {
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .uc__close {
+    background: rgba(255, 255, 255, 0.8);
+    color: rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="light"] .uc__close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #000;
+}
+
+[data-theme="light"] .uc__org-badge {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+
+/* Responsive: full-width at bottom on mobile */
 @media (max-width: 600px) {
     .uc__card {
         position: fixed;
@@ -301,13 +374,26 @@
         transform: none;
         margin: 0;
         width: 100%;
-        border-radius: 18px 18px 0 0;
-        max-height: 80vh;
+        border-radius: 24px 24px 0 0;
+        max-height: 85vh;
         overflow-y: auto;
-        animation: ucSlideUp .25s ease-out;
+        animation: ucSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+
     @keyframes ucSlideUp {
         from { transform: translateY(100%); }
-        to   { transform: translateY(0); }
+        to { transform: translateY(0); }
+    }
+
+    .uc__banner {
+        height: 140px;
+    }
+
+    .uc__avatar-wrapper {
+        margin-top: -45px;
+    }
+
+    .uc__stats {
+        gap: 32px;
     }
 }

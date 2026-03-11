@@ -2916,7 +2916,16 @@ useEffect(() => {
                                         <div className="tn__card-glow" />
                                         <div className="tn__card-accent" />
                                         <div className="card-image-container">
-                                            <img src={getGameImage(torneo.game)} alt={torneo.game} loading="lazy" />
+                                            <img
+                                                src={torneo.bannerImage || getGameImage(torneo.game)}
+                                                alt={torneo.title || torneo.game}
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    if (e.currentTarget.dataset.fallbackApplied === '1') return;
+                                                    e.currentTarget.dataset.fallbackApplied = '1';
+                                                    e.currentTarget.src = getGameImage(torneo.game);
+                                                }}
+                                            />
                                             <div className="overlay-gradient"></div>
                                             <div className="top-badges">
                                                 <span className="game-pill" style={{ borderColor: gameColor, color: '#fff' }}>
