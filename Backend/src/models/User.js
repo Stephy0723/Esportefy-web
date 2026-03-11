@@ -101,6 +101,23 @@ const UserSchema = new mongoose.Schema({
             accountRegion: { type: String, default: 'americas' }, // para account-v1
             verified: { type: Boolean, default: false },
             linkedAt: Date,
+            products: {
+                lol: {
+                    linked: { type: Boolean, default: false },
+                    linkedAt: { type: Date, default: null },
+                    lastVerifiedAt: { type: Date, default: null }
+                },
+                valorant: {
+                    linked: { type: Boolean, default: false },
+                    linkedAt: { type: Date, default: null },
+                    consentRequired: { type: Boolean, default: true },
+                    consentGranted: { type: Boolean, default: false },
+                    consentedAt: { type: Date, default: null },
+                    lastVerifiedAt: { type: Date, default: null },
+                    rsoSubject: { type: String, default: '' },
+                    scopes: { type: [String], default: [] }
+                }
+            },
 
             // seguridad / verificación por OTP
             pendingLink: {
@@ -189,7 +206,8 @@ const UserSchema = new mongoose.Schema({
         allowTeamInvites: { type: Boolean, default: true },
         showOnlineStatus: { type: Boolean, default: true },
         allowTournamentInvites: { type: Boolean, default: true },
-        showPublicUserCode: { type: Boolean, default: true }
+        showPublicUserCode: { type: Boolean, default: true },
+        showPublicRiotHandle: { type: Boolean, default: false }
     },
     university: {
         universityId: { type: String, default: '' },

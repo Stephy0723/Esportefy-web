@@ -48,6 +48,7 @@ export const SUPPORTED_GAME_NAMES = SUPPORTED_GAMES.map((game) => game.name);
 export const SUPPORTED_GAME_SHORTS = SUPPORTED_GAMES.map((game) => game.short);
 export const SUPPORTED_GAME_CATEGORIES = ['FPS', 'MOBA'];
 export const SUPPORTED_RIOT_GAME_NAMES = ['Valorant', 'League of Legends'];
+export const SUPPORTED_RIOT_PRODUCT_IDS = ['valorant', 'lol'];
 export const SUPPORTED_MLBB_GAME_NAMES = ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'];
 export const SUPPORTED_GAME_ROLE_TEMPLATES = Object.fromEntries(
   SUPPORTED_GAMES.map((game) => [game.name, [...game.roles]])
@@ -67,6 +68,14 @@ export const isSupportedGame = (value = '') => isSupportedGameName(value) || isS
 
 export const isSupportedRiotGame = (value = '') =>
   SUPPORTED_RIOT_GAME_NAMES.includes(normalizeSupportedGameName(value));
+
+export const getRiotProductId = (value = '') => {
+  const normalizedGameId = normalizeSupportedGameId(value);
+  return SUPPORTED_RIOT_PRODUCT_IDS.includes(normalizedGameId) ? normalizedGameId : '';
+};
+
+export const isSupportedRiotProductId = (value = '') =>
+  SUPPORTED_RIOT_PRODUCT_IDS.includes(String(value || '').trim().toLowerCase());
 
 export const isSupportedMlbbGame = (value = '') => normalizeSupportedGameId(value) === 'mlbb';
 

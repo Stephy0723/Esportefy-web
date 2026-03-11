@@ -120,6 +120,7 @@ const isValidMlbbId = (value = '') => /^\d{5,15}$/.test(normalizeMlbbIdentity(va
 const isValidMlbbZone = (value = '') => /^\d{3,6}$/.test(normalizeMlbbIdentity(value));
 const getRiotMinActiveParticipants = () => Math.max(2, RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS);
 const isRiotTournamentGame = (game = '') => isSupportedRiotGame(game);
+const isValorantGame = (game = '') => normalizeSupportedGameName(game) === 'Valorant';
 const isFreeEntryFeeValue = (entryFee = '') => ['gratis', 'free', '0', '0.0', '0.00'].includes(normalizeEntryFee(entryFee));
 const parseTeamSizeFromModality = (modality = '') => {
     const raw = String(modality || '').trim().toLowerCase();
@@ -166,6 +167,28 @@ const getRiotStarterIds = (registration) =>
     getRiotStarters(registration)
         .map((player) => normalizeRiotIdentity(player?.riotId))
         .filter(Boolean);
+
+const getRiotUserEligibility = (user = {}, game = '') => {
+    const verified = Boolean(user?.connections?.riot?.verified && user?.connections?.riot?.puuid);
+    const gameName = String(user?.connections?.riot?.gameName || '').trim();
+    const tagLine = String(user?.connections?.riot?.tagLine || '').trim();
+    const riotId = verified && gameName && tagLine ? `${gameName}#${tagLine}` : '';
+    const consentGranted = user?.connections?.riot?.products?.valorant?.consentGranted === true;
+    const eligible = verified && (!isValorantGame(game) || consentGranted);
+
+    return {
+        verified,
+        consentGranted,
+        riotId,
+        eligible
+    };
+};
+
+const getRiotEligibilityMessage = (game = '', subject = 'inscribirte') => (
+    isValorantGame(game)
+        ? `Debes autorizar VALORANT con Riot Sign On en Conexiones para ${subject}.`
+        : `Debes vincular tu cuenta Riot para ${subject}.`
+);
 
 const getApprovedRegistrations = (tournament) =>
     (Array.isArray(tournament?.registrations) ? tournament.registrations : [])
@@ -1321,8 +1344,9 @@ export const registerTeam = async (req, res) => {
         const requiresMlbb = isSupportedMlbbGame(tournament.game);
         // Requisitos Riot (si aplica)
         if (requiresRiot) {
-            if (!requester?.connections?.riot?.verified) {
-                return res.status(400).json({ message: 'Debes vincular tu cuenta Riot para inscribirte' });
+            const requesterRiot = getRiotUserEligibility(requester, tournament.game);
+            if (!requesterRiot.eligible) {
+                return res.status(400).json({ message: getRiotEligibilityMessage(tournament.game, 'inscribirte') });
             }
             const minTier = tournament.riotRequirements?.minTier;
             const maxTier = tournament.riotRequirements?.maxTier;
@@ -1423,8 +1447,14 @@ export const registerTeam = async (req, res) => {
             const riotUsers = users.length
                 ? await User.find({ _id: { $in: users } }).select('connections.riot')
                 : [];
+            const riotEligibilityMap = new Map(
+                riotUsers.map((u) => [String(u._id), getRiotUserEligibility(u, tournament.game)])
+            );
             const riotMap = new Map(
-                riotUsers.map(u => [String(u._id), u.connections?.riot?.verified ? `${u.connections.riot.gameName}#${u.connections.riot.tagLine}` : ''])
+                riotUsers.map((u) => {
+                    const state = riotEligibilityMap.get(String(u._id));
+                    return [String(u._id), state?.eligible ? state.riotId : ''];
+                })
             );
             const mlbbUsers = users.length
                 ? await User.find({ _id: { $in: users } }).select('connections.mlbb')
@@ -1451,7 +1481,10 @@ export const registerTeam = async (req, res) => {
                     return !p?.gameId;
                 });
                 if (missing) {
-                    return res.status(400).json({ message: 'Todos los titulares deben tener Riot vinculado' });
+                    return res.status(400).json({ message: isValorantGame(tournament.game)
+                        ? 'Todos los titulares deben tener cuenta Riot vinculada y autorización VALORANT mediante Riot Sign On.'
+                        : 'Todos los titulares deben tener Riot vinculado'
+                    });
                 }
             }
             if (requiresMlbb) {

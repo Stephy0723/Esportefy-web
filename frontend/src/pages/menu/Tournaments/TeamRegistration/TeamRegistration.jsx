@@ -15,6 +15,8 @@ const normalizeGame = (value) => {
   return String(normalizeSupportedGameName(value) || value || '').trim().toLowerCase();
 };
 
+const isValorantGame = (value) => normalizeGame(value) === 'valorant';
+
 const TeamRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,7 +62,9 @@ const TeamRegistration = () => {
   const teamComplete = expectedStarters > 0 && filledStarters >= expectedStarters;
   const gameMatches = !tournamentGameNormalized || normalizeGame(selectedTeam?.game) === tournamentGameNormalized;
   const requiresRiot = Boolean(tournament.riotRequirements?.required) || isSupportedRiotGame(tournament.game);
+  const requiresValorantRso = requiresRiot && isValorantGame(tournament.game);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
+  const hasValorantRso = currentUser?.connections?.riot?.products?.valorant?.consentGranted === true;
   const requiresMlbb = isSupportedMlbbGame(tournament.game);
   const hasMlbbLinked = isMlbbVerifiedStatus(
     normalizeMlbbVerificationStatus(
@@ -111,7 +115,7 @@ const TeamRegistration = () => {
     && gameMatches
     && (!requiresUniversityTeam
       || (requesterCanRegisterSelectedTeam && universityTeamValid && !universityPlayersMissingLinkedUser && !universityMismatch))
-    && (!requiresRiot || (hasRiotLinked && !startersMissingRiotId))
+    && (!requiresRiot || (hasRiotLinked && (!requiresValorantRso || hasValorantRso) && !startersMissingRiotId))
     && (!requiresMlbb || (hasMlbbLinked && !mlbbPlayersMissingId && !mlbbPlayersMissingLinkedUser));
 
   useEffect(() => {
@@ -169,6 +173,10 @@ const TeamRegistration = () => {
     }
     if (requiresRiot && !hasRiotLinked) {
       alert('Debes vincular tu cuenta Riot para inscribirte.');
+      return;
+    }
+    if (requiresValorantRso && !hasValorantRso) {
+      alert('Debes autorizar VALORANT con Riot Sign On en Settings para inscribirte.');
       return;
     }
     if (requiresRiot && startersMissingRiotId) {
@@ -303,6 +311,9 @@ const TeamRegistration = () => {
                   ) : null}
                   {requiresRiot && !hasRiotLinked ? (
                     <p className="validation-error">Debes vincular tu cuenta Riot en Settings.</p>
+                  ) : null}
+                  {requiresValorantRso && !hasValorantRso ? (
+                    <p className="validation-error">Debes autorizar VALORANT con Riot Sign On en Settings.</p>
                   ) : null}
                   {requiresRiot && startersMissingRiotId ? (
                     <p className="validation-error">Faltan Riot ID en titulares.</p>

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { formatTournamentPublicId } from '../../../../utils/publicIds';
+import { normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
 import './TournamentPublic.css';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
@@ -159,6 +160,7 @@ const TournamentPublicView = () => {
   const showBracket = settings.showBracket !== false;
   const displaySponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
   const displayRegistrations = Array.isArray(data.registrations) ? data.registrations : [];
+  const isValorantTournament = normalizeSupportedGameName(data.game) === 'Valorant';
 
   return (
     <div className="tpv-page">
@@ -200,6 +202,15 @@ const TournamentPublicView = () => {
           </article>
         ))}
       </section>
+
+      {isValorantTournament ? (
+        <section className="tpv-disclaimer" aria-label="VALORANT tournament disclaimer">
+          <span className="tpv-disclaimer__eyebrow">VALORANT Community Competition</span>
+          <p>
+            This competition is not affiliated with or sponsored by Riot Games, Inc. or VALORANT Esports.
+          </p>
+        </section>
+      ) : null}
 
       <div className="tpv-layout">
         <div className="tpv-main">

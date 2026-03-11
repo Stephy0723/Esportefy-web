@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import Chart from 'react-apexcharts';
-import { FaCheck, FaCheckCircle, FaDiscord, FaGamepad, FaPlusCircle, FaSteam, FaTwitch } from 'react-icons/fa';
-import { SiEpicgames, SiRiotgames } from 'react-icons/si';
+import { FaCheck, FaCheckCircle, FaDiscord, FaGamepad, FaPlusCircle, FaShieldAlt, FaSteam, FaTwitch } from 'react-icons/fa';
+import { SiEpicgames } from 'react-icons/si';
 import { API_URL } from '../../../config/api';
 import PageHud from '../../../components/PageHud/PageHud';
 import Footer from '../../../components/Home/Footer';
@@ -67,7 +67,7 @@ const SECTIONS = [
 
 /* ── Connection providers ── */
 const CONNECTION_PROVIDERS = [
-    { id: 'riot',    icon: 'bx bxs-shield-alt-2', iconComponent: SiRiotgames, name: 'Riot Games',      color: '#ff4655', fields: ['gameName','tagLine'], verifiedKey: 'riot' },
+    { id: 'riot',    icon: 'bx bxs-shield-alt-2', iconComponent: FaShieldAlt, name: 'Cuenta Riot',     color: '#ff4655', fields: ['gameName','tagLine'], verifiedKey: 'riot' },
     { id: 'discord', icon: 'bx bxl-discord-alt',  iconComponent: FaDiscord,   name: 'Discord',         color: '#5865F2', fields: ['username'],           verifiedKey: 'discord' },
     { id: 'moonton', icon: 'bx bx-game',          iconComponent: FaGamepad,   name: 'Moonton (MLBB)',  color: '#00b4d8', fields: ['gameId'],             verifiedKey: 'moonton' },
     { id: 'steam',   icon: 'bx bxl-steam',        iconComponent: FaSteam,     name: 'Steam',           color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam', comingSoon: true },

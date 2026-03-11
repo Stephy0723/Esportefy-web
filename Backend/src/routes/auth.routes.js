@@ -37,7 +37,10 @@ import {
   unlinkRiotAccount,
   syncRiotNow,
   validateRiotId,
-  riotStatus
+  riotStatus,
+  startValorantRso,
+  valorantRsoCallback,
+  valorantRsoStatus
 } from '../controllers/riot.controller.js';
 import {
   validateMlbbId,
@@ -102,8 +105,11 @@ router.patch('/organizer/:userId/approve', verifyToken, verifyOrganizerAction);
 ========================= */
 router.post('/riot/link/init', verifyToken, rlRiot, initRiotLink);
 router.post('/riot/link/confirm', verifyToken, rlRiot, confirmRiotLink);
+router.post('/riot/valorant/start', verifyToken, rlRiot, startValorantRso);
 router.delete('/riot', verifyToken, unlinkRiotAccount);
 router.get('/riot/status', verifyToken, rlRiot, riotStatus);
+router.get('/riot/valorant/status', verifyToken, rlRiot, valorantRsoStatus);
+router.get('/riot/valorant/callback', valorantRsoCallback);
 
 // (Opcional) sync manual
 router.post('/riot/sync', verifyToken, rlRiot, syncRiotNow);

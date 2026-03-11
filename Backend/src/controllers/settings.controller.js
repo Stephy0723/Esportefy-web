@@ -1,6 +1,28 @@
 import User from "../models/User.js";
 import AdminAuditLog from '../models/AdminAuditLog.js';
 
+const normalizeBoolean = (value, fallback = false) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  }
+  if (typeof value === 'number') {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  return fallback;
+};
+
+const normalizePrivacy = (incoming = {}, current = {}) => ({
+  allowTeamInvites: normalizeBoolean(incoming.allowTeamInvites, current.allowTeamInvites !== false),
+  showOnlineStatus: normalizeBoolean(incoming.showOnlineStatus, current.showOnlineStatus !== false),
+  allowTournamentInvites: normalizeBoolean(incoming.allowTournamentInvites, current.allowTournamentInvites !== false),
+  showPublicUserCode: normalizeBoolean(incoming.showPublicUserCode, current.showPublicUserCode !== false),
+  showPublicRiotHandle: normalizeBoolean(incoming.showPublicRiotHandle, current.showPublicRiotHandle === true)
+});
+
 
 export const getSettings = async (req, res) => {
   const user = await User.findById(req.userId).select("privacy");
@@ -8,15 +30,22 @@ export const getSettings = async (req, res) => {
 };
 
 export const updatePrivacy = async (req, res) => {
-  const { privacy } = req.body;
+  const currentUser = await User.findById(req.userId).select("privacy");
+  if (!currentUser) {
+    return res.status(404).json({ message: 'Usuario no encontrado' });
+  }
 
-  const user = await User.findByIdAndUpdate(
-    req.userId,
-    { privacy },
-    { new: true }
-  ).select("privacy");
+  const rawPrivacy = req.body?.privacy && typeof req.body.privacy === 'object'
+    ? req.body.privacy
+    : {};
+  const currentPrivacy = currentUser.privacy?.toObject
+    ? currentUser.privacy.toObject()
+    : (currentUser.privacy || {});
 
-  res.json(user);
+  currentUser.privacy = normalizePrivacy(rawPrivacy, currentPrivacy);
+  await currentUser.save();
+
+  res.json({ privacy: currentUser.privacy });
 };
 
 
@@ -105,4 +134,3 @@ export const getAdminAuditLogs = async (req, res) => {
     return res.status(500).json({ message: 'Error obteniendo auditoría admin.' });
   }
 };
-

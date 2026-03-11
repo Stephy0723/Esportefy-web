@@ -146,15 +146,24 @@ export const createTeam = async (req, res) => {
         }
 
         if (isSupportedRiotGame(parsedFormData.game)) {
-            const linked = await requireRiotLinked(req.userId);
-            if (!linked) {
-                return res.status(400).json({ message: "Debes vincular tu cuenta Riot en Conexiones para crear equipo" });
+            const linked = await requireRiotLinked(req.userId, parsedFormData.game, 'crear equipo');
+            if (!linked.ok) {
+                return res.status(400).json({ message: linked.message });
             }
             if (process.env.RIOT_API_KEY) {
                 const riotCheck = await validateRiotAccount(parsedFormData.leaderIgn, parsedFormData.leaderGameId);
                 if (!riotCheck.ok) {
                     console.warn('[createTeam] Riot validation failed:', riotCheck.message);
                     return res.status(400).json({ message: riotCheck.message });
+                }
+                const riotMatch = await ensureRiotPlayerMatchesLinkedUser(
+                    req.userId,
+                    parsedFormData.leaderIgn,
+                    parsedFormData.leaderGameId,
+                    parsedFormData.game
+                );
+                if (!riotMatch.ok) {
+                    return res.status(400).json({ message: riotMatch.message });
                 }
                 const riotUnique = await ensureRiotIdNotInOtherTeam(
                     parsedFormData.game,
@@ -730,9 +739,50 @@ const getMlbbRosterPlayers = (roster = {}) => {
     return [...starters, ...subs];
 };
 
-const requireRiotLinked = async (userId) => {
+const isValorantGame = (game = '') => normalizeSupportedGameName(game) === 'Valorant';
+
+const getRiotConnectionState = async (userId) => {
     const user = await User.findById(userId).select('connections.riot');
-    return Boolean(user?.connections?.riot?.verified);
+    return {
+        verified: Boolean(user?.connections?.riot?.verified && user?.connections?.riot?.puuid),
+        gameName: String(user?.connections?.riot?.gameName || '').trim(),
+        tagLine: String(user?.connections?.riot?.tagLine || '').trim(),
+        consentGranted: user?.connections?.riot?.products?.valorant?.consentGranted === true
+    };
+};
+
+const buildRiotLinkRequirementMessage = (game = '', action = 'continuar') => {
+    if (isValorantGame(game)) {
+        return `Debes autorizar VALORANT con Riot Sign On en Conexiones para ${action}.`;
+    }
+    return `Debes vincular tu cuenta Riot en Conexiones para ${action}.`;
+};
+
+const requireRiotLinked = async (userId, game = '', action = 'continuar') => {
+    const conn = await getRiotConnectionState(userId);
+    if (!conn.verified) {
+        return { ok: false, message: buildRiotLinkRequirementMessage(game, action), connection: conn };
+    }
+    if (isValorantGame(game) && conn.consentGranted !== true) {
+        return { ok: false, message: buildRiotLinkRequirementMessage(game, action), connection: conn };
+    }
+    return { ok: true, message: '', connection: conn };
+};
+
+const ensureRiotPlayerMatchesLinkedUser = async (userId, gameName, tagLine, game = '') => {
+    const linked = await requireRiotLinked(userId, game);
+    if (!linked.ok) return linked;
+
+    const expectedGameName = String(linked?.connection?.gameName || '').trim().toLowerCase();
+    const expectedTagLine = String(linked?.connection?.tagLine || '').trim().toLowerCase();
+    const actualGameName = String(gameName || '').trim().toLowerCase();
+    const actualTagLine = String(tagLine || '').trim().toLowerCase();
+
+    if (!actualGameName || !actualTagLine || actualGameName !== expectedGameName || actualTagLine !== expectedTagLine) {
+        return { ok: false, message: 'El Riot ID del jugador no coincide con su cuenta Riot vinculada.' };
+    }
+
+    return { ok: true, message: '', connection: linked.connection };
 };
 
 const getMlbbConnectionState = async (userId) => {
@@ -954,10 +1004,12 @@ export const joinTeam = async (req, res) => {
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
         if (isSupportedRiotGame(team.game)) {
-            const ok = await requireRiotLinked(req.userId);
-            if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para unirte a este equipo" });
+            const linked = await requireRiotLinked(req.userId, team.game, 'unirte a este equipo');
+            if (!linked.ok) return res.status(400).json({ message: linked.message });
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
+            const riotMatch = await ensureRiotPlayerMatchesLinkedUser(req.userId, player?.nickname, player?.gameId, team.game);
+            if (!riotMatch.ok) return res.status(400).json({ message: riotMatch.message });
             const riotUnique = await ensureRiotIdNotInOtherTeam(
                 team.game,
                 player?.nickname,
@@ -1078,9 +1130,23 @@ export const addMemberDirect = async (req, res) => {
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
 
-        if (isSupportedRiotGame(team.game)) {
+        if (isSupportedRiotGame(team.game) && slotType !== 'coach') {
+            if (!playerPayload?.user) {
+                return res.status(400).json({
+                    message: 'En equipos Riot no puedes agregar jugadores manuales sin usuario vinculado.'
+                });
+            }
+            const linked = await requireRiotLinked(playerPayload.user, team.game, 'integrar este roster');
+            if (!linked.ok) return res.status(400).json({ message: linked.message });
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
+            const riotMatch = await ensureRiotPlayerMatchesLinkedUser(
+                playerPayload.user,
+                player?.nickname,
+                player?.gameId,
+                team.game
+            );
+            if (!riotMatch.ok) return res.status(400).json({ message: riotMatch.message });
             const riotUnique = await ensureRiotIdNotInOtherTeam(
                 team.game,
                 player?.nickname,
@@ -1210,10 +1276,10 @@ export const inviteFriendToTeam = async (req, res) => {
         }
 
         if (isSupportedRiotGame(team.game) && normalizedSlotType !== 'coach') {
-            const riotLinked = await requireRiotLinked(target._id);
-            if (!riotLinked) {
+            const riotLinked = await requireRiotLinked(target._id, team.game, 'recibir invitación para este equipo');
+            if (!riotLinked.ok) {
                 return res.status(400).json({
-                    message: 'Este usuario debe vincular su cuenta Riot antes de recibir invitación para este equipo.'
+                    message: riotLinked.message
                 });
             }
         }
@@ -1479,10 +1545,12 @@ export const requestJoinTeam = async (req, res) => {
             if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
         }
         if (isSupportedRiotGame(team.game)) {
-            const ok = await requireRiotLinked(req.userId);
-            if (!ok) return res.status(400).json({ message: "Debes vincular tu cuenta Riot para solicitar ingreso" });
+            const linked = await requireRiotLinked(req.userId, team.game, 'solicitar ingreso');
+            if (!linked.ok) return res.status(400).json({ message: linked.message });
             const riotCheck = await validateRiotAccount(player?.nickname, player?.gameId);
             if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
+            const riotMatch = await ensureRiotPlayerMatchesLinkedUser(req.userId, player?.nickname, player?.gameId, team.game);
+            if (!riotMatch.ok) return res.status(400).json({ message: riotMatch.message });
             const riotUnique = await ensureRiotIdNotInOtherTeam(
                 team.game,
                 player?.nickname,
@@ -1599,10 +1667,17 @@ export const handleJoinRequest = async (req, res) => {
                 if (!universityCheck.ok) return res.status(400).json({ message: universityCheck.message });
             }
             if (isSupportedRiotGame(team.game)) {
-                const ok = await requireRiotLinked(reqDoc.user);
-                if (!ok) return res.status(400).json({ message: "El jugador debe vincular su cuenta Riot" });
+                const linked = await requireRiotLinked(reqDoc.user, team.game, 'integrar este equipo');
+                if (!linked.ok) return res.status(400).json({ message: linked.message });
                 const riotCheck = await validateRiotAccount(reqDoc.player?.nickname, reqDoc.player?.gameId);
                 if (!riotCheck.ok) return res.status(400).json({ message: riotCheck.message });
+                const riotMatch = await ensureRiotPlayerMatchesLinkedUser(
+                    reqDoc.user,
+                    reqDoc.player?.nickname,
+                    reqDoc.player?.gameId,
+                    team.game
+                );
+                if (!riotMatch.ok) return res.status(400).json({ message: riotMatch.message });
                 const riotUnique = await ensureRiotIdNotInOtherTeam(
                     team.game,
                     reqDoc.player?.nickname,

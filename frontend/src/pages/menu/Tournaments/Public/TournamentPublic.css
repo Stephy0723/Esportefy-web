@@ -136,6 +136,33 @@
   gap: 12px;
 }
 
+.tpv-disclaimer {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, #ff4655 28%, var(--border-color));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, #2b0b12 76%, transparent), color-mix(in srgb, var(--bg-card) 88%, transparent)),
+    var(--bg-card);
+  box-shadow: 0 20px 40px color-mix(in srgb, var(--shadow-color) 46%, transparent);
+  display: grid;
+  gap: 6px;
+}
+
+.tpv-disclaimer__eyebrow {
+  color: #ff8d98;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tpv-disclaimer p {
+  margin: 0;
+  color: var(--text-main);
+  line-height: 1.7;
+}
+
 .tpv-highlight {
   padding: 16px 18px;
   border-radius: 18px;
