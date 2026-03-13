@@ -1,13 +1,15 @@
 import {
   validateMlbbId,
   linkMlbbAccount,
-  mlbbOpsStatus
+  mlbbOpsStatus,
+  reviewMlbbLink
 } from '../controllers/mlbb.controller.js';
 import User from '../models/User.js';
 import {
   enqueueMlbbReviewEmail,
   getMlbbMailQueueStatus
 } from '../services/mlbbMailQueue.js';
+import { recordAdminAudit } from '../services/auditLogger.js';
 
 jest.mock('../models/User.js');
 jest.mock('../services/mlbbMailQueue.js', () => ({
@@ -67,15 +69,18 @@ describe('MLBB controller hardening', () => {
   });
 
   test('linkMlbbAccount en modo manual deja pending y encola correo', async () => {
-    mockFindOneSelect(null);
-    mockFindByIdSelect({
+    const userDoc = {
       _id: 'u1',
       username: 'angel',
       fullName: 'Angel',
       email: 'angel@mail.com',
       connections: {},
+      gameProfiles: {},
+      notifications: [],
       save: jest.fn().mockResolvedValue(true)
-    });
+    };
+    mockFindOneSelect(null);
+    mockFindByIdSelect(userDoc);
 
     const req = {
       body: { playerId: '123456789', zoneId: '1234', ign: 'AngelML' },
@@ -88,6 +93,10 @@ describe('MLBB controller hardening', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body?.status).toBe('pending');
     expect(enqueueMlbbReviewEmail).toHaveBeenCalledTimes(1);
+    expect(userDoc.gameProfiles?.mlbb?.playerId).toBe('123456789');
+    expect(userDoc.gameProfiles?.mlbb?.verificationStatus).toBe('pending');
+    expect(Array.isArray(userDoc.notifications)).toBe(true);
+    expect(userDoc.notifications[0]?.title).toBe('Solicitud MLBB enviada');
   });
 
   test('linkMlbbAccount aplica cooldown anti-spam en pending', async () => {
@@ -135,5 +144,89 @@ describe('MLBB controller hardening', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body?.queue?.enabled).toBe(true);
     expect(res.body?.queue?.byStatus?.pending).toBe(2);
+  });
+
+  test('reviewMlbbLink aprueba y sincroniza snapshot/notificación', async () => {
+    const targetUser = {
+      _id: 'user-target',
+      username: 'angel',
+      fullName: 'Angel',
+      connections: {
+        mlbb: {
+          playerId: '123456789',
+          zoneId: '1234',
+          ign: 'AngelML',
+          verificationStatus: 'pending',
+          verified: false,
+          riskFlags: ['too_many_attempts_24h']
+        }
+      },
+      gameProfiles: {},
+      notifications: [],
+      save: jest.fn().mockResolvedValue(true)
+    };
+
+    mockFindByIdSelect({ isAdmin: true });
+    mockFindByIdSelect(targetUser);
+    mockFindOneSelect(null);
+
+    const req = {
+      params: { userId: 'user-target' },
+      body: { action: 'approve' },
+      userId: 'admin-1'
+    };
+    const res = createRes();
+
+    await reviewMlbbLink(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body?.status).toBe('verified_manual');
+    expect(targetUser.connections.mlbb.verified).toBe(true);
+    expect(targetUser.gameProfiles?.mlbb?.verified).toBe(true);
+    expect(targetUser.gameProfiles?.mlbb?.verificationStatus).toBe('verified_manual');
+    expect(targetUser.notifications[0]?.title).toBe('Cuenta MLBB aprobada');
+    expect(recordAdminAudit).toHaveBeenCalledTimes(1);
+  });
+
+  test('reviewMlbbLink rechaza y deja snapshot en rejected', async () => {
+    const targetUser = {
+      _id: 'user-target',
+      username: 'angel',
+      fullName: 'Angel',
+      connections: {
+        mlbb: {
+          playerId: '123456789',
+          zoneId: '1234',
+          ign: 'AngelML',
+          verificationStatus: 'pending',
+          verified: false,
+          riskFlags: ['retry_after_reject_too_soon']
+        }
+      },
+      gameProfiles: {},
+      notifications: [],
+      save: jest.fn().mockResolvedValue(true)
+    };
+
+    mockFindByIdSelect({ isAdmin: true });
+    mockFindByIdSelect(targetUser);
+
+    const req = {
+      params: { userId: 'user-target' },
+      body: { action: 'reject', reason: 'IDs no coinciden con la evidencia.' },
+      userId: 'admin-1'
+    };
+    const res = createRes();
+
+    await reviewMlbbLink(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body?.status).toBe('rejected');
+    expect(targetUser.connections.mlbb.verified).toBe(false);
+    expect(targetUser.connections.mlbb.linkedAt).toBeNull();
+    expect(targetUser.gameProfiles?.mlbb?.verificationStatus).toBe('rejected');
+    expect(targetUser.notifications[0]?.title).toBe('Cuenta MLBB rechazada');
+    expect(String(targetUser.notifications[0]?.message || '')).toContain('IDs no coinciden');
+    expect(recordAdminAudit).toHaveBeenCalledTimes(1);
   });
 });

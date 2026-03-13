@@ -11,6 +11,8 @@ import {
   normalizeMlbbVerificationStatus
 } from '../utils/mlbbStatus.js';
 
+const MAX_USER_NOTIFICATIONS = 80;
+
 function parseMlbbPayload(body = {}) {
   const playerIdRaw = String(body.playerId || body.userId || '').trim();
   const zoneIdRaw = String(body.zoneId || '').trim();
@@ -71,6 +73,74 @@ const getMlbbRejectedRetryCooldownMs = () => {
   const raw = Number.parseInt(String(process.env.MLBB_REJECT_RETRY_COOLDOWN_MINUTES || '120').trim(), 10);
   if (!Number.isFinite(raw) || raw < 0) return 120 * 60 * 1000;
   return raw * 60 * 1000;
+};
+
+const buildMlbbProfileSnapshot = (connection = {}, { now = new Date() } = {}) => {
+  const playerId = String(connection?.playerId || '').trim();
+  const zoneId = String(connection?.zoneId || '').trim();
+  const ign = String(connection?.ign || '').trim();
+  const verificationStatus = normalizeMlbbVerificationStatus(
+    connection?.verificationStatus,
+    connection?.verified
+  );
+  const verified = isMlbbVerifiedStatus(verificationStatus, connection?.verified);
+
+  return {
+    exists: Boolean(playerId && zoneId),
+    playerId,
+    zoneId,
+    ign,
+    verificationStatus,
+    verified,
+    lastSyncAt: now
+  };
+};
+
+const syncMlbbProfileSnapshot = (user, { clear = false, now = new Date() } = {}) => {
+  if (!user) return null;
+
+  user.gameProfiles = user.gameProfiles || {};
+  user.gameProfiles.mlbb = clear
+    ? buildMlbbProfileSnapshot({}, { now })
+    : buildMlbbProfileSnapshot(user?.connections?.mlbb || {}, { now });
+
+  return user.gameProfiles.mlbb;
+};
+
+const pushMlbbNotification = (user, {
+  title,
+  message,
+  type = 'info',
+  category = 'mlbb',
+  icon = 'bx bx-game',
+  color = '#00b4d8',
+  glow = false,
+  meta = {},
+  source = 'Esportefy MLBB',
+  createdAt = new Date()
+} = {}) => {
+  if (!user || !title || !message) return;
+
+  user.notifications = Array.isArray(user.notifications) ? user.notifications : [];
+  user.notifications.unshift({
+    type,
+    category,
+    title,
+    source,
+    message,
+    status: 'unread',
+    meta,
+    visuals: {
+      icon,
+      color,
+      glow
+    },
+    createdAt
+  });
+
+  if (user.notifications.length > MAX_USER_NOTIFICATIONS) {
+    user.notifications = user.notifications.slice(0, MAX_USER_NOTIFICATIONS);
+  }
 };
 
 const buildMlbbRiskContext = (user, payload) => {
@@ -174,7 +244,7 @@ export const linkMlbbAccount = async (req, res) => {
       return res.status(400).json({ message: parsed.message });
     }
 
-    const user = await User.findById(req.userId).select('email username fullName connections.mlbb');
+    const user = await User.findById(req.userId).select('email username fullName connections.mlbb gameProfiles.mlbb notifications');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     const existing = await ensureMlbbAccountNotLinkedElsewhere(parsed.playerId, parsed.zoneId, req.userId);
@@ -202,6 +272,7 @@ export const linkMlbbAccount = async (req, res) => {
     const nextStatus = needsManualReview
       ? 'pending'
       : 'verified_auto';
+    const nowDate = new Date();
 
     user.connections = user.connections || {};
     user.connections.mlbb = {
@@ -211,14 +282,39 @@ export const linkMlbbAccount = async (req, res) => {
       ign: parsed.ign || user.connections?.mlbb?.ign || '',
       verified: isMlbbVerifiedStatus(nextStatus),
       verificationStatus: nextStatus,
-      reviewRequestedAt: new Date(),
-      reviewedAt: needsManualReview ? undefined : new Date(),
+      reviewRequestedAt: nowDate,
+      reviewedAt: needsManualReview ? null : nowDate,
       reviewedBy: needsManualReview ? '' : 'system:auto',
       rejectReason: '',
-      linkedAt: needsManualReview ? undefined : new Date(),
+      linkedAt: needsManualReview ? null : nowDate,
       linkAttempts: riskContext.nextAttemptDates,
       riskFlags: riskContext.signals
     };
+    syncMlbbProfileSnapshot(user, { now: nowDate });
+
+    pushMlbbNotification(user, needsManualReview
+      ? {
+          title: 'Solicitud MLBB enviada',
+          message: 'Tu cuenta de Mobile Legends quedó en revisión.',
+          meta: {
+            playerId: parsed.playerId,
+            zoneId: parsed.zoneId,
+            status: nextStatus,
+            riskFlags: riskContext.signals
+          }
+        }
+      : {
+          title: 'Cuenta MLBB vinculada',
+          message: 'Tu cuenta de Mobile Legends quedó verificada en Esportefy.',
+          type: 'success',
+          color: '#22c55e',
+          glow: true,
+          meta: {
+            playerId: parsed.playerId,
+            zoneId: parsed.zoneId,
+            status: nextStatus
+          }
+        });
 
     await user.save();
 
@@ -298,9 +394,39 @@ export const processMlbbOpsQueue = async (req, res) => {
 
 export const unlinkMlbbAccount = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.userId, {
-      $unset: { 'connections.mlbb': '' }
-    });
+    const user = await User.findById(req.userId).select('connections.mlbb gameProfiles.mlbb notifications');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    const current = user?.connections?.mlbb || {};
+    const hadLinkedAccount = Boolean(
+      String(current?.playerId || '').trim()
+      || String(current?.zoneId || '').trim()
+      || normalizeMlbbVerificationStatus(current?.verificationStatus, current?.verified) !== 'unlinked'
+    );
+
+    user.connections = user.connections || {};
+    if (typeof user.set === 'function') {
+      user.set('connections.mlbb', undefined);
+    } else {
+      delete user.connections.mlbb;
+    }
+
+    const nowDate = new Date();
+    syncMlbbProfileSnapshot(user, { clear: true, now: nowDate });
+
+    if (hadLinkedAccount) {
+      pushMlbbNotification(user, {
+        title: 'Cuenta MLBB desvinculada',
+        message: 'Tu cuenta de Mobile Legends fue desvinculada.',
+        color: '#f97316',
+        meta: {
+          action: 'unlink'
+        },
+        createdAt: nowDate
+      });
+    }
+
+    await user.save();
     return res.json({ message: 'Cuenta de Mobile Legends desvinculada.' });
   } catch (error) {
     return res.status(500).json({ message: 'Error al desvincular cuenta de Mobile Legends.' });
@@ -309,7 +435,7 @@ export const unlinkMlbbAccount = async (req, res) => {
 
 export const mlbbStatus = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('connections.mlbb');
+    const user = await User.findById(req.userId).select('connections.mlbb gameProfiles.mlbb');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     const status = normalizeMlbbVerificationStatus(
@@ -321,6 +447,16 @@ export const mlbbStatus = async (req, res) => {
       && user?.connections?.mlbb?.playerId
       && user?.connections?.mlbb?.zoneId
     );
+    const review = {
+      reviewRequestedAt: user?.connections?.mlbb?.reviewRequestedAt || null,
+      reviewedAt: user?.connections?.mlbb?.reviewedAt || null,
+      reviewedBy: user?.connections?.mlbb?.reviewedBy || '',
+      rejectReason: user?.connections?.mlbb?.rejectReason || '',
+      riskFlags: Array.isArray(user?.connections?.mlbb?.riskFlags) ? user.connections.mlbb.riskFlags : []
+    };
+    const profile = user?.gameProfiles?.mlbb?.lastSyncAt
+      ? user.gameProfiles.mlbb
+      : buildMlbbProfileSnapshot(user?.connections?.mlbb || {});
 
     return res.json({
       linked,
@@ -339,6 +475,8 @@ export const mlbbStatus = async (req, res) => {
               ign: user.connections.mlbb.ign || ''
             }
           : null),
+      review,
+      profile,
       api: {
         keyConfigured: false,
         reachable: null,
@@ -425,7 +563,7 @@ export const reviewMlbbLink = async (req, res) => {
       return res.status(403).json({ message: 'No autorizado. Solo administradores.' });
     }
 
-    const target = await User.findById(userId).select('connections.mlbb');
+    const target = await User.findById(userId).select('connections.mlbb gameProfiles.mlbb notifications username fullName');
     if (!target) return res.status(404).json({ message: 'Usuario objetivo no encontrado.' });
 
     const currentStatus = String(target?.connections?.mlbb?.verificationStatus || '');
@@ -433,26 +571,70 @@ export const reviewMlbbLink = async (req, res) => {
       return res.status(400).json({ message: 'La cuenta MLBB del usuario no está pendiente de revisión.' });
     }
 
+    const nowDate = new Date();
+
     if (action === 'approve') {
+      const playerId = String(target?.connections?.mlbb?.playerId || '').trim();
+      const zoneId = String(target?.connections?.mlbb?.zoneId || '').trim();
+      if (!playerId || !zoneId) {
+        return res.status(400).json({ message: 'La solicitud MLBB no tiene un User ID y Zone ID válidos.' });
+      }
+
+      const existing = await ensureMlbbAccountNotLinkedElsewhere(playerId, zoneId, userId);
+      if (existing) {
+        return res.status(409).json({ message: 'Esta cuenta de Mobile Legends ya está vinculada a otro usuario.' });
+      }
+
       target.connections.mlbb = {
         ...(target.connections.mlbb || {}),
         verified: true,
         verificationStatus: 'verified_manual',
-        reviewedAt: new Date(),
+        reviewedAt: nowDate,
         reviewedBy: String(req.userId),
         rejectReason: '',
-        linkedAt: new Date(),
+        linkedAt: nowDate,
         riskFlags: []
       };
+      syncMlbbProfileSnapshot(target, { now: nowDate });
+      pushMlbbNotification(target, {
+        title: 'Cuenta MLBB aprobada',
+        message: 'Tu cuenta de Mobile Legends fue aprobada por el equipo de Esportefy.',
+        type: 'success',
+        color: '#22c55e',
+        glow: true,
+        meta: {
+          action: 'approve',
+          playerId,
+          zoneId,
+          status: 'verified_manual'
+        },
+        createdAt: nowDate
+      });
     } else {
       target.connections.mlbb = {
         ...(target.connections.mlbb || {}),
         verified: false,
         verificationStatus: 'rejected',
-        reviewedAt: new Date(),
+        reviewedAt: nowDate,
         reviewedBy: String(req.userId),
-        rejectReason: reason || 'Solicitud rechazada por revisión interna.'
+        rejectReason: reason || 'Solicitud rechazada por revisión interna.',
+        linkedAt: null
       };
+      syncMlbbProfileSnapshot(target, { now: nowDate });
+      pushMlbbNotification(target, {
+        title: 'Cuenta MLBB rechazada',
+        message: reason || 'Tu verificación de Mobile Legends fue rechazada. Revisa tus datos y vuelve a intentarlo.',
+        color: '#ef4444',
+        glow: true,
+        meta: {
+          action: 'reject',
+          playerId: String(target?.connections?.mlbb?.playerId || '').trim(),
+          zoneId: String(target?.connections?.mlbb?.zoneId || '').trim(),
+          reason: reason || 'Solicitud rechazada por revisión interna.',
+          status: 'rejected'
+        },
+        createdAt: nowDate
+      });
     }
 
     await target.save();

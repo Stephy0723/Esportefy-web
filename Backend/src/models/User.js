@@ -196,6 +196,19 @@ const UserSchema = new mongoose.Schema({
             },
             lastSyncAt: Date
         },
+        mlbb: {
+            exists: { type: Boolean, default: false },
+            playerId: { type: String, default: '' },
+            zoneId: { type: String, default: '' },
+            ign: { type: String, default: '' },
+            verificationStatus: {
+                type: String,
+                enum: ['unlinked', 'pending', 'verified', 'verified_auto', 'verified_manual', 'rejected'],
+                default: 'unlinked'
+            },
+            verified: { type: Boolean, default: false },
+            lastSyncAt: { type: Date, default: null }
+        },
         steam: {
             steamId: { type: String },
             verified: { type: Boolean, default: false }

@@ -586,12 +586,7 @@ const Dashboard = () => {
                 }
             );
             await fetchProfile();
-            const nextStatus = String(res?.data?.status || '');
-            setMlbbMsg(
-                nextStatus === 'pending'
-                    ? 'Solicitud enviada. Tu cuenta MLBB quedó en revisión.'
-                    : 'Cuenta MLBB vinculada correctamente.'
-            );
+            setMlbbMsg(res?.data?.message || 'Cuenta MLBB actualizada correctamente.');
         } catch (error) {
             setMlbbMsg(error.response?.data?.message || 'No se pudo vincular la cuenta MLBB.');
         } finally {
