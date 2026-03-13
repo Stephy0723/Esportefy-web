@@ -6,8 +6,10 @@ import {
     FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft,
     FaCamera, FaPaintBrush, FaCheck, FaExclamationTriangle,
     FaLink, FaTwitch, FaYoutube, FaTwitter, FaInstagram, FaTiktok,
-    FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake
+    FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake,
+    FaDiscord, FaSteam, FaPlaystation, FaXbox
 } from 'react-icons/fa';
+import { SiRiotgames, SiEpicgames, SiNintendoswitch } from 'react-icons/si';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { PLAYER_TAGS } from '../../../data/playerTags';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
@@ -17,7 +19,7 @@ import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import './EditProfile.css';
 
-// ─── Game assets ───
+// ─── Game assets (todos los juegos disponibles) ───
 import imgLol from '../../../assets/gameImages/lol.png';
 import imgMlbb from '../../../assets/gameImages/mlbb.png';
 import imgHok from '../../../assets/gameImages/hok.png';
@@ -28,18 +30,101 @@ import imgFortnite from '../../../assets/gameImages/fortnite.png';
 import imgCodm from '../../../assets/gameImages/codm.png';
 import imgMk11 from '../../../assets/gameImages/mk11.png';
 import imgMarioKart from '../../../assets/gameImages/mariokart.png';
+import imgValorant from '../../../assets/gameImages/Valorant.png';
+import imgApex from '../../../assets/gameImages/Apex_Legends_logo.png';
+import imgDota2 from '../../../assets/gameImages/Dota2.png';
+import imgWildRift from '../../../assets/gameImages/WildRift.png';
+import imgOverwatch from '../../../assets/gameImages/Overwatch2.png';
+import imgClashRoyale from '../../../assets/gameImages/clashroyale.png';
+import imgPubg from '../../../assets/gameImages/PubgMobile.jpg';
+import imgRocket from '../../../assets/gameImages/RocketLeague.png';
+import imgTft from '../../../assets/gameImages/teamfight.png';
+import imgSf6 from '../../../assets/gameImages/sf6.png';
+import imgTekken from '../../../assets/gameImages/Tekken8.png';
+import imgSiege from '../../../assets/gameImages/Rainbow Six Siege.png';
+import imgSmite from '../../../assets/gameImages/smite2.png';
+import imgFifa from '../../../assets/gameImages/Fifa.png';
+import imgStarcraft from '../../../assets/gameImages/StarCraft.png';
+import imgHearthstone from '../../../assets/gameImages/Hearthstone-Emblem.png';
+import imgRuneterra from '../../../assets/gameImages/Runeterra.jpg';
+import imgGenshin from '../../../assets/gameImages/genshinImpact.png';
+import imgWuwa from '../../../assets/gameImages/WutheringWaves.png';
+import imgAmongUs from '../../../assets/gameImages/amongUs.png';
+import imgFallGuys from '../../../assets/gameImages/FallGuys.png';
+import imgMinecraft from '../../../assets/gameImages/Minecraft.png';
+import imgPalworld from '../../../assets/gameImages/Palworld.png';
+import imgHalo from '../../../assets/gameImages/Halo.png';
+import imgWarzone from '../../../assets/gameImages/CallofDutyWarzone.png';
+import imgGtaV from '../../../assets/gameImages/grandtheftautogtav.png';
+import imgAov from '../../../assets/gameImages/ArenaOfValor.webp';
 
-const mobaGames = [
-    { id: 'lol', name: 'League of Legends', img: imgLol },
-    { id: 'mlbb', name: 'Mobile Legends', img: imgMlbb },
-    { id: 'hok', name: 'Honor of Kings', img: imgHok },
-    { id: 'marvel', name: 'Marvel Rivals', img: imgMarvel },
-    { id: 'moco', name: 'Mo.co', img: imgMoco },
-    { id: 'freefire', name: 'Free Fire', img: imgFreeFire },
-    { id: 'fortnite', name: 'Fortnite', img: imgFortnite },
-    { id: 'codm', name: 'CoD Mobile', img: imgCodm },
-    { id: 'mk11', name: 'Mortal Kombat', img: imgMk11 },
-    { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart }
+// Categorías de juegos
+const gameCategories = [
+    { id: 'all', name: 'Todos', icon: 'bx-grid-alt' },
+    { id: 'moba', name: 'MOBA', icon: 'bx-shield-quarter' },
+    { id: 'shooter', name: 'Shooter', icon: 'bx-crosshair' },
+    { id: 'battle-royale', name: 'Battle Royale', icon: 'bx-target-lock' },
+    { id: 'fighting', name: 'Pelea', icon: 'bx-boxing' },
+    { id: 'sports', name: 'Deportes', icon: 'bx-football' },
+    { id: 'strategy', name: 'Estrategia', icon: 'bx-chess' },
+    { id: 'rpg', name: 'RPG/Aventura', icon: 'bx-map-alt' },
+    { id: 'casual', name: 'Casual', icon: 'bx-happy' },
+];
+
+// Lista completa de juegos organizados por categoría
+const allGames = [
+    // MOBA
+    { id: 'lol', name: 'League of Legends', img: imgLol, category: 'moba' },
+    { id: 'mlbb', name: 'Mobile Legends', img: imgMlbb, category: 'moba' },
+    { id: 'hok', name: 'Honor of Kings', img: imgHok, category: 'moba' },
+    { id: 'dota2', name: 'Dota 2', img: imgDota2, category: 'moba' },
+    { id: 'wildrift', name: 'Wild Rift', img: imgWildRift, category: 'moba' },
+    { id: 'smite', name: 'Smite 2', img: imgSmite, category: 'moba' },
+    { id: 'aov', name: 'Arena of Valor', img: imgAov, category: 'moba' },
+    
+    // Shooter
+    { id: 'valorant', name: 'Valorant', img: imgValorant, category: 'shooter' },
+    { id: 'codm', name: 'CoD Mobile', img: imgCodm, category: 'shooter' },
+    { id: 'overwatch', name: 'Overwatch 2', img: imgOverwatch, category: 'shooter' },
+    { id: 'siege', name: 'Rainbow Six Siege', img: imgSiege, category: 'shooter' },
+    { id: 'halo', name: 'Halo Infinite', img: imgHalo, category: 'shooter' },
+    { id: 'marvel', name: 'Marvel Rivals', img: imgMarvel, category: 'shooter' },
+    
+    // Battle Royale
+    { id: 'fortnite', name: 'Fortnite', img: imgFortnite, category: 'battle-royale' },
+    { id: 'freefire', name: 'Free Fire', img: imgFreeFire, category: 'battle-royale' },
+    { id: 'apex', name: 'Apex Legends', img: imgApex, category: 'battle-royale' },
+    { id: 'pubg', name: 'PUBG Mobile', img: imgPubg, category: 'battle-royale' },
+    { id: 'warzone', name: 'Warzone', img: imgWarzone, category: 'battle-royale' },
+    
+    // Pelea
+    { id: 'mk11', name: 'Mortal Kombat', img: imgMk11, category: 'fighting' },
+    { id: 'sf6', name: 'Street Fighter 6', img: imgSf6, category: 'fighting' },
+    { id: 'tekken', name: 'Tekken 8', img: imgTekken, category: 'fighting' },
+    
+    // Deportes
+    { id: 'fifa', name: 'EA FC / FIFA', img: imgFifa, category: 'sports' },
+    { id: 'rocket', name: 'Rocket League', img: imgRocket, category: 'sports' },
+    { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart, category: 'sports' },
+    
+    // Estrategia / Cartas
+    { id: 'tft', name: 'Teamfight Tactics', img: imgTft, category: 'strategy' },
+    { id: 'clashroyale', name: 'Clash Royale', img: imgClashRoyale, category: 'strategy' },
+    { id: 'hearthstone', name: 'Hearthstone', img: imgHearthstone, category: 'strategy' },
+    { id: 'runeterra', name: 'Legends of Runeterra', img: imgRuneterra, category: 'strategy' },
+    { id: 'starcraft', name: 'StarCraft II', img: imgStarcraft, category: 'strategy' },
+    
+    // RPG / Aventura
+    { id: 'genshin', name: 'Genshin Impact', img: imgGenshin, category: 'rpg' },
+    { id: 'wuwa', name: 'Wuthering Waves', img: imgWuwa, category: 'rpg' },
+    { id: 'palworld', name: 'Palworld', img: imgPalworld, category: 'rpg' },
+    { id: 'minecraft', name: 'Minecraft', img: imgMinecraft, category: 'rpg' },
+    { id: 'gtav', name: 'GTA V Online', img: imgGtaV, category: 'rpg' },
+    { id: 'moco', name: 'Mo.co', img: imgMoco, category: 'rpg' },
+    
+    // Casual
+    { id: 'amongus', name: 'Among Us', img: imgAmongUs, category: 'casual' },
+    { id: 'fallguys', name: 'Fall Guys', img: imgFallGuys, category: 'casual' },
 ];
 
 const platformsList = [
@@ -95,6 +180,25 @@ const rolesList = [
     { id: 'Flex', label: 'Flex', icon: 'bx-transfer' }
 ];
 
+const socialPlatforms = [
+    { key: 'twitch', icon: <FaTwitch />, label: 'Twitch', placeholder: 'tu_canal', color: '#9146FF', prefix: 'twitch.tv/' },
+    { key: 'youtube', icon: <FaYoutube />, label: 'YouTube', placeholder: '@tu_canal', color: '#FF0000', prefix: 'youtube.com/' },
+    { key: 'twitter', icon: <FaTwitter />, label: 'X / Twitter', placeholder: '@usuario', color: '#1DA1F2', prefix: 'x.com/' },
+    { key: 'instagram', icon: <FaInstagram />, label: 'Instagram', placeholder: '@usuario', color: '#E4405F', prefix: 'instagram.com/' },
+    { key: 'tiktok', icon: <FaTiktok />, label: 'TikTok', placeholder: '@usuario', color: '#00f2ea', prefix: 'tiktok.com/@' },
+];
+
+const gamingConnections = [
+    { key: 'discord', icon: <FaDiscord />, label: 'Discord', color: '#5865F2', description: 'Chat y comunidad', settingsKey: 'discord' },
+    { key: 'riot', icon: <SiRiotgames />, label: 'Riot Games', color: '#D32936', description: 'LoL, Valorant, TFT', settingsKey: 'riot' },
+    { key: 'mlbb', icon: <FaGamepad />, label: 'Mobile Legends', color: '#FF6B35', description: 'MLBB ID', settingsKey: 'mlbb' },
+    { key: 'steam', icon: <FaSteam />, label: 'Steam', color: '#1b2838', description: 'PC Gaming', settingsKey: 'steam' },
+    { key: 'epic', icon: <SiEpicgames />, label: 'Epic Games', color: '#2F2D2E', description: 'Fortnite, Rocket League', settingsKey: 'epic' },
+    { key: 'playstation', icon: <FaPlaystation />, label: 'PlayStation', color: '#003087', description: 'PSN ID', settingsKey: 'playstation' },
+    { key: 'xbox', icon: <FaXbox />, label: 'Xbox', color: '#107C10', description: 'Gamertag', settingsKey: 'xbox' },
+    { key: 'nintendo', icon: <SiNintendoswitch />, label: 'Nintendo', color: '#E60012', description: 'Switch', settingsKey: 'nintendo' },
+];
+
 const EditProfile = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -105,7 +209,11 @@ const EditProfile = () => {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState('');
     const [hasChanges, setHasChanges] = useState(false);
+    const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+    const [gameQuery, setGameQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
     const [currentUserId, setCurrentUserId] = useState('');
+    const [userConnections, setUserConnections] = useState({ discord: {}, riot: {}, mlbb: {} }); // Real connections from Settings
     const [phoneAvailability, setPhoneAvailability] = useState({
         loading: false,
         checked: false,
@@ -116,7 +224,6 @@ const EditProfile = () => {
 
     const [formData, setFormData] = useState({
         username: '',
-        userCode: '',
         fullName: '',
         country: '',
         phone: '',
@@ -132,8 +239,8 @@ const EditProfile = () => {
         preferredRoles: [],
         lookingForTeam: false,
         socialLinks: { twitch: '', youtube: '', twitter: '', instagram: '', tiktok: '' },
+        gamingConnections: { discord: '', riotId: '', steam: '', epic: '', playstation: '', xbox: '', nintendo: '' },
         isProfileHidden: false,
-        showPublicUserCode: true,
         selectedFrameId: 'none',
         selectedBgId: 'bg-1',
         status: 'online',
@@ -143,10 +250,23 @@ const EditProfile = () => {
     const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
     const normalizePhone = (value = '') => String(value).replace(/[^\d]/g, '');
     const isValidPhone = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
+    const sanitizeSocialHandle = (value = '') =>
+        String(value)
+            .trim()
+            .replace(/^https?:\/\/(www\.)?/i, '')
+            .replace(/^[a-z]+\.(com|tv)\//i, '')
+            .replace(/^@+/, '');
 
     // Helpers for live preview
     const currentFrame = FRAMES.find(f => f.id === formData.selectedFrameId) || FRAMES[0];
     const currentBg = BACKGROUNDS.find(b => b.id === formData.selectedBgId) || BACKGROUNDS[0];
+    
+    // Filtrado de juegos por categoría y búsqueda
+    const filteredGames = allGames.filter(game => {
+        const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
+        const matchesSearch = game.name.toLowerCase().includes(gameQuery.toLowerCase().trim());
+        return matchesCategory && matchesSearch;
+    });
 
     // ─── Fetch profile from API (not stale localStorage) ───
     const fetchProfile = useCallback(async () => {
@@ -158,9 +278,14 @@ const EditProfile = () => {
             });
             const u = res.data;
             setCurrentUserId(u?._id || u?.id || '');
+            // Load real connections from Settings
+            setUserConnections({
+                discord: u.connections?.discord || {},
+                riot: u.connections?.riot || {},
+                mlbb: u.connections?.mlbb || {}
+            });
             setFormData({
                 username: u.username || '',
-                userCode: u.userCode || '',
                 fullName: u.fullName || '',
                 country: u.country || '',
                 phone: u.phone || '',
@@ -182,8 +307,16 @@ const EditProfile = () => {
                     instagram: u.socialLinks?.instagram || '',
                     tiktok: u.socialLinks?.tiktok || ''
                 },
+                gamingConnections: {
+                    discord: u.gamingConnections?.discord || '',
+                    riotId: u.gamingConnections?.riotId || '',
+                    steam: u.gamingConnections?.steam || '',
+                    epic: u.gamingConnections?.epic || '',
+                    playstation: u.gamingConnections?.playstation || '',
+                    xbox: u.gamingConnections?.xbox || '',
+                    nintendo: u.gamingConnections?.nintendo || ''
+                },
                 isProfileHidden: u.isProfileHidden || false,
-                showPublicUserCode: u?.privacy?.showPublicUserCode !== false,
                 selectedFrameId: u.selectedFrameId || 'none',
                 selectedBgId: u.selectedBgId || 'bg-1',
                 status: u.status || 'online',
@@ -272,7 +405,15 @@ const EditProfile = () => {
     const handleSocialChange = (platform, value) => {
         setFormData(prev => ({
             ...prev,
-            socialLinks: { ...prev.socialLinks, [platform]: value }
+            socialLinks: { ...prev.socialLinks, [platform]: sanitizeSocialHandle(value) }
+        }));
+        setHasChanges(true);
+    };
+
+    const handleGamingChange = (platform, value) => {
+        setFormData(prev => ({
+            ...prev,
+            gamingConnections: { ...prev.gamingConnections, [platform]: value.trim() }
         }));
         setHasChanges(true);
     };
@@ -419,34 +560,17 @@ const EditProfile = () => {
         }
 
         // Array fields — send as comma-separated (backend splits on comma)
-        const arrayFields = [
-            'selectedGames',
-            'platforms',
-            'goals',
-            'experience',
-            'languages',
-            'preferredRoles'
-        ];
+        const arrayFields = ['selectedGames', 'platforms', 'goals', 'experience', 'languages', 'preferredRoles'];
         arrayFields.forEach(key => {
             const val = formData[key];
-            if (Array.isArray(val)) {
+            if (Array.isArray(val) && val.length > 0) {
                 data.append(key, val.join(','));
             }
         });
-
-        // Boolean fields — always send, so user can also disable them
         data.append('lookingForTeam', String(Boolean(formData.lookingForTeam)));
         data.append('isProfileHidden', String(Boolean(formData.isProfileHidden)));
-        data.append('showPublicUserCode', String(Boolean(formData.showPublicUserCode)));
-
-        // Social links — send as JSON payload
-        data.append('socialLinks', JSON.stringify({
-            twitch: formData.socialLinks?.twitch || '',
-            youtube: formData.socialLinks?.youtube || '',
-            twitter: formData.socialLinks?.twitter || '',
-            instagram: formData.socialLinks?.instagram || '',
-            tiktok: formData.socialLinks?.tiktok || ''
-        }));
+        data.append('socialLinks', JSON.stringify(formData.socialLinks || {}));
+        data.append('gamingConnections', JSON.stringify(formData.gamingConnections || {}));
 
         if (file) data.append('avatarFile', file);
 
@@ -458,8 +582,6 @@ const EditProfile = () => {
             });
             // Sync localStorage for other components
             localStorage.setItem('esportefyUser', JSON.stringify(res.data));
-            sessionStorage.setItem('esportefyUser', JSON.stringify(res.data));
-            window.dispatchEvent(new Event('user-update'));
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
             setHasChanges(false);
             setFile(null);
@@ -467,30 +589,37 @@ const EditProfile = () => {
             const u = res.data;
             setFormData(prev => ({
                 ...prev,
+                username: u.username || prev.username,
+                fullName: u.fullName || prev.fullName,
+                country: u.country || prev.country,
+                phone: u.phone || prev.phone,
+                gender: u.gender || prev.gender,
+                birthDate: u.birthDate ? u.birthDate.split('T')[0] : prev.birthDate,
                 avatar: resolveMediaUrl(u.avatar) || prev.avatar,
-                bio: u.bio ?? prev.bio,
-                fullName: u.fullName ?? prev.fullName,
-                username: u.username ?? prev.username,
-                userCode: u.userCode ?? prev.userCode,
-                country: u.country ?? prev.country,
-                phone: u.phone ?? prev.phone,
-                gender: u.gender ?? prev.gender,
-                birthDate: u.birthDate ? String(u.birthDate).split('T')[0] : prev.birthDate,
+                bio: u.bio || prev.bio,
                 selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : prev.selectedGames,
                 platforms: Array.isArray(u.platforms) ? u.platforms : prev.platforms,
                 goals: Array.isArray(u.goals) ? u.goals : prev.goals,
                 experience: Array.isArray(u.experience) ? u.experience : prev.experience,
                 languages: Array.isArray(u.languages) ? u.languages : prev.languages,
                 preferredRoles: Array.isArray(u.preferredRoles) ? u.preferredRoles : prev.preferredRoles,
-                lookingForTeam: typeof u.lookingForTeam === 'boolean' ? u.lookingForTeam : prev.lookingForTeam,
-                isProfileHidden: typeof u.isProfileHidden === 'boolean' ? u.isProfileHidden : prev.isProfileHidden,
-                showPublicUserCode: u?.privacy?.showPublicUserCode !== false,
+                lookingForTeam: Boolean(u.lookingForTeam),
+                isProfileHidden: Boolean(u.isProfileHidden),
                 socialLinks: {
-                    twitch: u.socialLinks?.twitch ?? prev.socialLinks.twitch,
-                    youtube: u.socialLinks?.youtube ?? prev.socialLinks.youtube,
-                    twitter: u.socialLinks?.twitter ?? prev.socialLinks.twitter,
-                    instagram: u.socialLinks?.instagram ?? prev.socialLinks.instagram,
-                    tiktok: u.socialLinks?.tiktok ?? prev.socialLinks.tiktok
+                    twitch: u.socialLinks?.twitch || '',
+                    youtube: u.socialLinks?.youtube || '',
+                    twitter: u.socialLinks?.twitter || '',
+                    instagram: u.socialLinks?.instagram || '',
+                    tiktok: u.socialLinks?.tiktok || ''
+                },
+                gamingConnections: {
+                    discord: u.gamingConnections?.discord || '',
+                    riotId: u.gamingConnections?.riotId || '',
+                    steam: u.gamingConnections?.steam || '',
+                    epic: u.gamingConnections?.epic || '',
+                    playstation: u.gamingConnections?.playstation || '',
+                    xbox: u.gamingConnections?.xbox || '',
+                    nintendo: u.gamingConnections?.nintendo || ''
                 },
                 selectedFrameId: u.selectedFrameId || prev.selectedFrameId,
                 selectedBgId: u.selectedBgId || prev.selectedBgId,
@@ -520,91 +649,158 @@ const EditProfile = () => {
     return (
         <div className="ep fade-in">
             <PageHud page="EDITAR PERFIL" />
-            {/* Top bar */}
-            <div className="ep__topbar">
-                <button className="ep__back" onClick={() => navigate('/profile')}>
-                    <FaArrowLeft /> Volver al Perfil
-                </button>
-                {hasChanges && <span className="ep__unsaved">Cambios sin guardar</span>}
-            </div>
-
-            <div className="ep__layout">
-                {/* Sidebar */}
-                <aside className="ep__sidebar">
-                    <h2>Editar Perfil</h2>
-                    <nav>
-                        {[
-                            { id: 'general', icon: <FaUser />, label: 'General' },
-                            { id: 'social', icon: <FaLink />, label: 'Social' },
-                            { id: 'customization', icon: <FaPaintBrush />, label: 'Personalización' },
-                            { id: 'gamer', icon: <FaGamepad />, label: 'Perfil Gamer' },
-                            { id: 'privacy', icon: <FaLock />, label: 'Privacidad' },
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                className={activeTab === tab.id ? 'active' : ''}
-                                onClick={() => setActiveTab(tab.id)}
-                            >
-                                {tab.icon} {tab.label}
+            
+            {/* Animated background elements */}
+            <div className="ep__grid-overlay" />
+            
+            {/* Unsaved Changes Modal */}
+            {showUnsavedModal && (
+                <div className="ep__unsaved-modal-overlay" onClick={() => setShowUnsavedModal(false)}>
+                    <div className="ep__unsaved-modal" onClick={e => e.stopPropagation()}>
+                        <div className="ep__unsaved-modal-icon">
+                            <FaExclamationTriangle />
+                        </div>
+                        <h3 className="ep__unsaved-modal-title">Cambios sin guardar</h3>
+                        <p className="ep__unsaved-modal-desc">
+                            Tienes cambios pendientes que no se han guardado. ¿Qué deseas hacer?
+                        </p>
+                        <div className="ep__unsaved-modal-actions">
+                            <button type="button" className="ep__unsaved-btn save" onClick={async () => {
+                                setShowUnsavedModal(false);
+                                await handleSave(new Event('submit'));
+                                navigate('/profile');
+                            }}>
+                                <FaSave /> Guardar y salir
                             </button>
-                        ))}
-                    </nav>
-                </aside>
+                            <button type="button" className="ep__unsaved-btn discard" onClick={() => {
+                                setShowUnsavedModal(false);
+                                navigate('/profile');
+                            }}>
+                                Descartar cambios
+                            </button>
+                            <button type="button" className="ep__unsaved-btn cancel" onClick={() => setShowUnsavedModal(false)}>
+                                Seguir editando
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            <div className="ep__wrapper">
+                {/* Header Bar */}
+                <header className="ep__header">
+                    <div className="ep__header-left">
+                        <button type="button" className="ep__back" onClick={() => hasChanges ? setShowUnsavedModal(true) : navigate('/profile')}>
+                            <FaArrowLeft />
+                        </button>
+                        <div className="ep__header-title">
+                            <h1>Editar Perfil</h1>
+                            <span>Personaliza tu identidad gamer</span>
+                        </div>
+                    </div>
+                    <div className="ep__header-right">
+                        {hasChanges && <span className="ep__unsaved">Cambios sin guardar</span>}
+                    </div>
+                </header>
 
-                {/* Content */}
-                <main className="ep__content">
-                    <form onSubmit={handleSave}>
+                <div className="ep__layout">
+                    {/* Sidebar */}
+                    <aside className="ep__sidebar">
+                        <h2>Secciones</h2>
+                        <nav>
+                            {[
+                                { id: 'general', icon: <FaUser />, label: 'General' },
+                                { id: 'social', icon: <FaLink />, label: 'Social' },
+                                { id: 'customization', icon: <FaPaintBrush />, label: 'Estilo' },
+                                { id: 'gamer', icon: <FaGamepad />, label: 'Gamer' },
+                                { id: 'privacy', icon: <FaLock />, label: 'Privacidad' },
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    className={activeTab === tab.id ? 'active' : ''}
+                                    onClick={() => setActiveTab(tab.id)}
+                                >
+                                    {tab.icon} {tab.label}
+                                </button>
+                            ))}
+                        </nav>
+                    </aside>
 
-                        {/* ═══ TAB: GENERAL ═══ */}
-                        {activeTab === 'general' && (
-                            <div className="ep__tab fade-in">
-                                <h3>Información Personal</h3>
+                    {/* Content */}
+                    <main className="ep__content">
+                        <form onSubmit={handleSave}>
 
-                                {/* Avatar section */}
-                                <div className="ep__avatar-section">
-                                    <img
-                                        src={resolveMediaUrl(preview || formData.avatar) || `https://ui-avatars.com/api/?name=${formData.username}`}
-                                        alt="Avatar"
-                                        className="ep__avatar-preview"
-                                        onError={(e) => applyImageFallback(e, getAvatarFallback(formData.username))}
-                                    />
-                                    <div className="ep__avatar-actions">
-                                        <label className="ep__upload-btn">
-                                            <FaCamera /> Subir Foto
-                                            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="avatar"
-                                            value={formData.avatar}
-                                            onChange={handleChange}
-                                            placeholder="O pega una URL de imagen..."
-                                            className="ep__url-input"
-                                        />
-                                        <span className="ep__file-hint">JPG, PNG o GIF. Máx 5MB.</span>
+                            {/* ═══ TAB: GENERAL ═══ */}
+                            {activeTab === 'general' && (
+                                <div className="ep__tab fade-in">
+                                    <h3>Información General</h3>
+
+                                    {/* ── SECCIÓN: FOTO DE PERFIL ── */}
+                                    <div className="ep__section">
+                                        <div className="ep__section-header">
+                                            <span className="ep__section-icon"><FaCamera /></span>
+                                            <div className="ep__section-title">
+                                                <h4>Foto de Perfil</h4>
+                                                <p>Tu imagen visible para otros</p>
+                                            </div>
+                                    </div>
+                                    <div className="ep__section-content">
+                                        <div className="ep__avatar-section">
+                                            <img
+                                                src={resolveMediaUrl(preview || formData.avatar) || `https://ui-avatars.com/api/?name=${formData.username}`}
+                                                alt="Avatar"
+                                                className="ep__avatar-preview"
+                                                onError={(e) => applyImageFallback(e, getAvatarFallback(formData.username))}
+                                            />
+                                            <div className="ep__avatar-actions">
+                                                <label className="ep__upload-btn">
+                                                    <FaCamera /> Subir Foto
+                                                    <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="avatar"
+                                                    value={formData.avatar}
+                                                    onChange={handleChange}
+                                                    placeholder="O pega una URL de imagen..."
+                                                    className="ep__url-input"
+                                                />
+                                                <span className="ep__file-hint">JPG, PNG o GIF. Máx 5MB.</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Default avatars */}
+                                        <label className="ep__label">Avatares Predeterminados</label>
+                                        <p className="ep__label-desc">Elige uno de nuestros avatares gaming si no quieres subir foto</p>
+                                        <div className="ep__default-avatars">
+                                            {DEFAULT_AVATARS.map(av => (
+                                                <button
+                                                    key={av.id}
+                                                    type="button"
+                                                    className={`ep__default-av ${formData.avatar === av.src ? 'active' : ''}`}
+                                                    onClick={() => selectDefaultAvatar(av.src)}
+                                                    title={av.name}
+                                                >
+                                                    <img src={av.src} alt={av.name} />
+                                                    <span>{av.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Default avatars */}
-                                <label className="ep__label">Avatares Predeterminados</label>
-                                <div className="ep__default-avatars">
-                                    {DEFAULT_AVATARS.map(av => (
-                                        <button
-                                            key={av.id}
-                                            type="button"
-                                            className={`ep__default-av ${formData.avatar === av.src ? 'active' : ''}`}
-                                            onClick={() => selectDefaultAvatar(av.src)}
-                                            title={av.name}
-                                        >
-                                            <img src={av.src} alt={av.name} />
-                                            <span>{av.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* Form fields */}
-                                <div className="ep__fields-grid">
+                                {/* ── SECCIÓN: INFORMACIÓN PERSONAL ── */}
+                                <div className="ep__section">
+                                    <div className="ep__section-header">
+                                        <span className="ep__section-icon"><FaUser /></span>
+                                        <div className="ep__section-title">
+                                            <h4>Datos Personales</h4>
+                                            <p>Información básica de tu cuenta</p>
+                                        </div>
+                                    </div>
+                                    <div className="ep__section-content">
+                                        <div className="ep__fields-grid">
                                     <div className="ep__field">
                                         <label>Nickname <span className="ep__req">*</span></label>
                                         <input type="text" name="username" value={formData.username} onChange={handleChange} maxLength={20} />
@@ -661,19 +857,32 @@ const EditProfile = () => {
                                         </div>
                                     </div>
                                 </div>
+                                    </div>
+                                </div>
 
-                                {/* Bio */}
-                                <div className="ep__field ep__field--full">
-                                    <label>Biografía</label>
-                                    <textarea
-                                        name="bio"
-                                        value={formData.bio}
-                                        onChange={handleChange}
-                                        placeholder="Cuéntanos sobre ti, tu estilo de juego, tus metas..."
-                                        rows={4}
-                                        maxLength={300}
-                                    />
-                                    <span className="ep__char-count">{formData.bio.length}/300</span>
+                                {/* ── SECCIÓN: BIOGRAFÍA ── */}
+                                <div className="ep__section">
+                                    <div className="ep__section-header">
+                                        <span className="ep__section-icon"><i className='bx bx-edit'></i></span>
+                                        <div className="ep__section-title">
+                                            <h4>Sobre Ti</h4>
+                                            <p>Cuéntale al mundo quién eres</p>
+                                        </div>
+                                    </div>
+                                    <div className="ep__section-content">
+                                        <div className="ep__field ep__field--full">
+                                            <label>Biografía</label>
+                                            <textarea
+                                                name="bio"
+                                                value={formData.bio}
+                                                onChange={handleChange}
+                                                placeholder="Cuéntanos sobre ti, tu estilo de juego, tus metas..."
+                                                rows={4}
+                                                maxLength={300}
+                                            />
+                                            <span className="ep__char-count">{formData.bio.length}/300</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -683,17 +892,71 @@ const EditProfile = () => {
                             <div className="ep__tab fade-in">
                                 <h3>Social & Conexiones</h3>
 
+                                {/* Gaming Connections - Icon based */}
+                                <div className="ep__section-header">
+                                    <FaGamepad className="ep__section-icon" />
+                                    <div>
+                                        <label className="ep__label">Conexiones de Gaming</label>
+                                        <p className="ep__label-desc">Haz clic en un icono para vincular tu cuenta.</p>
+                                    </div>
+                                </div>
+                                <div className="ep__gaming-icons-grid">
+                                    {gamingConnections.map(conn => {
+                                        // Check if connected from Settings
+                                        const connData = userConnections[conn.settingsKey] || {};
+                                        const isConnected = conn.settingsKey === 'discord' 
+                                            ? Boolean(connData.id)
+                                            : conn.settingsKey === 'riot'
+                                            ? Boolean(connData.verified)
+                                            : conn.settingsKey === 'mlbb'
+                                            ? Boolean(connData.verified || connData.verificationStatus === 'verified')
+                                            : false;
+                                        
+                                        const displayName = conn.settingsKey === 'discord' 
+                                            ? connData.username || ''
+                                            : conn.settingsKey === 'riot'
+                                            ? connData.gameName ? `${connData.gameName}#${connData.tagLine}` : ''
+                                            : conn.settingsKey === 'mlbb'
+                                            ? connData.playerId ? `ID: ${connData.playerId}` : ''
+                                            : '';
+
+                                        return (
+                                            <button
+                                                key={conn.key}
+                                                type="button"
+                                                className={`ep__gaming-icon-btn ${isConnected ? 'connected' : ''}`}
+                                                onClick={() => navigate('/settings', { state: { activeTab: 'connections' } })}
+                                                style={{ '--conn-color': conn.color }}
+                                            >
+                                                <div className="ep__gaming-icon-circle">
+                                                    {conn.icon}
+                                                    {isConnected && (
+                                                        <div className="ep__gaming-check">
+                                                            <FaCheck />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="ep__gaming-label">{conn.label}</span>
+                                                {isConnected ? (
+                                                    <span className="ep__gaming-username">{displayName}</span>
+                                                ) : (
+                                                    <span className="ep__gaming-pending">Vincular</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
                                 {/* Social links */}
-                                <label className="ep__label">Redes Sociales</label>
-                                <p className="ep__label-desc">Agrega tus redes para que otros jugadores te encuentren.</p>
+                                <div className="ep__section-header" style={{ marginTop: '30px' }}>
+                                    <FaLink className="ep__section-icon" />
+                                    <div>
+                                        <label className="ep__label">Redes Sociales</label>
+                                        <p className="ep__label-desc">Agrega tus redes para que otros jugadores te encuentren.</p>
+                                    </div>
+                                </div>
                                 <div className="ep__social-grid">
-                                    {[
-                                        { key: 'twitch', icon: <FaTwitch />, placeholder: 'tu_canal', color: '#9146FF', prefix: 'twitch.tv/' },
-                                        { key: 'youtube', icon: <FaYoutube />, placeholder: '@tu_canal', color: '#FF0000', prefix: 'youtube.com/' },
-                                        { key: 'twitter', icon: <FaTwitter />, placeholder: '@usuario', color: '#1DA1F2', prefix: 'x.com/' },
-                                        { key: 'instagram', icon: <FaInstagram />, placeholder: '@usuario', color: '#E4405F', prefix: 'instagram.com/' },
-                                        { key: 'tiktok', icon: <FaTiktok />, placeholder: '@usuario', color: '#00f2ea', prefix: 'tiktok.com/@' },
-                                    ].map(social => (
+                                    {socialPlatforms.map(social => (
                                         <div key={social.key} className="ep__social-item">
                                             <div className="ep__social-icon" style={{ color: social.color }}>
                                                 {social.icon}
@@ -708,13 +971,23 @@ const EditProfile = () => {
                                                     className="ep__social-input"
                                                 />
                                             </div>
+                                            {formData.socialLinks[social.key] && (
+                                                <div className="ep__social-check">
+                                                    <FaCheck />
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Languages */}
-                                <label className="ep__label">Idiomas</label>
-                                <p className="ep__label-desc">¿En qué idiomas puedes comunicarte con tu equipo?</p>
+                                <div className="ep__section-header" style={{ marginTop: '30px' }}>
+                                    <FaGlobeAmericas className="ep__section-icon" />
+                                    <div>
+                                        <label className="ep__label">Idiomas</label>
+                                        <p className="ep__label-desc">¿En qué idiomas puedes comunicarte con tu equipo?</p>
+                                    </div>
+                                </div>
                                 <div className="ep__chips-row">
                                     {languagesList.map(lang => (
                                         <div
@@ -728,7 +1001,7 @@ const EditProfile = () => {
                                 </div>
 
                                 {/* Looking for team */}
-                                <label className="ep__label">Búsqueda de Equipo</label>
+                                <label className="ep__label" style={{ marginTop: '20px' }}>Búsqueda de Equipo</label>
                                 <div className="ep__lft-card">
                                     <div className="ep__lft-info">
                                         <FaUsers className="ep__lft-icon" />
@@ -895,8 +1168,67 @@ const EditProfile = () => {
 
                                 {/* Games */}
                                 <label className="ep__label">Tus Juegos</label>
+                                <p className="ep__label-desc">Selecciona los juegos que juegas. Puedes filtrar por categoría.</p>
+                                
+                                {/* Categorías */}
+                                <div className="ep__categories-row">
+                                    {gameCategories.map(cat => (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            className={`ep__category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+                                            onClick={() => setSelectedCategory(cat.id)}
+                                        >
+                                            <i className={`bx ${cat.icon}`} />
+                                            <span>{cat.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                
+                                {/* Toolbar con búsqueda */}
+                                <div className="ep__games-toolbar">
+                                    <div className="ep__games-search-wrap">
+                                        <i className='bx bx-search'></i>
+                                        <input
+                                            type="text"
+                                            value={gameQuery}
+                                            onChange={(e) => setGameQuery(e.target.value)}
+                                            placeholder="Buscar juego..."
+                                            className="ep__games-search"
+                                        />
+                                        {gameQuery && (
+                                            <button 
+                                                type="button" 
+                                                className="ep__search-clear"
+                                                onClick={() => setGameQuery('')}
+                                            >
+                                                <i className='bx bx-x'></i>
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="ep__games-actions">
+                                        <span className="ep__games-count">
+                                            <i className='bx bx-check-circle'></i> {formData.selectedGames.length} seleccionados
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="ep__mini-btn ep__mini-btn--danger"
+                                            onClick={() => updateField('selectedGames', [])}
+                                            disabled={formData.selectedGames.length === 0}
+                                        >
+                                            Limpiar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="ep__mini-btn"
+                                            onClick={() => updateField('selectedGames', allGames.slice(0, 3).map(g => g.id))}
+                                        >
+                                            Sugeridos
+                                        </button>
+                                    </div>
+                                </div>
                                 <div className="ep__games-grid">
-                                    {mobaGames.map(game => (
+                                    {filteredGames.map(game => (
                                         <div
                                             key={game.id}
                                             className={`ep__game-card ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`}
@@ -904,9 +1236,21 @@ const EditProfile = () => {
                                         >
                                             <div className="ep__game-img"><img src={game.img} alt={game.name} /></div>
                                             <span>{game.name}</span>
+                                            {formData.selectedGames.includes(game.id) && (
+                                                <div className="ep__game-check"><i className='bx bx-check'></i></div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
+                                {filteredGames.length === 0 && (
+                                    <div className="ep__games-empty">
+                                        <i className='bx bx-search-alt'></i>
+                                        <p>No encontramos juegos con "{gameQuery}"</p>
+                                        <button type="button" onClick={() => { setGameQuery(''); setSelectedCategory('all'); }}>
+                                            Ver todos
+                                        </button>
+                                    </div>
+                                )}
 
                                 {/* Platforms */}
                                 <label className="ep__label">Plataformas</label>
@@ -942,28 +1286,6 @@ const EditProfile = () => {
                         {activeTab === 'privacy' && (
                             <div className="ep__tab fade-in">
                                 <h3>Privacidad</h3>
-                                <div className="ep__privacy-option ep__privacy-option--id">
-                                    <div>
-                                        <h4>Tu ID</h4>
-                                        <p>
-                                            Este código único te permite que otros te encuentren rápido:
-                                            <strong className="ep__user-code-label"> ID {formData.userCode || 'Generando...'}</strong>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="ep__privacy-option">
-                                    <div>
-                                        <h4>Mostrar ID públicamente</h4>
-                                        <p>Si lo desactivas, tu ID no aparecerá en búsquedas ni listados públicos.</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className={`ep__toggle-btn ${formData.showPublicUserCode ? 'is-on' : 'is-off'}`}
-                                        onClick={() => updateField('showPublicUserCode', !formData.showPublicUserCode)}
-                                    >
-                                        {formData.showPublicUserCode ? 'Visible' : 'Oculto'}
-                                    </button>
-                                </div>
                                 <div className="ep__privacy-option">
                                     <div>
                                         <h4>Ocultar Perfil</h4>
@@ -1002,6 +1324,7 @@ const EditProfile = () => {
                         </div>
                     </form>
                 </main>
+            </div>
             </div>
         </div>
     );

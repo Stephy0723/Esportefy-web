@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import './App.css';
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -35,11 +35,15 @@ import CalendarPage from './components/Calendar/CalendarPage/CalendarPage';
 import TeamRegistration from './pages/menu/Tournaments/TeamRegistration/TeamRegistration';
 import CreateTournament from './pages/menu/Tournaments/CreateTournament/CreateTournament';
 import OrganizerApplication from './pages/menu/Tournaments/OrganizerApplication/OrganizerApplication';
-import FriendsPage from './pages/menu/Friends/Friends';
 import TournamentAdminHub from './pages/menu/Tournaments/Admin/TournamentAdminHub';
 import TournamentManagePage from './pages/menu/Tournaments/Admin/TournamentManagePage';
 import TournamentBracketPage from './pages/menu/Tournaments/Admin/TournamentBracketPage';
 import TournamentRoulettePage from './pages/menu/Tournaments/Admin/TournamentRoulettePage';
+import TournamentMatchCenter from './pages/menu/Tournaments/Admin/TournamentMatchCenter';
+import TournamentStandingsPage from './pages/menu/Tournaments/Admin/TournamentStandingsPage';
+import TournamentReportsPage from './pages/menu/Tournaments/Admin/TournamentReportsPage';
+import TournamentStaffPage from './pages/menu/Tournaments/Admin/TournamentStaffPage';
+import TournamentSimulatorPage from './pages/menu/Tournaments/Admin/TournamentSimulatorPage';
 import TournamentPublicExplorer from './pages/menu/Tournaments/Public/TournamentPublicExplorer';
 import TournamentPublicView from './pages/menu/Tournaments/Public/TournamentPublicView';
 import EditProfile from './pages/menu/Profile/EditProfile';
@@ -48,8 +52,7 @@ import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
 import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
 import TermsConditions from './pages/menu/Legal/TermsConditions';
 import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
-import SteamOAuthCallback from './pages/Auth/OAuth/SteamOAuthCallback';
-import GamesPageV2 from './pages/menu/Community/games/GamesPageV2';
+import GamesPage from './pages/menu/Community/games/GamesPage';
 import GamesFilterTemplate from './pages/menu/Community/games/GamesFilterTemplate';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
 import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
@@ -62,8 +65,6 @@ const WelcomeTrigger = () => null;
 
 const MainLayout = () => {
   const [isClosed, setIsClosed] = useState(true);
-  const location = useLocation();
-  const hideLayoutFooter = location.pathname.startsWith('/dashboard');
 
   return (
     <>
@@ -73,7 +74,7 @@ const MainLayout = () => {
         <div className="content-wrapper">
           <Outlet />
         </div>
-        {!hideLayoutFooter && <Footer />}
+        <Footer />
       </div>
     </>
   );
@@ -91,7 +92,6 @@ const PublicLayout = () => {
 const AppRouterContent = () => {
   const location = useLocation();
   const hideFloatingOverlays =
-    location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/create-team') ||
     location.pathname.includes('/roulette/live');
 
@@ -106,7 +106,6 @@ const AppRouterContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/oauth/steam/callback" element={<SteamOAuthCallback />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} />
@@ -127,18 +126,14 @@ const AppRouterContent = () => {
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chats" element={<Chats />} />
-            <Route path="/friends" element={<FriendsPage />} />
-            <Route path="/amigos" element={<Navigate to="/friends" replace />} />
             <Route path="/tv" element={<Tv />} />
             <Route path="/settings" element={<SettingsV2 />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/torneos" element={<Tournaments />} />
             <Route path="/comunidad" element={<Community />} />
             <Route path="/equipos" element={<Teams />} />
-            <Route path="/teams" element={<Teams />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/perfil" element={<Navigate to="/profile" replace />} />
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NewsDetail />} />
@@ -149,8 +144,13 @@ const AppRouterContent = () => {
             <Route path="/tournaments/admin" element={<TournamentAdminHub />} />
             <Route path="/tournaments/manage/:code" element={<TournamentManagePage />} />
             <Route path="/tournaments/manage/:code/bracket" element={<TournamentBracketPage />} />
+            <Route path="/tournaments/manage/:code/matches" element={<TournamentMatchCenter />} />
+            <Route path="/tournaments/manage/:code/standings" element={<TournamentStandingsPage />} />
+            <Route path="/tournaments/manage/:code/staff" element={<TournamentStaffPage />} />
+            <Route path="/tournaments/manage/:code/reports" element={<TournamentReportsPage />} />
             <Route path="/tournaments/manage/:code/roulette" element={<TournamentRoulettePage />} />
-            <Route path="/games/:gameId" element={<GamesPageV2 />} />
+            <Route path="/tournaments/simulator" element={<TournamentSimulatorPage />} />
+            <Route path="/games/:gameId" element={<GamesPage />} />
             <Route path="/games/filter/:type/:value" element={<GamesFilterTemplate />} />
             <Route path="/university" element={<UniversityPage />} />
             <Route path="/game/:gameId" element={<CommunityGamePageTemplate />} />
@@ -180,3 +180,4 @@ function App() {
 }
 
 export default App;
+

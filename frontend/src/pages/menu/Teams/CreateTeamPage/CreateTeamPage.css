@@ -3,15 +3,15 @@
    ========================================= */
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;800&display=swap');
 
-:root {
+.create-team-layout {
     /* Colores Base (Dark Mode) */
-    --bg-main: #09090b;       
-    --bg-card: #121214;       
-    --bg-input: #18181b;      
-    --text-primary: #ffffff;  
-    --text-muted: #71717a; 
+    --bg-main: #09090b;
+    --bg-card: #121214;
+    --bg-input: #18181b;
+    --text-primary: #ffffff;
+    --text-muted: #71717a;
     --border-color: #27272a;
-    
+
     /* Variables que cambiarán dinámicamente */
     --theme-color: #00e676; /* Verde por defecto */
     --theme-gradient: linear-gradient(135deg, #00e676 0%, #00b894 100%);
@@ -268,7 +268,8 @@
     opacity: 0.7;
 }
 
-input, select {
+.create-team-layout input,
+.create-team-layout select {
     width: 100%;
     background: var(--bg-input);
     border: 1px solid var(--border-color);
@@ -284,17 +285,18 @@ input, select {
     box-sizing: border-box;
 }
 
-input:focus, select:focus {
+.create-team-layout input:focus,
+.create-team-layout select:focus {
     border-color: var(--theme-color);
     box-shadow: 0 0 0 3px var(--theme-glow), 0 0 12px var(--theme-glow);
     background: rgba(0, 0, 0, 0.5);
 }
 
-input::placeholder {
+.create-team-layout input::placeholder {
     color: var(--text-muted);
 }
 
-select option {
+.create-team-layout select option {
     background: var(--bg-card);
     color: var(--text-main, #fff);
 }
@@ -1009,7 +1011,7 @@ select option {
 /* =========================================
    8. MODAL (POPUP)
    ========================================= */
-.modal-overlay {
+.create-team-layout .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px);
     display: flex; justify-content: center; align-items: center; z-index: 200;
@@ -1037,7 +1039,7 @@ select option {
 .modal-header-styled {
     display: flex; justify-content: space-between; align-items: center; margin-top: 0; margin-bottom: 1.5rem;
 }
-.highlight { color: var(--theme-color); font-weight: bold; }
+.create-team-layout .highlight { color: var(--theme-color); font-weight: bold; }
 
 /* Photo Uploader en Modal */
 .photo-uploader { cursor: pointer; }
@@ -1060,7 +1062,7 @@ select option {
     from { opacity: 0; transform: translateY(20px) scale(0.97); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.fade-in {
+.create-team-layout .fade-in {
     animation: ct-slideUp 0.45s ease;
 }
 

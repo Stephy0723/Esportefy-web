@@ -661,13 +661,17 @@ export const createTournament = async (req, res) => {
             return [];
         };
         const sponsorsWithLogos = Array.isArray(sponsors)
-            ? sponsors.map((s, idx) => {
-                const fileIndex = Number.isInteger(s?.logoIndex) ? s.logoIndex : idx;
-                return {
-                    ...s,
-                    logoUrl: sponsorLogoFiles[fileIndex]?.path || s.logoUrl || ''
-                };
-            })
+            ? sponsors
+                .filter((s) => s && String(s.name || '').trim())
+                .map((s, idx) => {
+                    const fileIndex = Number.isInteger(s?.logoIndex) ? s.logoIndex : idx;
+                    return {
+                        name: s.name || '',
+                        link: s.link || '',
+                        tier: s.tier || 'Partner',
+                        logoUrl: sponsorLogoFiles[fileIndex]?.path || s.logoUrl || ''
+                    };
+                })
             : [];
         const wantsUniversityOnly = parsedEligibility.universityOnly === true || String(parsedEligibility.universityOnly || '').trim().toLowerCase() === 'true';
         if (wantsUniversityOnly && !isUniversityGameAllowed(data.game)) {
@@ -682,12 +686,31 @@ export const createTournament = async (req, res) => {
             });
         }
 
+        // Sanitize staff: filter empty/invalid moderator entries and ensure valid shape
+        const cleanModerators = Array.isArray(parsedStaff?.moderators)
+            ? parsedStaff.moderators
+                .filter((m) => m && typeof m === 'object' && String(m.username || '').trim())
+                .map((m) => ({
+                    user: m.user || null,
+                    username: String(m.username).trim(),
+                    role: m.role || 'moderator',
+                    displayRole: m.displayRole || '',
+                    addedAt: m.addedAt || new Date()
+                }))
+            : [];
+
+        // Remove raw FormData string keys that get properly parsed below
+        const { sponsors: _s, staff: _st, prizesByRank: _p, registrationWindow: _rw,
+            checkInWindow: _cw, eligibility: _el, contact: _co, broadcast: _br,
+            matchConfig: _mc, legalCompliance: _lc, bannerFile: _bf, rulesPdf: _rp,
+            sponsorLogos: _sl, sponsorsData: _sd, ...safeData } = data;
+
         const newTournament = new Tournament({
-            ...data,
+            ...safeData,
             tournamentId,
             prizesByRank: parsedPrizesByRank,
             sponsors: sponsorsWithLogos,
-            staff: parsedStaff,
+            staff: { moderators: cleanModerators },
             timezone: data.timezone || 'America/Santo_Domingo',
             registrationWindow: {
                 start: normalizeDateValue(parsedRegistrationWindow.start),
@@ -837,6 +860,13 @@ export const createTournament = async (req, res) => {
 
     } catch (error) {
         console.error("Error al crear el torneo:", error);
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors || {}).map((e) => e.message);
+            return res.status(400).json({
+                message: messages[0] || 'Error de validación al crear el torneo',
+                validationErrors: messages
+            });
+        }
         res.status(500).json({
             message: "Error interno del servidor",
             error: error.message
@@ -1077,7 +1107,7 @@ export const updateTournament = async (req, res) => {
         if (pdfPath) update.rulesPdf = pdfPath;
 
         Object.assign(tournament, update);
-        const saved = await tournament.save();
+        const saved = await tournament.save({ validateBeforeSave: false });
         return res.status(200).json(saved);
 
     } catch (error) {
@@ -1233,7 +1263,7 @@ export const updateTournamentPublicSettings = async (req, res) => {
             customMessage: String(incoming.customMessage || '').trim()
         };
 
-        await tournament.save();
+        await tournament.save({ validateBeforeSave: false });
         return res.status(200).json({ message: 'Configuración pública actualizada', publicSettings: tournament.publicSettings });
     } catch (error) {
         console.error('Error actualizando configuración pública:', error);
@@ -1270,7 +1300,7 @@ export const updateTournamentBracket = async (req, res) => {
         }
 
         tournament.bracket = bracket;
-        await tournament.save();
+        await tournament.save({ validateBeforeSave: false });
         return res.status(200).json({ message: 'Bracket actualizado', bracket: tournament.bracket });
     } catch (error) {
         console.error('Error actualizando bracket:', error);
@@ -1645,7 +1675,7 @@ export const registerTeam = async (req, res) => {
         tournament.registrations.push(registrationPayload);
 
         tournament.currentSlots = Math.min((tournament.currentSlots || 0) + 1, tournament.maxSlots);
-        await tournament.save();
+        await tournament.save({ validateBeforeSave: false });
 
         return res.status(200).json({ message: 'Equipo registrado', tournamentId: tournament.tournamentId });
 
@@ -1765,7 +1795,7 @@ export const updateRegistrationStatus = async (req, res) => {
                 visuals: { icon: 'bx-check-circle', color: '#34d399', glow: true }
             });
         }
-        await tournament.save();
+        await tournament.save({ validateBeforeSave: false });
 
         await recordAdminAudit({
             actorUserId: req.userId,
@@ -1830,7 +1860,7 @@ export const removeRegistration = async (req, res) => {
             visuals: { icon: 'bx-error-circle', color: '#f97316', glow: false }
         });
         tournament.currentSlots = Math.max((tournament.currentSlots || 0) - 1, 0);
-        await tournament.save();
+        await tournament.save({ validateBeforeSave: false });
 
         await recordAdminAudit({
             actorUserId: req.userId,
@@ -2131,7 +2161,7 @@ export const updateTournamentStatus = async (req, res) => {
                 return res.status(400).json({ message: 'Acción inválida' });
         }
 
-        await tournament.save();
+        await tournament.save({ validateBeforeSave: false });
 
         await recordAdminAudit({
             actorUserId: req.userId,
@@ -2201,5 +2231,336 @@ export const updateTournamentStatus = async (req, res) => {
     } catch (error) {
         console.error("Error al cambiar estado:", error);
         res.status(500).json({ message: "Error interno del servidor", error: error.message });
+    }
+};
+
+/* ──────────────── REPORTS ──────────────── */
+
+export const getReports = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+        res.json(tournament.reports || []);
+    } catch (error) {
+        console.error('Error obteniendo reportes:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+export const createReport = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        const { type, reportedTeam, reportedPlayer, reportedStaff, matchId, severity, evidence, description } = req.body;
+        if (!type || !description) return res.status(400).json({ message: 'Tipo y descripcion son obligatorios.' });
+
+        const report = {
+            reportId: `RPT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type,
+            reportedTeam: reportedTeam || '',
+            reportedPlayer: reportedPlayer || '',
+            reportedStaff: reportedStaff || '',
+            matchId: matchId || '',
+            severity: severity || 'medium',
+            evidence: evidence || '',
+            description,
+            status: 'open',
+            sanction: '',
+            sanctionNote: '',
+            createdBy: req.userId,
+            createdAt: new Date(),
+            resolvedAt: null,
+            resolvedBy: null,
+        };
+
+        tournament.reports.push(report);
+        await tournament.save({ validateBeforeSave: false });
+        res.status(201).json(report);
+    } catch (error) {
+        console.error('Error creando reporte:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+export const updateReport = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        const report = tournament.reports.find(r => r.reportId === req.params.reportId);
+        if (!report) return res.status(404).json({ message: 'Reporte no encontrado.' });
+
+        const { status, sanction, sanctionNote } = req.body;
+        if (status) report.status = status;
+        if (sanction !== undefined) report.sanction = sanction;
+        if (sanctionNote !== undefined) report.sanctionNote = sanctionNote;
+
+        if (status === 'resolved' || status === 'dismissed') {
+            report.resolvedAt = new Date();
+            report.resolvedBy = req.userId;
+        }
+
+        // DQ sanction: mark team matches as walkover
+        if (sanction === 'disqualification' && report.reportedTeam && tournament.bracket?.rounds) {
+            for (const round of tournament.bracket.rounds) {
+                for (const match of (round.matches || [])) {
+                    if (match.status === 'finished') continue;
+                    const nameA = match.teamA?.teamName || '';
+                    const nameB = match.teamB?.teamName || '';
+                    if (nameA === report.reportedTeam) {
+                        match.status = 'walkover';
+                        match.winnerRefId = match.teamB?.refId || '';
+                        match.confirmationStatus = 'resolved';
+                    } else if (nameB === report.reportedTeam) {
+                        match.status = 'walkover';
+                        match.winnerRefId = match.teamA?.refId || '';
+                        match.confirmationStatus = 'resolved';
+                    }
+                }
+            }
+            tournament.markModified('bracket');
+        }
+
+        // Staff removal sanction
+        if (sanction === 'staff_removal' && report.reportedStaff && tournament.staff?.moderators) {
+            tournament.staff.moderators = tournament.staff.moderators.filter(
+                m => m.username !== report.reportedStaff
+            );
+        }
+
+        await tournament.save({ validateBeforeSave: false });
+        res.json(report);
+    } catch (error) {
+        console.error('Error actualizando reporte:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+export const deleteReport = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        tournament.reports = (tournament.reports || []).filter(r => r.reportId !== req.params.reportId);
+        await tournament.save({ validateBeforeSave: false });
+        res.json({ message: 'Reporte eliminado.' });
+    } catch (error) {
+        console.error('Error eliminando reporte:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+/* ──────────────── STAFF ──────────────── */
+
+export const getStaff = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        res.json(tournament.staff?.moderators || []);
+    } catch (error) {
+        console.error('Error obteniendo staff:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+export const addStaffMember = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        const { username, role, displayRole } = req.body;
+        if (!username) return res.status(400).json({ message: 'El nombre de usuario es obligatorio.' });
+
+        if (!tournament.staff) tournament.staff = { moderators: [] };
+        if (!tournament.staff.moderators) tournament.staff.moderators = [];
+
+        const exists = tournament.staff.moderators.find(m => m.username === username);
+        if (exists) return res.status(409).json({ message: 'Este miembro ya esta en el staff.' });
+
+        // Try to link user account
+        const user = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+
+        const member = {
+            user: user?._id || null,
+            username,
+            role: role || 'moderator',
+            displayRole: displayRole || '',
+            addedAt: new Date(),
+        };
+
+        tournament.staff.moderators.push(member);
+        await tournament.save({ validateBeforeSave: false });
+        res.status(201).json(member);
+    } catch (error) {
+        console.error('Error agregando staff:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+export const updateStaffMember = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        const member = (tournament.staff?.moderators || []).find(m => m.username === req.params.username);
+        if (!member) return res.status(404).json({ message: 'Miembro no encontrado.' });
+
+        const { role, displayRole } = req.body;
+        if (role) member.role = role;
+        if (displayRole !== undefined) member.displayRole = displayRole;
+
+        await tournament.save({ validateBeforeSave: false });
+        res.json(member);
+    } catch (error) {
+        console.error('Error actualizando staff:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+export const removeStaffMember = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        tournament.staff.moderators = (tournament.staff?.moderators || []).filter(
+            m => m.username !== req.params.username
+        );
+        await tournament.save({ validateBeforeSave: false });
+        res.json({ message: 'Miembro removido del staff.' });
+    } catch (error) {
+        console.error('Error removiendo staff:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+/* ── Seed fake teams (dev/demo) ── */
+
+const FAKE_TEAMS = [
+    'Phoenix Rising', 'Shadow Wolves', 'Iron Titans', 'Neon Blitz',
+    'Arctic Storm', 'Dark Pulse', 'Cyber Hawks', 'Thunder Strike',
+    'Venom Squad', 'Ghost Legion', 'Solar Flare', 'Nova Elite',
+    'Crimson Tide', 'Omega Force', 'Blaze Unit', 'Frost Byte',
+    'Storm Riders', 'Night Owls', 'Rapid Fire', 'Steel Vipers',
+    'Lunar Knights', 'Inferno Squad', 'Crystal Edge', 'Titan Core',
+    'Echo Prime', 'Zenith Clan', 'Apex Predators', 'Dark Matter',
+    'Wild Cards', 'Zero Gravity', 'Rogue Wave', 'Phantom Force',
+];
+
+const FAKE_PLAYERS = [
+    'xDragon', 'ShadowKill', 'NightHawk', 'CyberNova', 'BlitzKrieg',
+    'IronFist', 'StormBlade', 'DarkVenom', 'FrostBite', 'ThunderBolt',
+    'NeonFlash', 'GhostRider', 'SolarWind', 'ArcticWolf', 'BlazeRunner',
+    'VoidWalker', 'StarDust', 'PixelHero', 'RageMaster', 'ZenithX',
+];
+
+export const seedFakeTeams = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code.toUpperCase() });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        // Clear existing registrations and re-seed from scratch
+        tournament.registrations = [];
+        tournament.currentSlots = 0;
+
+        const count = Math.min(Number(req.body?.count) || tournament.maxSlots || 8, 32);
+        const toAdd = Math.min(count, tournament.maxSlots || 32);
+
+        const availableNames = FAKE_TEAMS.slice(0, toAdd);
+
+        if (availableNames.length === 0) {
+            return res.status(400).json({ message: 'No hay mas nombres de equipos disponibles.' });
+        }
+
+        const newRegistrations = [];
+        const modalityStr = String(tournament.modality || '5v5');
+        const rosterSize = Number(modalityStr.split('v')[0]) || 5;
+        const isMlbb = MLBB_GAMES.has(String(tournament.game || '').trim());
+
+        for (let i = 0; i < toAdd && i < availableNames.length; i++) {
+            const teamName = availableNames[i];
+
+            const starters = [];
+            for (let p = 0; p < rosterSize; p++) {
+                const idx = (i * rosterSize + p) % FAKE_PLAYERS.length;
+                starters.push({
+                    nickname: `${FAKE_PLAYERS[idx]}_${i}${p}`,
+                    gameId: isMlbb ? `${100000 + i * 100 + p}` : `${FAKE_PLAYERS[idx]}#${1000 + i * 10 + p}`,
+                    role: '',
+                    region: isMlbb ? `${1000 + i}` : 'LAN',
+                });
+            }
+
+            newRegistrations.push({
+                teamName,
+                logoUrl: '',
+                captain: req.userId,
+                roster: { starters, subs: [] },
+                status: 'approved',
+                registeredAt: new Date(),
+                teamMeta: {
+                    category: tournament.category || '',
+                    teamCountry: 'DO',
+                    teamLevel: 'amateur',
+                },
+            });
+        }
+
+        for (const reg of newRegistrations) {
+            tournament.registrations.push(reg);
+        }
+        tournament.currentSlots = tournament.registrations.filter(r => r.status === 'approved').length;
+
+        if (tournament.status === 'draft') {
+            tournament.status = 'open';
+        }
+
+        await tournament.save({ validateBeforeSave: false });
+
+        res.json({
+            message: `${newRegistrations.length} equipos ficticios agregados.`,
+            total: tournament.registrations.length,
+            registrations: tournament.registrations,
+        });
+    } catch (error) {
+        console.error('Error seeding teams:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+/* ── Upload match proof ── */
+
+export const uploadMatchProofHandler = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code.toUpperCase() });
+        if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No se recibio ninguna imagen.' });
+        }
+
+        const proofUrl = `/uploads/match-proofs/${req.file.filename}`;
+        res.json({ proofUrl, filename: req.file.filename });
+    } catch (error) {
+        console.error('Error uploading match proof:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
     }
 };

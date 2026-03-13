@@ -101,6 +101,17 @@
   letter-spacing: 2px;
 }
 
+.player-tag.size-xlarge {
+  padding: 16px 44px;
+  border-radius: 16px;
+  min-width: 240px;
+}
+.player-tag.size-xlarge .tag-name {
+  font-size: 2rem;
+  letter-spacing: 2.5px;
+  font-weight: 800;
+}
+
 
 /* ─────────────────────────────────────────────────────────
    3 · TAG DESIGNS — Gradient Text + Hover FX

@@ -1460,12 +1460,12 @@ const Dashboard = () => {
                 {/* Botones de navegación — bordes */}
                 {currentMetricIdx > 0 && (
                     <button className="db__mx-nav db__mx-nav--left" onClick={() => setCurrentMetricIdx(i => i - 1)}>
-                        <i className="bx bx-chevron-left"></i>
+                        <span className="db__mx-nav-glyph" aria-hidden="true">{'<<'}</span>
                     </button>
                 )}
                 {currentMetricIdx < metricsData.length - 1 && (
                     <button className="db__mx-nav db__mx-nav--right" onClick={() => setCurrentMetricIdx(i => i + 1)}>
-                        <i className="bx bx-chevron-right"></i>
+                        <span className="db__mx-nav-glyph" aria-hidden="true">{'>>'}</span>
                     </button>
                 )}
             </section>

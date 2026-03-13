@@ -4,7 +4,9 @@ import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { formatTournamentPublicId } from '../../../../utils/publicIds';
 import { normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
+import { GAME_IMAGES } from '../../../../data/gameImages';
 import './TournamentPublic.css';
+import './TournamentPublicView.overrides.css';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
@@ -24,6 +26,7 @@ const mapLocalToPublicShape = (item) => ({
   title: item.title,
   game: item.game,
   status: item.status || 'open',
+  bannerImage: item.bannerImage || '',
   description: item.description || '',
   modality: item.modality || '',
   format: item.format || '',
@@ -68,6 +71,15 @@ const formatDate = (value) => {
   });
 };
 
+const getTeamLabel = (team) => {
+  if (!team) return '—';
+  if (typeof team === 'string') return team || '—';
+  if (team.teamName) return team.teamName;
+  if (team.isBye) return 'BYE';
+  if (team.isPlaceholder) return '—';
+  return '—';
+};
+
 const PublicBracketBoard = ({ bracket, game }) => (
   <div className="tpv-stage">
     <div className="tpv-stage__backdrop" />
@@ -85,22 +97,31 @@ const PublicBracketBoard = ({ bracket, game }) => (
           </div>
 
           <div className="tpv-stage__matches">
-            {(round.matches || []).map((match, matchIndex) => (
-              <article key={`match-${roundIndex}-${matchIndex}`} className="tpv-stage__match">
-                <div className="tpv-stage__match-top">
-                  <span>{`MATCH ${matchIndex + 1}`}</span>
-                  <small>{match.scheduledLabel || 'Sin horario'}</small>
-                </div>
-                <div className="tpv-stage__team-row">
-                  <strong>{match.teamA || 'TBD'}</strong>
-                  <span>{match.scoreA || 0}</span>
-                </div>
-                <div className="tpv-stage__team-row">
-                  <strong>{match.teamB || 'TBD'}</strong>
-                  <span>{match.scoreB || 0}</span>
-                </div>
-              </article>
-            ))}
+            {(round.matches || []).map((match, matchIndex) => {
+              const teamALabel = getTeamLabel(match.teamA);
+              const teamBLabel = getTeamLabel(match.teamB);
+              const hasWinner = match.status === 'finished' || match.winnerRefId;
+              const winnerIsA = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamA?.refId || match.teamA));
+              const winnerIsB = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamB?.refId || match.teamB));
+
+              return (
+                <article key={`match-${roundIndex}-${matchIndex}`} className={`tpv-stage__match ${hasWinner ? 'tpv-stage__match--done' : ''} ${match.status === 'live' ? 'tpv-stage__match--live' : ''}`}>
+                  <div className="tpv-stage__match-top">
+                    <span>{`MATCH ${matchIndex + 1}`}</span>
+                    {match.status === 'live' && <span className="tpv-live-badge">EN VIVO</span>}
+                    <small>{match.scheduledLabel || ''}</small>
+                  </div>
+                  <div className={`tpv-stage__team-row ${winnerIsA ? 'tpv-stage__team-row--winner' : ''}`}>
+                    <strong>{teamALabel}</strong>
+                    <span>{match.scoreA ?? '-'}</span>
+                  </div>
+                  <div className={`tpv-stage__team-row ${winnerIsB ? 'tpv-stage__team-row--winner' : ''}`}>
+                    <strong>{teamBLabel}</strong>
+                    <span>{match.scoreB ?? '-'}</span>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       ))}
@@ -161,9 +182,20 @@ const TournamentPublicView = () => {
   const displaySponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
   const displayRegistrations = Array.isArray(data.registrations) ? data.registrations : [];
   const isValorantTournament = normalizeSupportedGameName(data.game) === 'Valorant';
+  const gameImage = GAME_IMAGES[data.game] || GAME_IMAGES.Default;
+  const bannerUrl = data.bannerImage
+    ? (data.bannerImage.startsWith('http') ? data.bannerImage : `${API_URL}/${data.bannerImage}`)
+    : '';
 
   return (
     <div className="tpv-page">
+      {bannerUrl ? (
+        <div className="tpv-banner">
+          <img src={bannerUrl} alt={`${data.title} banner`} />
+          <div className="tpv-banner__overlay" />
+        </div>
+      ) : null}
+
       <section className="tpv-showcase">
         <div className="tpv-showcase__copy">
           <p className="tpv-chip"><i className="bx bx-trophy" /> Torneo oficial</p>
@@ -181,6 +213,12 @@ const TournamentPublicView = () => {
         </div>
 
         <aside className="tpv-showcase__side">
+          {gameImage ? (
+            <div className="tpv-game-badge">
+              <img src={gameImage} alt={data.game} />
+              <span>{data.game}</span>
+            </div>
+          ) : null}
           <div className="tpv-event-card">
             <span>Fecha</span>
             <strong>{formatDate(data.date)}</strong>
@@ -231,6 +269,10 @@ const TournamentPublicView = () => {
               </div>
               <h2>{data.bracket.title || 'Bracket principal'}</h2>
               <PublicBracketBoard bracket={data.bracket} game={data.game} />
+              <div className="tpv-scroll-hint">
+                <i className="bx bx-move-horizontal" />
+                Desliza para ver el bracket completo
+              </div>
             </section>
           ) : null}
 
