@@ -23,65 +23,77 @@ import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { STATUS_LIST } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { resolveMediaUrl } from '../../../utils/media';
+import { getAuthToken } from '../../../utils/authSession';
 import './Profile.css';
 
-/* ═══════════════════════════════
-   MOCK DATA
-   ═══════════════════════════════ */
-const MOCK_ACHIEVEMENTS = [
-    { id: 1, name: "Campeón Nacional", icon: "🏆", tournament: "Copa RD 2025", game: "MLBB", date: "Feb 2025", verified: true },
-    { id: 2, name: "MVP del Torneo", icon: "⭐", tournament: "Liga Caribe", game: "MLBB", date: "Ene 2025", verified: true },
-    { id: 3, name: "Top 10 Nacional", icon: "🔥", tournament: "Ranking MLBB", game: "MLBB", date: "2024", verified: true },
-];
-
-const MOCK_AWARDS = [
-    { id: 1, name: "Mejor Jungler 2025", icon: <FaMedal />, event: "Esportefy Awards", type: "gold" },
-    { id: 2, name: "MVP Regional", icon: <FaAward />, event: "Copa Caribe", type: "silver" },
-    { id: 3, name: "Rising Star", icon: <FaStar />, event: "MLBB Latinoamérica", type: "bronze" },
-];
-
-const MOCK_COMMUNITIES = [
-    { id: 1, name: "MLBB República Dominicana", members: 2340, role: "Miembro", image: null },
-    { id: 2, name: "Esports Caribe", members: 1850, role: "Moderador", image: null },
-    { id: 3, name: "Pro Players LATAM", members: 5200, role: "Miembro", image: null },
-];
-
-const MOCK_STATS = {
-    matches: 1247,
-    wins: 891,
-    winRate: 71,
-    tournaments: 34,
-    tournamentsWon: 12,
-    mvps: 23,
+const EMPTY_PROFILE_OVERVIEW = {
+    stats: {
+        matches: 0,
+        wins: 0,
+        winRate: 0,
+        tournaments: 0,
+        tournamentsWon: 0,
+        mvps: 0,
+        teams: 0,
+        ongoing: 0
+    },
+    achievements: [],
+    recognitions: [],
+    friends: [],
+    communities: [],
+    activity: [],
+    wallComments: [],
+    flags: {
+        hasVerifiedGameAccount: false,
+        hasUniversityVerification: false,
+        hasOnlineTeammates: false
+    }
 };
 
-const MOCK_FRIENDS = [
-    { id: 1, name: "DragonSlayer", status: "online", rank: "Mythic Glory", bio: "Pro player MLBB", country: "República Dominicana", gamesPlayed: 450 },
-    { id: 2, name: "NightHawk99", status: "ingame", rank: "Mythical Honor", bio: "Jungler main", country: "Puerto Rico", gamesPlayed: 320 },
-    { id: 3, name: "ShadowBlade", status: "online", rank: "Mythic", bio: "Team captain", country: "México", gamesPlayed: 580 },
-    { id: 4, name: "CyberNinja", status: "offline", rank: "Legend", bio: "Casual gamer", country: "Colombia", gamesPlayed: 210 },
-    { id: 5, name: "PhoenixFire", status: "online", rank: "Mythic Glory", bio: "Offlaner", country: "Venezuela", gamesPlayed: 670 },
-];
+const normalizeProfileOverview = (payload = {}) => ({
+    ...EMPTY_PROFILE_OVERVIEW,
+    ...payload,
+    stats: {
+        ...EMPTY_PROFILE_OVERVIEW.stats,
+        ...(payload?.stats || {})
+    },
+    achievements: Array.isArray(payload?.achievements) ? payload.achievements : [],
+    recognitions: Array.isArray(payload?.recognitions) ? payload.recognitions : [],
+    friends: Array.isArray(payload?.friends) ? payload.friends : [],
+    communities: Array.isArray(payload?.communities) ? payload.communities : [],
+    activity: Array.isArray(payload?.activity) ? payload.activity : [],
+    wallComments: Array.isArray(payload?.wallComments) ? payload.wallComments : [],
+    flags: {
+        ...EMPTY_PROFILE_OVERVIEW.flags,
+        ...(payload?.flags || {})
+    }
+});
 
-const MOCK_COMMENTS = [
-    { id: 1, user: { name: "DragonSlayer", avatar: null }, text: "GG bro! Ese último torneo estuvo increíble 🔥", time: Date.now() - 2 * 60 * 60 * 1000, likes: 12, liked: false, replies: [] },
-    { id: 2, user: { name: "NightHawk99", avatar: null }, text: "Cuando jugamos ranked? 💪", time: Date.now() - 5 * 60 * 60 * 1000, likes: 8, liked: true, replies: [] },
-    { id: 3, user: { name: "ShadowBlade", avatar: null }, text: "El mejor jungler de RD! 🏆", time: Date.now() - 24 * 60 * 60 * 1000, likes: 24, liked: false, replies: [] },
-];
+const normalizePresenceTone = (status = '') => {
+    const normalized = String(status || '').trim().toLowerCase();
+    if (['online', 'gaming', 'tournament', 'streaming', 'searching'].includes(normalized)) return 'online';
+    if (['afk', 'dnd'].includes(normalized)) return 'away';
+    return 'offline';
+};
+
+const ACTIVITY_VARIANTS = {
+    win: { icon: FaTrophy, tone: 'win' },
+    team: { icon: FaShieldAlt, tone: 'team' },
+    achievement: { icon: FaMedal, tone: 'win' },
+    rank: { icon: FaBolt, tone: 'rank' }
+};
 
 /* ════════════════════════════════════════
    MAIN COMPONENT
    ════════════════════════════════════════ */
 const Profile = () => {
     const [user, setUser] = useState(null);
+    const [profileOverview, setProfileOverview] = useState(EMPTY_PROFILE_OVERVIEW);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [copiedLink, setCopiedLink] = useState(false);
     const [newComment, setNewComment] = useState('');
-    const [comments, setComments] = useState(() => {
-        const saved = localStorage.getItem('profile_wall_comments');
-        return saved ? JSON.parse(saved) : MOCK_COMMENTS;
-    });
+    const [comments, setComments] = useState([]);
     const [replyingTo, setReplyingTo] = useState(null);
     const [replyText, setReplyText] = useState('');
     const [commentMenu, setCommentMenu] = useState(null);
@@ -94,23 +106,43 @@ const Profile = () => {
     const [showGamesModal, setShowGamesModal] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [selectedFriend, setSelectedFriend] = useState(null);
+    const [selectedFriendLoading, setSelectedFriendLoading] = useState(false);
     const [selectedGame, setSelectedGame] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                const token = getAuthToken();
                 if (!token) { navigate('/login'); return; }
-                const res = await axios.get(`${API_URL}/api/auth/profile`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setUser(res.data);
-                setLoading(false);
+                const [profileResult, overviewResult] = await Promise.allSettled([
+                    axios.get(`${API_URL}/api/auth/profile`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get(`${API_URL}/api/auth/profile/overview`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    })
+                ]);
+
+                if (profileResult.status !== 'fulfilled') {
+                    throw profileResult.reason;
+                }
+
+                setUser(profileResult.value.data);
+
+                if (overviewResult.status === 'fulfilled') {
+                    const nextOverview = normalizeProfileOverview(overviewResult.value.data);
+                    setProfileOverview(nextOverview);
+                    setComments(nextOverview.wallComments);
+                } else {
+                    setProfileOverview(EMPTY_PROFILE_OVERVIEW);
+                    setComments([]);
+                }
             } catch (err) {
                 setError("No se pudo cargar el perfil.");
-                setLoading(false);
                 if (err.response?.status === 401) navigate('/login');
+            } finally {
+                setLoading(false);
             }
         };
         fetchUserProfile();
@@ -122,14 +154,11 @@ const Profile = () => {
         setTimeout(() => setCopiedLink(false), 2000);
     };
 
-    // Save comments to localStorage
-    useEffect(() => {
-        localStorage.setItem('profile_wall_comments', JSON.stringify(comments));
-    }, [comments]);
-
     // Time formatting helper
     const formatTime = (timestamp) => {
-        const diff = Date.now() - timestamp;
+        const parsedDate = new Date(timestamp);
+        if (Number.isNaN(parsedDate.getTime())) return '';
+        const diff = Date.now() - parsedDate.getTime();
         const mins = Math.floor(diff / 60000);
         const hours = Math.floor(diff / 3600000);
         const days = Math.floor(diff / 86400000);
@@ -137,7 +166,7 @@ const Profile = () => {
         if (mins < 60) return `${mins}m`;
         if (hours < 24) return `${hours}h`;
         if (days < 7) return `${days}d`;
-        return new Date(timestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        return parsedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     };
 
     const handleSubmitComment = (e) => {
@@ -363,7 +392,8 @@ const Profile = () => {
         : (user.selectedGames ? user.selectedGames.split(',').map(g => g.trim()) : []);
     const currentFrame = FRAMES.find(f => f.id === user?.selectedFrameId) || FRAMES[0];
     const currentBg = BACKGROUNDS.find(b => b.id === user?.selectedBgId) || BACKGROUNDS[0];
-    const userStatus = STATUS_LIST.find(s => s.id === user.status) || STATUS_LIST[0];
+    const visibleProfileStatus = user?.privacy?.showOnlineStatus === false ? 'offline' : user?.status;
+    const userStatus = STATUS_LIST.find(s => s.id === visibleProfileStatus) || STATUS_LIST[0];
     const resolvedUserAvatar = resolveMediaUrl(user.avatar);
     const lookingForTeam = Boolean(user.lookingForTeam);
 
@@ -389,7 +419,9 @@ const Profile = () => {
     const gamingConnections = [
         { key: 'riot', icon: <SiRiotgames />, label: 'Riot', color: '#D32936', connected: user.connections?.riot?.verified, value: user.connections?.riot?.gameName ? `${user.connections.riot.gameName}#${user.connections.riot.tagLine}` : null },
         { key: 'discord', icon: <FaDiscord />, label: 'Discord', color: '#5865F2', connected: user.connections?.discord?.verified, value: user.connections?.discord?.username },
+        { key: 'mlbb', icon: <FaGamepad />, label: 'MLBB', color: '#00b4d8', connected: user.connections?.mlbb?.verified, value: user.connections?.mlbb?.playerId ? `${user.connections.mlbb.playerId} (${user.connections.mlbb.zoneId || 'zone'})` : null },
         { key: 'steam', icon: <FaSteam />, label: 'Steam', color: '#1b2838', connected: user.connections?.steam?.verified, value: user.connections?.steam?.username },
+        { key: 'epic', icon: <FaBolt />, label: 'Epic', color: '#0078f2', connected: user.connections?.epic?.verified, value: user.connections?.epic?.displayName || user.connections?.epic?.username || null },
     ];
 
     const mainGame = normalizedGames[0];
@@ -415,9 +447,54 @@ const Profile = () => {
     };
 
     // Handle friend click - show friend modal
-    const handleFriendClick = (friend) => {
+    const handleFriendClick = async (friend) => {
         setSelectedFriend(friend);
+        if (!friend?.id) return;
+        try {
+            setSelectedFriendLoading(true);
+            const token = getAuthToken();
+            const res = await axios.get(`${API_URL}/api/auth/user-card/${friend.id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSelectedFriend(prev => ({
+                ...(prev || {}),
+                ...(res.data || {})
+            }));
+        } catch (err) {
+            console.error('No se pudo cargar la tarjeta del amigo:', err);
+        } finally {
+            setSelectedFriendLoading(false);
+        }
     };
+
+    const overviewStats = profileOverview.stats || EMPTY_PROFILE_OVERVIEW.stats;
+    const profileAchievements = profileOverview.achievements || [];
+    const profileRecognitions = profileOverview.recognitions || [];
+    const profileFriends = profileOverview.friends || [];
+    const profileCommunities = profileOverview.communities || [];
+    const profileActivity = profileOverview.activity || [];
+    const onlineFriendsCount = profileFriends.filter((friend) => normalizePresenceTone(friend?.status) === 'online').length;
+    const selectedFriendMainGame = selectedFriend?.selectedGames?.[0] || selectedFriend?.rank || 'Jugador';
+    const selectedFriendTeamsCount = Array.isArray(selectedFriend?.teams) ? selectedFriend.teams.length : 0;
+    const selectedFriendStatusTone = normalizePresenceTone(selectedFriend?.status);
+    const selectedFriendStatusMeta = STATUS_LIST.find((status) => status.id === selectedFriend?.status) || null;
+    const selectedFriendStatusLabel = selectedFriendStatusMeta?.label
+        || (selectedFriendStatusTone === 'online' ? 'En línea' : selectedFriendStatusTone === 'away' ? 'Ausente' : 'Offline');
+    const selectedFriendRiotHandle = selectedFriend?.connections?.riot?.publicHandle || '';
+    const selectedFriendExperience = Array.isArray(selectedFriend?.experience) ? selectedFriend.experience.slice(0, 3) : [];
+    const selectedFriendGames = Array.isArray(selectedFriend?.selectedGames) ? selectedFriend.selectedGames.slice(0, 4) : [];
+    const selectedFriendLinkedAccounts = [
+        selectedFriend?.connections?.riot?.verified
+            ? (selectedFriendRiotHandle || 'Riot')
+            : null,
+        selectedFriend?.connections?.discord?.linked ? 'Discord' : null,
+        selectedFriend?.connections?.steam?.linked ? 'Steam' : null,
+        selectedFriend?.connections?.epic?.linked ? 'Epic Games' : null,
+        selectedFriend?.connections?.mlbb?.linked ? 'MLBB' : null
+    ].filter(Boolean);
+    const selectedFriendUniversityLabel = selectedFriend?.university?.verified
+        ? 'Estudiante verificado'
+        : 'Sin verificación universitaria';
 
     return (
         <div className="cyber">
@@ -477,7 +554,7 @@ const Profile = () => {
                             src={resolvedUserAvatar || `https://ui-avatars.com/api/?name=${user.username}`}
                             frameConfig={currentFrame}
                             size="150px"
-                            status={user.status}
+                            status={visibleProfileStatus}
                         />
                         <div className="cyber-avatar__status" style={{ '--status-color': userStatus.color }}>
                             <span className="cyber-avatar__dot" />
@@ -489,7 +566,7 @@ const Profile = () => {
                     <div className="cyber-identity">
                         <div className="cyber-identity__name">
                             <PlayerTag name={user.username || "Player"} tagId={user.selectedTagId} size="xlarge" />
-                            {user.verified && <span className="cyber-verified"><FaCheck /></span>}
+                            {user.university?.verified && <span className="cyber-verified"><FaCheck /></span>}
                         </div>
                         
                         {user.fullName && <p className="cyber-identity__realname">{user.fullName}</p>}
@@ -514,22 +591,22 @@ const Profile = () => {
                         <div className="cyber-stats__header"><FaChartLine /> STATS</div>
                         <div className="cyber-stats__grid">
                             <div className="cyber-stat cyber-stat--main">
-                                <span className="cyber-stat__value">{MOCK_STATS.winRate}<small>%</small></span>
+                                <span className="cyber-stat__value">{overviewStats.winRate}<small>%</small></span>
                                 <span className="cyber-stat__label">WIN RATE</span>
                                 <div className="cyber-stat__bar">
-                                    <div style={{ width: `${MOCK_STATS.winRate}%` }} />
+                                    <div style={{ width: `${overviewStats.winRate}%` }} />
                                 </div>
                             </div>
                             <div className="cyber-stat">
-                                <span className="cyber-stat__value">{MOCK_STATS.wins}</span>
+                                <span className="cyber-stat__value">{overviewStats.wins}</span>
                                 <span className="cyber-stat__label">WINS</span>
                             </div>
                             <div className="cyber-stat">
-                                <span className="cyber-stat__value">{MOCK_STATS.tournamentsWon}</span>
+                                <span className="cyber-stat__value">{overviewStats.tournamentsWon}</span>
                                 <span className="cyber-stat__label">TORNEOS</span>
                             </div>
                             <div className="cyber-stat">
-                                <span className="cyber-stat__value">{user.teams?.length || 0}</span>
+                                <span className="cyber-stat__value">{overviewStats.teams || user.teams?.length || 0}</span>
                                 <span className="cyber-stat__label">EQUIPOS</span>
                             </div>
                         </div>
@@ -681,15 +758,20 @@ const Profile = () => {
                             <div className="cyber-panel__line" />
                         </div>
                         <div className="cyber-awards">
-                            {MOCK_AWARDS.map(award => (
-                                <div key={award.id} className={`cyber-award cyber-award--${award.type}`}>
-                                    <span className="cyber-award__icon">{award.icon}</span>
+                            {profileRecognitions.length > 0 ? profileRecognitions.map((award) => (
+                                <div key={award.id} className={`cyber-award cyber-award--${award.type || 'bronze'}`}>
+                                    <span className="cyber-award__icon"><FaAward /></span>
                                     <div className="cyber-award__info">
-                                        <span className="cyber-award__name">{award.name}</span>
-                                        <span className="cyber-award__event">{award.event}</span>
+                                        <div className="cyber-award__title">{award.name}</div>
+                                        <div className="cyber-award__event">{award.event}</div>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="cyber-empty">
+                                    <FaMedal />
+                                    <p>SIN RECONOCIMIENTOS AÚN</p>
+                                </div>
+                            )}
                         </div>
                     </section>
                 </div>
@@ -758,7 +840,12 @@ const Profile = () => {
                         </form>
 
                         <div className="cyber-comments">
-                            {comments.map(comment => {
+                            {comments.length === 0 ? (
+                                <div className="cyber-empty">
+                                    <FaComment />
+                                    <p>SIN PUBLICACIONES RECIENTES</p>
+                                </div>
+                            ) : comments.map(comment => {
                                 // Recursive component for nested replies
                                 const RenderComment = ({ c, parentPath = [], depth = 0 }) => {
                                     const isReplying = replyingTo === c.id;
@@ -900,7 +987,7 @@ const Profile = () => {
                             <div className="cyber-panel__line" />
                         </div>
                         <div className="cyber-achievements">
-                            {MOCK_ACHIEVEMENTS.map(ach => (
+                            {profileAchievements.length > 0 ? profileAchievements.map((ach) => (
                                 <div key={ach.id} className={`cyber-achievement ${ach.verified ? 'cyber-achievement--verified' : ''}`}>
                                     <span className="cyber-achievement__icon">{ach.icon}</span>
                                     <div className="cyber-achievement__info">
@@ -909,7 +996,12 @@ const Profile = () => {
                                     </div>
                                     {ach.verified && <FaCheck />}
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="cyber-empty">
+                                    <FaTrophy />
+                                    <p>SIN LOGROS REGISTRADOS</p>
+                                </div>
+                            )}
                         </div>
                     </section>
 
@@ -917,15 +1009,15 @@ const Profile = () => {
                     <section className="cyber-panel">
                         <div className="cyber-panel__header">
                             <FaUserFriends /> AMIGOS
-                            <span className="cyber-panel__count">{MOCK_FRIENDS.filter(f => f.status === 'online').length} EN LÍNEA</span>
+                            <span className="cyber-panel__count">{onlineFriendsCount} EN LÍNEA</span>
                             <div className="cyber-panel__line" />
                         </div>
                         <div className="cyber-friends">
-                            {MOCK_FRIENDS.map(friend => (
+                            {profileFriends.length > 0 ? profileFriends.slice(0, 5).map(friend => (
                                 <div key={friend.id} className="cyber-friend" onClick={() => handleFriendClick(friend)}>
                                     <div className="cyber-friend__avatar">
-                                        <img src={`https://ui-avatars.com/api/?name=${friend.name}&background=0a0a15&color=00f0ff`} alt="" />
-                                        <span className={`cyber-friend__status cyber-friend__status--${friend.status}`} />
+                                        <img src={resolveMediaUrl(friend.avatar) || `https://ui-avatars.com/api/?name=${friend.name}&background=0a0a15&color=00f0ff`} alt="" />
+                                        <span className={`cyber-friend__status cyber-friend__status--${normalizePresenceTone(friend.status)}`} />
                                     </div>
                                     <div className="cyber-friend__info">
                                         <span>{friend.name}</span>
@@ -933,34 +1025,55 @@ const Profile = () => {
                                     </div>
                                     <FaChevronRight className="cyber-friend__arrow" />
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="cyber-empty">
+                                    <FaUserFriends />
+                                    <p>SIN AMIGOS MUTUOS</p>
+                                </div>
+                            )}
                         </div>
-                        <button className="cyber-panel__more" onClick={() => setShowFriendsModal(true)}>
-                            VER TODOS <FaChevronRight />
-                        </button>
+                        {profileFriends.length > 0 && (
+                            <button className="cyber-panel__more" onClick={() => setShowFriendsModal(true)}>
+                                VER TODOS <FaChevronRight />
+                            </button>
+                        )}
                     </section>
 
                     {/* Communities */}
                     <section className="cyber-panel">
                         <div className="cyber-panel__header">
                             <FaLayerGroup /> COMUNIDADES
-                            <span className="cyber-panel__count">{MOCK_COMMUNITIES.length}</span>
+                            <span className="cyber-panel__count">{profileCommunities.length}</span>
                             <div className="cyber-panel__line" />
                         </div>
                         <div className="cyber-communities">
-                            {MOCK_COMMUNITIES.map(community => (
-                                <div key={community.id} className="cyber-community" onClick={() => navigate(`/communities/${community.id}`)}>
-                                    <div className="cyber-community__avatar">
-                                        <img src={community.image || `https://ui-avatars.com/api/?name=${community.name}&background=0a0a15&color=00f0ff`} alt="" />
+                            {profileCommunities.length > 0 ? profileCommunities.map((community) => (
+                                <div key={community.id} className="cyber-community" onClick={() => navigate(`/communities/${community.shortUrl}`)}>
+                                    <div className="cyber-community__icon">
+                                        {community.image ? (
+                                            <img
+                                                src={resolveMediaUrl(community.image)}
+                                                alt={community.name}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                                            />
+                                        ) : (
+                                            <FaLayerGroup />
+                                        )}
                                     </div>
                                     <div className="cyber-community__info">
                                         <span className="cyber-community__name">{community.name}</span>
-                                        <span className="cyber-community__meta">
-                                            <FaUsers /> {community.members.toLocaleString()} • {community.role}
-                                        </span>
+                                        <div className="cyber-community__meta">
+                                            <span className="cyber-community__members"><FaUsers /> {Number(community.members || 0).toLocaleString()}</span>
+                                            <span className="cyber-community__role">{community.role}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="cyber-empty">
+                                    <FaLayerGroup />
+                                    <p>SIN COMUNIDADES ACTIVAS</p>
+                                </div>
+                            )}
                         </div>
                     </section>
 
@@ -971,18 +1084,24 @@ const Profile = () => {
                             <div className="cyber-panel__line" />
                         </div>
                         <div className="cyber-activity">
-                            <div className="cyber-activity__item cyber-activity__item--win">
-                                <FaTrophy />
-                                <div><p>Ganó <strong>Copa Caribe</strong></p><span>2 días</span></div>
-                            </div>
-                            <div className="cyber-activity__item cyber-activity__item--team">
-                                <FaShieldAlt />
-                                <div><p>Se unió a <strong>Hispaniola Esports</strong></p><span>1 semana</span></div>
-                            </div>
-                            <div className="cyber-activity__item cyber-activity__item--rank">
-                                <FaBolt />
-                                <div><p>Subió a <strong>Mythic Glory</strong></p><span>2 semanas</span></div>
-                            </div>
+                            {profileActivity.length > 0 ? profileActivity.map((item) => {
+                                const variant = ACTIVITY_VARIANTS[item.type] || ACTIVITY_VARIANTS.rank;
+                                const ActivityIcon = variant.icon;
+                                return (
+                                    <div key={item.id} className={`cyber-activity__item cyber-activity__item--${variant.tone}`}>
+                                        <ActivityIcon />
+                                        <div>
+                                            <p>{item.text || item.title}</p>
+                                            <span>{item.source || 'Sistema'} • {formatTime(item.createdAt)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            }) : (
+                                <div className="cyber-empty">
+                                    <FaFire />
+                                    <p>SIN ACTIVIDAD RECIENTE</p>
+                                </div>
+                            )}
                         </div>
                     </section>
                 </div>
@@ -1083,19 +1202,24 @@ const Profile = () => {
                                 <button onClick={() => setShowFriendsModal(false)}><FaTimes /></button>
                             </div>
                             <div className="cyber-modal__content">
-                                {MOCK_FRIENDS.map(friend => (
+                                {profileFriends.length > 0 ? profileFriends.map((friend) => (
                                     <div key={friend.id} className="cyber-modal-friend" onClick={() => { setShowFriendsModal(false); handleFriendClick(friend); }}>
                                         <div className="cyber-modal-friend__avatar">
-                                            <img src={`https://ui-avatars.com/api/?name=${friend.name}&background=0a0a15&color=00f0ff`} alt="" />
-                                            <span className={`cyber-modal-friend__status cyber-modal-friend__status--${friend.status}`} />
+                                            <img src={resolveMediaUrl(friend.avatar) || `https://ui-avatars.com/api/?name=${friend.name}&background=0a0a15&color=00f0ff`} alt="" />
+                                            <span className={`cyber-modal-friend__status cyber-modal-friend__status--${normalizePresenceTone(friend.status)}`} />
                                         </div>
                                         <div className="cyber-modal-friend__info">
-                                            <h3>{friend.name}</h3>
-                                            <span>{friend.rank}</span>
+                                            <div className="cyber-modal-friend__name">{friend.name}</div>
+                                            <div className="cyber-modal-friend__bio">{friend.rank}</div>
                                         </div>
-                                        <FaChevronRight />
+                                        <FaChevronRight className="cyber-modal-friend__arrow" />
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="cyber-empty">
+                                        <FaUserFriends />
+                                        <p>SIN AMIGOS DISPONIBLES</p>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>
@@ -1115,30 +1239,76 @@ const Profile = () => {
                                 <div className="cyber-friend-detail">
                                     <div className="cyber-friend-detail__header">
                                         <div className="cyber-friend-detail__avatar">
-                                            <img src={`https://ui-avatars.com/api/?name=${selectedFriend.name}&background=0a0a15&color=00f0ff&size=128`} alt="" />
-                                            <span className={`cyber-friend-detail__status cyber-friend-detail__status--${selectedFriend.status}`} />
+                                            <img src={resolveMediaUrl(selectedFriend.avatar) || `https://ui-avatars.com/api/?name=${selectedFriend.username || selectedFriend.name}&background=0a0a15&color=00f0ff&size=128`} alt="" />
+                                            <span className={`cyber-friend-detail__status-dot cyber-friend-detail__status-dot--${selectedFriendStatusTone}`} />
                                         </div>
-                                        <div className="cyber-friend-detail__info">
-                                            <h3>{selectedFriend.name}</h3>
-                                            <span className="cyber-friend-detail__rank"><FaTrophy /> {selectedFriend.rank}</span>
-                                            <span className="cyber-friend-detail__country"><FaFlag /> {selectedFriend.country}</span>
+                                        <div className="cyber-friend-detail__name">{selectedFriend.username || selectedFriend.name}</div>
+                                        <div className="cyber-friend-detail__games">
+                                            {selectedFriend.isOrganizer ? <span className="cyber-friend-detail__game-tag">Organizador</span> : null}
+                                            {selectedFriend?.university?.verified ? <span className="cyber-friend-detail__game-tag">Estudiante verificado</span> : null}
+                                            {selectedFriendRiotHandle ? <span className="cyber-friend-detail__game-tag">{selectedFriendRiotHandle}</span> : null}
                                         </div>
+                                        {selectedFriend.country ? <span className="cyber-friend-detail__country"><FaFlag /> {selectedFriend.country}</span> : null}
+                                        {selectedFriendMainGame ? (
+                                            <span className="cyber-friend-detail__country"><FaTrophy /> {selectedFriendMainGame}</span>
+                                        ) : null}
+                                        {selectedFriendLoading ? <p className="cyber-friend-detail__bio">Cargando datos del usuario...</p> : null}
                                     </div>
-                                    {selectedFriend.bio && (
-                                        <p className="cyber-friend-detail__bio">{selectedFriend.bio}</p>
-                                    )}
                                     <div className="cyber-friend-detail__stats">
                                         <div className="cyber-friend-detail__stat">
-                                            <span className="cyber-friend-detail__stat-value">{selectedFriend.gamesPlayed}</span>
-                                            <span className="cyber-friend-detail__stat-label">PARTIDAS</span>
+                                            <span className="cyber-friend-detail__stat-value">{selectedFriendTeamsCount}</span>
+                                            <span className="cyber-friend-detail__stat-label">EQUIPOS</span>
                                         </div>
                                         <div className="cyber-friend-detail__stat">
-                                            <span className="cyber-friend-detail__stat-value">{selectedFriend.status === 'online' ? 'SÍ' : 'NO'}</span>
-                                            <span className="cyber-friend-detail__stat-label">EN LÍNEA</span>
+                                            <span className="cyber-friend-detail__stat-value">{selectedFriendStatusLabel}</span>
+                                            <span className="cyber-friend-detail__stat-label">ESTADO</span>
+                                        </div>
+                                    </div>
+                                    <div className="cyber-friend-detail__section">
+                                        <h4>Perfil público</h4>
+                                        <div className="cyber-friend-detail__games">
+                                            {selectedFriendGames.length > 0
+                                                ? selectedFriendGames.map((game) => (
+                                                    <span key={game} className="cyber-friend-detail__game-tag">{game}</span>
+                                                ))
+                                                : <span className="cyber-friend-detail__game-tag">Sin juegos públicos</span>}
+                                            {selectedFriendExperience.map((entry) => (
+                                                <span key={entry} className="cyber-friend-detail__game-tag">{entry}</span>
+                                            ))}
+                                            {selectedFriend?.university?.verified && selectedFriend.university.universityName ? (
+                                                <span className="cyber-friend-detail__game-tag">{selectedFriend.university.universityName}</span>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                    <div className="cyber-friend-detail__section">
+                                        <h4>Universidad</h4>
+                                        <div className="cyber-friend-detail__meta-list">
+                                            <div className="cyber-friend-detail__meta-item">
+                                                <span className="cyber-friend-detail__meta-label">Estado</span>
+                                                <span className="cyber-friend-detail__meta-value">{selectedFriendUniversityLabel}</span>
+                                            </div>
+                                            {selectedFriend?.university?.verified && selectedFriend.university.universityName ? (
+                                                <div className="cyber-friend-detail__meta-item">
+                                                    <span className="cyber-friend-detail__meta-label">Universidad</span>
+                                                    <span className="cyber-friend-detail__meta-value">{selectedFriend.university.universityName}</span>
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                    <div className="cyber-friend-detail__section">
+                                        <h4>Cuentas vinculadas</h4>
+                                        <div className="cyber-friend-detail__games">
+                                            {selectedFriendLinkedAccounts.length > 0 ? (
+                                                selectedFriendLinkedAccounts.map((account) => (
+                                                    <span key={account} className="cyber-friend-detail__game-tag">{account}</span>
+                                                ))
+                                            ) : (
+                                                <span className="cyber-friend-detail__game-tag cyber-friend-detail__game-tag--muted">Sin cuentas vinculadas visibles</span>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="cyber-friend-detail__actions">
-                                        <button className="cyber-btn cyber-btn--primary">
+                                        <button className="cyber-btn cyber-btn--primary" disabled>
                                             <FaEnvelope /> MENSAJE
                                         </button>
                                         <button className="cyber-btn" onClick={() => setSelectedFriend(null)}>

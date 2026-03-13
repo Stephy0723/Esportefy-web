@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
@@ -16,13 +17,20 @@ import communityRoutes from './routes/community.routes.js';
 import universityRoutes from './routes/university.routes.js';
 import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
 
-dotenv.config();
-connectDB();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const backendEnvPath = path.resolve(__dirname, '../.env');
+
+if (fs.existsSync(backendEnvPath)) {
+  dotenv.config({ path: backendEnvPath });
+} else {
+  dotenv.config();
+}
+
+export const dbReady = connectDB();
 startMlbbMailQueueWorker();
 
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const uploadsDir = path.resolve(__dirname, '../uploads');
 const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 

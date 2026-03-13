@@ -3,6 +3,14 @@ const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || 'csrf_token';
 const CSRF_HEADER_NAME = (process.env.CSRF_HEADER_NAME || 'x-csrf-token').toLowerCase();
 const CSRF_HEADER_ALT = 'x-xsrf-token';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const PUBLIC_AUTH_PREFIXES = [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/check-phone',
+    '/api/auth/check-username',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password'
+];
 
 const parseCookies = (cookieHeader = '') => {
     return String(cookieHeader)
@@ -25,6 +33,11 @@ const parseCookies = (cookieHeader = '') => {
 
 export const verifyCsrf = (req, res, next) => {
     if (SAFE_METHODS.has(req.method)) return next();
+
+    const requestPath = String(req.originalUrl || req.url || '').split('?')[0];
+    if (PUBLIC_AUTH_PREFIXES.some((prefix) => requestPath.startsWith(prefix))) {
+        return next();
+    }
 
     const cookies = parseCookies(req.headers?.cookie || '');
     const authCookie = cookies[AUTH_COOKIE_NAME];

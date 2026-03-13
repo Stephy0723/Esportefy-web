@@ -7,9 +7,15 @@ const DISCORD_STATE_TTL_MS = 10 * 60 * 1000;
 const pendingDiscordStates = new Map();
 const DISCORD_STATE_PREFIX = 'oauth:discord:state';
 
-const getFrontendSettingsUrl = (status = 'error') => {
+const getFrontendSettingsUrl = (status = 'error', message = '') => {
   const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
-  return `${frontendBase}/settings?discord=${status}`;
+  const url = new URL('/settings', frontendBase);
+  url.searchParams.set('oauthProvider', 'discord');
+  url.searchParams.set('oauthStatus', String(status || 'error').trim().toLowerCase());
+  if (message) {
+    url.searchParams.set('oauthMessage', String(message).slice(0, 160));
+  }
+  return url.toString();
 };
 
 const cleanupDiscordStates = () => {
@@ -98,13 +104,13 @@ export const discordCallback = async (req, res) => {
   const { code, state } = req.query;
 
   if (!code || !state) {
-    return res.redirect(getFrontendSettingsUrl('error'));
+    return res.redirect(getFrontendSettingsUrl('error', 'Callback inválido de Discord.'));
   }
 
   try {
     const userId = await consumeDiscordState(state);
     if (!userId) {
-      return res.redirect(getFrontendSettingsUrl('error'));
+      return res.redirect(getFrontendSettingsUrl('error', 'La sesión de autorización de Discord expiró o no es válida.'));
     }
 
     const tokenRes = await axios.post(
@@ -146,11 +152,11 @@ export const discordCallback = async (req, res) => {
       }
     );
 
-    return res.redirect(getFrontendSettingsUrl('connected'));
+    return res.redirect(getFrontendSettingsUrl('connected', 'Discord se vinculó correctamente.'));
 
   } catch (error) {
     console.error('Discord callback error:', error.response?.data || error.message);
-    return res.redirect(getFrontendSettingsUrl('error'));
+    return res.redirect(getFrontendSettingsUrl('error', 'No se pudo completar la vinculación con Discord.'));
   }
 };
 
@@ -167,4 +173,3 @@ export const unlinkDiscord = async (req, res) => {
     return res.status(500).json({ message: 'Error al desvincular Discord' });
   }
 };
-

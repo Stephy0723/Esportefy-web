@@ -223,6 +223,9 @@
 .cyber-avatar {
     position: relative;
     flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 34px;
 }
 
 /* Glow/Ring removed - user's frame is the decoration */
@@ -240,13 +243,13 @@
 
 .cyber-avatar__status {
     position: absolute;
-    bottom: -10px;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 5px 12px;
     background: var(--bg-card);
     border: 1px solid var(--status-color, var(--primary));
     border-radius: 20px;
@@ -255,6 +258,8 @@
     color: var(--status-color, var(--primary));
     letter-spacing: 0.5px;
     white-space: nowrap;
+    z-index: 2;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
 .cyber-avatar__dot {
@@ -2163,6 +2168,11 @@
     box-shadow: 0 0 10px #00ff88;
 }
 
+.cyber-friend-detail__status-dot--away {
+    background: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+}
+
 .cyber-friend-detail__status-dot--offline {
     background: #666;
 }
@@ -2251,6 +2261,40 @@
     font-weight: 500;
 }
 
+.cyber-friend-detail__game-tag--muted {
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.cyber-friend-detail__meta-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.cyber-friend-detail__meta-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--cyber-border);
+    border-radius: 8px;
+}
+
+.cyber-friend-detail__meta-label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.cyber-friend-detail__meta-value {
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: right;
+}
+
 .cyber-friend-detail__actions {
     display: flex;
     gap: 1rem;
@@ -2306,6 +2350,11 @@
 .cyber-modal-friend__status--online {
     background: #00ff88;
     box-shadow: 0 0 8px #00ff88;
+}
+
+.cyber-modal-friend__status--away {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
 .cyber-modal-friend__status--offline {
