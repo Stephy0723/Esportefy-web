@@ -364,6 +364,11 @@ export default function SettingsV2() {
             }
         } catch (error) {
             console.error('Discord link error:', error);
+            setOauthNotice({
+                provider: 'discord',
+                status: 'error',
+                message: error?.response?.data?.message || 'No se pudo iniciar la vinculación con Discord.'
+            });
         }
     };
 

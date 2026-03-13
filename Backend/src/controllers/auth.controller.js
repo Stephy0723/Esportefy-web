@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import Team from "../models/Team.js";
 import Tournament from "../models/Tournament.js";
 import CommunityPost from "../models/CommunityPost.js";
+import Community from "../models/Community.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from "crypto";
@@ -180,6 +181,14 @@ const formatMonthYear = (value) => {
     return date.toLocaleDateString('es-DO', { month: 'short', year: 'numeric' });
 };
 
+const formatCommunityRoleLabel = (role = '') => {
+    const normalized = String(role || '').trim().toLowerCase();
+    if (normalized === 'owner') return 'Propietario';
+    if (normalized === 'admin') return 'Admin';
+    if (normalized === 'moderator') return 'Moderador';
+    return 'Miembro';
+};
+
 const isValidNonNegativeNumberString = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
 const isValidObjectIdLike = (value = '') => /^[a-fA-F0-9]{24}$/.test(String(value));
 const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -250,6 +259,22 @@ const buildPublicRiotConnection = (candidate) => {
         products: getPublicRiotProducts(candidate?.connections?.riot)
     };
 };
+
+const buildPublicLinkedConnections = (candidate) => ({
+    riot: buildPublicRiotConnection(candidate),
+    discord: {
+        linked: Boolean(candidate?.connections?.discord?.verified)
+    },
+    steam: {
+        linked: Boolean(candidate?.connections?.steam?.verified)
+    },
+    epic: {
+        linked: Boolean(candidate?.connections?.epic?.verified)
+    },
+    mlbb: {
+        linked: Boolean(candidate?.connections?.mlbb?.verified)
+    }
+});
 
 const mapFriendPreview = (candidate) => {
     const mainGame = Array.isArray(candidate?.selectedGames) && candidate.selectedGames.length > 0
@@ -553,7 +578,7 @@ export const getUserCard = async (req, res) => {
         const [viewer, target] = await Promise.all([
             User.findById(req.userId).select('following').lean(),
             User.findById(targetUserId)
-                .select('username fullName avatar status selectedGames country experience connections.riot isOrganizer teams followers following selectedTagId selectedFrameId userCode university.universityName university.verified university.verifiedAt privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
+                .select('username avatar status selectedGames country experience connections.riot connections.discord.verified connections.steam.verified connections.epic.verified connections.mlbb.verified isOrganizer teams selectedTagId selectedFrameId userCode university.universityName university.verified university.verifiedAt privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
                 .populate('teams', 'name logo game teamCode')
                 .lean()
         ]);
@@ -568,7 +593,6 @@ export const getUserCard = async (req, res) => {
         return res.status(200).json({
             id: String(target?._id || ''),
             username: target?.username || 'Jugador',
-            fullName: target?.fullName || '',
             avatar: target?.avatar || '',
             status: extractVisibleStatus(target),
             selectedGames: Array.isArray(target?.selectedGames) ? target.selectedGames : [],
@@ -583,14 +607,10 @@ export const getUserCard = async (req, res) => {
                 universityName: target?.university?.verified ? String(target?.university?.universityName || '') : '',
                 verifiedAt: target?.university?.verified ? target?.university?.verifiedAt || null : null
             },
-            connections: {
-                riot: buildPublicRiotConnection(target)
-            },
+            connections: buildPublicLinkedConnections(target),
             teams: Array.isArray(target?.teams)
                 ? target.teams.filter((team) => isSupportedGameName(team?.game))
                 : [],
-            followers: toIdArray(target?.followers),
-            following: toIdArray(target?.following),
             isFollowing
         });
     } catch (error) {
@@ -1048,6 +1068,34 @@ export const getProfileOverview = async (req, res) => {
             ].slice(0, 8);
         }
 
+        const communitiesDocs = await Community.find({
+            isActive: true,
+            $or: [{ createdBy: req.userId }, { 'members.user': req.userId }]
+        })
+            .sort({ createdAt: -1 })
+            .limit(8)
+            .select('name shortUrl membersCount mainGames media.avatarUrl createdAt createdBy members.user members.role')
+            .lean();
+
+        const communities = communitiesDocs.map((community) => {
+            const members = Array.isArray(community?.members) ? community.members : [];
+            const isOwner = String(community?.createdBy || '') === userIdStr;
+            const memberEntry = members.find(
+                (entry) => String(entry?.user || '') === userIdStr
+            );
+
+            return {
+                id: String(community?._id || ''),
+                name: community?.name || 'Comunidad',
+                shortUrl: community?.shortUrl || '',
+                image: community?.media?.avatarUrl || '',
+                members: Number(community?.membersCount || members.length || 0),
+                role: formatCommunityRoleLabel(isOwner ? 'owner' : memberEntry?.role || 'member'),
+                mainGame: Array.isArray(community?.mainGames) ? community.mainGames[0] || '' : '',
+                createdAt: community?.createdAt || null
+            };
+        });
+
         const achievements = [];
         if (captainTeams > 0) {
             achievements.push({
@@ -1116,6 +1164,56 @@ export const getProfileOverview = async (req, res) => {
             });
         }
 
+        const recognitions = [];
+        if (tournamentsWon > 0) {
+            recognitions.push({
+                id: 'recognition-tournament-winner',
+                name: tournamentsWon > 1 ? `${tournamentsWon} títulos logrados` : 'Campeón de torneo',
+                event: tournamentsWon > 1 ? 'Historial competitivo' : 'Competencia oficial',
+                type: 'gold'
+            });
+        }
+        if (user?.university?.verified) {
+            recognitions.push({
+                id: 'recognition-university-verified',
+                name: 'Estudiante verificado',
+                event: user?.university?.universityName || 'Universidad confirmada',
+                type: 'silver'
+            });
+        }
+        if (user?.connections?.riot?.verified || user?.connections?.mlbb?.verified) {
+            recognitions.push({
+                id: 'recognition-account-verified',
+                name: 'Cuenta de juego verificada',
+                event: user?.connections?.riot?.verified ? 'Riot Games' : 'Mobile Legends',
+                type: 'bronze'
+            });
+        }
+        if (captainTeams > 0) {
+            recognitions.push({
+                id: 'recognition-team-leader',
+                name: captainTeams > 1 ? `Lidera ${captainTeams} equipos` : 'Líder de equipo',
+                event: 'Gestión competitiva',
+                type: 'gold'
+            });
+        }
+        if (winRate >= 60 && matchesPlayed >= 5) {
+            recognitions.push({
+                id: 'recognition-winrate',
+                name: `Win rate ${winRate}%`,
+                event: `${matchesWon} victorias oficiales`,
+                type: 'silver'
+            });
+        }
+        if (communities.length > 0) {
+            recognitions.push({
+                id: 'recognition-community',
+                name: communities.length > 1 ? `${communities.length} comunidades activas` : 'Miembro de comunidad',
+                event: 'Presencia social',
+                type: 'bronze'
+            });
+        }
+
         return res.status(200).json({
             stats: {
                 matches: matchesPlayed,
@@ -1128,7 +1226,9 @@ export const getProfileOverview = async (req, res) => {
                 ongoing: tournamentsOngoing
             },
             achievements,
+            recognitions,
             friends,
+            communities,
             activity,
             wallComments,
             flags: {
