@@ -5,6 +5,7 @@ import { API_URL } from '../../../../config/api';
 import { formatTournamentPublicId } from '../../../../utils/publicIds';
 import { normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
 import { GAME_IMAGES } from '../../../../data/gameImages';
+import { getTournamentGameByName } from '../../../../data/tournamentGames/tournamentGames';
 import './TournamentPublic.css';
 import './TournamentPublicView.overrides.css';
 
@@ -80,54 +81,59 @@ const getTeamLabel = (team) => {
   return '—';
 };
 
-const PublicBracketBoard = ({ bracket, game }) => (
-  <div className="tpv-stage">
-    <div className="tpv-stage__backdrop" />
-    <div className="tpv-stage__brand">
-      <span>{game}</span>
-      <strong>{bracket?.title || 'Bracket'}</strong>
-    </div>
+const PublicBracketBoard = ({ bracket, game, gameColor }) => {
+  const gc = gameColor || 'var(--primary)';
+  return (
+    <div className="tpv-stage" style={{ '--gc': gc }}>
+      <div className="tpv-stage__backdrop" />
+      <div className="tpv-stage__brand">
+        <span>{game}</span>
+        <strong>{bracket?.title || 'Bracket'}</strong>
+      </div>
 
-    <div className="tpv-stage__board">
-      {(bracket?.rounds || []).map((round, roundIndex) => (
-        <div key={`round-${roundIndex}`} className="tpv-stage__column">
-          <div className="tpv-stage__round-head">
-            <h3>{round.name || `Ronda ${roundIndex + 1}`}</h3>
-            <span>{(round.matches || []).length} matches</span>
+      <div className="tpv-stage__board">
+        {(bracket?.rounds || []).map((round, roundIndex) => (
+          <div key={`round-${roundIndex}`} className="tpv-stage__column">
+            <div className="tpv-stage__round-head">
+              <h3>{round.name || `Ronda ${roundIndex + 1}`}</h3>
+              <span>{(round.matches || []).length} matches</span>
+            </div>
+
+            <div className="tpv-stage__matches">
+              {(round.matches || []).map((match, matchIndex) => {
+                const teamALabel = getTeamLabel(match.teamA);
+                const teamBLabel = getTeamLabel(match.teamB);
+                const hasWinner = match.status === 'finished' || match.winnerRefId;
+                const winnerIsA = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamA?.refId || match.teamA));
+                const winnerIsB = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamB?.refId || match.teamB));
+
+                return (
+                  <article key={`match-${roundIndex}-${matchIndex}`} className={`tpv-stage__match ${hasWinner ? 'tpv-stage__match--done' : ''} ${match.status === 'live' ? 'tpv-stage__match--live' : ''}`}>
+                    <div className="tpv-stage__match-top">
+                      <span>{`MATCH ${matchIndex + 1}`}</span>
+                      {match.status === 'live' && <span className="tpv-live-badge"><i className="bx bx-broadcast" /> EN VIVO</span>}
+                      <small>{match.scheduledLabel || ''}</small>
+                    </div>
+                    <div className={`tpv-stage__team-row ${winnerIsA ? 'tpv-stage__team-row--winner' : ''}`}>
+                      <div className="tpv-stage__team-avatar">{teamALabel.charAt(0)}</div>
+                      <strong>{teamALabel}</strong>
+                      <span>{match.scoreA ?? '-'}</span>
+                    </div>
+                    <div className={`tpv-stage__team-row ${winnerIsB ? 'tpv-stage__team-row--winner' : ''}`}>
+                      <div className="tpv-stage__team-avatar">{teamBLabel.charAt(0)}</div>
+                      <strong>{teamBLabel}</strong>
+                      <span>{match.scoreB ?? '-'}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
-
-          <div className="tpv-stage__matches">
-            {(round.matches || []).map((match, matchIndex) => {
-              const teamALabel = getTeamLabel(match.teamA);
-              const teamBLabel = getTeamLabel(match.teamB);
-              const hasWinner = match.status === 'finished' || match.winnerRefId;
-              const winnerIsA = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamA?.refId || match.teamA));
-              const winnerIsB = hasWinner && match.winnerRefId && (match.winnerRefId === (match.teamB?.refId || match.teamB));
-
-              return (
-                <article key={`match-${roundIndex}-${matchIndex}`} className={`tpv-stage__match ${hasWinner ? 'tpv-stage__match--done' : ''} ${match.status === 'live' ? 'tpv-stage__match--live' : ''}`}>
-                  <div className="tpv-stage__match-top">
-                    <span>{`MATCH ${matchIndex + 1}`}</span>
-                    {match.status === 'live' && <span className="tpv-live-badge">EN VIVO</span>}
-                    <small>{match.scheduledLabel || ''}</small>
-                  </div>
-                  <div className={`tpv-stage__team-row ${winnerIsA ? 'tpv-stage__team-row--winner' : ''}`}>
-                    <strong>{teamALabel}</strong>
-                    <span>{match.scoreA ?? '-'}</span>
-                  </div>
-                  <div className={`tpv-stage__team-row ${winnerIsB ? 'tpv-stage__team-row--winner' : ''}`}>
-                    <strong>{teamBLabel}</strong>
-                    <span>{match.scoreB ?? '-'}</span>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TournamentPublicView = () => {
   const { code } = useParams();
@@ -182,7 +188,9 @@ const TournamentPublicView = () => {
   const displaySponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
   const displayRegistrations = Array.isArray(data.registrations) ? data.registrations : [];
   const isValorantTournament = normalizeSupportedGameName(data.game) === 'Valorant';
+  const gameInfo = getTournamentGameByName(data.game);
   const gameImage = GAME_IMAGES[data.game] || GAME_IMAGES.Default;
+  const gameColor = gameInfo?.color || 'var(--primary)';
   const bannerUrl = data.bannerImage
     ? (data.bannerImage.startsWith('http') ? data.bannerImage : `${API_URL}/${data.bannerImage}`)
     : '';
@@ -207,16 +215,25 @@ const TournamentPublicView = () => {
             {data.customMessage || data.description || 'Competencia organizada para equipos, comunidad y transmision en directo.'}
           </p>
           <div className="tpv-showcase__actions">
-            {data.rulesPdf ? <a className="tpv-cta" href={data.rulesPdf} target="_blank" rel="noreferrer">Ver reglamento</a> : null}
-            {data.broadcast?.streamUrl ? <a className="tpv-cta tpv-cta--ghost" href={data.broadcast.streamUrl} target="_blank" rel="noreferrer">Ver stream</a> : null}
+            {data.broadcast?.streamUrl ? (
+              <a className="tpv-cta tpv-cta--stream" href={data.broadcast.streamUrl} target="_blank" rel="noreferrer" style={{ '--gc': gameColor }}>
+                <i className="bx bx-broadcast" /> Ver transmision en vivo
+              </a>
+            ) : null}
+            {data.rulesPdf ? <a className="tpv-cta tpv-cta--ghost" href={data.rulesPdf} target="_blank" rel="noreferrer">Ver reglamento</a> : null}
           </div>
         </div>
 
         <aside className="tpv-showcase__side">
           {gameImage ? (
-            <div className="tpv-game-badge">
-              <img src={gameImage} alt={data.game} />
-              <span>{data.game}</span>
+            <div className="tpv-game-badge tpv-game-badge--hero" style={{
+              '--gc': gameColor,
+              background: `linear-gradient(135deg, ${gameColor}22 0%, var(--bg-card) 60%, ${gameColor}11 100%)`,
+              boxShadow: `0 0 60px 0 ${gameColor}44, 0 20px 40px ${gameColor}22`,
+              borderColor: gameColor
+            }}>
+              <img src={gameImage} alt={data.game} style={{ width: '140px', height: '140px', boxShadow: `0 0 36px ${gameColor}55, 0 0 80px ${gameColor}22` }} />
+              <span style={{ color: gameColor, fontSize: '1.35rem', fontWeight: 900 }}>{data.game}</span>
             </div>
           ) : null}
           <div className="tpv-event-card">
@@ -226,7 +243,7 @@ const TournamentPublicView = () => {
           </div>
           <div className="tpv-event-card">
             <span>Participacion</span>
-            <strong>{data.slots?.current ?? 0}/{data.slots?.max ?? 0}</strong>
+            <strong style={{ color: gameColor }}>{data.slots?.current ?? 0}/{data.slots?.max ?? 0}</strong>
             <p>{STATUS_LABELS[data.status] || 'Publicado'}</p>
           </div>
         </aside>
@@ -268,7 +285,7 @@ const TournamentPublicView = () => {
                 <span className="tpv-chip tpv-chip--soft">Bracket oficial</span>
               </div>
               <h2>{data.bracket.title || 'Bracket principal'}</h2>
-              <PublicBracketBoard bracket={data.bracket} game={data.game} />
+              <PublicBracketBoard bracket={data.bracket} game={data.game} gameColor={gameColor} />
               <div className="tpv-scroll-hint">
                 <i className="bx bx-move-horizontal" />
                 Desliza para ver el bracket completo
@@ -287,12 +304,32 @@ const TournamentPublicView = () => {
               ) : (
                 <div className="tpv-list">
                   {displayRegistrations.map((item) => (
-                    <article key={item._id || item.teamName} className="tpv-row">
-                      <div>
-                        <strong>{item.teamName}</strong>
-                        <p>Equipo inscrito</p>
+                    <article key={item._id || item.teamName} className="tpv-row" style={{
+                      borderLeft: `6px solid ${gameColor}`,
+                      background: `linear-gradient(90deg, ${gameColor}11 0%, var(--bg-card) 100%)`,
+                      boxShadow: `0 2px 16px ${gameColor}22`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        {/* Avatar placeholder, replace with real avatar if available */}
+                        <div style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: '50%',
+                          background: `${gameColor}33`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 900,
+                          fontSize: '1.1rem',
+                          color: gameColor,
+                          boxShadow: `0 0 12px ${gameColor}33`
+                        }}>{item.teamName?.charAt(0) || '?'}</div>
+                        <div>
+                          <strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{item.teamName}</strong>
+                          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Equipo inscrito</p>
+                        </div>
                       </div>
-                      <span className="tpv-tag">{item.status}</span>
+                      <span className="tpv-tag" style={{ background: gameColor, color: '#fff', fontWeight: 700 }}>{item.status}</span>
                     </article>
                   ))}
                 </div>

@@ -1,4 +1,4 @@
-﻿/* =========================================
+﻿﻿/* =========================================
    AUTH LOGIN â€” Usa variables de index.css
    ========================================= */
 
@@ -302,4 +302,8 @@ color: var(--text-main) !important;
     /* En mÃ³vil, los inputs vuelven a apilarse verticalmente */
     .input-row { flex-direction: column; align-items: flex-start; gap: 5px; }
     .input-row label { width: 100%; }
+    
+    /* Opciones y botones */
+    .options-row { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .auth-nav { flex-direction: column; align-items: flex-start; gap: 10px; }
 }

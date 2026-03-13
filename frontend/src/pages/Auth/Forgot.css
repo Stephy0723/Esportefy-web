@@ -1,4 +1,4 @@
-﻿/* =========================================
+﻿﻿/* =========================================
    FORGOT PASSWORD â€” Usa variables de index.css
    ========================================= */
 
@@ -203,6 +203,8 @@
 @media (max-width: 480px) {
     .auth-left { padding: 20px; }
     .input-row { flex-direction: column; align-items: flex-start; gap: 5px; } 
+    .options-row { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .form-actions { flex-direction: column; }
 }
 /* =========================================
    BOTONES DE ACCIÃ“N (SOLUCIÃ“N DEFINITIVA)

@@ -903,7 +903,7 @@ export default function SettingsV2() {
                                 </div>
                                 <div className="stv2-disclaimer__content">
                                     <p>
-                                        <strong>Esportefy</strong> no está respaldado, afiliado, asociado ni patrocinado por 
+                                        <strong>GLITCH GANG</strong> no está respaldado, afiliado, asociado ni patrocinado por 
                                         <strong> Riot Games, Inc.</strong>, <strong>Moonton</strong>, <strong>Valve Corporation</strong>, 
                                         <strong> Epic Games, Inc.</strong>, <strong>Microsoft</strong>, <strong>Sony Interactive Entertainment</strong>, 
                                         <strong> Twitch Interactive</strong> ni <strong>Google LLC</strong>.
@@ -1565,7 +1565,7 @@ export default function SettingsV2() {
                             {/* App Info */}
                             <div className="stv2-app-info">
                                 <div className="stv2-app-info__logo">
-                                    <span className="stv2-app-info__name">Esportefy</span>
+                                    <span className="stv2-app-info__name">GLITCH GANG</span>
                                     <span className="stv2-app-info__badge">BETA</span>
                                 </div>
                                 <div className="stv2-app-info__details">
@@ -1592,7 +1592,7 @@ export default function SettingsV2() {
                                     <a href="/licenses">Licencias</a>
                                 </div>
                                 <p className="stv2-app-info__copyright">
-                                    © 2024-2026 Esportefy. Todos los derechos reservados.
+                                    © 2024-2026 GLITCH GANG. Todos los derechos reservados.
                                 </p>
                             </div>
                         </div>
@@ -1652,7 +1652,7 @@ export default function SettingsV2() {
                                                 rows={5}
                                             />
                                             <p className="stv2-feedback-hint">
-                                                <FaInfoCircle /> Tu feedback nos ayuda a mejorar Esportefy
+                                                <FaInfoCircle /> Tu feedback nos ayuda a mejorar GLITCH GANG
                                             </p>
                                         </div>
                                         <div className="stv2-modal__footer">

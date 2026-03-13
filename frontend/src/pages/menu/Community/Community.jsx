@@ -42,7 +42,7 @@ const HeroBanner = () => {
     const [heroIdx, setHeroIdx] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
     const heroes = GAMES.slice(0, 3);
-    const hero = heroes[heroIdx] || heroes[0] || { name: 'Esportefy', img: '', color: '#8EDB15' };
+    const hero = heroes[heroIdx] || heroes[0] || { name: 'GLITCH GANG', img: '', color: '#8EDB15' };
 
     useEffect(() => {
         setIsLoaded(true);

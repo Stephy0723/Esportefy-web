@@ -807,7 +807,7 @@ const Dashboard = () => {
                     <p className="db__conn-panel-gamertag" style={{ color: connectionPanel.color }}>
                         ID {mlbbConn.playerId} ({mlbbConn.zoneId})
                     </p>
-                    <p className="db__conn-panel-sub">Cuenta MLBB verificada en Esportefy</p>
+                    <p className="db__conn-panel-sub">Cuenta MLBB verificada en GLITCH GANG</p>
                     <div className="db__conn-panel-stats">
                         <div className="db__conn-panel-stat">
                             <span className="db__conn-panel-stat-val">{mlbbConn.ign || 'Sin IGN'}</span>
@@ -836,7 +836,7 @@ const Dashboard = () => {
                 <div className={`db__conn-panel-status ${mlbbStatus === 'rejected' ? 'db__conn-panel-status--error' : 'db__conn-panel-status--pending'}`}>
                     <i className={mlbbStatus === 'pending' ? 'bx bx-time-five' : mlbbStatus === 'rejected' ? 'bx bx-error-circle' : 'bx bx-link-external'}></i>
                     <span>{getProviderStatusLabel('moonton')}</span>
-                    <p className="db__conn-panel-desc">Verificación interna de Esportefy. No es una validación oficial de Moonton/API pública de MLBB.</p>
+                    <p className="db__conn-panel-desc">Verificación interna de GLITCH GANG. No es una validación oficial de Moonton/API pública de MLBB.</p>
                     {mlbbStatus === 'pending' && (
                         <p className="db__conn-panel-detail">Tu solicitud está en revisión.</p>
                     )}

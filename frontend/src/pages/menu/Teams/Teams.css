@@ -2246,3 +2246,537 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ═══════════════════════════════════════════════════
+   HUB SECTION NAV
+   ═══════════════════════════════════════════════════ */
+.th__hub-nav {
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.th__hub-nav::-webkit-scrollbar { display: none; }
+
+.th__hub-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+.th__hub-nav-btn i {
+    font-size: 1.15rem;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+.th__hub-nav-btn:hover {
+    color: var(--text-main);
+    background: var(--bg-elevated);
+}
+.th__hub-nav-btn:hover i {
+    transform: scale(1.15);
+}
+.th__hub-nav-btn.active {
+    background: var(--primary);
+    color: var(--text-inverted, #111);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+.th__hub-nav-btn.active i {
+    transform: scale(1.1);
+    animation: thNavPulse 2s ease-in-out infinite;
+}
+@keyframes thNavPulse {
+    0%, 100% { transform: scale(1.1); }
+    50% { transform: scale(1.25); }
+}
+
+/* ═══════════════════════════════════════════════════
+   SHARED SECTION STYLES
+   ═══════════════════════════════════════════════════ */
+.th__section {
+    animation: thSectionIn 0.5s ease both;
+}
+@keyframes thSectionIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.th__section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.th__section-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    animation: thIconFloat 3s ease-in-out infinite;
+}
+@keyframes thIconFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+.th__section-icon--scrims {
+    background: color-mix(in srgb, #ef4444 15%, var(--bg-elevated));
+    color: #ef4444;
+    border: 1px solid color-mix(in srgb, #ef4444 25%, var(--border-color));
+}
+.th__section-icon--lfteam {
+    background: color-mix(in srgb, #3b82f6 15%, var(--bg-elevated));
+    color: #3b82f6;
+    border: 1px solid color-mix(in srgb, #3b82f6 25%, var(--border-color));
+}
+.th__section-icon--lfplayers {
+    background: color-mix(in srgb, #a855f7 15%, var(--bg-elevated));
+    color: #a855f7;
+    border: 1px solid color-mix(in srgb, #a855f7 25%, var(--border-color));
+}
+
+.th__section-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0;
+    letter-spacing: -0.3px;
+}
+.th__section-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin: 4px 0 0;
+}
+
+/* ── Coming Soon Badge ── */
+.th__section-coming {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 20px;
+    border-radius: 16px;
+    border: 1px dashed color-mix(in srgb, var(--primary) 30%, var(--border-color));
+    background: color-mix(in srgb, var(--primary) 3%, var(--bg-card));
+    text-align: center;
+    margin-top: 24px;
+    animation: thSectionIn 0.6s ease both 0.4s;
+}
+.th__coming-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--primary) 15%, var(--bg-elevated));
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.5px;
+    animation: thPulseGlow 2.5s ease-in-out infinite;
+}
+@keyframes thPulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 20%, transparent); }
+    50% { box-shadow: 0 0 20px 4px color-mix(in srgb, var(--primary) 15%, transparent); }
+}
+.th__coming-badge i {
+    font-size: 1.1rem;
+    animation: thSpinSlow 4s linear infinite;
+}
+@keyframes thSpinSlow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+.th__section-coming p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    max-width: 500px;
+    line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════════════
+   SCRIMS SECTION
+   ═══════════════════════════════════════════════════ */
+.th__scrim-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+    animation: thSectionIn 0.5s ease both 0.1s;
+}
+.th__scrim-create-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 28px 20px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-main);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.th__scrim-create-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in srgb, #ef4444 8%, transparent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.th__scrim-create-btn:hover::before {
+    opacity: 1;
+}
+.th__scrim-create-btn:hover {
+    border-color: #ef4444;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px color-mix(in srgb, #ef4444 15%, transparent);
+}
+.th__scrim-create-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+.th__scrim-create-btn i {
+    font-size: 2rem;
+    color: #ef4444;
+    position: relative;
+}
+.th__scrim-create-btn span {
+    font-size: 1rem;
+    font-weight: 700;
+    position: relative;
+}
+.th__scrim-create-btn small {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    position: relative;
+}
+.th__scrim-create-btn--find::before {
+    background: linear-gradient(135deg, color-mix(in srgb, #f59e0b 8%, transparent), transparent);
+}
+.th__scrim-create-btn--find:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 12px 32px color-mix(in srgb, #f59e0b 15%, transparent);
+}
+.th__scrim-create-btn--find i {
+    color: #f59e0b;
+}
+
+.th__scrim-features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    animation: thSectionIn 0.5s ease both 0.2s;
+}
+.th__scrim-feature {
+    padding: 22px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.th__scrim-feature:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, #ef4444 30%, var(--border-color));
+    box-shadow: 0 8px 24px var(--shadow-color);
+}
+.th__scrim-feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, #ef4444 12%, var(--bg-elevated));
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin: 0 auto 12px;
+    transition: transform 0.3s ease;
+}
+.th__scrim-feature:hover .th__scrim-feature-icon {
+    transform: scale(1.12) rotate(-5deg);
+}
+.th__scrim-feature h4 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 6px;
+}
+.th__scrim-feature p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   BUSCAR EQUIPO / BUSCAR JUGADORES — shared
+   ═══════════════════════════════════════════════════ */
+.th__lf-profile-card,
+.th__lfp-post-card {
+    padding: 28px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    margin-bottom: 28px;
+    animation: thSectionIn 0.5s ease both 0.1s;
+    position: relative;
+    overflow: hidden;
+}
+.th__lf-profile-card::before,
+.th__lfp-post-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+}
+.th__lf-profile-card::before {
+    background: linear-gradient(90deg, #3b82f6, #06b6d4);
+}
+.th__lfp-post-card::before {
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+}
+
+.th__lf-profile-header,
+.th__lfp-post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.th__lf-profile-header i {
+    font-size: 1.5rem;
+    color: #3b82f6;
+}
+.th__lfp-post-header i {
+    font-size: 1.5rem;
+    color: #a855f7;
+}
+.th__lf-profile-header h4,
+.th__lfp-post-header h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+.th__lf-profile-desc,
+.th__lfp-post-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0 0 20px;
+}
+
+.th__lf-profile-fields,
+.th__lfp-post-fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+.th__lf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.th__lf-field--full {
+    grid-column: 1 / -1;
+}
+.th__lf-field label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.th__lf-field label i {
+    font-size: 0.95rem;
+    color: var(--primary);
+}
+.th__lf-field input,
+.th__lf-field select,
+.th__lf-field textarea {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.82rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    resize: none;
+}
+.th__lf-field input:focus,
+.th__lf-field select:focus,
+.th__lf-field textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+.th__lf-field input:disabled,
+.th__lf-field select:disabled,
+.th__lf-field textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.th__lfp-publish-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 18px;
+    padding: 13px 20px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.th__lfp-publish-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px color-mix(in srgb, #a855f7 30%, transparent);
+}
+.th__lfp-publish-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── Benefits Grid ── */
+.th__lf-benefits {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    animation: thSectionIn 0.5s ease both 0.25s;
+}
+.th__lf-benefit {
+    padding: 22px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.th__lf-benefit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px var(--shadow-color);
+}
+.th__section--lfteam .th__lf-benefit:hover {
+    border-color: color-mix(in srgb, #3b82f6 30%, var(--border-color));
+}
+.th__section--lfplayers .th__lf-benefit:hover {
+    border-color: color-mix(in srgb, #a855f7 30%, var(--border-color));
+}
+.th__lf-benefit-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin: 0 auto 12px;
+    transition: transform 0.3s ease;
+}
+.th__section--lfteam .th__lf-benefit-icon {
+    background: color-mix(in srgb, #3b82f6 12%, var(--bg-elevated));
+    color: #3b82f6;
+}
+.th__section--lfplayers .th__lf-benefit-icon {
+    background: color-mix(in srgb, #a855f7 12%, var(--bg-elevated));
+    color: #a855f7;
+}
+.th__lf-benefit:hover .th__lf-benefit-icon {
+    transform: scale(1.12) rotate(-5deg);
+}
+.th__lf-benefit h4 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 6px;
+}
+.th__lf-benefit p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE — new sections
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .th__scrim-features {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 640px) {
+    .th__hub-nav {
+        gap: 4px;
+        padding: 4px;
+        border-radius: 10px;
+    }
+    .th__hub-nav-btn {
+        padding: 10px 14px;
+        font-size: 0.78rem;
+        gap: 6px;
+    }
+    .th__hub-nav-btn span {
+        display: none;
+    }
+    .th__hub-nav-btn i {
+        font-size: 1.3rem;
+    }
+    .th__scrim-actions {
+        grid-template-columns: 1fr;
+    }
+    .th__scrim-features {
+        grid-template-columns: 1fr;
+    }
+    .th__lf-profile-fields,
+    .th__lfp-post-fields {
+        grid-template-columns: 1fr;
+    }
+    .th__lf-benefits {
+        grid-template-columns: 1fr;
+    }
+    .th__section-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .th__lf-profile-card,
+    .th__lfp-post-card {
+        padding: 20px;
+    }
+}

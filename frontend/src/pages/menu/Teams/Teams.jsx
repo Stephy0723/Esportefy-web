@@ -95,6 +95,7 @@ const Team = () => {
     const [error, setError] = useState(false);
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState('all');
+    const [hubSection, setHubSection] = useState('teams');
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -501,6 +502,29 @@ const Team = () => {
                 </div>
             </header>
 
+            {/* ── HUB SECTION NAV ── */}
+            <nav className="th__hub-nav">
+                {[
+                    { key: 'teams',     label: 'Equipos',          icon: 'bx-shield-quarter' },
+                    { key: 'scrims',    label: 'Scrims',           icon: 'bx-crossed-swords' },
+                    { key: 'lfteam',    label: 'Buscar Equipo',    icon: 'bx-search-alt-2' },
+                    { key: 'lfplayers', label: 'Buscar Jugadores', icon: 'bx-user-search' },
+                ].map((sec) => (
+                    <button
+                        key={sec.key}
+                        className={`th__hub-nav-btn ${hubSection === sec.key ? 'active' : ''}`}
+                        onClick={() => setHubSection(sec.key)}
+                    >
+                        <i className={`bx ${sec.icon}`}></i>
+                        <span>{sec.label}</span>
+                    </button>
+                ))}
+            </nav>
+
+            {/* ══════════════════════════════════════
+               SECTION: EQUIPOS (default hub)
+               ══════════════════════════════════════ */}
+            {hubSection === 'teams' && <>
             {/* ── TOOLBAR (search + filters) ── */}
             <div className="th__toolbar">
                 <div className="th__search">
@@ -752,6 +776,223 @@ const Team = () => {
                     </div>
                 )}
             </main>
+            </>}
+
+            {/* ══════════════════════════════════════
+               SECTION: SCRIMS (VS challenges)
+               ══════════════════════════════════════ */}
+            {hubSection === 'scrims' && (
+                <section className="th__section th__section--scrims">
+                    <div className="th__section-header">
+                        <div className="th__section-icon th__section-icon--scrims">
+                            <i className='bx bx-crossed-swords'></i>
+                        </div>
+                        <div>
+                            <h2 className="th__section-title">Scrims</h2>
+                            <p className="th__section-desc">Desafía a otros equipos a partidas de práctica competitiva</p>
+                        </div>
+                    </div>
+
+                    <div className="th__scrim-actions">
+                        <button className="th__scrim-create-btn" disabled>
+                            <i className='bx bx-plus-circle'></i>
+                            <span>Crear Desafío</span>
+                            <small>Reta a cualquier equipo registrado</small>
+                        </button>
+                        <button className="th__scrim-create-btn th__scrim-create-btn--find" disabled>
+                            <i className='bx bx-radar'></i>
+                            <span>Buscar Scrim</span>
+                            <small>Encuentra desafíos abiertos</small>
+                        </button>
+                    </div>
+
+                    <div className="th__scrim-features">
+                        <div className="th__scrim-feature">
+                            <div className="th__scrim-feature-icon"><i className='bx bx-target-lock'></i></div>
+                            <h4>Matchmaking Directo</h4>
+                            <p>Elige un equipo rival, define el juego, mapa y reglas. Envía el reto y espera confirmación.</p>
+                        </div>
+                        <div className="th__scrim-feature">
+                            <div className="th__scrim-feature-icon"><i className='bx bx-calendar-event'></i></div>
+                            <h4>Agenda tu Scrim</h4>
+                            <p>Programa fecha y hora para tu práctica. Ambos equipos reciben notificación con recordatorio.</p>
+                        </div>
+                        <div className="th__scrim-feature">
+                            <div className="th__scrim-feature-icon"><i className='bx bx-bar-chart-alt-2'></i></div>
+                            <h4>Historial y Stats</h4>
+                            <p>Registra resultados, lleva un récord de victorias/derrotas y analiza el rendimiento de tu equipo.</p>
+                        </div>
+                        <div className="th__scrim-feature">
+                            <div className="th__scrim-feature-icon"><i className='bx bx-trophy'></i></div>
+                            <h4>Ranking de Scrims</h4>
+                            <p>Los equipos más activos y con mejor récord aparecerán en el ranking competitivo.</p>
+                        </div>
+                    </div>
+
+                    <div className="th__section-coming">
+                        <div className="th__coming-badge">
+                            <i className='bx bx-time-five'></i>
+                            <span>Próximamente</span>
+                        </div>
+                        <p>El sistema de scrims está en desarrollo. Pronto podrás retar a cualquier equipo de la plataforma.</p>
+                    </div>
+                </section>
+            )}
+
+            {/* ══════════════════════════════════════
+               SECTION: BUSCAR EQUIPO (LF Team)
+               ══════════════════════════════════════ */}
+            {hubSection === 'lfteam' && (
+                <section className="th__section th__section--lfteam">
+                    <div className="th__section-header">
+                        <div className="th__section-icon th__section-icon--lfteam">
+                            <i className='bx bx-search-alt-2'></i>
+                        </div>
+                        <div>
+                            <h2 className="th__section-title">Buscar Equipo</h2>
+                            <p className="th__section-desc">Encuentra el equipo perfecto para ti y únete a la competencia</p>
+                        </div>
+                    </div>
+
+                    <div className="th__lf-profile-card">
+                        <div className="th__lf-profile-header">
+                            <i className='bx bx-user-circle'></i>
+                            <h4>Tu Perfil de Jugador</h4>
+                        </div>
+                        <p className="th__lf-profile-desc">Completa tu perfil para que los equipos te encuentren más fácil. Los capitanes podrán ver tu información y considerarte para su roster.</p>
+                        <div className="th__lf-profile-fields">
+                            <div className="th__lf-field">
+                                <label><i className='bx bx-game'></i> Juego principal</label>
+                                <input type="text" placeholder="Ej: Valorant, League of Legends..." disabled />
+                            </div>
+                            <div className="th__lf-field">
+                                <label><i className='bx bx-target-lock'></i> Rol preferido</label>
+                                <input type="text" placeholder="Ej: Duelista, Support, Mid..." disabled />
+                            </div>
+                            <div className="th__lf-field">
+                                <label><i className='bx bx-map'></i> Región</label>
+                                <input type="text" placeholder="Ej: LAN, LAS, NA..." disabled />
+                            </div>
+                            <div className="th__lf-field">
+                                <label><i className='bx bx-time'></i> Disponibilidad</label>
+                                <input type="text" placeholder="Ej: Tardes, Noches, Fines de semana..." disabled />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="th__lf-benefits">
+                        <div className="th__lf-benefit">
+                            <div className="th__lf-benefit-icon"><i className='bx bx-broadcast'></i></div>
+                            <h4>Visibilidad</h4>
+                            <p>Tu perfil será visible para todos los capitanes de equipo que buscan nuevos miembros.</p>
+                        </div>
+                        <div className="th__lf-benefit">
+                            <div className="th__lf-benefit-icon"><i className='bx bx-filter-alt'></i></div>
+                            <h4>Match por Juego</h4>
+                            <p>Te conectamos con equipos que juegan el mismo juego y buscan tu rol específico.</p>
+                        </div>
+                        <div className="th__lf-benefit">
+                            <div className="th__lf-benefit-icon"><i className='bx bx-bell'></i></div>
+                            <h4>Notificaciones</h4>
+                            <p>Recibe alertas cuando un equipo compatible publique una vacante que encaje contigo.</p>
+                        </div>
+                    </div>
+
+                    <div className="th__section-coming">
+                        <div className="th__coming-badge">
+                            <i className='bx bx-time-five'></i>
+                            <span>Próximamente</span>
+                        </div>
+                        <p>El sistema de búsqueda de equipo está en desarrollo. Pronto podrás publicar tu perfil y recibir invitaciones.</p>
+                    </div>
+                </section>
+            )}
+
+            {/* ══════════════════════════════════════
+               SECTION: BUSCAR JUGADORES (LF Players)
+               ══════════════════════════════════════ */}
+            {hubSection === 'lfplayers' && (
+                <section className="th__section th__section--lfplayers">
+                    <div className="th__section-header">
+                        <div className="th__section-icon th__section-icon--lfplayers">
+                            <i className='bx bx-user-search'></i>
+                        </div>
+                        <div>
+                            <h2 className="th__section-title">Buscar Jugadores</h2>
+                            <p className="th__section-desc">Recluta talento para completar el roster de tu equipo</p>
+                        </div>
+                    </div>
+
+                    <div className="th__lfp-post-card">
+                        <div className="th__lfp-post-header">
+                            <i className='bx bx-megaphone'></i>
+                            <h4>Publicar Vacante</h4>
+                        </div>
+                        <p className="th__lfp-post-desc">Publica qué posición necesitas y los jugadores interesados podrán aplicar directamente a tu equipo.</p>
+                        <div className="th__lfp-post-fields">
+                            <div className="th__lf-field">
+                                <label><i className='bx bx-shield-quarter'></i> Equipo</label>
+                                <select disabled>
+                                    <option>Selecciona tu equipo...</option>
+                                    {teams.filter(t => {
+                                        const captainId = t.captain?._id || t.captain;
+                                        return currentUser?._id && String(captainId) === String(currentUser._id);
+                                    }).map(t => (
+                                        <option key={t._id} value={t._id}>{t.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="th__lf-field">
+                                <label><i className='bx bx-target-lock'></i> Rol que buscas</label>
+                                <input type="text" placeholder="Ej: Duelista, Jungla, Support..." disabled />
+                            </div>
+                            <div className="th__lf-field">
+                                <label><i className='bx bx-trophy'></i> Nivel mínimo</label>
+                                <select disabled>
+                                    <option>Cualquier nivel</option>
+                                    <option>Casual</option>
+                                    <option>Amateur</option>
+                                    <option>Semi-Pro</option>
+                                    <option>Profesional</option>
+                                </select>
+                            </div>
+                            <div className="th__lf-field th__lf-field--full">
+                                <label><i className='bx bx-message-dots'></i> Descripción</label>
+                                <textarea placeholder="Describe qué tipo de jugador buscas, horarios, requisitos..." disabled rows={3}></textarea>
+                            </div>
+                        </div>
+                        <button className="th__lfp-publish-btn" disabled>
+                            <i className='bx bx-send'></i> Publicar Vacante
+                        </button>
+                    </div>
+
+                    <div className="th__lf-benefits">
+                        <div className="th__lf-benefit">
+                            <div className="th__lf-benefit-icon"><i className='bx bx-user-check'></i></div>
+                            <h4>Perfiles Verificados</h4>
+                            <p>Los jugadores que aplican tienen su cuenta verificada y datos de juego confirmados.</p>
+                        </div>
+                        <div className="th__lf-benefit">
+                            <div className="th__lf-benefit-icon"><i className='bx bx-conversation'></i></div>
+                            <h4>Comunicación Directa</h4>
+                            <p>Revisa aplicaciones, chatea con candidatos y decide quién entra a tu roster.</p>
+                        </div>
+                        <div className="th__lf-benefit">
+                            <div className="th__lf-benefit-icon"><i className='bx bx-star'></i></div>
+                            <h4>Reputación</h4>
+                            <p>Los jugadores acumulan reputación basada en su compromiso y desempeño en equipos anteriores.</p>
+                        </div>
+                    </div>
+
+                    <div className="th__section-coming">
+                        <div className="th__coming-badge">
+                            <i className='bx bx-time-five'></i>
+                            <span>Próximamente</span>
+                        </div>
+                        <p>El sistema de reclutamiento está en desarrollo. Pronto podrás publicar vacantes y recibir aplicaciones.</p>
+                    </div>
+                </section>
+            )}
 
             {/* ── MODALS ── */}
             {selectedTeam && (

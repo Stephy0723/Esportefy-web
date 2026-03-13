@@ -87,7 +87,7 @@ const Login = () => {
       <div className="auth-left">
         <div className="auth-nav">
       <span className="brand">
-          ESPORTEFY<span className="brand-dot">.</span>
+          GLITCH GANG<span className="brand-dot">.</span>
             </span>            
             <div className="nav-links">
                 <Link to="/">Inicio</Link>

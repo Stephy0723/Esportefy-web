@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import connectDB from './config/database.js';
 import { logger } from './middlewares/logger.js';
 import { verifyCsrf } from './middlewares/csrf.middleware.js';
 
@@ -14,11 +13,8 @@ import settingsRoutes from './routes/settings.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import communityRoutes from './routes/community.routes.js';
 import universityRoutes from './routes/university.routes.js';
-import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
 
 dotenv.config();
-connectDB();
-startMlbbMailQueueWorker();
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);

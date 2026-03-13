@@ -369,7 +369,7 @@ const Register = () => {
     <div className={`auth-container-split ${!isDarkMode ? 'light-mode' : ''}`}>
       <div className="auth-left">
         <div className="auth-nav">
-          <span className="brand">ESPORTEFY</span>
+          <span className="brand">GLITCH GANG</span>
           <div className="nav-links">
             <Link to="/login">Ya tengo cuenta</Link>
           </div>

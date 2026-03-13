@@ -118,9 +118,9 @@ const CommunityGamePageTemplate = () => {
     data?.developer || communityGame?.developer || communityGame?.company || COMPANY_BY_ID[id] || COMPANY_BY_ID[detailId] || 'Studio';
   const history =
     data?.history ||
-    `${name} es parte de la comunidad de Esportefy. Proximamente agregaremos informacion detallada, organizadores y eventos destacados.`;
+    `${name} es parte de la comunidad de GLITCH GANG. Proximamente agregaremos informacion detallada, organizadores y eventos destacados.`;
 
-  const organizers = fallbackArray(data?.organizers, [{ name: 'Esportefy Community', motto: 'Organizacion en actualizacion' }]);
+  const organizers = fallbackArray(data?.organizers, [{ name: 'GLITCH GANG Community', motto: 'Organizacion en actualizacion' }]);
   const sponsors = fallbackArray(data?.sponsors, [{ name: 'Community Sponsor' }]);
   const userCommunities = fallbackArray(data?.userCommunities, [{ name: `${name} Hub`, members: communityGame?.players || '0' }]);
   const tournaments = fallbackArray(data?.activeTournaments || data?.tournaments, [

@@ -9,7 +9,7 @@ export const gamesList = [
     img: LoLImg,
     tags: ['MOBA', 'PC', 'Competitivo'],
     color: '#0AC8B9',
-    desc: 'El MOBA tactico principal soportado por Esportefy.',
+    desc: 'El MOBA tactico principal soportado por GLITCH GANG.',
     members: '10M',
     active: '1.5M',
   },

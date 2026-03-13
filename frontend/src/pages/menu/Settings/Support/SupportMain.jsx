@@ -1,25 +1,22 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    FaChevronDown, FaChevronUp, FaSearch, FaQuestionCircle, 
+import {
+    FaChevronDown, FaSearch, FaQuestionCircle,
     FaArrowLeft, FaTimes, FaDiscord, FaHeadset, FaBook,
-    FaExclamationTriangle, FaCheckCircle, FaEnvelope, FaBug,
+    FaCheckCircle, FaEnvelope, FaBug,
     FaLightbulb, FaShieldAlt, FaGamepad, FaTrophy, FaCreditCard,
-    FaUser, FaCog, FaExternalLinkAlt, FaMedal, FaUpload, FaImage,
-    FaCalendarAlt, FaUsers, FaUserFriends, FaUserAlt, FaAward,
-    FaCrown, FaCloudUploadAlt, FaFileImage, FaTrash
+    FaUser, FaExternalLinkAlt, FaMedal,
+    FaCalendarAlt, FaUsers, FaUserFriends, FaUserAlt,
+    FaCrown, FaCloudUploadAlt, FaTrash
 } from 'react-icons/fa';
 import './SupportPage.css';
 
-// All supported games
 const SUPPORTED_GAMES = [
     { id: 'mlbb', name: 'Mobile Legends', short: 'MLBB' },
     { id: 'valorant', name: 'Valorant', short: 'Valorant' },
     { id: 'lol', name: 'League of Legends', short: 'LoL' },
 ];
 
-// FAQ Categories with icons
 const FAQ_CATEGORIES = [
     { id: 'all', label: 'Todos', icon: FaBook },
     { id: 'account', label: 'Cuenta', icon: FaUser },
@@ -29,28 +26,31 @@ const FAQ_CATEGORIES = [
     { id: 'security', label: 'Seguridad', icon: FaShieldAlt },
 ];
 
-// Enhanced FAQs with categories
 const FAQS = [
-    { id: 1, category: 'teams', question: "¿Cómo creo un equipo competitivo?", answer: "Ve al menú 'Equipos' > 'Crear Equipo'. Necesitarás definir un nombre, subir un logo y elegir el juego principal. Recibirás un link para invitar a tus jugadores." },
-    { id: 2, category: 'payments', question: "¿Cómo funcionan los premios?", answer: "Los premios se depositan automáticamente en la 'Wallet' del capitán una vez validado el resultado. El capitán es responsable de repartirlo." },
-    { id: 3, category: 'teams', question: "¿Puedo estar en varios equipos?", answer: "Sí, puedes pertenecer a múltiples equipos siempre que sean de juegos diferentes (ej: uno de LoL y otro de Valorant)." },
-    { id: 4, category: 'security', question: "¿Qué es el Nivel de Verificación?", answer: "Es nuestro sistema anti-smurf. Vinculamos tu ID real del juego para asegurar que tu rango coincida con la categoría del torneo." },
-    { id: 5, category: 'tournaments', question: "¿Cómo me inscribo a un torneo?", answer: "Busca el torneo en la pestaña 'Torneos', asegúrate de que tu equipo cumpla los requisitos y haz clic en 'Inscribirse'. El capitán debe realizar esta acción." },
-    { id: 6, category: 'tournaments', question: "¿Qué hago si mi rival no se presenta?", answer: "Debes esperar 15 minutos en el lobby. Si no aparecen, toma una captura de pantalla y súbela en el chat del partido para reclamar victoria por W.O." },
-    { id: 7, category: 'security', question: "¿Cómo reportar una conducta tóxica?", answer: "Usa el botón de 'Reportar' en el perfil del jugador o al finalizar la partida. Adjunta pruebas visuales para agilizar el proceso." },
-    { id: 8, category: 'payments', question: "¿Cuáles son los métodos de retiro?", answer: "Actualmente soportamos PayPal, transferencias bancarias locales y criptomonedas (USDT). El mínimo de retiro es de $10 USD." },
-    { id: 9, category: 'account', question: "¿Puedo cambiar mi nombre de usuario?", answer: "Sí, puedes cambiarlo una vez cada 30 días desde la configuración de tu perfil." },
-    { id: 10, category: 'tournaments', question: "¿Qué pasa si se cae mi conexión?", answer: "Cada equipo tiene derecho a 10 minutos de pausa técnica. Si no logras reconectar, tu equipo deberá jugar con un suplente o en desventaja." },
-    { id: 11, category: 'tournaments', question: "¿Cómo subo los resultados?", answer: "Al terminar la partida, el sistema intentará detectarlo automáticamente. Si falla, ambos capitanes deben subir una captura del marcador final." },
-    { id: 12, category: 'account', question: "¿Hay límite de edad?", answer: "Debes tener al menos 13 años para registrarte. Para torneos con premios en efectivo, se requiere ser mayor de 18 años o tener consentimiento parental." },
-    { id: 13, category: 'teams', question: "¿Cómo invito amigos a mi equipo?", answer: "Desde el panel de gestión de tu equipo, copia el 'Link de Invitación' y envíalo. El enlace expira en 24 horas por seguridad." },
-    { id: 14, category: 'account', question: "¿Olvidé mi contraseña, cómo la recupero?", answer: "En la pantalla de Login, pulsa 'Olvidé mi contraseña'. Te enviaremos un correo para restablecerla." },
-    { id: 15, category: 'tournaments', question: "¿Puedo ser organizador de torneos?", answer: "Sí, puedes aplicar para ser Organizador Verificado desde el menú 'Crear Torneo'. Revisaremos tu solicitud en 48 horas." },
-    { id: 16, category: 'security', question: "¿Qué es el Modo Streamer?", answer: "Es una función en Ajustes que oculta información sensible (emails, códigos de lobby) de tu pantalla para evitar stream sniping." },
-    { id: 17, category: 'account', question: "¿Cómo elimino mi cuenta?", answer: "Debes solicitarlo en Ajustes > Seguridad > Eliminar Cuenta. Este proceso es irreversible y perderás tus estadísticas." },
-    { id: 18, category: 'tournaments', question: "¿Los torneos son para todas las regiones?", answer: "Depende del torneo. Cada evento especifica su servidor (ej: NA, LAN, LAS, EUW). Revisa las reglas antes de inscribirte." },
-    { id: 19, category: 'payments', question: "¿Cobran comisión por participar?", answer: "La inscripción suele ser gratuita o de pago según el torneo. Esportefy retiene una pequeña comisión (10%) solo sobre los premios generados para mantenimiento." },
-    { id: 20, category: 'account', question: "¿Tienen aplicación móvil?", answer: "Actualmente estamos desarrollando la App para iOS y Android. Por ahora, nuestra web es 100% responsiva en navegadores móviles." },
+    { id: 1, category: 'account', question: "¿Cómo creo mi cuenta en GLITCH GANG?", answer: "Regístrate con tu correo electrónico o inicia sesión con Google/Discord. Completa tu perfil con tu gamertag, región y juegos principales para empezar a competir." },
+    { id: 2, category: 'account', question: "¿Puedo cambiar mi nombre de usuario?", answer: "Sí, puedes actualizar tu nombre de usuario desde Ajustes > Perfil. Este cambio está disponible una vez cada 30 días para evitar confusión en torneos activos." },
+    { id: 3, category: 'account', question: "¿Cómo recupero mi contraseña?", answer: "En la pantalla de inicio de sesión, selecciona 'Olvidé mi contraseña'. Recibirás un enlace de restablecimiento en tu correo registrado. Si no lo recibes, revisa tu carpeta de spam." },
+    { id: 4, category: 'account', question: "¿Hay límite de edad para usar GLITCH GANG?", answer: "Debes tener al menos 13 años para registrarte. Para participar en torneos con premios en efectivo, necesitas ser mayor de 18 años o contar con autorización parental verificada." },
+    { id: 5, category: 'account', question: "¿Cómo elimino mi cuenta?", answer: "Dirígete a Ajustes > Seguridad > Eliminar Cuenta. Este proceso es permanente e irreversible: perderás tu historial de torneos, estadísticas y saldo disponible en tu wallet." },
+    { id: 6, category: 'account', question: "¿Tienen aplicación móvil?", answer: "Actualmente estamos desarrollando la app nativa para iOS y Android. Mientras tanto, nuestra plataforma web está totalmente optimizada para dispositivos móviles desde cualquier navegador." },
+    { id: 7, category: 'teams', question: "¿Cómo creo un equipo competitivo?", answer: "Navega al Hub de Equipos y selecciona 'Crear Equipo'. Define el nombre, logo, juego principal y nivel competitivo. Recibirás un código de invitación único para reclutar miembros." },
+    { id: 8, category: 'teams', question: "¿Puedo pertenecer a varios equipos?", answer: "Sí, puedes ser miembro de múltiples equipos siempre que sean de juegos diferentes (ejemplo: un equipo de Valorant y otro de LoL). Esto evita conflictos en torneos del mismo título." },
+    { id: 9, category: 'teams', question: "¿Cómo invito jugadores a mi equipo?", answer: "Desde el panel de gestión de tu equipo, copia el código de invitación y compártelo. Los jugadores interesados también pueden solicitar unirse directamente desde el Hub de Equipos." },
+    { id: 10, category: 'teams', question: "¿Qué roles tienen los miembros del equipo?", answer: "Cada equipo tiene un Capitán (creador), Titulares, Suplentes y opcionalmente un Coach. El capitán gestiona el roster, acepta solicitudes y representa al equipo en torneos." },
+    { id: 11, category: 'tournaments', question: "¿Cómo inscribo a mi equipo en un torneo?", answer: "Busca el torneo en la sección Torneos, verifica que tu equipo cumple los requisitos (juego, nivel, roster completo) y haz clic en 'Inscribirse'. Solo el capitán puede realizar la inscripción." },
+    { id: 12, category: 'tournaments', question: "¿Qué formatos de torneo soportan?", answer: "GLITCH GANG soporta eliminación simple, eliminación doble, round robin (todos contra todos) y formatos híbridos con fases de grupos + playoffs. El organizador define el formato al crear el torneo." },
+    { id: 13, category: 'tournaments', question: "¿Qué hago si mi rival no se presenta?", answer: "Espera 15 minutos en el lobby. Si el equipo rival no aparece, toma capturas de pantalla como evidencia y repórtalas en el centro de partidos. Se otorgará victoria por W.O. (walkover) tras verificación." },
+    { id: 14, category: 'tournaments', question: "¿Cómo subo los resultados de mi partida?", answer: "Al finalizar la partida, ambos capitanes deben subir una captura del marcador final en el centro de partidos del torneo. Si hay discrepancia, un administrador revisará las evidencias." },
+    { id: 15, category: 'tournaments', question: "¿Qué pasa si pierdo conexión durante la partida?", answer: "Cada equipo tiene derecho a una pausa técnica de 10 minutos. Si no logras reconectar, tu equipo deberá continuar con un suplente o en desventaja numérica según las reglas del torneo." },
+    { id: 16, category: 'tournaments', question: "¿Puedo ser organizador de torneos?", answer: "Sí. Desde la sección 'Crear Torneo' puedes configurar tu propio evento. Organizadores verificados acceden a herramientas avanzadas como gestión de brackets, streams integrados y premios." },
+    { id: 17, category: 'tournaments', question: "¿Los torneos son para todas las regiones?", answer: "Cada torneo especifica su servidor y región (LAN, LAS, NA, EUW, etc.). Revisa los requisitos antes de inscribirte para asegurar compatibilidad de latencia y elegibilidad." },
+    { id: 18, category: 'payments', question: "¿Cómo funcionan los premios en GLITCH GANG?", answer: "Los premios se acreditan automáticamente en la Wallet del capitán del equipo ganador tras la validación del resultado. El capitán es responsable de distribuir el premio entre su equipo." },
+    { id: 19, category: 'payments', question: "¿Cuáles son los métodos de retiro?", answer: "Ofrecemos retiros por PayPal, transferencia bancaria local y criptomonedas (USDT). El monto mínimo de retiro es de $10 USD y el procesamiento toma entre 24-72 horas hábiles." },
+    { id: 20, category: 'payments', question: "¿GLITCH GANG cobra comisión?", answer: "La inscripción a torneos puede ser gratuita o de pago según el organizador. GLITCH GANG aplica una comisión del 10% sobre los premios generados para mantenimiento y desarrollo de la plataforma." },
+    { id: 21, category: 'security', question: "¿Qué es el sistema de verificación anti-smurf?", answer: "Vinculamos tu cuenta real del juego (Riot ID, MLBB ID) para verificar que tu rango coincida con la categoría del torneo. Esto garantiza competencia justa para todos los participantes." },
+    { id: 22, category: 'security', question: "¿Cómo reporto conducta tóxica o trampas?", answer: "Utiliza el botón 'Reportar' en el perfil del jugador o en el centro de partidos. Adjunta capturas de pantalla o clips de video como evidencia. Nuestro equipo revisa cada reporte en menos de 48 horas." },
+    { id: 23, category: 'security', question: "¿Qué medidas de seguridad protegen mi cuenta?", answer: "Tu cuenta está protegida con encriptación de contraseña, tokens de sesión seguros y verificación por email. Recomendamos usar una contraseña única y no compartir tus credenciales con terceros." },
+    { id: 24, category: 'security', question: "¿Qué es el Modo Streamer?", answer: "Una función en Ajustes que oculta información sensible (emails, códigos de lobby, códigos de invitación) de tu pantalla mientras transmites, para evitar stream sniping y proteger tu privacidad." },
 ];
 
 const SupportPage = () => {
@@ -65,789 +65,358 @@ const SupportPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-    // Achievement Modal States
     const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
     const [achievementData, setAchievementData] = useState({
-        game: '',
-        mode: 'team', // solo, duo, team
-        tournamentName: '',
-        tournamentDate: '',
-        placement: 1,
-        teamName: '',
-        partnerName: '',
-        description: '',
-        proofFiles: []
+        game: '', mode: 'team', tournamentName: '', tournamentDate: '',
+        placement: 1, teamName: '', partnerName: '', description: '', proofFiles: []
     });
 
-    // Animation variants
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: { 
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 }
-    };
-
-    // Filter FAQs
     const filteredFaqs = useMemo(() => {
         return FAQS.filter(faq => {
-            const matchesSearch = faq.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesSearch = faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesCategory = activeCategory === 'all' || faq.category === activeCategory;
             return matchesSearch && matchesCategory;
         });
     }, [searchTerm, activeCategory]);
 
-    // Show toast
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
     };
 
-    // Handle FAQ toggle
-    const toggleFaq = (id) => {
-        setActiveQuestion(activeQuestion === id ? null : id);
-    };
+    const toggleFaq = (id) => setActiveQuestion(activeQuestion === id ? null : id);
 
-    // Handle form submit
     const handleSubmitInquiry = async (e) => {
         e.preventDefault();
-        if (!inquiry.trim()) {
-            showToast('Por favor escribe tu mensaje', 'error');
-            return;
-        }
-        
+        if (!inquiry.trim()) { showToast('Por favor escribe tu mensaje', 'error'); return; }
         setIsSubmitting(true);
-        
-        // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1500));
-        
         setIsSubmitting(false);
         setInquiry('');
         setIsModalOpen(false);
-        showToast('✅ ¡Tu consulta ha sido enviada! Te responderemos en menos de 24 horas.');
+        showToast('Tu consulta ha sido enviada. Te responderemos en menos de 24 horas.');
     };
 
-    // Handle file selection for achievements
     const handleFileSelect = (e) => {
         const files = Array.from(e.target.files);
-        const validFiles = files.filter(file => {
-            const isImage = file.type.startsWith('image/');
-            const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB max
-            return isImage && isValidSize;
-        });
-
-        if (validFiles.length !== files.length) {
-            showToast('Algunos archivos fueron ignorados (solo imágenes de hasta 10MB)', 'error');
-        }
-
-        const newFiles = validFiles.map(file => ({
-            file,
-            preview: URL.createObjectURL(file),
-            name: file.name
-        }));
-
-        setAchievementData(prev => ({
-            ...prev,
-            proofFiles: [...prev.proofFiles, ...newFiles].slice(0, 5) // Max 5 files
-        }));
+        const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024);
+        if (validFiles.length !== files.length) showToast('Algunos archivos fueron ignorados (solo imágenes hasta 10MB)', 'error');
+        const newFiles = validFiles.map(f => ({ file: f, preview: URL.createObjectURL(f), name: f.name }));
+        setAchievementData(prev => ({ ...prev, proofFiles: [...prev.proofFiles, ...newFiles].slice(0, 5) }));
     };
 
-    // Remove proof file
     const removeProofFile = (index) => {
-        setAchievementData(prev => ({
-            ...prev,
-            proofFiles: prev.proofFiles.filter((_, i) => i !== index)
-        }));
+        setAchievementData(prev => ({ ...prev, proofFiles: prev.proofFiles.filter((_, i) => i !== index) }));
     };
 
-    // Handle achievement submission
     const handleSubmitAchievement = async (e) => {
         e.preventDefault();
-
-        // Validation
-        if (!achievementData.game) {
-            showToast('Selecciona un juego', 'error');
-            return;
-        }
-        if (!achievementData.tournamentName.trim()) {
-            showToast('Escribe el nombre del torneo', 'error');
-            return;
-        }
-        if (!achievementData.tournamentDate) {
-            showToast('Selecciona la fecha del torneo', 'error');
-            return;
-        }
-        if (achievementData.proofFiles.length === 0) {
-            showToast('Sube al menos una prueba de tu victoria', 'error');
-            return;
-        }
-        if (achievementData.mode === 'duo' && !achievementData.partnerName.trim()) {
-            showToast('Escribe el nombre de tu compañero de duo', 'error');
-            return;
-        }
-        if (achievementData.mode === 'team' && !achievementData.teamName.trim()) {
-            showToast('Escribe el nombre de tu equipo', 'error');
-            return;
-        }
-
+        if (!achievementData.game) { showToast('Selecciona un juego', 'error'); return; }
+        if (!achievementData.tournamentName.trim()) { showToast('Escribe el nombre del torneo', 'error'); return; }
+        if (!achievementData.tournamentDate) { showToast('Selecciona la fecha', 'error'); return; }
+        if (achievementData.proofFiles.length === 0) { showToast('Sube al menos una prueba', 'error'); return; }
+        if (achievementData.mode === 'duo' && !achievementData.partnerName.trim()) { showToast('Escribe el nombre de tu compañero', 'error'); return; }
+        if (achievementData.mode === 'team' && !achievementData.teamName.trim()) { showToast('Escribe el nombre del equipo', 'error'); return; }
         setIsSubmitting(true);
-        
-        // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
         setIsSubmitting(false);
-        setAchievementData({
-            game: '',
-            mode: 'team',
-            tournamentName: '',
-            tournamentDate: '',
-            placement: 1,
-            teamName: '',
-            partnerName: '',
-            description: '',
-            proofFiles: []
-        });
+        setAchievementData({ game: '', mode: 'team', tournamentName: '', tournamentDate: '', placement: 1, teamName: '', partnerName: '', description: '', proofFiles: [] });
         setIsAchievementModalOpen(false);
-        showToast('🏆 ¡Logro enviado! Nuestro equipo lo revisará en 24-48 horas.');
+        showToast('Logro enviado. Nuestro equipo lo revisará en 24-48 horas.');
     };
 
-    // Reset achievement modal
     const closeAchievementModal = () => {
         if (!isSubmitting) {
             setIsAchievementModalOpen(false);
-            setAchievementData({
-                game: '',
-                mode: 'team',
-                tournamentName: '',
-                tournamentDate: '',
-                placement: 1,
-                teamName: '',
-                partnerName: '',
-                description: '',
-                proofFiles: []
-            });
+            setAchievementData({ game: '', mode: 'team', tournamentName: '', tournamentDate: '', placement: 1, teamName: '', partnerName: '', description: '', proofFiles: [] });
         }
     };
 
-    // Quick actions
     const quickActions = [
-        { 
-            icon: FaTrophy, 
-            title: 'Enviar Logro', 
-            desc: 'Reporta tus victorias',
-            color: 'gold',
-            onClick: () => setIsAchievementModalOpen(true)
-        },
-        { 
-            icon: FaBook, 
-            title: 'Documentación', 
-            desc: 'Guías completas y tutoriales',
-            color: 'primary',
-            onClick: () => window.open('/docs', '_blank')
-        },
-        { 
-            icon: FaDiscord, 
-            title: 'Discord', 
-            desc: 'Soporte en tiempo real',
-            color: 'discord',
-            onClick: () => window.open('https://discord.gg/esportefy', '_blank')
-        },
-        { 
-            icon: FaBug, 
-            title: 'Reportar Bug', 
-            desc: 'Ayúdanos a mejorar',
-            color: 'warning',
-            onClick: () => { setInquiryType('bug'); setIsModalOpen(true); }
-        },
-        { 
-            icon: FaLightbulb, 
-            title: 'Sugerencias', 
-            desc: 'Comparte tus ideas',
-            color: 'info',
-            onClick: () => { setInquiryType('suggestion'); setIsModalOpen(true); }
-        },
+        { icon: FaTrophy, title: 'Enviar Logro', desc: 'Reporta tus victorias en torneos', accent: 'gold', onClick: () => setIsAchievementModalOpen(true) },
+        { icon: FaBook, title: 'Documentación', desc: 'Guías y tutoriales completos', accent: 'primary', onClick: () => navigate('/docs') },
+        { icon: FaDiscord, title: 'Discord', desc: 'Comunidad y soporte en vivo', accent: 'discord', onClick: () => window.open('https://discord.gg/esportefy', '_blank') },
+        { icon: FaBug, title: 'Reportar Bug', desc: 'Ayúdanos a mejorar la plataforma', accent: 'warning', onClick: () => { setInquiryType('bug'); setIsModalOpen(true); } },
+        { icon: FaLightbulb, title: 'Sugerencias', desc: 'Comparte tus ideas con nosotros', accent: 'info', onClick: () => { setInquiryType('suggestion'); setIsModalOpen(true); } },
     ];
 
     return (
-        <motion.div 
-            className="sp-page"
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-        >
+        <div className="sp">
             {/* Toast */}
-            <AnimatePresence>
-                {toast.show && (
-                    <motion.div 
-                        className={`sp-toast sp-toast--${toast.type}`}
-                        initial={{ opacity: 0, y: -30, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: -30 }}
-                    >
-                        {toast.message}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {toast.show && (
+                <div className={`sp-toast sp-toast--${toast.type}`}>
+                    <i className={`bx ${toast.type === 'error' ? 'bx-error-circle' : 'bx-check-circle'}`}></i>
+                    <span>{toast.message}</span>
+                </div>
+            )}
 
-            {/* Header */}
-            <motion.header className="sp-header" variants={itemVariants}>
-                <button className="sp-back-btn" onClick={() => navigate(-1)}>
-                    <FaArrowLeft />
-                    <span>Volver</span>
-                </button>
-                
-                <div className="sp-header__content">
-                    <div className="sp-header__icon">
-                        <FaHeadset />
+            {/* Hero */}
+            <header className="sp-hero">
+                <div className="sp-hero__bg" />
+                <div className="sp-hero__inner">
+                    <button className="sp-back" onClick={() => navigate(-1)}>
+                        <FaArrowLeft /> <span>Volver</span>
+                    </button>
+                    <div className="sp-hero__badge">
+                        <i className='bx bx-support'></i>
                     </div>
-                    <h1>Centro de Ayuda</h1>
-                    <p>Encuentra respuestas, reporta problemas y conecta con nuestro equipo</p>
-                </div>
+                    <h1 className="sp-hero__title">Centro de Ayuda</h1>
+                    <p className="sp-hero__sub">Todo lo que necesitas para dominar GLITCH GANG</p>
 
-                {/* Search Bar */}
-                <div className="sp-search">
-                    <FaSearch className="sp-search__icon" />
-                    <input 
-                        type="text"
-                        placeholder="Buscar en la base de conocimiento..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                        <button className="sp-search__clear" onClick={() => setSearchTerm('')}>
-                            <FaTimes />
-                        </button>
-                    )}
+                    <div className="sp-hero__search">
+                        <FaSearch className="sp-hero__search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Buscar preguntas, guías, temas..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        {searchTerm && (
+                            <button className="sp-hero__search-clear" onClick={() => setSearchTerm('')}>
+                                <FaTimes />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="sp-hero__stats">
+                        <div className="sp-hero__stat">
+                            <strong>{FAQS.length}</strong>
+                            <span>Artículos</span>
+                        </div>
+                        <div className="sp-hero__stat-sep" />
+                        <div className="sp-hero__stat">
+                            <strong>&lt; 2h</strong>
+                            <span>Respuesta</span>
+                        </div>
+                        <div className="sp-hero__stat-sep" />
+                        <div className="sp-hero__stat">
+                            <strong>24/7</strong>
+                            <span>Soporte</span>
+                        </div>
+                    </div>
                 </div>
-            </motion.header>
+            </header>
 
             {/* Quick Actions */}
-            <motion.section className="sp-quick-actions" variants={itemVariants}>
-                <h2 className="sp-section-title">
-                    <FaExclamationTriangle />
-                    Acciones Rápidas
-                </h2>
-                <div className="sp-quick-actions__grid">
-                    {quickActions.map((action, index) => (
-                        <motion.div
-                            key={index}
-                            className={`sp-action-card sp-action-card--${action.color}`}
-                            onClick={action.onClick}
-                            whileHover={{ y: -4, scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <div className="sp-action-card__icon">
-                                <action.icon />
+            <section className="sp-actions">
+                <div className="sp-actions__grid">
+                    {quickActions.map((a, i) => (
+                        <button key={i} className={`sp-action sp-action--${a.accent}`} onClick={a.onClick} style={{ animationDelay: `${i * 0.08}s` }}>
+                            <div className="sp-action__icon"><a.icon /></div>
+                            <div className="sp-action__text">
+                                <strong>{a.title}</strong>
+                                <span>{a.desc}</span>
                             </div>
-                            <div className="sp-action-card__content">
-                                <h3>{action.title}</h3>
-                                <p>{action.desc}</p>
-                            </div>
-                            <FaExternalLinkAlt className="sp-action-card__arrow" />
-                        </motion.div>
+                            <FaExternalLinkAlt className="sp-action__arrow" />
+                        </button>
                     ))}
                 </div>
-            </motion.section>
+            </section>
 
             {/* Main Content */}
-            <div className="sp-main">
-                {/* FAQ Section */}
-                <motion.section className="sp-faq" variants={itemVariants}>
-                    <h2 className="sp-section-title">
-                        <FaQuestionCircle />
-                        Preguntas Frecuentes
-                        <span className="sp-section-title__count">{filteredFaqs.length}</span>
-                    </h2>
-
-                    {/* Category Tabs */}
-                    <div className="sp-faq__categories">
-                        {FAQ_CATEGORIES.map(cat => (
-                            <button
-                                key={cat.id}
-                                className={`sp-category-btn ${activeCategory === cat.id ? 'sp-category-btn--active' : ''}`}
-                                onClick={() => setActiveCategory(cat.id)}
-                            >
-                                <cat.icon />
-                                <span>{cat.label}</span>
-                            </button>
-                        ))}
+            <div className="sp-body">
+                {/* FAQ */}
+                <section className="sp-faq">
+                    <div className="sp-faq__head">
+                        <h2><FaQuestionCircle /> Preguntas Frecuentes</h2>
+                        <span className="sp-faq__count">{filteredFaqs.length}</span>
                     </div>
 
-                    {/* FAQ List */}
+                    <div className="sp-faq__cats">
+                        {FAQ_CATEGORIES.map(cat => {
+                            const Icon = cat.icon;
+                            return (
+                                <button
+                                    key={cat.id}
+                                    className={`sp-cat ${activeCategory === cat.id ? 'sp-cat--active' : ''}`}
+                                    onClick={() => setActiveCategory(cat.id)}
+                                >
+                                    <Icon /> <span>{cat.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
                     <div className="sp-faq__list">
-                        <AnimatePresence mode="popLayout">
-                            {filteredFaqs.length > 0 ? (
-                                filteredFaqs.map((faq, index) => (
-                                    <motion.div
-                                        key={faq.id}
-                                        className={`sp-faq-item ${activeQuestion === faq.id ? 'sp-faq-item--active' : ''}`}
-                                        onClick={() => toggleFaq(faq.id)}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ delay: index * 0.03 }}
-                                        layout
-                                    >
-                                        <div className="sp-faq-item__question">
-                                            <span className="sp-faq-item__number">{String(index + 1).padStart(2, '0')}</span>
-                                            <span className="sp-faq-item__text">{faq.question}</span>
-                                            <motion.div
-                                                className="sp-faq-item__chevron"
-                                                animate={{ rotate: activeQuestion === faq.id ? 180 : 0 }}
-                                            >
-                                                <FaChevronDown />
-                                            </motion.div>
-                                        </div>
-                                        <AnimatePresence>
-                                            {activeQuestion === faq.id && (
-                                                <motion.div 
-                                                    className="sp-faq-item__answer"
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    transition={{ duration: 0.3 }}
-                                                >
-                                                    <p>{faq.answer}</p>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </motion.div>
-                                ))
-                            ) : (
-                                <motion.div 
-                                    className="sp-faq__empty"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
+                        {filteredFaqs.length > 0 ? (
+                            filteredFaqs.map((faq, index) => (
+                                <div
+                                    key={faq.id}
+                                    className={`sp-q ${activeQuestion === faq.id ? 'sp-q--open' : ''}`}
+                                    style={{ animationDelay: `${index * 0.04}s` }}
                                 >
-                                    <FaSearch />
-                                    <h3>No encontramos resultados</h3>
-                                    <p>Intenta con otros términos o categorías</p>
-                                    <button onClick={() => { setSearchTerm(''); setActiveCategory('all'); }}>
-                                        Ver todas las preguntas
+                                    <button className="sp-q__head" onClick={() => toggleFaq(faq.id)}>
+                                        <span className="sp-q__num">{String(index + 1).padStart(2, '0')}</span>
+                                        <span className="sp-q__text">{faq.question}</span>
+                                        <span className="sp-q__chevron"><FaChevronDown /></span>
                                     </button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    <div className="sp-q__body">
+                                        <p>{faq.answer}</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="sp-faq__empty">
+                                <FaSearch />
+                                <h3>Sin resultados</h3>
+                                <p>Intenta con otros términos o categorías</p>
+                                <button onClick={() => { setSearchTerm(''); setActiveCategory('all'); }}>
+                                    Ver todas las preguntas
+                                </button>
+                            </div>
+                        )}
                     </div>
-                </motion.section>
+                </section>
 
-                {/* Contact Sidebar */}
-                <motion.aside className="sp-sidebar" variants={itemVariants}>
-                    {/* Still need help card */}
-                    <div className="sp-contact-card">
-                        <div className="sp-contact-card__icon">
-                            <FaHeadset />
-                        </div>
+                {/* Sidebar */}
+                <aside className="sp-side">
+                    <div className="sp-contact">
+                        <div className="sp-contact__icon"><FaHeadset /></div>
                         <h3>¿Necesitas más ayuda?</h3>
-                        <p>Nuestro equipo está disponible 24/7 para resolver tus dudas</p>
-                        
-                        <button 
-                            className="sp-contact-card__btn"
-                            onClick={() => { setInquiryType('question'); setIsModalOpen(true); }}
-                        >
-                            <FaEnvelope />
-                            Enviar Consulta
+                        <p>Nuestro equipo está disponible para resolver cualquier duda que tengas sobre la plataforma.</p>
+                        <button className="sp-contact__btn" onClick={() => { setInquiryType('question'); setIsModalOpen(true); }}>
+                            <FaEnvelope /> Enviar Consulta
                         </button>
-
-                        <div className="sp-contact-card__stats">
-                            <div className="sp-contact-card__stat">
-                                <span className="sp-contact-card__stat-value">&lt; 2h</span>
-                                <span className="sp-contact-card__stat-label">Tiempo de respuesta</span>
-                            </div>
-                            <div className="sp-contact-card__stat">
-                                <span className="sp-contact-card__stat-value">98%</span>
-                                <span className="sp-contact-card__stat-label">Satisfacción</span>
-                            </div>
+                        <div className="sp-contact__stats">
+                            <div><strong>&lt; 2h</strong><span>Tiempo de respuesta</span></div>
+                            <div><strong>98%</strong><span>Satisfacción</span></div>
                         </div>
                     </div>
 
-                    {/* Popular Topics */}
-                    <div className="sp-popular">
+                    <div className="sp-topics">
                         <h4>Temas Populares</h4>
-                        <div className="sp-popular__tags">
-                            {['Torneos', 'Pagos', 'Verificación', 'Equipos', 'Reportes'].map(tag => (
-                                <button 
-                                    key={tag}
-                                    className="sp-popular__tag"
-                                    onClick={() => setSearchTerm(tag.toLowerCase())}
-                                >
+                        <div className="sp-topics__list">
+                            {['Inscripción', 'Premios', 'Verificación', 'Equipos', 'Brackets', 'Reportes'].map(tag => (
+                                <button key={tag} className="sp-topics__tag" onClick={() => setSearchTerm(tag.toLowerCase())}>
                                     {tag}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Contact info */}
-                    <div className="sp-contact-info">
+                    <div className="sp-direct">
                         <h4>Contacto Directo</h4>
-                        <a href="mailto:soporte@esportefy.com" className="sp-contact-info__item">
-                            <FaEnvelope />
-                            <span>soporte@esportefy.com</span>
+                        <a href="mailto:soporte@esportefy.com" className="sp-direct__link">
+                            <FaEnvelope /> <span>soporte@esportefy.com</span>
                         </a>
-                        <a href="https://discord.gg/esportefy" target="_blank" rel="noopener noreferrer" className="sp-contact-info__item">
-                            <FaDiscord />
-                            <span>Discord Server</span>
+                        <a href="https://discord.gg/esportefy" target="_blank" rel="noopener noreferrer" className="sp-direct__link">
+                            <FaDiscord /> <span>Servidor de Discord</span>
                         </a>
                     </div>
-                </motion.aside>
+                </aside>
             </div>
 
-            {/* Modal */}
-            <AnimatePresence>
-                {isModalOpen && (
-                    <motion.div 
-                        className="sp-modal-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => !isSubmitting && setIsModalOpen(false)}
-                    >
-                        <motion.div 
-                            className="sp-modal"
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <button 
-                                className="sp-modal__close"
-                                onClick={() => setIsModalOpen(false)}
-                                disabled={isSubmitting}
-                            >
-                                <FaTimes />
-                            </button>
-
-                            <div className="sp-modal__header">
-                                <div className="sp-modal__icon">
-                                    {inquiryType === 'bug' ? <FaBug /> : 
-                                     inquiryType === 'suggestion' ? <FaLightbulb /> : <FaEnvelope />}
-                                </div>
-                                <h3>
-                                    {inquiryType === 'bug' ? 'Reportar un Bug' : 
-                                     inquiryType === 'suggestion' ? 'Enviar Sugerencia' : 'Nueva Consulta'}
-                                </h3>
-                                <p>
-                                    {inquiryType === 'bug' ? 'Describe el problema lo más detallado posible' : 
-                                     inquiryType === 'suggestion' ? 'Comparte tu idea para mejorar Esportefy' : 
-                                     'Te responderemos en menos de 24 horas'}
-                                </p>
+            {/* ── Inquiry Modal ── */}
+            {isModalOpen && (
+                <div className="sp-overlay" onClick={() => !isSubmitting && setIsModalOpen(false)}>
+                    <div className="sp-modal" onClick={e => e.stopPropagation()}>
+                        <button className="sp-modal__close" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}><FaTimes /></button>
+                        <div className="sp-modal__head">
+                            <div className="sp-modal__badge">
+                                {inquiryType === 'bug' ? <FaBug /> : inquiryType === 'suggestion' ? <FaLightbulb /> : <FaEnvelope />}
                             </div>
+                            <h3>{inquiryType === 'bug' ? 'Reportar un Bug' : inquiryType === 'suggestion' ? 'Enviar Sugerencia' : 'Nueva Consulta'}</h3>
+                            <p>{inquiryType === 'bug' ? 'Describe el problema con el mayor detalle posible' : inquiryType === 'suggestion' ? 'Comparte tu idea para mejorar GLITCH GANG' : 'Te responderemos en menos de 24 horas'}</p>
+                        </div>
+                        <form onSubmit={handleSubmitInquiry} className="sp-modal__form">
+                            <div className="sp-modal__types">
+                                {[
+                                    { id: 'question', label: 'Pregunta', icon: FaQuestionCircle },
+                                    { id: 'bug', label: 'Bug', icon: FaBug },
+                                    { id: 'suggestion', label: 'Idea', icon: FaLightbulb },
+                                ].map(type => (
+                                    <button key={type.id} type="button" className={`sp-modal__type ${inquiryType === type.id ? 'active' : ''}`} onClick={() => setInquiryType(type.id)} disabled={isSubmitting}>
+                                        <type.icon /> <span>{type.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <textarea
+                                placeholder={inquiryType === 'bug' ? 'Describe qué pasó, qué esperabas que pasara, y los pasos para reproducirlo...' : inquiryType === 'suggestion' ? 'Cuéntanos tu idea y cómo mejoraría la plataforma...' : 'Escribe tu pregunta o consulta aquí...'}
+                                value={inquiry} onChange={(e) => setInquiry(e.target.value)} disabled={isSubmitting} rows={6}
+                            />
+                            <div className="sp-modal__actions">
+                                <button type="button" className="sp-modal__btn sp-modal__btn--ghost" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Cancelar</button>
+                                <button type="submit" className="sp-modal__btn sp-modal__btn--primary" disabled={isSubmitting || !inquiry.trim()}>
+                                    {isSubmitting ? <><i className='bx bx-loader-alt bx-spin'></i> Enviando...</> : <><FaCheckCircle /> Enviar</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
-                            <form onSubmit={handleSubmitInquiry} className="sp-modal__form">
-                                {/* Type selector */}
-                                <div className="sp-modal__types">
-                                    {[
-                                        { id: 'question', label: 'Pregunta', icon: FaQuestionCircle },
-                                        { id: 'bug', label: 'Bug', icon: FaBug },
-                                        { id: 'suggestion', label: 'Idea', icon: FaLightbulb },
-                                    ].map(type => (
-                                        <button
-                                            key={type.id}
-                                            type="button"
-                                            className={`sp-modal__type ${inquiryType === type.id ? 'sp-modal__type--active' : ''}`}
-                                            onClick={() => setInquiryType(type.id)}
-                                            disabled={isSubmitting}
-                                        >
-                                            <type.icon />
-                                            <span>{type.label}</span>
+            {/* ── Achievement Modal ── */}
+            {isAchievementModalOpen && (
+                <div className="sp-overlay" onClick={closeAchievementModal}>
+                    <div className="sp-modal sp-modal--lg" onClick={e => e.stopPropagation()}>
+                        <button className="sp-modal__close" onClick={closeAchievementModal} disabled={isSubmitting}><FaTimes /></button>
+                        <div className="sp-modal__head sp-modal__head--gold">
+                            <div className="sp-modal__badge sp-modal__badge--gold"><FaTrophy /></div>
+                            <h3>Enviar Logro</h3>
+                            <p>Comparte tus victorias en torneos para que aparezcan en tu perfil</p>
+                        </div>
+                        <form onSubmit={handleSubmitAchievement} className="sp-modal__form sp-modal__form--ach">
+                            <div className="sp-field">
+                                <label><FaGamepad /> Juego</label>
+                                <select value={achievementData.game} onChange={(e) => setAchievementData(prev => ({ ...prev, game: e.target.value }))} disabled={isSubmitting} required>
+                                    <option value="">Selecciona un juego</option>
+                                    {SUPPORTED_GAMES.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="sp-field">
+                                <label><FaUsers /> Modo de Competición</label>
+                                <div className="sp-modes">
+                                    {[{ id: 'solo', label: 'Solo', icon: FaUserAlt }, { id: 'duo', label: 'Duo', icon: FaUserFriends }, { id: 'team', label: 'Equipo', icon: FaUsers }].map(m => (
+                                        <button key={m.id} type="button" className={`sp-mode ${achievementData.mode === m.id ? 'active' : ''}`} onClick={() => setAchievementData(prev => ({ ...prev, mode: m.id }))} disabled={isSubmitting}>
+                                            <m.icon /> <span>{m.label}</span>
                                         </button>
                                     ))}
                                 </div>
-
-                                <textarea
-                                    placeholder={
-                                        inquiryType === 'bug' ? 'Describe qué pasó, qué esperabas que pasara, y los pasos para reproducirlo...' :
-                                        inquiryType === 'suggestion' ? 'Cuéntanos tu idea y cómo crees que mejoraría la plataforma...' :
-                                        'Escribe tu pregunta o consulta aquí...'
-                                    }
-                                    value={inquiry}
-                                    onChange={(e) => setInquiry(e.target.value)}
-                                    disabled={isSubmitting}
-                                    rows={6}
-                                />
-
-                                <div className="sp-modal__footer">
-                                    <button 
-                                        type="button"
-                                        className="sp-modal__btn sp-modal__btn--ghost"
-                                        onClick={() => setIsModalOpen(false)}
-                                        disabled={isSubmitting}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button 
-                                        type="submit"
-                                        className="sp-modal__btn sp-modal__btn--primary"
-                                        disabled={isSubmitting || !inquiry.trim()}
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <i className='bx bx-loader-alt spin' />
-                                                Enviando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <FaCheckCircle />
-                                                Enviar
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Achievement Submission Modal */}
-            <AnimatePresence>
-                {isAchievementModalOpen && (
-                    <motion.div 
-                        className="sp-modal-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={closeAchievementModal}
-                    >
-                        <motion.div 
-                            className="sp-modal sp-modal--achievement"
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <button 
-                                className="sp-modal__close"
-                                onClick={closeAchievementModal}
-                                disabled={isSubmitting}
-                            >
-                                <FaTimes />
-                            </button>
-
-                            <div className="sp-modal__header sp-modal__header--achievement">
-                                <div className="sp-modal__icon sp-modal__icon--gold">
-                                    <FaTrophy />
-                                </div>
-                                <h3>Enviar Logro</h3>
-                                <p>Comparte tus victorias en torneos para que aparezcan en tu perfil</p>
                             </div>
-
-                            <form onSubmit={handleSubmitAchievement} className="sp-modal__form sp-achievement-form">
-                                {/* Game Selection */}
-                                <div className="sp-form-group">
-                                    <label><FaGamepad /> Juego</label>
-                                    <select 
-                                        value={achievementData.game}
-                                        onChange={(e) => setAchievementData(prev => ({ ...prev, game: e.target.value }))}
-                                        disabled={isSubmitting}
-                                        required
-                                    >
-                                        <option value="">Selecciona un juego</option>
-                                        {SUPPORTED_GAMES.map(game => (
-                                            <option key={game.id} value={game.id}>{game.name}</option>
-                                        ))}
+                            <div className="sp-row">
+                                <div className="sp-field"><label><FaMedal /> Nombre del Torneo</label><input type="text" placeholder="Ej: Copa Nacional MLBB 2025" value={achievementData.tournamentName} onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentName: e.target.value }))} disabled={isSubmitting} required /></div>
+                                <div className="sp-field sp-field--sm"><label><FaCalendarAlt /> Fecha</label><input type="date" value={achievementData.tournamentDate} onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentDate: e.target.value }))} disabled={isSubmitting} required /></div>
+                            </div>
+                            <div className="sp-row">
+                                <div className="sp-field sp-field--sm">
+                                    <label><FaCrown /> Posición</label>
+                                    <select value={achievementData.placement} onChange={(e) => setAchievementData(prev => ({ ...prev, placement: parseInt(e.target.value) }))} disabled={isSubmitting}>
+                                        <option value={1}>1er Lugar</option><option value={2}>2do Lugar</option><option value={3}>3er Lugar</option><option value={4}>4to Lugar</option><option value={5}>Top 5</option><option value={8}>Top 8</option>
                                     </select>
                                 </div>
-
-                                {/* Mode Selection */}
-                                <div className="sp-form-group">
-                                    <label><FaUsers /> Modo de Competición</label>
-                                    <div className="sp-mode-selector">
-                                        {[
-                                            { id: 'solo', label: 'Solo', icon: FaUserAlt },
-                                            { id: 'duo', label: 'Duo', icon: FaUserFriends },
-                                            { id: 'team', label: 'Equipo', icon: FaUsers },
-                                        ].map(mode => (
-                                            <button
-                                                key={mode.id}
-                                                type="button"
-                                                className={`sp-mode-btn ${achievementData.mode === mode.id ? 'sp-mode-btn--active' : ''}`}
-                                                onClick={() => setAchievementData(prev => ({ ...prev, mode: mode.id }))}
-                                                disabled={isSubmitting}
-                                            >
-                                                <mode.icon />
-                                                <span>{mode.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Tournament Info Row */}
-                                <div className="sp-form-row">
-                                    <div className="sp-form-group">
-                                        <label><FaMedal /> Nombre del Torneo</label>
-                                        <input 
-                                            type="text"
-                                            placeholder="Ej: Copa Nacional MLBB 2025"
-                                            value={achievementData.tournamentName}
-                                            onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentName: e.target.value }))}
-                                            disabled={isSubmitting}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="sp-form-group sp-form-group--small">
-                                        <label><FaCalendarAlt /> Fecha</label>
-                                        <input 
-                                            type="date"
-                                            value={achievementData.tournamentDate}
-                                            onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentDate: e.target.value }))}
-                                            disabled={isSubmitting}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Placement Row */}
-                                <div className="sp-form-row">
-                                    <div className="sp-form-group sp-form-group--small">
-                                        <label><FaCrown /> Posición</label>
-                                        <select 
-                                            value={achievementData.placement}
-                                            onChange={(e) => setAchievementData(prev => ({ ...prev, placement: parseInt(e.target.value) }))}
-                                            disabled={isSubmitting}
-                                        >
-                                            <option value={1}>🥇 1er Lugar</option>
-                                            <option value={2}>🥈 2do Lugar</option>
-                                            <option value={3}>🥉 3er Lugar</option>
-                                            <option value={4}>4to Lugar</option>
-                                            <option value={5}>Top 5</option>
-                                            <option value={8}>Top 8</option>
-                                            <option value={10}>Top 10</option>
-                                            <option value={16}>Top 16</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Conditional: Team Name */}
-                                    {achievementData.mode === 'team' && (
-                                        <div className="sp-form-group">
-                                            <label><FaShieldAlt /> Nombre del Equipo</label>
-                                            <input 
-                                                type="text"
-                                                placeholder="Ej: Hispaniola Esports"
-                                                value={achievementData.teamName}
-                                                onChange={(e) => setAchievementData(prev => ({ ...prev, teamName: e.target.value }))}
-                                                disabled={isSubmitting}
-                                                required={achievementData.mode === 'team'}
-                                            />
+                                {achievementData.mode === 'team' && <div className="sp-field"><label><FaShieldAlt /> Nombre del Equipo</label><input type="text" placeholder="Ej: Hispaniola Esports" value={achievementData.teamName} onChange={(e) => setAchievementData(prev => ({ ...prev, teamName: e.target.value }))} disabled={isSubmitting} required /></div>}
+                                {achievementData.mode === 'duo' && <div className="sp-field"><label><FaUserFriends /> Compañero</label><input type="text" placeholder="Nombre o IGN" value={achievementData.partnerName} onChange={(e) => setAchievementData(prev => ({ ...prev, partnerName: e.target.value }))} disabled={isSubmitting} required /></div>}
+                            </div>
+                            <div className="sp-field"><label><FaBook /> Descripción (opcional)</label><textarea placeholder="Formato del torneo, número de participantes, etc." value={achievementData.description} onChange={(e) => setAchievementData(prev => ({ ...prev, description: e.target.value }))} disabled={isSubmitting} rows={3} /></div>
+                            <div className="sp-field">
+                                <label><i className='bx bx-image'></i> Pruebas (máx. 5 imágenes)</label>
+                                <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileSelect} disabled={isSubmitting || achievementData.proofFiles.length >= 5} style={{ display: 'none' }} />
+                                <div className="sp-proofs">
+                                    {achievementData.proofFiles.map((f, i) => (
+                                        <div key={i} className="sp-proof">
+                                            <img src={f.preview} alt={`Prueba ${i + 1}`} />
+                                            <button type="button" className="sp-proof__rm" onClick={() => removeProofFile(i)} disabled={isSubmitting}><FaTrash /></button>
                                         </div>
-                                    )}
-
-                                    {/* Conditional: Partner Name */}
-                                    {achievementData.mode === 'duo' && (
-                                        <div className="sp-form-group">
-                                            <label><FaUserFriends /> Compañero de Duo</label>
-                                            <input 
-                                                type="text"
-                                                placeholder="Nombre o IGN del compañero"
-                                                value={achievementData.partnerName}
-                                                onChange={(e) => setAchievementData(prev => ({ ...prev, partnerName: e.target.value }))}
-                                                disabled={isSubmitting}
-                                                required={achievementData.mode === 'duo'}
-                                            />
-                                        </div>
+                                    ))}
+                                    {achievementData.proofFiles.length < 5 && (
+                                        <button type="button" className="sp-proof__add" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
+                                            <FaCloudUploadAlt /><span>Subir</span>
+                                        </button>
                                     )}
                                 </div>
-
-                                {/* Description */}
-                                <div className="sp-form-group">
-                                    <label><FaBook /> Descripción (opcional)</label>
-                                    <textarea
-                                        placeholder="Cuéntanos más sobre este logro, formato del torneo, número de participantes, etc."
-                                        value={achievementData.description}
-                                        onChange={(e) => setAchievementData(prev => ({ ...prev, description: e.target.value }))}
-                                        disabled={isSubmitting}
-                                        rows={3}
-                                    />
-                                </div>
-
-                                {/* Proof Upload */}
-                                <div className="sp-form-group">
-                                    <label><FaImage /> Pruebas de Victoria (máx. 5 imágenes)</label>
-                                    <div className="sp-proof-upload">
-                                        <input 
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={handleFileSelect}
-                                            disabled={isSubmitting || achievementData.proofFiles.length >= 5}
-                                            style={{ display: 'none' }}
-                                        />
-                                        
-                                        <div className="sp-proof-grid">
-                                            {achievementData.proofFiles.map((file, index) => (
-                                                <div key={index} className="sp-proof-item">
-                                                    <img src={file.preview} alt={`Prueba ${index + 1}`} />
-                                                    <button 
-                                                        type="button"
-                                                        className="sp-proof-remove"
-                                                        onClick={() => removeProofFile(index)}
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            
-                                            {achievementData.proofFiles.length < 5 && (
-                                                <button 
-                                                    type="button"
-                                                    className="sp-proof-add"
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    disabled={isSubmitting}
-                                                >
-                                                    <FaCloudUploadAlt />
-                                                    <span>Subir prueba</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                        
-                                        <p className="sp-proof-hint">
-                                            Sube capturas del scoreboard, bracket, certificado o cualquier imagen que demuestre tu victoria.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Submit */}
-                                <div className="sp-modal__footer">
-                                    <button 
-                                        type="button"
-                                        className="sp-modal__btn sp-modal__btn--ghost"
-                                        onClick={closeAchievementModal}
-                                        disabled={isSubmitting}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button 
-                                        type="submit"
-                                        className="sp-modal__btn sp-modal__btn--gold"
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <i className='bx bx-loader-alt spin' />
-                                                Enviando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <FaTrophy />
-                                                Enviar Logro
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+                            </div>
+                            <div className="sp-modal__actions">
+                                <button type="button" className="sp-modal__btn sp-modal__btn--ghost" onClick={closeAchievementModal} disabled={isSubmitting}>Cancelar</button>
+                                <button type="submit" className="sp-modal__btn sp-modal__btn--gold" disabled={isSubmitting}>
+                                    {isSubmitting ? <><i className='bx bx-loader-alt bx-spin'></i> Enviando...</> : <><FaTrophy /> Enviar Logro</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

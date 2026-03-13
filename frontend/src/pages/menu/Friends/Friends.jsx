@@ -232,114 +232,165 @@ const FriendsPage = () => {
         return Array.isArray(socialData?.[activeTab]) ? socialData[activeTab] : [];
     }, [activeTab, searchResults, socialData]);
 
-    const emptyText = activeTab === 'discover'
-        ? 'Escribe al menos 2 caracteres para buscar por nombre, username o número.'
-        : (activeTab === 'followers'
-            ? 'Aún no tienes seguidores.'
-            : (activeTab === 'following'
-                ? 'Aún no sigues a nadie.'
-                : 'Aún no tienes amigos mutuos.'));
-
     const counts = socialData?.counts || { friends: 0, followers: 0, following: 0 };
 
+    const emptyIcon = activeTab === 'discover' ? 'bx-search-alt' : (activeTab === 'followers' ? 'bx-user-voice' : (activeTab === 'following' ? 'bx-user-plus' : 'bx-group'));
+    const emptyText = activeTab === 'discover'
+        ? 'Escribe al menos 2 caracteres para buscar por nombre, username o #ID.'
+        : (activeTab === 'followers'
+            ? 'Aun no tienes seguidores. Comparte tu perfil para que otros te encuentren.'
+            : (activeTab === 'following'
+                ? 'Aun no sigues a nadie. Descubre jugadores en la pestaña Buscar.'
+                : 'Aun no tienes amigos mutuos. Sigue a otros jugadores para conectar.'));
+
     return (
-        <div className="friends-page">
+        <div className="fr">
             <PageHud page="AMIGOS" />
 
-            <section className="friends-card">
-                <div className="friends-card__header">
-                    <h2><FaUserFriends /> Centro Social</h2>
-                    <p>Gestiona tus amigos, seguidores y nuevas conexiones.</p>
-                    <div className="friends-card__actions">
-                        <button
-                            type="button"
-                            className={`friends-id-toggle ${myUserCodeVisible ? 'is-visible' : 'is-hidden'}`}
-                            onClick={handleToggleMyUserCode}
-                            disabled={myUserCodeBusy}
-                        >
-                            {myUserCodeBusy
-                                ? 'Guardando...'
-                                : (myUserCodeVisible ? 'Ocultar mi ID' : 'Mostrar mi ID')}
-                        </button>
+            {/* Header */}
+            <div className="fr__header">
+                <div>
+                    <h2 className="fr__title">
+                        <span className="fr__title-icon"><i className="bx bx-group"></i></span>
+                        Centro Social
+                    </h2>
+                    <p className="fr__subtitle">Gestiona tus amigos, seguidores y descubre nuevos jugadores.</p>
+                </div>
+                <button
+                    type="button"
+                    className={`fr__id-toggle ${myUserCodeVisible ? 'is-visible' : ''}`}
+                    onClick={handleToggleMyUserCode}
+                    disabled={myUserCodeBusy}
+                >
+                    <i className={`bx ${myUserCodeVisible ? 'bx-show' : 'bx-hide'}`}></i>
+                    {myUserCodeBusy ? 'Guardando...' : (myUserCodeVisible ? 'ID visible' : 'ID oculto')}
+                </button>
+            </div>
+
+            {/* Stats */}
+            <div className="fr__stats">
+                <div className="fr__stat">
+                    <div className="fr__stat-icon"><i className="bx bx-group"></i></div>
+                    <div>
+                        <div className="fr__stat-value">{counts.friends}</div>
+                        <div className="fr__stat-label">Amigos</div>
                     </div>
                 </div>
+                <div className="fr__stat">
+                    <div className="fr__stat-icon fr__stat-icon--followers"><i className="bx bx-user-voice"></i></div>
+                    <div>
+                        <div className="fr__stat-value">{counts.followers}</div>
+                        <div className="fr__stat-label">Seguidores</div>
+                    </div>
+                </div>
+                <div className="fr__stat">
+                    <div className="fr__stat-icon fr__stat-icon--following"><i className="bx bx-user-plus"></i></div>
+                    <div>
+                        <div className="fr__stat-value">{counts.following}</div>
+                        <div className="fr__stat-label">Siguiendo</div>
+                    </div>
+                </div>
+            </div>
 
-                <div className="friends-tabs">
-                    {TABS.map((tab) => {
-                        const Icon = tab.icon;
-                        const tabCount = tab.id === 'discover' ? null : Number(counts?.[tab.id] || 0);
+            {/* Tabs */}
+            <div className="fr__tabs">
+                {TABS.map((tab) => {
+                    const Icon = tab.icon;
+                    const tabCount = tab.id === 'discover' ? null : Number(counts?.[tab.id] || 0);
+                    return (
+                        <button
+                            key={tab.id}
+                            className={`fr__tab ${activeTab === tab.id ? 'is-active' : ''}`}
+                            onClick={() => { setActiveTab(tab.id); setError(''); }}
+                        >
+                            <Icon />
+                            {tab.label}
+                            {tabCount !== null && <span className="fr__tab-count">{tabCount}</span>}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Search */}
+            {activeTab === 'discover' && (
+                <div className="fr__search">
+                    <FaSearch className="fr__search-icon" />
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Buscar por username, nombre o #ID..."
+                    />
+                </div>
+            )}
+
+            {/* Error */}
+            {error && (
+                <div className="fr__error">
+                    <i className="bx bx-error-circle"></i>
+                    {error}
+                </div>
+            )}
+
+            {/* List */}
+            {(loading || searchLoading) ? (
+                <div className="fr__skeleton">
+                    <div className="fr__skeleton-item" />
+                    <div className="fr__skeleton-item" />
+                    <div className="fr__skeleton-item" />
+                    <div className="fr__skeleton-item" />
+                </div>
+            ) : activeList.length > 0 ? (
+                <div className="fr__list">
+                    {activeList.map((entry) => {
+                        const id = String(entry?.id || '');
+                        const status = String(entry?.status || 'offline').toLowerCase();
                         return (
-                            <button
-                                key={tab.id}
-                                className={`friends-tab ${activeTab === tab.id ? 'is-active' : ''}`}
-                                onClick={() => {
-                                    setActiveTab(tab.id);
-                                    setError('');
-                                }}
-                            >
-                                <span><Icon /> {tab.label}</span>
-                                {tabCount !== null && <small>{tabCount}</small>}
-                            </button>
+                            <div key={id} className="fr__user">
+                                <div className="fr__user-left">
+                                    <div className="fr__avatar">
+                                        <img
+                                            src={resolveMediaUrl(entry?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(entry?.name || 'U')}&background=1a1a2e&color=8EDB15`}
+                                            alt={entry?.name || 'Usuario'}
+                                        />
+                                        <span className={`fr__avatar-status fr__avatar-status--${status}`} />
+                                    </div>
+                                    <div className="fr__info">
+                                        <div className="fr__name">
+                                            <span>{entry?.name || 'Jugador'}</span>
+                                            {entry?.userCode && <span className="fr__code">#{entry.userCode}</span>}
+                                        </div>
+                                        <span className="fr__username">@{entry?.username || 'usuario'}</span>
+                                        <div className="fr__meta">
+                                            <span>{entry?.rank || 'Jugador'}</span>
+                                            <span className="fr__meta-dot" />
+                                            <span className="fr__meta-status">{status}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    className={`fr__follow-btn ${entry?.isFollowing ? 'is-following' : ''}`}
+                                    onClick={() => handleToggleFollow(id)}
+                                    disabled={Boolean(followBusyIds[id])}
+                                >
+                                    {followBusyIds[id]
+                                        ? <><i className="bx bx-loader-alt bx-spin"></i></>
+                                        : entry?.isFollowing
+                                            ? <><i className="bx bx-check"></i> Siguiendo</>
+                                            : <><i className="bx bx-user-plus"></i> Seguir</>
+                                    }
+                                </button>
+                            </div>
                         );
                     })}
                 </div>
-
-                {activeTab === 'discover' && (
-                    <div className="friends-search">
-                        <FaSearch />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                            placeholder="Buscar por username, nombre o #ID número..."
-                        />
-                    </div>
-                )}
-
-                {error && <div className="friends-error">{error}</div>}
-
-                <div className="friends-list">
-                    {(loading || searchLoading) ? (
-                        <div className="friends-empty">Cargando...</div>
-                    ) : activeList.length > 0 ? (
-                        activeList.map((entry) => {
-                            const id = String(entry?.id || '');
-                            const statusClass = `friends-item__status friends-item__status--${String(entry?.status || 'offline').toLowerCase()}`;
-                            return (
-                                <div key={id} className="friends-item">
-                                    <div className="friends-item__left">
-                                        <div className="friends-item__avatar">
-                                            <img
-                                                src={resolveMediaUrl(entry?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(entry?.name || 'U')}&background=1a1a2e&color=8EDB15`}
-                                                alt={entry?.name || 'Usuario'}
-                                            />
-                                            <span className={statusClass} />
-                                        </div>
-                                        <div className="friends-item__info">
-                                            <strong>{entry?.name || 'Jugador'}</strong>
-                                            <span>@{entry?.username || 'usuario'}</span>
-                                            {entry?.userCode && (
-                                                <span className="friends-item__code">#{entry.userCode}</span>
-                                            )}
-                                            <small>{entry?.rank || 'Jugador'} · {entry?.status || 'offline'}</small>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        className={`friends-item__follow ${entry?.isFollowing ? 'is-following' : ''}`}
-                                        onClick={() => handleToggleFollow(id)}
-                                        disabled={Boolean(followBusyIds[id])}
-                                    >
-                                        {followBusyIds[id] ? '...' : (entry?.isFollowing ? 'Siguiendo' : 'Seguir')}
-                                    </button>
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <div className="friends-empty">{emptyText}</div>
-                    )}
+            ) : (
+                <div className="fr__empty">
+                    <div className="fr__empty-icon"><i className={`bx ${emptyIcon}`}></i></div>
+                    <p className="fr__empty-text">{emptyText}</p>
                 </div>
-            </section>
+            )}
         </div>
     );
 };

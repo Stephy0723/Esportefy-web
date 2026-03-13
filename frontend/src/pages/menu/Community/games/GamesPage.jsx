@@ -121,7 +121,7 @@ const GamesPage = () => {
     // Share to platform
     const handleShare = useCallback((platform) => {
         const url = encodeURIComponent(window.location.href);
-        const text = encodeURIComponent(`Únete a la comunidad de ${game?.name || 'este juego'} en Esportefy`);
+        const text = encodeURIComponent(`Únete a la comunidad de ${game?.name || 'este juego'} en GLITCH GANG`);
         
         const shareUrls = {
             twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,

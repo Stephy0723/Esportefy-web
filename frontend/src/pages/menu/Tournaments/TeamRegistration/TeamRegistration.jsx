@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import PageHud from '../../../../components/PageHud/PageHud';
+import { getTournamentGameByName } from '../../../../data/tournamentGames/tournamentGames';
 import { resolveMediaUrl } from '../../../../utils/media';
 import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/publicIds';
 import { getAuthToken } from '../../../../utils/authSession';
@@ -192,7 +193,7 @@ const TeamRegistration = () => {
       return;
     }
     if (requiresUniversityTeam && universityPlayersMissingLinkedUser) {
-      alert('En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de Esportefy.');
+      alert('En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de GLITCH GANG.');
       return;
     }
     if (requiresUniversityTeam && universityMismatch) {
@@ -204,7 +205,7 @@ const TeamRegistration = () => {
       return;
     }
     if (requiresMlbb && mlbbPlayersMissingLinkedUser) {
-      alert('En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de Esportefy.');
+      alert('En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de GLITCH GANG.');
       return;
     }
     if (requiresMlbb && mlbbPlayersMissingId) {
@@ -239,10 +240,17 @@ const TeamRegistration = () => {
       'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=2070&auto=format&fit=crop';
   };
 
+  // Get tournament game info for image/color/icon
+  const tournamentGameInfo = getTournamentGameByName(tournament.game);
+
   return (
-    <div className="registration-content">
-      <PageHud page="REGISTRO" />
-      <div className="center-stage">
+    <>
+      {/* Breadcrumb/route info at the very top, outside registration-content, for true top alignment */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg-page)', padding: '18px 0 0 0' }}>
+        <PageHud page="REGISTRO" />
+      </div>
+      <div className="registration-content">
+        <div className="center-stage">
         <div className="glass-card">
           <div className="form-section">
             <div className="header-box">
@@ -344,19 +352,21 @@ const TeamRegistration = () => {
           <div className="image-section">
             <div className="overlay-gradient" />
             <img
-              src={tournament.image}
-              alt="Game Art"
+              src={tournamentGameInfo?.img || tournament.image}
+              alt={tournamentGameInfo?.name || 'Game Art'}
               className="cinematic-bg"
               onError={handleImageError}
+              style={tournamentGameInfo?.color ? { boxShadow: `0 0 60px 0 ${tournamentGameInfo.color}55` } : {}}
             />
             <div className="image-text">
-              <h2>Domina el Juego</h2>
+              <h2>{tournamentGameInfo?.name || 'Domina el Juego'}</h2>
               <p>La competencia empieza aqui.</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

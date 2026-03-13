@@ -20,7 +20,7 @@ const ROUTE_NAMES = {
   '/rankings': 'Rankings',
   '/noticias': 'Noticias',
   '/chats': 'Mensajes',
-  '/tv': 'Esportefy TV',
+  '/tv': 'GLITCH GANG TV',
   '/settings': 'Configuración',
   '/notifications': 'Notificaciones',
   '/profile': 'Mi Perfil',
@@ -29,7 +29,9 @@ const ROUTE_NAMES = {
   '/create-tournament': 'Crear Torneo',
   '/CalendarPage': 'Calendario',
   '/university': 'Universidad',
+  '/docs': 'Documentacion',
   '/support': 'Soporte',
+  '/esportefy': 'GLITCH GANG',
 };
 
 /* ── Quick Actions (only for logged-in users) ── */
@@ -38,7 +40,7 @@ const QUICK_ACTIONS = [
   { label: 'Crear Equipo', to: '/create-team', icon: 'bx-group', color: '#4FACFE' },
 ];
 
-const Navbar = () => {
+const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const [scrolled, setScrolled] = useState(false);
   const [activeUser, setActiveUser] = useState(null);
   const [hasUnread, setHasUnread] = useState(false);
@@ -185,11 +187,20 @@ const Navbar = () => {
     <nav className={`nb ${scrolled ? 'nb--scrolled' : ''}`}>
       <div className="nb__inner">
 
-        {/* ═══ LEFT: Logo + Breadcrumb ═══ */}
+        {/* ═══ LEFT: Menu + Logo + Breadcrumb ═══ */}
         <div className="nb__left">
+          {onMenuToggle && (
+            <button
+              className={`nb__menu-btn ${isSidebarOpen ? 'nb__menu-btn--open' : ''}`}
+              onClick={onMenuToggle}
+              aria-label="Menu"
+            >
+              <i className={`bx ${isSidebarOpen ? 'bx-x' : 'bx-menu'}`}></i>
+            </button>
+          )}
           <Link to={activeUser ? '/dashboard' : '/'} className="nb__logo">
             <span className="nb__logo-text">
-              ESPORTE<span className="nb__logo-accent">FY</span>
+              GLITCH{' '}<span className="nb__logo-accent">GANG</span>
             </span>
           </Link>
 
@@ -208,7 +219,7 @@ const Navbar = () => {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Buscar en Esportefy..."
+              placeholder="Buscar en GLITCH GANG..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -301,7 +312,7 @@ const Navbar = () => {
 
           {/* ── Rankings ── */}
           <button
-            className="nb__icon-btn"
+            className="nb__icon-btn nb__icon-btn--secondary"
             onClick={() => navigate('/rankings')}
             title="Rankings"
           >
@@ -310,7 +321,7 @@ const Navbar = () => {
 
           {/* ── Noticias ── */}
           <button
-            className="nb__icon-btn"
+            className="nb__icon-btn nb__icon-btn--secondary"
             onClick={() => navigate('/noticias')}
             title="Noticias"
           >

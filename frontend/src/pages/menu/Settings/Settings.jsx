@@ -659,7 +659,7 @@ export default function Settings() {
                                         </small>
                                     )}
                                     <small className="riot-msg">
-                                        Esportefy no está respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games.
+                                        GLITCH GANG no está respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games.
                                     </small>
                                     <small className="riot-msg">
                                         Riot Games y sus propiedades asociadas son marcas o marcas registradas de Riot Games, Inc.
@@ -808,7 +808,7 @@ export default function Settings() {
                                         <small className="riot-msg">{mlbbStatus.api.message}</small>
                                     )}
                                     <small className="riot-msg">
-                                        Verificación interna de Esportefy. No es una validación oficial de Moonton/API pública de MLBB.
+                                        Verificación interna de GLITCH GANG. No es una validación oficial de Moonton/API pública de MLBB.
                                     </small>
 
                                     {mlbbVerificationStatus === 'pending' && (
@@ -973,7 +973,7 @@ export default function Settings() {
                             <div className="theme-selector">
                                 <div className="theme-option active">
                                     <div className="theme-preview dark"></div>
-                                    <span>Esportefy Dark</span>
+                                    <span>GLITCH GANG Dark</span>
                                 </div>
                                 <div className="theme-option">
                                     <div className="theme-preview midnight"></div>
@@ -1242,7 +1242,7 @@ export default function Settings() {
                         </div>
 
                         <div className="app-version">
-                            <span>Esportefy Web v1.0.4 (Beta)</span>
+                            <span>GLITCH GANG Web v1.0.4 (Beta)</span>
                         </div>
                     </div>
                 );

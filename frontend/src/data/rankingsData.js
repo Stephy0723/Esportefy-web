@@ -229,12 +229,12 @@ export const TEAMS_DATA = [
 ];
 
 export const TOURNAMENTS_DATA = [
-  { id: 1, name: 'Copa Nacional MLBB RD 2026', game: 'MLBB', status: 'active', startDate: '2026-02-15', endDate: '2026-03-30', prize: 150000, currency: 'DOP', teams: 32, registeredTeams: 28, location: 'Santo Domingo', organizer: 'Esportefy RD', format: 'Double Elimination', featured: true },
-  { id: 2, name: 'Valorant Caribe Cup', game: 'Valorant', status: 'upcoming', startDate: '2026-03-10', endDate: '2026-04-20', prize: 100000, currency: 'DOP', teams: 16, registeredTeams: 12, location: 'Santiago', organizer: 'Esportefy RD', format: 'Single Elimination', featured: true },
-  { id: 3, name: 'Liga LoL RD S1 2026', game: 'LoL', status: 'active', startDate: '2026-02-01', endDate: '2026-04-10', prize: 120000, currency: 'DOP', teams: 12, registeredTeams: 10, location: 'Online', organizer: 'Esportefy RD', format: 'Round Robin', featured: false },
+  { id: 1, name: 'Copa Nacional MLBB RD 2026', game: 'MLBB', status: 'active', startDate: '2026-02-15', endDate: '2026-03-30', prize: 150000, currency: 'DOP', teams: 32, registeredTeams: 28, location: 'Santo Domingo', organizer: 'GLITCH GANG RD', format: 'Double Elimination', featured: true },
+  { id: 2, name: 'Valorant Caribe Cup', game: 'Valorant', status: 'upcoming', startDate: '2026-03-10', endDate: '2026-04-20', prize: 100000, currency: 'DOP', teams: 16, registeredTeams: 12, location: 'Santiago', organizer: 'GLITCH GANG RD', format: 'Single Elimination', featured: true },
+  { id: 3, name: 'Liga LoL RD S1 2026', game: 'LoL', status: 'active', startDate: '2026-02-01', endDate: '2026-04-10', prize: 120000, currency: 'DOP', teams: 12, registeredTeams: 10, location: 'Online', organizer: 'GLITCH GANG RD', format: 'Round Robin', featured: false },
   { id: 4, name: 'MLBB Championship 2025', game: 'MLBB', status: 'completed', startDate: '2025-10-01', endDate: '2025-12-15', prize: 250000, currency: 'DOP', teams: 48, registeredTeams: 48, location: 'Santo Domingo', organizer: 'Moonton RD', format: 'Double Elimination', champion: 'Hispaniola Esports', runnerUp: 'Quisqueya Gaming' },
   { id: 5, name: 'Liga LoL Dominicana 2025', game: 'LoL', status: 'completed', startDate: '2025-06-01', endDate: '2025-09-15', prize: 180000, currency: 'DOP', teams: 12, registeredTeams: 12, location: 'Online', organizer: 'Riot Games', format: 'Double Round Robin', champion: 'Tainos Gaming', runnerUp: 'Cibao Stars' },
-  { id: 6, name: 'Valorant Open RD', game: 'Valorant', status: 'completed', startDate: '2025-07-10', endDate: '2025-08-30', prize: 120000, currency: 'DOP', teams: 24, registeredTeams: 24, location: 'Santiago', organizer: 'Esportefy RD', format: 'Swiss + Playoffs', champion: 'Azucareros eSports', runnerUp: 'Dominicana Clutch' },
+  { id: 6, name: 'Valorant Open RD', game: 'Valorant', status: 'completed', startDate: '2025-07-10', endDate: '2025-08-30', prize: 120000, currency: 'DOP', teams: 24, registeredTeams: 24, location: 'Santiago', organizer: 'GLITCH GANG RD', format: 'Swiss + Playoffs', champion: 'Azucareros eSports', runnerUp: 'Dominicana Clutch' },
 ];
 
 export const GAMES = ['Todos', 'MLBB', 'Valorant', 'LoL'];

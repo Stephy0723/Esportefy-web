@@ -71,7 +71,7 @@ const OrganizerTerms = () => {
             <p>
               El organizador solo puede tratar datos de participantes para fines del torneo.
               Queda prohibido compartir listados, correos o identificadores con terceros no
-              autorizados por Esportefy o por la normativa aplicable.
+              autorizados por GLITCH GANG o por la normativa aplicable.
             </p>
             </section>
 
@@ -86,7 +86,7 @@ const OrganizerTerms = () => {
 
             <h2 className="legal-h"><i className="bx bx-image"></i>Licencia de contenido</h2>
             <p>
-              Conservas derechos sobre tu marca, pero otorgas licencia no exclusiva a Esportefy
+              Conservas derechos sobre tu marca, pero otorgas licencia no exclusiva a GLITCH GANG
               para mostrar nombre, arte y clips del torneo en promocion de la plataforma.
             </p>
 

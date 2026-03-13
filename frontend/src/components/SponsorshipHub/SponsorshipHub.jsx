@@ -29,7 +29,7 @@ const INITIAL_AGENT_MESSAGES = [
   {
     id: 1,
     role: 'agent',
-    text: 'Hola, soy Esportefy Agent. Puedo ayudarte con patrocinios, activaciones y soporte comercial.',
+    text: 'Hola, soy GLITCH GANG Agent. Puedo ayudarte con patrocinios, activaciones y soporte comercial.',
   },
 ];
 
@@ -66,7 +66,7 @@ const HUB_ACTIONS = [
   { id: 'music', icon: FaHeadphones, label: 'Música', color: '#4cc9f0' },
   { id: 'agent', icon: FaCommentDots, label: 'Agente', color: '#8EDB15' },
   { id: 'sponsor', icon: FaHandshake, label: 'Patrocinio', color: '#f3c667' },
-  { id: 'quick', icon: FaBolt, label: 'Esportefy TV', color: '#c084fc' },
+  { id: 'quick', icon: FaBolt, label: 'GLITCH GANG TV', color: '#c084fc' },
 ];
 
 const ACTION_LAYOUT = {
@@ -259,7 +259,7 @@ const SponsorDialog = ({ form, onChange, onClose, onSubmit, sent }) => (
           <FaHandshake />
         </div>
         <div>
-          <h3>Patrocinio Esportefy</h3>
+          <h3>Patrocinio GLITCH GANG</h3>
           <p>Envia tu propuesta y te contactamos para activaciones, torneos y branding.</p>
         </div>
       </header>
@@ -360,7 +360,7 @@ const AgentDialog = ({ agentDraft, agentMessages, onClose, onSubmit, setAgentDra
                     <FaHeadset />
                   </div>
                 )}
-                <span>{msg.role === 'user' ? 'Tu' : 'Esportefy Agent'}</span>
+                <span>{msg.role === 'user' ? 'Tu' : 'GLITCH GANG Agent'}</span>
               </div>
               <p>{msg.text}</p>
             </article>

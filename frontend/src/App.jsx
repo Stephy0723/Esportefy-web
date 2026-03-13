@@ -12,6 +12,7 @@ import Navbar from './components/Navbar/Navbar';
 import Sidebar from './components/Sidebar/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 
+import DocsPage from './pages/Docs/DocsPage';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -21,7 +22,9 @@ import Noticias from './pages/menu/Noticias/Noticias';
 import NewsDetail from './pages/menu/Noticias/NewsDetail';
 import OrganismProfile from './pages/menu/Organismos/OrganismProfile';
 import Dashboard from './pages/menu/Dashboard/Dashboard';
+import FriendsPage from './pages/menu/Friends/Friends';
 import Chats from './pages/menu/Chats/Chats';
+import EsportefyPage from './pages/menu/Esportefy/EsportefyPage';
 import Tv from './pages/menu/EsportefyTV/Tv';
 import Notifications from './pages/Notifications/Notifications';
 import Tournaments from './pages/menu/Tournaments/Tournaments';
@@ -69,8 +72,12 @@ const MainLayout = () => {
   return (
     <>
       <Sidebar isClosed={isClosed} setIsClosed={setIsClosed} />
+      {/* Overlay for mobile sidebar */}
+      {!isClosed && (
+        <div className="sidebar-overlay" onClick={() => setIsClosed(true)} />
+      )}
       <div className={`main-layout ${isClosed ? 'collapsed' : 'expanded'}`}>
-        <Navbar />
+        <Navbar onMenuToggle={() => setIsClosed((prev) => !prev)} isSidebarOpen={!isClosed} />
         <div className="content-wrapper">
           <Outlet />
         </div>
@@ -106,6 +113,7 @@ const AppRouterContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/docs" element={<DocsPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} />
@@ -125,9 +133,12 @@ const AppRouterContent = () => {
 
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/amigos" element={<FriendsPage />} />
             <Route path="/chats" element={<Chats />} />
             <Route path="/tv" element={<Tv />} />
             <Route path="/settings" element={<SettingsV2 />} />
+            <Route path="/esportefy" element={<EsportefyPage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/torneos" element={<Tournaments />} />
             <Route path="/comunidad" element={<Community />} />

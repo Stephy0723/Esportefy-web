@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaArrowLeft, FaChartLine, FaCommentDots, FaEye,
@@ -8,8 +8,8 @@ import {
     FaTwitter, FaFacebook, FaCopy, FaCheck
 } from 'react-icons/fa';
 import PageHud from '../../../components/PageHud/PageHud';
-import { NEWS } from '../../../data/newsData';
 import { ORGANISM_PATHS } from '../../../data/esportsOrganismsData';
+import { DEFAULT_NEWS_COMPANY, getNewsFeed } from '../../../utils/customNews';
 import './NewsDetail.css';
 
 // Format date
@@ -67,19 +67,30 @@ const Bubbles = () => {
 
 export default function NewsDetail() {
     const { id } = useParams();
-    const navigate = useNavigate();
-    const news = NEWS.find((n) => String(n.id) === String(id));
-    
+    const [newsItems, setNewsItems] = useState(() => getNewsFeed());
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [copied, setCopied] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '' });
+    const news = useMemo(
+        () => newsItems.find((item) => String(item.id) === String(id)),
+        [newsItems, id]
+    );
+
+    useEffect(() => {
+        const loadFeed = () => setNewsItems(getNewsFeed());
+
+        loadFeed();
+        window.addEventListener('custom-news-updated', loadFeed);
+
+        return () => window.removeEventListener('custom-news-updated', loadFeed);
+    }, []);
 
     // Load saved state
     useEffect(() => {
         const bookmarks = JSON.parse(localStorage.getItem('news_bookmarks') || '[]');
         const likes = JSON.parse(localStorage.getItem('news_likes') || '{}');
-        setIsBookmarked(bookmarks.includes(parseInt(id)));
+        setIsBookmarked(bookmarks.some((bookmarkId) => String(bookmarkId) === String(id)));
         setIsLiked(!!likes[id]);
     }, [id]);
 
@@ -92,9 +103,10 @@ export default function NewsDetail() {
     // Toggle bookmark
     const toggleBookmark = () => {
         const bookmarks = JSON.parse(localStorage.getItem('news_bookmarks') || '[]');
-        const updated = isBookmarked 
-            ? bookmarks.filter(b => b !== parseInt(id))
-            : [...bookmarks, parseInt(id)];
+        const articleId = news?.id ?? id;
+        const updated = isBookmarked
+            ? bookmarks.filter((bookmarkId) => String(bookmarkId) !== String(articleId))
+            : [...bookmarks, articleId];
         localStorage.setItem('news_bookmarks', JSON.stringify(updated));
         setIsBookmarked(!isBookmarked);
         showToast(isBookmarked ? 'Eliminado de guardados' : 'Guardado en favoritos');
@@ -131,10 +143,10 @@ export default function NewsDetail() {
     // Related news
     const relatedNews = useMemo(() => {
         if (!news) return [];
-        return NEWS
+        return newsItems
             .filter((item) => item.id !== news.id && (item.game === news.game || item.category === news.category))
             .slice(0, 3);
-    }, [news]);
+    }, [news, newsItems]);
 
     // 404 state
     if (!news) {
@@ -160,8 +172,16 @@ export default function NewsDetail() {
         );
     }
 
-    const readMinutes = Math.max(2, Math.ceil((news.excerpt.length + news.details.join(' ').length) / 420));
-    const highlightLines = news.details.slice(0, 3);
+    const storyDetails = Array.isArray(news.details) && news.details.length
+        ? news.details
+        : [news.excerpt].filter(Boolean);
+    const galleryItems = Array.isArray(news.gallery) && news.gallery.length
+        ? news.gallery
+        : [news.image].filter(Boolean);
+    const publisherName = news.company || DEFAULT_NEWS_COMPANY;
+    const articleTags = Array.isArray(news.tags) ? news.tags.filter(Boolean).slice(0, 4) : [];
+    const readMinutes = Math.max(2, Math.ceil((news.excerpt.length + storyDetails.join(' ').length) / 420));
+    const highlightLines = storyDetails.slice(0, 3);
 
     return (
         <div className="nd-page">
@@ -201,7 +221,7 @@ export default function NewsDetail() {
                     </Link>
                     <div className="nd-topbar__meta">
                         <span><FaRegClock /> {readMinutes} min lectura</span>
-                        <span><FaShareAlt /> Editorial Esportefy</span>
+                        <span><FaShareAlt /> {publisherName}</span>
                     </div>
                 </motion.div>
 
@@ -219,18 +239,23 @@ export default function NewsDetail() {
 
                     <div className="nd-hero__content">
                         <div className="nd-tags">
+                            {news.featured && <span className="nd-tag nd-tag--accent">Primicia</span>}
+                            {news.isNew && <span className="nd-tag nd-tag--fresh">Nuevo</span>}
                             <span className="nd-tag">{news.category}</span>
                             <span className="nd-tag">{news.game}</span>
-                            <span className="nd-tag nd-tag--accent">Breaking Desk</span>
+                            {articleTags.map((tag) => (
+                                <span key={tag} className="nd-tag nd-tag--soft">{tag}</span>
+                            ))}
                         </div>
 
-                        <p className="nd-kicker">Cobertura especial</p>
+                        <p className="nd-kicker">{publisherName}</p>
                         <h1><LinkedKeywordsText text={news.title} /></h1>
                         <p className="nd-lead"><LinkedKeywordsText text={news.excerpt} /></p>
 
                         <div className="nd-meta">
                             <span>{formatDate(news.date)}</span>
                             <span>{news.author}</span>
+                            <span>{publisherName}</span>
                             <span>{news.views.toLocaleString()} vistas</span>
                             <span>{news.comments} comentarios</span>
                         </div>
@@ -283,7 +308,7 @@ export default function NewsDetail() {
                             </div>
                             <div className="nd-statbox">
                                 <FaLayerGroup />
-                                <strong>{news.details.length}</strong>
+                                <strong>{storyDetails.length}</strong>
                                 <span>claves</span>
                             </div>
                             <div className="nd-statbox">
@@ -341,7 +366,7 @@ export default function NewsDetail() {
                                 <p className="nd-copy__lead">
                                     <LinkedKeywordsText text={news.excerpt} />
                                 </p>
-                                {news.details.map((paragraph, idx) => (
+                                {storyDetails.map((paragraph, idx) => (
                                     <p key={`detail-${idx}`}>
                                         <LinkedKeywordsText text={paragraph} />
                                     </p>
@@ -361,7 +386,7 @@ export default function NewsDetail() {
                                 <h2>Galería visual</h2>
                             </div>
                             <div className="nd-gallery">
-                                {news.gallery.map((img, idx) => (
+                                {galleryItems.map((img, idx) => (
                                     <motion.figure 
                                         key={`gallery-${idx}`} 
                                         className={`nd-gallery__item nd-gallery__item--${(idx % 3) + 1}`}
@@ -420,6 +445,20 @@ export default function NewsDetail() {
                                 <span>Autor</span>
                                 <strong>{news.author}</strong>
                             </div>
+                            <div className="nd-sidecard__row">
+                                <span>Empresa</span>
+                                <strong>{publisherName}</strong>
+                            </div>
+                            {articleTags.length > 0 && (
+                                <div className="nd-sidecard__stack">
+                                    <span>Tags</span>
+                                    <div className="nd-sidecard__chips">
+                                        {articleTags.map((tag) => (
+                                            <span key={tag}>{tag}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </motion.section>
 
                         <motion.section 
@@ -429,17 +468,21 @@ export default function NewsDetail() {
                             transition={{ delay: 0.4 }}
                         >
                             <p className="nd-sidecard__label">Cobertura relacionada</p>
-                            <div className="nd-related">
-                                {relatedNews.map((item) => (
-                                    <Link key={item.id} to={`/noticias/${item.id}`} className="nd-related__item">
-                                        <img src={item.image} alt={item.title} loading="lazy" />
-                                        <div>
-                                            <span>{item.category}</span>
-                                            <strong>{item.title}</strong>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
+                            {relatedNews.length > 0 ? (
+                                <div className="nd-related">
+                                    {relatedNews.map((item) => (
+                                        <Link key={item.id} to={`/noticias/${item.id}`} className="nd-related__item">
+                                            <img src={item.image} alt={item.title} loading="lazy" />
+                                            <div>
+                                                <span>{item.category}</span>
+                                                <strong>{item.title}</strong>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="nd-related__empty">Aun no hay mas coberturas relacionadas para esta publicacion.</p>
+                            )}
                         </motion.section>
                     </aside>
                 </div>

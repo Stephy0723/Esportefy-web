@@ -9,6 +9,7 @@
 /* ========================================= */
 .main-layout {
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -25,10 +26,51 @@
   width: calc(100% - var(--sidebar-width-open));
 }
 
+/* ── Content wrapper — contiene las páginas ── */
+.content-wrapper {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* ── Sidebar overlay (mobile) ── */
+.sidebar-overlay {
+  display: none;
+}
+
+/* ========================================= */
+/* RESPONSIVE LAYOUT                          */
+/* ========================================= */
+
+/* Tablet: sidebar se colapsa en expanded */
+@media (max-width: 900px) {
+  .main-layout.expanded {
+    margin-left: var(--sidebar-width-closed);
+    width: calc(100% - var(--sidebar-width-closed));
+  }
+}
+
+/* Mobile: sidebar se oculta, hamburger lo abre como overlay */
 @media (max-width: 768px) {
   .main-layout.collapsed,
   .main-layout.expanded {
     margin-left: 0;
     width: 100%;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    z-index: 999;
+    animation: overlayIn 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 }

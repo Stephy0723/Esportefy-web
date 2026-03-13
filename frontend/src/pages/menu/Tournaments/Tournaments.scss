@@ -71,8 +71,8 @@ $navbar-height: 80px;
 .modal-overlay-backdrop {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(8px);
+  background: var(--overlay);
+  backdrop-filter: blur(10px);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -1042,7 +1042,7 @@ $navbar-height: 80px;
       position: absolute; inset: 0;
       background: linear-gradient(
         to top,
-        var(--card-bg, rgba(0,0,0,0.9)) 0%,
+        var(--bg-card) 0%,
         rgba(0,0,0,0.3) 40%,
         transparent 100%
       );
@@ -1545,7 +1545,7 @@ $navbar-height: 80px;
 // DETAIL MODAL — theme-aware
 // ═══════════════════════════════════════════════════════
 .tournament-details-modal {
-  background: var(--card-bg, #121212);
+  background: var(--bg-card);
   width: 90%;
   max-width: 800px;
   border-radius: 16px;
@@ -1560,16 +1560,16 @@ $navbar-height: 80px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
 
-  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar { width: 6px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb {
-    background: rgba(128,128,128,0.25); border-radius: 3px;
-    &:hover { background: rgba(128,128,128,0.4); }
+    background: color-mix(in srgb, var(--text-muted) 30%, transparent); border-radius: 3px;
+    &:hover { background: color-mix(in srgb, var(--primary) 50%, transparent); }
   }
 
   // ── Banner ──
   .modal-header-banner {
-    height: 300px; width: 100%;
+    height: 380px; width: 100%;
     background-size: cover !important;
     background-position: center center !important;
     position: relative;
@@ -1581,22 +1581,22 @@ $navbar-height: 80px;
       position: absolute; inset: 0;
       background: linear-gradient(
         to top,
-        var(--card-bg, #121212) 5%,
-        color-mix(in srgb, var(--card-bg, #121212) 60%, transparent) 50%,
-        rgba(0,0,0,0.2) 100%
+        var(--bg-card) 2%,
+        color-mix(in srgb, var(--bg-card) 45%, transparent) 40%,
+        transparent 100%
       );
       z-index: 1;
     }
 
     .close-btn-round {
       position: absolute; top: 20px; right: 20px; z-index: 10;
-      width: 36px; height: 36px; border-radius: 50%;
-      background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; font-size: 20px; cursor: pointer;
+      width: 38px; height: 38px; border-radius: 50%;
+      background: color-mix(in srgb, var(--bg-card) 80%, transparent); backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      color: var(--text-main); font-size: 20px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s;
-      &:hover { background: $danger; border-color: $danger; transform: scale(1.1); }
+      transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+      &:hover { background: var(--danger); border-color: var(--danger); color: #fff; transform: scale(1.12) rotate(90deg); }
     }
 
     .banner-content {
@@ -1604,22 +1604,41 @@ $navbar-height: 80px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      animation: tdBannerIn 0.6s ease both;
+      animation-delay: 0.1s;
+
+      @keyframes tdBannerIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
 
       .top-tags {
         display: inline-flex;
         align-items: center;
+        gap: 8px;
         .game-badge {
           display: inline-flex; align-items: center; gap: 6px;
-          padding: 6px 12px; border-radius: 6px;
-          font-weight: 800; font-size: 0.8rem; text-transform: uppercase;
+          padding: 8px 14px; border-radius: 8px;
+          font-weight: 800; font-size: 0.82rem; text-transform: uppercase;
           box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+          transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+          i { font-size: 1rem; }
+          &:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
         }
       }
 
       h2 {
         font-size: 2.5rem; color: #fff; margin: 0;
-        line-height: 1.1; font-weight: 800; text-transform: uppercase;
+        line-height: 1.1; font-weight: 900; text-transform: uppercase;
         text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        letter-spacing: -0.02em;
+        animation: tdTitleIn 0.5s ease both;
+        animation-delay: 0.15s;
+      }
+
+      @keyframes tdTitleIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
       }
 
       .banner-meta {
@@ -1642,26 +1661,26 @@ $navbar-height: 80px;
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        color: rgba(255,255,255,0.82);
+        color: rgba(255,255,255,0.85);
         font-size: 0.95rem;
-        strong { color: #fff; margin-left: 0; }
-        i { color: #00b894; margin-left: 0; }
+        strong { color: #fff; margin-left: 0; font-weight: 800; }
+        i { color: var(--primary); margin-left: 0; font-size: 1.1rem; }
       }
 
       .tournament-status-pill {
         margin: 0;
         display: inline-flex;
         align-items: center;
-        padding: 5px 11px;
+        padding: 6px 14px;
         border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.26);
-        background: rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,255,255,0.2);
+        background: color-mix(in srgb, var(--bg-card) 60%, transparent);
         color: #fff;
         font-size: 0.75rem;
-        font-weight: 700;
+        font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
-        backdrop-filter: blur(6px);
+        letter-spacing: 0.06em;
+        backdrop-filter: blur(8px);
       }
     }
 
@@ -1671,11 +1690,11 @@ $navbar-height: 80px;
 
     .team-logo {
       width: 64px; height: 64px; border-radius: 16px;
-      background: rgba(255,255,255,0.08);
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
       display: grid; place-items: center; overflow: hidden;
       color: #fff; font-weight: 800; font-size: 1rem; text-transform: uppercase;
       box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-      border: 2px solid rgba(255,255,255,0.08);
+      border: 2px solid color-mix(in srgb, var(--primary) 25%, transparent);
     }
 
     .team-logo img { width: 100%; height: 100%; object-fit: cover; }
@@ -1684,36 +1703,38 @@ $navbar-height: 80px;
   // ── Body ──
   .modal-content-body {
     padding: 30px;
-    background: var(--card-bg, );
+    background: var(--bg-card);
 
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 12px; margin-bottom: 30px;
+      animation: tdFadeUp 0.45s ease both;
+      animation-delay: 0.1s;
 
       .stat-box {
-        background: rgba(255,215,0,0.06);
+        background: var(--bg-elevated);
         padding: 15px; border-radius: 12px;
-        border: 1px solid rgba(255,215,0,0.15);
+        border: 1px solid var(--border-color);
         display: flex; flex-direction: column; gap: 5px;
-        transition: all 0.2s;
+        transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
 
         &:hover {
-          border-color: rgba(255,215,0,0.28);
-          box-shadow: 0 4px 14px rgba(255,215,0,0.12);
-          transform: translateY(-1px);
+          border-color: color-mix(in srgb, var(--primary) 30%, var(--border-color));
+          box-shadow: 0 6px 18px var(--shadow-color);
+          transform: translateY(-2px);
         }
 
         .label {
-          font-size: 0.72rem; color: var(--text-main); opacity: 0.4;
+          font-size: 0.72rem; color: var(--text-muted);
           text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
         }
         .value { font-size: 1rem; color: var(--text-main); font-weight: 600; }
 
         &.prize {
-          background: rgba(255,215,0,0.1);
-          border-color: rgba(255,215,0,0.3);
-          .value { color: #ffd700; font-size: 1.2rem; }
+          background: color-mix(in srgb, var(--gold) 8%, var(--bg-elevated));
+          border-color: color-mix(in srgb, var(--gold) 25%, var(--border-color));
+          .value { color: var(--gold); font-size: 1.2rem; }
         }
       }
     }
@@ -1725,8 +1746,19 @@ $navbar-height: 80px;
     }
 
     .info-section {
-      h4 { color: var(--text-main); margin-bottom: 10px; font-size: 1.1rem; }
-      p { color: var(--text-main); opacity: 0.6; line-height: 1.6; font-size: 0.95rem; }
+      animation: tdFadeUp 0.45s ease both;
+      animation-delay: 0.15s;
+      h4 {
+        color: var(--text-main); margin-bottom: 10px; font-size: 1.1rem;
+        display: flex; align-items: center; gap: 8px;
+        i { color: var(--gc, var(--primary)); font-size: 1.2rem; }
+      }
+      p { color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; }
+    }
+
+    @keyframes tdFadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .tournament-status-pill {
@@ -1740,6 +1772,8 @@ $navbar-height: 80px;
 
     .tournament-registrations {
       display: flex; flex-direction: column; gap: 10px;
+      animation: tdFadeUp 0.4s ease both;
+      animation-delay: 0.2s;
     }
 
     .info-section.registrations-section {
@@ -1752,15 +1786,29 @@ $navbar-height: 80px;
     }
 
     .registration-row {
-      padding: 12px 14px; border-radius: 12px;
-      background: var(--bg-elevated);
+      padding: 12px 14px; border-radius: 14px;
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
-      transition: all 0.25s ease;
+      border-left: 4px solid var(--gc, var(--primary));
+      transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
       display: flex; flex-direction: column; gap: 4px;
+      animation: tdTeamSlide 0.45s ease both;
+      &:nth-child(1) { animation-delay: 0.05s; }
+      &:nth-child(2) { animation-delay: 0.1s; }
+      &:nth-child(3) { animation-delay: 0.15s; }
+      &:nth-child(4) { animation-delay: 0.2s; }
+      &:nth-child(5) { animation-delay: 0.25s; }
       &:hover {
-        border-color: color-mix(in srgb, var(--primary) 20%, var(--border-color));
-        box-shadow: 0 2px 10px var(--shadow-color);
+        border-color: var(--gc, var(--primary));
+        box-shadow: 0 8px 24px var(--shadow-color), 0 0 16px color-mix(in srgb, var(--gc, var(--primary)) 10%, transparent);
+        transform: translateX(6px);
+        background: color-mix(in srgb, var(--gc, var(--primary)) 4%, var(--bg-card));
       }
+    }
+
+    @keyframes tdTeamSlide {
+      from { opacity: 0; transform: translateX(-14px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
 
     .registration-row.compact {
@@ -1807,11 +1855,18 @@ $navbar-height: 80px;
     }
 
     .team-logo {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: color-mix(in srgb, var(--text-main) 6%, transparent);
+      width: 40px; height: 40px; border-radius: 12px;
+      background: color-mix(in srgb, var(--gc, var(--primary)) 12%, var(--bg-input));
       display: grid; place-items: center; overflow: hidden;
-      color: var(--text-main); font-weight: 800;
-      font-size: 0.75rem; text-transform: uppercase;
+      color: var(--gc, var(--primary)); font-weight: 900;
+      font-size: 0.8rem; text-transform: uppercase;
+      border: 1px solid color-mix(in srgb, var(--gc, var(--primary)) 20%, var(--border-color));
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+
+    .registration-row:hover .team-logo {
+      box-shadow: 0 0 12px color-mix(in srgb, var(--gc, var(--primary)) 25%, transparent);
+      border-color: var(--gc, var(--primary));
     }
 
     .team-logo img { width: 100%; height: 100%; object-fit: cover; }
@@ -1823,6 +1878,14 @@ $navbar-height: 80px;
 
     .team-text {
       display: flex; flex-direction: column; gap: 2px; min-width: 0;
+      strong {
+        font-size: 0.95rem;
+        font-weight: 700;
+        transition: color 0.3s;
+      }
+    }
+    .registration-row:hover .team-text strong {
+      color: var(--gc, var(--primary));
     }
 
     .team-sub {
@@ -1958,13 +2021,13 @@ $navbar-height: 80px;
     }
 
     .reg-btn.approve {
-      background: rgba(16,185,129,0.15); color: #34d399;
-      &:hover { background: rgba(16,185,129,0.25); }
+      background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary);
+      &:hover { background: color-mix(in srgb, var(--primary) 25%, transparent); }
     }
 
     .reg-btn.reject {
-      background: rgba(239,68,68,0.15); color: #f87171;
-      &:hover { background: rgba(239,68,68,0.25); }
+      background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger);
+      &:hover { background: color-mix(in srgb, var(--danger) 25%, transparent); }
     }
 
     .modal-actions-footer {
@@ -2029,6 +2092,116 @@ $navbar-height: 80px;
       text-align: right;
       margin-top: 2px;
     }
+
+    // ── Stream link ──
+    .td-stream-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--danger) 8%, var(--bg-elevated));
+      border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border-color));
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+      animation: tdPulse 3s ease-in-out infinite;
+
+      &:hover {
+        background: color-mix(in srgb, var(--danger) 15%, var(--bg-elevated));
+        border-color: var(--danger);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px color-mix(in srgb, var(--danger) 20%, transparent);
+      }
+
+      i:first-child {
+        font-size: 1.3rem;
+        animation: tdLivePulse 1.5s ease-in-out infinite;
+      }
+
+      span { flex: 1; }
+      i:last-child { opacity: 0.5; font-size: 0.9rem; }
+    }
+
+    @keyframes tdPulse {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 0%, transparent); }
+      50%      { box-shadow: 0 0 16px 2px color-mix(in srgb, var(--danger) 12%, transparent); }
+    }
+
+    @keyframes tdLivePulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    // ── Admin panel ──
+    .td-admin-panel {
+      margin-top: 16px;
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid color-mix(in srgb, var(--gc, var(--primary)) 20%, var(--border-color));
+      background: color-mix(in srgb, var(--gc, var(--primary)) 4%, var(--bg-card));
+      display: grid;
+      gap: 16px;
+      animation: tdAdminIn 0.5s ease both;
+    }
+
+    @keyframes tdAdminIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .td-admin-panel__header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+
+      > i {
+        flex-shrink: 0;
+        font-size: 1.6rem;
+        color: var(--gc, var(--primary));
+        margin-top: 2px;
+      }
+
+      strong {
+        display: block;
+        color: var(--text-main);
+        font-size: 0.92rem;
+        margin-bottom: 4px;
+      }
+
+      p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        line-height: 1.6;
+      }
+    }
+
+    .td-admin-panel__btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      color: var(--text-inverted);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+
+      &:hover {
+        transform: translateY(-3px) scale(1.02);
+        filter: brightness(1.1);
+      }
+
+      i { font-size: 1.2rem; }
+    }
   }
 }
 
@@ -2038,7 +2211,7 @@ $navbar-height: 80px;
 }
 
 @media (max-width: 600px) {
-  .tournament-details-modal .modal-header-banner { height: 200px; }
+  .tournament-details-modal .modal-header-banner { height: 260px; }
   .tournament-details-modal .modal-header-banner h2 { font-size: 1.8rem; }
   .stats-grid { grid-template-columns: 1fr 1fr !important; }
   .tournament-details-modal .modal-content-body .registration-main {

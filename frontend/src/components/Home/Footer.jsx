@@ -13,6 +13,7 @@ const LINKS = {
     { label: 'Universidad', to: '/university' },
   ],
   soporte: [
+    { label: 'Documentacion', to: '/docs' },
     { label: 'Centro de Ayuda', to: '/support' },
     { label: 'Reportar un Bug', to: '/settings' },
     { label: 'Contacto', href: 'mailto:soporte@esportefy.com' },
@@ -46,10 +47,10 @@ const Footer = () => {
 
           {/* Brand column */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-5">
-              <img src={logo} alt="Esportefy" className="h-10 w-auto" />
-              <span className="text-[var(--text-main)] text-xl font-bold tracking-wider">
-                ESPORTEFY
+            <div className="flex items-center gap-4 mb-5">
+              <img src={logo} alt="GLITCH GANG" className="h-14 md:h-16 w-auto shrink-0" />
+              <span className="text-[var(--text-main)] text-2xl md:text-3xl font-bold tracking-[0.18em]">
+                GLITCH GANG
               </span>
             </div>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-6 max-w-xs">
@@ -143,7 +144,7 @@ const Footer = () => {
         <div className="border-t border-[var(--border-color)] pt-6 pb-2">
           <div className="flex flex-col gap-2">
             <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-5xl">
-              Esportefy no esta respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games
+              GLITCH GANG no esta respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games
               ni de personas oficialmente involucradas en la produccion o gestion de propiedades de Riot Games.
               Riot Games y todas sus propiedades asociadas son marcas o marcas registradas de Riot Games, Inc.
             </p>
@@ -163,7 +164,7 @@ const Footer = () => {
         {/* Divider */}
         <div className="border-t border-[var(--border-color)] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[var(--text-muted)] text-xs">
-            &copy; {currentYear} Esportefy. Todos los derechos reservados.
+            &copy; {currentYear} GLITCH GANG. Todos los derechos reservados.
             Desarrollado por <span className="font-semibold text-[var(--text-main)]">Steliant</span>.
           </p>
           <p className="text-[var(--text-muted)] text-xs">

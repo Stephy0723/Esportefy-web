@@ -727,7 +727,7 @@ const CommunityTemplateV2 = () => {
                     </div>
                 </div>
                 <footer className="ctv2-footer">
-                    <p>© {new Date().getFullYear()} {community.name}. Parte de la red Esportefy.</p>
+                    <p>© {new Date().getFullYear()} {community.name}. Parte de la red GLITCH GANG.</p>
                 </footer>
             </section>
         </div>

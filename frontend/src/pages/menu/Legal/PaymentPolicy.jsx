@@ -67,7 +67,7 @@ const PaymentPolicy = () => {
             <p className="legal-section-mini">Las reversiones bancarias activan controles extra y conciliacion manual.</p>
             <p>
               Si una transaccion es revertida por emisor financiero o proveedor de pagos,
-              Esportefy puede retener saldos, pausar funcionalidades de cuenta o requerir
+              GLITCH GANG puede retener saldos, pausar funcionalidades de cuenta o requerir
               <span className="legal-key">documentacion adicional</span> para conciliacion.
             </p>
 
@@ -95,7 +95,7 @@ const PaymentPolicy = () => {
             <h2 className="legal-h"><i className="bx bx-shield-x"></i>Pagos fuera de plataforma</h2>
             <p>
               No permitimos solicitar pagos externos cuando el torneo se publica bajo flujo
-              financiero interno de Esportefy. Este control protege a jugadores y organizadores.
+              financiero interno de GLITCH GANG. Este control protege a jugadores y organizadores.
             </p>
             <p>
               En la beta de Mobile Legends se priorizan torneos gratuitos y se bloquean

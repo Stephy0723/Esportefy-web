@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { useTheme, THEMES } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { resolveMediaUrl } from '../../utils/media';
+import { STATUS_LIST } from '../../data/defaultAvatars';
 
 import logoWhite from '../../assets/Logo/logo-black.png';
 import logoBlack from '../../assets/Logo/logo-white.png';
@@ -12,7 +14,7 @@ const MAIN_LINKS = [
   { to: '/dashboard', icon: 'bx-grid-alt', label: 'Dashboard' },
   { to: '/torneos', icon: 'bx-trophy', label: 'Torneos' },
   { to: '/equipos', icon: 'bx-group', label: 'Equipos' },
-  { to: '/tv', icon: 'bx-movie-play', label: 'Esportefy TV' },
+  { to: '/tv', icon: 'bx-movie-play', label: 'GLITCH GANG TV' },
 ];
 
 const EXTRA_LINKS = [
@@ -20,7 +22,7 @@ const EXTRA_LINKS = [
   { to: '/friends', icon: 'bx-user-plus', label: 'Amigos' },
   { to: '/chats', icon: 'bx-chat', label: 'Chats' },
   { to: '/settings', icon: 'bx-cog', label: 'Ajustes', section: 'CONFIG' },
-  { to: '/profile', icon: 'bx-user', label: 'Mi Perfil' },
+  { to: '/esportefy', icon: 'bx-info-circle', label: 'GLITCH GANG', section: 'MARCA' },
 ];
 
 const SOCIALS = [
@@ -35,7 +37,21 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   const { logout } = useAuth();
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
+  const [user, setUser] = useState(null);
   const sidebarRef = useRef(null);
+
+  /* Leer usuario de localStorage */
+  useEffect(() => {
+    const loadUser = () => {
+      try {
+        const stored = localStorage.getItem('esportefyUser');
+        setUser(stored ? JSON.parse(stored) : null);
+      } catch { setUser(null); }
+    };
+    loadUser();
+    window.addEventListener('user-update', loadUser);
+    return () => window.removeEventListener('user-update', loadUser);
+  }, []);
 
   /* Cerrar al hacer clic fuera */
   useEffect(() => {
@@ -60,7 +76,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   /* ─── Render de un link individual ─── */
   const renderLink = ({ to, icon, label }) => (
     <li key={to} className={`sb-item ${isActive(to) ? 'sb-active' : ''}`}>
-      <Link to={to}>
+      <Link to={to} data-tooltip={label}>
         <div className="sb-icon-wrap">
           <i className={`bx ${icon}`} />
           {isActive(to) && <span className="sb-active-dot" />}
@@ -79,14 +95,16 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
       {/* ═══════════ HEADER ═══════════ */}
       <header className="sb-header">
         <div className="sb-logo-row">
-          <img
-            src={isDarkMode ? logoWhite : logoBlack}
-            alt="Esportefy"
-            className="sb-logo-img"
-          />
+          <div className="sb-logo-frame">
+            <img
+              src={isDarkMode ? logoWhite : logoBlack}
+              alt="GLITCH GANG"
+              className="sb-logo-img"
+            />
+          </div>
           {!isClosed && (
             <div className="sb-brand-text">
-              <span className="sb-brand-name">ESPORTE<span className="sb-brand-accent">FY</span></span>
+              <span className="sb-brand-name">GLITCH{' '}<span className="sb-brand-accent">GANG</span></span>
               <span className="sb-brand-sub">Pro Gaming</span>
             </div>
           )}
@@ -163,6 +181,28 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
       <div className="sb-footer">
         <div className="sb-footer-line" />
 
+        {/* Perfil del usuario */}
+        {user && (
+          <Link to="/profile" className="sb-profile" data-tooltip={user.username || user.name}>
+            <div className="sb-profile__avatar-wrap">
+              <img
+                src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=1a1a2e&color=8EDB15`}
+                alt=""
+                className="sb-profile__avatar"
+              />
+              <span className={`sb-profile__status sb-profile__status--${user.status || 'online'}`} />
+            </div>
+            {!isClosed && (
+              <div className="sb-profile__info">
+                <span className="sb-profile__name">{user.username || user.name || 'Jugador'}</span>
+                <span className={`sb-profile__role sb-profile__role--${user.status || 'online'}`}>
+                  {STATUS_LIST.find(s => s.id === (user.status || 'online'))?.label || 'En Línea'}
+                </span>
+              </div>
+            )}
+          </Link>
+        )}
+
         {/* Cerrar sesión */}
         <button type="button" className="sb-logout" onClick={handleLogout}>
           <i className="bx bx-log-out" />
@@ -229,7 +269,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
         {/* Crédito */}
         {!isClosed && (
           <div className="sb-credit">
-            Dev by <strong>Steliant</strong>
+            By <strong>Steliant</strong>
           </div>
         )}
       </div>

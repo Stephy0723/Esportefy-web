@@ -743,6 +743,44 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
+   HAMBURGER MENU BUTTON (mobile only by default)
+   ══════════════════════════════════════════════════════════════ */
+.nb__menu-btn {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 22px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.nb__menu-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-dim);
+}
+
+.nb__menu-btn--open {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-dim);
+}
+
+.nb__menu-btn i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+}
+
+/* ══════════════════════════════════════════════════════════════
    RESPONSIVE
    ══════════════════════════════════════════════════════════════ */
 
@@ -773,12 +811,25 @@
   }
 }
 
+/* Tablet */
+@media (max-width: 900px) {
+  .nb__menu-btn {
+    display: flex;
+  }
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .nb__inner {
-    padding: 0 12px;
+    padding: 0 var(--page-px, 12px);
     height: 56px;
     gap: 8px;
+  }
+
+  .nb__menu-btn {
+    display: flex;
+    width: 36px;
+    height: 36px;
   }
 
   .nb__logo-text {
@@ -794,14 +845,19 @@
     flex: 1;
   }
 
+  .nb__cmdbar-form {
+    height: 38px;
+    padding: 0 10px;
+  }
+
   .nb__cmdbar-input::placeholder {
     font-size: 12px;
   }
 
   .nb__cmdbar-overlay {
     position: fixed;
-    left: 12px;
-    right: 12px;
+    left: var(--page-px, 12px);
+    right: var(--page-px, 12px);
     top: 64px;
     width: auto;
   }
@@ -822,18 +878,25 @@
 
   .nb__dropdown {
     position: fixed;
-    right: 12px;
+    right: var(--page-px, 12px);
     left: auto;
-    width: calc(100vw - 24px);
+    width: calc(100vw - var(--page-px, 12px) * 2);
     max-width: 300px;
   }
 
   .nb__quick-dropdown {
     position: fixed;
-    right: 12px;
+    right: var(--page-px, 12px);
     left: auto;
-    width: calc(100vw - 24px);
+    width: calc(100vw - var(--page-px, 12px) * 2);
     max-width: 260px;
+  }
+
+  /* Icon buttons smaller on mobile */
+  .nb__icon-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
   }
 }
 
@@ -844,5 +907,13 @@
 
   .nb__action-btn {
     display: none;
+  }
+
+  .nb__icon-btn--secondary {
+    display: none;
+  }
+
+  .nb__auth {
+    gap: 4px;
   }
 }

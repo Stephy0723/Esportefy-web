@@ -35,7 +35,7 @@ const MOCK_ACHIEVEMENTS = [
 ];
 
 const MOCK_AWARDS = [
-    { id: 1, name: "Mejor Jungler 2025", icon: <FaMedal />, event: "Esportefy Awards", type: "gold" },
+    { id: 1, name: "Mejor Jungler 2025", icon: <FaMedal />, event: "GLITCH GANG Awards", type: "gold" },
     { id: 2, name: "MVP Regional", icon: <FaAward />, event: "Copa Caribe", type: "silver" },
     { id: 3, name: "Rising Star", icon: <FaStar />, event: "MLBB Latinoamérica", type: "bronze" },
 ];

@@ -285,12 +285,26 @@ const TournamentMatchCenter = () => {
         <>
           {/* Intro */}
           <div className="ta-section-intro">
-            <h3>Centro de partidas</h3>
+            <h3><i className="bx bx-joystick" style={{ marginRight: 8, color: 'var(--primary)' }} />Centro de partidas</h3>
             <p>
               Aqui gestionas todas las partidas del torneo. Puedes cambiar el estado de cada
               partida, registrar resultados, subir capturas de prueba y resolver disputas.
               Haz clic en cualquier tarjeta de partida para abrir el panel de edicion.
             </p>
+          </div>
+
+          {/* Admin guide banner */}
+          <div className="mc-admin-guide">
+            <div className="mc-admin-guide__icon"><i className="bx bx-info-circle" /></div>
+            <div className="mc-admin-guide__content">
+              <strong>Guia rapida para el organizador</strong>
+              <p>
+                <b>Poner en vivo</b> — Marca la partida como activa cuando los equipos esten jugando.{' '}
+                <b>Reportar resultado</b> — Abre el editor lateral para ingresar scores y subir prueba.{' '}
+                <b>Finalizar match</b> — Cierra la partida, define el ganador y avanza el bracket.{' '}
+                Haz clic en cualquier tarjeta para ver todas las opciones.
+              </p>
+            </div>
           </div>
 
           {/* Stats bar */}
@@ -389,11 +403,13 @@ const TournamentMatchCenter = () => {
 
                             <div className="mc-card__teams">
                               <div className={`mc-team ${winA ? 'mc-team--winner' : ''}`}>
+                                <div className="mc-team__avatar">{(match.nameA || '?').charAt(0)}</div>
                                 <span className="mc-team__name">{match.nameA || 'Por definir'}</span>
                                 <span className="mc-team__score">{match.scoreA ?? '-'}</span>
                               </div>
-                              <div className="mc-card__vs">VS</div>
+                              <div className="mc-card__vs"><span>VS</span></div>
                               <div className={`mc-team ${winB ? 'mc-team--winner' : ''}`}>
+                                <div className="mc-team__avatar">{(match.nameB || '?').charAt(0)}</div>
                                 <span className="mc-team__name">{match.nameB || 'Por definir'}</span>
                                 <span className="mc-team__score">{match.scoreB ?? '-'}</span>
                               </div>

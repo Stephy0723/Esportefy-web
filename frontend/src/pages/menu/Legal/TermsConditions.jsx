@@ -19,7 +19,7 @@ const TermsConditions = () => {
               <p className="legal-mini">Marco general de uso de plataforma</p>
               <h1 className="legal-hero-title">Terminos y <span className="legal-accent">Condiciones</span></h1>
               <p className="legal-hero-lead">
-                Define tus derechos, deberes, reglas de uso y mecanismo de solucion de disputas en Esportefy.
+                Define tus derechos, deberes, reglas de uso y mecanismo de solucion de disputas en GLITCH GANG.
               </p>
               <p className="legal-mini">Ultima actualizacion: 23 de febrero de 2026</p>
               <p className="legal-mini">Version legal RD: v1.0 | Fecha efectiva: 23 de febrero de 2026</p>
@@ -33,9 +33,9 @@ const TermsConditions = () => {
           <div className="terms-grid">
             <article className="legal-box terms-article">
             <h2 className="legal-h"><i className="bx bx-check-shield"></i>1. Aceptacion contractual</h2>
-            <p className="legal-section-mini">Cuando usas Esportefy, existe un acuerdo legal activo.</p>
+            <p className="legal-section-mini">Cuando usas GLITCH GANG, existe un acuerdo legal activo.</p>
             <p>
-              Al crear una cuenta, iniciar sesion o participar en funcionalidades de Esportefy,
+              Al crear una cuenta, iniciar sesion o participar en funcionalidades de GLITCH GANG,
               aceptas estos <span className="legal-key">terminos</span> y las politicas vinculadas.
               Si no estas de acuerdo con el contenido vigente, debes dejar de utilizar el servicio.
             </p>
@@ -56,7 +56,7 @@ const TermsConditions = () => {
             <p className="legal-section-mini">Las faltas se investigan y se sancionan segun gravedad.</p>
             <ul>
               <li>No se permite acoso, discurso discriminatorio, amenazas ni <span className="legal-key">fraude</span>.</li>
-              <li>Esportefy puede investigar reportes y aplicar suspensiones, bloqueos o bajas.</li>
+              <li>GLITCH GANG puede investigar reportes y aplicar suspensiones, bloqueos o bajas.</li>
               <li>Las decisiones disciplinarias pueden incluir retencion temporal de beneficios.</li>
               <li>Las conductas informaticas ilicitas se evaluan segun la <span className="legal-key">Ley 53-07</span>.</li>
             </ul>
@@ -65,14 +65,14 @@ const TermsConditions = () => {
             <p className="legal-section-mini">Las reglas del torneo prevalecen durante toda la competencia.</p>
             <p>
               Las reglas de cada torneo son obligatorias para equipos y organizadores.
-              En caso de disputa, Esportefy puede solicitar evidencia y establecer una resolucion
+              En caso de disputa, GLITCH GANG puede solicitar evidencia y establecer una resolucion
               final para preservar <span className="legal-key">integridad competitiva</span>.
             </p>
 
             <h2 className="legal-h"><i className="bx bx-mobile-alt"></i>4.1 Mobile Legends (alcance beta)</h2>
             <p className="legal-section-mini">Las verificaciones MLBB se basan en datos declarados por el usuario y control interno.</p>
             <ul>
-              <li>Esportefy no declara afiliacion, partnership ni respaldo oficial de Moonton.</li>
+              <li>GLITCH GANG no declara afiliacion, partnership ni respaldo oficial de Moonton.</li>
               <li>Se valida identidad con User ID + Zone ID y controles anti-duplicado.</li>
               <li>Se prohibe contenido o dinamicas de apuestas, cuotas o gambling en torneos MLBB.</li>
             </ul>
@@ -104,7 +104,7 @@ const TermsConditions = () => {
               <li>Edad minima sugerida: 13+ con autorizacion legal cuando aplique.</li>
               <li>Actividades ilegales o de fraude generan cierre de cuenta.</li>
               <li>La marca y logos de terceros mantienen sus propietarios originales.</li>
-              <li>No existe cesion de derechos de Esportefy por tolerancia de conductas previas.</li>
+              <li>No existe cesion de derechos de GLITCH GANG por tolerancia de conductas previas.</li>
               <li>Consumidores mantienen proteccion bajo <span className="legal-key">Ley 358-05</span>.</li>
               <li>Tambien se reconoce la tutela del consumidor del <span className="legal-key">Articulo 53 constitucional</span>.</li>
             </ul>

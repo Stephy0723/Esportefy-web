@@ -71,7 +71,7 @@ const ForgotPasswordFlow = () => {
             {/* --- IZQUIERDA --- */}
             <div className="auth-left">
                 <div className="auth-nav">
-                    <span className="brand">ESPORTEFY</span>
+                    <span className="brand">GLITCH GANG</span>
                 </div>
 
                 <div className="auth-content">

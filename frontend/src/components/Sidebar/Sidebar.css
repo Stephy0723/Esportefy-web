@@ -25,34 +25,58 @@
 
 /* ─────────── HEADER ─────────── */
 .sb-header {
-  padding: 24px 16px 0;
+  padding: 20px 16px 0;
   flex-shrink: 0;
 }
 .sidebar.close .sb-header {
-  padding: 24px 8px 0;
+  padding: 20px 8px 0;
 }
 
 .sb-logo-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 48px;
+  min-height: 68px;
 }
 .sidebar.close .sb-logo-row {
   justify-content: center;
   gap: 0;
 }
 
-.sb-logo-img {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
+.sb-logo-frame {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 8px rgba(142, 219, 21, 0.25));
-  transition: filter 0.3s;
+  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.sidebar.close .sb-logo-frame {
+  width: 54px;
+  height: 54px;
+  border-radius: 0;
+}
+
+.sb-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+  transform: scale(1.92);
+  filter: drop-shadow(0 0 10px rgba(142, 219, 21, 0.28));
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+.sidebar.close .sb-logo-img {
+  transform: scale(2.02);
 }
 .sidebar:hover .sb-logo-img {
-  filter: drop-shadow(0 0 14px rgba(142, 219, 21, 0.5));
+  transform: scale(2.06);
+  filter: drop-shadow(0 0 18px rgba(142, 219, 21, 0.45));
 }
 
 .sb-brand-text {
@@ -63,9 +87,9 @@
   overflow: hidden;
 }
 .sb-brand-name {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   color: var(--text-main);
 }
 .sb-brand-accent {
@@ -75,9 +99,9 @@
   font-size: 10px;
   font-weight: 500;
   color: var(--text-muted);
-  letter-spacing: 2px;
+  letter-spacing: 1.6px;
   text-transform: uppercase;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 /* Línea decorativa gradiente bajo el header */
@@ -500,6 +524,89 @@
   color: var(--primary);
 }
 
+/* ─────────── PROFILE CARD ─────────── */
+.sb-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  margin-bottom: 4px;
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+.sidebar.close .sb-profile {
+  justify-content: center;
+  padding: 10px 6px;
+  gap: 0;
+}
+.sb-profile:hover {
+  background: rgba(142, 219, 21, 0.06);
+}
+
+.sb-profile__avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.sb-profile__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid var(--primary);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.sb-profile:hover .sb-profile__avatar {
+  box-shadow: 0 0 10px rgba(142, 219, 21, 0.3);
+}
+
+.sb-profile__status {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-sidebar);
+}
+.sb-profile__status--online     { background: #10b981; box-shadow: 0 0 5px #10b981; }
+.sb-profile__status--gaming     { background: #8b5cf6; box-shadow: 0 0 5px #8b5cf6; }
+.sb-profile__status--tournament { background: #fbbf24; box-shadow: 0 0 5px #fbbf24; }
+.sb-profile__status--streaming  { background: #ef4444; box-shadow: 0 0 5px #ef4444; }
+.sb-profile__status--searching  { background: #06b6d4; box-shadow: 0 0 5px #06b6d4; }
+.sb-profile__status--afk        { background: #f97316; box-shadow: 0 0 5px #f97316; }
+.sb-profile__status--dnd        { background: #dc2626; box-shadow: 0 0 5px #dc2626; }
+.sb-profile__status--offline    { background: #6b7280; }
+
+.sb-profile__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+.sb-profile__name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-profile__role {
+  font-size: 10px;
+  font-weight: 600;
+  transition: color 0.25s;
+}
+.sb-profile__role--online     { color: #10b981; }
+.sb-profile__role--gaming     { color: #8b5cf6; }
+.sb-profile__role--tournament { color: #fbbf24; }
+.sb-profile__role--streaming  { color: #ef4444; }
+.sb-profile__role--searching  { color: #06b6d4; }
+.sb-profile__role--afk        { color: #f97316; }
+.sb-profile__role--dnd        { color: #dc2626; }
+.sb-profile__role--offline    { color: #6b7280; }
+
 /* ─────────── CREDIT ─────────── */
 .sb-credit {
   text-align: center;
@@ -546,18 +653,41 @@
   transform: translateY(-50%) translateX(0);
 }
 
+/* ─────────── TABLET ─────────── */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 72px;
+  }
+  .sidebar:not(.close) {
+    width: 250px;
+    box-shadow: 6px 0 24px rgba(0, 0, 0, 0.2);
+  }
+}
+
 /* ─────────── MOBILE ─────────── */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    width: 260px;
+    width: 280px;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .sidebar:not(.close) {
     transform: translateX(0);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+    width: 280px;
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.4);
   }
   .sidebar.close {
     transform: translateX(-100%);
-    width: 260px;
+    width: 280px;
+  }
+
+  /* Always show labels in mobile sidebar (never collapsed mode) */
+  .sidebar.close .sb-label {
+    display: none;
+  }
+  .sidebar:not(.close) .sb-label {
+    display: inline;
+    opacity: 1;
+    width: auto;
   }
 }

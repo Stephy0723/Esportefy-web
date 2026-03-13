@@ -11,7 +11,7 @@ const parseFragment = (hash = '') => {
 export default function SteamOAuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState('Procesando autorización de Steam...');
-  const [details, setDetails] = useState('Validando el token y vinculando la cuenta en Esportefy.');
+  const [details, setDetails] = useState('Validando el token y vinculando la cuenta en GLITCH GANG.');
 
   useEffect(() => {
     let active = true;

@@ -60,7 +60,7 @@ const FeaturesShowcase = () => {
             Todo en un solo lugar
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[var(--text-main)] mt-4 mb-6">
-            &iquest;Por qu&eacute; Esportefy?
+            &iquest;Por qu&eacute; GLITCH GANG?
           </h2>
           <p className="text-[var(--text-muted)] text-lg max-w-xl mx-auto">
             Herramientas dise&ntilde;adas por gamers, para gamers.

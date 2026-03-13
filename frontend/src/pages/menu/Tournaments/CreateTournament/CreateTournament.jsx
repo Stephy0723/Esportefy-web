@@ -813,7 +813,7 @@ const CreateTournament = () => {
             </label>
             {tournament.eligibility.universityOnly === true && (
               <p className="ct-inline-help">
-                El backend exigirá que el equipo y todos sus jugadores tengan la misma universidad verificada en Esportefy.
+                El backend exigirá que el equipo y todos sus jugadores tengan la misma universidad verificada en GLITCH GANG.
               </p>
             )}
           </fieldset>

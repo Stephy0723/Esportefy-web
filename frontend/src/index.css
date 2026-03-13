@@ -226,3 +226,313 @@ body.reduce-motion .stv2__particle,
 body.reduce-motion .gp-ambient__dot {
     display: none;
 }
+
+/* =========================================================== */
+/* SISTEMA RESPONSIVE GLOBAL                                    */
+/* Variables de espaciado y tipografía que escalan por viewport */
+/* =========================================================== */
+
+/* ---- Espaciado responsive (cambian por breakpoint) ---- */
+:root {
+    --page-px: 24px;             /* padding horizontal de páginas */
+    --page-max-w: 1200px;        /* ancho máximo del contenido   */
+    --section-py: 80px;          /* padding vertical de secciones */
+    --card-gap: 16px;            /* gap entre cards/grids         */
+    --card-radius: 16px;         /* border-radius de cards        */
+    --card-padding: 24px;        /* padding interior de cards     */
+    --input-h: 44px;             /* altura mínima de inputs       */
+    --btn-h: 44px;               /* altura mínima de botones      */
+    --modal-mx: 24px;            /* margen lateral de modales     */
+}
+
+/* ---- Tipografía fluida ---- */
+:root {
+    --fs-hero: clamp(2rem, 5vw, 3.5rem);
+    --fs-h1: clamp(1.6rem, 3.5vw, 2.4rem);
+    --fs-h2: clamp(1.3rem, 2.8vw, 1.8rem);
+    --fs-h3: clamp(1.05rem, 2vw, 1.3rem);
+    --fs-body: clamp(0.85rem, 1.2vw, 0.95rem);
+    --fs-small: clamp(0.72rem, 1vw, 0.82rem);
+    --fs-xs: clamp(0.65rem, 0.9vw, 0.72rem);
+}
+
+/* ── Tablet (≤ 900px) ── */
+@media (max-width: 900px) {
+    :root {
+        --page-px: 20px;
+        --section-py: 60px;
+        --card-gap: 14px;
+        --card-padding: 20px;
+    }
+}
+
+/* ── Mobile (≤ 768px) ── */
+@media (max-width: 768px) {
+    :root {
+        --page-px: 16px;
+        --section-py: 48px;
+        --card-gap: 12px;
+        --card-radius: 14px;
+        --card-padding: 16px;
+        --modal-mx: 12px;
+    }
+}
+
+/* ── Small Mobile (≤ 480px) ── */
+@media (max-width: 480px) {
+    :root {
+        --page-px: 12px;
+        --section-py: 36px;
+        --card-gap: 10px;
+        --card-radius: 12px;
+        --card-padding: 14px;
+        --modal-mx: 8px;
+    }
+}
+
+/* =========================================================== */
+/* CONTENEDOR GLOBAL — usa en cualquier página                  */
+/* =========================================================== */
+.page-container {
+    width: 100%;
+    max-width: var(--page-max-w);
+    margin: 0 auto;
+    padding: 0 var(--page-px);
+}
+
+.page-section {
+    padding: var(--section-py) 0;
+}
+
+/* =========================================================== */
+/* GRID RESPONSIVE GLOBAL                                       */
+/* Grids que colapsan automáticamente                           */
+/* =========================================================== */
+.grid-auto {
+    display: grid;
+    gap: var(--card-gap);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+
+.grid-2 {
+    display: grid;
+    gap: var(--card-gap);
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+    display: grid;
+    gap: var(--card-gap);
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-4 {
+    display: grid;
+    gap: var(--card-gap);
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* =========================================================== */
+/* CARDS BASE GLOBAL                                            */
+/* Estilo base que cualquier página puede extender              */
+/* =========================================================== */
+.card-base {
+    padding: var(--card-padding);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-base:hover {
+    border-color: color-mix(in srgb, var(--primary) 30%, var(--border-color));
+    box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+/* =========================================================== */
+/* BOTONES BASE GLOBAL                                          */
+/* =========================================================== */
+.btn-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--btn-h);
+    padding: 0 20px;
+    border-radius: 12px;
+    border: none;
+    font-family: inherit;
+    font-size: var(--fs-body);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--text-inverted);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+
+.btn-ghost:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-2px);
+}
+
+/* =========================================================== */
+/* INPUTS BASE GLOBAL                                           */
+/* =========================================================== */
+.input-base {
+    width: 100%;
+    min-height: var(--input-h);
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: var(--fs-body);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.input-base:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-dim);
+    outline: none;
+}
+
+.input-base::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* =========================================================== */
+/* MODALES RESPONSIVE GLOBAL                                    */
+/* =========================================================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--modal-mx);
+    z-index: 1100;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 560px;
+    max-height: calc(100vh - var(--modal-mx) * 2);
+    overflow-y: auto;
+    border-radius: var(--card-radius);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 24px 80px var(--shadow-color);
+}
+
+@media (max-width: 640px) {
+    .modal-content {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: var(--card-radius) var(--card-radius) 0 0;
+        align-self: flex-end;
+    }
+}
+
+/* =========================================================== */
+/* UTILIDADES RESPONSIVE                                        */
+/* =========================================================== */
+
+/* Ocultar en breakpoints */
+@media (max-width: 768px) {
+    .hide-mobile { display: none !important; }
+}
+@media (max-width: 900px) {
+    .hide-tablet { display: none !important; }
+}
+@media (min-width: 769px) {
+    .hide-desktop { display: none !important; }
+}
+
+/* Stack en mobile — convierte row en column */
+.stack-mobile {
+    display: flex;
+    gap: var(--card-gap);
+}
+@media (max-width: 768px) {
+    .stack-mobile {
+        flex-direction: column;
+    }
+}
+
+/* Full width en mobile */
+@media (max-width: 640px) {
+    .full-mobile { width: 100% !important; }
+}
+
+/* =========================================================== */
+/* TOUCH TARGETS — Asegura tap targets de 44px en mobile       */
+/* Solo aplica a botones standalone, no links inline            */
+/* =========================================================== */
+@media (max-width: 768px) {
+    .btn-base, .btn-primary, .btn-ghost,
+    input[type="submit"], input[type="button"] {
+        min-height: 44px;
+    }
+}
+
+/* =========================================================== */
+/* TIPOGRAFÍA RESPONSIVE GLOBAL                                 */
+/* =========================================================== */
+h1, .h1 { font-size: var(--fs-h1); font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
+h2, .h2 { font-size: var(--fs-h2); font-weight: 700; line-height: 1.2; }
+h3, .h3 { font-size: var(--fs-h3); font-weight: 600; line-height: 1.3; }
+
+/* Texto truncado */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Texto con límite de líneas */
+.text-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.text-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

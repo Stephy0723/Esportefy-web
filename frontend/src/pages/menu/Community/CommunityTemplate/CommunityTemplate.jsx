@@ -42,7 +42,7 @@ const TOURNAMENTS_DATA = [
         logo: 'https://cdn-icons-png.flaticon.com/512/3176/3176218.png',
         banner: 'https://via.placeholder.com/800x300/0b1220/8EDB15?text=VALORANT+CUP',
         date: 'Finaliza 20 Oct',
-        organizer: 'Esportefy Staff'
+        organizer: 'GLITCH GANG Staff'
     },
     {
         id: 2,

@@ -5,7 +5,7 @@ import { API_URL } from '../../../config/api';
 import { useNotification } from '../../../context/NotificationContext';
 import { useAuth } from '../../../context/AuthContext';
 import './Tournaments.scss'; 
-import { GAME_IMAGES } from '../../../data/gameImages';
+import { TOURNAMENT_GAMES, getTournamentGameByName } from '../../../data/tournamentGames/tournamentGames';
 import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
@@ -17,9 +17,9 @@ const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
-  "Valorant": { color: "#ff4655", icon: "bx-crosshair" },
-  "League of Legends": { color: "#c1a05e", icon: "bx-world" },
-  "Mobile Legends": { color: "#ffbf00", icon: "bx-mobile-landscape" },
+  ...Object.fromEntries(
+    TOURNAMENT_GAMES.map(g => [g.name, { color: g.color, icon: g.icon }])
+  )
 };
 
 const normalizeTournamentGame = (value) => String(value || '').trim().toLowerCase();
@@ -34,7 +34,7 @@ const PROMO_SLIDES = [
         gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
         accent: '#8EDB15',
         icon: 'bx-trophy',
-        badge: 'ESPORTEFY ARENA',
+        badge: 'GLITCH GANG ARENA',
         title: 'COMPITE AL MÁXIMO NIVEL',
         subtitle: 'Inscríbete en torneos competitivos, demuestra tu skill y gana premios reales.',
         cta: 'Explorar Torneos',
@@ -81,7 +81,7 @@ const PROMO_SLIDES = [
         icon: 'bx-calendar-event',
         badge: 'TEMPORADA 2026',
         title: 'LA NUEVA ERA COMPETITIVA',
-        subtitle: 'Nuevas reglas, nuevos premios, nuevas leyendas. La temporada más grande de Esportefy.',
+        subtitle: 'Nuevas reglas, nuevos premios, nuevas leyendas. La temporada más grande de GLITCH GANG.',
         cta: 'Ver Calendario',
         ctaIcon: 'bx-calendar',
         ctaAction: 'scroll',
@@ -94,7 +94,7 @@ const PROMO_SLIDES = [
         gradient: 'linear-gradient(135deg, #0a1628 0%, #0c2445 50%, #071a30 100%)',
         accent: '#00d4ff',
         icon: 'bx-broadcast',
-        badge: 'ESPORTEFY LIVE',
+        badge: 'GLITCH GANG LIVE',
         title: 'TRANSMITE TU TORNEO',
         subtitle: 'Conecta tu stream, comparte tu gameplay y haz crecer tu audiencia en cada competencia.',
         cta: 'Ir a TV',
@@ -554,9 +554,18 @@ const Tournaments = () => {
     });
   };
 
-  // Helper para obtener imagen segura
+  // Helper para obtener imagen segura y datos del juego
   const getGameImage = (gameName) => {
-    return GAME_IMAGES[gameName] || GAME_IMAGES["Default"];
+    const game = getTournamentGameByName(gameName);
+    return game?.img || '';
+  };
+  const getGameColor = (gameName) => {
+    const game = getTournamentGameByName(gameName);
+    return game?.color || '#8EDB15';
+  };
+  const getGameIcon = (gameName) => {
+    const game = getTournamentGameByName(gameName);
+    return game?.icon || 'bx-joystick';
   };
   // --- LOGICA CARRUSEL ---
   useEffect(() => {
@@ -843,7 +852,12 @@ useEffect(() => {
   const canAccessTournamentAdmin = Boolean(user?.isOrganizer === true || user?.isAdmin === true);
 
   const goToEditTournament = (torneo) => {
-    navigate('/create-tournament', { state: { editTournament: torneo } });
+    const isPublished = torneo.status && torneo.status !== 'draft';
+    if (isPublished) {
+      navigate(`/tournaments/manage/${torneo.tournamentId}`);
+    } else {
+      navigate('/create-tournament', { state: { editTournament: torneo } });
+    }
   };
 
   const updateRegistrationStatus = async (torneo, registrationId, status) => {
@@ -1817,7 +1831,7 @@ useEffect(() => {
                                 <div className="host-info">
                                     <span>Organizado por:</span>
                                     <strong style={{color: '#fff'}}>{selectedTournament.organizer}</strong>
-                                    <i className='bx bxs-badge-check' style={{color: '#00b894'}}></i>
+                                    <i className='bx bxs-badge-check' style={{color: 'var(--primary)'}}></i>
                                 </div>
                                     <div className="banner-status-group">
                                         <div className="top-tags">
@@ -1825,7 +1839,7 @@ useEffect(() => {
                                                 <i className={`bx ${GAME_CONFIG[selectedTournament.game]?.icon}`}></i> {selectedTournament.game}
                                             </span>
                                             {selectedTournament.eligibility?.universityOnly === true && (
-                                                <span className="game-badge" style={{ background: '#6366f1', color: '#fff' }}>
+                                                <span className="game-badge" style={{ background: 'var(--info)', color: '#fff' }}>
                                                     <i className='bx bx-book-reader'></i> Solo universidades
                                                 </span>
                                             )}
@@ -1840,8 +1854,21 @@ useEffect(() => {
                         </div>
                     </div>
                     
-                    <div className="modal-content-body">
-                        
+                    <div className="modal-content-body" style={{ '--gc': GAME_CONFIG[selectedTournament.game]?.color || 'var(--primary)' }}>
+
+                        {/* Stream link */}
+                        {selectedTournament.broadcast?.streamUrl && (
+                            <a
+                                className="td-stream-link"
+                                href={selectedTournament.broadcast.streamUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <i className='bx bx-broadcast'></i>
+                                <span>Ver transmision en vivo</span>
+                                <i className='bx bx-link-external'></i>
+                            </a>
+                        )}
 
                         <div className="divider"></div>
 
@@ -1849,7 +1876,7 @@ useEffect(() => {
                             <h4><i className='bx bx-file'></i> Descripción y Reglas</h4>
                             <p>{selectedTournament.desc}</p>
                             {selectedTournament.eligibility?.universityOnly === true && (
-                                <p style={{ marginTop: 12, color: '#a5b4fc' }}>
+                                <p style={{ marginTop: 12, color: 'var(--info)' }}>
                                     Este torneo exige equipos universitarios verificados. El backend validará que todo el roster pertenezca a la misma universidad.
                                 </p>
                             )}
@@ -1995,111 +2022,6 @@ useEffect(() => {
                                     </p>
                                 )}
 
-                                {isSelectedTournamentManager && (
-                                    <div className="bracket-admin-actions">
-                                        <button
-                                            className="btn-secondary"
-                                            disabled={bracketLoading}
-                                            onClick={() => generateBracket(selectedTournament, 'random')}
-                                        >
-                                            {bracketLoading ? 'Generando...' : 'Generar aleatorio'}
-                                        </button>
-                                        <button
-                                            className="btn-secondary"
-                                            disabled={bracketLoading}
-                                            onClick={() => previewBracketRequest(selectedTournament, 'random')}
-                                        >
-                                            Vista previa
-                                        </button>
-                                        <button
-                                            className="btn-secondary"
-                                            disabled={bracketLoading}
-                                            onClick={toggleCustomSeeding}
-                                        >
-                                            {customSeedingOpen ? 'Ocultar personalizado' : 'Personalizado'}
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isSelectedTournamentManager && customSeedingOpen && (
-                                    <div className="custom-seeding-editor">
-                                        <h5>Orden personalizado</h5>
-                                        <p>Arrastra equipos a cualquier casilla (incluso vacía). Puedes previsualizar antes de guardar.</p>
-                                        <div className="custom-seeding-list">
-                                            {customSeedSlots.map((slot, index) => (
-                                                <div
-                                                    key={`seed-slot-${index + 1}`}
-                                                    className={`custom-seeding-item ${dragSeedRefId === slot.refId ? 'is-dragging' : ''} ${dragOverSeedRefId === slot.refId ? 'is-drop-target' : ''} ${slot.isEmpty ? 'is-empty' : ''}`}
-                                                    draggable={!bracketLoading}
-                                                    onDragStart={() => handleSeedDragStart(slot.refId)}
-                                                    onDragOver={(event) => {
-                                                        event.preventDefault();
-                                                        if (!bracketLoading) setDragOverSeedRefId(slot.refId);
-                                                    }}
-                                                    onDrop={(event) => {
-                                                        event.preventDefault();
-                                                        if (!bracketLoading) handleSeedDrop(slot.refId);
-                                                    }}
-                                                    onDragEnd={() => {
-                                                        setDragSeedRefId('');
-                                                        setDragOverSeedRefId('');
-                                                    }}
-                                                >
-                                                    <div className="seed-main">
-                                                        <span className="seed-position">#{slot.slot}</span>
-                                                        {slot.entry?.logoUrl ? (
-                                                          <img
-                                                            className="seed-logo"
-                                                            src={slot.entry.logoUrl}
-                                                            alt={slot.entry.teamName || 'Equipo'}
-                                                            onError={(e) => applyImageFallback(e, getTeamFallback(slot.entry?.teamName))}
-                                                          />
-                                                        ) : (
-                                                          <span className="seed-empty-dot"><i className='bx bx-plus'></i></span>
-                                                        )}
-                                                        <span className={`seed-name ${slot.isEmpty ? 'is-empty' : ''}`}>
-                                                          {slot.entry?.teamName || 'Casilla vacía'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="seed-actions-inline">
-                                                        <button
-                                                            type="button"
-                                                            className="mini-btn"
-                                                            disabled={index === 0 || bracketLoading}
-                                                            onClick={() => moveSeedItem(index, index - 1)}
-                                                        >
-                                                            <i className='bx bx-up-arrow-alt'></i>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="mini-btn"
-                                                            disabled={index === customSeedSlots.length - 1 || bracketLoading}
-                                                            onClick={() => moveSeedItem(index, index + 1)}
-                                                        >
-                                                            <i className='bx bx-down-arrow-alt'></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="bracket-admin-actions">
-                                            <button
-                                                className="btn-secondary"
-                                                disabled={bracketLoading}
-                                                onClick={() => previewBracketRequest(selectedTournament, 'custom')}
-                                            >
-                                                Vista previa personalizada
-                                            </button>
-                                            <button
-                                                className="btn-secondary"
-                                                disabled={bracketLoading}
-                                                onClick={() => generateBracket(selectedTournament, 'custom')}
-                                            >
-                                                Confirmar personalizado
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
                         
@@ -2134,7 +2056,7 @@ useEffect(() => {
                                 <span className="label">Hora</span>
                                 <span className="value">{selectedTournament.time}</span>
                             </div>
-                            <div className="stat-box prize">
+                            <div className="stat-box prize" style={{ '--gc': GAME_CONFIG[selectedTournament.game]?.color || 'var(--primary)' }}>
                                 <span className="label">Premio</span>
                                 <span className="value highlight">{selectedTournament.prize}</span>
                             </div>
@@ -2342,73 +2264,39 @@ useEffect(() => {
                             </a>
                         )}
 
-                        <div className="modal-actions-footer modal-actions-footer--admin">
-                            <div className="modal-actions-main">
-                                <button className="btn-secondary" onClick={closeTournamentDetails}>Cerrar</button>
-                                {canManageTournament(selectedTournament) && (
-                                    <button className="btn-secondary" onClick={() => goToEditTournament(selectedTournament)}>
-                                        Editar
-                                    </button>
-                                )}
-                            </div>
-                            {canManageTournament(selectedTournament) && (
-                                <div className="tournament-admin-actions">
-                                    {isSelectedTournamentOpen && (
-                                        <>
-                                            <button
-                                                className="btn-secondary"
-                                                onClick={() => updateTournamentStatus(selectedTournament, 'open')}
-                                                disabled={statusActionLoading === 'open' || !selectedTournament.registrationClosed}
-                                                title={!selectedTournament.registrationClosed ? 'Las inscripciones ya están abiertas' : ''}
-                                            >
-                                                {statusActionLoading === 'open' ? 'Abriendo...' : 'Abrir inscripciones'}
-                                            </button>
-                                            <button
-                                                className="btn-secondary"
-                                                onClick={() => updateTournamentStatus(selectedTournament, 'close')}
-                                                disabled={statusActionLoading === 'close' || selectedTournament.registrationClosed}
-                                                title={selectedTournament.registrationClosed ? 'Las inscripciones ya están cerradas' : ''}
-                                            >
-                                                {statusActionLoading === 'close' ? 'Cerrando...' : 'Cerrar inscripciones'}
-                                            </button>
-                                            <button
-                                                className="btn-secondary"
-                                                onClick={() => updateTournamentStatus(selectedTournament, 'start')}
-                                                disabled={statusActionLoading === 'start' || !canStartSelectedTournament}
-                                                title={!canStartSelectedTournament ? 'Primero genera el bracket del torneo' : ''}
-                                            >
-                                                {statusActionLoading === 'start' ? 'Iniciando...' : 'Iniciar torneo'}
-                                            </button>
-                                        </>
-                                    )}
-
-                                    {isSelectedTournamentOngoing && (
-                                        <button
-                                            className="btn-secondary"
-                                            onClick={() => updateTournamentStatus(selectedTournament, 'finish')}
-                                            disabled={statusActionLoading === 'finish'}
-                                        >
-                                            {statusActionLoading === 'finish' ? 'Finalizando...' : 'Finalizar torneo'}
-                                        </button>
-                                    )}
-
-                                    {(isSelectedTournamentOpen || isSelectedTournamentOngoing) && (
-                                        <button
-                                            className="btn-secondary"
-                                            onClick={() => updateTournamentStatus(selectedTournament, 'cancel')}
-                                            disabled={statusActionLoading === 'cancel'}
-                                        >
-                                            {statusActionLoading === 'cancel' ? 'Cancelando...' : 'Cancelar torneo'}
-                                        </button>
-                                    )}
-
-                                    {isSelectedTournamentOpen && !canStartSelectedTournament && (
-                                        <span className="join-hint admin-hint">Genera el bracket antes de iniciar</span>
-                                    )}
+                        {/* Admin guide + manage button */}
+                        {canManageTournament(selectedTournament) && (
+                            <div className="td-admin-panel">
+                                <div className="td-admin-panel__header">
+                                    <i className='bx bx-cog'></i>
+                                    <div>
+                                        <strong>Eres el organizador de este torneo</strong>
+                                        <p>Administra equipos, bracket, partidas, standings y mas desde el panel de control.</p>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                                <button
+                                    className="td-admin-panel__btn"
+                                    onClick={() => {
+                                        closeTournamentDetails();
+                                        navigate(`/tournaments/manage/${selectedTournament.tournamentId}`);
+                                    }}
+                                    style={{
+                                        background: GAME_CONFIG[selectedTournament.game]?.color || 'var(--primary)',
+                                        boxShadow: `0 0 20px ${GAME_CONFIG[selectedTournament.game]?.color || 'var(--primary)'}33`
+                                    }}
+                                >
+                                    <i className='bx bx-joystick'></i> Ir al panel de administracion
+                                </button>
+                            </div>
+                        )}
+
                         <div className="modal-actions-footer">
+                            <button className="btn-secondary" onClick={closeTournamentDetails}>Cerrar</button>
+                            {canManageTournament(selectedTournament) && (
+                                <button className="btn-secondary" onClick={() => goToEditTournament(selectedTournament)}>
+                                    Editar torneo
+                                </button>
+                            )}
                             {!hasRegisteredTeam(selectedTournament) && canRegisterSelectedTournament && (
                                 <button 
                                     className="btn-primary-action" 
@@ -2869,8 +2757,8 @@ useEffect(() => {
                                             />
                                             <div className="overlay-gradient"></div>
                                             <div className="top-badges">
-                                                <span className="game-pill" style={{ borderColor: gameColor, color: '#fff' }}>
-                                                    <i className={`bx ${GAME_CONFIG[torneo.game]?.icon || 'bx-joystick'}`}></i> {torneo.game}
+                                                <span className="game-pill" style={{ borderColor: getGameColor(torneo.game), color: '#fff' }}>
+                                                  <i className={`bx ${getGameIcon(torneo.game)}`}></i> {torneo.game}
                                                 </span>
                                                 {torneo.eligibility?.universityOnly === true && (
                                                     <span className="tn__card-status" style={{ background: '#6366f118', color: '#818cf8', border: '1px solid #818cf830' }}>

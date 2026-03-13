@@ -244,7 +244,7 @@ const CommunitySpacePage = () => {
             />
             <div className="community-space-title">
               <h1>{community.name}</h1>
-              <p>{community.description || 'Comunidad competitiva en Esportefy.'}</p>
+              <p>{community.description || 'Comunidad competitiva en GLITCH GANG.'}</p>
               <div className="community-space-chips">
                 <span className="community-chip">
                   <FaUsers /> {community.membersCount || 0} miembros
