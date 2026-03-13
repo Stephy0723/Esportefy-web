@@ -4,7 +4,9 @@ import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { formatTournamentPublicId } from '../../../../utils/publicIds';
 import { normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
+import { GAME_IMAGES } from '../../../../data/gameImages';
 import './TournamentPublic.css';
+import './TournamentPublicView.overrides.css';
 
 const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
@@ -24,6 +26,7 @@ const mapLocalToPublicShape = (item) => ({
   title: item.title,
   game: item.game,
   status: item.status || 'open',
+  bannerImage: item.bannerImage || '',
   description: item.description || '',
   modality: item.modality || '',
   format: item.format || '',
@@ -179,9 +182,20 @@ const TournamentPublicView = () => {
   const displaySponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
   const displayRegistrations = Array.isArray(data.registrations) ? data.registrations : [];
   const isValorantTournament = normalizeSupportedGameName(data.game) === 'Valorant';
+  const gameImage = GAME_IMAGES[data.game] || GAME_IMAGES.Default;
+  const bannerUrl = data.bannerImage
+    ? (data.bannerImage.startsWith('http') ? data.bannerImage : `${API_URL}/${data.bannerImage}`)
+    : '';
 
   return (
     <div className="tpv-page">
+      {bannerUrl ? (
+        <div className="tpv-banner">
+          <img src={bannerUrl} alt={`${data.title} banner`} />
+          <div className="tpv-banner__overlay" />
+        </div>
+      ) : null}
+
       <section className="tpv-showcase">
         <div className="tpv-showcase__copy">
           <p className="tpv-chip"><i className="bx bx-trophy" /> Torneo oficial</p>
@@ -199,6 +213,12 @@ const TournamentPublicView = () => {
         </div>
 
         <aside className="tpv-showcase__side">
+          {gameImage ? (
+            <div className="tpv-game-badge">
+              <img src={gameImage} alt={data.game} />
+              <span>{data.game}</span>
+            </div>
+          ) : null}
           <div className="tpv-event-card">
             <span>Fecha</span>
             <strong>{formatDate(data.date)}</strong>
@@ -249,6 +269,10 @@ const TournamentPublicView = () => {
               </div>
               <h2>{data.bracket.title || 'Bracket principal'}</h2>
               <PublicBracketBoard bracket={data.bracket} game={data.game} />
+              <div className="tpv-scroll-hint">
+                <i className="bx bx-move-horizontal" />
+                Desliza para ver el bracket completo
+              </div>
             </section>
           ) : null}
 

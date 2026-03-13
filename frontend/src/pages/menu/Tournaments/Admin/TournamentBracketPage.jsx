@@ -16,6 +16,11 @@ const FORMAT_OPTIONS = [
   { value: 'round_robin', label: 'Round Robin (todos contra todos)' },
 ];
 
+const toTeamObj = (name) => {
+  if (!name) return { refId: '', teamName: '', isBye: true };
+  return { refId: name, teamName: name, isBye: false };
+};
+
 const roundLabel = (index, total) => {
   const labels = ['Octavos', 'Cuartos', 'Semifinal', 'Final'];
   return labels[Math.max(0, labels.length - total + index)] || `Ronda ${index + 1}`;
@@ -30,8 +35,8 @@ const buildSingleElimination = (teams, bracketTitle) => {
   for (let i = 0; i < nextPower; i += 2) {
     seededMatches.push({
       ...createEmptyMatch(),
-      teamA: teams[i] || 'BYE',
-      teamB: teams[i + 1] || 'BYE',
+      teamA: teams[i] ? toTeamObj(teams[i]) : { refId: '', teamName: 'BYE', isBye: true },
+      teamB: teams[i + 1] ? toTeamObj(teams[i + 1]) : { refId: '', teamName: 'BYE', isBye: true },
     });
   }
 
@@ -61,8 +66,8 @@ const buildDoubleElimination = (teams, bracketTitle) => {
   for (let i = 0; i < nextPower; i += 2) {
     firstRoundMatches.push({
       ...createEmptyMatch(),
-      teamA: teams[i] || 'BYE',
-      teamB: teams[i + 1] || 'BYE',
+      teamA: teams[i] ? toTeamObj(teams[i]) : { refId: '', teamName: 'BYE', isBye: true },
+      teamB: teams[i + 1] ? toTeamObj(teams[i + 1]) : { refId: '', teamName: 'BYE', isBye: true },
     });
   }
 
@@ -107,14 +112,14 @@ const buildSwiss = (teams, bracketTitle, swissRounds) => {
     if (i + 1 < shuffled.length) {
       firstRoundMatches.push({
         ...createEmptyMatch(),
-        teamA: shuffled[i],
-        teamB: shuffled[i + 1],
+        teamA: toTeamObj(shuffled[i]),
+        teamB: toTeamObj(shuffled[i + 1]),
       });
     } else {
       firstRoundMatches.push({
         ...createEmptyMatch(),
-        teamA: shuffled[i],
-        teamB: 'BYE',
+        teamA: toTeamObj(shuffled[i]),
+        teamB: { refId: '', teamName: 'BYE', isBye: true },
       });
     }
   }
@@ -149,10 +154,12 @@ const buildRoundRobin = (teams, bracketTitle) => {
     const current = [fixed, ...teamsCopy];
 
     for (let i = 0; i < half; i++) {
+      const a = current[i];
+      const b = current[current.length - 1 - i];
       matches.push({
         ...createEmptyMatch(),
-        teamA: current[i],
-        teamB: current[current.length - 1 - i],
+        teamA: a === 'BYE' ? { refId: '', teamName: 'BYE', isBye: true } : toTeamObj(a),
+        teamB: b === 'BYE' ? { refId: '', teamName: 'BYE', isBye: true } : toTeamObj(b),
       });
     }
 
@@ -180,17 +187,30 @@ const TournamentBracketPage = () => {
 
   const availableSeed = useMemo(() => approvedTeams.join(', '), [approvedTeams]);
 
+  const teamName = (team) => {
+    if (!team) return '';
+    if (typeof team === 'string') return team;
+    return team.teamName || team.name || '';
+  };
+
   const updateSelectedField = (field, value) => {
     setBracket((prev) => {
       const next = {
         ...prev,
         rounds: (prev?.rounds || []).map((round, roundIndex) => ({
           ...round,
-          matches: (round.matches || []).map((match, matchIndex) =>
-            roundIndex === selectedMatch.roundIndex && matchIndex === selectedMatch.matchIndex
-              ? { ...match, [field]: value }
-              : match
-          ),
+          matches: (round.matches || []).map((match, matchIndex) => {
+            if (roundIndex !== selectedMatch.roundIndex || matchIndex !== selectedMatch.matchIndex) return match;
+            // For team fields, preserve object structure
+            if (field === 'teamA' || field === 'teamB') {
+              const current = match[field];
+              if (current && typeof current === 'object') {
+                return { ...match, [field]: { ...current, teamName: value, refId: current.refId || value } };
+              }
+              return { ...match, [field]: toTeamObj(value) };
+            }
+            return { ...match, [field]: value };
+          }),
         })),
       };
       return next;
@@ -217,6 +237,52 @@ const TournamentBracketPage = () => {
         },
       ],
     }));
+  };
+
+  const getTeamRef = (team) => {
+    if (!team) return '';
+    if (typeof team === 'string') return team;
+    return team.refId || team.teamName || '';
+  };
+
+  const setWinner = (side) => {
+    const ri = selectedMatch.roundIndex;
+    const mi = selectedMatch.matchIndex;
+
+    setBracket((prev) => {
+      const updatedRounds = (prev?.rounds || []).map((round, roundIdx) => ({
+        ...round,
+        matches: (round.matches || []).map((match, matchIdx) => {
+          if (roundIdx !== ri || matchIdx !== mi) return match;
+          const winner = side === 'A' ? match.teamA : match.teamB;
+          return {
+            ...match,
+            winnerRefId: getTeamRef(winner),
+            status: 'finished',
+          };
+        }),
+      }));
+
+      // Advance winner to next round
+      const nextRi = ri + 1;
+      if (nextRi < updatedRounds.length) {
+        const nextMi = Math.floor(mi / 2);
+        const slot = mi % 2 === 0 ? 'teamA' : 'teamB';
+        const currentMatch = updatedRounds[ri].matches[mi];
+        const winner = side === 'A' ? currentMatch.teamA : currentMatch.teamB;
+        const nextRound = updatedRounds[nextRi];
+        if (nextRound.matches[nextMi]) {
+          const winnerObj = typeof winner === 'object' && winner
+            ? { ...winner }
+            : toTeamObj(typeof winner === 'string' ? winner : winner?.teamName || '');
+          nextRound.matches = nextRound.matches.map((m, idx) =>
+            idx === nextMi ? { ...m, [slot]: winnerObj } : m
+          );
+        }
+      }
+
+      return { ...prev, rounds: updatedRounds };
+    });
   };
 
   const addMatchToRound = (roundIndex) => {
@@ -268,9 +334,22 @@ const TournamentBracketPage = () => {
               <h2>Editor del bracket</h2>
             </div>
             <div className="ta-actions">
-              <button className="ghost" onClick={addRound}>Agregar ronda</button>
-              <button onClick={saveBracket}>Guardar</button>
+              <button className="ghost" onClick={addRound} title="Crea una nueva ronda vacia al final del bracket para agregar partidas manualmente">
+                Agregar ronda
+              </button>
+              <button onClick={saveBracket} title="Guarda todos los cambios del bracket en el servidor">
+                Guardar
+              </button>
             </div>
+          </div>
+
+          <div className="ta-section-intro">
+            <h3>Gestor de llaves del torneo</h3>
+            <p>
+              Aqui configuras la estructura de eliminacion de tu torneo. Puedes generar
+              el bracket automaticamente con los equipos aprobados o armarlo manualmente.
+              Haz clic en cualquier partida del bracket (a la derecha) para editarla desde aqui.
+            </p>
           </div>
 
           <label>
@@ -278,30 +357,33 @@ const TournamentBracketPage = () => {
             <input
               value={bracket?.title || ''}
               onChange={(e) => setBracket((prev) => ({ ...(prev || createEmptyBracket()), title: e.target.value }))}
+              placeholder="Ej: Bracket principal"
             />
+            <p className="ta-hint">Nombre visible para los participantes y espectadores.</p>
           </label>
 
           <div className="ta-editor-block">
             <span className="ta-editor-label">Match seleccionado</span>
             <strong>Ronda {selectedMatch.roundIndex + 1} - Match {selectedMatch.matchIndex + 1}</strong>
+            <p className="ta-hint">Haz clic en una partida del bracket para seleccionarla y editar sus datos aqui.</p>
           </div>
 
           <div className="ta-form-grid ta-form-grid--stacked">
             <label>
               <span>Equipo A</span>
-              <input value={selectedMatchData.teamA || ''} onChange={(e) => updateSelectedField('teamA', e.target.value)} />
+              <input value={teamName(selectedMatchData.teamA)} onChange={(e) => updateSelectedField('teamA', e.target.value)} placeholder="Nombre del equipo" />
             </label>
             <label>
               <span>Score A</span>
-              <input value={selectedMatchData.scoreA || ''} onChange={(e) => updateSelectedField('scoreA', e.target.value)} />
+              <input value={selectedMatchData.scoreA || ''} onChange={(e) => updateSelectedField('scoreA', e.target.value)} placeholder="0" />
             </label>
             <label>
               <span>Equipo B</span>
-              <input value={selectedMatchData.teamB || ''} onChange={(e) => updateSelectedField('teamB', e.target.value)} />
+              <input value={teamName(selectedMatchData.teamB)} onChange={(e) => updateSelectedField('teamB', e.target.value)} placeholder="Nombre del equipo" />
             </label>
             <label>
               <span>Score B</span>
-              <input value={selectedMatchData.scoreB || ''} onChange={(e) => updateSelectedField('scoreB', e.target.value)} />
+              <input value={selectedMatchData.scoreB || ''} onChange={(e) => updateSelectedField('scoreB', e.target.value)} placeholder="0" />
             </label>
             <label className="ta-form-grid__full">
               <span>Horario</span>
@@ -310,12 +392,53 @@ const TournamentBracketPage = () => {
                 onChange={(e) => updateSelectedField('scheduledLabel', e.target.value)}
                 placeholder="23:00 EST - 19 Mar"
               />
+              <p className="ta-hint">Fecha y hora de la partida. Visible en la tarjeta del match.</p>
             </label>
           </div>
+
+          {/* Winner selector */}
+          {(teamName(selectedMatchData.teamA) && teamName(selectedMatchData.teamB)) && (
+            <div className="ta-editor-block">
+              <span className="ta-editor-label">Ganador de la partida</span>
+              <p className="ta-hint">
+                Selecciona al equipo ganador. El ganador avanzara automaticamente a la siguiente ronda.
+              </p>
+              <div className="ta-winner-btns">
+                <button
+                  className={`ta-winner-btn ${selectedMatchData.winnerRefId && selectedMatchData.winnerRefId === getTeamRef(selectedMatchData.teamA) ? 'ta-winner-btn--active' : ''}`}
+                  onClick={() => setWinner('A')}
+                  title={`Marcar a ${teamName(selectedMatchData.teamA)} como ganador`}
+                >
+                  {teamName(selectedMatchData.teamA) || 'Equipo A'}
+                </button>
+                <button
+                  className={`ta-winner-btn ${selectedMatchData.winnerRefId && selectedMatchData.winnerRefId === getTeamRef(selectedMatchData.teamB) ? 'ta-winner-btn--active' : ''}`}
+                  onClick={() => setWinner('B')}
+                  title={`Marcar a ${teamName(selectedMatchData.teamB)} como ganador`}
+                >
+                  {teamName(selectedMatchData.teamB) || 'Equipo B'}
+                </button>
+              </div>
+              {selectedMatchData.winnerRefId && (
+                <p className="ta-hint" style={{ color: 'var(--primary)' }}>
+                  Ganador: {selectedMatchData.winnerRefId === getTeamRef(selectedMatchData.teamA) ? teamName(selectedMatchData.teamA) : teamName(selectedMatchData.teamB)}
+                  {' '} — Recuerda guardar para aplicar los cambios.
+                </p>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={saveBracket}
+            title="Guarda los cambios del match seleccionado al servidor"
+          >
+            Guardar match (R{selectedMatch.roundIndex + 1}-M{selectedMatch.matchIndex + 1})
+          </button>
 
           <div className="ta-editor-block">
             <span className="ta-editor-label">Equipos aprobados ({approvedTeams.length})</span>
             <p>{availableSeed || 'Aun no hay equipos aprobados para sembrar.'}</p>
+            <p className="ta-hint">Estos son los equipos que ya fueron aceptados en el torneo y se usaran para generar el bracket.</p>
           </div>
 
           <div className="ta-form-grid ta-form-grid--stacked">
@@ -326,6 +449,12 @@ const TournamentBracketPage = () => {
                   <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
               </select>
+              <p className="ta-hint">
+                {selectedFormat === 'single_elimination' && 'Pierdes una vez y quedas fuera. Ideal para torneos rapidos.'}
+                {selectedFormat === 'double_elimination' && 'Necesitas perder dos veces para ser eliminado. Mas justo, mas largo.'}
+                {selectedFormat === 'swiss' && 'Los equipos se emparejan por puntuacion similar en cada ronda. Sin eliminacion directa.'}
+                {selectedFormat === 'round_robin' && 'Todos los equipos juegan contra todos. Ideal para ligas o grupos.'}
+              </p>
             </label>
             <label>
               <span>Semilla</span>
@@ -333,6 +462,7 @@ const TournamentBracketPage = () => {
                 <option value="order">Orden de inscripcion</option>
                 <option value="random">Aleatorio</option>
               </select>
+              <p className="ta-hint">Define como se ordenan los equipos en la primera ronda.</p>
             </label>
             {selectedFormat === 'swiss' && (
               <label>
@@ -345,22 +475,31 @@ const TournamentBracketPage = () => {
                   onChange={(e) => setSwissRounds(Number(e.target.value))}
                   placeholder="Auto"
                 />
+                <p className="ta-hint">Cantidad de rondas. Si dejas vacio, se calcula automaticamente.</p>
               </label>
             )}
           </div>
 
           <div className="ta-shortcuts">
-            <button onClick={autoBuildBracket}>Generar bracket</button>
+            <button onClick={autoBuildBracket} title="Crea automaticamente todas las rondas y partidas usando los equipos aprobados y el formato seleccionado">
+              Generar bracket
+            </button>
+            <p className="ta-hint">Genera automaticamente las llaves con los equipos aprobados y el formato elegido arriba.</p>
             <button
               className="ghost"
               onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/roulette/live/duel`)}
+              title="Abre la ruleta interactiva para sortear los enfrentamientos en vivo"
             >
               Generar desde Ruleta
             </button>
+            <p className="ta-hint">Usa la ruleta animada para sortear enfrentamientos de forma interactiva y luego aplicarlos al bracket.</p>
             {rounds[selectedMatch.roundIndex] ? (
-              <button className="ghost" onClick={() => addMatchToRound(selectedMatch.roundIndex)}>
-                Agregar match a esta ronda
-              </button>
+              <>
+                <button className="ghost" onClick={() => addMatchToRound(selectedMatch.roundIndex)} title="Agrega una nueva partida vacia a la ronda actualmente seleccionada">
+                  Agregar match a esta ronda
+                </button>
+                <p className="ta-hint">Agrega una partida extra a la ronda seleccionada (Ronda {selectedMatch.roundIndex + 1}).</p>
+              </>
             ) : null}
           </div>
 
@@ -368,6 +507,7 @@ const TournamentBracketPage = () => {
             <div className="ta-editor-block">
               <span className="ta-editor-label">Formato activo</span>
               <strong>{FORMAT_OPTIONS.find((f) => f.value === bracket.format)?.label || bracket.format}</strong>
+              <p className="ta-hint">Este es el formato con el que se genero el bracket actual.</p>
             </div>
           )}
         </aside>
@@ -377,6 +517,9 @@ const TournamentBracketPage = () => {
           <div className="ta-stage__brand ta-stage__brand--corner">
             <span>{tournament.game}</span>
             <strong>{bracket?.title || 'Bracket principal'}</strong>
+            <p className="ta-hint" style={{ marginTop: 4 }}>
+              Vista previa del bracket. Haz clic en cualquier partida para seleccionarla y editarla en el panel izquierdo.
+            </p>
           </div>
 
           <div className="bk-tree">

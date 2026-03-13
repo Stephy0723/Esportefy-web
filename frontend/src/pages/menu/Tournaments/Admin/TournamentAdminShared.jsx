@@ -5,8 +5,8 @@ import { API_URL } from '../../../../config/api';
 import { getAuthToken } from '../../../../utils/authSession';
 
 export const createEmptyMatch = () => ({
-  teamA: '',
-  teamB: '',
+  teamA: { refId: '', teamName: '', isPlaceholder: true },
+  teamB: { refId: '', teamName: '', isPlaceholder: true },
   scoreA: '',
   scoreB: '',
   scheduledLabel: '',

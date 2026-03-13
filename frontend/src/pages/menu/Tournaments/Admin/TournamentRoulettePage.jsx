@@ -575,12 +575,17 @@ const roundLabel = (index, total) => {
   return labels[Math.max(0, labels.length - total + index)] || `Ronda ${index + 1}`;
 };
 
+const toTeamObj = (name) => {
+  if (!name) return { refId: '', teamName: '', isBye: true };
+  return { refId: name, teamName: name, isBye: false };
+};
+
 const buildBracketFromMatchups = (matchups) => {
   const pairs = [...matchups].reverse(); // oldest first
   const firstRoundMatches = pairs.map((pair) => ({
     ...createEmptyMatch(),
-    teamA: pair.teamA,
-    teamB: pair.teamB,
+    teamA: toTeamObj(pair.teamA),
+    teamB: toTeamObj(pair.teamB),
   }));
 
   const nextPower = 2 ** Math.ceil(Math.log2(Math.max(2, firstRoundMatches.length)));

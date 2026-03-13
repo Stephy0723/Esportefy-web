@@ -199,6 +199,113 @@ const TournamentManagePage = () => {
         </div>
       </section>
 
+
+      {/* Teams */}
+      <section className="ta-panel ta-panel--teams" style={{ marginTop: 16 }}>
+        <div className="ta-panel__head">
+          <div>
+            <span className="ta-kicker">Paso 1</span>
+            <h2>Equipos inscritos ({approvedCount}/{tournament.maxSlots || 0})</h2>
+          </div>
+          <div className="ta-actions">
+            <button className="ghost" onClick={seedTeams} disabled={seedLoading}>
+              {seedLoading ? 'Llenando...' : 'Llenar ficticios'}
+            </button>
+          </div>
+        </div>
+
+        {registrations.length === 0 ? (
+          <div className="ta-empty">No hay equipos inscritos. Usa "Llenar ficticios" para probar el flujo.</div>
+        ) : (
+          <div className="ta-list">
+            {registrations.map((item) => {
+              const starters = Array.isArray(item?.roster?.starters) ? item.roster.starters.filter(Boolean) : [];
+              const subs = Array.isArray(item?.roster?.subs) ? item.roster.subs.filter(Boolean) : [];
+              const isExpanded = expandedRoster === item._id;
+
+              return (
+                <article key={item._id} className="ta-row ta-row--expandable">
+                  <div className="ta-row__main">
+                    <div>
+                      <strong>{item.teamName}</strong>
+                      <div className="ta-row-meta">
+                        <span className={`ta-pill ${item.status === 'approved' ? 'ok' : item.status === 'rejected' ? 'warn' : ''}`}>
+                          {item.status === 'approved' ? 'Aprobado' : item.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                        </span>
+                        {item?.teamMeta?.teamCountry ? <span className="ta-pill">{item.teamMeta.teamCountry}</span> : null}
+                        <span className="ta-pill">{starters.length} titulares</span>
+                        {subs.length > 0 && <span className="ta-pill">{subs.length} suplentes</span>}
+                        {isMlbbTournament ? (
+                          <span className={`ta-pill ${hasValidMlbbRoster(item) ? 'ok' : 'warn'}`}>
+                            {hasValidMlbbRoster(item) ? 'MLBB listo' : 'MLBB incompleto'}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="ta-row-actions">
+                      <button
+                        className="ghost"
+                        onClick={() => setExpandedRoster(isExpanded ? null : item._id)}
+                        style={{ padding: '8px 12px' }}
+                      >
+                        {isExpanded ? 'Ocultar' : 'Roster'}
+                      </button>
+                      <button
+                        onClick={() => updateRegistration(item._id, 'approved')}
+                        disabled={isMlbbTournament && !hasValidMlbbRoster(item)}
+                      >
+                        Aprobar
+                      </button>
+                      <button className="warn" onClick={() => updateRegistration(item._id, 'rejected')}>Rechazar</button>
+                      <button className="danger" onClick={() => removeRegistration(item._id)}>Quitar</button>
+                    </div>
+                  </div>
+
+                  {isExpanded && (starters.length > 0 || subs.length > 0) && (
+                    <div className="ta-roster-detail">
+                      {starters.length > 0 && (
+                        <div>
+                          <span className="ta-editor-label">Titulares</span>
+                          <div className="ta-roster-grid">
+                            {starters.map((player, idx) => (
+                              <div key={idx} className="ta-roster-player">
+                                <strong>{player.nickname || player.gameId || `Jugador ${idx + 1}`}</strong>
+                                <div className="ta-row-meta">
+                                  {player.role && <span className="ta-pill">{player.role}</span>}
+                                  {player.gameId && <span className="ta-pill">{player.gameId}</span>}
+                                  {player.region && <span className="ta-pill">{player.region}</span>}
+                                  {player.riotId && <span className="ta-pill">Riot: {player.riotId}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {subs.length > 0 && (
+                        <div>
+                          <span className="ta-editor-label">Suplentes</span>
+                          <div className="ta-roster-grid">
+                            {subs.map((player, idx) => (
+                              <div key={idx} className="ta-roster-player">
+                                <strong>{player.nickname || player.gameId || `Suplente ${idx + 1}`}</strong>
+                                <div className="ta-row-meta">
+                                  {player.role && <span className="ta-pill">{player.role}</span>}
+                                  {player.gameId && <span className="ta-pill">{player.gameId}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* Quick info + Status */}
       <div className="ta-manage-layout">
         <section className="ta-panel">
@@ -374,111 +481,6 @@ const TournamentManagePage = () => {
         </section>
       </div>
 
-      {/* Teams */}
-      <section className="ta-panel ta-panel--teams" style={{ marginTop: 16 }}>
-        <div className="ta-panel__head">
-          <div>
-            <span className="ta-kicker">Paso 1</span>
-            <h2>Equipos inscritos ({approvedCount}/{tournament.maxSlots || 0})</h2>
-          </div>
-          <div className="ta-actions">
-            <button className="ghost" onClick={seedTeams} disabled={seedLoading}>
-              {seedLoading ? 'Llenando...' : 'Llenar ficticios'}
-            </button>
-          </div>
-        </div>
-
-        {registrations.length === 0 ? (
-          <div className="ta-empty">No hay equipos inscritos. Usa "Llenar ficticios" para probar el flujo.</div>
-        ) : (
-          <div className="ta-list">
-            {registrations.map((item) => {
-              const starters = Array.isArray(item?.roster?.starters) ? item.roster.starters.filter(Boolean) : [];
-              const subs = Array.isArray(item?.roster?.subs) ? item.roster.subs.filter(Boolean) : [];
-              const isExpanded = expandedRoster === item._id;
-
-              return (
-                <article key={item._id} className="ta-row ta-row--expandable">
-                  <div className="ta-row__main">
-                    <div>
-                      <strong>{item.teamName}</strong>
-                      <div className="ta-row-meta">
-                        <span className={`ta-pill ${item.status === 'approved' ? 'ok' : item.status === 'rejected' ? 'warn' : ''}`}>
-                          {item.status === 'approved' ? 'Aprobado' : item.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
-                        </span>
-                        {item?.teamMeta?.teamCountry ? <span className="ta-pill">{item.teamMeta.teamCountry}</span> : null}
-                        <span className="ta-pill">{starters.length} titulares</span>
-                        {subs.length > 0 && <span className="ta-pill">{subs.length} suplentes</span>}
-                        {isMlbbTournament ? (
-                          <span className={`ta-pill ${hasValidMlbbRoster(item) ? 'ok' : 'warn'}`}>
-                            {hasValidMlbbRoster(item) ? 'MLBB listo' : 'MLBB incompleto'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="ta-row-actions">
-                      <button
-                        className="ghost"
-                        onClick={() => setExpandedRoster(isExpanded ? null : item._id)}
-                        style={{ padding: '8px 12px' }}
-                      >
-                        {isExpanded ? 'Ocultar' : 'Roster'}
-                      </button>
-                      <button
-                        onClick={() => updateRegistration(item._id, 'approved')}
-                        disabled={isMlbbTournament && !hasValidMlbbRoster(item)}
-                      >
-                        Aprobar
-                      </button>
-                      <button className="warn" onClick={() => updateRegistration(item._id, 'rejected')}>Rechazar</button>
-                      <button className="danger" onClick={() => removeRegistration(item._id)}>Quitar</button>
-                    </div>
-                  </div>
-
-                  {isExpanded && (starters.length > 0 || subs.length > 0) && (
-                    <div className="ta-roster-detail">
-                      {starters.length > 0 && (
-                        <div>
-                          <span className="ta-editor-label">Titulares</span>
-                          <div className="ta-roster-grid">
-                            {starters.map((player, idx) => (
-                              <div key={idx} className="ta-roster-player">
-                                <strong>{player.nickname || player.gameId || `Jugador ${idx + 1}`}</strong>
-                                <div className="ta-row-meta">
-                                  {player.role && <span className="ta-pill">{player.role}</span>}
-                                  {player.gameId && <span className="ta-pill">{player.gameId}</span>}
-                                  {player.region && <span className="ta-pill">{player.region}</span>}
-                                  {player.riotId && <span className="ta-pill">Riot: {player.riotId}</span>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {subs.length > 0 && (
-                        <div>
-                          <span className="ta-editor-label">Suplentes</span>
-                          <div className="ta-roster-grid">
-                            {subs.map((player, idx) => (
-                              <div key={idx} className="ta-roster-player">
-                                <strong>{player.nickname || player.gameId || `Suplente ${idx + 1}`}</strong>
-                                <div className="ta-row-meta">
-                                  {player.role && <span className="ta-pill">{player.role}</span>}
-                                  {player.gameId && <span className="ta-pill">{player.gameId}</span>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
     </TournamentAdminShell>
   );
 };

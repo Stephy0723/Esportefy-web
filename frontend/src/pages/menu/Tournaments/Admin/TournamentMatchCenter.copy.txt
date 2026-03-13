@@ -7,7 +7,6 @@ import {
   useTournamentAdminData,
 } from './TournamentAdminShared';
 import './TournamentAdmin.css';
-import './TournamentMatchCenter.overrides.css';
 
 /* ── helpers ── */
 
@@ -283,41 +282,31 @@ const TournamentMatchCenter = () => {
         </section>
       ) : (
         <>
-          {/* Intro */}
-          <div className="ta-section-intro">
-            <h3>Centro de partidas</h3>
-            <p>
-              Aqui gestionas todas las partidas del torneo. Puedes cambiar el estado de cada
-              partida, registrar resultados, subir capturas de prueba y resolver disputas.
-              Haz clic en cualquier tarjeta de partida para abrir el panel de edicion.
-            </p>
-          </div>
-
           {/* Stats bar */}
           <div className="mc-stats-bar">
-            <div className="mc-stat" title="Cantidad total de partidas en el bracket">
+            <div className="mc-stat">
               <strong>{stats.total}</strong>
               <span>Total</span>
             </div>
-            <div className="mc-stat mc-stat--live" title="Partidas que estan jugandose en este momento">
+            <div className="mc-stat mc-stat--live">
               <strong>{stats.live}</strong>
               <span>En vivo</span>
             </div>
-            <div className="mc-stat mc-stat--done" title="Partidas con resultado confirmado">
+            <div className="mc-stat mc-stat--done">
               <strong>{stats.finished}</strong>
               <span>Finalizadas</span>
             </div>
-            <div className="mc-stat" title="Partidas que aun no han comenzado">
+            <div className="mc-stat">
               <strong>{stats.pending}</strong>
               <span>Pendientes</span>
             </div>
             {stats.disputed > 0 && (
-              <div className="mc-stat mc-stat--warn" title="Partidas donde los equipos reportaron resultados diferentes">
+              <div className="mc-stat mc-stat--warn">
                 <strong>{stats.disputed}</strong>
                 <span>Disputadas</span>
               </div>
             )}
-            <div className="mc-stat mc-stat--pct" title="Porcentaje de partidas finalizadas sobre el total">
+            <div className="mc-stat mc-stat--pct">
               <strong>{stats.total > 0 ? Math.round((stats.finished / stats.total) * 100) : 0}%</strong>
               <span>Completado</span>
             </div>
@@ -326,17 +315,16 @@ const TournamentMatchCenter = () => {
           {/* Filters */}
           <div className="mc-filters">
             {[
-              { key: 'all', label: 'Todas', tip: 'Ver todas las partidas' },
-              { key: 'active', label: 'En vivo / Listas', tip: 'Partidas en curso o listas para comenzar' },
-              { key: 'pending', label: 'Pendientes', tip: 'Partidas que aun no tienen equipos o no han comenzado' },
-              { key: 'finished', label: 'Finalizadas', tip: 'Partidas con resultado registrado' },
-              { key: 'disputed', label: 'Disputadas', tip: 'Partidas donde hay conflicto de resultados' },
+              { key: 'all', label: 'Todas' },
+              { key: 'active', label: 'En vivo / Listas' },
+              { key: 'pending', label: 'Pendientes' },
+              { key: 'finished', label: 'Finalizadas' },
+              { key: 'disputed', label: 'Disputadas' },
             ].map((f) => (
               <button
                 key={f.key}
                 className={`ta-filter-btn ${filter === f.key ? 'is-active' : ''}`}
                 onClick={() => setFilter(f.key)}
-                title={f.tip}
               >
                 {f.label}
               </button>
@@ -407,7 +395,6 @@ const TournamentMatchCenter = () => {
                                     className="ta-btn-sm"
                                     onClick={(e) => { e.stopPropagation(); setMatchStatus(match, 'live'); }}
                                     disabled={saving}
-                                    title="Cambia el estado a En vivo para indicar que la partida esta en curso"
                                   >
                                     Poner en vivo
                                   </button>
@@ -416,7 +403,6 @@ const TournamentMatchCenter = () => {
                                   <button
                                     className="ta-btn-sm ta-btn-sm--secondary"
                                     onClick={(e) => { e.stopPropagation(); selectMatch(match); }}
-                                    title="Abre el panel lateral para registrar scores, subir prueba y finalizar"
                                   >
                                     Reportar resultado
                                   </button>
@@ -430,7 +416,6 @@ const TournamentMatchCenter = () => {
                                   className="ta-btn-sm"
                                   onClick={(e) => { e.stopPropagation(); resolveDispute(match, 'A'); }}
                                   disabled={saving}
-                                  title={`Resolver la disputa a favor de ${match.nameA} y finalizar la partida`}
                                 >
                                   Victoria {match.nameA}
                                 </button>
@@ -438,7 +423,6 @@ const TournamentMatchCenter = () => {
                                   className="ta-btn-sm ta-btn-sm--secondary"
                                   onClick={(e) => { e.stopPropagation(); resolveDispute(match, 'B'); }}
                                   disabled={saving}
-                                  title={`Resolver la disputa a favor de ${match.nameB} y finalizar la partida`}
                                 >
                                   Victoria {match.nameB}
                                 </button>
@@ -461,7 +445,7 @@ const TournamentMatchCenter = () => {
                     <span className="ta-kicker">{selectedMatch.roundName}</span>
                     <h3>{selectedMatch.displayId}</h3>
                   </div>
-                  <button className="ghost" onClick={closeEditor} title="Cerrar el panel de edicion">Cerrar</button>
+                  <button className="ghost" onClick={closeEditor}>Cerrar</button>
                 </div>
 
                 <div className="mc-editor__matchup">
@@ -492,26 +476,22 @@ const TournamentMatchCenter = () => {
                     />
                   </label>
                 </div>
-                <p className="ta-hint">Ingresa el puntaje de cada equipo. Puede ser rondas ganadas, kills, puntos, etc.</p>
 
                 <label className="mc-editor__status">
                   <span>Estado</span>
                   <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
-                    <option value="pending">Pendiente — Aun no comienza</option>
-                    <option value="ready">Listo — Equipos confirmados, por iniciar</option>
-                    <option value="live">En vivo — Partida en curso</option>
-                    <option value="finished">Finalizado — Resultado registrado</option>
-                    <option value="walkover">Walkover — Victoria por ausencia</option>
+                    <option value="pending">Pendiente</option>
+                    <option value="ready">Listo</option>
+                    <option value="live">En vivo</option>
+                    <option value="finished">Finalizado</option>
+                    <option value="walkover">Walkover</option>
                   </select>
                 </label>
-                <p className="ta-hint">El estado controla como se muestra la partida. Usa &quot;Finalizado&quot; cuando ya tengas el resultado.</p>
 
                 {/* Proof section */}
                 <div className="mc-editor__proof">
-                  <div className="mc-editor__proof-head">
-                    <span className="mc-editor__label">Captura de resultado</span>
-                    <small>Obligatoria para finalizar la partida</small>
-                  </div>
+                  <span className="mc-editor__label">Captura de resultado</span>
+                  <small>Obligatoria para finalizar la partida</small>
 
                   {(proofPreview || proofUrl || selectedMatch.proofUrl) && (
                     <div className="mc-editor__proof-img">
@@ -535,17 +515,15 @@ const TournamentMatchCenter = () => {
                       className="ghost"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={proofUploading}
-                      title="Selecciona una imagen (JPG, PNG o WebP) como evidencia del resultado"
                     >
                       {proofFile ? 'Cambiar captura' : 'Subir captura'}
                     </button>
                     {proofFile && !proofUrl && (
-                      <button className="ghost" onClick={uploadProof} disabled={proofUploading} title="Sube la imagen al servidor">
+                      <button className="ghost" onClick={uploadProof} disabled={proofUploading}>
                         {proofUploading ? 'Subiendo...' : 'Confirmar subida'}
                       </button>
                     )}
                   </div>
-                  <p className="ta-hint">Sube un screenshot del resultado final como evidencia. Necesaria antes de finalizar.</p>
                 </div>
 
                 {/* Save actions */}
@@ -554,7 +532,6 @@ const TournamentMatchCenter = () => {
                     className="mc-editor__btn mc-editor__btn--save"
                     onClick={() => saveMatchResult(false)}
                     disabled={saving}
-                    title="Guarda los scores y el estado sin finalizar la partida"
                   >
                     {saving ? 'Guardando...' : 'Guardar'}
                   </button>
@@ -562,15 +539,10 @@ const TournamentMatchCenter = () => {
                     className="mc-editor__btn mc-editor__btn--finish"
                     onClick={() => saveMatchResult(true)}
                     disabled={saving}
-                    title="Marca la partida como finalizada, registra el ganador y guarda todo"
                   >
                     Finalizar match
                   </button>
                 </div>
-                <p className="ta-hint">
-                  <strong>Guardar:</strong> guarda scores y estado sin cerrar la partida.{' '}
-                  <strong>Finalizar:</strong> cierra la partida, determina el ganador por score y requiere captura de prueba.
-                </p>
               </aside>
             )}
           </div>
