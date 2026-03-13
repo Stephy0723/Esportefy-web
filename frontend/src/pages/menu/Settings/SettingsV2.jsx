@@ -57,6 +57,7 @@ export default function SettingsV2() {
     const [riotGameName, setRiotGameName] = useState('');
     const [riotTagLine, setRiotTagLine] = useState('');
     const [riotLoading, setRiotLoading] = useState(false);
+    const [riotSyncing, setRiotSyncing] = useState(false);
     const [riotStep, setRiotStep] = useState('idle');
     const [riotOtp, setRiotOtp] = useState('');
     const [riotMsg, setRiotMsg] = useState('');
@@ -407,13 +408,16 @@ export default function SettingsV2() {
         }
         try {
             setRiotLoading(true);
-            await axios.post(`${API_URL}/api/auth/riot/link/confirm`, 
+            const res = await axios.post(`${API_URL}/api/auth/riot/link/confirm`, 
                 { otp: riotOtp },
                 { headers: authHeaders }
             );
             await fetchSettings();
             await fetchRiotStatus();
-            setRiotMsg('Riot vinculado exitosamente');
+            emitUserUpdate();
+            const backendMessage = res?.data?.message || 'Riot vinculado correctamente.';
+            const syncNotice = res?.data?.sync?.warning || res?.data?.sync?.lol?.note || '';
+            setRiotMsg(syncNotice ? `${backendMessage} ${syncNotice}` : backendMessage);
             setRiotStep('idle');
             setRiotOtp('');
             setRiotGameName('');
@@ -425,13 +429,33 @@ export default function SettingsV2() {
         }
     };
 
-    const unlinkRiot = async () => {
+    const syncRiot = async () => {
         try {
-            await axios.delete(`${API_URL}/api/auth/riot`, {
+            setRiotSyncing(true);
+            setRiotMsg('');
+            const res = await axios.post(`${API_URL}/api/auth/riot/sync`, {}, {
                 headers: authHeaders
             });
             await fetchSettings();
             await fetchRiotStatus();
+            emitUserUpdate();
+            const syncNote = res?.data?.result?.lol?.note || res?.data?.result?.valorant?.note || '';
+            setRiotMsg(syncNote ? `Sincronización completada: ${syncNote}` : (res?.data?.message || 'Sincronización Riot completada.'));
+        } catch (error) {
+            setRiotMsg(error.response?.data?.message || 'No se pudo sincronizar Riot.');
+        } finally {
+            setRiotSyncing(false);
+        }
+    };
+
+    const unlinkRiot = async () => {
+        try {
+            const res = await axios.delete(`${API_URL}/api/auth/riot`, {
+                headers: authHeaders
+            });
+            await fetchSettings();
+            await fetchRiotStatus();
+            setRiotMsg(res?.data?.message || 'Riot desvinculado.');
             emitUserUpdate();
         } catch (error) {
             console.error('Riot unlink error:', error);
@@ -502,12 +526,8 @@ export default function SettingsV2() {
             );
             await fetchSettings();
             await fetchMlbbStatus();
-            const nextStatus = String(res?.data?.status || '');
-            setMlbbMsg(
-                nextStatus === 'pending'
-                    ? 'Solicitud enviada. Quedó en revisión.'
-                    : 'Cuenta MLBB vinculada correctamente.'
-            );
+            emitUserUpdate();
+            setMlbbMsg(res?.data?.message || 'Cuenta MLBB actualizada correctamente.');
             setMlbbPlayerId('');
             setMlbbZoneId('');
             setMlbbIgn('');
@@ -702,9 +722,14 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__action">
                                         {connections?.riot?.verified ? (
-                                            <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkRiot}>
-                                                Desvincular
-                                            </button>
+                                            <>
+                                                <button className="stv2-btn stv2-btn--ghost" onClick={() => setActiveTab('riot-link')}>
+                                                    Gestionar
+                                                </button>
+                                                <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkRiot}>
+                                                    Desvincular
+                                                </button>
+                                            </>
                                         ) : (
                                             <button className="stv2-btn stv2-btn--primary" onClick={() => setActiveTab('riot-link')}>
                                                 Vincular
@@ -914,8 +939,8 @@ export default function SettingsV2() {
                                         Mobile Legends: Bang Bang es una marca registrada de Moonton.
                                     </p>
                                     <p className="stv2-disclaimer__privacy">
-                                        <FaLink /> Tus datos de conexión están protegidos mediante encriptación AES-256 y nunca son compartidos con terceros.
-                                        Consulta nuestra <a href="/privacy">Política de Privacidad</a> y <a href="/terms">Términos de Servicio</a>.
+                                        <FaLink /> Tus datos de conexión se procesan con controles de acceso y medidas de seguridad del servicio, y no se comparten con terceros sin base legal o consentimiento aplicable.
+                                        Consulta nuestra <a href="/legal/privacy">Política de Privacidad</a> y <a href="/legal/terms">Términos de Servicio</a>.
                                     </p>
                                 </div>
                             </div>
@@ -964,6 +989,23 @@ export default function SettingsV2() {
 
                             <div className="stv2-form">
                                 <h3 className="stv2-section__subtitle">League of Legends / identidad base</h3>
+                                {riotStatus?.linked && (
+                                    <div className="stv2-form__actions-inline">
+                                        <button
+                                            className="stv2-btn stv2-btn--ghost"
+                                            onClick={syncRiot}
+                                            disabled={riotSyncing}
+                                        >
+                                            {riotSyncing ? 'Sincronizando...' : 'Sync ahora'}
+                                        </button>
+                                        <button
+                                            className="stv2-btn stv2-btn--ghost stv2-btn--danger"
+                                            onClick={unlinkRiot}
+                                        >
+                                            Desvincular Riot
+                                        </button>
+                                    </div>
+                                )}
                                 {riotStep === 'idle' ? (
                                     <>
                                         <div className="stv2-form__row">
