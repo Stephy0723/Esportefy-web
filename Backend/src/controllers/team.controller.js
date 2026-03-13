@@ -10,6 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
+import { getRiotAccountByRiotId, getRiotApiKey } from '../utils/riotApi.js';
 import {
     getSupportedGameRoles,
     isSupportedGameName,
@@ -150,40 +151,36 @@ export const createTeam = async (req, res) => {
             if (!linked.ok) {
                 return res.status(400).json({ message: linked.message });
             }
-            if (process.env.RIOT_API_KEY) {
-                const riotCheck = await validateRiotAccount(parsedFormData.leaderIgn, parsedFormData.leaderGameId);
-                if (!riotCheck.ok) {
-                    console.warn('[createTeam] Riot validation failed:', riotCheck.message);
-                    return res.status(400).json({ message: riotCheck.message });
+            const riotCheck = await validateRiotAccount(parsedFormData.leaderIgn, parsedFormData.leaderGameId);
+            if (!riotCheck.ok) {
+                console.warn('[createTeam] Riot validation failed:', riotCheck.message);
+                return res.status(400).json({ message: riotCheck.message });
+            }
+            const riotMatch = await ensureRiotPlayerMatchesLinkedUser(
+                req.userId,
+                parsedFormData.leaderIgn,
+                parsedFormData.leaderGameId,
+                parsedFormData.game
+            );
+            if (!riotMatch.ok) {
+                return res.status(400).json({ message: riotMatch.message });
+            }
+            const riotUnique = await ensureRiotIdNotInOtherTeam(
+                parsedFormData.game,
+                parsedFormData.leaderIgn,
+                parsedFormData.leaderGameId,
+                null,
+                {
+                    targetTeamLike: {
+                        teamLevel: parsedFormData.teamLevel,
+                        university: { isUniversityTeam: wantsUniversityTeam }
+                    },
+                    targetUserId: req.userId
                 }
-                const riotMatch = await ensureRiotPlayerMatchesLinkedUser(
-                    req.userId,
-                    parsedFormData.leaderIgn,
-                    parsedFormData.leaderGameId,
-                    parsedFormData.game
-                );
-                if (!riotMatch.ok) {
-                    return res.status(400).json({ message: riotMatch.message });
-                }
-                const riotUnique = await ensureRiotIdNotInOtherTeam(
-                    parsedFormData.game,
-                    parsedFormData.leaderIgn,
-                    parsedFormData.leaderGameId,
-                    null,
-                    {
-                        targetTeamLike: {
-                            teamLevel: parsedFormData.teamLevel,
-                            university: { isUniversityTeam: wantsUniversityTeam }
-                        },
-                        targetUserId: req.userId
-                    }
-                );
-                if (!riotUnique.ok) {
-                    console.warn('[createTeam] Riot ID already in team:', riotUnique.message);
-                    return res.status(400).json({ message: riotUnique.message });
-                }
-            } else {
-                console.warn('[createTeam] RIOT_API_KEY no configurada — Riot validation omitida (dev mode)');
+            );
+            if (!riotUnique.ok) {
+                console.warn('[createTeam] Riot ID already in team:', riotUnique.message);
+                return res.status(400).json({ message: riotUnique.message });
             }
         }
         if (isMlbbGame(parsedFormData.game)) {
@@ -956,22 +953,33 @@ const canJoinByGender = async (team, userId) => {
     return { ok: true };
 };
 const validateRiotAccount = async (gameName, tagLine) => {
-    if (!process.env.RIOT_API_KEY) {
-        throw new Error('RIOT_API_KEY no configurada');
-    }
     const gn = String(gameName || '').trim();
     const tl = String(tagLine || '').trim();
     if (!gn || !tl) {
         return { ok: false, message: 'Riot ID inválido' };
     }
     try {
-        await axios.get(
-            `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gn)}/${encodeURIComponent(tl)}`,
-            { headers: { 'X-Riot-Token': process.env.RIOT_API_KEY } }
-        );
+        if (!getRiotApiKey()) {
+            return { ok: false, message: 'Riot API no configurada en el servidor.' };
+        }
+        await getRiotAccountByRiotId(gn, tl);
         return { ok: true };
-    } catch (e) {
-        return { ok: false, message: 'Riot ID no válido' };
+    } catch (error) {
+        if (error?.code === 'RIOT_KEY_MODE_RESTRICTED') {
+            return {
+                ok: false,
+                message: 'La key Riot actual no está permitida en este entorno público. Usa una review URL controlada o una production key.'
+            };
+        }
+        const status = Number(error?.response?.status || 0);
+        if (status === 404) return { ok: false, message: 'Riot ID no válido' };
+        if (status === 401 || status === 403) {
+            return { ok: false, message: 'La Riot API key es inválida, expiró o no tiene permisos.' };
+        }
+        if (status === 429) {
+            return { ok: false, message: 'Riot API rate limit alcanzado. Intenta otra vez en unos minutos.' };
+        }
+        return { ok: false, message: 'No se pudo validar la cuenta Riot en este momento.' };
     }
 };
 

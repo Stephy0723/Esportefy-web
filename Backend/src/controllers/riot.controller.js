@@ -3,24 +3,22 @@ import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 import { createOAuthState, consumeOAuthState } from '../services/oauthStateStore.js';
-
-const RIOT_API_TIMEOUT_MS = 10000;
+import {
+  RIOT_API_TIMEOUT_MS,
+  ensureRiotApiAccess,
+  getRiotAccountByRiotId,
+  getRiotApiKey,
+  riotAmericasGet
+} from '../utils/riotApi.js';
 const RIOT_RSO_STATE_TTL_MS = 10 * 60 * 1000;
 const OTP_EXP_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_RESEND_COOLDOWN_SECONDS = 45;
 const LOL_REGIONS = ['la1', 'na1', 'euw1', 'eun1', 'br1', 'kr', 'jp1', 'oc1', 'tr1', 'ru', 'ph2', 'sg2', 'th2', 'tw2', 'vn2'];
+const MAX_RIOT_NOTIFICATIONS = 80;
 
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function getRiotApiKey() {
-  return String(process.env.RIOT_API_KEY || '').trim();
-}
-
-function getRiotKeyMode() {
-  return String(process.env.RIOT_KEY_MODE || 'development').trim().toLowerCase();
 }
 
 function parseOAuthScopes(value = '') {
@@ -183,53 +181,6 @@ async function getRiotRsoAccountMe(accessToken, config) {
   return response.data || {};
 }
 
-function isLocalOrPrivateHost(hostname = '') {
-  const host = String(hostname || '').trim().toLowerCase();
-  if (!host) return false;
-  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return true;
-  if (host.startsWith('10.')) return true;
-  if (host.startsWith('192.168.')) return true;
-  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
-  return false;
-}
-
-function ensureRiotApiKey() {
-  if (!getRiotApiKey()) {
-    const err = new Error('RIOT_API_KEY no configurada');
-    err.code = 'RIOT_KEY_MISSING';
-    throw err;
-  }
-
-  const keyMode = getRiotKeyMode();
-  const nodeEnv = String(process.env.NODE_ENV || 'development').trim().toLowerCase();
-  const allowDevKeyInProd = String(process.env.ALLOW_RIOT_DEV_KEY_IN_PROD || '').trim().toLowerCase() === 'true';
-
-  // Política de seguridad: evita exponer accidentalmente una Development/Interim key en despliegues públicos.
-  if (keyMode !== 'production' && nodeEnv === 'production' && !allowDevKeyInProd) {
-    const err = new Error('RIOT_KEY_MODE_RESTRICTED');
-    err.code = 'RIOT_KEY_MODE_RESTRICTED';
-    throw err;
-  }
-
-  if (keyMode !== 'production') {
-    const frontendUrl = String(process.env.FRONTEND_URL || '').trim();
-    if (frontendUrl) {
-      try {
-        const frontendHost = new URL(frontendUrl).hostname;
-        if (!isLocalOrPrivateHost(frontendHost) && !allowDevKeyInProd) {
-          const err = new Error('RIOT_KEY_MODE_RESTRICTED');
-          err.code = 'RIOT_KEY_MODE_RESTRICTED';
-          throw err;
-        }
-      } catch (_) {
-        const err = new Error('RIOT_KEY_MODE_RESTRICTED');
-        err.code = 'RIOT_KEY_MODE_RESTRICTED';
-        throw err;
-      }
-    }
-  }
-}
-
 function parseRiotId(riotId) {
   const raw = String(riotId || '').trim();
   const parts = raw.split('#');
@@ -339,17 +290,11 @@ function mapRiotRsoError(error, fallbackMessage = 'No se pudo completar Riot Sig
 }
 
 async function riotGet(urlPath) {
-  ensureRiotApiKey();
-  return axios.get(`https://americas.api.riotgames.com${urlPath}`, {
-    headers: { 'X-Riot-Token': getRiotApiKey() },
-    timeout: RIOT_API_TIMEOUT_MS
-  });
+  return riotAmericasGet(urlPath);
 }
 
 async function getAccountByRiotId(gameName, tagLine) {
-  const path = `/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
-  const response = await riotGet(path);
-  return response.data;
+  return getRiotAccountByRiotId(gameName, tagLine);
 }
 
 async function sendEmailOtp(to, code) {
@@ -432,6 +377,32 @@ async function ensureRiotAccountNotLinkedElsewhere(puuid, currentUserId) {
   }).select('_id username fullName');
 
   return existing;
+}
+
+async function pushRiotNotification(userId, payload = {}) {
+  if (!userId) return false;
+
+  const notification = {
+    ...payload,
+    status: payload?.status || 'unread',
+    isSaved: Boolean(payload?.isSaved),
+    isArchived: Boolean(payload?.isArchived),
+    createdAt: payload?.createdAt || new Date()
+  };
+
+  const result = await User.updateOne(
+    { _id: userId },
+    {
+      $push: {
+        notifications: {
+          $each: [notification],
+          $slice: -MAX_RIOT_NOTIFICATIONS
+        }
+      }
+    }
+  );
+
+  return result?.modifiedCount > 0;
 }
 
 // =========================
@@ -628,6 +599,26 @@ export const confirmRiotLink = async (req, res) => {
       };
     }
 
+    await pushRiotNotification(req.userId, {
+      type: 'success',
+      category: 'riot',
+      title: 'Cuenta Riot vinculada',
+      source: 'Conexiones',
+      message: syncResult?.warning
+        ? `Tu cuenta Riot quedó vinculada, pero la sincronización automática reportó: ${syncResult.warning}`
+        : `Tu cuenta Riot ${pending.gameName}#${pending.tagLine} quedó vinculada correctamente en Esportefy.`,
+      meta: {
+        riotId: `${pending.gameName}#${pending.tagLine}`,
+        syncOk: syncResult?.ok === true,
+        syncWarning: syncResult?.warning || ''
+      },
+      visuals: {
+        icon: 'bx bx-link',
+        color: '#06d6a0',
+        glow: true
+      }
+    });
+
     return res.json({
       message: 'Riot vinculado correctamente',
       sync: syncResult
@@ -644,6 +635,18 @@ export const confirmRiotLink = async (req, res) => {
 // =========================
 export const unlinkRiotAccount = async (req, res) => {
   try {
+    const user = await User.findById(req.userId).select('connections.riot');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    const riot = user?.connections?.riot || {};
+    const hadLinkedRiot = Boolean(
+      riot?.verified
+      || riot?.puuid
+      || riot?.pendingLink?.puuid
+      || riot?.products?.valorant?.consentGranted === true
+    );
+    const riotId = riot?.gameName && riot?.tagLine ? `${riot.gameName}#${riot.tagLine}` : '';
+
     await User.findByIdAndUpdate(req.userId, {
       $unset: {
         'connections.riot': '',
@@ -651,6 +654,27 @@ export const unlinkRiotAccount = async (req, res) => {
         'gameProfiles.valorant': ''
       }
     });
+
+    if (hadLinkedRiot) {
+      await pushRiotNotification(req.userId, {
+        type: 'info',
+        category: 'riot',
+        title: 'Cuenta Riot desvinculada',
+        source: 'Conexiones',
+        message: riotId
+          ? `Tu cuenta Riot ${riotId} fue desvinculada de Esportefy.`
+          : 'Tu cuenta Riot fue desvinculada de Esportefy.',
+        meta: {
+          riotId,
+          action: 'unlink'
+        },
+        visuals: {
+          icon: 'bx bx-unlink',
+          color: '#f97316',
+          glow: false
+        }
+      });
+    }
 
     return res.json({ message: 'Riot desvinculado' });
   } catch (error) {
@@ -856,6 +880,24 @@ export const valorantRsoCallback = async (req, res) => {
       }
     }
 
+    await pushRiotNotification(user._id, {
+      type: 'success',
+      category: 'riot',
+      title: 'VALORANT autorizado',
+      source: 'Riot Sign On',
+      message: `Tu cuenta Riot ${gameName}#${tagLine} ya autorizó VALORANT mediante Riot Sign On.`,
+      meta: {
+        riotId: `${gameName}#${tagLine}`,
+        action: 'valorant-rso',
+        consentGranted: true
+      },
+      visuals: {
+        icon: 'bx bx-badge-check',
+        color: '#22c55e',
+        glow: true
+      }
+    });
+
     return res.redirect(getFrontendSettingsUrl('connected', 'VALORANT quedó autorizado mediante Riot Sign On.'));
   } catch (error) {
     const mapped = mapRiotRsoError(error, 'No se pudo completar Riot Sign On para VALORANT.');
@@ -867,7 +909,7 @@ export const valorantRsoCallback = async (req, res) => {
 // AUTOSYNC (LoL + Valorant)
 // =========================
 async function autoSyncRiotGames(userId) {
-  ensureRiotApiKey();
+  ensureRiotApiAccess();
 
   const user = await User.findById(userId);
   const puuid = user?.connections?.riot?.puuid;

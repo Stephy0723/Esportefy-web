@@ -4,11 +4,13 @@ import { API_URL } from '../config/api';
 const oauthStartLocks = new Set();
 
 const START_ENDPOINTS = {
-  steam: '/api/auth/steam/start'
+  steam: '/api/auth/steam/start',
+  epic: '/api/auth/epic/start'
 };
 
 const UNLINK_ENDPOINTS = {
-  steam: '/api/auth/steam'
+  steam: '/api/auth/steam',
+  epic: '/api/auth/epic'
 };
 
 const resolveEndpoint = (map, provider) => {

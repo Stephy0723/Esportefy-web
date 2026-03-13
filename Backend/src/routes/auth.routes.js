@@ -30,6 +30,14 @@ import {
   discordCallback,
   unlinkDiscord
 } from '../controllers/discord.controller.js';
+import {
+  epicAuthCallback,
+  epicAuthStart,
+  steamAuthFinalize,
+  steamAuthStart,
+  unlinkEpic,
+  unlinkSteam
+} from '../controllers/platformOAuth.controller.js';
 
 import {
   initRiotLink,
@@ -68,6 +76,7 @@ const rlMlbbStatus = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 400, key
 const rlMlbbReview = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: 'mlbb-review' });
 const rlMlbbOps = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: 'mlbb-ops' });
 const rlDiscord = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8, keyPrefix: 'discord-oauth' });
+const rlPlatformOAuth = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 8, keyPrefix: 'platform-oauth' });
 const rlProfile = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 120, keyPrefix: 'profile-read' });
 const rlSocialSearch = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 90, keyPrefix: 'social-search' });
 const rlFollowStrict = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 40, keyPrefix: 'social-follow' });
@@ -78,6 +87,16 @@ const rlFollowStrict = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 40, ke
 router.post('/discord/start', verifyToken, rlDiscord, discordAuthStart);
 router.get('/discord/callback', discordCallback);
 router.delete('/discord', verifyToken, unlinkDiscord);
+
+/* =========================
+   STEAM / EPIC
+========================= */
+router.post('/steam/start', verifyToken, rlPlatformOAuth, steamAuthStart);
+router.post('/steam/finalize', verifyToken, rlPlatformOAuth, steamAuthFinalize);
+router.delete('/steam', verifyToken, unlinkSteam);
+router.post('/epic/start', verifyToken, rlPlatformOAuth, epicAuthStart);
+router.get('/epic/callback', epicAuthCallback);
+router.delete('/epic', verifyToken, unlinkEpic);
 
 /* =========================
    AUTH

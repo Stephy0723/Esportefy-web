@@ -61,6 +61,84 @@ const formatRosterGameId = (game, player = {}) => {
     return `${nick}#${cleanedTag}`;
 };
 
+const hasFilledTeamSlot = (slot) => Boolean(slot?.user || slot?.nickname || slot?.gameId || slot?.email || slot?.role);
+const normalizeMetricText = (value = '') => String(value || '').trim().toLowerCase();
+
+const buildTeamStatsSnapshot = (team = {}) => {
+    const starters = Array.isArray(team?.roster?.starters) ? team.roster.starters : [];
+    const subs = Array.isArray(team?.roster?.subs) ? team.roster.subs : [];
+    const coach = team?.roster?.coach || null;
+    const joinRequests = Array.isArray(team?.joinRequests) ? team.joinRequests : [];
+    const starterCapacity = Number.isFinite(Number(team?.maxMembers)) && Number(team.maxMembers) > 0
+        ? Number(team.maxMembers)
+        : starters.length;
+    const subCapacity = Number.isFinite(Number(team?.maxSubstitutes)) && Number(team.maxSubstitutes) > 0
+        ? Number(team.maxSubstitutes)
+        : subs.length;
+
+    const filledStarters = starters.filter(hasFilledTeamSlot);
+    const filledSubs = subs.filter(hasFilledTeamSlot);
+    const hasCoach = hasFilledTeamSlot(coach);
+    const rosterEntries = [...filledStarters, ...filledSubs, ...(hasCoach ? [coach] : [])];
+    const linkedUsers = rosterEntries.filter((entry) => Boolean(entry?.user)).length;
+    const manualEntries = Math.max(0, rosterEntries.length - linkedUsers);
+    const rolesCovered = new Set(
+        rosterEntries
+            .map((entry) => normalizeMetricText(entry?.role))
+            .filter(Boolean)
+    ).size;
+    const pendingRequests = joinRequests.filter((item) => String(item?.status || 'pending') === 'pending').length;
+    const approvedRequests = joinRequests.filter((item) => String(item?.status || '') === 'approved').length;
+    const rejectedRequests = joinRequests.filter((item) => String(item?.status || '') === 'rejected').length;
+    const totalCompetitiveSlots = starterCapacity + subCapacity;
+    const filledCompetitiveSlots = filledStarters.length + filledSubs.length;
+    const completionPct = totalCompetitiveSlots > 0
+        ? Math.round((filledCompetitiveSlots / totalCompetitiveSlots) * 100)
+        : 0;
+    const vacancies = Math.max(0, totalCompetitiveSlots - filledCompetitiveSlots);
+    const rosterReadyEntries = [...filledStarters, ...filledSubs];
+    const competitiveIdsReady = isSupportedMlbbGame(team?.game)
+        ? rosterReadyEntries.filter((entry) => String(entry?.gameId || '').trim() && String(entry?.region || '').trim()).length
+        : isSupportedRiotGame(team?.game)
+            ? rosterReadyEntries.filter((entry) => String(entry?.nickname || '').trim() && String(entry?.gameId || '').trim()).length
+            : rosterReadyEntries.filter((entry) => String(entry?.gameId || '').trim()).length;
+    const competitiveIdLabel = isSupportedMlbbGame(team?.game)
+        ? 'IDs MLBB listos'
+        : isSupportedRiotGame(team?.game)
+            ? 'Riot IDs listos'
+            : 'IDs de juego listos';
+    const createdAt = team?.createdAt ? new Date(team.createdAt) : null;
+    const ageDays = createdAt && !Number.isNaN(createdAt.getTime())
+        ? Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / 86_400_000))
+        : 0;
+
+    return {
+        completionPct,
+        totalCompetitiveSlots,
+        filledCompetitiveSlots,
+        pendingRequests,
+        linkedUsers,
+        overview: [
+            { label: 'Titulares llenos', value: `${filledStarters.length}/${starterCapacity || 0}` },
+            { label: 'Suplentes llenos', value: `${filledSubs.length}/${subCapacity || 0}` },
+            { label: 'Coach asignado', value: hasCoach ? 'Sí' : 'No' },
+            { label: 'Vacantes activas', value: String(vacancies) }
+        ],
+        access: [
+            { label: 'Miembros Esportefy', value: String(linkedUsers) },
+            { label: 'Entradas manuales', value: String(manualEntries) },
+            { label: competitiveIdLabel, value: `${competitiveIdsReady}/${filledCompetitiveSlots || 0}` },
+            { label: 'Roles cubiertos', value: String(rolesCovered) }
+        ],
+        operations: [
+            { label: 'Solicitudes pendientes', value: String(pendingRequests) },
+            { label: 'Solicitudes aprobadas', value: String(approvedRequests) },
+            { label: 'Solicitudes rechazadas', value: String(rejectedRequests) },
+            { label: 'Edad del equipo', value: ageDays > 0 ? `${ageDays} día${ageDays === 1 ? '' : 's'}` : 'Hoy' }
+        ]
+    };
+};
+
 /* ═══════════════════════════════════════
    FILTER TABS
    ═══════════════════════════════════════ */
@@ -101,6 +179,7 @@ const Team = () => {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [viewModalInitialTab, setViewModalInitialTab] = useState('info');
     const [viewModalSeed, setViewModalSeed] = useState(0);
+    const [teamStatsOpen, setTeamStatsOpen] = useState(false);
 
     // Join flow state
     const [joinInviteCode, setJoinInviteCode] = useState('');
@@ -161,6 +240,7 @@ const Team = () => {
     const openManageTeamModal = (team, initialTab = 'info') => {
         if (!team?._id) return;
         setSelectedTeam(team);
+        setTeamStatsOpen(false);
         setViewModalInitialTab(initialTab === 'roster' ? 'roster' : 'info');
         setViewModalSeed((prev) => prev + 1);
         setIsPreviewOpen(false);
@@ -603,7 +683,7 @@ const Team = () => {
                                     key={team._id}
                                     className={`th__card ${isMember ? 'th__card--mine' : ''}`}
                                     style={{ '--card-accent': vis.color }}
-                                    onClick={() => { setSelectedTeam(team); setIsPreviewOpen(true); }}
+                                    onClick={() => { setSelectedTeam(team); setTeamStatsOpen(false); setIsPreviewOpen(true); }}
                                 >
                                     {/* Gradient glow background */}
                                     <div className="th__card-glow" />
@@ -1019,14 +1099,17 @@ const Team = () => {
                 const previewTotal = selectedTeam.maxMembers || previewStarters.length || 0;
                 const previewIsCaptain = currentUser?._id && String(selectedTeam.captain?._id || selectedTeam.captain) === String(currentUser._id);
                 const previewIsAdmin = currentUser?.isAdmin;
+                const previewIsOrganizer = currentUser?.isOrganizer === true;
                 const previewCanManage = previewIsCaptain || previewIsAdmin;
+                const previewCanViewStats = previewCanManage || previewIsOrganizer;
+                const previewStats = buildTeamStatsSnapshot(selectedTeam);
                 return (
-                <div className="modal-overlay" onClick={() => { setIsPreviewOpen(false); resetJoinForm(); }}>
+                <div className="modal-overlay" onClick={() => { setIsPreviewOpen(false); setTeamStatsOpen(false); resetJoinForm(); }}>
                     <div className="th__modal" onClick={(e) => e.stopPropagation()} style={{ '--modal-accent': previewVis.color }}>
                         {/* Themed banner header */}
                         <div className="th__modal-banner">
                             <div className="th__modal-banner-bg" />
-                            <button className="th__modal-close" onClick={() => { setIsPreviewOpen(false); resetJoinForm(); }}>
+                            <button className="th__modal-close" onClick={() => { setIsPreviewOpen(false); setTeamStatsOpen(false); resetJoinForm(); }}>
                                 <i className='bx bx-x'></i>
                             </button>
                             <div className="th__modal-hero">
@@ -1232,20 +1315,108 @@ const Team = () => {
                                 )}
                             </div>
 
-                            {previewCanManage && (
+                            {(previewCanViewStats || previewCanManage) && (
                                 <div className="th__modal-actions">
-                                    <button
-                                        className="th__modal-btn th__modal-btn--primary"
-                                        onClick={() => openManageTeamModal(selectedTeam, 'roster')}
-                                    >
-                                        <i className='bx bx-user-plus'></i> Invitar amigo
-                                    </button>
-                                    <button
-                                        className="th__modal-btn th__modal-btn--secondary"
-                                        onClick={() => openManageTeamModal(selectedTeam, 'info')}
-                                    >
-                                        <i className='bx bx-cog'></i> Gestionar equipo
-                                    </button>
+                                    {previewCanViewStats && (
+                                        <button
+                                            className={`th__modal-btn th__modal-btn--stats ${teamStatsOpen ? 'is-open' : ''}`}
+                                            onClick={() => setTeamStatsOpen((prev) => !prev)}
+                                        >
+                                            <i className={`bx ${teamStatsOpen ? 'bx-chevron-up' : 'bx-bar-chart-alt-2'}`}></i>
+                                            {teamStatsOpen ? 'Ocultar estadísticas' : 'Ver estadísticas'}
+                                        </button>
+                                    )}
+                                    {previewCanManage && (
+                                        <>
+                                            <button
+                                                className="th__modal-btn th__modal-btn--primary"
+                                                onClick={() => openManageTeamModal(selectedTeam, 'roster')}
+                                            >
+                                                <i className='bx bx-user-plus'></i> Invitar amigo
+                                            </button>
+                                            <button
+                                                className="th__modal-btn th__modal-btn--secondary"
+                                                onClick={() => openManageTeamModal(selectedTeam, 'info')}
+                                            >
+                                                <i className='bx bx-cog'></i> Gestionar equipo
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {previewCanViewStats && teamStatsOpen && (
+                                <div className="th__stats-sheet">
+                                    <div className="th__stats-sheet__head">
+                                        <div>
+                                            <span className="th__stats-sheet__eyebrow">Panel privado</span>
+                                            <h4>Estadísticas completas del equipo</h4>
+                                            <p>Disponible para capitán, organizers y administradores.</p>
+                                        </div>
+                                        <button
+                                            className="th__stats-sheet__close"
+                                            type="button"
+                                            onClick={() => setTeamStatsOpen(false)}
+                                        >
+                                            <i className='bx bx-x'></i>
+                                        </button>
+                                    </div>
+
+                                    <div className="th__stats-sheet__hero">
+                                        <article className="th__stats-sheet__hero-card">
+                                            <span>Completitud competitiva</span>
+                                            <strong>{previewStats.completionPct}%</strong>
+                                            <small>{previewStats.filledCompetitiveSlots}/{previewStats.totalCompetitiveSlots || 0} slots listos</small>
+                                        </article>
+                                        <article className="th__stats-sheet__hero-card">
+                                            <span>Solicitudes activas</span>
+                                            <strong>{previewStats.pendingRequests}</strong>
+                                            <small>pendientes de revisar</small>
+                                        </article>
+                                        <article className="th__stats-sheet__hero-card">
+                                            <span>Miembros vinculados</span>
+                                            <strong>{previewStats.linkedUsers}</strong>
+                                            <small>usuarios reales de Esportefy</small>
+                                        </article>
+                                    </div>
+
+                                    <div className="th__stats-sheet__sections">
+                                        <section className="th__stats-sheet__section">
+                                            <h5>Composición</h5>
+                                            <div className="th__stats-sheet__grid">
+                                                {previewStats.overview.map((item) => (
+                                                    <div key={item.label} className="th__stats-sheet__item">
+                                                        <span>{item.label}</span>
+                                                        <strong>{item.value}</strong>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+
+                                        <section className="th__stats-sheet__section">
+                                            <h5>Integridad competitiva</h5>
+                                            <div className="th__stats-sheet__grid">
+                                                {previewStats.access.map((item) => (
+                                                    <div key={item.label} className="th__stats-sheet__item">
+                                                        <span>{item.label}</span>
+                                                        <strong>{item.value}</strong>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+
+                                        <section className="th__stats-sheet__section">
+                                            <h5>Operación</h5>
+                                            <div className="th__stats-sheet__grid">
+                                                {previewStats.operations.map((item) => (
+                                                    <div key={item.label} className="th__stats-sheet__item">
+                                                        <span>{item.label}</span>
+                                                        <strong>{item.value}</strong>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                    </div>
                                 </div>
                             )}
 

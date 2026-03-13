@@ -415,6 +415,8 @@
 .stv2-connection__action {
     display: flex;
     align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -571,6 +573,14 @@
 .stv2-form__actions {
     display: flex;
     gap: 0.75rem;
+}
+
+.stv2-form__actions-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

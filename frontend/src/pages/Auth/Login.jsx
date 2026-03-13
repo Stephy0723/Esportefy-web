@@ -25,10 +25,12 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     try {
             const endpointCandidates = [
                 `${API_URL}/api/auth/login`,
@@ -44,6 +46,8 @@ const Login = () => {
                         email,
                         password,
                         rememberMe
+                    }, {
+                        timeout: 15000
                     });
                     break;
                 } catch (candidateError) {
@@ -72,10 +76,16 @@ const Login = () => {
             window.dispatchEvent(new Event('user-update'));
 
             navigate('/dashboard');
-            
+
         } catch (err) {
-            const message = err.response?.data?.message || err.message || 'Error al conectar con el servidor';
+            const isTimeout = err.code === 'ECONNABORTED';
+            const message = err.response?.data?.message
+                || (isTimeout ? 'El servidor tardó demasiado en responder. Revisa backend y MongoDB.' : '')
+                || err.message
+                || 'Error al conectar con el servidor';
             setError(message);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -158,7 +168,9 @@ const Login = () => {
 
                 {/* BOTÓN Y FOOTER */}
                 <div className="form-actions">
-                    <button type="submit" className="btn-primary">ACCEDER A LA PLATAFORMA</button>
+                    <button type="submit" className="btn-primary" disabled={submitting}>
+                        {submitting ? 'ACCEDIENDO...' : 'ACCEDER A LA PLATAFORMA'}
+                    </button>
                 </div>
                 
                 <p className="footer-text">
