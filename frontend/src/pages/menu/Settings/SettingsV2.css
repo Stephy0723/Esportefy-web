@@ -101,6 +101,34 @@
     border-bottom: 1px solid var(--stv2-border);
 }
 
+.stv2__header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.stv2__header-kicker {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--stv2-primary-rgb), 0.24);
+    background: rgba(var(--stv2-primary-rgb), 0.08);
+    color: var(--stv2-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.stv2__header-main {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 .stv2__header h1 {
     font-size: 1.75rem;
     font-weight: 700;
@@ -115,6 +143,32 @@
     margin: 0;
     color: var(--stv2-text-muted);
     font-size: 0.9rem;
+}
+
+.stv2__header-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
+.stv2__header-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--stv2-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--stv2-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.3;
+}
+
+.stv2__header-chip--active {
+    border-color: rgba(var(--stv2-primary-rgb), 0.28);
+    background: rgba(var(--stv2-primary-rgb), 0.12);
+    color: var(--stv2-primary);
+    font-weight: 600;
 }
 
 .stv2__layout {
@@ -165,6 +219,10 @@
     transition: var(--stv2-transition);
 }
 
+.stv2__nav-item span {
+    min-width: 0;
+}
+
 .stv2__nav-item:hover {
     color: var(--stv2-text);
     background: var(--bg-card-hover);
@@ -195,6 +253,7 @@
    ───────────────────────────────────────────────────────────────────────────── */
 .stv2__content {
     min-height: 500px;
+    min-width: 0;
 }
 
 .stv2-loading {
@@ -573,6 +632,7 @@
 .stv2-form__actions {
     display: flex;
     gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .stv2-form__actions-inline {
@@ -627,6 +687,7 @@
 
 .stv2-toggle__info {
     flex: 1;
+    min-width: 0;
 }
 
 .stv2-toggle__info h4 {
@@ -707,6 +768,7 @@
     border-radius: var(--stv2-radius);
     cursor: pointer;
     transition: var(--stv2-transition);
+    min-width: 0;
 }
 
 .stv2-theme:hover {
@@ -795,6 +857,7 @@
     gap: 0.4rem;
     font-size: 0.8rem;
     color: var(--stv2-text-muted);
+    min-width: 0;
 }
 
 .stv2-plan--current .stv2-plan__features svg {
@@ -911,6 +974,7 @@
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 .stv2-system-status__indicator {
@@ -1265,6 +1329,7 @@
     gap: 0.5rem;
     margin-top: 1rem;
     font-size: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .stv2-app-info__links a {
@@ -1685,7 +1750,7 @@
     padding: 0.65rem 0.75rem;
     border: 1px solid var(--stv2-border);
     border-radius: var(--stv2-radius-sm);
-    background: var(--stv2-bg-main);
+    background: var(--stv2-bg-elevated);
     color: var(--stv2-text);
     font-size: 0.8rem;
 }
@@ -1693,6 +1758,11 @@
 .stv2-admin-card__actions {
     display: flex;
     gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.stv2-admin-card__actions .stv2-btn {
+    flex: 1 1 140px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -1786,29 +1856,60 @@
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
+    .stv2__container {
+        padding: 1.5rem;
+    }
+
+    .stv2__header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.25rem;
+    }
+
+    .stv2__header-main {
+        align-items: flex-start;
+    }
+
     .stv2__layout {
         grid-template-columns: 1fr;
+        gap: 1.25rem;
     }
 
     .stv2__sidebar {
         position: static;
+        padding: 1rem;
+        background: var(--stv2-bg-elevated);
+        border: 1px solid var(--stv2-border);
+        border-radius: var(--stv2-radius-lg);
     }
 
     .stv2__nav {
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 0.25rem;
-        padding-bottom: 0.5rem;
-        scrollbar-width: none;
-    }
-
-    .stv2__nav::-webkit-scrollbar {
-        display: none;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+        overflow: visible;
+        padding-bottom: 0;
+        scrollbar-width: auto;
     }
 
     .stv2__nav-item {
-        flex-shrink: 0;
-        padding: 0.5rem 0.75rem;
+        min-height: 76px;
+        padding: 0.75rem 0.65rem;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.45rem;
+        text-align: center;
+        border: 1px solid var(--stv2-border);
+        background: var(--stv2-bg-card);
+    }
+
+    .stv2__nav-item span {
+        white-space: normal;
+        line-height: 1.25;
+    }
+
+    .stv2__nav-item--active {
+        border-color: rgba(var(--stv2-primary-rgb), 0.3);
+        box-shadow: 0 0 0 1px rgba(var(--stv2-primary-rgb), 0.16) inset;
     }
 
     .stv2__nav-divider {
@@ -1816,11 +1917,26 @@
     }
 
     .stv2__nav--admin {
-        margin-top: 0;
+        margin-top: 0.75rem;
+        grid-template-columns: 1fr;
     }
 
     .stv2-plans {
         grid-template-columns: 1fr;
+    }
+
+    .stv2-plan--current .stv2-plan__features {
+        flex-wrap: wrap;
+        gap: 0.75rem 1rem;
+    }
+
+    .stv2-plan--current .stv2-plan__features li {
+        flex: 1 1 180px;
+    }
+
+    .stv2-themes {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .stv2-support-cards {
@@ -1836,12 +1952,17 @@
     }
 
     .stv2-social-links {
-        justify-content: center;
+        justify-content: flex-start;
     }
 
     .stv2-connection {
-        grid-template-columns: 48px 1fr;
+        grid-template-columns: 48px minmax(0, 1fr);
         gap: 0.75rem;
+        align-items: flex-start;
+    }
+
+    .stv2-connection__info {
+        min-width: 0;
     }
 
     .stv2-connection__status,
@@ -1849,32 +1970,215 @@
         grid-column: 2;
     }
 
+    .stv2-connection__action {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        padding-top: 0.25rem;
+    }
+
     .stv2-form__row {
         grid-template-columns: 1fr;
+    }
+
+    .stv2-form {
+        max-width: none;
     }
 }
 
 @media (max-width: 600px) {
     .stv2__container {
-        padding: 1rem;
+        padding: 0.95rem 0.95rem 1.25rem;
+    }
+
+    .stv2__header {
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+    }
+
+    .stv2__header h1 {
+        font-size: 1.45rem;
+    }
+
+    .stv2__header p {
+        font-size: 0.84rem;
+    }
+
+    .stv2__header-badges {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .stv2__header-chip {
+        padding: 0.45rem 0.7rem;
+        font-size: 0.72rem;
+    }
+
+    .stv2__sidebar {
+        padding: 0.85rem;
+        border-radius: 14px;
+    }
+
+    .stv2__nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stv2__nav-item {
+        min-height: 72px;
+        padding: 0.7rem 0.5rem;
+        font-size: 0.78rem;
     }
 
     .stv2-section {
-        padding: 1.25rem;
+        padding: 1.1rem;
+        border-radius: 14px;
+    }
+
+    .stv2-section__title {
+        font-size: 1.1rem;
+    }
+
+    .stv2-section__desc {
+        margin-bottom: 1.2rem;
+        font-size: 0.82rem;
     }
 
     .stv2-toggle--featured {
-        margin: 0 -1.25rem;
-        padding: 1rem 1.25rem;
+        margin: 0 -1.1rem;
+        padding: 1rem 1.1rem;
+    }
+
+    .stv2-toggle {
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .stv2-toggle__icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .stv2-plan--current .stv2-plan__features {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .stv2-plan {
+        padding: 1.2rem;
+    }
+
+    .stv2-connection {
+        padding: 0.9rem;
+    }
+
+    .stv2-connection__action {
+        width: 100%;
+    }
+
+    .stv2-connection__action .stv2-btn {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .stv2-form__actions,
+    .stv2-form__actions-inline,
+    .stv2-admin-card__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .stv2-form__actions .stv2-btn,
+    .stv2-form__actions-inline .stv2-btn,
+    .stv2-admin-card__actions .stv2-btn {
+        width: 100%;
+    }
+
+    .stv2-system-status {
+        padding: 1rem;
+    }
+
+    .stv2-system-status__refresh {
+        margin-left: 0;
+    }
+
+    .stv2-support-card {
+        padding: 1rem;
+        gap: 0.85rem;
+    }
+
+    .stv2-social-links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .stv2-social-link {
+        justify-content: center;
+        padding: 0.65rem 0.75rem;
+    }
+
+    .stv2-contact-item {
+        align-items: flex-start;
+    }
+
+    .stv2-contact-item__value {
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .stv2-app-info__row {
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .stv2-app-info__links {
+        justify-content: flex-start;
+    }
+
+    .stv2-app-info__links span {
+        display: none;
+    }
+
+    .stv2-notice {
+        flex-wrap: wrap;
+    }
+
+    .stv2-notice .stv2-btn {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .stv2-admin-grid {
+        grid-template-columns: 1fr;
     }
 
     .stv2-feedback-types {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .stv2-modal-overlay {
+        align-items: flex-end;
+        padding: 0.5rem 0 0;
+    }
+
     .stv2-modal {
-        max-width: 100%;
-        margin: 0.5rem;
+        max-width: none;
+        max-height: calc(100dvh - 0.5rem);
+        margin: 0;
+        border-radius: 16px 16px 0 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stv2-modal__header,
+    .stv2-modal__footer {
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+    }
+
+    .stv2-modal__body {
+        padding: 1.1rem;
+        overflow-y: auto;
     }
 
     .stv2-modal__footer {
@@ -1884,5 +2188,46 @@
     .stv2-modal__footer .stv2-btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .stv2-toast {
+        width: calc(100% - 1.5rem);
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .stv2__container {
+        padding: 0.8rem 0.8rem 1rem;
+    }
+
+    .stv2__header-kicker {
+        font-size: 0.68rem;
+    }
+
+    .stv2__header h1 {
+        font-size: 1.35rem;
+    }
+
+    .stv2__header-badges {
+        gap: 0.45rem;
+    }
+
+    .stv2__header-chip {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stv2-themes,
+    .stv2-social-links {
+        grid-template-columns: 1fr;
+    }
+
+    .stv2-feedback-types {
+        gap: 0.4rem;
+    }
+
+    .stv2-feedback-type {
+        padding: 0.7rem 0.35rem;
     }
 }

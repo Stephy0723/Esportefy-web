@@ -539,46 +539,6 @@ const Team = () => {
                     <button className="th__btn-create" onClick={() => navigate('/create-team')}>
                         <i className='bx bx-plus'></i> Crear Equipo
                     </button>
-                    {currentUser && (
-                        <button
-                            className="th__btn-create th__btn-create--demo"
-                            onClick={async () => {
-                                try {
-                                    const token = getAuthToken();
-                                    const res = await axios.post(`${API_URL}/api/teams/seed-demo`, {}, {
-                                        headers: { Authorization: `Bearer ${token}` }
-                                    });
-                                    addToast(res.data.message || 'Equipos demo creados', 'success');
-                                    const teamsRes = await axios.get(`${API_URL}/api/teams`);
-                                    setTeams((teamsRes.data || []).filter((team) => isSupportedGameName(team?.game)));
-                                } catch (err) {
-                                    addToast(err.response?.data?.message || 'Error al crear equipos demo', 'error');
-                                }
-                            }}
-                        >
-                            <i className='bx bx-bot'></i> Demo Teams
-                        </button>
-                    )}
-                    {currentUser && (
-                        <button
-                            className="th__btn-create th__btn-create--third"
-                            onClick={async () => {
-                                try {
-                                    const token = getAuthToken();
-                                    const res = await axios.post(`${API_URL}/api/teams/seed-third-party`, {}, {
-                                        headers: { Authorization: `Bearer ${token}` }
-                                    });
-                                    addToast(res.data.message || 'Equipos de terceros creados', 'success');
-                                    const teamsRes = await axios.get(`${API_URL}/api/teams`);
-                                    setTeams((teamsRes.data || []).filter((team) => isSupportedGameName(team?.game)));
-                                } catch (err) {
-                                    addToast(err.response?.data?.message || 'Error al crear equipos de terceros', 'error');
-                                }
-                            }}
-                        >
-                            <i className='bx bx-group'></i> Equipos Ajenos
-                        </button>
-                    )}
                 </div>
             </header>
 
@@ -586,9 +546,9 @@ const Team = () => {
             <nav className="th__hub-nav">
                 {[
                     { key: 'teams',     label: 'Equipos',          icon: 'bx-shield-quarter' },
-                    { key: 'scrims',    label: 'Scrims',           icon: 'bx-crossed-swords' },
+                    { key: 'scrims',    label: 'Scrims',           icon: 'bx-target-lock' },
                     { key: 'lfteam',    label: 'Buscar Equipo',    icon: 'bx-search-alt-2' },
-                    { key: 'lfplayers', label: 'Buscar Jugadores', icon: 'bx-user-search' },
+                    { key: 'lfplayers', label: 'Buscar Jugadores', icon: 'bx-user-plus' },
                 ].map((sec) => (
                     <button
                         key={sec.key}
@@ -865,7 +825,7 @@ const Team = () => {
                 <section className="th__section th__section--scrims">
                     <div className="th__section-header">
                         <div className="th__section-icon th__section-icon--scrims">
-                            <i className='bx bx-crossed-swords'></i>
+                            <i className='bx bx-target-lock'></i>
                         </div>
                         <div>
                             <h2 className="th__section-title">Scrims</h2>
@@ -995,7 +955,7 @@ const Team = () => {
                 <section className="th__section th__section--lfplayers">
                     <div className="th__section-header">
                         <div className="th__section-icon th__section-icon--lfplayers">
-                            <i className='bx bx-user-search'></i>
+                            <i className='bx bx-user-plus'></i>
                         </div>
                         <div>
                             <h2 className="th__section-title">Buscar Jugadores</h2>
@@ -1097,6 +1057,8 @@ const Team = () => {
                 const previewCoach = selectedTeam.roster?.coach;
                 const previewFilled = previewStarters.filter(p => p?.nickname).length;
                 const previewTotal = selectedTeam.maxMembers || previewStarters.length || 0;
+                const previewSubSlots = Math.max(Number(selectedTeam.maxSubstitutes) || 0, previewSubs.length);
+                const previewSubsDisplay = Array.from({ length: previewSubSlots }, (_, index) => previewSubs[index] || null);
                 const previewIsCaptain = currentUser?._id && String(selectedTeam.captain?._id || selectedTeam.captain) === String(currentUser._id);
                 const previewIsAdmin = currentUser?.isAdmin;
                 const previewIsOrganizer = currentUser?.isOrganizer === true;
@@ -1208,7 +1170,7 @@ const Team = () => {
                                 )}
                             </div>
                             {/* ── ROSTER TITULARES ── */}
-                            <div className="th__modal-section">
+                            <div className="th__modal-section th__modal-section--panel">
                                 <h4><i className='bx bx-group'></i> Titulares ({previewFilled}/{previewTotal})</h4>
                                 <div className="th__modal-roster-grid">
                                     {previewStarters.map((p, i) => {
@@ -1248,11 +1210,11 @@ const Team = () => {
                             </div>
 
                             {/* ── ROSTER SUPLENTES ── */}
-                            {(previewSubs.length > 0 || selectedTeam.maxSubstitutes > 0) && (
-                                <div className="th__modal-section">
-                                    <h4><i className='bx bx-transfer-alt'></i> Suplentes ({previewSubs.filter(p => p?.nickname).length}/{selectedTeam.maxSubstitutes || previewSubs.length})</h4>
+                            {previewSubSlots > 0 && (
+                                <div className="th__modal-section th__modal-section--panel">
+                                    <h4><i className='bx bx-transfer-alt'></i> Suplentes ({previewSubs.filter(p => p?.nickname).length}/{previewSubSlots})</h4>
                                     <div className="th__modal-roster-grid">
-                                        {previewSubs.map((p, i) => (
+                                        {previewSubsDisplay.map((p, i) => (
                                             <div key={`sub-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
                                                 <div className="th__modal-player-avatar">
                                                     {p?.photo
@@ -1270,7 +1232,7 @@ const Team = () => {
                                                 </div>
                                                 <div className="th__modal-player-info">
                                                     <span className="th__modal-player-name">{p?.nickname || 'Vacante'}</span>
-                                                    {p?.role && <span className="th__modal-player-role">{p.role}</span>}
+                                                    <span className="th__modal-player-role">{p?.role || `Suplente ${i + 1}`}</span>
                                                     {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {formatRosterGameId(selectedTeam?.game, p)}</span>}
                                                     {p?.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {p.region}</span>}
                                                 </div>
@@ -1281,7 +1243,7 @@ const Team = () => {
                             )}
 
                             {/* ── COACH ── */}
-                            <div className="th__modal-section">
+                            <div className="th__modal-section th__modal-section--panel">
                                 <h4><i className='bx bx-user-voice'></i> Coach / Staff</h4>
                                 {previewCoach && previewCoach.nickname ? (
                                     <div className="th__modal-player th__modal-player--coach">
@@ -1346,7 +1308,14 @@ const Team = () => {
                             )}
 
                             {previewCanViewStats && teamStatsOpen && (
-                                <div className="th__stats-sheet">
+                                <div className="th__stats-sheet-layer">
+                                    <button
+                                        className="th__stats-sheet__backdrop"
+                                        type="button"
+                                        aria-label="Cerrar panel de estadísticas"
+                                        onClick={() => setTeamStatsOpen(false)}
+                                    />
+                                    <div className="th__stats-sheet">
                                     <div className="th__stats-sheet__head">
                                         <div>
                                             <span className="th__stats-sheet__eyebrow">Panel privado</span>
@@ -1417,6 +1386,7 @@ const Team = () => {
                                             </div>
                                         </section>
                                     </div>
+                                </div>
                                 </div>
                             )}
 

@@ -26,6 +26,17 @@
     box-shadow: none;
 }
 
+:where(input[type="checkbox"]),
+:where(input[type="radio"]) {
+    accent-color: var(--primary);
+}
+
+:where(input[type="checkbox"]):focus-visible,
+:where(input[type="radio"]):focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--primary) 60%, transparent);
+    outline-offset: 2px;
+}
+
 /* Remove search input browser styling (X button, etc) */
 :where(input[type="search"])::-webkit-search-decoration,
 :where(input[type="search"])::-webkit-search-cancel-button,
@@ -68,6 +79,7 @@
 /* =========================================================== */
 .theme-dark,
 :root {
+    color-scheme: dark;
     --bg-page: #121212;
     --bg-card: #1e1e1e;
     --bg-card-hover: #2a2a2a;
@@ -75,6 +87,7 @@
     --bg-sidebar: #1a1a1a;
     --bg-elevated: #252525;
     --border-color: #333333;
+    --input-border: rgba(255, 255, 255, 0.74);
     --text-main: #ffffff;
     --text-muted: #aaaaaa;
     --text-inverted: #000000;
@@ -88,6 +101,7 @@
 /* TEMA: LIGHT (blanco)                                         */
 /* =========================================================== */
 .theme-light {
+    color-scheme: light;
     --bg-page: #f5f5f5;
     --bg-card: #ffffff;
     --bg-card-hover: #f0f0f0;
@@ -95,6 +109,7 @@
     --bg-sidebar: #ffffff;
     --bg-elevated: #e8e8e8;
     --border-color: #dddddd;
+    --input-border: rgba(29, 29, 29, 0.34);
     --text-main: #1d1d1d;
     --text-muted: #666666;
     --text-inverted: #ffffff;
@@ -108,6 +123,7 @@
 /* TEMA: AMOLED (negro puro)                                    */
 /* =========================================================== */
 .theme-amoled {
+    color-scheme: dark;
     --bg-page: #000000;
     --bg-card: #0a0a0a;
     --bg-card-hover: #141414;
@@ -115,6 +131,7 @@
     --bg-sidebar: #050505;
     --bg-elevated: #111111;
     --border-color: #1a1a1a;
+    --input-border: rgba(255, 255, 255, 0.82);
     --text-main: #ffffff;
     --text-muted: #bbbbbb;
     --text-inverted: #000000;
@@ -128,6 +145,7 @@
 /* TEMA: GRAY (blanco grisáceo — variante clara)                */
 /* =========================================================== */
 .theme-gray {
+    color-scheme: light;
     --bg-page: #e4e4e8;
     --bg-card: #ededf0;
     --bg-card-hover: #dcdce0;
@@ -135,6 +153,7 @@
     --bg-sidebar: #eaeaee;
     --bg-elevated: #d6d6da;
     --border-color: #c8c8cc;
+    --input-border: rgba(29, 29, 29, 0.32);
     --text-main: #1d1d1d;
     --text-muted: #6b6b70;
     --text-inverted: #ffffff;

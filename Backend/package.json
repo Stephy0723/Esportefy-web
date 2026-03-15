@@ -14,7 +14,9 @@
     "test:e2e:social": "node scripts/e2e/social-flow-smoke.js",
     "test:e2e:university": "node scripts/e2e/university-flow-smoke.js",
     "test:load:mlbb": "node --env-file=.env scripts/load/mlbb-load-smoke.js",
-    "test:load:mlbb:writes": "node --env-file=.env scripts/load/mlbb-write-load-smoke.js"
+    "test:load:mlbb:writes": "node --env-file=.env scripts/load/mlbb-write-load-smoke.js",
+    "seed:demo": "node --env-file=.env scripts/seed-demo-users.js",
+    "reset:db": "node --env-file=.env scripts/reset-database.js"
   },
   "keywords": [],
   "author": "",

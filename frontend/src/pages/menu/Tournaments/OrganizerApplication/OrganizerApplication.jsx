@@ -65,8 +65,8 @@ const OrganizerApplication = () => {
         }
       });
 
-      notify('success', 'Tu solicitud ha sido recibida.', 'Tu perfil está bajo revisión. Te notificaremos en 24-48 horas.');
-      navigate('/tournaments');
+      notify('success', 'Solicitud enviada', 'Tu solicitud fue enviada al correo de Steliant y quedo pendiente de confirmacion por administracion.');
+      navigate('/profile');
     } catch (err) {
       notify('error', 'Error en el envío', err.response?.data?.message || 'No se pudo procesar tu solicitud.');
     } finally {
@@ -88,6 +88,13 @@ const OrganizerApplication = () => {
                     </div>
                     <h1>Solicitud de <span className="highlight-green">Organizador</span></h1>
                     <p>Para garantizar la seguridad de la comunidad, requerimos validar tu identidad antes de permitirte gestionar eventos y premios.</p>
+                    <div className="application-review-note">
+                        <i className='bx bx-envelope'></i>
+                        <div>
+                            <strong>Revision por administracion</strong>
+                            <p>Completa este formulario y enviaremos tu solicitud al correo de Steliant para su confirmacion administrativa.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <form className="gamer-form" onSubmit={handleSubmit}>

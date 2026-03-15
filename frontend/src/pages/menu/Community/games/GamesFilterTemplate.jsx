@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY } from '../../../../data/communityData';
 import { supportedGamesDetailedData as gamesDetailedData } from '../../../../data/supportedGamesDetailedData';
+import { fetchGameHubStatsIndex, formatGameHubCount } from '../gameHub.service';
 import HeroTagSection from './HeroTagSection';
 import './GamesFilterTemplate.css';
 
@@ -164,6 +165,30 @@ const GamesFilterTemplate = () => {
   const location = useLocation();
   const [tiltMap, setTiltMap] = useState({});
   const [hoverAccent, setHoverAccent] = useState('');
+  const [gameStats, setGameStats] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGameStats = async () => {
+      try {
+        const nextStats = await fetchGameHubStatsIndex();
+        if (!cancelled) {
+          setGameStats(nextStats);
+        }
+      } catch (_) {
+        if (!cancelled) {
+          setGameStats({});
+        }
+      }
+    };
+
+    loadGameStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const normalizedType = normalizeText(type) || 'tag';
   const decodedValue = useMemo(() => {
@@ -429,7 +454,7 @@ const GamesFilterTemplate = () => {
                           : 'Explore this game community, discover events, teams and active players.'}
                       </p>
                       <div className="gft-card-meta">
-                        <span>{game.players || '0'} players</span>
+                        <span>{formatGameHubCount(gameStats?.[game.id]?.usersCount ?? 0)} players</span>
                         <span>{toTitle(game.cat || 'Game')}</span>
                       </div>
                     </div>

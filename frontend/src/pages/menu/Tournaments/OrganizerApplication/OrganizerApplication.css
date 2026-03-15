@@ -102,6 +102,38 @@
   margin-bottom: 28px;
 }
 
+.application-review-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border-color));
+  background: color-mix(in srgb, var(--primary) 9%, var(--bg-card));
+}
+
+.application-review-note i {
+  font-size: 1.2rem;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+.application-review-note strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-main);
+  font-size: 0.84rem;
+  letter-spacing: 0.02em;
+}
+
+.application-review-note p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
 .step-badge.verify {
   color: var(--primary);
   font-size: 0.72rem;
@@ -273,6 +305,36 @@
   border-color: color-mix(in srgb, var(--primary) 40%, var(--border-color));
 }
 
+.static-label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.file-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .upload-btn {
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
@@ -436,4 +498,5 @@ button.btn-neon.green:hover {
   .grid-inputs {
     grid-template-columns: 1fr;
   }
+
 }

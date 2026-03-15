@@ -5,6 +5,8 @@ import Team from "../models/Team.js";
 import Tournament from "../models/Tournament.js";
 import CommunityPost from "../models/CommunityPost.js";
 import Community from "../models/Community.js";
+import SupportTicket from "../models/SupportTicket.js";
+import buildProfileProgression from "../services/profileProgression.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from "crypto";
@@ -13,9 +15,13 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { filterSupportedGameNames, isSupportedGameName, SUPPORTED_GAME_NAMES } from '../../../shared/supportedGames.js';
+import { normalizeCommunityGameIds } from '../utils/communityGames.js';
+import { recordAdminAudit } from '../services/auditLogger.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.pdf']);
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
 const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || 'csrf_token';
 const MIN_AUTH_TTL_MS = 60 * 1000;
@@ -136,6 +142,43 @@ export const upload = multer({
     }
 });
 
+const organizerDocumentStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = './uploads/organizer-documents/';
+
+        try {
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+                console.log('Carpeta de documentos creada con exito.');
+            }
+        } catch (err) {
+            console.error('Error al crear la carpeta de documentos:', err);
+        }
+
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${req.userId}-${Date.now()}${ext}`);
+    }
+});
+
+export const organizerDocumentUpload = multer({
+    storage: organizerDocumentStorage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const validMime = ALLOWED_DOCUMENT_MIME_TYPES.has(file.mimetype);
+        const validExt = ALLOWED_DOCUMENT_EXTENSIONS.has(ext);
+        if (!validMime || !validExt) {
+            return cb(new Error('Archivo invalido. Solo se permiten documentos PDF o imagenes JPG, PNG y WEBP.'));
+        }
+        return cb(null, true);
+    }
+});
+
+export const roleDocumentUpload = organizerDocumentUpload;
+
 const normalizeStringArray = (value) => {
     if (Array.isArray(value)) {
         return value.map((v) => String(v || '').trim()).filter(Boolean);
@@ -158,6 +201,76 @@ const normalizeBoolean = (value, fallback = false) => {
     if (['true', '1', 'yes', 'si', 'sí', 'on'].includes(raw)) return true;
     if (['false', '0', 'no', 'off'].includes(raw)) return false;
     return fallback;
+};
+
+const cleanupUploadedFile = (file) => {
+    if (file?.path && fs.existsSync(file.path)) {
+        fs.unlink(file.path, () => {});
+    }
+};
+
+const parseRoleApplicationData = (body = {}) => {
+    let nestedData = {};
+
+    if (body?.data && typeof body.data === 'object' && !Array.isArray(body.data)) {
+        nestedData = body.data;
+    } else if (typeof body?.data === 'string') {
+        try {
+            const parsed = JSON.parse(body.data);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                nestedData = parsed;
+            }
+        } catch {
+            nestedData = {};
+        }
+    }
+
+    const directData = { ...body };
+    delete directData.role;
+    delete directData.data;
+
+    return { ...nestedData, ...directData };
+};
+
+const formatRoleApplicationLabel = (key) => {
+    const knownLabels = {
+        fullName: 'Nombre Legal Completo',
+        idNumber: 'Cedula / DNI / Pasaporte / ID',
+        documentFilename: 'Documento adjunto',
+        mainPlatform: 'Plataforma principal',
+        channelUrl: 'URL del canal / perfil',
+        followers: 'Seguidores / suscriptores',
+        contentType: 'Tipo de contenido',
+        games: 'Juegos',
+        description: 'Descripcion',
+        experienceYears: 'Experiencia',
+        specialization: 'Especializacion',
+        tools: 'Herramientas',
+        portfolio: 'Portfolio / trabajos',
+        languages: 'Idiomas',
+        experience: 'Nivel de experiencia',
+        castingStyle: 'Estilo de casting',
+        sampleUrl: 'Muestra / clip',
+        platform: 'Plataforma',
+        game: 'Juego principal',
+        rank: 'Rango / elo',
+        coachingType: 'Tipo de coaching',
+        availability: 'Disponibilidad',
+        companyName: 'Empresa / marca',
+        website: 'Sitio web',
+        industry: 'Industria',
+        sponsorType: 'Tipo de patrocinio',
+        budget: 'Presupuesto',
+        interests: 'Intereses'
+    };
+
+    if (knownLabels[key]) return knownLabels[key];
+
+    return String(key || '')
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/[_-]+/g, ' ')
+        .trim()
+        .replace(/^./, (char) => char.toUpperCase());
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -421,6 +534,11 @@ export const register = async (req, res) => {
         }
 
         // 2. Hashear contraseña
+        const selectedGames = filterSupportedGameNames(normalizeStringArray(payload.selectedGames));
+        const communityGameSubscriptions = normalizeCommunityGameIds([
+            ...selectedGames,
+            payload.pendingGameJoinId
+        ]);
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // 3. Crear usuario con whitelist explícita para evitar mass-assignment
@@ -430,7 +548,8 @@ export const register = async (req, res) => {
             gender: payload.gender,
             country,
             birthDate,
-            selectedGames: filterSupportedGameNames(normalizeStringArray(payload.selectedGames)),
+            selectedGames,
+            communityGameSubscriptions,
             experience: normalizeStringArray(payload.experience),
             platforms: normalizeStringArray(payload.platforms),
             goals: normalizeStringArray(payload.goals),
@@ -439,6 +558,19 @@ export const register = async (req, res) => {
             password: hashedPassword,
             checkTerms: true
         });
+
+        // Welcome notification
+        user.notifications.push({
+            type: 'success',
+            category: 'system',
+            title: 'Bienvenido a GLITCH GANG',
+            source: 'Sistema',
+            message: `Hola ${fullName}! Tu cuenta ha sido creada exitosamente. Explora torneos, unete a equipos y conecta con la comunidad esports.`,
+            status: 'unread',
+            visuals: { icon: 'bx-party', color: '#8EDB15', glow: true },
+            createdAt: new Date()
+        });
+        await user.save();
 
         // Opcional: No devolver la contraseña en la respuesta
         const userResponse = user.toObject();
@@ -862,7 +994,7 @@ export const searchUsers = async (req, res) => {
 export const getProfileOverview = async (req, res) => {
     try {
         const userDoc = await User.findById(req.userId)
-            .select('username fullName avatar status selectedGames university connections notifications createdAt followers following userCode privacy.showPublicUserCode');
+            .select('username fullName avatar bio status country phone birthDate selectedGames preferredRoles languages socialLinks lookingForTeam selectedFrameId selectedBgId selectedTagId university connections notifications createdAt followers following userCode privacy.showPublicUserCode');
         if (!userDoc) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
@@ -1023,6 +1155,15 @@ export const getProfileOverview = async (req, res) => {
             };
         });
 
+        const likesReceived = ownPosts.reduce((acc, post) => {
+            const likes = Array.isArray(post?.likes) ? post.likes.length : 0;
+            return acc + likes;
+        }, 0);
+        const commentsReceived = ownPosts.reduce((acc, post) => {
+            const comments = Array.isArray(post?.comments) ? post.comments.length : 0;
+            return acc + comments;
+        }, 0);
+
         const notifications = Array.isArray(user?.notifications)
             ? [...user.notifications]
             : [];
@@ -1096,6 +1237,43 @@ export const getProfileOverview = async (req, res) => {
             };
         });
 
+        const progression = buildProfileProgression({
+            user,
+            teamsCount: teams.length,
+            captainTeams,
+            mutualFriendsCount: mutualFriendUsers.length,
+            communitiesCount: communities.length,
+            postsCount: ownPosts.length,
+            likesReceived,
+            commentsReceived,
+            tournamentsJoined,
+            tournamentsWon,
+            matchesPlayed,
+            matchesWon
+        });
+
+        const progressionAchievements = progression.achievements
+            .filter((achievement) => achievement.unlocked)
+            .slice(0, 8)
+            .map((achievement) => ({
+                id: achievement.id,
+                name: achievement.name,
+                description: achievement.description,
+                iconClass: achievement.iconClass,
+                tournament: achievement.description,
+                date: achievement.progressLabel,
+                subtitle: achievement.category === 'competitive'
+                    ? 'Competitivo'
+                    : achievement.category === 'team'
+                        ? 'Equipos'
+                        : achievement.category === 'community'
+                            ? 'Comunidad'
+                            : achievement.category === 'social'
+                                ? 'Social'
+                                : 'Perfil',
+                meta: achievement.progressLabel,
+                verified: true
+            }));
         const achievements = [];
         if (captainTeams > 0) {
             achievements.push({
@@ -1164,6 +1342,7 @@ export const getProfileOverview = async (req, res) => {
             });
         }
 
+        const visibleAchievements = progressionAchievements;
         const recognitions = [];
         if (tournamentsWon > 0) {
             recognitions.push({
@@ -1219,18 +1398,20 @@ export const getProfileOverview = async (req, res) => {
                 matches: matchesPlayed,
                 wins: matchesWon,
                 winRate,
+                points: progression.totalPoints,
                 tournaments: tournamentsJoined,
                 tournamentsWon,
                 mvps: 0,
                 teams: teams.length,
                 ongoing: tournamentsOngoing
             },
-            achievements,
+            achievements: visibleAchievements,
             recognitions,
             friends,
             communities,
             activity,
             wallComments,
+            progression,
             flags: {
                 hasVerifiedGameAccount: Boolean(user?.connections?.riot?.verified || user?.connections?.mlbb?.verified),
                 hasUniversityVerification: Boolean(user?.university?.verified),
@@ -1355,6 +1536,18 @@ export const resetPassword = async (req, res) => {
         user.password = await bcrypt.hash(password, 10);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
+
+        // Notification: password reset
+        user.notifications.unshift({
+            type: 'info',
+            category: 'system',
+            title: 'Contrasena restablecida',
+            source: 'Seguridad',
+            message: 'Tu contrasena fue actualizada exitosamente. Si no realizaste este cambio, contacta soporte inmediatamente.',
+            status: 'unread',
+            visuals: { icon: 'bx-lock-open-alt', color: '#f59e0b', glow: true },
+            createdAt: new Date()
+        });
 
         await user.save();
         res.status(200).json({ message: "Contraseña actualizada correctamente." });
@@ -1573,11 +1766,50 @@ export const updateProfile = async (req, res) => {
 
 // 4. Solicitar ser Organizador
 export const applyOrganizer = async (req, res) => {
-    const { fullName, idNumber, orgName,eventType, 
-        website, experienceYears,maxSize, tools, description } = req.body;
+    const { fullName, idNumber, orgName, eventType,
+        website, experienceYears, maxSize, tools, description } = req.body;
     const file = req.file;
+    const applicationData = {
+        fullName,
+        idNumber,
+        orgName,
+        eventType,
+        website,
+        experienceYears,
+        maxSize,
+        tools,
+        description,
+        documentFilename: file?.originalname || ''
+    };
+
+    if (!file) {
+        return res.status(400).json({ message: 'Debes adjuntar una foto de tu documento de identidad.' });
+    }
 
     try {
+        const user = await User.findById(req.userId).select('username email avatar isOrganizer roles roleApplications');
+        if (!user) {
+            cleanupUploadedFile(file);
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        const currentApp = user.roleApplications?.organizer;
+        if (currentApp?.status === 'pending') {
+            cleanupUploadedFile(file);
+            return res.status(400).json({ message: 'Ya tienes una solicitud pendiente para organizador.' });
+        }
+
+        if (user.isOrganizer || user.roles?.includes('organizer') || currentApp?.status === 'approved') {
+            cleanupUploadedFile(file);
+            return res.status(400).json({ message: 'Ya tienes el rol de organizador aprobado.' });
+        }
+
+        user.set('roleApplications.organizer.status', 'pending');
+        user.set('roleApplications.organizer.appliedAt', new Date());
+        user.set('roleApplications.organizer.reviewedAt', null);
+        user.set('roleApplications.organizer.data', applicationData);
+        await user.save();
+
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
@@ -1586,35 +1818,187 @@ export const applyOrganizer = async (req, res) => {
         const mailOptions = {
             from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
             to: 'steliantsoft@gmail.com',
-            subject: `🚨 Solicitud de Organizador: ${orgName}`,
+            replyTo: user.email,
+            subject: `Solicitud de Organizador: ${orgName || user.username}`,
             html: `
                 <div style="font-family: Arial, sans-serif; background-color: #000; color: #fff; padding: 30px; border: 1px solid #8EDB15; border-radius: 10px;">
-                    <h2 style="color: #8EDB15; text-align: center;">Nueva Solicitud de Verificación</h2>
+                    <h2 style="color: #8EDB15; text-align: center;">Nueva Solicitud de Verificacion</h2>
                     <hr style="border: 0.5px solid #333;" />
+                    <p><strong>Usuario:</strong> ${user.username}</p>
+                    <p><strong>Correo:</strong> ${user.email}</p>
                     <p><strong>Candidato:</strong> ${fullName}</p>
-                    <p><strong>Identificación:</strong> ${idNumber}</p>
-                    <p><strong>Organización:</strong> ${orgName}</p>
+                    <p><strong>Identificacion:</strong> ${idNumber}</p>
+                    <p><strong>Organizacion:</strong> ${orgName}</p>
                     <p><strong>Tipo de Eventos:</strong> ${eventType}</p>
                     <p><strong>Sitio Web:</strong> ${website || 'N/A'}</p>
                     <p><strong>Experiencia:</strong> ${experienceYears}</p>
-                    <p><strong>Tamaño de Torneos:</strong> ${maxSize}</p>
+                    <p><strong>Tamano de Torneos:</strong> ${maxSize}</p>
                     <p><strong>Herramientas:</strong> ${tools}</p>
                     <p style="background: #111; padding: 15px; border-radius: 5px;">${description}</p>
                     <p style="font-size: 12px; color: #666; margin-top: 20px; text-align: center;">
-                        Revisar y aprobar desde el panel administrativo autenticado.
+                        Esta solicitud fue enviada desde el formulario de roles y queda pendiente de confirmacion administrativa.
                     </p>
                 </div>
             `,
             attachments: file ? [{ filename: file.originalname, path: file.path }] : []
         };
 
-        await transporter.sendMail(mailOptions);
-        if (file) fs.unlink(file.path, () => {});
+        try {
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            console.warn('Email de notificacion fallo (la solicitud se guardo igual):', emailError?.message || emailError);
+        }
+
+        // Also create a SupportTicket so it shows in the admin panel
+        try {
+            const dataEntries = Object.entries(applicationData)
+                .filter(([, val]) => val)
+                .map(([key, val]) => `${formatRoleApplicationLabel(key)}: ${val}`)
+                .join('\n');
+
+            await SupportTicket.create({
+                userId: user._id,
+                username: user.username,
+                email: user.email,
+                avatar: user.avatar || '',
+                type: 'question',
+                subject: `Solicitud de Organizador: ${orgName || user.username}`,
+                message: `Solicitud de Organizador\n\n${dataEntries}`,
+                data: { ...applicationData, role: 'organizer', applicationType: 'role-application' }
+            });
+        } catch (ticketErr) {
+            console.warn('No se pudo crear ticket para solicitud de organizador:', ticketErr?.message);
+        }
+
+        cleanupUploadedFile(file);
 
         res.status(200).json({ message: "Solicitud enviada." });
     } catch (error) {
-        if (file) fs.unlink(file.path, () => {});
+        cleanupUploadedFile(file);
+        console.error('Error en applyOrganizer:', error);
         res.status(500).json({ message: "Error en el servidor." });
+    }
+};
+
+// ── Solicitud de Rol genérico ──
+export const applyRole = async (req, res) => {
+    const { role } = req.body;
+    const file = req.file;
+    const validRoles = ['content-creator', 'coach', 'caster', 'sponsor', 'analyst'];
+    const data = parseRoleApplicationData(req.body);
+    const applicationData = {
+        ...data,
+        documentFilename: file?.originalname || ''
+    };
+
+    if (!file) {
+        return res.status(400).json({ message: 'Debes adjuntar una foto de tu documento de identidad.' });
+    }
+
+    if (!validRoles.includes(role)) {
+        cleanupUploadedFile(file);
+        return res.status(400).json({ message: 'Rol inválido.' });
+    }
+
+    try {
+        const user = await User.findById(req.userId);
+        if (!user) {
+            cleanupUploadedFile(file);
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        // Check if already applied or approved
+        const currentApp = user.roleApplications?.[role];
+        if (currentApp?.status === 'pending') {
+            cleanupUploadedFile(file);
+            return res.status(400).json({ message: 'Ya tienes una solicitud pendiente para este rol.' });
+        }
+        if (currentApp?.status === 'approved' || user.roles?.includes(role)) {
+            cleanupUploadedFile(file);
+            return res.status(400).json({ message: 'Ya tienes este rol aprobado.' });
+        }
+
+        // Save application
+        user.set(`roleApplications.${role}.status`, 'pending');
+        user.set(`roleApplications.${role}.appliedAt`, new Date());
+        user.set(`roleApplications.${role}.reviewedAt`, null);
+        user.set(`roleApplications.${role}.data`, applicationData);
+        await user.save();
+
+        // Send notification email
+        const roleLabels = {
+            'content-creator': 'Creador de Contenido',
+            coach: 'Coach / Entrenador',
+            caster: 'Caster / Comentarista',
+            sponsor: 'Sponsor / Patrocinador',
+            analyst: 'Analista'
+        };
+
+        try {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+            });
+
+            const dataEntries = Object.entries(applicationData || {})
+                .map(([key, val]) => `<p><strong>${formatRoleApplicationLabel(key)}:</strong> ${val || 'N/A'}</p>`)
+                .join('');
+
+            await transporter.sendMail({
+                from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
+                to: 'steliantsoft@gmail.com',
+                replyTo: user.email,
+                subject: `Nueva Solicitud de Rol: ${roleLabels[role] || role} — ${user.username}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; background-color: #000; color: #fff; padding: 30px; border: 1px solid #8EDB15; border-radius: 10px;">
+                        <h2 style="color: #8EDB15; text-align: center;">Solicitud de ${roleLabels[role] || role}</h2>
+                        <hr style="border: 0.5px solid #333;" />
+                        <p><strong>Usuario:</strong> ${user.username} (${user.email})</p>
+                        <p><strong>Rol solicitado:</strong> ${roleLabels[role] || role}</p>
+                        <p><strong>Estado:</strong> Pendiente de confirmacion administrativa.</p>
+                        ${dataEntries}
+                    </div>
+                `,
+                attachments: [{ filename: file.originalname, path: file.path }]
+            });
+        } catch (emailErr) {
+            console.warn('Email de notificacion fallo (la solicitud se guardo igual):', emailErr?.message || emailErr);
+        }
+
+        // Also create a SupportTicket so it shows in the admin panel
+        try {
+            const roleLabels = {
+                'content-creator': 'Creador de Contenido',
+                coach: 'Coach / Entrenador',
+                caster: 'Caster / Comentarista',
+                sponsor: 'Sponsor / Patrocinador',
+                analyst: 'Analista'
+            };
+            const dataEntries = Object.entries(applicationData || {})
+                .filter(([, val]) => val)
+                .map(([key, val]) => `${formatRoleApplicationLabel(key)}: ${val}`)
+                .join('\n');
+
+            await SupportTicket.create({
+                userId: user._id,
+                username: user.username,
+                email: user.email,
+                avatar: user.avatar || '',
+                type: 'question',
+                subject: `Solicitud de Rol: ${roleLabels[role] || role}`,
+                message: `Solicitud de ${roleLabels[role] || role}\n\n${dataEntries}`,
+                data: { ...applicationData, role, applicationType: 'role-application' }
+            });
+        } catch (ticketErr) {
+            console.warn('No se pudo crear ticket de soporte para solicitud de rol:', ticketErr?.message);
+        }
+
+        cleanupUploadedFile(file);
+        res.status(200).json({ message: 'Solicitud enviada correctamente.' });
+    } catch (error) {
+        cleanupUploadedFile(file);
+        console.error('Error en applyRole:', error);
+        res.status(500).json({ message: 'Error en el servidor.' });
     }
 };
 
@@ -1635,9 +2019,31 @@ export const verifyOrganizerAction = async (req, res) => {
 
         const target = await User.findByIdAndUpdate(
             userId,
-            { isOrganizer: true },
+            {
+                $set: {
+                    isOrganizer: true,
+                    'roleApplications.organizer.status': 'approved',
+                    'roleApplications.organizer.reviewedAt': new Date()
+                },
+                $addToSet: { roles: 'organizer' },
+                $push: {
+                    notifications: {
+                        $each: [{
+                            type: 'success',
+                            category: 'system',
+                            title: 'Rol Aprobado: Organizador',
+                            source: 'Admin',
+                            message: 'Felicidades! Tu solicitud de Organizador ha sido aprobada. Ya puedes crear y gestionar torneos en la plataforma.',
+                            status: 'unread',
+                            visuals: { icon: 'bx-check-shield', color: '#10b981', glow: true },
+                            createdAt: new Date()
+                        }],
+                        $position: 0
+                    }
+                }
+            },
             { new: true }
-        ).select('_id isOrganizer');
+        ).select('_id isOrganizer roles roleApplications.organizer.status');
 
         if (!target) {
             return res.status(404).json({ message: 'Usuario objetivo no encontrado.' });
@@ -1649,5 +2055,497 @@ export const verifyOrganizerAction = async (req, res) => {
         });
     } catch (error) {
         return res.status(500).json({ message: 'Error procesando la acción.' });
+    }
+};
+
+// ══════════════════════════════════════
+//  ADMIN PANEL ENDPOINTS
+// ══════════════════════════════════════
+
+const ensureAdminUser = async (reqUserId) => {
+    const admin = await User.findById(reqUserId).select('isAdmin');
+    return Boolean(admin?.isAdmin);
+};
+
+// List all pending role applications
+export const adminGetRoleApplications = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const statusFilter = req.query.status || 'pending';
+        const roleFilter = req.query.role || '';
+
+        const allRoles = ['organizer', 'content-creator', 'coach', 'caster', 'sponsor', 'analyst'];
+        const rolesToSearch = roleFilter && allRoles.includes(roleFilter) ? [roleFilter] : allRoles;
+
+        const orConditions = rolesToSearch.map(r => ({
+            [`roleApplications.${r}.status`]: statusFilter
+        }));
+
+        const users = await User.find({ $or: orConditions })
+            .select('username email fullName avatar roles isOrganizer roleApplications createdAt')
+            .sort({ createdAt: -1 })
+            .limit(200)
+            .lean();
+
+        const applications = [];
+        for (const user of users) {
+            for (const role of rolesToSearch) {
+                const app = user.roleApplications?.[role];
+                if (app?.status === statusFilter) {
+                    applications.push({
+                        userId: user._id,
+                        username: user.username,
+                        email: user.email,
+                        fullName: user.fullName,
+                        avatar: user.avatar,
+                        role,
+                        status: app.status,
+                        appliedAt: app.appliedAt,
+                        reviewedAt: app.reviewedAt,
+                        data: app.data || {}
+                    });
+                }
+            }
+        }
+
+        applications.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
+        res.json({ total: applications.length, items: applications });
+    } catch (error) {
+        console.error('Error en adminGetRoleApplications:', error);
+        res.status(500).json({ message: 'Error al obtener solicitudes.' });
+    }
+};
+
+// Approve or reject a role application
+export const adminReviewRoleApplication = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const { userId } = req.params;
+        const { role, action, reason } = req.body;
+        const allRoles = ['organizer', 'content-creator', 'coach', 'caster', 'sponsor', 'analyst'];
+
+        if (!allRoles.includes(role)) {
+            return res.status(400).json({ message: 'Rol invalido.' });
+        }
+        if (!['approve', 'reject'].includes(action)) {
+            return res.status(400).json({ message: 'Accion invalida. Usa approve o reject.' });
+        }
+
+        const target = await User.findById(userId);
+        if (!target) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+        const currentApp = target.roleApplications?.[role];
+        if (!currentApp || currentApp.status !== 'pending') {
+            return res.status(400).json({ message: 'No hay solicitud pendiente para este rol.' });
+        }
+
+        const roleLabels = {
+            organizer: 'Organizador', 'content-creator': 'Creador de Contenido',
+            coach: 'Coach', caster: 'Caster', sponsor: 'Sponsor', analyst: 'Analista'
+        };
+
+        if (action === 'approve') {
+            target.set(`roleApplications.${role}.status`, 'approved');
+            target.set(`roleApplications.${role}.reviewedAt`, new Date());
+            if (!target.roles.includes(role)) target.roles.push(role);
+            if (role === 'organizer') target.isOrganizer = true;
+
+            target.notifications.unshift({
+                type: 'success',
+                category: 'system',
+                title: `Rol Aprobado: ${roleLabels[role] || role}`,
+                source: 'Admin',
+                message: `Felicidades! Tu solicitud de ${roleLabels[role] || role} ha sido aprobada. Ya puedes disfrutar de los beneficios de tu nuevo rol.`,
+                status: 'unread',
+                visuals: { icon: 'bx-check-shield', color: '#10b981', glow: true },
+                createdAt: new Date()
+            });
+        } else {
+            target.set(`roleApplications.${role}.status`, 'rejected');
+            target.set(`roleApplications.${role}.reviewedAt`, new Date());
+            if (reason) target.set(`roleApplications.${role}.data.rejectReason`, reason);
+
+            target.notifications.unshift({
+                type: 'warning',
+                category: 'system',
+                title: `Solicitud de ${roleLabels[role] || role} rechazada`,
+                source: 'Admin',
+                message: reason
+                    ? `Tu solicitud de ${roleLabels[role] || role} fue rechazada. Razon: ${reason}`
+                    : `Tu solicitud de ${roleLabels[role] || role} fue rechazada. Puedes volver a aplicar corrigiendo los datos.`,
+                status: 'unread',
+                visuals: { icon: 'bx-x-circle', color: '#ef4444', glow: false },
+                createdAt: new Date()
+            });
+        }
+
+        await target.save();
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: `role-${action}`,
+            entityType: 'user',
+            entityId: userId,
+            meta: { role, reason: reason || '' },
+            req
+        });
+
+        res.json({
+            message: action === 'approve'
+                ? `Rol ${role} aprobado para ${target.username}.`
+                : `Solicitud de ${role} rechazada para ${target.username}.`,
+            user: { _id: target._id, username: target.username, roles: target.roles }
+        });
+    } catch (error) {
+        console.error('Error en adminReviewRoleApplication:', error);
+        res.status(500).json({ message: 'Error al procesar la solicitud.' });
+    }
+};
+
+// List users with search/filter (admin)
+export const adminListUsers = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const rawLimit = Number(req.query.limit);
+        const rawPage = Number(req.query.page);
+        const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(100, Math.trunc(rawLimit))) : 20;
+        const page = Number.isFinite(rawPage) ? Math.max(1, Math.trunc(rawPage)) : 1;
+        const skip = (page - 1) * limit;
+        const search = String(req.query.search || '').trim();
+
+        const filter = {};
+        if (search) {
+            filter.$or = [
+                { username: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { fullName: { $regex: search, $options: 'i' } }
+            ];
+        }
+        if (req.query.banned === 'true') filter.isBanned = true;
+
+        const game = String(req.query.game || '').trim();
+        if (game) {
+            filter.selectedGames = game;
+        }
+
+        const [total, users] = await Promise.all([
+            User.countDocuments(filter),
+            User.find(filter)
+                .select('username email fullName avatar roles selectedGames isOrganizer isAdmin isBanned banReason createdAt status')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean()
+        ]);
+
+        res.json({ total, page, limit, items: users });
+    } catch (error) {
+        console.error('Error en adminListUsers:', error);
+        res.status(500).json({ message: 'Error al listar usuarios.' });
+    }
+};
+
+// Ban / unban user
+export const adminBanUser = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const { userId } = req.params;
+        const { action, reason } = req.body;
+
+        if (!['ban', 'unban'].includes(action)) {
+            return res.status(400).json({ message: 'Accion invalida. Usa ban o unban.' });
+        }
+
+        if (userId === req.userId) {
+            return res.status(400).json({ message: 'No puedes banearte a ti mismo.' });
+        }
+
+        const target = await User.findById(userId);
+        if (!target) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+        if (target.isAdmin) {
+            return res.status(400).json({ message: 'No puedes banear a otro administrador.' });
+        }
+
+        if (action === 'ban') {
+            target.isBanned = true;
+            target.banReason = reason || 'Violacion de normas de la comunidad';
+            target.bannedAt = new Date();
+
+            target.notifications.unshift({
+                type: 'error',
+                category: 'system',
+                title: 'Cuenta suspendida',
+                source: 'Admin',
+                message: `Tu cuenta ha sido suspendida. Razon: ${reason || 'Violacion de normas de la comunidad'}. Si crees que esto es un error, contacta soporte.`,
+                status: 'unread',
+                visuals: { icon: 'bx-block', color: '#ef4444', glow: true },
+                createdAt: new Date()
+            });
+        } else {
+            target.isBanned = false;
+            target.banReason = '';
+            target.bannedAt = null;
+
+            target.notifications.unshift({
+                type: 'success',
+                category: 'system',
+                title: 'Cuenta reactivada',
+                source: 'Admin',
+                message: 'Tu cuenta ha sido reactivada. Ya puedes acceder a todas las funciones de la plataforma. Bienvenido de vuelta!',
+                status: 'unread',
+                visuals: { icon: 'bx-check-circle', color: '#10b981', glow: true },
+                createdAt: new Date()
+            });
+        }
+
+        await target.save();
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: `user-${action}`,
+            entityType: 'user',
+            entityId: userId,
+            meta: { reason: reason || '', username: target.username },
+            req
+        });
+
+        res.json({
+            message: action === 'ban'
+                ? `Usuario ${target.username} baneado.`
+                : `Usuario ${target.username} desbaneado.`,
+            user: { _id: target._id, username: target.username, isBanned: target.isBanned }
+        });
+    } catch (error) {
+        console.error('Error en adminBanUser:', error);
+        res.status(500).json({ message: 'Error al procesar el baneo.' });
+    }
+};
+
+// Send notification to one user or all users
+export const adminSendNotification = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const { userId, title, message, category } = req.body;
+        if (!message || !message.trim()) {
+            return res.status(400).json({ message: 'El mensaje es obligatorio.' });
+        }
+
+        const notification = {
+            type: 'info',
+            category: category || 'admin',
+            title: title || 'Mensaje de Administracion',
+            source: 'Admin',
+            message: message.trim(),
+            status: 'unread',
+            visuals: { icon: 'bx-shield-quarter', color: '#a855f7', glow: true },
+            createdAt: new Date()
+        };
+
+        let updatedCount = 0;
+
+        if (userId === 'all') {
+            // Broadcast to all users
+            const result = await User.updateMany(
+                {},
+                { $push: { notifications: { $each: [notification], $position: 0 } } }
+            );
+            updatedCount = result.modifiedCount || 0;
+        } else {
+            // Send to a specific user
+            const target = await User.findById(userId);
+            if (!target) return res.status(404).json({ message: 'Usuario no encontrado.' });
+            target.notifications.unshift(notification);
+            await target.save();
+            updatedCount = 1;
+        }
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: userId === 'all' ? 'broadcast-notification' : 'send-notification',
+            entityType: 'notification',
+            entityId: userId,
+            meta: { title: notification.title, recipients: updatedCount },
+            req
+        });
+
+        res.json({ message: `Notificacion enviada a ${updatedCount} usuario(s).`, count: updatedCount });
+    } catch (error) {
+        console.error('Error en adminSendNotification:', error);
+        res.status(500).json({ message: 'Error al enviar la notificacion.' });
+    }
+};
+
+// ══════════════════════════════════════
+// SUPPORT TICKETS
+// ══════════════════════════════════════
+
+// User creates a support ticket
+export const createSupportTicket = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+        const { type, message, subject, data } = req.body;
+        const validTypes = ['bug', 'suggestion', 'question', 'achievement'];
+        if (!validTypes.includes(type)) {
+            return res.status(400).json({ message: 'Tipo de ticket invalido.' });
+        }
+        if (!message || !message.trim()) {
+            return res.status(400).json({ message: 'El mensaje es obligatorio.' });
+        }
+
+        const typeLabels = { bug: 'Reporte de Bug', suggestion: 'Sugerencia', question: 'Consulta', achievement: 'Logro' };
+
+        const ticket = await SupportTicket.create({
+            userId: req.userId,
+            username: user.username,
+            email: user.email,
+            avatar: user.avatar || '',
+            type,
+            subject: subject || '',
+            message: message.trim(),
+            data: data || {}
+        });
+
+        // Confirmation notification to user
+        user.notifications.unshift({
+            type: 'info',
+            category: 'support',
+            title: `${typeLabels[type] || 'Mensaje'} enviado`,
+            source: 'Soporte',
+            message: `Tu ${(typeLabels[type] || 'mensaje').toLowerCase()} fue recibido. Nuestro equipo lo revisara y te responderemos pronto.`,
+            status: 'unread',
+            visuals: { icon: 'bx-envelope', color: '#6366f1', glow: false },
+            createdAt: new Date()
+        });
+        await user.save();
+
+        res.status(201).json({ message: 'Ticket creado exitosamente.', ticket: { _id: ticket._id, type: ticket.type, status: ticket.status } });
+    } catch (error) {
+        console.error('Error en createSupportTicket:', error);
+        res.status(500).json({ message: 'Error al crear el ticket.' });
+    }
+};
+
+// Admin lists support tickets
+export const adminGetSupportTickets = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const rawLimit = Number(req.query.limit);
+        const rawPage = Number(req.query.page);
+        const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(100, Math.trunc(rawLimit))) : 20;
+        const page = Number.isFinite(rawPage) ? Math.max(1, Math.trunc(rawPage)) : 1;
+        const skip = (page - 1) * limit;
+
+        const filter = {};
+        const status = String(req.query.status || '').trim();
+        if (status && ['open', 'in-progress', 'resolved', 'closed'].includes(status)) {
+            filter.status = status;
+        }
+        const type = String(req.query.type || '').trim();
+        if (type && ['bug', 'suggestion', 'question', 'achievement'].includes(type)) {
+            filter.type = type;
+        }
+
+        const [total, items] = await Promise.all([
+            SupportTicket.countDocuments(filter),
+            SupportTicket.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean()
+        ]);
+
+        res.json({ total, page, limit, items });
+    } catch (error) {
+        console.error('Error en adminGetSupportTickets:', error);
+        res.status(500).json({ message: 'Error al listar tickets.' });
+    }
+};
+
+// Admin responds to a support ticket
+export const adminRespondSupportTicket = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const { ticketId } = req.params;
+        const { response, status } = req.body;
+
+        const ticket = await SupportTicket.findById(ticketId);
+        if (!ticket) return res.status(404).json({ message: 'Ticket no encontrado.' });
+
+        if (response && response.trim()) {
+            ticket.adminResponse = response.trim();
+            ticket.respondedBy = req.userId;
+            ticket.respondedAt = new Date();
+        }
+
+        if (status && ['open', 'in-progress', 'resolved', 'closed'].includes(status)) {
+            ticket.status = status;
+        }
+
+        await ticket.save();
+
+        // Send notification to the user
+        if (response && response.trim()) {
+            const typeLabels = { bug: 'Reporte de Bug', suggestion: 'Sugerencia', question: 'Consulta', achievement: 'Logro' };
+            await User.findByIdAndUpdate(ticket.userId, {
+                $push: {
+                    notifications: {
+                        $each: [{
+                            type: 'info',
+                            category: 'support',
+                            title: `Respuesta a tu ${typeLabels[ticket.type] || 'ticket'}`,
+                            source: 'Soporte',
+                            message: response.trim(),
+                            status: 'unread',
+                            visuals: { icon: 'bx-support', color: '#6366f1', glow: true },
+                            createdAt: new Date()
+                        }],
+                        $position: 0
+                    }
+                }
+            });
+        }
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: response ? 'ticket-respond' : 'ticket-status-change',
+            entityType: 'support-ticket',
+            entityId: ticketId,
+            meta: {
+                ticketType: ticket.type,
+                newStatus: ticket.status,
+                username: ticket.username,
+                hasResponse: !!response
+            },
+            req
+        });
+
+        res.json({ message: 'Ticket actualizado.', ticket });
+    } catch (error) {
+        console.error('Error en adminRespondSupportTicket:', error);
+        res.status(500).json({ message: 'Error al responder el ticket.' });
     }
 };

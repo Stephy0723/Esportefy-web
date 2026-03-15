@@ -5,6 +5,7 @@ import { useTheme, THEMES } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { resolveMediaUrl } from '../../utils/media';
 import { STATUS_LIST } from '../../data/defaultAvatars';
+import Toast from '../Toast/Toast';
 
 import logoWhite from '../../assets/Logo/logo-black.png';
 import logoBlack from '../../assets/Logo/logo-white.png';
@@ -38,6 +39,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
   const [user, setUser] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
   const sidebarRef = useRef(null);
 
   /* Leer usuario de localStorage */
@@ -86,194 +88,216 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
     </li>
   );
 
+  const showAccountCreatedToast = () => {
+    setToastVisible(true);
+  };
+
   return (
-    <nav
-      className={`sidebar ${isClosed ? 'close' : ''}`}
-      ref={sidebarRef}
-      onClick={openIfClosed}
-    >
-      {/* ═══════════ HEADER ═══════════ */}
-      <header className="sb-header">
-        <div className="sb-logo-row">
-          <div className="sb-logo-frame">
-            <img
-              src={isDarkMode ? logoWhite : logoBlack}
-              alt="GLITCH GANG"
-              className="sb-logo-img"
-            />
-          </div>
-          {!isClosed && (
-            <div className="sb-brand-text">
-              <span className="sb-brand-name">GLITCH{' '}<span className="sb-brand-accent">GANG</span></span>
-              <span className="sb-brand-sub">Pro Gaming</span>
-            </div>
-          )}
-        </div>
-        {/* Línea decorativa under header */}
-        <div className="sb-header-line" />
-      </header>
-
-      {/* ═══════════ MENÚ PRINCIPAL ═══════════ */}
-      <div className="sb-scroll-area">
-        <div className="sb-section">
-          {!isClosed && <p className="sb-section-title">MENÚ</p>}
-          <ul className="sb-list">
-            {MAIN_LINKS.map(renderLink)}
-          </ul>
-        </div>
-
-        {/* ═══════════ EXPAND TOGGLE ═══════════ */}
-        <button
-          className="sb-expand-btn"
-          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-        >
-          <i className={`bx bx-chevron-${expanded ? 'up' : 'down'} sb-expand-icon`} />
-          {!isClosed && (
-            <span className="sb-expand-text">
-              {expanded ? 'Menos' : 'Más'}
-            </span>
-          )}
-        </button>
-
-        {/* ═══════════ SECCIONES EXPANDIBLES ═══════════ */}
-        {expanded && (
-          <div className="sb-expanded">
-            {(() => {
-              let currentSection = '';
-              return EXTRA_LINKS.map((link) => {
-                const showHeader = link.section && link.section !== currentSection;
-                if (link.section) currentSection = link.section;
-                return (
-                  <React.Fragment key={link.to}>
-                    {showHeader && !isClosed && (
-                      <p className="sb-section-title">{link.section}</p>
-                    )}
-                    <ul className="sb-list">{renderLink(link)}</ul>
-                  </React.Fragment>
-                );
-              });
-            })()}
-
-            {/* Redes sociales */}
-            {!isClosed && (
-              <div className="sb-socials">
-                <p className="sb-section-title">SÍGUENOS</p>
-                <div className="sb-socials-row">
-                  {SOCIALS.map((s) => (
-                    <a
-                      key={s.cls}
-                      href={s.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`sb-social-icon ${s.cls}`}
-                    >
-                      <i className={`bx ${s.icon}`} />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ═══════════ FOOTER ═══════════ */}
-      <div className="sb-footer">
-        <div className="sb-footer-line" />
-
-        {/* Perfil del usuario */}
-        {user && (
-          <Link to="/profile" className="sb-profile" data-tooltip={user.username || user.name}>
-            <div className="sb-profile__avatar-wrap">
+    <>
+      <nav
+        className={`sidebar ${isClosed ? 'close' : ''}`}
+        ref={sidebarRef}
+        onClick={openIfClosed}
+      >
+        {/* ═══════════ HEADER ═══════════ */}
+        <header className="sb-header">
+          <div className="sb-logo-row">
+            <div className="sb-logo-frame">
               <img
-                src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=1a1a2e&color=8EDB15`}
-                alt=""
-                className="sb-profile__avatar"
+                src={isDarkMode ? logoWhite : logoBlack}
+                alt="GLITCH GANG"
+                className="sb-logo-img"
               />
-              <span className={`sb-profile__status sb-profile__status--${user.status || 'online'}`} />
             </div>
             {!isClosed && (
-              <div className="sb-profile__info">
-                <span className="sb-profile__name">{user.username || user.name || 'Jugador'}</span>
-                <span className={`sb-profile__role sb-profile__role--${user.status || 'online'}`}>
-                  {STATUS_LIST.find(s => s.id === (user.status || 'online'))?.label || 'En Línea'}
-                </span>
+              <div className="sb-brand-text">
+                <span className="sb-brand-name">GLITCH{' '}<span className="sb-brand-accent">GANG</span></span>
+                <span className="sb-brand-sub">Pro Gaming</span>
               </div>
             )}
-          </Link>
-        )}
-
-        {/* Cerrar sesión */}
-        <button type="button" className="sb-logout" onClick={handleLogout}>
-          <i className="bx bx-log-out" />
-          <span className="sb-label">Cerrar Sesión</span>
-        </button>
-
-        {/* ─── THEME PICKER (2 grupos × 2 opciones) ─── */}
-        {!isClosed ? (
-          <div className="sb-theme-picker">
-            {/* Grupo oscuro: Dark ↔ AMOLED */}
-            <div className="sb-theme-group">
-              <button
-                className={`sb-theme-btn ${theme === THEMES.DARK ? 'active' : ''}`}
-                onClick={(e) => { e.stopPropagation(); setTheme(THEMES.DARK); }}
-                title="Dark"
-              >
-                <span className="sb-swatch sb-swatch-dark" />
-                <span className="sb-theme-name">Dark</span>
-              </button>
-              <button
-                className={`sb-theme-btn ${theme === THEMES.AMOLED ? 'active' : ''}`}
-                onClick={(e) => { e.stopPropagation(); setTheme(THEMES.AMOLED); }}
-                title="AMOLED"
-              >
-                <span className="sb-swatch sb-swatch-amoled" />
-                <span className="sb-theme-name">AMOLED</span>
-              </button>
-            </div>
-
-            {/* Separador vertical */}
-            <div className="sb-theme-divider" />
-
-            {/* Grupo claro: Light ↔ Gray */}
-            <div className="sb-theme-group">
-              <button
-                className={`sb-theme-btn ${theme === THEMES.LIGHT ? 'active' : ''}`}
-                onClick={(e) => { e.stopPropagation(); setTheme(THEMES.LIGHT); }}
-                title="Light"
-              >
-                <span className="sb-swatch sb-swatch-light" />
-                <span className="sb-theme-name">Light</span>
-              </button>
-              <button
-                className={`sb-theme-btn ${theme === THEMES.GRAY ? 'active' : ''}`}
-                onClick={(e) => { e.stopPropagation(); setTheme(THEMES.GRAY); }}
-                title="Gray"
-              >
-                <span className="sb-swatch sb-swatch-gray" />
-                <span className="sb-theme-name">Gray</span>
-              </button>
-            </div>
           </div>
-        ) : (
-          /* Colapsado: solo un icono de paleta */
+          {/* Línea decorativa under header */}
+          <div className="sb-header-line" />
+        </header>
+
+        {/* ═══════════ MENÚ PRINCIPAL ═══════════ */}
+        <div className="sb-scroll-area">
+          <div className="sb-section">
+            {!isClosed && <p className="sb-section-title">MENÚ</p>}
+            <ul className="sb-list">
+              {MAIN_LINKS.map(renderLink)}
+            </ul>
+          </div>
+
+          {/* ═══════════ EXPAND TOGGLE ═══════════ */}
           <button
-            className="sb-theme-icon-only"
-            onClick={(e) => { e.stopPropagation(); setIsClosed(false); }}
-            title="Cambiar tema"
+            className="sb-expand-btn"
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
           >
-            <i className="bx bx-palette" />
+            <i className={`bx bx-chevron-${expanded ? 'up' : 'down'} sb-expand-icon`} />
+            {!isClosed && (
+              <span className="sb-expand-text">
+                {expanded ? 'Menos' : 'Más'}
+              </span>
+            )}
           </button>
-        )}
 
-        {/* Crédito */}
-        {!isClosed && (
-          <div className="sb-credit">
-            By <strong>Steliant</strong>
-          </div>
-        )}
-      </div>
-    </nav>
+          {/* ═══════════ SECCIONES EXPANDIBLES ═══════════ */}
+          {expanded && (
+            <div className="sb-expanded">
+              {(() => {
+                let currentSection = '';
+                return EXTRA_LINKS.map((link) => {
+                  const showHeader = link.section && link.section !== currentSection;
+                  if (link.section) currentSection = link.section;
+                  return (
+                    <React.Fragment key={link.to}>
+                      {showHeader && !isClosed && (
+                        <p className="sb-section-title">{link.section}</p>
+                      )}
+                      <ul className="sb-list">{renderLink(link)}</ul>
+                    </React.Fragment>
+                  );
+                });
+              })()}
+
+              {/* Admin link — solo si isAdmin */}
+              {user?.isAdmin && (
+                <>
+                  {!isClosed && <p className="sb-section-title">ADMIN</p>}
+                  <ul className="sb-list">
+                    {renderLink({ to: '/admin', icon: 'bx-shield-quarter', label: 'Admin Panel' })}
+                  </ul>
+                </>
+              )}
+
+              {/* Redes sociales */}
+              {!isClosed && (
+                <div className="sb-socials">
+                  <p className="sb-section-title">SÍGUENOS</p>
+                  <div className="sb-socials-row">
+                    {SOCIALS.map((s) => (
+                      <a
+                        key={s.cls}
+                        href={s.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`sb-social-icon ${s.cls}`}
+                      >
+                        <i className={`bx ${s.icon}`} />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ═══════════ FOOTER ═══════════ */}
+        <div className="sb-footer">
+          <div className="sb-footer-line" />
+
+          {/* Perfil del usuario */}
+          {user && (
+            <Link to="/profile" className="sb-profile" data-tooltip={user.username || user.name}>
+              <div className="sb-profile__avatar-wrap">
+                <img
+                  src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=1a1a2e&color=8EDB15`}
+                  alt=""
+                  className="sb-profile__avatar"
+                />
+                <span className={`sb-profile__status sb-profile__status--${user.status || 'online'}`} />
+              </div>
+              {!isClosed && (
+                <div className="sb-profile__info">
+                  <span className="sb-profile__name">{user.username || user.name || 'Jugador'}</span>
+                  <span className={`sb-profile__role sb-profile__role--${user.status || 'online'}`}>
+                    {STATUS_LIST.find(s => s.id === (user.status || 'online'))?.label || 'En Línea'}
+                  </span>
+                </div>
+              )}
+            </Link>
+          )}
+
+          {/* Cerrar sesión */}
+          <button type="button" className="sb-logout" onClick={handleLogout}>
+            <i className="bx bx-log-out" />
+            <span className="sb-label">Cerrar Sesión</span>
+          </button>
+
+          {/* ─── THEME PICKER (2 grupos × 2 opciones) ─── */}
+          {!isClosed ? (
+            <div className="sb-theme-picker">
+              {/* Grupo oscuro: Dark ↔ AMOLED */}
+              <div className="sb-theme-group">
+                <button
+                  className={`sb-theme-btn ${theme === THEMES.DARK ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setTheme(THEMES.DARK); }}
+                  title="Dark"
+                >
+                  <span className="sb-swatch sb-swatch-dark" />
+                  <span className="sb-theme-name">Dark</span>
+                </button>
+                <button
+                  className={`sb-theme-btn ${theme === THEMES.AMOLED ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setTheme(THEMES.AMOLED); }}
+                  title="AMOLED"
+                >
+                  <span className="sb-swatch sb-swatch-amoled" />
+                  <span className="sb-theme-name">AMOLED</span>
+                </button>
+              </div>
+
+              {/* Separador vertical */}
+              <div className="sb-theme-divider" />
+
+              {/* Grupo claro: Light ↔ Gray */}
+              <div className="sb-theme-group">
+                <button
+                  className={`sb-theme-btn ${theme === THEMES.LIGHT ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setTheme(THEMES.LIGHT); }}
+                  title="Light"
+                >
+                  <span className="sb-swatch sb-swatch-light" />
+                  <span className="sb-theme-name">Light</span>
+                </button>
+                <button
+                  className={`sb-theme-btn ${theme === THEMES.GRAY ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setTheme(THEMES.GRAY); }}
+                  title="Gray"
+                >
+                  <span className="sb-swatch sb-swatch-gray" />
+                  <span className="sb-theme-name">Gray</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Colapsado: solo un icono de paleta */
+            <button
+              className="sb-theme-icon-only"
+              onClick={(e) => { e.stopPropagation(); setIsClosed(false); }}
+              title="Cambiar tema"
+            >
+              <i className="bx bx-palette" />
+            </button>
+          )}
+
+          {/* Crédito */}
+          {!isClosed && (
+            <div className="sb-credit">
+              By <strong>Steliant</strong>
+            </div>
+          )}
+        </div>
+      </nav>
+      <Toast
+        message="¡Tu cuenta ha sido creada exitosamente! Ya puedes iniciar sesión y comenzar a disfrutar de Esportefy."
+        show={toastVisible}
+        onClose={() => setToastVisible(false)}
+        duration={4000}
+      />
+    </>
   );
 };
 

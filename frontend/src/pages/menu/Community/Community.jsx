@@ -5,6 +5,7 @@ import './Community.css';
 import PageHud from '../../../components/PageHud/PageHud';
 import FeedPanel from './FeedPanel/FeedPanel';
 import CreateCommunityModal from './CreateCommunityModal/CreateCommunityModal';
+import { fetchGameHubStatsIndex, formatGameHubCount } from './gameHub.service';
 import {
     COMMUNITY_GAMES as GAMES,
     COMMUNITY_FILTERS as FILTERS,
@@ -38,7 +39,7 @@ const useCountUp = (target, duration = 2200, active = true) => {
 
 /*  COMPONENTS  */
 
-const HeroBanner = () => {
+const HeroBanner = ({ onExplore }) => {
     const [heroIdx, setHeroIdx] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
     const heroes = GAMES.slice(0, 3);
@@ -96,6 +97,7 @@ const HeroBanner = () => {
                 <div className="cm-hero__cta">
                     <motion.button 
                         className="cm-hero__btn cm-hero__btn--primary"
+                        onClick={onExplore}
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.98 }}
                     >
@@ -171,7 +173,7 @@ const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommuni
                                 onClick={() => { setGameFilter('all'); setShowGameDrop(false); }}>
                                 <i className='bx bx-grid-alt'></i> Todos los juegos
                             </button>
-                            {GAMES.slice(0, 10).map(g => (
+                            {GAMES.map(g => (
                                 <button key={g.id} className={'cm-search__dropdown-item ' + (gameFilter === g.name ? 'active' : '')}
                                     onClick={() => { setGameFilter(g.name); setShowGameDrop(false); }}>
                                     <img src={g.img} alt="" className="cm-search__dropdown-img" />
@@ -190,10 +192,13 @@ const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommuni
     );
 };
 
-const GameCard = ({ game, index }) => {
+const GameCard = ({ game, index, stats }) => {
     const navigate = useNavigate();
     const [isHovered, setIsHovered] = useState(false);
     const cardRef = useRef(null);
+    const goToGame = useCallback(() => {
+        navigate('/game/' + game.id);
+    }, [navigate, game.id]);
 
     const handleMouseMove = useCallback((e) => {
         if (!cardRef.current) return;
@@ -222,6 +227,15 @@ const GameCard = ({ game, index }) => {
             onMouseEnter={() => setIsHovered(true)} 
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
+            onClick={goToGame}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    goToGame();
+                }
+            }}
+            role="button"
+            tabIndex={0}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -241,7 +255,7 @@ const GameCard = ({ game, index }) => {
                     <h3 className="cm-game__name">{game.name}</h3>
                     <div className="cm-game__meta">
                         <div className="cm-game__players">
-                            <i className='bx bxs-user'></i> {game.players}
+                            <i className='bx bxs-user'></i> {formatGameHubCount(stats?.usersCount ?? 0)}
                         </div>
                         <div className="cm-game__rating">
                             <i className='bx bxs-star'></i> 4.8
@@ -249,7 +263,7 @@ const GameCard = ({ game, index }) => {
                     </div>
                     <motion.button 
                         className="cm-game__btn" 
-                        onClick={(e) => { e.stopPropagation(); navigate('/games/' + game.id); }}
+                        onClick={(e) => { e.stopPropagation(); goToGame(); }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
@@ -267,7 +281,7 @@ const GameCard = ({ game, index }) => {
     );
 };
 
-const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGame }) => {
+const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGame, gameStats }) => {
     const carouselRef = useRef(null);
     const [isPaused, setIsPaused] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -307,6 +321,7 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
 
     return (
         <motion.section
+            id="community-games-section"
             className="cm-games"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -351,7 +366,9 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
                         <i className='bx bx-chevron-left'></i>
                     </button>
                     <div ref={carouselRef} className="cm-carousel" onScroll={handleScroll}>
-                        {filtered.map((g, i) => <GameCard key={g.id} game={g} index={i} />)}
+                        {filtered.map((g, i) => (
+                            <GameCard key={g.id} game={g} index={i} stats={gameStats?.[g.id]} />
+                        ))}
                         <div className="cm-suggest-card" onClick={onSuggestGame}>
                             <div className="cm-suggest-card__inner">
                                 <div className="cm-suggest-card__glow" />
@@ -571,7 +588,7 @@ const CommunitiesSection = ({ searchQuery, gameFilter }) => {
     );
 };
 
-const QuickStats = () => {
+const QuickStats = ({ totalUsersCount = 0 }) => {
     const [inView, setInView] = useState(false);
     const [hoveredStat, setHoveredStat] = useState(null);
     const ref = useRef(null);
@@ -584,13 +601,13 @@ const QuickStats = () => {
 
     const gamesCount = useCountUp(GAMES.length, 1800, inView);
     const communitiesCount = useCountUp(COMMUNITIES.length, 1800, inView);
-    const playersCount = useCountUp(213, 2200, inView);
+    const playersCount = useCountUp(totalUsersCount, 2200, inView);
     const tourneysCount = useCountUp(48, 1600, inView);
 
     const stats = [
         { icon: 'bx bxs-joystick', label: 'Juegos', value: gamesCount, display: String(gamesCount), color: 'var(--primary)', desc: 'Juegos disponibles' },
         { icon: 'bx bxs-group', label: 'Comunidades', value: communitiesCount, display: String(communitiesCount), color: 'var(--primary-hover)', desc: 'Comunidades activas' },
-        { icon: 'bx bxs-user-account', label: 'Jugadores', value: playersCount, display: (playersCount / 10).toFixed(1) + 'k', color: '#a8e048', desc: 'Jugadores conectados' },
+        { icon: 'bx bxs-user-account', label: 'Jugadores', value: playersCount, display: formatGameHubCount(playersCount), color: '#a8e048', desc: 'Usuarios en hubs' },
         { icon: 'bx bxs-trophy', label: 'Torneos', value: tourneysCount, display: String(tourneysCount), color: '#6bb30a', desc: 'Torneos activos' },
     ];
     return (
@@ -847,6 +864,8 @@ const Community = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showSuggestModal, setShowSuggestModal] = useState(false);
     const [activeView, setActiveView] = useState('feed');
+    const [gameStats, setGameStats] = useState({});
+    const shouldScrollToGamesRef = useRef(false);
 
     const viewTabs = [
         { id: 'feed', label: 'Feed', icon: 'bx bxs-news' },
@@ -861,6 +880,53 @@ const Community = () => {
             duration: `${12 + Math.random() * 15}s`,
             delay: `${Math.random() * 10}s`,
         })), []);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadGameStats = async () => {
+            try {
+                const nextStats = await fetchGameHubStatsIndex();
+                if (!cancelled) {
+                    setGameStats(nextStats);
+                }
+            } catch (_) {
+                if (!cancelled) {
+                    setGameStats({});
+                }
+            }
+        };
+
+        loadGameStats();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const totalGameUsers = useMemo(
+        () => Object.values(gameStats || {}).reduce((sum, entry) => sum + Number(entry?.usersCount || 0), 0),
+        [gameStats]
+    );
+
+    const handleExploreGames = useCallback(() => {
+        shouldScrollToGamesRef.current = true;
+        setActiveView('games');
+    }, []);
+
+    useEffect(() => {
+        if (activeView !== 'games' || !shouldScrollToGamesRef.current) return undefined;
+
+        const timeoutId = window.setTimeout(() => {
+            const gamesSection = document.getElementById('community-games-section');
+            if (gamesSection) {
+                gamesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            shouldScrollToGamesRef.current = false;
+        }, 80);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [activeView]);
 
     return (
         <div className="cm-page">
@@ -880,9 +946,9 @@ const Community = () => {
             <div className="cm-page__orb-extra" />
             
             <PageHud page="Comunidad" />
-            <HeroBanner />
+            <HeroBanner onExplore={handleExploreGames} />
             <div className="cm-container">
-                <QuickStats />
+                <QuickStats totalUsersCount={totalGameUsers} />
                 <SearchBar
                     value={searchQuery} onChange={setSearchQuery}
                     gameFilter={gameFilter} setGameFilter={setGameFilter}
@@ -934,7 +1000,13 @@ const Community = () => {
                         >
                             <div className="cm-main-layout">
                                 <div className="cm-main-content">
-                                    <GamesSection searchQuery={searchQuery} activeFilter={activeFilter} setActiveFilter={setActiveFilter} onSuggestGame={() => setShowSuggestModal(true)} />
+                                    <GamesSection
+                                        searchQuery={searchQuery}
+                                        activeFilter={activeFilter}
+                                        setActiveFilter={setActiveFilter}
+                                        onSuggestGame={() => setShowSuggestModal(true)}
+                                        gameStats={gameStats}
+                                    />
                                 </div>
                                 <div className="cm-sidebar">
                                     <TrendingSidebar />

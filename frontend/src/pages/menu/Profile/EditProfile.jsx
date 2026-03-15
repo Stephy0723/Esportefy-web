@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import {
     FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft,
     FaCamera, FaPaintBrush, FaCheck, FaExclamationTriangle,
     FaLink, FaTwitch, FaYoutube, FaTwitter, FaInstagram, FaTiktok,
-    FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake,
+    FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake, FaTrophy,
     FaDiscord, FaSteam, FaPlaystation, FaXbox
 } from 'react-icons/fa';
 import { SiRiotgames, SiEpicgames, SiNintendoswitch } from 'react-icons/si';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { PLAYER_TAGS } from '../../../data/playerTags';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
+import { EMPTY_PROFILE_PROGRESSION, normalizeProfileProgression } from '../../../data/profileProgression';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
@@ -213,6 +214,7 @@ const EditProfile = () => {
     const [gameQuery, setGameQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [currentUserId, setCurrentUserId] = useState('');
+    const [profileProgression, setProfileProgression] = useState(EMPTY_PROFILE_PROGRESSION);
     const [userConnections, setUserConnections] = useState({ discord: {}, riot: {}, mlbb: {} }); // Real connections from Settings
     const [phoneAvailability, setPhoneAvailability] = useState({
         loading: false,
@@ -221,6 +223,18 @@ const EditProfile = () => {
         message: '',
         warning: false
     });
+
+    const fetchProfileOverview = useCallback(async (token) => {
+        try {
+            const res = await axios.get(`${API_URL}/api/auth/profile/overview`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setProfileProgression(normalizeProfileProgression(res.data?.progression));
+        } catch (err) {
+            console.warn('No se pudo cargar el progreso del perfil:', err?.response?.status || err?.message || err);
+            setProfileProgression(EMPTY_PROFILE_PROGRESSION);
+        }
+    }, []);
 
     const [formData, setFormData] = useState({
         username: '',
@@ -244,7 +258,10 @@ const EditProfile = () => {
         selectedFrameId: 'none',
         selectedBgId: 'bg-1',
         status: 'online',
-        selectedTagId: 'tag-obsidian'
+        selectedTagId: 'tag-obsidian',
+        isOrganizer: false,
+        roles: ['player'],
+        roleApplications: {}
     });
 
     const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -256,6 +273,11 @@ const EditProfile = () => {
             .replace(/^https?:\/\/(www\.)?/i, '')
             .replace(/^[a-z]+\.(com|tv)\//i, '')
             .replace(/^@+/, '');
+
+    const renderProgressionIcon = (iconClass = '', fallback = 'bx bx-star') => {
+        const safeClass = String(iconClass || fallback).trim() || fallback;
+        return <i className={safeClass.startsWith('bx ') ? safeClass : fallback} aria-hidden="true" />;
+    };
 
     // Helpers for live preview
     const currentFrame = FRAMES.find(f => f.id === formData.selectedFrameId) || FRAMES[0];
@@ -273,10 +295,16 @@ const EditProfile = () => {
         try {
             const token = getToken();
             if (!token) { navigate('/login'); return; }
-            const res = await axios.get(`${API_URL}/api/auth/profile`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const u = res.data;
+            const [profileResult, overviewResult] = await Promise.allSettled([
+                axios.get(`${API_URL}/api/auth/profile`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                axios.get(`${API_URL}/api/auth/profile/overview`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+            ]);
+            if (profileResult.status !== 'fulfilled') throw profileResult.reason;
+            const u = profileResult.value.data;
             setCurrentUserId(u?._id || u?.id || '');
             // Load real connections from Settings
             setUserConnections({
@@ -320,13 +348,22 @@ const EditProfile = () => {
                 selectedFrameId: u.selectedFrameId || 'none',
                 selectedBgId: u.selectedBgId || 'bg-1',
                 status: u.status || 'online',
-                selectedTagId: u.selectedTagId || 'tag-obsidian'
+                selectedTagId: u.selectedTagId || 'tag-obsidian',
+                isOrganizer: Boolean(u.isOrganizer),
+                roles: Array.isArray(u.roles) && u.roles.length > 0 ? u.roles : ['player'],
+                roleApplications: u.roleApplications || {}
             });
             setPreview(resolveMediaUrl(u.avatar) || '');
+            if (overviewResult.status === 'fulfilled') {
+                setProfileProgression(normalizeProfileProgression(overviewResult.value.data?.progression));
+            } else {
+                setProfileProgression(EMPTY_PROFILE_PROGRESSION);
+            }
             setLoading(false);
         } catch (err) {
             console.error('Error fetching profile:', err);
             if (err.response?.status === 401) navigate('/login');
+            setProfileProgression(EMPTY_PROFILE_PROGRESSION);
             setLoading(false);
         }
     }, [navigate]);
@@ -625,8 +662,10 @@ const EditProfile = () => {
                 selectedBgId: u.selectedBgId || prev.selectedBgId,
                 selectedTagId: u.selectedTagId || prev.selectedTagId,
                 status: u.status || prev.status,
+                isOrganizer: typeof u.isOrganizer === 'boolean' ? u.isOrganizer : prev.isOrganizer,
             }));
             if (u.avatar) setPreview(resolveMediaUrl(u.avatar));
+            await fetchProfileOverview(token);
         } catch (err) {
             const msg = err.response?.data?.message || 'Error al guardar los cambios.';
             setSaveMsg({ type: 'error', text: msg });
@@ -713,6 +752,7 @@ const EditProfile = () => {
                                 { id: 'social', icon: <FaLink />, label: 'Social' },
                                 { id: 'customization', icon: <FaPaintBrush />, label: 'Estilo' },
                                 { id: 'gamer', icon: <FaGamepad />, label: 'Gamer' },
+                                { id: 'progress', icon: <FaTrophy />, label: 'Progreso' },
                                 { id: 'privacy', icon: <FaLock />, label: 'Privacidad' },
                             ].map(tab => (
                                 <button
@@ -882,6 +922,75 @@ const EditProfile = () => {
                                             />
                                             <span className="ep__char-count">{formData.bio.length}/300</span>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* ── Roles de usuario ── */}
+                                <div className="ep__section">
+                                    <div className="ep__section-header">
+                                        <FaUsers className="ep__section-icon" />
+                                        <div className="ep__section-title">
+                                            <h4>Roles en la Plataforma</h4>
+                                            <p>Solicita roles adicionales para desbloquear herramientas especiales</p>
+                                        </div>
+                                    </div>
+                                    <div className="ep__section-content">
+                                        <div className="ep__roles-grid">
+                                            {[
+                                                { id: 'player', label: 'Jugador', icon: 'bx bx-joystick', color: '#3b82f6', locked: true },
+                                                { id: 'organizer', label: 'Organizador', icon: 'bx bx-crown', color: '#f59e0b', route: '/organizer-application' },
+                                                { id: 'content-creator', label: 'Creador de Contenido', icon: 'bx bx-video', color: '#c026d3', route: '/role/content-creator/apply' },
+                                                { id: 'coach', label: 'Coach', icon: 'bx bx-chalkboard', color: '#d97706', route: '/role/coach/apply' },
+                                                { id: 'caster', label: 'Caster', icon: 'bx bx-microphone', color: '#ef4444', route: '/role/caster/apply' },
+                                                { id: 'analyst', label: 'Analista', icon: 'bx bx-line-chart', color: '#6366f1', route: '/role/analyst/apply' },
+                                                { id: 'sponsor', label: 'Sponsor', icon: 'bx bx-dollar-circle', color: '#10b981', route: '/role/sponsor/apply' },
+                                            ].map(role => {
+                                                const userRoles = formData.roles || ['player'];
+                                                const isOrganizerApproved = role.id === 'organizer' && Boolean(formData.isOrganizer);
+                                                const isActive = userRoles.includes(role.id) || isOrganizerApproved;
+                                                const appStatus = formData.roleApplications?.[role.id]?.status || 'none';
+                                                const isPending = !isActive && appStatus === 'pending';
+                                                const isApproved = isActive || appStatus === 'approved';
+                                                const roleClassName = `ep__role-btn ${!role.locked && !isApproved && !isPending && role.route ? 'ep__role-btn--link' : ''} ${isApproved ? 'ep__role-btn--active' : ''} ${isPending ? 'ep__role-btn--pending' : ''} ${role.locked ? 'ep__role-btn--locked' : ''}`;
+                                                const roleContent = (
+                                                    <>
+                                                        <i className={role.icon} style={{ color: (isApproved || isPending) ? role.color : undefined }} />
+                                                        <span>{role.label}</span>
+                                                        {isApproved && <FaCheck className="ep__role-check" />}
+                                                        {isPending && <span className="ep__role-status ep__role-status--pending">Pendiente</span>}
+                                                        {!isApproved && !isPending && !role.locked && <span className="ep__role-status ep__role-status--apply">Solicitar</span>}
+                                                    </>
+                                                );
+
+                                                if (!role.locked && !isApproved && !isPending && role.route) {
+                                                    return (
+                                                        <Link
+                                                            key={role.id}
+                                                            to={role.route}
+                                                            className={roleClassName}
+                                                            style={{ '--role-color': role.color }}
+                                                            aria-label={`Solicitar rol ${role.label}`}
+                                                        >
+                                                            {roleContent}
+                                                        </Link>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div
+                                                        key={role.id}
+                                                        className={roleClassName}
+                                                        style={{ '--role-color': role.color }}
+                                                        aria-disabled="true"
+                                                    >
+                                                        {roleContent}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="ep__role-note">
+                                            Cada solicitud abre un formulario y se envia al correo de Steliant para revision de administracion.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -1283,6 +1392,124 @@ const EditProfile = () => {
                         )}
 
                         {/* ═══ TAB: PRIVACY ═══ */}
+                        {activeTab === 'progress' && (
+                            <div className="ep__tab fade-in">
+                                <h3>Progreso y Logros</h3>
+
+                                <div className="ep__progress-hero">
+                                    <div className="ep__progress-main">
+                                        <span className="ep__progress-kicker">Puntos de perfil</span>
+                                        <strong>{Number(profileProgression.totalPoints || 0).toLocaleString('es-ES')}</strong>
+                                        <div className="ep__progress-level-row">
+                                            <span className="ep__progress-level">{profileProgression.level.name}</span>
+                                            <span className="ep__progress-next">
+                                                {profileProgression.level.pointsNeeded > 0
+                                                    ? `${profileProgression.level.pointsNeeded} para ${profileProgression.level.nextLevelName}`
+                                                    : 'Nivel maximo alcanzado'}
+                                            </span>
+                                        </div>
+                                        <div className="ep__progress-bar">
+                                            <div style={{ width: `${profileProgression.level.progressPercent}%` }} />
+                                        </div>
+                                        <p className="ep__progress-note">
+                                            Los puntos se calculan automaticamente segun tus acciones dentro de Esportefy:
+                                            completar el perfil, conectar cuentas, jugar, publicar y competir.
+                                        </p>
+                                    </div>
+
+                                    <div className="ep__progress-highlights">
+                                        {profileProgression.highlights.map((item) => (
+                                            <div key={item.id} className="ep__progress-highlight">
+                                                <span className="ep__progress-highlight-icon">
+                                                    {renderProgressionIcon(item.iconClass)}
+                                                </span>
+                                                <div>
+                                                    <strong>{Number(item.value || 0).toLocaleString('es-ES')}</strong>
+                                                    <span>{item.label}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="ep__section">
+                                    <div className="ep__section-header">
+                                        <span className="ep__section-icon"><FaTrophy /></span>
+                                        <div className="ep__section-title">
+                                            <h4>Como se ganan los puntos</h4>
+                                            <p>Desglose automatico por acciones dentro de la plataforma</p>
+                                        </div>
+                                    </div>
+                                    <div className="ep__section-content">
+                                        <div className="ep__points-grid">
+                                            {profileProgression.pointSources.map((source) => (
+                                                <div key={source.id} className="ep__points-card">
+                                                    <div className="ep__points-card-top">
+                                                        <strong>{source.label}</strong>
+                                                        <span>{source.awardedPoints}/{source.maxPoints} pts</span>
+                                                    </div>
+                                                    <p>{source.description}</p>
+                                                    <div className="ep__points-card-meta">
+                                                        <span>{source.progressLabel}</span>
+                                                        <span>{source.progressPercent}%</span>
+                                                    </div>
+                                                    <div className="ep__points-card-bar">
+                                                        <div style={{ width: `${source.progressPercent}%` }} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="ep__section">
+                                    <div className="ep__section-header">
+                                        <span className="ep__section-icon"><i className='bx bx-medal' /></span>
+                                        <div className="ep__section-title">
+                                            <h4>20 logros desbloqueables</h4>
+                                            <p>{profileProgression.unlockedAchievements}/{profileProgression.totalAchievements} desbloqueados</p>
+                                        </div>
+                                    </div>
+                                    <div className="ep__section-content">
+                                        <div className="ep__achievements-grid">
+                                            {profileProgression.achievements.map((achievement) => (
+                                                <div
+                                                    key={achievement.id}
+                                                    className={`ep__achievement-card ${achievement.unlocked ? 'is-unlocked' : ''}`}
+                                                >
+                                                    <div className="ep__achievement-card-top">
+                                                        <span
+                                                            className="ep__achievement-icon"
+                                                            style={{ '--ach-color': achievement.accentColor }}
+                                                        >
+                                                            {renderProgressionIcon(achievement.iconClass, 'bx bx-trophy')}
+                                                        </span>
+                                                        <span className={`ep__achievement-status ${achievement.unlocked ? 'is-unlocked' : 'is-locked'}`}>
+                                                            {achievement.unlocked ? 'Desbloqueado' : 'En progreso'}
+                                                        </span>
+                                                    </div>
+                                                    <strong className="ep__achievement-title">{achievement.name}</strong>
+                                                    <p className="ep__achievement-desc">{achievement.description}</p>
+                                                    <div className="ep__achievement-meta">
+                                                        <span>{achievement.progressLabel}</span>
+                                                        <span>{achievement.category}</span>
+                                                    </div>
+                                                    <div className="ep__achievement-bar">
+                                                        <div
+                                                            style={{
+                                                                width: `${achievement.progressPercent}%`,
+                                                                background: achievement.accentColor
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {activeTab === 'privacy' && (
                             <div className="ep__tab fade-in">
                                 <h3>Privacidad</h3>

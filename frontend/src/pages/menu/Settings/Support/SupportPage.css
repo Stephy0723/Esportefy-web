@@ -5,7 +5,10 @@
 /* ── Base ── */
 .sp {
     min-height: 100vh;
-    background: var(--bg-page);
+    background:
+        radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 8%, transparent), transparent 34%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--info, #6366f1) 7%, transparent), transparent 28%),
+        var(--bg-page);
     color: var(--text-main);
     font-family: 'Poppins', 'Segoe UI', sans-serif;
 }
@@ -45,8 +48,7 @@
    ═══════════════════════════════════════ */
 .sp-hero {
     position: relative;
-    padding: 48px 24px 40px;
-    text-align: center;
+    padding: 36px 24px 30px;
     overflow: hidden;
 }
 .sp-hero__bg {
@@ -59,14 +61,29 @@
 }
 .sp-hero__inner {
     position: relative;
-    max-width: 700px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 30px;
+    border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--border-color));
+    border-radius: 28px;
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--bg-card) 86%, transparent), color-mix(in srgb, var(--bg-elevated) 95%, transparent)),
+        linear-gradient(180deg, color-mix(in srgb, var(--primary) 4%, transparent), transparent 30%);
+    box-shadow:
+        0 20px 60px color-mix(in srgb, var(--shadow-color) 72%, transparent),
+        inset 0 1px 0 color-mix(in srgb, var(--text-main) 5%, transparent);
+    text-align: left;
+}
+
+.sp-hero__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
 }
 
 .sp-back {
-    position: absolute;
-    left: -60px;
-    top: 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -87,10 +104,33 @@
     transform: translateX(-2px);
 }
 
+.sp-hero__signal {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 8%, var(--bg-card));
+    border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border-color));
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.sp-hero__signal svg {
+    color: var(--primary);
+    font-size: 0.95rem;
+}
+
+.sp-hero__signal strong {
+    color: var(--text-main);
+    font-weight: 800;
+}
+
 .sp-hero__badge {
     width: 72px;
     height: 72px;
-    margin: 0 auto 18px;
+    margin: 0 0 18px;
     border-radius: 20px;
     background: color-mix(in srgb, var(--primary) 14%, var(--bg-card));
     border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border-color));
@@ -107,7 +147,7 @@
 }
 
 .sp-hero__title {
-    font-size: 2.4rem;
+    font-size: clamp(2.1rem, 4vw, 3.4rem);
     font-weight: 800;
     margin: 0 0 8px;
     letter-spacing: -0.5px;
@@ -115,10 +155,33 @@
     animation: spFadeUp 0.6s ease both;
 }
 .sp-hero__sub {
+    max-width: 620px;
     font-size: 1rem;
     color: var(--text-muted);
     margin: 0 0 28px;
     animation: spFadeUp 0.6s ease both 0.1s;
+}
+
+.sp-hero__games {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 24px;
+}
+
+.sp-hero__game {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-elevated) 84%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border-color));
+    color: var(--text-main);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
 }
 
 @keyframes spFadeUp {
@@ -129,8 +192,8 @@
 /* Search */
 .sp-hero__search {
     position: relative;
-    max-width: 560px;
-    margin: 0 auto 24px;
+    max-width: 620px;
+    margin: 0 0 24px;
     animation: spFadeUp 0.6s ease both 0.2s;
 }
 .sp-hero__search-icon {
@@ -186,36 +249,35 @@
 
 /* Stats */
 .sp-hero__stats {
-    display: inline-flex;
-    align-items: center;
-    gap: 20px;
-    padding: 12px 28px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    width: min(100%, 620px);
     animation: spFadeUp 0.6s ease both 0.3s;
 }
 .sp-hero__stat {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 2px;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 16px;
+    background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
 }
 .sp-hero__stat strong {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 800;
     color: var(--primary);
 }
 .sp-hero__stat span {
-    font-size: 0.65rem;
+    font-size: 0.68rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 .sp-hero__stat-sep {
-    width: 1px;
-    height: 28px;
-    background: var(--border-color);
+    display: none;
 }
 
 /* ═══════════════════════════════════════
@@ -239,13 +301,17 @@
     padding: 16px 18px;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 14px;
+    border-radius: 18px;
     cursor: pointer;
     font-family: inherit;
     text-align: left;
     color: var(--text-main);
     transition: all 0.3s ease;
     animation: spFadeUp 0.5s ease both;
+    position: relative;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 90%, transparent), color-mix(in srgb, var(--bg-elevated) 92%, transparent));
 }
 .sp-action:hover {
     transform: translateY(-3px);
@@ -323,9 +389,16 @@
 }
 .sp-faq__head {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
     margin-bottom: 20px;
+}
+.sp-faq__head-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
 }
 .sp-faq__head h2 {
     display: flex;
@@ -337,14 +410,44 @@
     color: var(--text-main);
 }
 .sp-faq__head h2 svg { color: var(--primary); font-size: 1.3rem; }
+.sp-faq__head-copy p {
+    margin: 0;
+    max-width: 620px;
+    font-size: 0.86rem;
+    line-height: 1.65;
+    color: var(--text-muted);
+}
+.sp-faq__meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
 .sp-faq__count {
-    margin-left: auto;
     padding: 4px 14px;
     border-radius: 20px;
     background: color-mix(in srgb, var(--primary) 12%, var(--bg-elevated));
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--primary);
+}
+
+.sp-faq__reset {
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.sp-faq__reset:hover {
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border-color));
+    color: var(--text-main);
 }
 
 /* Category Tabs */
@@ -1035,17 +1138,38 @@
         gap: 14px;
     }
     .sp-contact { grid-column: 1 / -1; }
-    .sp-back { position: relative; left: 0; margin-bottom: 10px; display: inline-flex; }
+    .sp-hero__inner { padding: 24px; }
+    .sp-back { margin-bottom: 0; }
 }
 @media (max-width: 700px) {
     .sp-hero { padding: 28px 16px 28px; }
-    .sp-hero__title { font-size: 1.7rem; }
+    .sp-hero__inner { padding: 20px; border-radius: 22px; }
+    .sp-hero__top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .sp-hero__signal {
+        justify-content: space-between;
+    }
+    .sp-hero__title { font-size: 1.9rem; }
     .sp-hero__badge { width: 56px; height: 56px; font-size: 1.7rem; border-radius: 16px; }
     .sp-actions, .sp-body { padding-left: 16px; padding-right: 16px; }
-    .sp-actions__grid { grid-template-columns: 1fr; }
+    .sp-actions__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .sp-side { grid-template-columns: 1fr; }
     .sp-contact { grid-column: 1; }
     .sp-faq { padding: 20px 16px; border-radius: 14px; }
+    .sp-faq__head {
+        flex-direction: column;
+    }
+    .sp-faq__meta {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .sp-faq__cats {
+        flex-wrap: wrap;
+        overflow: visible;
+        padding-bottom: 0;
+    }
     .sp-q__head { padding: 14px 14px; gap: 10px; font-size: 0.85rem; }
     .sp-q__num { min-width: 32px; height: 32px; font-size: 0.65rem; border-radius: 8px; }
     .sp-q--open .sp-q__body > p { padding: 0 14px 14px 56px; }
@@ -1056,5 +1180,26 @@
     .sp-modal__btn { width: 100%; }
     .sp-row { flex-direction: column; }
     .sp-field--sm { flex: 1; }
-    .sp-hero__stats { padding: 10px 18px; gap: 14px; }
+    .sp-hero__stats { width: 100%; }
+}
+
+@media (max-width: 520px) {
+    .sp-actions__grid,
+    .sp-hero__stats,
+    .sp-modal__types {
+        grid-template-columns: 1fr;
+    }
+
+    .sp-modes {
+        flex-direction: column;
+    }
+
+    .sp-faq__meta {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .sp-faq__reset {
+        width: 100%;
+    }
 }

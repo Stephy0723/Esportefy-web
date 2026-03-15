@@ -132,6 +132,7 @@
   z-index: 5;
   text-align: center;
   max-width: 900px;
+  width: min(100%, 920px);
   padding: 0 24px;
   display: flex;
   flex-direction: column;
@@ -241,9 +242,9 @@
 
 /* ── CTA Buttons ── */
 .hero__actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 280px));
   gap: 16px;
-  flex-wrap: wrap;
   justify-content: center;
   margin-bottom: 60px;
 }
@@ -251,8 +252,10 @@
 .hero__btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 14px 34px;
+  min-height: 58px;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -281,15 +284,21 @@
 }
 
 .hero__btn--outline {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(12, 15, 24, 0.62);
   color: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 38px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px);
 }
 
 .hero__btn--outline:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(17, 22, 34, 0.82);
+  border-color: rgba(142, 219, 21, 0.56);
+  box-shadow:
+    0 0 0 1px rgba(142, 219, 21, 0.2),
+    0 20px 42px rgba(0, 0, 0, 0.3);
   transform: translateY(-3px);
 }
 
@@ -536,6 +545,14 @@
    RESPONSIVE
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  .hero {
+    min-height: 640px;
+  }
+
+  .hero__content {
+    padding: 36px 20px 0;
+  }
+
   .about-grid {
     grid-template-columns: 1fr;
   }
@@ -545,14 +562,15 @@
   }
 
   .hero__actions {
-    flex-direction: column;
-    width: 100%;
-    padding: 0 20px;
+    grid-template-columns: minmax(0, 1fr);
+    width: min(100%, 360px);
+    padding: 0;
+    margin-bottom: 36px;
   }
 
   .hero__btn {
-    justify-content: center;
     width: 100%;
+    padding: 14px 24px;
   }
 
   .hud {
@@ -566,6 +584,27 @@
 }
 
 @media (max-width: 480px) {
+  .hero {
+    min-height: 620px;
+  }
+
+  .hero__title {
+    font-size: clamp(2.85rem, 16vw, 4.8rem);
+    margin-bottom: 18px;
+  }
+
+  .hero__subtitle {
+    font-size: 1.02rem;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+
+  .hero__btn {
+    min-height: 54px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
   .about-card {
     padding: 28px 20px;
   }

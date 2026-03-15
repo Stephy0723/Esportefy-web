@@ -16,6 +16,52 @@ const UserSchema = new mongoose.Schema({
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isOrganizer: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
+    isBanned: { type: Boolean, default: false },
+    banReason: { type: String, default: '' },
+    bannedAt: { type: Date, default: null },
+    roles: {
+        type: [String],
+        enum: ['player', 'organizer', 'content-creator', 'coach', 'caster', 'sponsor', 'analyst'],
+        default: ['player']
+    },
+    roleApplications: {
+        organizer: {
+            status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+            appliedAt: { type: Date, default: null },
+            reviewedAt: { type: Date, default: null },
+            data: { type: mongoose.Schema.Types.Mixed, default: {} }
+        },
+        'content-creator': {
+            status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+            appliedAt: { type: Date, default: null },
+            reviewedAt: { type: Date, default: null },
+            data: { type: mongoose.Schema.Types.Mixed, default: {} }
+        },
+        coach: {
+            status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+            appliedAt: { type: Date, default: null },
+            reviewedAt: { type: Date, default: null },
+            data: { type: mongoose.Schema.Types.Mixed, default: {} }
+        },
+        caster: {
+            status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+            appliedAt: { type: Date, default: null },
+            reviewedAt: { type: Date, default: null },
+            data: { type: mongoose.Schema.Types.Mixed, default: {} }
+        },
+        sponsor: {
+            status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+            appliedAt: { type: Date, default: null },
+            reviewedAt: { type: Date, default: null },
+            data: { type: mongoose.Schema.Types.Mixed, default: {} }
+        },
+        analyst: {
+            status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+            appliedAt: { type: Date, default: null },
+            reviewedAt: { type: Date, default: null },
+            data: { type: mongoose.Schema.Types.Mixed, default: {} }
+        }
+    },
 
 
     // --- Etapa 1: Datos Personales ---
@@ -27,6 +73,7 @@ const UserSchema = new mongoose.Schema({
 
     // --- Etapa 2: Gaming Core ---
     selectedGames: { type: [String], default: [] }, // Cambiado a default [] para evitar errores de .map()
+    communityGameSubscriptions: { type: [String], default: [] },
 
     // --- Etapa 3: Perfil Pro ---
     experience: { type: [String], default: [] },

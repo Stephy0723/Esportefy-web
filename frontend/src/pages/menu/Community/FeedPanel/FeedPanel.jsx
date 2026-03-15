@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
+import { useNotification } from '../../../../context/NotificationContext';
 import './FeedPanel.css';
 
 const GAME_OPTIONS = [
@@ -40,6 +41,41 @@ const DEMO_POSTS = [
         likes: 67, comments: 15, shares: 44, liked: false,
     },
 ];
+
+const FEED_SAVED_POSTS_KEY = 'community_feed_saved_posts';
+const FEED_SHARE_COUNTS_KEY = 'community_feed_share_counts';
+
+const readStoredValue = (key, fallback) => {
+    if (typeof window === 'undefined') return fallback;
+
+    try {
+        const raw = window.localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch {
+        return fallback;
+    }
+};
+
+const writeStoredValue = (key, value) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+        // Ignore storage write failures in demo feed actions.
+    }
+};
+
+const getPostShareUrl = (postId) => {
+    if (typeof window === 'undefined') return `#post-${postId}`;
+    return `${window.location.origin}${window.location.pathname}#post-${postId}`;
+};
+
+const buildShareText = (post) => {
+    const base = (post.content || '').trim();
+    if (base.length <= 140) return base;
+    return `${base.slice(0, 137).trim()}...`;
+};
 
 /* ───────────── POST CREATOR ───────────── */
 
@@ -268,19 +304,32 @@ const PollWidget = ({ poll }) => {
 
 /* ───────────── SINGLE POST ───────────── */
 
-const FeedPost = ({ post }) => {
+const FeedPost = ({
+    post,
+    isSaved,
+    onToggleSave,
+    onShare,
+    onCopyText,
+    onCopyLink,
+    onHidePost,
+    onReportPost,
+}) => {
     const { user } = useAuth();
     const [liked, setLiked] = useState(post.liked);
     const [likes, setLikes] = useState(post.likes);
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [imgIdx, setImgIdx] = useState(0);
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef(null);
 
     const getUserInitials = () => {
         if (!user) return '?';
         const name = user.username || user.name || user.email || '';
         return name.charAt(0).toUpperCase();
     };
+
+    const hasAvatarImage = typeof post.avatar === 'string' && /^(https?:|data:image)/.test(post.avatar);
 
     const toggleLike = () => {
         setLiked(!liked);
@@ -289,11 +338,39 @@ const FeedPost = ({ post }) => {
 
     const formatNum = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
 
+    useEffect(() => {
+        if (!showMenu) return undefined;
+
+        const handlePointerDown = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') setShowMenu(false);
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            window.removeEventListener('keydown', handleEscape);
+        };
+    }, [showMenu]);
+
     return (
-        <article className="fp-post" style={{ '--post-color': post.game?.color || '#a35ddf' }}>
+        <article id={`post-${post.id}`} className="fp-post" style={{ '--post-color': post.game?.color || '#a35ddf' }}>
             {/* Header */}
             <div className="fp-post__header">
-                <div className="fp-post__avatar">{post.avatar}</div>
+                <div className="fp-post__avatar">
+                    {hasAvatarImage ? (
+                        <img src={post.avatar} alt={post.author} />
+                    ) : (
+                        post.avatar
+                    )}
+                </div>
                 <div className="fp-post__meta">
                     <span className="fp-post__author">{post.author}</span>
                     <span className="fp-post__time">{post.time}</span>
@@ -303,7 +380,41 @@ const FeedPost = ({ post }) => {
                         <i className='bx bxs-game'></i> {post.game.name}
                     </span>
                 )}
-                <button className="fp-post__more"><i className='bx bx-dots-horizontal-rounded'></i></button>
+                <div className="fp-post__menu-wrap" ref={menuRef}>
+                    <button
+                        className={'fp-post__more' + (showMenu ? ' active' : '')}
+                        onClick={() => setShowMenu(prev => !prev)}
+                        aria-label="Acciones de la publicacion"
+                        aria-expanded={showMenu}
+                        aria-haspopup="menu"
+                    >
+                        <i className='bx bx-dots-horizontal-rounded'></i>
+                    </button>
+                    {showMenu && (
+                        <div className="fp-post__menu" role="menu">
+                            <button className="fp-post__menu-item" onClick={() => { onToggleSave(post); setShowMenu(false); }}>
+                                <i className={`bx ${isSaved ? 'bx-bookmark-minus' : 'bx-bookmark-plus'}`}></i>
+                                <span>{isSaved ? 'Quitar de guardados' : 'Guardar publicacion'}</span>
+                            </button>
+                            <button className="fp-post__menu-item" onClick={() => { onCopyText(post); setShowMenu(false); }}>
+                                <i className='bx bx-copy-alt'></i>
+                                <span>Copiar texto</span>
+                            </button>
+                            <button className="fp-post__menu-item" onClick={() => { onCopyLink(post); setShowMenu(false); }}>
+                                <i className='bx bx-link-alt'></i>
+                                <span>Copiar enlace</span>
+                            </button>
+                            <button className="fp-post__menu-item" onClick={() => { onReportPost(post); setShowMenu(false); }}>
+                                <i className='bx bx-flag'></i>
+                                <span>Reportar</span>
+                            </button>
+                            <button className="fp-post__menu-item fp-post__menu-item--danger" onClick={() => { onHidePost(post.id); setShowMenu(false); }}>
+                                <i className='bx bx-hide'></i>
+                                <span>Ocultar del feed</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Content */}
@@ -350,12 +461,16 @@ const FeedPost = ({ post }) => {
                     <i className='bx bx-message-rounded'></i>
                     <span>{formatNum(post.comments)}</span>
                 </button>
-                <button className="fp-post__action">
+                <button className="fp-post__action" onClick={() => onShare(post)}>
                     <i className='bx bx-share-alt'></i>
                     <span>{formatNum(post.shares)}</span>
                 </button>
-                <button className="fp-post__action fp-post__action--save">
-                    <i className='bx bx-bookmark'></i>
+                <button
+                    className={'fp-post__action fp-post__action--save' + (isSaved ? ' saved' : '')}
+                    onClick={() => onToggleSave(post)}
+                    aria-label={isSaved ? 'Quitar de guardados' : 'Guardar publicacion'}
+                >
+                    <i className={isSaved ? 'bx bxs-bookmark' : 'bx bx-bookmark'}></i>
                 </button>
             </div>
 
@@ -386,7 +501,15 @@ const FeedPost = ({ post }) => {
 
 const FeedPanel = ({ communityName, filterGame }) => {
     const { user } = useAuth();
-    const [posts, setPosts] = useState(DEMO_POSTS);
+    const { addToast, notify } = useNotification();
+    const [savedPosts, setSavedPosts] = useState(() => readStoredValue(FEED_SAVED_POSTS_KEY, []));
+    const [posts, setPosts] = useState(() => {
+        const storedShares = readStoredValue(FEED_SHARE_COUNTS_KEY, {});
+        return DEMO_POSTS.map((post) => ({
+            ...post,
+            shares: storedShares[post.id] ?? post.shares,
+        }));
+    });
     const [feedFilter, setFeedFilter] = useState('all');
 
     const handleNewPost = useCallback((postData) => {
@@ -411,6 +534,83 @@ const FeedPanel = ({ communityName, filterGame }) => {
         };
         setPosts(prev => [newPost, ...prev]);
     }, [user]);
+
+    const copyToClipboard = useCallback(async (value, successMessage) => {
+        try {
+            if (!navigator.clipboard?.writeText) throw new Error('clipboard-unavailable');
+            await navigator.clipboard.writeText(value);
+            addToast(successMessage, 'success');
+            return true;
+        } catch {
+            addToast('No se pudo copiar al portapapeles.', 'error');
+            return false;
+        }
+    }, [addToast]);
+
+    const toggleSavedPost = useCallback((post) => {
+        setSavedPosts((prev) => {
+            const alreadySaved = prev.includes(post.id);
+            const next = alreadySaved ? prev.filter((id) => id !== post.id) : [...prev, post.id];
+            writeStoredValue(FEED_SAVED_POSTS_KEY, next);
+            addToast(alreadySaved ? 'Publicacion eliminada de guardados.' : 'Publicacion guardada en tu lista.', alreadySaved ? 'info' : 'success');
+            return next;
+        });
+    }, [addToast]);
+
+    const copyPostText = useCallback(async (post) => {
+        await copyToClipboard(`${post.author}\n${post.content}`, 'Texto de la publicacion copiado.');
+    }, [copyToClipboard]);
+
+    const copyPostLink = useCallback(async (post) => {
+        await copyToClipboard(getPostShareUrl(post.id), 'Enlace de la publicacion copiado.');
+    }, [copyToClipboard]);
+
+    const handleSharePost = useCallback(async (post) => {
+        const shareUrl = getPostShareUrl(post.id);
+        const sharePayload = {
+            title: `Publicacion de ${post.author}`,
+            text: buildShareText(post),
+            url: shareUrl,
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(sharePayload);
+                addToast('Publicacion compartida correctamente.', 'success');
+            } else {
+                const copied = await copyToClipboard(`${sharePayload.text}\n${shareUrl}`, 'Enlace listo para compartir.');
+                if (!copied) return;
+            }
+
+            const currentPost = posts.find((item) => item.id === post.id);
+            const nextShares = (currentPost?.shares ?? post.shares ?? 0) + 1;
+
+            setPosts((prev) => prev.map((item) => (
+                item.id === post.id ? { ...item, shares: nextShares } : item
+            )));
+
+            writeStoredValue(
+                FEED_SHARE_COUNTS_KEY,
+                posts.reduce((acc, item) => {
+                    acc[item.id] = item.id === post.id ? nextShares : item.shares;
+                    return acc;
+                }, {})
+            );
+        } catch (error) {
+            if (error?.name !== 'AbortError') {
+                addToast('No se pudo compartir la publicacion.', 'error');
+            }
+        }
+    }, [addToast, copyToClipboard, posts]);
+
+    const hidePost = useCallback((postId) => {
+        setPosts((prev) => prev.filter((post) => post.id !== postId));
+        addToast('Publicacion ocultada del feed.', 'info');
+    }, [addToast]);
+
+    const reportPost = useCallback((post) => {
+        notify('info', 'Reporte enviado', `Revisaremos la publicacion de ${post.author}.`);
+    }, [notify]);
 
     const filteredPosts = feedFilter === 'all'
         ? posts
@@ -447,7 +647,19 @@ const FeedPanel = ({ communityName, filterGame }) => {
             {/* Posts */}
             <div className="fp-feed__posts">
                 {displayPosts.length > 0 ? (
-                    displayPosts.map(p => <FeedPost key={p.id} post={p} />)
+                    displayPosts.map((p) => (
+                        <FeedPost
+                            key={p.id}
+                            post={p}
+                            isSaved={savedPosts.includes(p.id)}
+                            onToggleSave={toggleSavedPost}
+                            onShare={handleSharePost}
+                            onCopyText={copyPostText}
+                            onCopyLink={copyPostLink}
+                            onHidePost={hidePost}
+                            onReportPost={reportPost}
+                        />
+                    ))
                 ) : (
                     <div className="fp-feed__empty">
                         <i className='bx bx-message-alt-detail'></i>

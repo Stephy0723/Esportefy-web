@@ -1496,8 +1496,9 @@ $navbar-height: 80px;
   }
 
   .tn__command-bar {
-    flex-direction: column;
+    flex-direction: column; gap: 10px;
     .tn__cmd-search { min-width: 100%; }
+    .tn__cmd-actions { width: 100%; justify-content: flex-end; }
     .tn__cmd-create span { display: none; }
   }
   .tn__filters-panel {
@@ -1514,6 +1515,8 @@ $navbar-height: 80px;
     position: fixed; top: 0; right: 0; height: 100vh; width: 280px; z-index: $z-index-sidebar;
     background: var(--bg-card); box-shadow: -5px 0 15px rgba(0,0,0,0.5);
     transform: translateX(100%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     &.open { transform: translateX(0); }
   }
   .sidebar-overlay-mobile {
@@ -1537,8 +1540,49 @@ $navbar-height: 80px;
   .tournaments-grid { grid-template-columns: 1fr; gap: 16px; }
   .tournament-card-pro .card-content { padding: 14px; }
   .tournament-card-pro .card-content .card-actions { grid-template-columns: 1fr; }
-  .tn__command-bar .tn__cmd-actions { width: 100%; justify-content: flex-end; }
   .tn__sponsors-showcase .tn__spn-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .tn__command-bar {
+    gap: 10px;
+
+    .tn__cmd-search {
+      min-width: 100%; order: 1;
+
+      input { padding: 10px 8px; font-size: 0.8rem; }
+
+      .tn__cmd-filter-btn span { display: none; }
+    }
+
+    .tn__cmd-actions {
+      order: 2; width: 100%;
+      justify-content: center; gap: 6px;
+    }
+
+    .tn__cmd-icon-btn,
+    .tn__cmd-create {
+      flex: 1; height: 40px;
+      border-radius: 10px; font-size: 1.05rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .tn__cmd-create {
+      span { display: none; }
+    }
+  }
+
+  .tn__stats-bar {
+    flex-direction: column; align-items: stretch;
+    padding: 12px; gap: 8px;
+
+    .tn__stat {
+      padding: 8px 12px;
+      background: var(--bg-elevated);
+      border-radius: 10px;
+      justify-content: flex-start;
+    }
+
+    .tn__stat-divider { display: none; }
+  }
 }
 
 // ═══════════════════════════════════════════════════════

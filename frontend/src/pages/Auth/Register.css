@@ -23,17 +23,62 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 40px 80px; /* Espacio de respiraciÃ³n (Sistema de 8pts) */
+    padding: 40px 80px;
     background-color: var(--bg-page);
     position: relative;
-    max-width: 600px;
+    max-width: 640px;
 }
 
 /* Header y Textos */
-.auth-nav { position: absolute; top: 40px; left: 80px; }
+.auth-nav {
+    position: absolute;
+    top: 32px;
+    left: 80px;
+    right: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
 .brand { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
 
-.header-text { margin-top: 50px; margin-bottom: 40px; }
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    color: var(--text-main);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(var(--primary-rgb), 0.28);
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    font-size: 0.84rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nav-links a:hover {
+    transform: translateY(-1px);
+    border-color: var(--primary);
+    box-shadow:
+        0 16px 30px rgba(0, 0, 0, 0.24),
+        0 0 0 1px rgba(var(--primary-rgb), 0.16);
+}
+
+.header-text { margin-top: 68px; margin-bottom: 40px; }
 .header-text h1 { 
     font-size: 3rem; 
     margin: 10px 0; 
@@ -54,57 +99,72 @@
    ========================================= */
 .input-row {
     display: flex;
-    align-items: flex-end; /* Alinea el texto del label con la lÃ­nea base */
-    margin-bottom: 30px;
+    align-items: flex-start;
+    margin-bottom: 26px;
     gap: 20px;
-}
-
-/* Etiqueta (Email, ContraseÃ±a...) */
-.input-row label {
-    width: 140px;          /* Ancho fijo para alineaciÃ³n perfecta */
-    flex-shrink: 0;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    text-align: left;
-    padding-bottom: 10px;  /* SeparaciÃ³n visual con la lÃ­nea */
-    letter-spacing: 1px;
 }
 
 .input-wrapper {
     flex-grow: 1;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.input-wrapper label {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0 0 10px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: left;
+    letter-spacing: 1px;
 }
 
 /* EL INPUT REAL (Transparente y minimalista) */
-.input-wrapper input {
+.input-wrapper input,
+.input-wrapper select {
     width: 100%;
-    background-color: transparent !important; /* SIN FONDO */
+    background-color: transparent !important;
     border: none !important;
-    border-bottom: 1px solid var(--border-color) !important; /* SOLO LÃNEA ABAJO */
+    border-bottom: 1px solid var(--border-color) !important;
     border-radius: 0 !important;
     padding: 10px 35px 10px 0;
-    
+    min-height: 44px;
     color: var(--text-main);
     font-size: 1rem;
     font-weight: 500;
     font-family: inherit;
-    transition: border-color 0.3s ease;
-    
-    /* Eliminar estilos por defecto */
+    transition: border-color 0.3s ease, color 0.3s ease;
     box-shadow: none !important;
     outline: none !important;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .input-wrapper input::placeholder {
     color: var(--text-muted);
-    opacity: 0.5;
+    opacity: 0.56;
+}
+
+.input-wrapper select {
+    cursor: pointer;
+    color: var(--text-main);
+}
+
+.input-wrapper select option {
+    background: var(--bg-page);
+    color: var(--text-main);
 }
 
 /* AL HACER CLICK (FOCUS) */
-.input-wrapper input:focus {
-    border-bottom: 2px solid var(--primary) !important; /* La lÃ­nea se pone VERDE */
+.input-wrapper input:focus,
+.input-wrapper select:focus {
+    border-bottom: 2px solid var(--primary) !important;
     background: transparent !important;
 }
 
@@ -130,8 +190,46 @@
 }
 
 /* El icono tambiÃ©n se pone verde al enfocar */
-.input-wrapper input:focus + i { color: var(--primary); }
+.input-wrapper input:focus + i,
+.input-wrapper select:focus + i { color: var(--primary); }
 .input-wrapper i.toggle-pass { pointer-events: auto; cursor: pointer; }
+
+.input-prefix {
+    position: absolute;
+    left: 0;
+    bottom: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgba(var(--primary-rgb), 0.12);
+    color: var(--primary);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+}
+
+.input-prefix + input {
+    padding-left: 42px;
+}
+
+.input-wrapper.input-error input,
+.input-wrapper.input-error select {
+    border-bottom-color: #ff5b4d !important;
+}
+
+.input-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.82;
+    filter: invert(1);
+    cursor: pointer;
+}
+
+.light-mode .input-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: none;
+}
 
 
 /* =========================================
@@ -265,15 +363,66 @@
 }
 
 /* Responsive */
-@media (max-width: 900px) { .auth-right { display: none; } } /* Ocultar imagen en tablets */
+@media (max-width: 900px) {
+    .auth-right { display: none; }
+    .auth-left {
+        max-width: none;
+        padding: 34px 32px 28px;
+    }
+    .auth-nav {
+        position: static;
+        margin-bottom: 24px;
+    }
+    .header-text {
+        margin-top: 0;
+    }
+}
+
 @media (max-width: 480px) {
-    .auth-left { padding: 20px; }
+    .auth-left { padding: 22px 16px 18px; }
+    .auth-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    .nav-links {
+        width: 100%;
+    }
+    .nav-links a {
+        width: 100%;
+    }
+    .header-text h1 {
+        font-size: 2.35rem;
+    }
     .input-row { flex-direction: column; align-items: flex-start; gap: 5px; }
-    .input-row label { width: 100%; padding-bottom: 0; margin-bottom: 5px; }
+    .input-wrapper label { padding-bottom: 8px; margin-bottom: 0; }
     
     .options-row { flex-direction: column; align-items: flex-start; gap: 15px; }
     .form-actions { flex-direction: column; }
     .btn-secondary { width: 100%; }
+    .step-title {
+        font-size: 1.3rem;
+        margin-bottom: 18px;
+    }
+    .games-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+    .game-card-pro {
+        min-height: 152px;
+        padding: 16px 10px 14px;
+    }
+    .game-img-wrapper {
+        width: 52px;
+        height: 52px;
+    }
+    .game-card-pro span:last-child {
+        font-size: 0.69rem;
+    }
+    .selection-check {
+        width: 22px;
+        height: 22px;
+    }
 }
 /* =========================================
    STEP INDICATOR (CÃRCULOS 1-2-3-4)
@@ -371,11 +520,16 @@
 @media (max-width: 600px) {
     .input-row.split {
         flex-direction: column; /* Columna vertical */
-        gap: 0;                 /* Sin espacio extra, usa el margin-bottom normal */
+        gap: 14px;
     }
     
     .step-line {
         width: 30px; /* LÃ­neas mÃ¡s cortas en pantalla pequeÃ±a */
+    }
+
+    .input-wrapper input,
+    .input-wrapper select {
+        font-size: 0.95rem;
     }
 }
 /* =========================================
@@ -385,33 +539,28 @@
 /* 1. Contenedor de la cuadrÃ­cula */
 .games-grid {
     display: grid;
-    /* Columnas automÃ¡ticas: mÃ­nimo 100px de ancho, mÃ¡ximo lo que quepa */
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 14px;
     margin-top: 20px;
     margin-bottom: 40px;
 }
 
 /* 2. La Tarjeta del Juego INDIVIDUAL */
 .game-card-pro {
-    /* IMPORTANTE: Fondo transparente para tomar el color de la pÃ¡gina */
     background-color: transparent; 
-    
-    /* Borde dinÃ¡mico: gris oscuro en tema oscuro, gris claro en tema claro */
     border: 1px solid var(--border-color); 
-    
     border-radius: 12px;
-    padding: 20px 10px;
+    padding: 18px 12px 16px;
     cursor: pointer;
-    
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    
     transition: all 0.2s ease;
     position: relative;
+    overflow: hidden;
+    min-height: 178px;
 }
 
 /* 3. Hover (Al pasar el mouse) */
@@ -426,6 +575,16 @@
     border-color: var(--primary);       /* Borde Verde NeÃ³n */
     background-color: rgba(142, 219, 21, 0.05); /* Fondo verde muy, muy suave */
     box-shadow: 0 0 15px rgba(142, 219, 21, 0.15); /* Resplandor verde */
+}
+
+.game-card-pro.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.game-card-pro.is-disabled:hover {
+    transform: none;
+    border-color: var(--border-color);
 }
 
 /* 5. Contenedor de la imagen (Icono del juego) */
@@ -457,19 +616,56 @@
 }
 
 /* 6. Texto (Nombre del juego) */
-.game-card-pro span {
+.game-card-pro__name {
     font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    
-    /* El color del texto cambia automÃ¡ticamente */
     color: var(--text-muted); 
 }
 
 /* Al seleccionar, el texto se pone del color principal (Blanco/Negro) */
-.game-card-pro.selected span {
+.game-card-pro.selected .game-card-pro__name {
     color: var(--text-main);
+}
+
+.selection-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: var(--primary);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+}
+
+.selection-check::before {
+    content: '';
+    position: absolute;
+    top: 48%;
+    left: 50%;
+    width: 6px;
+    height: 11px;
+    border-right: 2px solid #071100;
+    border-bottom: 2px solid #071100;
+    transform: translate(-50%, -58%) rotate(45deg);
+}
+
+.selection-check--inline {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.selection-check--inline::before {
+    width: 4px;
+    height: 8px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
 }
 /* =========================================
    PASO 3: EXPERIENCIA, PLATAFORMA Y METAS
@@ -497,6 +693,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
+    overflow: hidden;
 }
 
 /* Icono del Nivel (Medalla, Trofeo...) */
@@ -567,6 +764,7 @@
     display: flex;
     align-items: center;
     gap: 8px; /* Espacio entre icono y texto */
+    position: relative;
 }
 
 .platform-chip i { font-size: 1.1rem; }
@@ -608,6 +806,8 @@
     gap: 10px;
     transition: all 0.2s;
     text-align: center;
+    position: relative;
+    overflow: hidden;
 }
 
 .goal-card i {
@@ -628,8 +828,21 @@
 .error-text {
     display: block;
     margin-top: 8px;
+    margin-bottom: 0;
     font-size: 0.95rem;
     line-height: 1.35;
+}
+
+.helper-text + .helper-text,
+.helper-text + .error-text,
+.error-text + .helper-text,
+.error-text + .error-text {
+    margin-top: 6px;
+}
+
+.helper-text + .input-row.split,
+.error-text + .input-row.split {
+    margin-top: 18px;
 }
 
 .helper-text {
@@ -662,6 +875,11 @@
     .platform-chip {
         flex: 1; /* Que se estiren en mÃ³vil */
         justify-content: center;
+    }
+
+    .platforms-row {
+        display: grid;
+        grid-template-columns: 1fr;
     }
 }
 /* =========================================
@@ -700,13 +918,15 @@
 
 /* El "Tick" o palomita (creado con CSS puro) */
 .terms-checkbox:checked::after {
-    content: 'âœ”';
-    font-size: 14px;
-    color: #000; /* Tick negro sobre fondo verde */
+    content: '';
     position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: bold;
+    top: 48%;
+    left: 50%;
+    width: 5px;
+    height: 10px;
+    border-right: 2px solid #071100;
+    border-bottom: 2px solid #071100;
+    transform: translate(-50%, -58%) rotate(45deg);
 }
 
 /* El Texto de los tÃ©rminos */
@@ -714,6 +934,14 @@
     font-size: 0.85rem;
     color: var(--text-muted);
     line-height: 1.5;
+}
+
+.terms-row.input-error .terms-checkbox {
+    border-color: #ff5b4d;
+}
+
+.terms-row.input-error .terms-text {
+    color: #ff8c83;
 }
 
 /* LOS ENLACES (Links) dentro del texto */

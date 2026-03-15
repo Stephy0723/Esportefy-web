@@ -184,7 +184,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
   const timeString = currentTime.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
   return (
-    <nav className={`nb ${scrolled ? 'nb--scrolled' : ''}`}>
+    <nav className={`nb ${scrolled ? 'nb--scrolled' : ''} ${activeUser ? 'nb--authed' : 'nb--guest'}`}>
       <div className="nb__inner">
 
         {/* ═══ LEFT: Menu + Logo + Breadcrumb ═══ */}
@@ -329,16 +329,18 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
           </button>
 
           {/* ── Notifications ── */}
-          <button
-            className="nb__icon-btn"
-            onClick={() => navigate('/notifications')}
-            title="Notificaciones"
-          >
-            <i className="bx bx-bell"></i>
-            {activeUser && hasUnread && (
-              <span className="nb__badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
-            )}
-          </button>
+          {activeUser && (
+            <button
+              className="nb__icon-btn"
+              onClick={() => navigate('/notifications')}
+              title="Notificaciones"
+            >
+              <i className="bx bx-bell"></i>
+              {hasUnread && (
+                <span className="nb__badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              )}
+            </button>
+          )}
 
           {/* ── Clock HUD (desktop only) ── */}
           <div className="nb__clock">
@@ -410,6 +412,15 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                   <Link to="/CalendarPage" className="nb__dropdown-item" onClick={() => setProfileOpen(false)}>
                     <i className="bx bx-calendar"></i> Calendario
                   </Link>
+
+                  {activeUser?.isAdmin && (
+                    <>
+                      <div className="nb__dropdown-sep" />
+                      <Link to="/admin" className="nb__dropdown-item nb__dropdown-item--admin" onClick={() => setProfileOpen(false)}>
+                        <i className="bx bx-shield-quarter"></i> Admin Panel
+                      </Link>
+                    </>
+                  )}
 
                   <div className="nb__dropdown-sep" />
 

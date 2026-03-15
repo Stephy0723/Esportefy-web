@@ -13,6 +13,8 @@ const FILTERS = [
   { key: 'team', label: 'Equipos', icon: 'bx-group', dot: '#4facfe' },
   { key: 'tournament', label: 'Torneos', icon: 'bx-trophy', dot: '#FFD700' },
   { key: 'social', label: 'Social', icon: 'bx-user-plus', dot: '#f093fb' },
+  { key: 'support', label: 'Soporte', icon: 'bx-support', dot: '#6366f1' },
+  { key: 'admin', label: 'Admin', icon: 'bx-shield-quarter', dot: '#a855f7' },
 ];
 
 const Notifications = () => {

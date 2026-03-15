@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import CommunityPost from '../models/CommunityPost.js';
 import Community from '../models/Community.js';
 import User from '../models/User.js';
+import { normalizeCommunityGameId, normalizeCommunityGameIds } from '../utils/communityGames.js';
 
 const UPLOAD_DIR = './uploads/community/';
 const POST_MAX_LENGTH = 1200;
@@ -277,6 +278,47 @@ const toAuditLogPayload = (entry) => {
     metadata: entry?.metadata && typeof entry.metadata === 'object' ? entry.metadata : {},
     createdAt: entry?.createdAt || null
   };
+};
+
+const getNormalizedUserGameSubscriptions = (userDoc) =>
+  normalizeCommunityGameIds(userDoc?.communityGameSubscriptions || []);
+
+const buildGameHubStatsPayload = ({ gameId, usersCount = 0, activeCount = 0, joined = false }) => ({
+  gameId,
+  usersCount: Number(usersCount || 0),
+  activeCount: Number(activeCount || 0),
+  joined: Boolean(joined)
+});
+
+const aggregateCommunityGameSubscriptions = async () => {
+  const rows = await User.aggregate([
+    {
+      $project: {
+        communityGameSubscriptions: {
+          $ifNull: ['$communityGameSubscriptions', []]
+        }
+      }
+    },
+    { $unwind: '$communityGameSubscriptions' },
+    {
+      $group: {
+        _id: '$communityGameSubscriptions',
+        usersCount: { $sum: 1 }
+      }
+    }
+  ]);
+
+  return rows.reduce((acc, row) => {
+    const gameId = normalizeCommunityGameId(row?._id || '');
+    if (!gameId) return acc;
+    acc[gameId] = buildGameHubStatsPayload({
+      gameId,
+      usersCount: row?.usersCount || 0,
+      activeCount: row?.usersCount || 0,
+      joined: false
+    });
+    return acc;
+  }, {});
 };
 
 const storage = multer.diskStorage({
@@ -895,6 +937,102 @@ export const transferCommunityOwnership = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ message: 'Error al transferir ownership', error: error.message });
+  }
+};
+
+export const getGameHubStatsIndex = async (req, res) => {
+  try {
+    const [viewer, aggregatedStats] = await Promise.all([
+      User.findById(req.userId).select('communityGameSubscriptions').lean(),
+      aggregateCommunityGameSubscriptions()
+    ]);
+
+    const joinedGameIds = getNormalizedUserGameSubscriptions(viewer);
+    const allGameIds = new Set([
+      ...Object.keys(aggregatedStats),
+      ...joinedGameIds
+    ]);
+
+    const stats = Array.from(allGameIds)
+      .sort((a, b) => String(a).localeCompare(String(b), 'es'))
+      .map((gameId) => {
+        const base = aggregatedStats[gameId] || buildGameHubStatsPayload({ gameId });
+        return buildGameHubStatsPayload({
+          ...base,
+          gameId,
+          joined: joinedGameIds.includes(gameId)
+        });
+      });
+
+    return res.status(200).json({ stats });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al obtener estadisticas de juegos', error: error.message });
+  }
+};
+
+export const getGameHubStats = async (req, res) => {
+  try {
+    const gameId = normalizeCommunityGameId(req.params?.gameId);
+    if (!gameId) {
+      return res.status(400).json({ message: 'Juego invalido' });
+    }
+
+    const [viewer, aggregatedStats] = await Promise.all([
+      User.findById(req.userId).select('communityGameSubscriptions').lean(),
+      aggregateCommunityGameSubscriptions()
+    ]);
+
+    const joinedGameIds = getNormalizedUserGameSubscriptions(viewer);
+    const base = aggregatedStats[gameId] || buildGameHubStatsPayload({ gameId });
+
+    return res.status(200).json({
+      stats: buildGameHubStatsPayload({
+        ...base,
+        gameId,
+        joined: joinedGameIds.includes(gameId)
+      })
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al obtener estadisticas del juego', error: error.message });
+  }
+};
+
+export const joinGameHub = async (req, res) => {
+  try {
+    const gameId = normalizeCommunityGameId(req.params?.gameId);
+    if (!gameId) {
+      return res.status(400).json({ message: 'Juego invalido' });
+    }
+
+    const user = await User.findById(req.userId).select('communityGameSubscriptions');
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    const currentSubscriptions = getNormalizedUserGameSubscriptions(user);
+    const alreadyJoined = currentSubscriptions.includes(gameId);
+
+    if (!alreadyJoined) {
+      user.communityGameSubscriptions = normalizeCommunityGameIds([
+        ...currentSubscriptions,
+        gameId
+      ]);
+      await user.save();
+    }
+
+    const usersCount = await User.countDocuments({ communityGameSubscriptions: gameId });
+
+    return res.status(200).json({
+      stats: buildGameHubStatsPayload({
+        gameId,
+        usersCount,
+        activeCount: usersCount,
+        joined: true
+      }),
+      alreadyJoined
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al unirse al hub del juego', error: error.message });
   }
 };
 

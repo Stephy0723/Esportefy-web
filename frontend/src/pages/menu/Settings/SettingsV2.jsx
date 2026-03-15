@@ -1520,7 +1520,10 @@ export default function SettingsV2() {
                                     <FaExternalLinkAlt className="stv2-support-card__arrow" />
                                 </div>
 
-                                <div className="stv2-support-card" onClick={() => navigate('/report')}>
+                                <div
+                                    className="stv2-support-card"
+                                    onClick={() => setFeedbackModal({ open: true, type: 'bug', message: '', submitting: false })}
+                                >
                                     <div className="stv2-support-card__icon-wrapper stv2-support-card__icon-wrapper--warning">
                                         <FaFlag className="stv2-support-card__icon" />
                                     </div>
@@ -1867,8 +1870,17 @@ export default function SettingsV2() {
                 {/* Header */}
                 <header className="stv2__header">
                     <div className="stv2__header-content">
-                        <h1>Configuración</h1>
-                        <p>Gestiona tu cuenta, conexiones y preferencias</p>
+                        <span className="stv2__header-kicker">Centro de control</span>
+                        <div className="stv2__header-main">
+                            <div>
+                                <h1>Configuración</h1>
+                                <p>Gestiona tu cuenta, conexiones y preferencias</p>
+                            </div>
+                            <div className="stv2__header-badges">
+                                <span className="stv2__header-chip stv2__header-chip--active">{currentTab.label}</span>
+                                <span className="stv2__header-chip">{currentTab.description}</span>
+                            </div>
+                        </div>
                     </div>
                 </header>
 

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import { persistAuthSession } from '../../utils/authSession';
+import { getGameIdFromRoutePath, joinGameHub } from '../menu/Community/gameHub.service';
 import './Login.css'; 
 
 // 1. IMPORTAR CONTEXTO DE TEMA
@@ -15,6 +16,7 @@ import bgBlack from '../../assets/images/login-white.png';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // 3. OBTENER EL VALOR DEL TEMA (isDarkMode)
   const { isDarkMode } = useTheme(); 
@@ -26,6 +28,9 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const redirectTarget = location.state?.from || null;
+  const redirectPath = typeof redirectTarget?.pathname === 'string' ? redirectTarget.pathname : '';
+  const pendingGameJoinId = getGameIdFromRoutePath(redirectPath);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,6 +80,19 @@ const Login = () => {
             
             window.dispatchEvent(new Event('user-update'));
 
+            if (pendingGameJoinId) {
+                try {
+                    await joinGameHub(pendingGameJoinId);
+                } catch (_) {
+                    // If the join fails, we still allow login to complete.
+                }
+            }
+
+            if (redirectPath) {
+                navigate(redirectPath, { replace: true });
+                return;
+            }
+
             navigate('/dashboard');
 
         } catch (err) {
@@ -91,7 +109,7 @@ const Login = () => {
 
   return (
     // 4. AGREGAR CLASE 'light-mode' SI NO ES MODO OSCURO (Para el formulario)
-    <div className={`auth-container-split ${!isDarkMode ? 'light-mode' : ''}`}>
+    <div className={`auth-container-split auth-container-split--login ${!isDarkMode ? 'light-mode' : ''}`}>
       
       {/* SECCIÓN IZQUIERDA: FORMULARIO */}
       <div className="auth-left">
@@ -101,7 +119,7 @@ const Login = () => {
             </span>            
             <div className="nav-links">
                 <Link to="/">Inicio</Link>
-                <Link to="/register" className="active">Unirse</Link>
+                <Link to="/register" state={location.state} className="active">Unirse</Link>
             </div>
         </div>
 
@@ -174,7 +192,7 @@ const Login = () => {
                 </div>
                 
                 <p className="footer-text">
-                    ¿Aún no tienes equipo? <Link to="/register">Crea tu cuenta de jugador</Link>
+                    ¿Aún no tienes equipo? <Link to="/register" state={location.state}>Crea tu cuenta de jugador</Link>
                 </p>
             </form>
              <div className="sidebar-credit">

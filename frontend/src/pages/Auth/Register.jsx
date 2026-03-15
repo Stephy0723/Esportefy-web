@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import './Register.css';
@@ -11,13 +11,7 @@ import bgWhite from '../../assets/images/login-black.png'; // Imagen Oscura
 import bgBlack from '../../assets/images/login-white.png'; // Imagen Clara (Asegúrate que exista con este nombre)
 
 import { GAME_IMAGES } from '../../data/gameImages';
-import { SUPPORTED_GAME_NAMES } from '../../../../shared/supportedGames.js';
-
-const REGISTER_GAMES = SUPPORTED_GAME_NAMES.map((name) => ({
-  id: name,
-  name,
-  imageKey: name,
-}));
+import { getGameIdFromRoutePath } from '../menu/Community/gameHub.service';
 
 const normalizeForCompare = (value = '') =>
   String(value)
@@ -25,6 +19,24 @@ const normalizeForCompare = (value = '') =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
+
+const REGISTER_GAMES = [
+  {
+    id: 'valorant',
+    name: 'Valorant',
+    image: GAME_IMAGES.Valorant
+  },
+  {
+    id: 'lol',
+    name: 'League of Legends',
+    image: GAME_IMAGES['League of Legends']
+  },
+  {
+    id: 'mlbb',
+    name: 'Mobile Legends',
+    image: GAME_IMAGES['Mobile Legends']
+  }
+];
 
 const normalizePhone = (value = '') => String(value).replace(/[^\d]/g, '');
 const isValidEmail = (value = '') => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
@@ -127,9 +139,13 @@ const getStep1Error = (formData) => {
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // 3. OBTENER SI ESTÁ EN MODO OSCURO (IGUAL QUE EN SIDEBAR)
   const { isDarkMode } = useTheme();
+  const redirectTarget = location.state?.from || null;
+  const redirectPath = typeof redirectTarget?.pathname === 'string' ? redirectTarget.pathname : '';
+  const pendingGameJoinId = getGameIdFromRoutePath(redirectPath);
 
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
@@ -178,10 +194,13 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/auth/register`, formData);
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
+        ...formData,
+        ...(pendingGameJoinId ? { pendingGameJoinId } : {})
+      });
       console.log("Usuario registrado:", response.data);
       alert("¡Cuenta creada con éxito! Ahora puedes iniciar sesión.");
-      navigate('/login');
+      navigate('/login', { state: location.state });
     } catch (err) {
       const message = err.response?.data?.message || 'Error al procesar el registro';
       setError(message);
@@ -371,7 +390,7 @@ const Register = () => {
         <div className="auth-nav">
           <span className="brand">GLITCH GANG</span>
           <div className="nav-links">
-            <Link to="/login">Ya tengo cuenta</Link>
+            <Link to="/login" state={location.state}>Ya tengo cuenta</Link>
           </div>
         </div>
 
@@ -404,10 +423,11 @@ const Register = () => {
                   </div>
                   <div className="input-wrapper">
                     <label>Teléfono</label>
+                    <span className="input-prefix">+1</span>
                     <input
                       type="tel"
                       name="phone"
-                      placeholder="Solo números. Ej: 573001234567"
+                      placeholder="8095551234"
                       value={formData.phone}
                       onChange={handleChange}
                       onBlur={() => checkPhoneAvailability(formData.phone)}
@@ -415,7 +435,7 @@ const Register = () => {
                     <i className='bx bxl-whatsapp'></i>
                   </div>
                 </div>
-                <span className="helper-text"><i className='bx bx-info-circle'></i> Usa solo números, sin + ni espacios.</span>
+                <span className="helper-text"><i className='bx bx-info-circle'></i> Ej: +1 8095551234. Escribe solo los números locales, sin espacios.</span>
                 {phoneAvailability.loading && (
                   <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
                 )}
@@ -471,9 +491,14 @@ const Register = () => {
                 <h3 className="step-title">Elige tu Campo de Batalla</h3>
                 <div className="games-grid">
                   {REGISTER_GAMES.map(game => (
-                    <div key={game.id} className={`game-card-pro ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`} onClick={() => toggleSelection('selectedGames', game.id)}>
-                      <div className="game-img-wrapper"><img src={game.image || GAME_IMAGES[game.imageKey] || GAME_IMAGES.Default} alt={game.name} /></div>
-                      <span>{game.name}</span>
+                    <div
+                      key={game.id}
+                      className={`game-card-pro ${formData.selectedGames.includes(game.name) ? 'selected' : ''}`}
+                      onClick={() => toggleSelection('selectedGames', game.name)}
+                    >
+                      {formData.selectedGames.includes(game.name) && <span className="selection-check" aria-hidden="true" />}
+                      <div className="game-img-wrapper"><img src={game.image || GAME_IMAGES.Default} alt={game.name} /></div>
+                      <span className="game-card-pro__name">{game.name}</span>
                     </div>
                   ))}
                 </div>
@@ -499,6 +524,7 @@ const Register = () => {
                 <div className="levels-row">
                   {[{ id: 'Rookie', label: 'ROOKIE', desc: 'Principiante', icon: 'bx-user' }, { id: 'Mid', label: 'MID', desc: 'Intermedio', icon: 'bx-medal' }, { id: 'Pro', label: 'PRO', desc: 'Avanzado', icon: 'bx-trophy' }].map((lvl) => (
                     <div key={lvl.id} className={`level-card ${formData.experience === lvl.id ? 'selected' : ''}`} onClick={() => setFormData({...formData, experience: lvl.id})}>
+                      {formData.experience === lvl.id && <span className="selection-check" aria-hidden="true" />}
                       <i className={`bx ${lvl.icon} level-icon`}></i>
                       <div className="level-info"><span className="lvl-label">{lvl.label}</span><span className="lvl-desc">{lvl.desc}</span></div>
                     </div>
@@ -508,6 +534,7 @@ const Register = () => {
                 <div className="platforms-row">
                   {platformsList.map(p => (
                     <div key={p.id} className={`platform-chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`} onClick={() => toggleSelection('platforms', p.id)}>
+                      {formData.platforms.includes(p.id) && <span className="selection-check selection-check--inline" aria-hidden="true" />}
                       <i className={`bx ${p.icon}`}></i> {p.name}
                     </div>
                   ))}
@@ -516,6 +543,7 @@ const Register = () => {
                 <div className="goals-row">
                   {[{ id: 'Torneos', label: 'Torneos', icon: 'bx-joystick' }, { id: 'Equipo', label: 'Equipo / Duo', icon: 'bx-group' }, { id: 'Fun', label: 'Diversión', icon: 'bx-smile' }].map((goal) => (
                     <div key={goal.id} className={`goal-card ${formData.goals.includes(goal.id) ? 'selected' : ''}`} onClick={() => toggleSelection('goals', goal.id)}>
+                      {formData.goals.includes(goal.id) && <span className="selection-check" aria-hidden="true" />}
                       <i className={`bx ${goal.icon}`}></i><span>{goal.label}</span>
                     </div>
                   ))}
@@ -585,8 +613,8 @@ const Register = () => {
                     <span className="error-text"><i className='bx bx-error-circle'></i> No coinciden</span>
                   )}
                 </div>
-                <label className={`remember-me mt-2 ${submitErrorHint === 'Debes aceptar los términos para continuar.' ? 'input-error' : ''}`}>
-                  <input type="checkbox" name="checkTerms" checked={formData.checkTerms} onChange={handleChange} />
+                <label className={`terms-row mt-2 ${submitErrorHint === 'Debes aceptar los términos para continuar.' ? 'input-error' : ''}`}>
+                  <input className="terms-checkbox" type="checkbox" name="checkTerms" checked={formData.checkTerms} onChange={handleChange} />
                   <span className="terms-text">
                     He leído y acepto los <a href="/legal/terms" target="_blank" rel="noreferrer"> Términos de Servicio </a> y la <a href="/legal/privacy" target="_blank" rel="noreferrer"> Política de Privacidad</a>.
                   </span>

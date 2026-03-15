@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { API_URL } from '../../../../config/api';
+import { getAuthToken } from '../../../../utils/authSession';
 import {
     FaChevronDown, FaSearch, FaQuestionCircle,
     FaArrowLeft, FaTimes, FaDiscord, FaHeadset, FaBook,
@@ -80,6 +83,24 @@ const SupportPage = () => {
         });
     }, [searchTerm, activeCategory]);
 
+    const activeCategoryLabel = useMemo(
+        () => FAQ_CATEGORIES.find((cat) => cat.id === activeCategory)?.label || 'Todos',
+        [activeCategory]
+    );
+
+    const hasActiveFilters = Boolean(searchTerm.trim()) || activeCategory !== 'all';
+
+    const faqSummary = useMemo(() => {
+        const trimmedSearch = searchTerm.trim();
+        if (trimmedSearch) {
+            return `Resultados para "${trimmedSearch}" dentro de ${activeCategoryLabel.toLowerCase()}.`;
+        }
+        if (activeCategory !== 'all') {
+            return `Mostrando preguntas de ${activeCategoryLabel.toLowerCase()} para resolver dudas más rápido.`;
+        }
+        return 'Busca respuestas sobre cuenta, equipos, torneos, pagos y seguridad desde un solo lugar.';
+    }, [activeCategory, activeCategoryLabel, searchTerm]);
+
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
@@ -91,11 +112,21 @@ const SupportPage = () => {
         e.preventDefault();
         if (!inquiry.trim()) { showToast('Por favor escribe tu mensaje', 'error'); return; }
         setIsSubmitting(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsSubmitting(false);
-        setInquiry('');
-        setIsModalOpen(false);
-        showToast('Tu consulta ha sido enviada. Te responderemos en menos de 24 horas.');
+        try {
+            const token = getAuthToken();
+            await axios.post(`${API_URL}/api/auth/support/ticket`, {
+                type: inquiryType,
+                message: inquiry.trim(),
+                subject: inquiryType === 'bug' ? 'Reporte de Bug' : inquiryType === 'suggestion' ? 'Sugerencia' : 'Consulta'
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            setInquiry('');
+            setIsModalOpen(false);
+            showToast('Tu consulta ha sido enviada. Te responderemos en menos de 24 horas.');
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Error al enviar. Intenta de nuevo.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleFileSelect = (e) => {
@@ -119,11 +150,31 @@ const SupportPage = () => {
         if (achievementData.mode === 'duo' && !achievementData.partnerName.trim()) { showToast('Escribe el nombre de tu compañero', 'error'); return; }
         if (achievementData.mode === 'team' && !achievementData.teamName.trim()) { showToast('Escribe el nombre del equipo', 'error'); return; }
         setIsSubmitting(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsSubmitting(false);
-        setAchievementData({ game: '', mode: 'team', tournamentName: '', tournamentDate: '', placement: 1, teamName: '', partnerName: '', description: '', proofFiles: [] });
-        setIsAchievementModalOpen(false);
-        showToast('Logro enviado. Nuestro equipo lo revisará en 24-48 horas.');
+        try {
+            const token = getAuthToken();
+            await axios.post(`${API_URL}/api/auth/support/ticket`, {
+                type: 'achievement',
+                subject: `Logro: ${achievementData.tournamentName}`,
+                message: `Juego: ${achievementData.game} | Torneo: ${achievementData.tournamentName} | Posicion: ${achievementData.placement} | Modo: ${achievementData.mode}${achievementData.description ? ' | ' + achievementData.description : ''}`,
+                data: {
+                    game: achievementData.game,
+                    mode: achievementData.mode,
+                    tournamentName: achievementData.tournamentName,
+                    tournamentDate: achievementData.tournamentDate,
+                    placement: achievementData.placement,
+                    teamName: achievementData.teamName,
+                    partnerName: achievementData.partnerName,
+                    proofCount: achievementData.proofFiles.length
+                }
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            setAchievementData({ game: '', mode: 'team', tournamentName: '', tournamentDate: '', placement: 1, teamName: '', partnerName: '', description: '', proofFiles: [] });
+            setIsAchievementModalOpen(false);
+            showToast('Logro enviado. Nuestro equipo lo revisara en 24-48 horas.');
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Error al enviar. Intenta de nuevo.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const closeAchievementModal = () => {
@@ -155,14 +206,26 @@ const SupportPage = () => {
             <header className="sp-hero">
                 <div className="sp-hero__bg" />
                 <div className="sp-hero__inner">
-                    <button className="sp-back" onClick={() => navigate(-1)}>
-                        <FaArrowLeft /> <span>Volver</span>
-                    </button>
+                    <div className="sp-hero__top">
+                        <button className="sp-back" onClick={() => navigate(-1)}>
+                            <FaArrowLeft /> <span>Volver</span>
+                        </button>
+                        <div className="sp-hero__signal">
+                            <FaHeadset />
+                            <span>Soporte activo</span>
+                            <strong>&lt; 2h</strong>
+                        </div>
+                    </div>
                     <div className="sp-hero__badge">
                         <i className='bx bx-support'></i>
                     </div>
                     <h1 className="sp-hero__title">Centro de Ayuda</h1>
                     <p className="sp-hero__sub">Todo lo que necesitas para dominar GLITCH GANG</p>
+                    <div className="sp-hero__games">
+                        {SUPPORTED_GAMES.map((game) => (
+                            <span key={game.id} className="sp-hero__game">{game.short}</span>
+                        ))}
+                    </div>
 
                     <div className="sp-hero__search">
                         <FaSearch className="sp-hero__search-icon" />
@@ -219,8 +282,24 @@ const SupportPage = () => {
                 {/* FAQ */}
                 <section className="sp-faq">
                     <div className="sp-faq__head">
-                        <h2><FaQuestionCircle /> Preguntas Frecuentes</h2>
-                        <span className="sp-faq__count">{filteredFaqs.length}</span>
+                        <div className="sp-faq__head-copy">
+                            <h2><FaQuestionCircle /> Preguntas Frecuentes</h2>
+                            <p>{faqSummary}</p>
+                        </div>
+                        <div className="sp-faq__meta">
+                            <span className="sp-faq__count">{filteredFaqs.length}</span>
+                            {hasActiveFilters && (
+                                <button
+                                    className="sp-faq__reset"
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setActiveCategory('all');
+                                    }}
+                                >
+                                    Limpiar filtros
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div className="sp-faq__cats">

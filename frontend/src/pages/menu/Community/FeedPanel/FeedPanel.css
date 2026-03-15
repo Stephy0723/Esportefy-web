@@ -286,6 +286,7 @@
 }
 .fp-creator__doc-name {
   font-size: 0.85rem; font-weight: 600; color: var(--text-main);
+  overflow-wrap: anywhere;
 }
 .fp-creator__doc-size {
   font-size: 0.72rem; color: var(--text-muted);
@@ -476,6 +477,12 @@
   font-size: 0.9rem; font-weight: 800;
   color: var(--post-color);
   flex-shrink: 0;
+  overflow: hidden;
+}
+.fp-post__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .fp-post__meta { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .fp-post__author {
@@ -503,6 +510,10 @@
 }
 .fp-post__game i { font-size: 0.8rem; }
 
+.fp-post__menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
 .fp-post__more {
   width: 32px; height: 32px;
   border-radius: 8px;
@@ -514,9 +525,71 @@
   cursor: pointer;
   transition: all 0.2s;
 }
+.fp-post__more.active,
 .fp-post__more:hover {
   background: var(--bg-elevated);
   color: var(--text-main);
+}
+
+.fp-post__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-card) 94%, #000 6%);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 15;
+}
+
+.fp-post__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fp-post__menu-item i {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.fp-post__menu-item:hover {
+  background: rgba(var(--fp-primary-rgb), 0.08);
+  color: var(--fp-primary);
+}
+
+.fp-post__menu-item:hover i {
+  color: var(--fp-primary);
+}
+
+.fp-post__menu-item--danger {
+  color: #ff8d8d;
+}
+
+.fp-post__menu-item--danger i,
+.fp-post__menu-item--danger:hover i {
+  color: #ff8d8d;
+}
+
+.fp-post__menu-item--danger:hover {
+  background: rgba(255, 90, 90, 0.1);
+  color: #ffd1d1;
 }
 
 /* Post Content */
@@ -670,6 +743,9 @@
 
 .fp-post__doc-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .fp-post__doc-name { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+.fp-post__doc-name {
+  overflow-wrap: anywhere;
+}
 .fp-post__doc-size { font-size: 0.72rem; color: var(--text-muted); }
 
 .fp-post__doc-btn {
@@ -721,6 +797,12 @@
 }
 .fp-post__action.liked i {
   animation: fp-heartPop 0.4s ease;
+}
+.fp-post__action.saved {
+  color: var(--fp-primary);
+}
+.fp-post__action.saved i {
+  filter: drop-shadow(0 0 8px rgba(var(--fp-primary-rgb), 0.28));
 }
 .fp-post__action--save { margin-left: auto; }
 
@@ -827,18 +909,148 @@
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
+  .fp-creator {
+    padding: 1rem;
+    border-radius: 18px;
+  }
+  .fp-creator__top {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .fp-creator__avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
   .fp-creator__images { margin-left: 0; }
   .fp-creator__poll { margin-left: 0; }
   .fp-creator__doc { margin-left: 0; }
-  .fp-creator__game-tag { margin-left: 0; }
-  .fp-creator__game-dropdown { left: 0; transform: none; }
-  .fp-post__header { flex-wrap: wrap; }
-  .fp-post__game { order: 5; margin-top: 4px; }
-  .fp-feed__filters { overflow-x: auto; flex-wrap: nowrap; }
+  .fp-creator__game-tag {
+    margin-left: 0;
+    max-width: 100%;
+  }
+  .fp-creator__game-dropdown {
+    left: 0;
+    right: 0;
+    width: auto;
+    transform: none;
+  }
+  .fp-creator__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+  .fp-creator__tools {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+  }
+  .fp-creator__tool {
+    width: 100%;
+    height: 42px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-input);
+  }
+  .fp-creator__post-btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .fp-feed__filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
   .fp-feed__filters::-webkit-scrollbar { height: 0; }
+  .fp-feed__filter {
+    justify-content: center;
+    padding: 10px 12px;
+  }
+  .fp-post {
+    border-radius: 18px;
+  }
+  .fp-post__header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "avatar meta more"
+      "avatar game more";
+    align-items: start;
+    gap: 0.75rem;
+  }
+  .fp-post__avatar { grid-area: avatar; }
+  .fp-post__meta { grid-area: meta; }
+  .fp-post__menu-wrap {
+    grid-area: more;
+    align-self: start;
+    justify-self: end;
+  }
+  .fp-post__game {
+    grid-area: game;
+    margin-top: 0.15rem;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .fp-post__menu {
+    right: 0;
+    min-width: 200px;
+  }
+  .fp-post__actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+  .fp-post__action {
+    justify-content: center;
+    padding: 10px 8px;
+  }
+  .fp-post__action--save { margin-left: 0; }
+  .fp-post__doc {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+  }
+  .fp-post__doc-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
 }
 @media (max-width: 480px) {
-  .fp-post__action span { display: none; }
-  .fp-creator__tools { gap: 2px; }
-  .fp-creator__tool { width: 34px; height: 34px; font-size: 1rem; }
+  .fp-creator {
+    padding: 0.9rem;
+  }
+  .fp-creator__top { gap: 10px; }
+  .fp-creator__avatar {
+    width: 40px;
+    height: 40px;
+  }
+  .fp-creator__tools {
+    gap: 0.45rem;
+  }
+  .fp-creator__tool {
+    height: 40px;
+    font-size: 1rem;
+  }
+  .fp-post__content { font-size: 0.88rem; }
+  .fp-post__action {
+    gap: 4px;
+    padding: 9px 6px;
+    font-size: 0.72rem;
+  }
+  .fp-post__action i { font-size: 1rem; }
+  .fp-post__doc {
+    gap: 10px;
+    padding: 12px;
+  }
+  .fp-post__doc-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .fp-post__doc-btn {
+    padding: 9px 12px;
+    font-size: 0.76rem;
+  }
 }

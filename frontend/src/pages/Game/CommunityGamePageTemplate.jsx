@@ -1,103 +1,308 @@
-import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FaArrowLeft,
-  FaChevronDown,
-  FaChevronRight,
-  FaHandshake,
-  FaUsers,
-  FaStar,
-  FaTrophy,
-  FaGamepad,
-  FaBuilding,
-  FaGlobe,
-  FaShieldAlt,
-  FaCrown,
-  FaFire,
-  FaCalendarAlt,
-  FaUserFriends,
-  FaNewspaper,
-  FaImage,
-  FaPaperPlane,
-  FaCommentDots,
-  FaShareAlt,
-  FaBookmark,
-  FaFlag,
-  FaClock,
-  FaChartLine,
   FaBolt,
-  FaHeart,
-  FaEllipsisH,
+  FaBuilding,
+  FaCalendarAlt,
+  FaChartLine,
+  FaChevronRight,
+  FaCommentDots,
+  FaGlobe,
   FaPlay,
-  FaEye,
-  FaThumbsUp,
+  FaShieldAlt,
   FaSignInAlt,
-  FaBell,
-  FaLink,
+  FaTrophy,
+  FaUsers,
 } from 'react-icons/fa';
-import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY } from '../../data/communityData';
+import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY, COMMUNITY_LIST } from '../../data/communityData';
 import { supportedGamesDetailedData as gamesDetailedData } from '../../data/supportedGamesDetailedData';
+import { TEAMS_DATA, TOURNAMENTS_DATA, formatDate, formatPrize, getStatusLabel } from '../../data/rankingsData';
 import { isSupportedGameId } from '../../../../shared/supportedGames.js';
+import { fetchGameHubStatsIndex, formatGameHubCount, joinGameHub } from '../menu/Community/gameHub.service';
 import './CommunityGamePageTemplate.css';
 
-const fallbackArray = (arr, fb) => (Array.isArray(arr) && arr.length > 0 ? arr : fb);
-const toTitle = (v) =>
-  String(v || '')
-    .split(' ')
+const DATA_ALIASES = {
+  ow2: 'overwatch',
+  rl: 'rocket',
+  ff: 'freefire',
+  wr: 'wildrift',
+  wildrift: 'wildrift',
+  r6s: 'r6',
+  r6: 'r6',
+  pubg: 'pubgm',
+  pubgm: 'pubgm',
+  hs: 'hearthstone',
+  nba2k: 'nba2k',
+  lor: 'lor',
+  cr: 'clashroyale',
+  aov: 'hok',
+};
+
+const COMPANY_BY_ID = {
+  lol: 'Riot Games',
+  valorant: 'Riot Games',
+  dota2: 'Valve',
+  mlbb: 'Moonton',
+  wildrift: 'Riot Games',
+  fortnite: 'Epic Games',
+  cs2: 'Valve',
+  apex: 'Respawn Entertainment',
+  warzone: 'Activision',
+  pubgm: 'Tencent',
+  rl: 'Psyonix',
+  tekken8: 'Bandai Namco',
+  sf6: 'Capcom',
+  gta: 'Rockstar Games',
+  genshin: 'HoYoverse',
+  amongus: 'Innersloth',
+  fallguys: 'Mediatonic',
+  marvel: 'NetEase Games',
+  xdefiant: 'Ubisoft',
+  thefinals: 'Embark Studios',
+  deadlock: 'Valve',
+  eafc25: 'EA Sports',
+  palworld: 'Pocketpair',
+  ow2: 'Blizzard Entertainment',
+  r6: 'Ubisoft',
+  hs: 'Blizzard Entertainment',
+  lor: 'Riot Games',
+  tft: 'Riot Games',
+  hok: 'Tencent',
+};
+
+const CREATOR_BLUEPRINTS = {
+  moba: [
+    {
+      title: 'Meta y drafts',
+      format: 'Analisis',
+      description: 'Tier lists, counters, picks prioritarios y lectura de composiciones.',
+    },
+    {
+      title: 'SoloQ y coaching',
+      format: 'Directo',
+      description: 'Ranked, review de partidas y mejora individual para cada rol.',
+    },
+    {
+      title: 'Co-streams',
+      format: 'Cobertura',
+      description: 'Watch parties, resumenes de ligas y seguimiento de playoffs.',
+    },
+  ],
+  fps: [
+    {
+      title: 'VOD review',
+      format: 'Analisis',
+      description: 'Rotaciones, utilidad, timings y ajustes tacticos del juego.',
+    },
+    {
+      title: 'Ranked y scrims',
+      format: 'Directo',
+      description: 'Sesiones competitivas, tryouts y practica con equipos.',
+    },
+    {
+      title: 'Highlights',
+      format: 'Clips',
+      description: 'Jugadas clave, mejores rondas y momentos virales del hub.',
+    },
+  ],
+  fighting: [
+    {
+      title: 'Matchup lab',
+      format: 'Analisis',
+      description: 'Notas de matchup, frame data y respuestas a personajes meta.',
+    },
+    {
+      title: 'Sets y FT',
+      format: 'Directo',
+      description: 'Sets largos, lobby abierto y sesiones de entrenamiento.',
+    },
+    {
+      title: 'Clips de torneo',
+      format: 'Cobertura',
+      description: 'Highlights de brackets, resets y momentos clutch.',
+    },
+  ],
+  default: [
+    {
+      title: 'Noticias y parches',
+      format: 'Analisis',
+      description: 'Cambios importantes, guias rapidas y contexto competitivo.',
+    },
+    {
+      title: 'Comunidad en vivo',
+      format: 'Directo',
+      description: 'Streams del hub, watch parties y espacios para reaccionar.',
+    },
+    {
+      title: 'Clips y resumenes',
+      format: 'Cobertura',
+      description: 'Contenido corto para seguir el ritmo del juego sin perder tiempo.',
+    },
+  ],
+};
+
+const STATUS_ORDER = {
+  active: 0,
+  upcoming: 1,
+  completed: 2,
+};
+
+const fallbackArray = (value, fallback = []) => (Array.isArray(value) && value.length > 0 ? value : fallback);
+
+const normalizeText = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+const toTitle = (value) =>
+  String(value || '')
+    .split(/[\s-]+/)
     .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-const parseMembers = (value) => {
+
+const parseCompactNumber = (value) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
   const raw = String(value || '0').toLowerCase().replace(/\s+/g, '');
   const base = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
+
   if (raw.includes('m')) return base * 1000000;
   if (raw.includes('k')) return base * 1000;
   return base;
 };
 
-const DATA_ALIASES = {
-  cs2: 'csgo', warzone: 'cod', rocket: 'rl', overwatch: 'ow2',
-  hearthstone: 'hs', clashroyale: 'cr', freefire: 'ff', pubg: 'pubgm',
-  rainbowsix: 'r6', r6s: 'r6', fifa: 'eafc25',
+const formatCompactLabel = (value) => {
+  if (typeof value === 'number') {
+    return formatGameHubCount(value);
+  }
+
+  const raw = String(value || '').trim();
+  if (!raw) return '0';
+  return raw;
 };
 
-const COMPANY_BY_ID = {
-  lol: 'Riot Games', valorant: 'Riot Games', dota2: 'Valve', mlbb: 'Moonton',
-  wildrift: 'Riot Games', fortnite: 'Epic Games', cs2: 'Valve', apex: 'Respawn Entertainment',
-  warzone: 'Activision', pubgm: 'Tencent', rl: 'Psyonix', tekken8: 'Bandai Namco',
-  sf6: 'Capcom', gta: 'Rockstar Games', genshin: 'HoYoverse', amongus: 'Innersloth',
-  fallguys: 'Mediatonic', marvel: 'NetEase Games', xdefiant: 'Ubisoft', aov: 'Tencent',
-  thefinals: 'Embark Studios', tarkov: 'Battlestate Games', deadlock: 'Valve',
-  eafc25: 'EA Sports', dbsz: 'Bandai Namco', multiversus: 'WB Games', palworld: 'Pocketpair',
-  helldivers2: 'Arrowhead Game Studios', bg3: 'Larian Studios', ff: 'Garena',
-  ow2: 'Blizzard Entertainment', r6: 'Ubisoft', hs: 'Blizzard Entertainment',
-  lor: 'Riot Games', tft: 'Riot Games', hok: 'Tencent', cr: 'Supercell',
-  starcraft: 'Blizzard Entertainment', nba2k: '2K Sports', mariokart: 'Nintendo',
-  halo: '343 Industries', wuwa: 'Kuro Games', codbo6: 'Activision', mk1: 'WB Games',
-  eldenring: 'FromSoftware', cyberpunk: 'CD Projekt Red', rdr2: 'Rockstar Games',
-  mhwilds: 'Capcom', hogwarts: 'WB Games', nms: 'Hello Games',
-  cod: 'Activision', csgo: 'Valve', smash: 'Nintendo', minecraft: 'Mojang',
+const formatTournamentDate = (item) => {
+  if (item?.startDate) {
+    return formatDate(item.startDate);
+  }
+
+  return item?.date || 'Proximamente';
 };
 
-const TAG_DISPLAY = {
-  fps: 'FPS', moba: 'MOBA', rpg: 'RPG', rts: 'RTS', br: 'BR', pc: 'PC',
-  'e-sports': 'E-Sports', esports: 'E-Sports', 'battle royale': 'Battle Royale',
-  'action rpg': 'Action RPG',
+const formatTournamentPrize = (item) => {
+  if (typeof item?.prize === 'number') {
+    return formatPrize(item.prize, item.currency);
+  }
+
+  return item?.prize || 'Por definir';
 };
+
+const uniqueByName = (items) => {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    const key = normalizeText(item?.name || item?.title);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const buildHubRooms = (gameName, taxonomy, activeCount) => {
+  const baseActive = Math.max(Number(activeCount || 0), 32);
+  const modes = fallbackArray(taxonomy?.mode, []);
+  const mechanics = fallbackArray(taxonomy?.mechanics, []);
+  const mainMechanic = mechanics[0] ? toTitle(mechanics[0]) : 'Meta';
+  const hasRanked = modes.some((mode) => normalizeText(mode) === 'ranked');
+
+  return [
+    {
+      name: 'General',
+      description: `Noticias, clips, agenda competitiva y debate de ${gameName}.`,
+      users: Math.max(12, Math.round(baseActive * 0.42)),
+      status: 'Abierto',
+    },
+    {
+      name: hasRanked ? 'Ranked y duo' : 'LFG y scrims',
+      description: 'Busca duo, roster, suplentes o bloque de practica.',
+      users: Math.max(9, Math.round(baseActive * 0.28)),
+      status: 'Buscando grupo',
+    },
+    {
+      name: 'Torneos',
+      description: 'Inscripciones, reglas, horarios y resultados del circuito.',
+      users: Math.max(7, Math.round(baseActive * 0.18)),
+      status: 'Competitivo',
+    },
+    {
+      name: `${mainMechanic} y parches`,
+      description: 'Cambios del meta, picks fuertes y guias rapidas.',
+      users: Math.max(6, Math.round(baseActive * 0.12)),
+      status: 'Analisis',
+    },
+  ];
+};
+
+const buildCreatorCards = (gameName, taxonomy) => {
+  const primaryGenre = normalizeText(fallbackArray(taxonomy?.genre, ['default'])[0]);
+  const blueprint = CREATOR_BLUEPRINTS[primaryGenre] || CREATOR_BLUEPRINTS.default;
+
+  return blueprint.map((item, index) => ({
+    ...item,
+    title: index === 0 ? `${item.title} de ${gameName}` : item.title,
+  }));
+};
+
+const SectionHeader = ({ icon, title, subtitle, actionLabel, onAction }) => (
+  <div className="guh-section__head">
+    <div>
+      <span className="guh-section__eyebrow">
+        {icon}
+        {title}
+      </span>
+      <h2>{title}</h2>
+      <p>{subtitle}</p>
+    </div>
+    {actionLabel && onAction && (
+      <button type="button" className="guh-btn guh-btn--ghost" onClick={onAction}>
+        {actionLabel}
+        <FaChevronRight />
+      </button>
+    )}
+  </div>
+);
+
+const StatCard = ({ icon, label, value }) => (
+  <div className="guh-stat">
+    <span className="guh-stat__icon">{icon}</span>
+    <strong>{value}</strong>
+    <span>{label}</span>
+  </div>
+);
+
+const EmptyState = ({ title, copy, actionLabel, onAction }) => (
+  <div className="guh-empty">
+    <strong>{title}</strong>
+    <p>{copy}</p>
+    {actionLabel && onAction && (
+      <button type="button" className="guh-btn guh-btn--ghost" onClick={onAction}>
+        {actionLabel}
+      </button>
+    )}
+  </div>
+);
 
 const CommunityGamePageTemplate = () => {
   const { gameId: rawId } = useParams();
   const navigate = useNavigate();
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
-  const [activeSection, setActiveSection] = useState(0);
-  const [revealed, setRevealed] = useState(new Set([0]));
-  const [postDraft, setPostDraft] = useState('');
-  const [activeTab, setActiveTab] = useState('feed');
-  const [likedCards, setLikedCards] = useState(new Set());
-  const [savedCards, setSavedCards] = useState(new Set());
-  const sectionRefs = useRef([]);
+  const [gameStatsMap, setGameStatsMap] = useState({});
+  const [joiningHub, setJoiningHub] = useState(false);
 
-  const id = String(rawId || '').toLowerCase().trim();
+  const id = normalizeText(rawId);
   const detailId = DATA_ALIASES[id] || id;
   const isSupportedCommunityGame = isSupportedGameId(id) || isSupportedGameId(detailId);
 
@@ -107,619 +312,570 @@ const CommunityGamePageTemplate = () => {
     }
   }, [isSupportedCommunityGame, navigate]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGameStats = async () => {
+      try {
+        const nextStats = await fetchGameHubStatsIndex();
+        if (!cancelled) {
+          setGameStatsMap(nextStats);
+        }
+      } catch (_) {
+        if (!cancelled) {
+          setGameStatsMap({});
+        }
+      }
+    };
+
+    loadGameStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detailId, id]);
+
   const data = gamesDetailedData?.[detailId] || gamesDetailedData?.[id] || null;
-  const communityGame = COMMUNITY_GAMES.find((g) => g.id === id || g.id === detailId);
+  const communityGame =
+    COMMUNITY_GAMES.find((game) => normalizeText(game.id) === id || normalizeText(game.id) === detailId) || null;
   const taxonomy = COMMUNITY_GAME_TAXONOMY?.[id] || COMMUNITY_GAME_TAXONOMY?.[detailId] || {};
 
   const name = data?.name || communityGame?.name || toTitle(id);
   const banner = data?.banner || communityGame?.img || '';
   const accentColor = data?.color || communityGame?.color || 'var(--primary)';
   const developer =
-    data?.developer || communityGame?.developer || communityGame?.company || COMPANY_BY_ID[id] || COMPANY_BY_ID[detailId] || 'Studio';
+    data?.developer ||
+    communityGame?.developer ||
+    communityGame?.company ||
+    COMPANY_BY_ID[id] ||
+    COMPANY_BY_ID[detailId] ||
+    'Studio';
   const history =
     data?.history ||
-    `${name} es parte de la comunidad de GLITCH GANG. Proximamente agregaremos informacion detallada, organizadores y eventos destacados.`;
+    `${name} tiene un hub dedicado para comunidades, torneos, equipos y conversacion competitiva.`;
+  const category = data?.category || communityGame?.cat || toTitle(fallbackArray(taxonomy?.genre, ['competitivo'])[0]);
+  const currentGameStats = gameStatsMap[id] || gameStatsMap[detailId] || { usersCount: 0, activeCount: 0, joined: false };
 
-  const organizers = fallbackArray(data?.organizers, [{ name: 'GLITCH GANG Community', motto: 'Organizacion en actualizacion' }]);
-  const sponsors = fallbackArray(data?.sponsors, [{ name: 'Community Sponsor' }]);
-  const userCommunities = fallbackArray(data?.userCommunities, [{ name: `${name} Hub`, members: communityGame?.players || '0' }]);
-  const tournaments = fallbackArray(data?.activeTournaments || data?.tournaments, [
-    { title: `${name} Open Series`, prize: 'TBD', date: 'Proximamente' },
+  const gameKeys = new Set(
+    [id, detailId, normalizeText(name), normalizeText(communityGame?.name), normalizeText(category)].filter(Boolean)
+  );
+
+  const supportedCommunities = COMMUNITY_LIST.filter((community) => gameKeys.has(normalizeText(community.game))).map(
+    (community) => ({
+      key: community.id,
+      name: community.name,
+      description: community.description,
+      membersLabel: formatGameHubCount(community.members),
+      onlineLabel: formatGameHubCount(community.online),
+      tags: fallbackArray(community.tags, [category]),
+      actionLabel: community.slug ? 'Abrir comunidad' : 'Explorar',
+      onClick: () => navigate(community.slug ? `/community/${community.slug}` : '/comunidad'),
+    })
+  );
+
+  const fallbackCommunities = fallbackArray(data?.userCommunities, []).map((community, index) => ({
+    key: `${normalizeText(community.name)}-${index}`,
+    name: community.name,
+    description: `Espacio para reclutamiento, scrims, clips y noticias de ${name}.`,
+    membersLabel: formatCompactLabel(community.members),
+    onlineLabel: formatGameHubCount(Math.max(18, Math.round(parseCompactNumber(community.members) * 0.02))),
+    tags: [category, 'Hub', 'LFG'],
+    actionLabel: 'Ver comunidad',
+    onClick: () => navigate('/comunidad'),
+  }));
+
+  const communityCards = uniqueByName([
+    ...supportedCommunities,
+    ...fallbackCommunities,
+    {
+      key: `${id}-hub`,
+      name: `${name} Hub`,
+      description: `Canal principal para la comunidad competitiva de ${name}.`,
+      membersLabel: formatGameHubCount(currentGameStats.usersCount),
+      onlineLabel: formatGameHubCount(currentGameStats.activeCount),
+      tags: [category, 'Hub', 'Competitivo'],
+      actionLabel: 'Entrar al hub',
+      onClick: () => navigate('/comunidad'),
+    },
+  ]).slice(0, 4);
+
+  const baseOrganizers = fallbackArray(data?.organizers, [
+    { name: developer, motto: 'Operacion del ecosistema y eventos del juego' },
   ]);
-  const featuredTournament = tournaments[0] || null;
-  const communityPanels = useMemo(() => {
-    const safeCommunities = userCommunities.map((c) => ({
-      ...c,
-      membersLabel: c.members || '0',
-      membersCount: parseMembers(c.members),
+
+  const rankingTournaments = TOURNAMENTS_DATA.filter((tournament) => gameKeys.has(normalizeText(tournament.game)))
+    .sort((a, b) => {
+      const orderDiff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+      if (orderDiff !== 0) return orderDiff;
+      return new Date(a.startDate || 0).getTime() - new Date(b.startDate || 0).getTime();
+    })
+    .map((tournament) => ({
+      key: `ranking-${tournament.id}`,
+      title: tournament.name,
+      status: getStatusLabel(tournament.status),
+      tone: tournament.status || 'upcoming',
+      prize: formatTournamentPrize(tournament),
+      date: formatTournamentDate(tournament),
+      format: tournament.format || 'Formato por definir',
+      organizer: tournament.organizer || baseOrganizers[0]?.name || developer,
+      location: tournament.location || 'Online',
+      teamsLabel: `${tournament.registeredTeams || tournament.teams || 0}/${tournament.teams || tournament.registeredTeams || 0} equipos`,
+      onClick: () => navigate('/torneos'),
     }));
-    const newest = safeCommunities.slice(0, 4);
-    const active = [...safeCommunities].sort((a, b) => b.membersCount - a.membersCount).slice(0, 4);
-    const trending = [...safeCommunities]
-      .map((c, idx) => ({ ...c, score: c.membersCount + (idx + 1) * 10 }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4);
-    return [
-      { id: 'new', title: 'Nuevos', icon: <FaClock />, items: newest },
-      { id: 'active', title: 'Mas activos', icon: <FaChartLine />, items: active },
-      { id: 'trending', title: 'Trending', icon: <FaBolt />, items: trending },
-    ];
-  }, [userCommunities]);
 
-  const tags = useMemo(() => {
-    const raw = [
-      ...(data?.tags || []),
-      ...(taxonomy.genre || []),
-      ...(taxonomy.style || []),
-      ...(taxonomy.mechanics || []),
-      ...(taxonomy.mode || []),
-      communityGame?.cat,
-    ].filter(Boolean);
-    const seen = new Set();
-    const result = [];
-    for (const tag of raw) {
-      const key = String(tag).toLowerCase().trim();
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        result.push(TAG_DISPLAY[key] || toTitle(tag));
-      }
+  const fallbackTournaments = fallbackArray(data?.activeTournaments || data?.tournaments, []).map((tournament, index) => ({
+    key: `fallback-${index}`,
+    title: tournament.title || `${name} Open`,
+    status: tournament.status ? getStatusLabel(tournament.status) : 'Proximamente',
+    tone: tournament.status || 'upcoming',
+    prize: formatTournamentPrize(tournament),
+    date: formatTournamentDate(tournament),
+    format: tournament.format || 'Open',
+    organizer: tournament.organizer || baseOrganizers[0]?.name || developer,
+    location: tournament.location || 'Online',
+    teamsLabel: tournament.teams ? `${tournament.teams} equipos` : 'Cupos por definir',
+    onClick: () => navigate('/torneos'),
+  }));
+
+  const tournamentCards = uniqueByName([...rankingTournaments, ...fallbackTournaments]).slice(0, 4);
+
+  const teamCards = TEAMS_DATA.filter((team) =>
+    fallbackArray(team.games, []).some((game) => gameKeys.has(normalizeText(game)))
+  )
+    .sort((a, b) => Number(b.points || 0) - Number(a.points || 0))
+    .slice(0, 6);
+
+  const tournamentOrganizerCount = rankingTournaments.reduce((acc, tournament) => {
+    const key = normalizeText(tournament.organizer);
+    if (!key) return acc;
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const organizerCards = uniqueByName([
+    ...baseOrganizers.map((organizer, index) => ({
+      key: `organizer-${index}`,
+      name: organizer.name,
+      description: organizer.motto || 'Organiza comunidad, torneos y operaciones del hub.',
+    })),
+    ...rankingTournaments.map((tournament, index) => ({
+      key: `tournament-organizer-${index}`,
+      name: tournament.organizer,
+      description: `${tournament.status} - ${tournament.format}`,
+    })),
+  ])
+    .map((organizer) => ({
+      ...organizer,
+      tournamentsLabel:
+        tournamentOrganizerCount[normalizeText(organizer.name)] > 0
+          ? `${tournamentOrganizerCount[normalizeText(organizer.name)]} torneos en este juego`
+          : 'Gestion y activaciones del ecosistema',
+    }))
+    .slice(0, 6);
+
+  const creatorCards = buildCreatorCards(name, taxonomy);
+  const hubRooms = buildHubRooms(name, taxonomy, currentGameStats.activeCount);
+
+  const primaryFacts = [
+    { label: 'Estudio', value: developer, icon: <FaBuilding /> },
+    { label: 'Categoria', value: category, icon: <FaGlobe /> },
+    { label: 'Plataforma', value: toTitle(fallbackArray(taxonomy?.platform, ['pc'])[0]), icon: <FaChartLine /> },
+    { label: 'Modo', value: toTitle(fallbackArray(taxonomy?.mode, ['competitivo'])[0]), icon: <FaBolt /> },
+  ];
+
+  const summaryStats = [
+    { label: 'Miembros del hub', value: formatGameHubCount(currentGameStats.usersCount), icon: <FaUsers /> },
+    { label: 'Activos hoy', value: formatGameHubCount(currentGameStats.activeCount), icon: <FaBolt /> },
+    { label: 'Comunidades', value: communityCards.length, icon: <FaGlobe /> },
+    { label: 'Torneos', value: tournamentCards.length, icon: <FaTrophy /> },
+    { label: 'Equipos', value: teamCards.length, icon: <FaShieldAlt /> },
+  ];
+
+  const goToSection = (sectionId) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleJoinCurrentHub = async () => {
+    if (!id || joiningHub) return;
+
+    try {
+      setJoiningHub(true);
+      const response = await joinGameHub(id);
+      setGameStatsMap((prev) => ({
+        ...prev,
+        [id]: response.stats,
+        ...(detailId !== id ? { [detailId]: response.stats } : {}),
+      }));
+    } finally {
+      setJoiningHub(false);
     }
-    return result.slice(0, 8);
-  }, [data, taxonomy, communityGame]);
-
-  const relatedGames = useMemo(() => {
-    const devLower = developer.toLowerCase();
-    return COMMUNITY_GAMES.filter((g) => {
-      const gDev = (COMPANY_BY_ID[g.id] || '').toLowerCase();
-      return gDev === devLower && g.id !== id && g.id !== detailId;
-    }).slice(0, 8);
-  }, [developer, id, detailId]);
-
-  /* ── Build publication feed items ── */
-  const feedItems = useMemo(() => {
-    const items = [];
-    tournaments.forEach((t) => {
-      items.push({
-        type: 'torneo',
-        icon: <FaTrophy />,
-        title: t.title,
-        sub: t.date || 'Proximamente',
-        badge: t.prize || 'TBD',
-        cover: t.banner || banner || communityGame?.img || '',
-        logo: String(t.title || name)
-          .split(' ')
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((w) => w[0]?.toUpperCase())
-          .join(''),
-        viewers: Math.floor(Math.random() * 500 + 100),
-        likes: Math.floor(Math.random() * 200 + 30),
-        comments: Math.floor(Math.random() * 50 + 5),
-      });
-    });
-    userCommunities.forEach((c) => {
-      items.push({
-        type: 'comunidad',
-        icon: <FaUserFriends />,
-        title: c.name,
-        sub: `${c.members || '0'} miembros`,
-        badge: 'ACTIVA',
-        cover: communityGame?.img || banner || '',
-        logo: String(c.name || name)
-          .split(' ')
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((w) => w[0]?.toUpperCase())
-          .join(''),
-        viewers: Math.floor(Math.random() * 300 + 50),
-        likes: Math.floor(Math.random() * 150 + 20),
-        comments: Math.floor(Math.random() * 40 + 3),
-      });
-    });
-    sponsors.forEach((s) => {
-      items.push({
-        type: 'sponsor',
-        icon: <FaCrown />,
-        title: s.name,
-        sub: 'Patrocinador oficial',
-        badge: 'PARTNER',
-        cover: banner || communityGame?.img || '',
-        logo: String(s.name || 'SP').slice(0, 2).toUpperCase(),
-        viewers: Math.floor(Math.random() * 800 + 200),
-        likes: Math.floor(Math.random() * 300 + 50),
-        comments: Math.floor(Math.random() * 80 + 10),
-      });
-    });
-    return items.slice(0, 6);
-  }, [tournaments, userCommunities, sponsors, banner, communityGame, name]);
-
-  const handlePublish = useCallback(() => {
-    const content = postDraft.trim();
-    if (!content) return;
-    setPostDraft('');
-  }, [postDraft]);
-
-  const toggleLike = (idx) => {
-    setLikedCards((prev) => {
-      const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
-      return next;
-    });
   };
-
-  const toggleSave = (idx) => {
-    setSavedCards((prev) => {
-      const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
-      return next;
-    });
-  };
-
-  /* ── Parallax ── */
-  const onHeroMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-    setParallax({ x, y });
-  };
-  const onHeroLeave = () => setParallax({ x: 0, y: 0 });
-
-  /* ── Scroll spy + reveal ── */
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const idx = sectionRefs.current.indexOf(entry.target);
-          if (idx === -1) continue;
-          if (entry.isIntersecting) {
-            setActiveSection(idx);
-            setRevealed((prev) => {
-              if (prev.has(idx)) return prev;
-              const next = new Set(prev);
-              next.add(idx);
-              return next;
-            });
-          }
-        }
-      },
-      { threshold: 0.18 }
-    );
-    sectionRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [relatedGames.length]);
-
-  const scrollTo = (idx) => {
-    sectionRefs.current[idx]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const goToFilter = (type, value) => {
-    if (!value) return;
-    navigate(`/games/filter/${type}/${encodeURIComponent(String(value))}`);
-  };
-
-  const sectionCount = relatedGames.length > 0 ? 5 : 4;
-
-  const particles = useMemo(() =>
-    Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      delay: `${Math.random() * 8}s`,
-      duration: `${6 + Math.random() * 8}s`,
-      size: `${2 + Math.random() * 4}px`,
-    })),
-  []);
-
-  const orbits = useMemo(() =>
-    Array.from({ length: 3 }, (_, i) => ({
-      id: i,
-      size: 200 + i * 180,
-      duration: `${20 + i * 10}s`,
-      delay: `${i * 2}s`,
-    })),
-  []);
 
   return (
-    <div className="ghp" style={{ '--gc': accentColor }}>
-
-      {/* Side dots */}
-      <nav className="ghp-nav">
-        {Array.from({ length: sectionCount }, (_, i) => (
-          <button key={i} type="button" className={`ghp-nav__dot ${activeSection === i ? 'ghp-nav__dot--on' : ''}`} onClick={() => scrollTo(i)}>
-            <span className="ghp-nav__pulse" />
+    <div className="guh" style={{ '--guh-accent': accentColor }}>
+      <div className="guh__backdrop" style={banner ? { backgroundImage: `url(${banner})` } : undefined} />
+      <div className="guh__overlay" />
+      <div className="guh__inner">
+        <header className="guh-hero">
+          <button type="button" className="guh-back" onClick={() => navigate(-1)}>
+            <FaArrowLeft />
+            <span>Volver</span>
           </button>
-        ))}
-      </nav>
 
-      {/* ═══════ SECTION 1 — HERO ═══════ */}
-      <section className="ghp-s ghp-hero" ref={(el) => (sectionRefs.current[0] = el)} onMouseMove={onHeroMove} onMouseLeave={onHeroLeave}>
-        <div className="ghp-hero__bg" style={{ backgroundImage: banner ? `url(${banner})` : 'none', transform: `translate3d(${parallax.x * 16}px, ${parallax.y * 12}px, 0) scale(1.1)` }} />
-        <div className="ghp-hero__fade" />
-        <div className="ghp-hero__vignette" />
-        <div className="ghp-hero__mesh" />
-        <div className="ghp-particles">{particles.map((p) => <span key={p.id} className="ghp-particle" style={{ left: p.left, animationDelay: p.delay, animationDuration: p.duration, width: p.size, height: p.size }} />)}</div>
+          <div className="guh-hero__grid">
+            <div className="guh-hero__copy">
+              <span className="guh-hero__eyebrow">Hub util de juego</span>
+              <h1>{name}</h1>
+              <p>{history}</p>
 
-        {/* Orbital rings */}
-        <div className="ghp-orbits">
-          {orbits.map((o) => (
-            <div key={o.id} className="ghp-orbit" style={{ width: `${o.size}px`, height: `${o.size}px`, animationDuration: o.duration, animationDelay: o.delay }} />
-          ))}
-        </div>
-
-        <button className="ghp-back" type="button" onClick={() => navigate(-1)}><FaArrowLeft /> <span>VOLVER</span></button>
-
-        <div className="ghp-hero__center">
-          <span className="ghp-hero__kicker"><FaFire /> GAME HUB</span>
-          <h1 className="ghp-hero__title">{name}</h1>
-          <div className="ghp-hero__line">
-            <span className="ghp-hero__line-glow" />
-          </div>
-          <p className="ghp-hero__desc">{history.length <= 200 ? history : `${history.slice(0, 200)}...`}</p>
-
-          <div className="ghp-hero__tags">
-            <button className="ghp-chip ghp-chip--dev" type="button" onClick={() => goToFilter('company', developer)}><FaBuilding /> {developer}</button>
-            {tags.map((tag) => <button key={tag} type="button" className="ghp-chip" onClick={() => goToFilter('tag', tag)}>{tag}</button>)}
-          </div>
-
-          <div className="ghp-hero__row">
-            {[
-              { label: 'Jugadores', value: communityGame?.players || '—', icon: <FaUsers /> },
-              { label: 'Torneos', value: tournaments.length, icon: <FaTrophy /> },
-              { label: 'Comunidades', value: userCommunities.length, icon: <FaGlobe /> },
-              { label: 'Organizadores', value: organizers.length, icon: <FaShieldAlt /> },
-            ].map((s) => (
-              <div key={s.label} className="ghp-hero__stat">
-                <div className="ghp-hero__stat-icon">{s.icon}</div>
-                <strong>{s.value}</strong>
-                <span>{s.label}</span>
+              <div className="guh-facts">
+                {primaryFacts.map((fact) => (
+                  <div key={fact.label} className="guh-fact">
+                    <span>{fact.icon}</span>
+                    <div>
+                      <small>{fact.label}</small>
+                      <strong>{fact.value}</strong>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+
+              <div className="guh-actions">
+                <button type="button" className="guh-btn guh-btn--primary" onClick={handleJoinCurrentHub} disabled={joiningHub}>
+                  <FaSignInAlt />
+                  {currentGameStats.joined ? 'Ya estas en el hub' : joiningHub ? 'Uniendo...' : 'Unirme al hub'}
+                </button>
+                <button type="button" className="guh-btn guh-btn--ghost" onClick={() => navigate('/chats')}>
+                  <FaCommentDots />
+                  Abrir chat
+                </button>
+                <button type="button" className="guh-btn guh-btn--ghost" onClick={() => navigate('/torneos')}>
+                  <FaTrophy />
+                  Ver torneos
+                </button>
+              </div>
+            </div>
+
+            <aside className="guh-hero__aside">
+              <div className="guh-status">
+                <strong>
+                  <span className={`guh-status__dot ${currentGameStats.joined ? 'is-on' : ''}`} />
+                  {currentGameStats.joined ? 'Unido al hub' : 'Aun no te has unido'}
+                </strong>
+                <p>Todo lo importante de {name} reunido en una sola vista.</p>
+              </div>
+
+              <div className="guh-stats">
+                {summaryStats.map((stat) => (
+                  <StatCard key={stat.label} icon={stat.icon} label={stat.label} value={stat.value} />
+                ))}
+              </div>
+            </aside>
           </div>
 
-          {/* Hero action buttons */}
-          <div className="ghp-hero__actions">
-            <button type="button" className="ghp-btn ghp-btn--primary ghp-btn--lg">
-              <FaSignInAlt /> Unirme al Hub
-            </button>
-            <button type="button" className="ghp-btn ghp-btn--glass ghp-btn--lg">
-              <FaBell /> Seguir
-            </button>
-            <button type="button" className="ghp-btn ghp-btn--glass ghp-btn--lg">
-              <FaShareAlt /> Compartir
-            </button>
-          </div>
-        </div>
-
-        <button className="ghp-scroll" type="button" onClick={() => scrollTo(1)}><span>EXPLORAR</span> <FaChevronDown /></button>
-      </section>
-
-      {/* ═══════ SECTION 2 — PUBLICATION HUB ═══════ */}
-      <section className={`ghp-s ghp-sec ${revealed.has(1) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[1] = el)}>
-        <div className="ghp-sec__bg-accent" />
-        <div className="ghp-sec__inner">
-          <SectionTitle icon={<FaNewspaper />} title="Hub de Novedades" subtitle={`Torneos, comunidades y alianzas de ${name}`} />
-
-          {/* Tab navigation */}
-          <div className="ghp-tabs">
+          <div className="guh-anchor-nav">
             {[
-              { id: 'feed', label: 'Feed', icon: <FaNewspaper /> },
-              { id: 'tournaments', label: 'Torneos', icon: <FaTrophy /> },
-              { id: 'communities', label: 'Comunidades', icon: <FaUsers /> },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`ghp-tab ${activeTab === tab.id ? 'ghp-tab--active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.icon} {tab.label}
+              ['communities', 'Comunidades'],
+              ['tournaments', 'Torneos'],
+              ['teams', 'Equipos'],
+              ['hub', 'Chat hub'],
+              ['creators', 'Creadores'],
+              ['organizers', 'Organizadores'],
+            ].map(([sectionId, label]) => (
+              <button key={sectionId} type="button" className="guh-anchor" onClick={() => goToSection(sectionId)}>
+                {label}
               </button>
             ))}
           </div>
+        </header>
 
-          <div className="ghp-news-grid">
-            <div className="ghp-news-main">
-              {/* Composer */}
-              <article className="ghp-composer">
-                <div className="ghp-composer__identity">
-                  <div className="ghp-composer__avatar">{String(name).slice(0, 2).toUpperCase()}</div>
-                  <div className="ghp-composer__copy">
-                    <h3>Publicar Novedad</h3>
-                    <p>Comparte anuncios, reclutamiento o highlights con la comunidad de {name}.</p>
-                  </div>
-                </div>
+        <main className="guh-panels">
+          <section id="communities" className="guh-panel guh-panel--communities">
+            <SectionHeader
+              icon={<FaGlobe />}
+              title="Comunidades del juego"
+              subtitle="Entra a los espacios donde se recluta, se conversa del meta y se publican novedades."
+              actionLabel="Ver comunidad"
+              onAction={() => navigate('/comunidad')}
+            />
 
-                {featuredTournament && (
-                  <div className="ghp-composer__featured">
-                    <div
-                      className="ghp-composer__featured-bg"
-                      style={{ backgroundImage: featuredTournament?.banner || banner ? `url(${featuredTournament?.banner || banner})` : 'none' }}
-                    />
-                    <div className="ghp-composer__featured-overlay" />
-                    <div className="ghp-composer__featured-content">
-                      <div className="ghp-composer__featured-top">
-                        <span className="ghp-composer__pill"><FaTrophy /> Torneo activo</span>
-                        <span className="ghp-composer__live-dot"><span /> EN VIVO</span>
+            {communityCards.length > 0 ? (
+              <div className="guh-community-list">
+                {communityCards.map((community) => (
+                  <article key={community.key} className="guh-community-card">
+                    <div className="guh-community-card__top">
+                      <div>
+                        <h3>{community.name}</h3>
+                        <p>{community.description}</p>
                       </div>
-                      <strong>{featuredTournament.title}</strong>
-                      <small><FaCalendarAlt /> {featuredTournament.date || 'Proximamente'} &bull; Prize: {featuredTournament.prize || 'TBD'}</small>
-                      <div className="ghp-composer__featured-actions">
-                        <button type="button" className="ghp-btn ghp-btn--join">
-                          <FaHandshake /> Unirme
-                        </button>
-                        <button type="button" className="ghp-btn ghp-btn--glass">
-                          <FaEye /> Ver detalles
-                        </button>
-                        <button type="button" className="ghp-btn ghp-btn--glass">
-                          <FaShareAlt /> Compartir
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <textarea
-                  className="ghp-composer__input"
-                  rows={4}
-                  maxLength={320}
-                  value={postDraft}
-                  onChange={(e) => setPostDraft(e.target.value)}
-                  placeholder={`Escribe tu publicacion para ${name}. Ejemplo: "Busco jungla para scrims hoy 8PM".`}
-                />
-
-                <div className="ghp-composer__footer">
-                  <div className="ghp-composer__tools">
-                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaImage /> Imagen</button>
-                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaPlay /> Clip</button>
-                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaCalendarAlt /> Evento</button>
-                    <button type="button" className="ghp-btn ghp-btn--ghost"><FaLink /> Enlace</button>
-                  </div>
-                  <div className="ghp-composer__submit">
-                    <span className="ghp-composer__counter">{postDraft.length}/320</span>
-                    <button type="button" className="ghp-btn ghp-btn--primary" onClick={handlePublish} disabled={!postDraft.trim()}>
-                      <FaPaperPlane /> Publicar
-                    </button>
-                  </div>
-                </div>
-              </article>
-
-              {/* Feed cards */}
-              <div className="ghp-feed">
-                {feedItems.map((item, i) => (
-                  <article key={`${item.title}-${i}`} className="ghp-feed__card">
-                    <div className="ghp-feed__media" style={{ backgroundImage: item.cover ? `url(${item.cover})` : 'none' }}>
-                      <div className="ghp-feed__media-fade" />
-                      <div className="ghp-feed__logo">{item.logo || 'EF'}</div>
-                      <div className="ghp-feed__media-badge">
-                        <span className={`ghp-feed__type ghp-feed__type--${item.type}`}>{item.icon} {item.type}</span>
-                      </div>
-                      {item.type === 'torneo' && (
-                        <div className="ghp-feed__media-live">
-                          <FaEye /> {item.viewers}
-                        </div>
-                      )}
+                      <button type="button" className="guh-btn guh-btn--ghost" onClick={community.onClick}>
+                        {community.actionLabel}
+                      </button>
                     </div>
 
-                    <div className="ghp-feed__card-body">
-                      <div className="ghp-feed__card-top">
-                        <span className="ghp-feed__badge">{item.badge}</span>
-                        <button type="button" className="ghp-feed__more"><FaEllipsisH /></button>
-                      </div>
-                      <h3 className="ghp-feed__card-title">{item.title}</h3>
-                      <p className="ghp-feed__card-sub">{item.sub}</p>
-                      <p className="ghp-feed__message">
-                        {item.type === 'torneo' && `Nuevo anuncio del torneo ${item.title}. Cupos limitados para squads competitivos.`}
-                        {item.type === 'comunidad' && `La comunidad ${item.title} esta activa. Comparte tus clips y recluta jugadores.`}
-                        {item.type === 'sponsor' && `${item.title} confirma apoyo oficial para eventos y dinamicas semanales.`}
-                      </p>
-
-                      {/* Engagement stats */}
-                      <div className="ghp-feed__stats">
-                        <span><FaThumbsUp /> {item.likes + (likedCards.has(i) ? 1 : 0)}</span>
-                        <span><FaCommentDots /> {item.comments}</span>
-                        <span><FaEye /> {item.viewers}</span>
-                      </div>
-
-                      <div className="ghp-feed__divider" />
-
-                      <div className="ghp-feed__actions">
-                        <button type="button" className={`ghp-btn ghp-btn--action ${likedCards.has(i) ? 'ghp-btn--liked' : ''}`} onClick={() => toggleLike(i)}>
-                          <FaHeart /> {likedCards.has(i) ? 'Liked' : 'Like'}
-                        </button>
-                        <button type="button" className="ghp-btn ghp-btn--action"><FaCommentDots /> Comentar</button>
-                        <button type="button" className="ghp-btn ghp-btn--action"><FaShareAlt /> Compartir</button>
-                        <button type="button" className={`ghp-btn ghp-btn--action ${savedCards.has(i) ? 'ghp-btn--saved' : ''}`} onClick={() => toggleSave(i)}>
-                          <FaBookmark /> {savedCards.has(i) ? 'Guardado' : 'Guardar'}
-                        </button>
-                      </div>
-
-                      <div className="ghp-feed__card-cta">
-                        <button type="button" className="ghp-btn ghp-btn--join ghp-btn--wide">
-                          <FaHandshake /> {item.type === 'torneo' ? 'Inscribirme al torneo' : item.type === 'comunidad' ? 'Unirme a la comunidad' : 'Explorar alianza'}
-                        </button>
-                        <button type="button" className="ghp-btn ghp-btn--danger-sm"><FaFlag /> Reportar</button>
-                      </div>
+                    <div className="guh-community-card__meta">
+                      <span>
+                        <FaUsers />
+                        {community.membersLabel} miembros
+                      </span>
+                      <span>
+                        <FaBolt />
+                        {community.onlineLabel} activos
+                      </span>
                     </div>
-                    <div className="ghp-feed__card-line" />
+
+                    <div className="guh-tags">
+                      {community.tags.map((tag) => (
+                        <span key={`${community.key}-${tag}`} className="guh-tag">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </article>
                 ))}
               </div>
-            </div>
+            ) : (
+              <EmptyState
+                title="Todavia no hay comunidades cargadas"
+                copy={`Cuando se activen comunidades para ${name}, apareceran aqui con acceso directo.`}
+                actionLabel="Explorar comunidad"
+                onAction={() => navigate('/comunidad')}
+              />
+            )}
+          </section>
 
-            <aside className="ghp-news-side">
-              {/* Quick stats panel */}
-              <article className="ghp-side-stats">
-                <header className="ghp-side-stats__head">
-                  <FaChartLine /> <h4>Actividad del Hub</h4>
-                </header>
-                <div className="ghp-side-stats__grid">
-                  <div className="ghp-side-stats__item">
-                    <strong>{tournaments.length}</strong>
-                    <span>Torneos</span>
-                  </div>
-                  <div className="ghp-side-stats__item">
-                    <strong>{userCommunities.length}</strong>
-                    <span>Comunidades</span>
-                  </div>
-                  <div className="ghp-side-stats__item">
-                    <strong>{sponsors.length}</strong>
-                    <span>Sponsors</span>
-                  </div>
-                  <div className="ghp-side-stats__item">
-                    <strong>{organizers.length}</strong>
-                    <span>Organizers</span>
-                  </div>
-                </div>
-              </article>
+          <section id="hub" className="guh-panel guh-panel--hub">
+            <SectionHeader
+              icon={<FaCommentDots />}
+              title="Chat hub de juego"
+              subtitle="Canales listos para conversar, reclutar, coordinar scrims y seguir el meta."
+              actionLabel="Ir a chats"
+              onAction={() => navigate('/chats')}
+            />
 
-              {communityPanels.map((panel) => (
-                <article key={panel.id} className="ghp-side-panel">
-                  <header className="ghp-side-panel__head">
-                    <span>{panel.icon}</span>
-                    <h4>{panel.title}</h4>
-                    <FaChevronRight className="ghp-side-panel__arrow" />
-                  </header>
-                  <div className="ghp-side-panel__list">
-                    {panel.items.map((c, i) => (
-                      <button type="button" key={`${panel.id}-${c.name}-${i}`} className="ghp-side-item">
-                        <div className="ghp-side-item__icon"><FaUsers /></div>
-                        <div className="ghp-side-item__text">
-                          <strong>{c.name}</strong>
-                          <span>{c.membersLabel} miembros</span>
-                        </div>
-                        <div className="ghp-side-item__join"><FaSignInAlt /></div>
-                      </button>
-                    ))}
+            <div className="guh-room-list">
+              {hubRooms.map((room) => (
+                <article key={room.name} className="guh-room">
+                  <div className="guh-room__top">
+                    <div>
+                      <h3>{room.name}</h3>
+                      <p>{room.description}</p>
+                    </div>
+                    <span className="guh-room__status">{room.status}</span>
+                  </div>
+
+                  <div className="guh-room__footer">
+                    <strong>{formatGameHubCount(room.users)}</strong>
+                    <span>usuarios activos</span>
+                    <button type="button" className="guh-btn guh-btn--ghost" onClick={() => navigate('/chats')}>
+                      Abrir chat
+                    </button>
                   </div>
                 </article>
               ))}
-            </aside>
-          </div>
-        </div>
-        <button className="ghp-scroll ghp-scroll--sec" type="button" onClick={() => scrollTo(2)}><FaChevronDown /></button>
-      </section>
+            </div>
 
-      {/* ═══════ SECTION 3 — HISTORIA & COMUNIDAD ═══════ */}
-      <section className={`ghp-s ghp-sec ${revealed.has(2) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[2] = el)}>
-        <div className="ghp-sec__bg-accent ghp-sec__bg-accent--alt" />
-        <div className="ghp-sec__inner">
-          <SectionTitle icon={<FaStar />} title="Historia & Comunidad" subtitle={`Conoce la historia y comunidades de ${name}`} />
-
-          <div className="ghp-duo">
-            <article className="ghp-block ghp-block--story">
-              <div className="ghp-block__head"><FaStar /> <h3>Historia</h3></div>
-              <div className="ghp-block__accent-line" />
-              <p className="ghp-block__text">{history}</p>
-              <div className="ghp-block__footer">
-                <span className="ghp-block__dev"><FaBuilding /> {developer}</span>
-              </div>
-            </article>
-            <article className="ghp-block">
-              <div className="ghp-block__head"><FaUsers /> <h3>Comunidades</h3></div>
-              <div className="ghp-block__accent-line" />
-              <div className="ghp-comm-list">
-                {userCommunities.map((c, i) => (
-                  <div key={`${c.name}-${i}`} className="ghp-comm">
-                    <div className="ghp-comm__left">
-                      <div className="ghp-comm__avatar"><FaUsers /></div>
-                      <div><strong>{c.name}</strong><span>{c.members || '0'} miembros</span></div>
-                    </div>
-                    <div className="ghp-comm__right">
-                      <button type="button" className="ghp-btn ghp-btn--join ghp-btn--sm"><FaSignInAlt /> Unirme</button>
-                      <FaChevronRight className="ghp-comm__arrow" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </div>
-        </div>
-        <button className="ghp-scroll ghp-scroll--sec" type="button" onClick={() => scrollTo(3)}><FaChevronDown /></button>
-      </section>
-
-      {/* ═══════ SECTION 4 — SPONSORS & ORGANIZERS ═══════ */}
-      <section className={`ghp-s ghp-sec ${revealed.has(3) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[3] = el)}>
-        <div className="ghp-sec__bg-accent" />
-        <div className="ghp-sec__inner">
-          <SectionTitle icon={<FaHandshake />} title="Patrocinadores & Organizadores" subtitle="Alianzas oficiales y organizadores verificados" />
-
-          <div className="ghp-duo">
-            <article className="ghp-block">
-              <div className="ghp-block__head"><FaCrown /> <h3>Patrocinadores</h3></div>
-              <div className="ghp-block__accent-line" />
-              <div className="ghp-sponsors-grid">
-                {sponsors.map((s, i) => (
-                  <div key={`${s.name}-${i}`} className="ghp-sponsor-item">
-                    <div className="ghp-sponsor-item__ico"><FaHandshake /></div>
-                    <div className="ghp-sponsor-item__info">
-                      <strong>{s.name}</strong>
-                      <span>Partner oficial</span>
-                    </div>
-                    <div className="ghp-sponsor-item__badge">PARTNER</div>
-                  </div>
-                ))}
-              </div>
-            </article>
-            <article className="ghp-block">
-              <div className="ghp-block__head"><FaShieldAlt /> <h3>Organizadores</h3></div>
-              <div className="ghp-block__accent-line" />
-              <div className="ghp-org-list">
-                {organizers.map((o, i) => (
-                  <div key={`${o.name}-${i}`} className="ghp-org-item">
-                    <div className="ghp-org-item__avatar"><FaShieldAlt /></div>
-                    <div className="ghp-org-item__info">
-                      <strong>{o.name}</strong>
-                      <span>{o.motto || 'Official organizer'}</span>
-                      {o.region && <small>{o.region}</small>}
-                    </div>
-                    <div className="ghp-org-item__verified"><FaShieldAlt /> Verificado</div>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </div>
-        </div>
-        {relatedGames.length > 0 && <button className="ghp-scroll ghp-scroll--sec" type="button" onClick={() => scrollTo(4)}><FaChevronDown /></button>}
-      </section>
-
-      {/* ═══════ SECTION 5 — RELATED GAMES ═══════ */}
-      {relatedGames.length > 0 && (
-        <section className={`ghp-s ghp-sec ${revealed.has(4) ? 'ghp-sec--visible' : ''}`} ref={(el) => (sectionRefs.current[4] = el)}>
-          <div className="ghp-sec__bg-accent ghp-sec__bg-accent--alt" />
-          <div className="ghp-sec__inner">
-            <SectionTitle icon={<FaGamepad />} title={`Mas de ${developer}`} subtitle="Explora otros juegos del mismo estudio" />
-
-            <div className="ghp-related-grid">
-              {relatedGames.map((g) => (
-                <button key={g.id} type="button" className="ghp-rcard" onClick={() => navigate(`/game/${g.id}`)} style={{ '--rg': g.color || accentColor }}>
-                  <div className="ghp-rcard__img"><img src={g.img || g.image || ''} alt={g.name} loading="lazy" /></div>
-                  <div className="ghp-rcard__body">
-                    <span className="ghp-rcard__cat">{g.cat}</span>
-                    <h4>{g.name}</h4>
-                    <span className="ghp-rcard__players"><FaUsers /> {g.players || '—'}</span>
-                    <span className="ghp-rcard__cta">VER HUB <FaChevronRight /></span>
-                  </div>
+            <div className="guh-utility-card">
+              <strong>Acciones rapidas</strong>
+              <div className="guh-utility-card__actions">
+                <button type="button" className="guh-btn guh-btn--ghost" onClick={handleJoinCurrentHub} disabled={joiningHub}>
+                  <FaSignInAlt />
+                  {currentGameStats.joined ? 'Seguir activo' : 'Entrar al hub'}
                 </button>
+                <button type="button" className="guh-btn guh-btn--ghost" onClick={() => navigate('/tv')}>
+                  <FaPlay />
+                  Ver cobertura
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section id="tournaments" className="guh-panel guh-panel--tournaments">
+            <SectionHeader
+              icon={<FaTrophy />}
+              title="Torneos del juego"
+              subtitle="Revisa los brackets, premios, fechas y organizadores que ya estan moviendo la escena."
+              actionLabel="Abrir torneos"
+              onAction={() => navigate('/torneos')}
+            />
+
+            {tournamentCards.length > 0 ? (
+              <div className="guh-card-grid">
+                {tournamentCards.map((tournament) => (
+                  <article key={tournament.key} className="guh-info-card">
+                    <div className="guh-info-card__top">
+                      <span className={`guh-badge guh-badge--${tournament.tone}`}>{tournament.status}</span>
+                      <button type="button" className="guh-inline-link" onClick={tournament.onClick}>
+                        Ver torneos
+                        <FaChevronRight />
+                      </button>
+                    </div>
+
+                    <h3>{tournament.title}</h3>
+
+                    <div className="guh-info-card__rows">
+                      <div>
+                        <small>Premio</small>
+                        <strong>{tournament.prize}</strong>
+                      </div>
+                      <div>
+                        <small>Fecha</small>
+                        <strong>{tournament.date}</strong>
+                      </div>
+                      <div>
+                        <small>Formato</small>
+                        <strong>{tournament.format}</strong>
+                      </div>
+                      <div>
+                        <small>Organizador</small>
+                        <strong>{tournament.organizer}</strong>
+                      </div>
+                      <div>
+                        <small>Equipos</small>
+                        <strong>{tournament.teamsLabel}</strong>
+                      </div>
+                      <div>
+                        <small>Ubicacion</small>
+                        <strong>{tournament.location}</strong>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No hay torneos visibles"
+                copy={`Todavia no aparecen torneos para ${name}. Cuando se publiquen, saldran aqui primero.`}
+                actionLabel="Crear torneo"
+                onAction={() => navigate('/create-tournament')}
+              />
+            )}
+          </section>
+
+          <section id="teams" className="guh-panel guh-panel--teams">
+            <SectionHeader
+              icon={<FaShieldAlt />}
+              title="Equipos del juego"
+              subtitle="Equipos activos para scrims, tryouts, torneos y reclutamiento competitivo."
+              actionLabel="Abrir equipos"
+              onAction={() => navigate('/equipos')}
+            />
+
+            {teamCards.length > 0 ? (
+              <div className="guh-card-grid">
+                {teamCards.map((team) => (
+                  <article key={team.id} className="guh-info-card">
+                    <div className="guh-team__head">
+                      <div>
+                        <span className="guh-team__tag">{team.tag}</span>
+                        <h3>{team.name}</h3>
+                      </div>
+                      <span className="guh-team__region">{team.region}</span>
+                    </div>
+
+                    <div className="guh-info-card__rows">
+                      <div>
+                        <small>Jugadores</small>
+                        <strong>{team.players}</strong>
+                      </div>
+                      <div>
+                        <small>Win rate</small>
+                        <strong>{team.winRate}%</strong>
+                      </div>
+                      <div>
+                        <small>Puntos</small>
+                        <strong>{Number(team.points || 0).toLocaleString('es-DO')}</strong>
+                      </div>
+                      <div>
+                        <small>Titulos</small>
+                        <strong>{team.trophies}</strong>
+                      </div>
+                    </div>
+
+                    <button type="button" className="guh-btn guh-btn--ghost guh-btn--full" onClick={() => navigate('/equipos')}>
+                      Ver equipos
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No hay equipos listados"
+                copy={`Todavia no hay equipos cargados para ${name}. Puedes crear el primero desde aqui.`}
+                actionLabel="Crear equipo"
+                onAction={() => navigate('/create-team')}
+              />
+            )}
+          </section>
+
+          <section id="creators" className="guh-panel guh-panel--creators">
+            <SectionHeader
+              icon={<FaPlay />}
+              title="Creadores y cobertura"
+              subtitle="Solo contenido util para seguir el juego: analisis, directos, clips y watch parties."
+              actionLabel="Abrir TV"
+              onAction={() => navigate('/tv')}
+            />
+
+            <div className="guh-card-grid">
+              {creatorCards.map((creator) => (
+                <article key={creator.title} className="guh-info-card">
+                  <div className="guh-info-card__top">
+                    <span className="guh-badge guh-badge--neutral">{creator.format}</span>
+                  </div>
+                  <h3>{creator.title}</h3>
+                  <p className="guh-copy">{creator.description}</p>
+                  <button type="button" className="guh-btn guh-btn--ghost guh-btn--full" onClick={() => navigate('/tv')}>
+                    Ver cobertura
+                  </button>
+                </article>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+
+          <section id="organizers" className="guh-panel guh-panel--organizers">
+            <SectionHeader
+              icon={<FaCalendarAlt />}
+              title="Organizadores"
+              subtitle="Quienes estan moviendo esta escena con torneos, activaciones y operacion del circuito."
+              actionLabel="Crear torneo"
+              onAction={() => navigate('/create-tournament')}
+            />
+
+            {organizerCards.length > 0 ? (
+              <div className="guh-organizer-list">
+                {organizerCards.map((organizer) => (
+                  <article key={organizer.key} className="guh-organizer">
+                    <div className="guh-organizer__icon">
+                      <FaShieldAlt />
+                    </div>
+                    <div className="guh-organizer__body">
+                      <div className="guh-organizer__top">
+                        <h3>{organizer.name}</h3>
+                        <span className="guh-badge guh-badge--neutral">Verificado</span>
+                      </div>
+                      <p>{organizer.description}</p>
+                      <small>{organizer.tournamentsLabel}</small>
+                    </div>
+                    <button type="button" className="guh-btn guh-btn--ghost" onClick={() => navigate('/torneos')}>
+                      Ver torneos
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No hay organizadores visibles"
+                copy={`Cuando se registren organizadores para ${name}, apareceran aqui con su actividad.`}
+                actionLabel="Postularme como organizador"
+                onAction={() => navigate('/organizer-application')}
+              />
+            )}
+          </section>
+        </main>
+      </div>
     </div>
   );
 };
-
-/* ── Section Title — centered with decorative line ── */
-const SectionTitle = ({ icon, title, subtitle }) => (
-  <div className="ghp-stitle">
-    <div className="ghp-stitle__icon">{icon}</div>
-    <h2>{title}</h2>
-    <div className="ghp-stitle__line">
-      <span className="ghp-stitle__line-dot" />
-      <span className="ghp-stitle__line-bar" />
-      <span className="ghp-stitle__line-dot" />
-    </div>
-    <p>{subtitle}</p>
-  </div>
-);
 
 export default CommunityGamePageTemplate;

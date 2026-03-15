@@ -63,6 +63,12 @@ import CommunityTemplate from './pages/menu/Community/CommunityTemplate/Communit
 import CommunityAdminTemplate from './pages/menu/Community/CommunityAdminTemplate/CommunityAdminTemplate';
 import CommunityGamePageTemplate from './pages/Game/CommunityGamePageTemplate';
 import CommunitySpacePage from './pages/menu/Community/groups/CommunitySpacePage';
+import ContentCreatorPage from './pages/menu/Roles/ContentCreatorPage';
+import CoachPage from './pages/menu/Roles/CoachPage';
+import CasterPage from './pages/menu/Roles/CasterPage';
+import SponsorPage from './pages/menu/Roles/SponsorPage';
+import AnalystPage from './pages/menu/Roles/AnalystPage';
+import AdminPanel from './pages/menu/Admin/AdminPanel';
 
 const WelcomeTrigger = () => null;
 
@@ -170,6 +176,12 @@ const AppRouterContent = () => {
             <Route path="/community/:id/admin" element={<CommunityAdminTemplate />} />
             <Route path="/group/:id" element={<GroupPage />} />
             <Route path="/organizer/:id" element={<OrganizerPage />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/role/content-creator/apply" element={<ContentCreatorPage />} />
+            <Route path="/role/coach/apply" element={<CoachPage />} />
+            <Route path="/role/caster/apply" element={<CasterPage />} />
+            <Route path="/role/sponsor/apply" element={<SponsorPage />} />
+            <Route path="/role/analyst/apply" element={<AnalystPage />} />
           </Route>
         </Route>
       </Routes>

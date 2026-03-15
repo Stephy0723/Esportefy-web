@@ -5,13 +5,15 @@ import { gamesList } from '../../../../data/gamesData';
 import { COMMUNITY_GAMES } from '../../../../data/communityData';
 import { supportedGamesDetailedData as gamesDetailedData } from '../../../../data/supportedGamesDetailedData';
 import { useTheme, THEMES } from '../../../../context/ThemeContext';
+import { fetchGameHubStats, joinGameHub, formatGameHubCount } from '../gameHub.service';
 import './GameCard.css';
 
 const GamesPage = () => {
     const { gameId } = useParams();
     const navigate = useNavigate();
     const [isLiked, setIsLiked] = useState(false);
-    const [isFollowing, setIsFollowing] = useState(false);
+    const [gameStats, setGameStats] = useState({ usersCount: 0, activeCount: 0, joined: false });
+    const [joiningHub, setJoiningHub] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [copied, setCopied] = useState(false);
     const [toast, setToast] = useState(null);
@@ -47,6 +49,7 @@ const GamesPage = () => {
     const game = communityGame || catalogGame || null;
 
     const gameColor = game?.color || '#8EDB15';
+    const isFollowing = gameStats.joined;
 
     // Generate particles on mount
     useEffect(() => {
@@ -60,6 +63,31 @@ const GamesPage = () => {
         }));
         setParticles(p);
     }, []);
+
+    useEffect(() => {
+        if (!incomingId) return;
+
+        let cancelled = false;
+
+        const loadGameStats = async () => {
+            try {
+                const stats = await fetchGameHubStats(incomingId);
+                if (!cancelled) {
+                    setGameStats(stats);
+                }
+            } catch (_) {
+                if (!cancelled) {
+                    setGameStats({ usersCount: 0, activeCount: 0, joined: false });
+                }
+            }
+        };
+
+        loadGameStats();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [incomingId]);
 
     // Close share menu on outside click
     useEffect(() => {
@@ -97,13 +125,29 @@ const GamesPage = () => {
     }, [showToast]);
 
     // Handle follow toggle
-    const handleFollow = useCallback(() => {
-        setIsFollowing(prev => {
-            const newState = !prev;
-            showToast(newState ? '¡Ahora sigues esta comunidad!' : 'Dejaste de seguir', newState ? 'success' : 'info');
-            return newState;
-        });
-    }, [showToast]);
+    const handleJoinHub = useCallback(async () => {
+        if (!incomingId || joiningHub) return null;
+
+        try {
+            setJoiningHub(true);
+            const response = await joinGameHub(incomingId);
+            setGameStats(response.stats);
+            showToast(
+                response.alreadyJoined ? 'Ya formas parte de este hub.' : 'Ahora formas parte de esta comunidad.',
+                'success'
+            );
+            return response.stats;
+        } catch {
+            showToast('No se pudo actualizar el conteo de este juego.', 'error');
+            return null;
+        } finally {
+            setJoiningHub(false);
+        }
+    }, [incomingId, joiningHub, showToast]);
+
+    const handleFollow = useCallback(async () => {
+        await handleJoinHub();
+    }, [handleJoinHub]);
 
     // Copy link to clipboard
     const handleCopyLink = useCallback(async () => {
@@ -201,6 +245,34 @@ const GamesPage = () => {
         navigate(`/games/filter/${type}/${encodeURIComponent(String(value))}`);
     };
 
+    const handleEnterGame = useCallback(async () => {
+        await handleJoinHub();
+
+        const routeIdMap = {
+            overwatch: 'overwatch',
+            ow2: 'overwatch',
+            rocket: 'rocket',
+            rl: 'rocket',
+            freefire: 'freefire',
+            ff: 'freefire',
+            wildrift: 'wildrift',
+            wr: 'wildrift',
+            r6: 'r6',
+            r6s: 'r6',
+            pubg: 'pubgm',
+            pubgm: 'pubgm',
+            hs: 'hearthstone',
+            hearthstone: 'hearthstone',
+            cr: 'clashroyale',
+            clashroyale: 'clashroyale',
+            lor: 'lor',
+            nba2k: 'nba2k',
+            aov: 'hok',
+        };
+        const routeId = routeIdMap[incomingId] || routeIdMap[catalogId] || catalogId;
+        navigate(`/game/${routeId}`);
+    }, [catalogId, handleJoinHub, incomingId, navigate]);
+
     return (
         <div className={`gp-backdrop theme-${theme}`} style={{ '--gc': gameColor }}>
             {/* Toast notification */}
@@ -286,7 +358,7 @@ const GamesPage = () => {
                         <div className="gp-stats-bar__item">
                             <FaUsers className="gp-stats-bar__icon" />
                             <div className="gp-stats-bar__text">
-                                <strong>{game.members || '5.2k'}</strong>
+                                <strong>{formatGameHubCount(gameStats.usersCount)}</strong>
                                 <span>miembros</span>
                             </div>
                         </div>
@@ -294,7 +366,7 @@ const GamesPage = () => {
                         <div className="gp-stats-bar__item">
                             <FaBolt className="gp-stats-bar__icon" />
                             <div className="gp-stats-bar__text">
-                                <strong>{game.active || '1.2k'}</strong>
+                                <strong>{formatGameHubCount(gameStats.activeCount)}</strong>
                                 <span>activos</span>
                             </div>
                         </div>
@@ -318,10 +390,15 @@ const GamesPage = () => {
                     {/* Footer */}
                     <div className="gp-footer">
                         <div className="gp-avatars">
-                            <img src="https://i.pravatar.cc/150?u=1" alt="" />
-                            <img src="https://i.pravatar.cc/150?u=2" alt="" />
-                            <img src="https://i.pravatar.cc/150?u=3" alt="" />
-                            <div className="gp-avatars__count">+{parseInt(game.members) || 99}</div>
+                            <div className="gp-avatars__ghosts" aria-hidden="true">
+                                <span className="gp-avatars__ghost" />
+                                <span className="gp-avatars__ghost" />
+                                <span className="gp-avatars__ghost" />
+                            </div>
+                            <div className="gp-avatars__summary">
+                                <strong>{formatGameHubCount(gameStats.usersCount)}</strong>
+                                <span>{Number(gameStats.usersCount || 0) > 0 ? 'usuarios en el hub' : 'Sin miembros aun'}</span>
+                            </div>
                         </div>
 
                         <div className="gp-actions">
@@ -354,38 +431,16 @@ const GamesPage = () => {
                             {/* Follow button */}
                             <button 
                                 className={`gp-btn gp-btn--icon ${isFollowing ? 'active' : ''}`} 
-                                title={isFollowing ? 'Dejar de seguir' : 'Seguir'}
+                                title={isFollowing ? 'Ya formas parte del hub' : 'Unirme al hub'}
                                 onClick={handleFollow}
+                                disabled={joiningHub}
                             >
                                 {isFollowing ? <FaUserCheck /> : <FaUserPlus />}
                             </button>
                             <button
                                 className="gp-btn gp-btn--enter"
-                                onClick={() => {
-                                    const routeIdMap = {
-                                        overwatch: 'overwatch',
-                                        ow2: 'overwatch',
-                                        rocket: 'rocket',
-                                        rl: 'rocket',
-                                        freefire: 'freefire',
-                                        ff: 'freefire',
-                                        wildrift: 'wildrift',
-                                        wr: 'wildrift',
-                                        r6: 'r6',
-                                        r6s: 'r6',
-                                        pubg: 'pubgm',
-                                        pubgm: 'pubgm',
-                                        hs: 'hearthstone',
-                                        hearthstone: 'hearthstone',
-                                        cr: 'clashroyale',
-                                        clashroyale: 'clashroyale',
-                                        lor: 'lor',
-                                        nba2k: 'nba2k',
-                                        aov: 'hok',
-                                    };
-                                    const routeId = routeIdMap[incomingId] || routeIdMap[catalogId] || catalogId;
-                                    navigate(`/game/${routeId}`);
-                                }}
+                                onClick={handleEnterGame}
+                                disabled={joiningHub}
                             >
                                 <FaGamepad className="gp-btn__gamepad" />
                                 <span>ENTRAR</span>

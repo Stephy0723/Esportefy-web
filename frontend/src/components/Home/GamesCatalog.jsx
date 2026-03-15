@@ -1,17 +1,15 @@
 ﻿import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { COMMUNITY_GAMES } from '../../data/communityData';
 
-// Importar imágenes de juegos locales
-import lolImg from '../../assets/games/lol.jpg';
-import valorantImg from '../../assets/games/valorant.jpg';
-import mlbbImg from '../../assets/games/mlbb.jpg';
-
-const FEATURED_GAMES = [
-  { id: 'lol', name: 'League of Legends', img: lolImg, color: '#C1A058', tag: 'MOBA' },
-  { id: 'valorant', name: 'Valorant', img: valorantImg, color: '#FF4655', tag: 'FPS' },
-  { id: 'mlbb', name: 'Mobile Legends', img: mlbbImg, color: '#2980B9', tag: 'MOBA' },
-];
+const FEATURED_GAMES = COMMUNITY_GAMES.slice(0, 24).map((game) => ({
+  id: game.id,
+  name: game.name,
+  img: game.img,
+  color: game.color,
+  tag: game.cat,
+}));
 
 const GamesCatalog = () => {
   return (
@@ -35,11 +33,11 @@ const GamesCatalog = () => {
             Ecosistema competitivo
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[var(--text-main)] mt-4 mb-6">
-            3 Juegos Soportados
+            Mas de 20 juegos y comunidades
           </h2>
           <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
-            Valorant, League of Legends y Mobile Legends son el foco actual de la plataforma.
-            El resto volverá cuando esté implementado.
+            Explora shooters, MOBA, fighting, battle royale y juegos sociales dentro de un
+            catalogo mucho mas amplio que el hero inicial.
           </p>
         </motion.div>
 

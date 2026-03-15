@@ -141,20 +141,6 @@
     padding: 8px 18px;
     font-size: 0.8rem;
 }
-.th__btn-create--demo {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    box-shadow: 0 4px 14px rgba(99,102,241,0.25);
-}
-.th__btn-create--demo:hover {
-    box-shadow: 0 6px 20px rgba(99,102,241,0.4);
-}
-.th__btn-create--third {
-    background: linear-gradient(135deg, #f59e0b, #ef4444);
-    box-shadow: 0 4px 14px rgba(245,158,11,0.25);
-}
-.th__btn-create--third:hover {
-    box-shadow: 0 6px 20px rgba(245,158,11,0.4);
-}
 
 /* ── TOOLBAR ── */
 .th__toolbar {
@@ -433,6 +419,22 @@
 .th__card-identity {
     flex: 1;
     min-width: 0;
+}
+.th__card .tournament-id-tag,
+.th__modal .tournament-id-tag {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--text-main, #eee) 82%, transparent);
+    background: color-mix(in srgb, var(--card-accent, var(--primary)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--card-accent, var(--primary)) 22%, transparent);
+    margin-bottom: 6px;
 }
 .th__card-name {
     font-size: 1rem;
@@ -1246,6 +1248,14 @@
     flex-direction: column;
     gap: 8px;
 }
+.th__modal-section--panel {
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--modal-accent, var(--primary)) 16%, var(--border-color, #2a2a2a));
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--modal-accent, var(--primary)) 4%, var(--bg-card, #171717)), var(--bg-card, #171717));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
 .th__modal-section h4 {
     font-size: 0.8rem;
     font-weight: 700;
@@ -1278,18 +1288,23 @@
 .th__modal-roster-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-auto-rows: 1fr;
     gap: 10px;
 }
 .th__modal-player {
     display: flex;
     align-items: flex-start;
     gap: 12px;
+    min-height: 104px;
+    height: 100%;
     padding: 12px 14px;
     background: var(--bg-elevated, #222);
     border-radius: 12px;
     border: 1px solid var(--border-color, #2a2a2a);
     transition: border-color 0.2s, box-shadow 0.25s;
     position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 .th__modal-player:hover {
     border-color: color-mix(in srgb, var(--modal-accent) 35%, transparent);
@@ -1353,6 +1368,7 @@
     gap: 2px;
     flex: 1;
     min-width: 0;
+    overflow: hidden;
 }
 .th__modal-player-name {
     font-size: 0.82rem;
@@ -1497,10 +1513,12 @@
     padding: 0 24px 20px;
     justify-content: flex-end;
     flex-wrap: wrap;
+    align-items: stretch;
 }
 .th__modal-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
     padding: 8px 18px;
     border-radius: 8px;
@@ -1510,6 +1528,8 @@
     transition: all 0.2s;
     font-family: inherit;
     border: none;
+    text-align: center;
+    min-height: 46px;
 }
 .th__modal-btn i { font-size: 1rem; }
 
@@ -1551,6 +1571,15 @@
 .th__modal-btn--stats.is-open {
     background: color-mix(in srgb, var(--modal-accent, var(--primary)) 24%, var(--bg-card, #1a1a1a));
     box-shadow: 0 8px 24px color-mix(in srgb, var(--modal-accent, var(--primary)) 18%, transparent);
+}
+
+.th__stats-sheet-layer {
+    position: relative;
+    z-index: 4;
+}
+
+.th__stats-sheet__backdrop {
+    display: none;
 }
 
 .th__stats-sheet {
@@ -1736,13 +1765,16 @@
         grid-template-columns: 1fr;
     }
     .th__filters {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        padding-bottom: 4px;
-        -webkit-overflow-scrolling: touch;
+        overflow-x: visible;
+        flex-wrap: wrap;
+        padding-bottom: 0;
+        row-gap: 8px;
     }
     .th__filter-btn {
         flex-shrink: 0;
+    }
+    .th__filter-sep {
+        display: none;
     }
     .th__modal {
         max-width: 100%;
@@ -1764,6 +1796,75 @@
     }
 }
 
+@media (max-width: 640px) {
+    .th__modal-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 0 16px 18px;
+    }
+    .th__modal-btn {
+        width: 100%;
+        min-height: 52px;
+        padding: 12px 16px;
+        border-radius: 14px;
+    }
+    .th__stats-sheet-layer {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px 12px;
+        z-index: 1002;
+    }
+    .th__stats-sheet__backdrop {
+        display: block;
+        position: absolute;
+        inset: 0;
+        border: 0;
+        background: rgba(4, 6, 10, 0.68);
+        backdrop-filter: blur(8px);
+    }
+    .th__stats-sheet {
+        position: relative;
+        width: min(100%, 420px);
+        max-height: min(86vh, 760px);
+        margin: 0;
+        padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+        border-radius: 22px;
+        overflow-y: auto;
+        box-shadow:
+            0 22px 56px rgba(0,0,0,0.42),
+            inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .th__stats-sheet__head {
+        position: relative;
+        z-index: 2;
+        display: block;
+        margin: 0 0 16px;
+        padding: 0 48px 12px 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--modal-accent, var(--primary)) 20%, transparent);
+        background: transparent;
+        backdrop-filter: none;
+    }
+    .th__stats-sheet__close {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+    .th__stats-sheet__hero {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .th__stats-sheet__hero-card:first-child {
+        grid-column: auto;
+    }
+    .th__stats-sheet__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 480px) {
     .th__title {
         font-size: 1.3rem;
@@ -1772,14 +1873,103 @@
         font-size: 1.4rem;
     }
     .th__card-top {
-        padding: 14px 12px 0;
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr) 32px;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 14px 0;
+    }
+    .th__card-logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+    }
+    .th__card-badge {
+        font-size: 1.45rem;
+        justify-self: end;
+        opacity: 0.78;
+    }
+    .th__card-name {
+        font-size: 1.05rem;
+        line-height: 1.1;
+    }
+    .th__card-meta {
+        flex-wrap: wrap;
+        gap: 4px 10px;
+        margin-top: 2px;
+    }
+    .th__card-slogan {
+        padding: 8px 14px 0;
+        font-size: 0.72rem;
+        white-space: normal;
+        line-height: 1.45;
     }
     .th__card-tags,
     .th__card-roster,
     .th__card-progress,
     .th__card-footer {
-        padding-left: 12px;
-        padding-right: 12px;
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+    .th__card-tags {
+        gap: 6px;
+        padding-top: 12px;
+    }
+    .th__tag {
+        min-height: 28px;
+        font-size: 0.64rem;
+    }
+    .th__card-roster {
+        padding-top: 12px;
+    }
+    .th__card-progress {
+        padding-top: 10px;
+    }
+    .th__card-footer {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding-top: 12px;
+    }
+    .th__card-coach {
+        justify-content: center;
+        width: 100%;
+        min-height: 38px;
+        padding: 8px 10px;
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--card-accent, var(--primary)) 10%, transparent);
+        border: 1px solid color-mix(in srgb, var(--card-accent, var(--primary)) 16%, transparent);
+    }
+    .th__card-actions {
+        width: 100%;
+        margin-left: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .th__card-btn {
+        width: 100%;
+        min-height: 42px;
+        margin-left: 0;
+        justify-content: center;
+        padding: 0 10px;
+    }
+    .th__filters {
+        gap: 8px;
+    }
+    .th__filter-btn {
+        padding: 6px 10px;
+        font-size: 0.72rem;
+    }
+    .th__filter-btn i {
+        font-size: 0.9rem;
+    }
+    .th__filter-count {
+        min-width: 14px;
+        padding: 1px 5px;
     }
     .th__modal-banner {
         padding: 18px 16px 14px;
@@ -1790,12 +1980,18 @@
     .th__modal-actions {
         padding: 0 16px 16px;
     }
+    .th__modal-section--panel {
+        padding: 12px;
+        border-radius: 14px;
+    }
     .th__stats-sheet {
-        margin: 0 16px 18px;
-        padding: 14px;
+        margin: 0;
+        padding: 16px 14px calc(18px + env(safe-area-inset-bottom));
     }
     .th__stats-sheet__head {
-        flex-direction: column;
+        display: block;
+        margin: 0 0 14px;
+        padding: 0 44px 12px 0;
     }
     .th__stats-sheet__hero,
     .th__stats-sheet__grid {
@@ -2409,10 +2605,7 @@
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 14px;
-    overflow-x: auto;
-    scrollbar-width: none;
 }
-.th__hub-nav::-webkit-scrollbar { display: none; }
 
 .th__hub-nav-btn {
     display: flex;
@@ -2898,17 +3091,22 @@
         gap: 4px;
         padding: 4px;
         border-radius: 10px;
+        overflow-x: visible;
+        flex-wrap: nowrap;
     }
     .th__hub-nav-btn {
-        padding: 10px 14px;
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 12px 0;
         font-size: 0.78rem;
         gap: 6px;
+        justify-content: center;
     }
     .th__hub-nav-btn span {
         display: none;
     }
     .th__hub-nav-btn i {
-        font-size: 1.3rem;
+        font-size: 1.35rem;
     }
     .th__scrim-actions {
         grid-template-columns: 1fr;

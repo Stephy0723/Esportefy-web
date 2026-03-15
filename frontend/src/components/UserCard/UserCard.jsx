@@ -1,22 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import { useNavigate } from 'react-router-dom';
-import {
-    FaGamepad, FaGlobeAmericas, FaBolt, FaShieldAlt,
-    FaUserPlus, FaUserCheck, FaUsers, FaTimes, FaTrophy,
-    FaStar, FaClock, FaCalendarAlt, FaHeart, FaRegHeart,
-    FaComment, FaUserFriends, FaFolder, FaCheckCircle
-} from 'react-icons/fa';
-import AvatarCircle from '../AvatarCircle/AvatarCircle';
-import PlayerTag from '../PlayerTag/PlayerTag';
-import { FRAMES } from '../../data/profileOptions';
-import { STATUS_LIST } from '../../data/defaultAvatars';
-import { GAME_IMAGES } from '../../data/gameImages';
 import { resolveMediaUrl } from '../../utils/media';
 import './UserCard.css';
 
-// Banner gradients for users without custom banner
 const BANNER_GRADIENTS = [
     'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -28,26 +17,16 @@ const BANNER_GRADIENTS = [
     'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
 ];
 
-/**
- * UserCard — Popup card shown when clicking on a user avatar/name.
- * Props:
- *   userId   — The user ID to fetch
- *   trigger  — React element that triggers the card (wraps children)
- *   children — Content of the trigger
- */
 const UserCard = ({ userId, children }) => {
     const [open, setOpen] = useState(false);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
-    const [favorited, setFavorited] = useState(false);
     const cardRef = useRef(null);
-    const triggerRef = useRef(null);
     const navigate = useNavigate();
 
     const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
-    // Generate consistent banner gradient based on userId
     const getBannerGradient = useCallback(() => {
         if (!userId) return BANNER_GRADIENTS[0];
         const hash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -69,17 +48,17 @@ const UserCard = ({ userId, children }) => {
         }
     }, [userId]);
 
-    const handleToggle = (e) => {
+    const handleOpen = (e) => {
         e.stopPropagation();
-        if (!open) {
-            setOpen(true);
-            fetchCard();
-        } else {
-            setOpen(false);
-        }
+        e.preventDefault();
+        setOpen(true);
+        fetchCard();
     };
 
-    const handleFollow = async () => {
+    const handleClose = () => setOpen(false);
+
+    const handleFollow = async (e) => {
+        e.stopPropagation();
         if (!data || followLoading) return;
         setFollowLoading(true);
         try {
@@ -100,161 +79,194 @@ const UserCard = ({ userId, children }) => {
         }
     };
 
-    // Close on outside click
-    useEffect(() => {
-        if (!open) return;
-        const handleClick = (e) => {
-            if (cardRef.current && !cardRef.current.contains(e.target) &&
-                triggerRef.current && !triggerRef.current.contains(e.target)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
-    }, [open]);
-
     // Close on Escape
     useEffect(() => {
         if (!open) return;
-        const handleKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+        const handleKey = (e) => { if (e.key === 'Escape') handleClose(); };
         document.addEventListener('keydown', handleKey);
         return () => document.removeEventListener('keydown', handleKey);
     }, [open]);
 
-    const userStatus = data ? (STATUS_LIST.find(s => s.id === data.status) || STATUS_LIST[0]) : null;
-    const userFrame = data ? (FRAMES.find(f => f.id === data.selectedFrameId) || FRAMES[0]) : null;
+    // Lock body scroll when open
+    useEffect(() => {
+        if (open) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [open]);
+
     const normalizedGames = data?.selectedGames || [];
+    const mainGame = normalizedGames.length > 0 ? normalizedGames[0] : null;
+    const followersCount = Array.isArray(data?.followers) ? data.followers.length : (data?.followersCount || 0);
+    const followingCount = Array.isArray(data?.following) ? data.following.length : (data?.followingCount || 0);
+    const teamsCount = Array.isArray(data?.teams) ? data.teams.length : 0;
+    const avatarUrl = data ? (resolveMediaUrl(data.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username || 'U')}&background=1a1a2e&color=8EDB15&size=400`) : '';
 
-    return (
-        <div className="uc__wrap">
-            <div ref={triggerRef} className="uc__trigger" onClick={handleToggle}>
-                {children}
-            </div>
+    const uniName = data?.university?.verified ? data.university.universityName : null;
 
-            {open && (
-                <div className="uc__card" ref={cardRef}>
-                    {/* Close btn */}
-                    <button className="uc__close" onClick={() => setOpen(false)}><FaTimes /></button>
+    const cardContent = open ? (
+        <div className="uc__portal">
+            <div className="uc__overlay" onClick={handleClose} />
+            <div className={`uc__modal ${data ? 'uc__modal--loaded' : ''}`} ref={cardRef} onClick={(e) => e.stopPropagation()}>
+                <button className="uc__close" onClick={handleClose}>
+                    <i className="bx bx-x"></i>
+                </button>
 
-                    {loading && !data ? (
-                        <div className="uc__loading">
-                            <div className="uc__spinner" />
+                {loading && !data ? (
+                    <div className="uc__loading">
+                        <div className="uc__spinner" />
+                    </div>
+                ) : data ? (
+                    <>
+                        {/* Photo area — large avatar as hero image */}
+                        <div
+                            className="uc__hero"
+                            style={{ background: getBannerGradient() }}
+                        >
+                            <div className="uc__hero-img-wrap">
+                                <img
+                                    className="uc__hero-img"
+                                    src={avatarUrl}
+                                    alt={data.username}
+                                />
+                            </div>
+
+                            {/* Badges on the hero */}
+                            <div className="uc__hero-badges">
+                                {data.isOrganizer && (
+                                    <span className="uc__badge uc__badge--org">
+                                        <i className="bx bx-shield-quarter"></i> Organizador
+                                    </span>
+                                )}
+                                {data.experience?.includes('Pro') && (
+                                    <span className="uc__badge uc__badge--pro">
+                                        <i className="bx bxs-crown"></i> PRO
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                    ) : data ? (
-                        <>
-                            {/* Banner with cover image */}
-                            <div className="uc__banner" style={{ background: data.bannerUrl ? `url(${resolveMediaUrl(data.bannerUrl)})` : getBannerGradient(), backgroundSize: 'cover', backgroundPosition: 'center' }}>
-                                {/* Organization badge */}
-                                {data.organization && (
-                                    <span className="uc__org-badge">
-                                        <FaUsers /> {data.organization}
+
+                        {/* Card body */}
+                        <div className="uc__body">
+                            {/* Name + verified */}
+                            <div className="uc__identity">
+                                <h3 className="uc__name">
+                                    {data.username || 'Player'}
+                                    {data.isVerified && <i className="bx bxs-badge-check uc__verified"></i>}
+                                </h3>
+                                {data.fullName && data.fullName !== data.username && (
+                                    <span className="uc__fullname">{data.fullName}</span>
+                                )}
+                            </div>
+
+                            {/* Bio */}
+                            {data.bio && (
+                                <p className="uc__bio">{data.bio}</p>
+                            )}
+
+                            {/* Info row */}
+                            <div className="uc__info-row">
+                                {data.country && (
+                                    <span className="uc__info-item">
+                                        <i className="bx bx-map"></i> {data.country}
+                                    </span>
+                                )}
+                                {mainGame && (
+                                    <span className="uc__info-item">
+                                        <i className="bx bx-joystick"></i> {mainGame}
+                                    </span>
+                                )}
+                                {uniName && (
+                                    <span className="uc__info-item uc__info-item--uni">
+                                        <i className="bx bxs-graduation"></i> {uniName}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Avatar overlapping banner */}
-                            <div className="uc__avatar-wrapper">
-                                <AvatarCircle
-                                    src={resolveMediaUrl(data.avatar) || `https://ui-avatars.com/api/?name=${data.username}`}
-                                    frameConfig={userFrame}
-                                    size="72px"
-                                    status={data.status}
-                                />
+                            {/* Stats */}
+                            <div className="uc__stats">
+                                <div className="uc__stat">
+                                    <i className="bx bx-group"></i>
+                                    <span className="uc__stat-num">{followersCount}</span>
+                                    <span className="uc__stat-label">Seguidores</span>
+                                </div>
+                                <div className="uc__stat">
+                                    <i className="bx bx-user-plus"></i>
+                                    <span className="uc__stat-num">{followingCount}</span>
+                                    <span className="uc__stat-label">Siguiendo</span>
+                                </div>
+                                <div className="uc__stat">
+                                    <i className="bx bx-shield"></i>
+                                    <span className="uc__stat-num">{teamsCount}</span>
+                                    <span className="uc__stat-label">Equipos</span>
+                                </div>
                             </div>
 
-                            {/* Body */}
-                            <div className="uc__body">
-                                {/* Name row with verified and favorite */}
-                                <div className="uc__name-row">
-                                    <h3 className="uc__username">
-                                        {data.username || "Player"}
-                                        {data.isVerified && <FaCheckCircle className="uc__verified" />}
-                                    </h3>
-                                    <button 
-                                        className={`uc__favorite ${favorited ? 'uc__favorite--active' : ''}`}
-                                        onClick={() => setFavorited(!favorited)}
-                                    >
-                                        {favorited ? <FaHeart /> : <FaRegHeart />}
-                                    </button>
-                                </div>
-
-                                {/* Role/Title */}
-                                <p className="uc__role">
-                                    {data.role || (data.isOrganizer ? 'Organizador de Torneos' : 'Jugador Competitivo')}
-                                </p>
-
-                                {/* Tags: Organization and Tools */}
+                            {/* Games tags */}
+                            {normalizedGames.length > 0 && (
                                 <div className="uc__tags">
-                                    {data.team && (
-                                        <span className="uc__tag uc__tag--team">
-                                            <FaUsers /> {data.team}
-                                        </span>
+                                    {normalizedGames.map((game, i) => (
+                                        <span key={i} className="uc__tag">#{game.replace(/\s+/g, '')}</span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Main actions */}
+                            <div className="uc__actions">
+                                <button
+                                    className={`uc__btn-follow ${data.isFollowing ? 'is-following' : ''}`}
+                                    onClick={handleFollow}
+                                    disabled={followLoading}
+                                >
+                                    {followLoading ? (
+                                        <i className="bx bx-loader-alt bx-spin"></i>
+                                    ) : data.isFollowing ? (
+                                        <><i className="bx bx-check"></i> Siguiendo</>
+                                    ) : (
+                                        <><i className="bx bx-user-plus"></i> Seguir</>
                                     )}
-                                    {normalizedGames.length > 0 && (
-                                        <span className="uc__tag uc__tag--games">
-                                            <FaGamepad /> {normalizedGames.length} Juegos
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Stats row */}
-                                <div className="uc__stats">
-                                    <div className="uc__stat">
-                                        <div className="uc__stat-value">
-                                            <FaStar className="uc__stat-icon uc__stat-icon--star" />
-                                            {data.rating || '4.5'}
-                                        </div>
-                                        <span className="uc__stat-label">rating</span>
-                                    </div>
-                                    <div className="uc__stat">
-                                        <div className="uc__stat-value">
-                                            <FaClock className="uc__stat-icon" />
-                                            {data.hoursPlayed || '120'}h
-                                        </div>
-                                        <span className="uc__stat-label">jugadas</span>
-                                    </div>
-                                    <div className="uc__stat">
-                                        <div className="uc__stat-value">
-                                            <FaCalendarAlt className="uc__stat-icon" />
-                                            {data.memberSince || '12'}
-                                        </div>
-                                        <span className="uc__stat-label">meses</span>
-                                    </div>
-                                </div>
-
-                                {/* Action buttons row */}
-                                <div className="uc__actions">
-                                    <button className="uc__action-btn" title="Ver perfil" onClick={() => { setOpen(false); navigate(`/profile/${userId}`); }}>
-                                        <FaUserFriends />
-                                    </button>
-                                    <button className="uc__action-btn" title="Mensaje">
-                                        <FaComment />
-                                    </button>
-                                    <button 
-                                        className={`uc__action-btn ${data.isFollowing ? 'uc__action-btn--active' : ''}`}
-                                        onClick={handleFollow}
-                                        disabled={followLoading}
-                                        title={data.isFollowing ? 'Siguiendo' : 'Seguir'}
-                                    >
-                                        {data.isFollowing ? <FaUserCheck /> : <FaUserPlus />}
-                                    </button>
-                                    <button className="uc__action-btn" title="Equipos">
-                                        <FaFolder />
-                                    </button>
-                                </div>
-
-                                {/* Main CTA button */}
-                                <button className="uc__cta-btn" onClick={() => { setOpen(false); navigate(`/profile/${userId}`); }}>
-                                    Ver Perfil Completo
+                                </button>
+                                <button
+                                    className="uc__btn-profile"
+                                    onClick={() => { handleClose(); navigate(`/profile/${userId}`); }}
+                                >
+                                    <i className="bx bx-user"></i> Ver Perfil
                                 </button>
                             </div>
-                        </>
-                    ) : (
-                        <div className="uc__error">No se pudo cargar</div>
-                    )}
-                </div>
-            )}
+
+                            {/* Secondary actions row */}
+                            <div className="uc__secondary">
+                                <button className="uc__sec-btn" title="Mensaje">
+                                    <i className="bx bx-message-rounded-dots"></i>
+                                </button>
+                                <button className="uc__sec-btn" title="Reportar">
+                                    <i className="bx bx-flag"></i>
+                                </button>
+                                <button className="uc__sec-btn" title="Bloquear">
+                                    <i className="bx bx-block"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="uc__error">
+                        <i className="bx bx-error-circle"></i>
+                        No se pudo cargar
+                    </div>
+                )}
+            </div>
         </div>
+    ) : null;
+
+    return (
+        <>
+            <span className="uc__trigger" onClick={handleOpen}>
+                {children}
+            </span>
+            {cardContent && createPortal(cardContent, document.body)}
+        </>
     );
 };
 

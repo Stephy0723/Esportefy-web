@@ -14,7 +14,7 @@
 }
 
 /* --- LADO IZQUIERDO (FORMULARIO) --- */
-.auth-left {
+.auth-container-split--login .auth-left {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -26,7 +26,7 @@
 }
 
 /* Navbar superior */
-.auth-nav {
+.auth-container-split--login .auth-nav {
     position: absolute;
     top: 40px;
     left: 80px;
@@ -37,7 +37,7 @@
 }
 
 /* LOGO DE MARCA */
-.brand {
+.auth-container-split--login .brand {
     font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -1px;
@@ -50,28 +50,46 @@ color: var(--text-main) !important;
 }
 
 /* EL PUNTO VERDE NEÃ“N */
-.brand-dot {
+.auth-container-split--login .brand-dot {
     color: var(--primary); /* Usa tu verde (#8EDB15) */
     font-size: 1.8rem; /* Un poquito mÃ¡s grande para estilo */
     line-height: 1;
 }
-.nav-links a {
+.auth-container-split--login .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.auth-container-split--login .nav-links a {
+    display: inline;
+    min-height: auto;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     color: var(--text-muted);
     text-decoration: none;
     font-weight: 600;
-    margin-left: 20px;
     font-size: 0.9rem;
-    transition: color 0.2s;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: color 0.2s ease;
 }
-.nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+.auth-container-split--login .nav-links a:hover,
+.auth-container-split--login .nav-links a.active { color: var(--text-main); }
 
 /* Contenido del Formulario */
-.auth-content { width: 100%; margin-top: 60px; }
+.auth-container-split--login .auth-content { width: 100%; margin-top: 34px; }
 
 /* Encabezados */
-.header-text { margin-bottom: 50px; }
+.auth-container-split--login .header-text {
+    margin-top: 0;
+    margin-bottom: 44px;
+}
 
-.badge-pro {
+.auth-container-split--login .badge-pro {
     display: inline-block;
     background: rgba(142, 219, 21, 0.1);
     color: var(--primary);
@@ -84,13 +102,13 @@ color: var(--text-main) !important;
     border: 1px solid rgba(142, 219, 21, 0.2);
 }
 
-.header-text h1 {
+.auth-container-split--login .header-text h1 {
     font-size: 3rem;
     line-height: 1.1;
     margin: 0 0 10px 0;
     letter-spacing: -1px;
 }
-.subtitle { color: var(--text-muted); font-size: 1.1rem; }
+.auth-container-split--login .subtitle { color: var(--text-muted); font-size: 1.1rem; }
 
 /* =========================================
    INPUTS ESTILO LÃNEA (Side-by-Side)
@@ -295,9 +313,21 @@ color: var(--text-main) !important;
 @media (min-width: 900px) { .auth-right { display: block; } }
 
 @media (max-width: 600px) {
-    .auth-left { padding: 20px 25px; }
-    .auth-nav { top: 20px; left: 25px; right: 25px; }
-    .header-text h1 { font-size: 2.2rem; }
+    .auth-container-split--login .auth-left {
+        justify-content: flex-start;
+        padding: 18px 25px 24px;
+    }
+    .auth-container-split--login .auth-nav {
+        position: static;
+        left: auto;
+        right: auto;
+        top: auto;
+        width: 100%;
+        margin-bottom: 16px;
+    }
+    .auth-container-split--login .auth-content { margin-top: 0; }
+    .auth-container-split--login .header-text { margin-bottom: 34px; }
+    .auth-container-split--login .header-text h1 { font-size: 2.2rem; }
     
     /* En mÃ³vil, los inputs vuelven a apilarse verticalmente */
     .input-row { flex-direction: column; align-items: flex-start; gap: 5px; }
@@ -305,5 +335,39 @@ color: var(--text-main) !important;
     
     /* Opciones y botones */
     .options-row { flex-direction: column; align-items: flex-start; gap: 15px; }
-    .auth-nav { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .auth-container-split--login .auth-nav {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: nowrap;
+    }
+    .auth-container-split--login .nav-links {
+        width: auto;
+        margin-left: auto;
+        gap: 16px;
+        flex-shrink: 0;
+    }
+    .auth-container-split--login .nav-links a {
+        width: auto;
+        min-height: auto;
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        color: var(--text-muted);
+        font-size: 0.92rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+    .auth-container-split--login .brand {
+        font-size: 1.25rem;
+        line-height: 1;
+        flex-shrink: 1;
+    }
+    .auth-container-split--login .brand-dot {
+        font-size: 1.45rem;
+    }
 }

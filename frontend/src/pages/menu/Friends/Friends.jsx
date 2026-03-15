@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaSearch, FaUserFriends, FaUsers, FaUserPlus } from 'react-icons/fa';
@@ -6,6 +6,7 @@ import { API_URL } from '../../../config/api';
 import { resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
 import PageHud from '../../../components/PageHud/PageHud';
+import UserCard from '../../../components/UserCard/UserCard';
 import './Friends.css';
 
 const TABS = [
@@ -347,27 +348,29 @@ const FriendsPage = () => {
                         const status = String(entry?.status || 'offline').toLowerCase();
                         return (
                             <div key={id} className="fr__user">
-                                <div className="fr__user-left">
-                                    <div className="fr__avatar">
-                                        <img
-                                            src={resolveMediaUrl(entry?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(entry?.name || 'U')}&background=1a1a2e&color=8EDB15`}
-                                            alt={entry?.name || 'Usuario'}
-                                        />
-                                        <span className={`fr__avatar-status fr__avatar-status--${status}`} />
-                                    </div>
-                                    <div className="fr__info">
-                                        <div className="fr__name">
-                                            <span>{entry?.name || 'Jugador'}</span>
-                                            {entry?.userCode && <span className="fr__code">#{entry.userCode}</span>}
+                                <UserCard userId={id}>
+                                    <div className="fr__user-left">
+                                        <div className="fr__avatar">
+                                            <img
+                                                src={resolveMediaUrl(entry?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(entry?.name || 'U')}&background=1a1a2e&color=8EDB15`}
+                                                alt={entry?.name || 'Usuario'}
+                                            />
+                                            <span className={`fr__avatar-status fr__avatar-status--${status}`} />
                                         </div>
-                                        <span className="fr__username">@{entry?.username || 'usuario'}</span>
-                                        <div className="fr__meta">
-                                            <span>{entry?.rank || 'Jugador'}</span>
-                                            <span className="fr__meta-dot" />
-                                            <span className="fr__meta-status">{status}</span>
+                                        <div className="fr__info">
+                                            <div className="fr__name">
+                                                <span>{entry?.name || 'Jugador'}</span>
+                                                {entry?.userCode && <span className="fr__code">#{entry.userCode}</span>}
+                                            </div>
+                                            <span className="fr__username">@{entry?.username || 'usuario'}</span>
+                                            <div className="fr__meta">
+                                                <span>{entry?.rank || 'Jugador'}</span>
+                                                <span className="fr__meta-dot" />
+                                                <span className="fr__meta-status">{status}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </UserCard>
 
                                 <button
                                     className={`fr__follow-btn ${entry?.isFollowing ? 'is-following' : ''}`}

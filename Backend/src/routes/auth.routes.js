@@ -18,8 +18,19 @@ import {
   resetPassword,
   updateProfile,
   applyOrganizer,
+  applyRole,
   verifyOrganizerAction,
-  upload
+  adminGetRoleApplications,
+  adminReviewRoleApplication,
+  adminListUsers,
+  adminBanUser,
+  adminSendNotification,
+  createSupportTicket,
+  adminGetSupportTickets,
+  adminRespondSupportTicket,
+  upload,
+  organizerDocumentUpload,
+  roleDocumentUpload
 } from '../controllers/auth.controller.js';
 
 import { verifyToken } from '../middlewares/auth.middleware.js';
@@ -116,8 +127,21 @@ router.post('/follow/:userId', verifyToken, rlFollowStrict, toggleFollow);
 router.put('/update-profile', verifyToken, upload.single('avatarFile'), updateProfile);
 router.post('/forgot-password', rlForgot, forgotPassword);
 router.post('/reset-password/:token', rlReset, resetPassword);
-router.post('/apply-organizer', verifyToken, upload.single('document'), applyOrganizer);
+router.post('/apply-organizer', verifyToken, organizerDocumentUpload.single('document'), applyOrganizer);
+router.post('/apply-role', verifyToken, roleDocumentUpload.single('document'), applyRole);
 router.patch('/organizer/:userId/approve', verifyToken, verifyOrganizerAction);
+
+// ── Admin Panel ──
+router.get('/admin/role-applications', verifyToken, adminGetRoleApplications);
+router.patch('/admin/role-applications/:userId', verifyToken, adminReviewRoleApplication);
+router.get('/admin/users', verifyToken, adminListUsers);
+router.patch('/admin/users/:userId/ban', verifyToken, adminBanUser);
+router.post('/admin/send-notification', verifyToken, adminSendNotification);
+
+// ── Support Tickets ──
+router.post('/support/ticket', verifyToken, createSupportTicket);
+router.get('/admin/support-tickets', verifyToken, adminGetSupportTickets);
+router.patch('/admin/support-tickets/:ticketId', verifyToken, adminRespondSupportTicket);
 
 /* =========================
    RIOT
