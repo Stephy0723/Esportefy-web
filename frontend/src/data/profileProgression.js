@@ -7,9 +7,9 @@ export const EMPTY_PROFILE_PROGRESSION = {
         id: 'rookie',
         name: 'Rookie',
         nextLevelName: 'Aspirante',
-        nextLevelPoints: 350,
+        nextLevelPoints: 200,
         pointsIntoLevel: 0,
-        pointsNeeded: 350,
+        pointsNeeded: 200,
         progressPercent: 0
     },
     achievements: [],

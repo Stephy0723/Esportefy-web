@@ -20,7 +20,6 @@ import { useNotification } from '../../../../context/NotificationContext';
 import { SUPPORTED_GAME_NAMES } from '../../../../../../shared/supportedGames.js';
 import './CreateCommunityModal.css';
 
-const CURRENT_USER_ROLE = 'organizer';
 const AVAILABLE_GAMES = [...SUPPORTED_GAME_NAMES];
 const TAB_ORDER = ['identity', 'content', 'rules', 'team', 'settings'];
 
@@ -202,8 +201,6 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
             setIsSaving(false);
         }
     };
-
-    if (CURRENT_USER_ROLE !== 'organizer') return null;
 
     return (
         <AnimatePresence>

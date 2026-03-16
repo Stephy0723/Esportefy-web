@@ -10,6 +10,7 @@ import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCale
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
+import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
 import { filterSupportedGameObjects, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
 
@@ -442,7 +443,8 @@ const Tournaments = () => {
   const [loadingTournaments, setLoadingTournaments] = useState(true);
   
   // ESTADO MODAL ORGANIZADOR
-  const [showInfoModal, setShowInfoModal] = useState(false); 
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showRoleGate, setShowRoleGate] = useState(false);
   const [current, setCurrent] = useState(0);
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -1176,19 +1178,17 @@ useEffect(() => {
   };
 
   const handleCreateClick = () => {
-        if (loading) return; // Evita clics mientras carga el contexto
+        if (loading) return;
 
         if (!user) {
             notify('warning', 'Acceso Denegado', 'Debes iniciar sesión para crear un torneo.');
             return;
         }
 
-        // VALIDACI“N CLAVE: Usamos el campo de tu base de datos
         if (user.isOrganizer === true) {
             navigate('/create-tournament');
         } else {
-            notify('danger', 'Acceso Restringido', 'Solo los Organizadores Verificados pueden crear torneos. Solicita tu verificación.');
-            
+            setShowRoleGate(true);
         }
     };
 
@@ -1813,6 +1813,8 @@ useEffect(() => {
                 </div>
             </div>
         )}
+
+        <RoleGateModal isOpen={showRoleGate} onClose={() => setShowRoleGate(false)} type="organizer" />
 
         {/* ======================================================= */}
         {/* 2. MODAL DE DETALLES DEL TORNEO */}

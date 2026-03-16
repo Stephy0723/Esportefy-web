@@ -366,6 +366,34 @@
     border-color: rgba(255, 215, 0, 0.5);
 }
 
+.rk-podium-1 .rk-podium-stats span {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 160, 0, 0.12));
+    border-color: rgba(255, 215, 0, 0.5);
+    color: #fcd34d;
+    font-size: 0.9rem;
+    padding: 8px 18px;
+    text-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 24px rgba(255, 215, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: rk-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes rk-glow-pulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(255, 215, 0, 0.1), inset 0 1px 0 rgba(255,255,255,0.06); }
+    50% { box-shadow: 0 0 28px rgba(255, 215, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.1); }
+}
+
+.rk-podium-2 .rk-podium-stats span {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(160, 160, 160, 0.08));
+    border-color: rgba(192, 192, 192, 0.35);
+    color: #d1d5db;
+}
+
+.rk-podium-3 .rk-podium-stats span {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(180, 100, 30, 0.08));
+    border-color: rgba(205, 127, 50, 0.35);
+    color: #d97706;
+}
+
 .rk-podium-card h3 {
     margin: 0 0 4px;
     font-size: 1.1rem;
@@ -388,11 +416,102 @@
     color: var(--primary);
 }
 
+/* Titles badge in podium */
+.rk-podium-titles {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 10px 0 4px;
+    padding: 8px 18px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(255, 180, 0, 0.08));
+    border: 1.5px solid rgba(255, 215, 0, 0.4);
+    border-radius: 24px;
+    color: #fbbf24;
+    font-weight: 800;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.12);
+}
+
+.rk-podium-titles svg {
+    font-size: 1rem;
+    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
+}
+
+.rk-podium-titles__count {
+    font-size: 1.5rem;
+    line-height: 1;
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.4);
+}
+
+.rk-podium-titles__label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.85;
+}
+
+.rk-podium-1 .rk-podium-titles {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.28), rgba(255, 160, 0, 0.12));
+    border-color: rgba(255, 215, 0, 0.55);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+    animation: rk-glow-pulse 3s ease-in-out infinite;
+}
+
+.rk-podium-1 .rk-podium-titles__count {
+    font-size: 1.8rem;
+    color: #fcd34d;
+}
+
+.rk-podium-2 .rk-podium-titles {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(160, 160, 160, 0.06));
+    border-color: rgba(192, 192, 192, 0.35);
+    color: #d1d5db;
+    box-shadow: 0 0 16px rgba(192, 192, 192, 0.08);
+}
+
+.rk-podium-3 .rk-podium-titles {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(180, 100, 30, 0.06));
+    border-color: rgba(205, 127, 50, 0.35);
+    color: #d97706;
+    box-shadow: 0 0 16px rgba(205, 127, 50, 0.08);
+}
+
+.rk-podium-achievements {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    font-weight: 500;
+    opacity: 0.7;
+}
+
+/* Title icon in table */
+.rk-title-icon {
+    color: #fbbf24;
+    font-size: 0.75rem;
+    margin-right: 2px;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.4));
+}
+
+/* Panel stat highlight */
+.rk-panel-stat--highlight {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 180, 0, 0.04)) !important;
+    border: 1px solid rgba(255, 215, 0, 0.25) !important;
+}
+
+.rk-stat-title {
+    color: #fbbf24 !important;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+}
+
 .rk-podium-card strong {
     display: block;
-    font-size: 1.25rem;
-    color: var(--primary);
-    margin: 8px 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 6px 0 4px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
 }
 
 .rk-podium-stats {
@@ -402,12 +521,24 @@
 }
 
 .rk-podium-stats span {
-    padding: 4px 8px;
-    background: var(--bg-input);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 0.72rem;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 180, 0, 0.08));
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #fbbf24;
+    letter-spacing: 0.3px;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.rk-podium-stats span svg {
+    font-size: 0.9rem;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
 }
 
 /* ══ Table ═══════════════════════════════════════════════════ */
@@ -758,7 +889,8 @@
 
 .rk-team-card__stats {
     display: flex;
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 10px 16px;
     margin-bottom: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--border-color);
@@ -768,19 +900,159 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
 .rk-team-card__stats svg {
     color: var(--primary);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .rk-team-card__points {
     font-size: 1.15rem;
     font-weight: 800;
     color: var(--primary);
+}
+
+/* ── Team Card Members Avatars ── */
+.rk-team-card__members {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 10px;
+}
+
+.rk-team-card__members img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-card);
+    margin-left: -6px;
+    transition: transform 0.2s ease;
+}
+
+.rk-team-card__members img:first-child {
+    margin-left: 0;
+}
+
+.rk-team-card__members img:hover {
+    transform: scale(1.2);
+    z-index: 2;
+}
+
+.rk-team-card__more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(var(--primary-rgb), 0.15);
+    color: var(--primary);
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-left: -6px;
+}
+
+/* ── Team Modal Sections ── */
+.rk-team-modal-section {
+    margin-top: 1.25rem;
+}
+
+.rk-team-modal-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rk-team-modal-section h4 svg {
+    color: var(--primary);
+}
+
+.rk-team-members-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.rk-team-member-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(var(--primary-rgb), 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rk-team-member-card:hover {
+    border-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.08);
+}
+
+.rk-team-member-card img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.rk-team-member-card div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.rk-team-member-card strong {
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
+.rk-team-member-card small {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.rk-team-member-titles {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #ffd700;
+}
+
+.rk-team-member-titles svg {
+    font-size: 0.7rem;
+}
+
+.rk-team-modal-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.rk-team-modal-empty svg {
+    font-size: 2rem;
+    opacity: 0.4;
+}
+
+.rk-team-modal-empty p {
+    font-size: 0.9rem;
 }
 
 /* ══ Tournaments List ════════════════════════════════════════ */
@@ -933,9 +1205,11 @@
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 24px;
-    max-width: 500px;
+    max-width: 520px;
     width: 100%;
     padding: 2rem;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 
 .rk-modal-close {
@@ -999,30 +1273,33 @@
 
 .rk-modal-stats {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 0.5rem;
 }
 
 .rk-modal-stats > div {
     display: flex;
     flex-direction: column;
-    padding: 12px 16px;
+    align-items: center;
+    padding: 10px 8px;
     background: var(--bg-input);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 10px;
 }
 
 .rk-modal-stats span {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
 }
 
 .rk-modal-stats b {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    font-weight: 800;
     color: var(--text-main);
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 /* ══ Responsive ══════════════════════════════════════════════ */
@@ -1152,7 +1429,7 @@
     }
 
     .rk-modal-stats {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -1481,6 +1758,17 @@
     transition: all 0.2s ease;
 }
 
+.rk-achievement-item--team {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.rk-achievement-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .rk-achievement-item:hover {
     border-color: var(--primary);
     background: rgba(var(--primary-rgb), 0.05);
@@ -1579,6 +1867,96 @@
 .rk-place-3 .rk-achievement-place {
     background: rgba(205, 127, 50, 0.15);
     color: #cd7f32;
+}
+
+/* ══ Roster Display ══════════════════════════════════════════ */
+.rk-roster {
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.rk-roster-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.rk-roster-label svg {
+    font-size: 0.65rem;
+    color: var(--primary);
+}
+
+.rk-roster-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rk-roster-member {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 56px;
+    max-width: 72px;
+}
+
+.rk-roster-member span {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.2;
+    word-break: break-word;
+    max-width: 72px;
+}
+
+.rk-roster-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.rk-roster-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rk-roster-member--self .rk-roster-avatar {
+    border-color: #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.rk-roster-member--self span {
+    color: #ffd700;
+    font-weight: 600;
+}
+
+.rk-roster-avatar--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed rgba(var(--primary-rgb), 0.3);
+    background: rgba(var(--primary-rgb), 0.05);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+}
+
+.rk-roster-member--empty span {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-style: italic;
 }
 
 .rk-no-achievements {
@@ -2256,4 +2634,81 @@
     }
 }
 
+/* ── Contribute / Verified badges ── */
+.rk-contribute-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .4rem .75rem;
+    border-radius: 8px;
+    font-size: .7rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px dashed var(--primary);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+    color: var(--primary);
+    transition: all .2s;
+    margin-top: .5rem;
+    white-space: nowrap;
+}
+
+.rk-contribute-btn:hover {
+    background: var(--primary);
+    color: #fff;
+    border-style: solid;
+    transform: translateY(-1px);
+}
+
+.rk-contribute-btn--card {
+    width: 100%;
+    justify-content: center;
+    margin-top: .75rem;
+}
+
+.rk-university-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+}
+
+.rk-university-badge svg {
+    font-size: 0.6rem;
+}
+
+.rk-verified-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .3rem;
+    font-size: .68rem;
+    font-weight: 600;
+    color: #22c55e;
+    margin-top: .5rem;
+    opacity: .7;
+}
+
+.rk-team-card__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .25rem;
+    margin-top: auto;
+    padding-top: .5rem;
+}
+
+.rk-team-card__footer .rk-verified-badge {
+    margin-top: 0;
+}
+
+.rk-team-card__footer .rk-contribute-btn--card {
+    margin-top: 0;
+}
 

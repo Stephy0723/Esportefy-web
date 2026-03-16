@@ -5,6 +5,7 @@ import './Community.css';
 import PageHud from '../../../components/PageHud/PageHud';
 import FeedPanel from './FeedPanel/FeedPanel';
 import CreateCommunityModal from './CreateCommunityModal/CreateCommunityModal';
+import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
 import { fetchGameHubStatsIndex, formatGameHubCount } from './gameHub.service';
 import {
     COMMUNITY_GAMES as GAMES,
@@ -862,6 +863,7 @@ const Community = () => {
     const [gameFilter, setGameFilter] = useState('all');
     const [activeFilter, setActiveFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showRoleGate, setShowRoleGate] = useState(false);
     const [showSuggestModal, setShowSuggestModal] = useState(false);
     const [activeView, setActiveView] = useState('feed');
     const [gameStats, setGameStats] = useState({});
@@ -952,7 +954,18 @@ const Community = () => {
                 <SearchBar
                     value={searchQuery} onChange={setSearchQuery}
                     gameFilter={gameFilter} setGameFilter={setGameFilter}
-                    onCreateCommunity={() => setShowCreateModal(true)}
+                    onCreateCommunity={() => {
+                        try {
+                            const stored = localStorage.getItem('esportefyUser');
+                            const u = stored ? JSON.parse(stored) : null;
+                            const roles = u?.roles || [];
+                            if (roles.includes('organizer') || roles.includes('content-creator') || u?.isOrganizer || u?.isAdmin) {
+                                setShowCreateModal(true);
+                            } else {
+                                setShowRoleGate(true);
+                            }
+                        } catch { setShowRoleGate(true); }
+                    }}
                 />
 
                 {/* View Navigation Tabs */}
@@ -1070,6 +1083,7 @@ const Community = () => {
                 </AnimatePresence>
             </div>
             <CreateCommunityModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+            <RoleGateModal isOpen={showRoleGate} onClose={() => setShowRoleGate(false)} type="community" />
             <SuggestGameModal open={showSuggestModal} onClose={() => setShowSuggestModal(false)} />
         </div>
     );

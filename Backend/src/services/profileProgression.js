@@ -1,12 +1,12 @@
 const LEVELS = [
     { id: 'rookie', name: 'Rookie', minPoints: 0 },
-    { id: 'aspirante', name: 'Aspirante', minPoints: 350 },
-    { id: 'competidor', name: 'Competidor', minPoints: 800 },
-    { id: 'estratega', name: 'Estratega', minPoints: 1400 },
-    { id: 'capitan', name: 'Capitan', minPoints: 2100 },
-    { id: 'elite', name: 'Elite', minPoints: 2900 },
-    { id: 'campeon', name: 'Campeon', minPoints: 3800 },
-    { id: 'leyenda', name: 'Leyenda', minPoints: 4700 }
+    { id: 'aspirante', name: 'Aspirante', minPoints: 200 },
+    { id: 'competidor', name: 'Competidor', minPoints: 500 },
+    { id: 'estratega', name: 'Estratega', minPoints: 900 },
+    { id: 'capitan', name: 'Capitan', minPoints: 1400 },
+    { id: 'elite', name: 'Elite', minPoints: 2000 },
+    { id: 'campeon', name: 'Campeon', minPoints: 2600 },
+    { id: 'leyenda', name: 'Leyenda', minPoints: 3200 }
 ];
 
 const ACHIEVEMENT_ACCENTS = {
@@ -168,138 +168,173 @@ export const buildProfileProgression = ({
     const engagementScore = Math.min(toNumber(likesReceived), 15) + Math.min(toNumber(commentsReceived) * 2, 10);
     const universityVerified = user?.university?.verified ? 1 : 0;
 
+    /* ─────────────────────────────────────────────────
+       PUNTO MÁXIMO TEÓRICO: ~3 308 pts
+       ─────────────────────────────────────────────────
+       Perfil   ≈  208 pts  (lo más fácil, pocos pts)
+       Social   ≈  300 pts
+       Equipos  ≈  300 pts
+       Competitivo ≈ 2 500 pts  (lo que más vale)
+       ───────────────────────────────────────────────── */
     const pointSources = [
+        // ── Perfil (~208 pts) ──
         buildSource({
             id: 'profile-core',
-            label: 'Perfil base',
-            description: 'Completa tus datos principales visibles en tu perfil.',
+            label: 'Datos del perfil',
+            description: 'Nombre, pais, telefono, etc.',
             current: profileCoreFields,
             target: 5,
             unit: 'datos',
-            pointsPerUnit: 30
+            pointsPerUnit: 5
         }),
         buildSource({
             id: 'identity-style',
-            label: 'Identidad visual',
-            description: 'Personaliza avatar, placa, fondo y marco.',
+            label: 'Estilo visual',
+            description: 'Avatar, placa, fondo y marco.',
             current: styleElements,
             target: 4,
             unit: 'items',
-            pointsPerUnit: 25
+            pointsPerUnit: 5
         }),
         buildSource({
             id: 'bio-ready',
-            label: 'Bio lista',
-            description: 'Escribe una bio clara para tu perfil publico.',
+            label: 'Bio',
+            description: 'Escribe una bio (+20 caracteres).',
             current: bioReady,
             target: 1,
             unit: 'estado',
-            points: 60,
+            points: 10,
             binary: true
         }),
         buildSource({
             id: 'game-pool',
-            label: 'Pool de juegos',
-            description: 'Amplia tu perfil con varios juegos seleccionados.',
+            label: 'Juegos',
+            description: 'Selecciona tus juegos.',
             current: selectedGamesCount,
             target: 5,
             unit: 'juegos',
-            pointsPerUnit: 25
+            pointsPerUnit: 5
         }),
         buildSource({
             id: 'communication-kit',
-            label: 'Rol e idiomas',
-            description: 'Define roles y lenguajes para jugar mejor en equipo.',
+            label: 'Roles e idiomas',
+            description: 'Roles e idiomas configurados.',
             current: communicationScore,
             target: 6,
             unit: 'selecciones',
-            pointsPerUnit: 10
+            pointsPerUnit: 3
         }),
         buildSource({
             id: 'social-links',
             label: 'Redes sociales',
-            description: 'Conecta tus redes para ganar visibilidad.',
+            description: 'Agrega tus redes.',
             current: socialLinksCount,
             target: 3,
             unit: 'redes',
-            pointsPerUnit: 20
+            pointsPerUnit: 5
         }),
         buildSource({
             id: 'account-links',
-            label: 'Cuentas conectadas',
-            description: 'Vincula Discord y cuentas gaming verificadas.',
+            label: 'Cuentas vinculadas',
+            description: 'Discord, Riot, MLBB, etc.',
             current: connectionScore,
             target: 4,
             unit: 'cuentas',
-            pointsPerUnit: 65
+            pointsPerUnit: 15
         }),
+        buildSource({
+            id: 'university',
+            label: 'Universidad verificada',
+            description: 'Verifica tu universidad.',
+            current: universityVerified,
+            target: 1,
+            unit: 'estado',
+            points: 30,
+            binary: true
+        }),
+        buildSource({
+            id: 'looking-for-team',
+            label: 'Buscando equipo',
+            description: 'Activa busqueda de equipo.',
+            current: lookingForTeamActive,
+            target: 1,
+            unit: 'estado',
+            points: 5,
+            binary: true
+        }),
+
+        // ── Social (~300 pts) ──
         buildSource({
             id: 'friend-network',
-            label: 'Red de amigos',
-            description: 'Suma amistades mutuas dentro de la plataforma.',
+            label: 'Amigos',
+            description: 'Amistades mutuas.',
             current: mutualFriendsCount,
             target: 5,
-            unit: 'amistades',
-            pointsPerUnit: 30
+            unit: 'amigos',
+            pointsPerUnit: 15
         }),
         buildSource({
+            id: 'community',
+            label: 'Comunidades',
+            description: 'Unete a comunidades.',
+            current: communitiesCount,
+            target: 3,
+            unit: 'comunidades',
+            pointsPerUnit: 25
+        }),
+        buildSource({
+            id: 'content',
+            label: 'Publicaciones',
+            description: 'Publica contenido.',
+            current: postsCount,
+            target: 5,
+            unit: 'posts',
+            pointsPerUnit: 15
+        }),
+        buildSource({
+            id: 'engagement',
+            label: 'Interacciones',
+            description: 'Likes y comentarios recibidos.',
+            current: engagementScore,
+            target: 25,
+            unit: 'interacciones',
+            pointsPerUnit: 3
+        }),
+
+        // ── Equipos (~300 pts) ──
+        buildSource({
             id: 'teams',
-            label: 'Trayectoria en equipos',
-            description: 'Participa en escuadras y consolida tu historial.',
+            label: 'Equipos',
+            description: 'Forma parte de equipos.',
             current: teamsCount,
             target: 3,
             unit: 'equipos',
-            pointsPerUnit: 100
+            pointsPerUnit: 50
         }),
         buildSource({
             id: 'leadership',
             label: 'Liderazgo',
-            description: 'Capitanear equipos suma prestigio competitivo.',
+            description: 'Capitanea equipos.',
             current: captainTeams,
             target: 2,
             unit: 'capitanias',
-            pointsPerUnit: 80
+            pointsPerUnit: 75
         }),
-        buildSource({
-            id: 'community',
-            label: 'Presencia en comunidad',
-            description: 'Participa dentro de comunidades activas.',
-            current: communitiesCount,
-            target: 3,
-            unit: 'comunidades',
-            pointsPerUnit: 70
-        }),
-        buildSource({
-            id: 'content',
-            label: 'Contenido publicado',
-            description: 'Comparte publicaciones y mantente visible.',
-            current: postsCount,
-            target: 5,
-            unit: 'posts',
-            pointsPerUnit: 40
-        }),
-        buildSource({
-            id: 'engagement',
-            label: 'Interaccion recibida',
-            description: 'Likes y comentarios que reciben tus publicaciones.',
-            current: engagementScore,
-            target: 25,
-            unit: 'interacciones',
-            pointsPerUnit: 8
-        }),
+
+        // ── Competitivo (~2 500 pts) ──
         buildSource({
             id: 'tournament-entries',
-            label: 'Participacion en torneos',
-            description: 'Inscribete y juega competiciones oficiales.',
+            label: 'Torneos jugados',
+            description: 'Participa en torneos.',
             current: tournamentsJoined,
             target: 5,
             unit: 'torneos',
-            pointsPerUnit: 150
+            pointsPerUnit: 100
         }),
         buildSource({
             id: 'official-matches',
             label: 'Partidas oficiales',
-            description: 'Cada partida oficial completada suma experiencia.',
+            description: 'Partidas completadas.',
             current: matchesPlayed,
             target: 10,
             unit: 'partidas',
@@ -307,41 +342,21 @@ export const buildProfileProgression = ({
         }),
         buildSource({
             id: 'official-wins',
-            label: 'Victorias oficiales',
-            description: 'Ganar tambien impulsa tus puntos de perfil.',
+            label: 'Victorias',
+            description: 'Partidas ganadas.',
             current: matchesWon,
             target: 10,
             unit: 'victorias',
-            pointsPerUnit: 35
+            pointsPerUnit: 50
         }),
         buildSource({
             id: 'tournament-titles',
-            label: 'Titulos',
-            description: 'Los campeonatos son el mayor impulso de puntos.',
+            label: 'Titulos de campeon',
+            description: 'Gana torneos.',
             current: tournamentsWon,
             target: 5,
             unit: 'titulos',
-            pointsPerUnit: 300
-        }),
-        buildSource({
-            id: 'university',
-            label: 'Verificacion universitaria',
-            description: 'La validacion academica aporta prestigio adicional.',
-            current: universityVerified,
-            target: 1,
-            unit: 'estado',
-            points: 150,
-            binary: true
-        }),
-        buildSource({
-            id: 'looking-for-team',
-            label: 'Disponible para reclutamiento',
-            description: 'Activa tu estado de busqueda de equipo.',
-            current: lookingForTeamActive,
-            target: 1,
-            unit: 'estado',
-            points: 30,
-            binary: true
+            pointsPerUnit: 250
         })
     ];
 
@@ -349,10 +364,11 @@ export const buildProfileProgression = ({
     const level = resolveLevel(totalPoints);
 
     const achievements = [
+        // ── Onboarding ──
         buildAchievement({
             id: 'profile-complete',
             name: 'Perfil completo',
-            description: 'Completa los 5 datos base de tu perfil.',
+            description: 'Completa los 5 datos base.',
             iconClass: 'bx bx-user-check',
             category: 'onboarding',
             current: profileCoreFields,
@@ -362,7 +378,7 @@ export const buildProfileProgression = ({
         buildAchievement({
             id: 'visual-identity',
             name: 'Firma gamer',
-            description: 'Activa avatar, placa, fondo y marco.',
+            description: 'Avatar, placa, fondo y marco.',
             iconClass: 'bx bx-paint',
             category: 'onboarding',
             current: styleElements,
@@ -372,7 +388,7 @@ export const buildProfileProgression = ({
         buildAchievement({
             id: 'bio-live',
             name: 'Voz propia',
-            description: 'Publica una bio de al menos 20 caracteres.',
+            description: 'Escribe tu bio.',
             iconClass: 'bx bx-edit-alt',
             category: 'onboarding',
             current: bioReady,
@@ -382,7 +398,7 @@ export const buildProfileProgression = ({
         buildAchievement({
             id: 'multi-game',
             name: 'Multijuego',
-            description: 'Selecciona 3 juegos en tu perfil.',
+            description: 'Selecciona 3 juegos.',
             iconClass: 'bx bx-joystick',
             category: 'onboarding',
             current: selectedGamesCount,
@@ -391,14 +407,15 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'multi-language',
-            name: 'Comunicacion lista',
-            description: 'Configura 2 idiomas visibles.',
+            name: 'Comunicador',
+            description: 'Configura 2 idiomas.',
             iconClass: 'bx bx-globe',
             category: 'onboarding',
             current: languagesCount,
             target: 2,
             unit: 'idiomas'
         }),
+        // ── Social ──
         buildAchievement({
             id: 'social-links',
             name: 'Perfil social',
@@ -412,7 +429,7 @@ export const buildProfileProgression = ({
         buildAchievement({
             id: 'discord-ready',
             name: 'Discord listo',
-            description: 'Vincula tu cuenta de Discord.',
+            description: 'Vincula Discord.',
             iconClass: 'bx bxl-discord-alt',
             category: 'social',
             current: discordLinked,
@@ -421,8 +438,8 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'verified-gamer',
-            name: 'Cuenta competitiva',
-            description: 'Verifica al menos una cuenta Riot o MLBB.',
+            name: 'Cuenta verificada',
+            description: 'Verifica Riot o MLBB.',
             iconClass: 'bx bx-check-circle',
             category: 'social',
             current: verifiedGameAccount,
@@ -432,7 +449,7 @@ export const buildProfileProgression = ({
         buildAchievement({
             id: 'first-friend',
             name: 'Primer amigo',
-            description: 'Consigue 1 amistad mutua.',
+            description: '1 amistad mutua.',
             iconClass: 'bx bx-user-plus',
             category: 'social',
             current: mutualFriendsCount,
@@ -442,17 +459,18 @@ export const buildProfileProgression = ({
         buildAchievement({
             id: 'friend-network',
             name: 'Red activa',
-            description: 'Consigue 5 amistades mutuas.',
+            description: '5 amistades mutuas.',
             iconClass: 'bx bx-group',
             category: 'social',
             current: mutualFriendsCount,
             target: 5,
             unit: 'amistades'
         }),
+        // ── Team ──
         buildAchievement({
             id: 'first-team',
             name: 'Primer equipo',
-            description: 'Forma parte de tu primer roster.',
+            description: 'Unete a un equipo.',
             iconClass: 'bx bx-shield-quarter',
             category: 'team',
             current: teamsCount,
@@ -461,18 +479,19 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'team-captain',
-            name: 'Capitan nato',
-            description: 'Lidera al menos 1 equipo.',
+            name: 'Capitan',
+            description: 'Lidera un equipo.',
             iconClass: 'bx bx-crown',
             category: 'team',
             current: captainTeams,
             target: 1,
             unit: 'capitania'
         }),
+        // ── Community ──
         buildAchievement({
             id: 'community-member',
-            name: 'Comunidad viva',
-            description: 'Unete a tu primera comunidad.',
+            name: 'Miembro activo',
+            description: 'Unete a una comunidad.',
             iconClass: 'bx bx-layer',
             category: 'community',
             current: communitiesCount,
@@ -481,8 +500,8 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'content-creator',
-            name: 'Creador activo',
-            description: 'Publica 3 posts dentro de la plataforma.',
+            name: 'Creador',
+            description: 'Publica 3 posts.',
             iconClass: 'bx bx-message-rounded',
             category: 'community',
             current: postsCount,
@@ -491,18 +510,19 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'public-response',
-            name: 'Reaccion del publico',
-            description: 'Recibe 10 likes en tus publicaciones.',
+            name: 'Popular',
+            description: 'Recibe 10 likes.',
             iconClass: 'bx bx-heart',
             category: 'community',
             current: likesReceived,
             target: 10,
             unit: 'likes'
         }),
+        // ── Competitive ──
         buildAchievement({
             id: 'tournament-rookie',
-            name: 'Debut competitivo',
-            description: 'Participa en tu primer torneo.',
+            name: 'Debut',
+            description: 'Juega tu primer torneo.',
             iconClass: 'bx bx-trophy',
             category: 'competitive',
             current: tournamentsJoined,
@@ -511,8 +531,8 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'tournament-regular',
-            name: 'Circuito regular',
-            description: 'Participa en 5 torneos.',
+            name: 'Veterano',
+            description: 'Juega 5 torneos.',
             iconClass: 'bx bx-medal',
             category: 'competitive',
             current: tournamentsJoined,
@@ -521,8 +541,8 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'match-grinder',
-            name: 'Guerrero oficial',
-            description: 'Juega 10 partidas oficiales.',
+            name: 'Guerrero',
+            description: '10 partidas oficiales.',
             iconClass: 'bx bx-bolt',
             category: 'competitive',
             current: matchesPlayed,
@@ -532,7 +552,7 @@ export const buildProfileProgression = ({
         buildAchievement({
             id: 'first-title',
             name: 'Primera corona',
-            description: 'Gana tu primer torneo.',
+            description: 'Gana un torneo.',
             iconClass: 'bx bx-trophy',
             category: 'competitive',
             current: tournamentsWon,
@@ -541,8 +561,8 @@ export const buildProfileProgression = ({
         }),
         buildAchievement({
             id: 'dynasty',
-            name: 'Dinastia competitiva',
-            description: 'Gana 5 torneos oficiales.',
+            name: 'Dinastia',
+            description: 'Gana 5 torneos.',
             iconClass: 'bx bx-medal',
             category: 'competitive',
             current: tournamentsWon,

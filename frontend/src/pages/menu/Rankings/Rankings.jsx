@@ -1,4 +1,8 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
+// import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { API_URL } from '../../../config/api';
+import { getAuthToken } from '../../../utils/authSession';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaTrophy, FaUsers, FaCalendarAlt, FaMedal, FaFire, FaChartLine,
@@ -6,7 +10,8 @@ import {
     FaArrowUp, FaArrowDown, FaMinus, FaChevronRight, FaGlobeAmericas,
     FaUserAlt, FaShieldAlt, FaCoins, FaCalendarCheck, FaFlag,
     FaHistory, FaHandshake, FaUserFriends, FaTwitter, FaInstagram, FaAt,
-    FaCloudUploadAlt, FaTrash, FaImage, FaBook, FaPlus, FaCheckCircle
+    FaCloudUploadAlt, FaTrash, FaImage, FaBook, FaCheckCircle,
+    FaInfoCircle, FaPencilAlt, FaPlus
 } from 'react-icons/fa';
 import { GiPodium, GiTrophy, GiSwordsEmblem } from 'react-icons/gi';
 import PageHud from '../../../components/PageHud/PageHud';
@@ -18,18 +23,37 @@ import './Rankings.css';
 
 // All supported games
 const SUPPORTED_GAMES = [
-    { id: 'mlbb', name: 'Mobile Legends', short: 'MLBB' },
+    { id: 'sf', name: 'Street Fighter', short: 'SF' },
+    { id: 'ssbu', name: 'Smash Bros', short: 'Smash' },
     { id: 'valorant', name: 'Valorant', short: 'Valorant' },
     { id: 'lol', name: 'League of Legends', short: 'LoL' },
+    { id: 'mlbb', name: 'Mobile Legends', short: 'MLBB' },
+    { id: 'warzone', name: 'Warzone', short: 'WZ' },
+    { id: 'nba2k', name: 'NBA 2K', short: 'NBA2K' },
+    { id: 'eafc', name: 'EA Sports FC', short: 'EA FC' },
+    { id: 'tekken', name: 'Tekken', short: 'Tekken' },
+    { id: 'efootball', name: 'eFootball', short: 'eFoot' },
+    { id: 'rl', name: 'Rocket League', short: 'RL' },
 ];
 
 const RANKINGS_VISIBLE_GAMES = new Set([
-    'Mobile Legends',
-    'Mobile Legends: Bang Bang',
-    'MLBB',
+    'Street Fighter',
+    'Smash Bros',
     'Valorant',
     'League of Legends',
     'LoL',
+    'Mobile Legends',
+    'MLBB',
+    'Warzone',
+    'NBA 2K',
+    'EA Sports FC',
+    'Tekken',
+    'eFootball',
+    'Rocket League',
+    'PUBG Mobile',
+    'Free Fire',
+    'Fortnite',
+    'Multigame',
 ]);
 
 // Bubbles component
@@ -54,6 +78,21 @@ const Bubbles = () => (
 const avatarUrl = (seed) => `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(seed)}`;
 const teamLogo = (seed) => `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(seed)}`;
 
+// Utility: count titles (place === 1) across solo + duo + team — all count as personal
+const getTitleCount = (player) => {
+    if (!player.achievements) return 0;
+    const solo = player.achievements.solo?.filter(a => a.place === 1).length || 0;
+    const duo = player.achievements.duo?.filter(a => a.place === 1).length || 0;
+    const team = player.achievements.team?.filter(a => a.place === 1).length || 0;
+    return solo + duo + team;
+};
+
+// Utility: count all achievements (participations)
+const getAchievementCount = (player) => {
+    if (!player.achievements) return 0;
+    return (player.achievements.solo?.length || 0) + (player.achievements.duo?.length || 0) + (player.achievements.team?.length || 0);
+};
+
 // Tab definitions
 const TABS = [
     { id: 'players', label: 'Jugadores', icon: FaUserAlt },
@@ -63,6 +102,7 @@ const TABS = [
 
 export default function Rankings() {
     const fileInputRef = useRef(null);
+    const achievementFileRef = useRef(null);
     const [activeTab, setActiveTab] = useState('players');
     const [game, setGame] = useState('Todos');
     const [region, setRegion] = useState('Todas');
@@ -72,11 +112,14 @@ export default function Rankings() {
     const [tournamentFilter, setTournamentFilter] = useState('Todos');
     const [playerPanelTab, setPlayerPanelTab] = useState('overview');
 
-    // Achievement Modal States
+    // Modal States
     const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
+    const [isContributeModalOpen, setIsContributeModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-    const [achievementData, setAchievementData] = useState({
+
+    // Achievement modal (Enviar Mi Logro)
+    const initialAchievementData = {
         game: '',
         mode: 'team',
         tournamentName: '',
@@ -86,7 +129,84 @@ export default function Rankings() {
         partnerName: '',
         description: '',
         proofFiles: []
-    });
+    };
+    const [achievementData, setAchievementData] = useState(initialAchievementData);
+
+    // Contribute modal (Aportar Datos)
+    const initialContributeData = {
+        subject: '',
+        playerOrTeam: '',
+        game: '',
+        tournamentName: '',
+        tournamentDate: '',
+        result: '',
+        source: '',
+        description: '',
+        proofFiles: []
+    };
+    const [contributeData, setContributeData] = useState(initialContributeData);
+
+    const handleContribute = useCallback((subject) => {
+        setContributeData({ ...initialContributeData, subject, playerOrTeam: subject });
+        setIsContributeModalOpen(true);
+    }, []);
+
+    // Achievement modal handlers
+    const handleSubmitAchievement = async (e) => {
+        e.preventDefault();
+        if (!achievementData.game) { showToast('Selecciona un juego', 'error'); return; }
+        if (!achievementData.tournamentName.trim()) { showToast('Escribe el nombre del torneo', 'error'); return; }
+        if (!achievementData.tournamentDate) { showToast('Selecciona la fecha', 'error'); return; }
+        if (achievementData.proofFiles.length === 0) { showToast('Sube al menos una prueba', 'error'); return; }
+        if (achievementData.mode === 'duo' && !achievementData.partnerName.trim()) { showToast('Escribe el nombre de tu compañero', 'error'); return; }
+        if (achievementData.mode === 'team' && !achievementData.teamName.trim()) { showToast('Escribe el nombre del equipo', 'error'); return; }
+
+        setIsSubmitting(true);
+        try {
+            const token = getAuthToken();
+            if (!token) { showToast('Debes iniciar sesion', 'error'); setIsSubmitting(false); return; }
+            const gameName = SUPPORTED_GAMES.find(g => g.id === achievementData.game)?.name || achievementData.game;
+            await axios.post(`${API_URL}/api/auth/support/ticket`, {
+                type: 'achievement',
+                subject: `Logro: ${achievementData.tournamentName}`,
+                message: `Juego: ${gameName} | Torneo: ${achievementData.tournamentName} | Fecha: ${achievementData.tournamentDate} | Posicion: ${achievementData.placement} | Modo: ${achievementData.mode}${achievementData.mode === 'team' ? ` | Equipo: ${achievementData.teamName}` : ''}${achievementData.mode === 'duo' ? ` | Compañero: ${achievementData.partnerName}` : ''}${achievementData.description ? `\n\n${achievementData.description}` : ''}`,
+                data: {
+                    game: gameName,
+                    mode: achievementData.mode,
+                    tournamentName: achievementData.tournamentName,
+                    tournamentDate: achievementData.tournamentDate,
+                    placement: achievementData.placement,
+                    teamName: achievementData.teamName,
+                    partnerName: achievementData.partnerName,
+                    proofCount: achievementData.proofFiles.length,
+                }
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            setAchievementData(initialAchievementData);
+            setIsAchievementModalOpen(false);
+            showToast('Logro enviado. Nuestro equipo lo revisara en 24-48 horas.');
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Error al enviar', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const closeAchievementModal = () => {
+        if (!isSubmitting) { setIsAchievementModalOpen(false); setAchievementData(initialAchievementData); }
+    };
+
+    const handleAchievementFileSelect = (e) => {
+        const files = Array.from(e.target.files);
+        const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024);
+        if (validFiles.length !== files.length) showToast('Solo imagenes de hasta 10MB', 'error');
+        const newFiles = validFiles.map(f => ({ file: f, preview: URL.createObjectURL(f), name: f.name }));
+        setAchievementData(prev => ({ ...prev, proofFiles: [...prev.proofFiles, ...newFiles].slice(0, 5) }));
+    };
+
+    const removeAchievementFile = (index) => {
+        setAchievementData(prev => ({ ...prev, proofFiles: prev.proofFiles.filter((_, i) => i !== index) }));
+    };
 
     // Show toast
     const showToast = (message, type = 'success') => {
@@ -94,7 +214,7 @@ export default function Rankings() {
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
     };
 
-    // Handle file selection for achievements
+    // Handle file selection (contribute modal)
     const handleFileSelect = (e) => {
         const files = Array.from(e.target.files);
         const validFiles = files.filter(file => {
@@ -102,18 +222,15 @@ export default function Rankings() {
             const isValidSize = file.size <= 10 * 1024 * 1024;
             return isImage && isValidSize;
         });
-
         if (validFiles.length !== files.length) {
-            showToast('Algunos archivos fueron ignorados (solo imágenes de hasta 10MB)', 'error');
+            showToast('Solo imagenes de hasta 10MB', 'error');
         }
-
         const newFiles = validFiles.map(file => ({
             file,
             preview: URL.createObjectURL(file),
             name: file.name
         }));
-
-        setAchievementData(prev => ({
+        setContributeData(prev => ({
             ...prev,
             proofFiles: [...prev.proofFiles, ...newFiles].slice(0, 5)
         }));
@@ -121,75 +238,81 @@ export default function Rankings() {
 
     // Remove proof file
     const removeProofFile = (index) => {
-        setAchievementData(prev => ({
+        setContributeData(prev => ({
             ...prev,
             proofFiles: prev.proofFiles.filter((_, i) => i !== index)
         }));
     };
 
-    // Handle achievement submission
-    const handleSubmitAchievement = async (e) => {
+    // Submit contribute data to backend
+    const handleSubmitContribute = async (e) => {
         e.preventDefault();
 
-        if (!achievementData.game) {
-            showToast('Selecciona un juego', 'error');
+        if (!contributeData.playerOrTeam.trim()) {
+            showToast('Escribe el nombre del jugador o equipo', 'error');
             return;
         }
-        if (!achievementData.tournamentName.trim()) {
-            showToast('Escribe el nombre del torneo', 'error');
+        if (!contributeData.tournamentName.trim()) {
+            showToast('Escribe el nombre del torneo o evento', 'error');
             return;
         }
-        if (!achievementData.tournamentDate) {
-            showToast('Selecciona la fecha del torneo', 'error');
-            return;
-        }
-        if (achievementData.proofFiles.length === 0) {
-            showToast('Sube al menos una prueba de tu victoria', 'error');
-            return;
-        }
-        if (achievementData.mode === 'duo' && !achievementData.partnerName.trim()) {
-            showToast('Escribe el nombre de tu compañero de duo', 'error');
-            return;
-        }
-        if (achievementData.mode === 'team' && !achievementData.teamName.trim()) {
-            showToast('Escribe el nombre de tu equipo', 'error');
+        if (!contributeData.description.trim()) {
+            showToast('Agrega una descripcion de los datos', 'error');
             return;
         }
 
         setIsSubmitting(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        setIsSubmitting(false);
-        setAchievementData({
-            game: '',
-            mode: 'team',
-            tournamentName: '',
-            tournamentDate: '',
-            placement: 1,
-            teamName: '',
-            partnerName: '',
-            description: '',
-            proofFiles: []
-        });
-        setIsAchievementModalOpen(false);
-        showToast('🏆 ¡Logro enviado! Nuestro equipo lo revisará en 24-48 horas.');
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                showToast('Debes iniciar sesion para aportar datos', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const gameName = contributeData.game
+                ? SUPPORTED_GAMES.find(g => g.id === contributeData.game)?.name || contributeData.game
+                : 'No especificado';
+
+            await axios.post(`${API_URL}/api/auth/support/ticket`, {
+                type: 'achievement',
+                subject: `Aporte de datos: ${contributeData.playerOrTeam}`,
+                message: [
+                    `Jugador/Equipo: ${contributeData.playerOrTeam}`,
+                    `Juego: ${gameName}`,
+                    `Torneo/Evento: ${contributeData.tournamentName}`,
+                    contributeData.tournamentDate ? `Fecha: ${contributeData.tournamentDate}` : '',
+                    contributeData.result ? `Resultado: ${contributeData.result}` : '',
+                    contributeData.source ? `Fuente: ${contributeData.source}` : '',
+                    `\nDescripcion:\n${contributeData.description}`,
+                ].filter(Boolean).join('\n'),
+                data: {
+                    playerOrTeam: contributeData.playerOrTeam,
+                    game: gameName,
+                    tournamentName: contributeData.tournamentName,
+                    tournamentDate: contributeData.tournamentDate,
+                    result: contributeData.result,
+                    source: contributeData.source,
+                    proofCount: contributeData.proofFiles.length,
+                }
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            setContributeData(initialContributeData);
+            setIsContributeModalOpen(false);
+            showToast('Datos enviados. Nuestro equipo los revisara en 24-48 horas.');
+        } catch (err) {
+            console.error('Error submitting contribute data:', err);
+            showToast(err.response?.data?.error || 'Error al enviar los datos', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    // Close achievement modal
-    const closeAchievementModal = () => {
+    // Close contribute modal
+    const closeContributeModal = () => {
         if (!isSubmitting) {
-            setIsAchievementModalOpen(false);
-            setAchievementData({
-                game: '',
-                mode: 'team',
-                tournamentName: '',
-                tournamentDate: '',
-                placement: 1,
-                teamName: '',
-                partnerName: '',
-                description: '',
-                proofFiles: []
-            });
+            setIsContributeModalOpen(false);
+            setContributeData(initialContributeData);
         }
     };
 
@@ -197,7 +320,15 @@ export default function Rankings() {
     // PLAYERS TAB
     // ═══════════════════════════════════════════════════════════
     const filteredPlayers = useMemo(() => {
-        let rows = [...PLAYERS_DATA].filter((player) => RANKINGS_VISIBLE_GAMES.has(player.game));
+        let rows = [...PLAYERS_DATA].filter((player) => {
+            if (player.isTeam) return false;
+            if (!RANKINGS_VISIBLE_GAMES.has(player.game)) return false;
+            // Solo mostrar jugadores con logros individuales (solo/duo)
+            // Los que solo tienen logros de equipo se ven en la pestaña Equipos
+            const hasSolo = player.achievements?.solo?.length > 0;
+            const hasDuo = player.achievements?.duo?.length > 0;
+            return hasSolo || hasDuo;
+        });
 
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -210,15 +341,54 @@ export default function Rankings() {
         if (game !== 'Todos') rows = rows.filter(p => p.game === game);
         if (region !== 'Todas') rows = rows.filter(p => p.region === region);
 
-        return rows.sort((a, b) => b.points - a.points);
+        // Sort by titles first (place === 1), then by total achievements
+        return rows.sort((a, b) => {
+            const aTitles = getTitleCount(a);
+            const bTitles = getTitleCount(b);
+            if (bTitles !== aTitles) return bTitles - aTitles;
+            return getAchievementCount(b) - getAchievementCount(a);
+        });
     }, [game, region, searchTerm]);
 
     const podiumPlayers = filteredPlayers.slice(0, 3);
     const topPlayer = filteredPlayers[0];
-    const hotStreak = useMemo(() => {
-        if (!filteredPlayers.length) return null;
-        return [...filteredPlayers].sort((a, b) => b.streak - a.streak)[0];
-    }, [filteredPlayers]);
+
+    // ═══════════════════════════════════════════════════════════
+    // TEAM ENRICHMENT — derive real stats from PLAYERS_DATA
+    // ═══════════════════════════════════════════════════════════
+    const getTeamData = useCallback((teamName) => {
+        // Find individual players that belong to this team (exclude isTeam entries)
+        const members = PLAYERS_DATA.filter(p =>
+            !p.isTeam && p.team && p.team.split(' / ').some(t => t.trim() === teamName)
+        );
+        // Collect achievements from player data
+        const teamAchievements = [];
+        const seen = new Set();
+        members.forEach(p => {
+            p.achievements?.team?.forEach(ach => {
+                if (ach.team === teamName) {
+                    const key = `${ach.name}|${ach.date}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        teamAchievements.push({ ...ach, player: p.player });
+                    }
+                }
+            });
+        });
+        // Also include achievements defined directly on the team in TEAMS_DATA
+        const teamEntry = TEAMS_DATA.find(t => t.name === teamName);
+        if (teamEntry?.achievements) {
+            teamEntry.achievements.forEach(ach => {
+                const key = `${ach.name}|${ach.date}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    teamAchievements.push(ach);
+                }
+            });
+        }
+        const titles = teamAchievements.filter(a => a.place === 1).length;
+        return { members, achievements: teamAchievements, titles, isUniversity: teamEntry?.isUniversity || false };
+    }, []);
 
     // ═══════════════════════════════════════════════════════════
     // TEAMS TAB
@@ -238,8 +408,16 @@ export default function Rankings() {
         if (game !== 'Todos') rows = rows.filter(t => t.games.includes(game));
         if (region !== 'Todas') rows = rows.filter(t => t.region === region);
 
-        return rows.sort((a, b) => b.points - a.points);
-    }, [game, region, searchTerm]);
+        // Sort by titles first, then achievements, then verified, then name
+        return rows.sort((a, b) => {
+            const tdA = getTeamData(a.name);
+            const tdB = getTeamData(b.name);
+            if (tdB.titles !== tdA.titles) return tdB.titles - tdA.titles;
+            if (tdB.achievements.length !== tdA.achievements.length) return tdB.achievements.length - tdA.achievements.length;
+            if (a.verified !== b.verified) return b.verified ? 1 : -1;
+            return a.name.localeCompare(b.name);
+        });
+    }, [game, region, searchTerm, getTeamData]);
 
     // ═══════════════════════════════════════════════════════════
     // TOURNAMENTS TAB
@@ -265,7 +443,7 @@ export default function Rankings() {
         totalPlayers: filteredPlayers.length,
         totalTeams: filteredTeams.length,
         activeTournaments: filteredTournaments.filter(t => t.status === 'active').length,
-        totalPrize: filteredTournaments.reduce((acc, t) => acc + t.prize, 0),
+        totalPrize: filteredTournaments.reduce((acc, t) => acc + (t.prize || 0), 0),
     }), [filteredPlayers, filteredTeams, filteredTournaments]);
 
     // Animation variants
@@ -323,13 +501,13 @@ export default function Rankings() {
                         <p>Clasificación oficial de jugadores, equipos y torneos de la escena competitiva dominicana</p>
 
                         {/* Submit Achievement Button */}
-                        <motion.button 
+                        <motion.button
                             className="rk-submit-achievement-btn"
                             onClick={() => setIsAchievementModalOpen(true)}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
-                            <FaPlus />
+                            <FaTrophy />
                             <span>Enviar Mi Logro</span>
                         </motion.button>
 
@@ -434,12 +612,13 @@ export default function Rankings() {
                                             <h3>{p.player}</h3>
                                             <span className="rk-podium-team">{p.team}</span>
                                             <div className="rk-podium-game">{p.game}</div>
-                                            <strong>{p.points.toLocaleString()} pts</strong>
-                                            <div className="rk-podium-stats">
-                                                <span>{p.wins}W</span>
-                                                <span>{p.losses}L</span>
-                                                <span>{getWinRate(p.wins, p.losses)}%</span>
+                                            <div className="rk-podium-titles">
+                                                <FaTrophy /> <span className="rk-podium-titles__count">{getTitleCount(p)}</span> <span className="rk-podium-titles__label">{getTitleCount(p) === 1 ? 'Titulo' : 'Titulos'}</span>
                                             </div>
+                                            <small className="rk-podium-achievements">{getAchievementCount(p)} participaciones</small>
+                                            <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(p.player); }}>
+                                                <FaPencilAlt /> Aportar datos
+                                            </button>
                                         </motion.div>
                                     ))}
                                 </div>
@@ -456,9 +635,9 @@ export default function Rankings() {
                                                 <th>Equipo</th>
                                                 <th>Juego</th>
                                                 <th>Región</th>
-                                                <th>Puntos</th>
-                                                <th>Win Rate</th>
-                                                <th>Racha</th>
+                                                <th>Titulos</th>
+                                                <th>Participaciones</th>
+                                                <th>Estado</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -482,7 +661,17 @@ export default function Rankings() {
                                                         <div className="rk-player-cell">
                                                             <img src={avatarUrl(p.player)} alt={p.player} />
                                                             <div>
-                                                                <strong>{p.player}</strong>
+                                                                <strong>
+                                                                    {p.player}
+                                                                    <img 
+                                                                        src={`https://flagcdn.com/w20/${(p.country || 'DO').toLowerCase()}.png`} 
+                                                                        srcSet={`https://flagcdn.com/w40/${(p.country || 'DO').toLowerCase()}.png 2x`} 
+                                                                        width="21" 
+                                                                        height="14"
+                                                                        alt={p.country || 'DO'} 
+                                                                        style={{ marginLeft: '6px', verticalAlign: 'middle', borderRadius: '2px', objectFit: 'cover' }}
+                                                                    />
+                                                                </strong>
                                                                 <small>{p.role}</small>
                                                             </div>
                                                         </div>
@@ -490,14 +679,13 @@ export default function Rankings() {
                                                     <td>{p.team}</td>
                                                     <td><span className="rk-game-badge">{p.game}</span></td>
                                                     <td><FaMapMarkerAlt /> {p.region}</td>
-                                                    <td className="rk-points">{p.points.toLocaleString()}</td>
-                                                    <td>{getWinRate(p.wins, p.losses)}%</td>
+                                                    <td className="rk-points"><FaTrophy className="rk-title-icon" /> {getTitleCount(p)}</td>
+                                                    <td>{getAchievementCount(p)}</td>
                                                     <td>
-                                                        {p.streak > 0 && (
-                                                            <span className="rk-streak-badge">
-                                                                <FaFire /> {p.streak}
-                                                            </span>
-                                                        )}
+                                                        {p.verified && <span className="rk-verified-badge"><FaCheckCircle /></span>}
+                                                        <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(p.player); }}>
+                                                            <FaPencilAlt /> Aportar datos
+                                                        </button>
                                                     </td>
                                                 </motion.tr>
                                             )) : (
@@ -514,7 +702,7 @@ export default function Rankings() {
                                     {topPlayer && (
                                         <div className="rk-sidebar-card rk-sidebar-card--featured">
                                             <div className="rk-sidebar-card__header">
-                                                <FaStar /> Jugador #1
+                                                <FaStar /> Jugador Destacado
                                             </div>
                                             <div className="rk-sidebar-player">
                                                 <img src={avatarUrl(topPlayer.player)} alt={topPlayer.player} />
@@ -525,36 +713,30 @@ export default function Rankings() {
                                                 </div>
                                             </div>
                                             <div className="rk-sidebar-stats">
-                                                <div><span>Puntos</span><b>{topPlayer.points.toLocaleString()}</b></div>
-                                                <div><span>Win Rate</span><b>{getWinRate(topPlayer.wins, topPlayer.losses)}%</b></div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {hotStreak && (
-                                        <div className="rk-sidebar-card">
-                                            <div className="rk-sidebar-card__header">
-                                                <FaFire /> Mayor Racha
-                                            </div>
-                                            <div className="rk-sidebar-player">
-                                                <img src={avatarUrl(hotStreak.player)} alt={hotStreak.player} />
-                                                <div>
-                                                    <strong>{hotStreak.player}</strong>
-                                                    <span className="rk-hot-streak">{hotStreak.streak} victorias seguidas</span>
-                                                </div>
+                                                <div><span>Titulos</span><b>{getTitleCount(topPlayer)}</b></div>
+                                                <div><span>Participaciones</span><b>{getAchievementCount(topPlayer)}</b></div>
                                             </div>
                                         </div>
                                     )}
 
                                     <div className="rk-sidebar-card">
                                         <div className="rk-sidebar-card__header">
-                                            <FaChartLine /> Estadísticas
+                                            <FaChartLine /> Resumen
                                         </div>
                                         <ul className="rk-stats-list">
-                                            <li><span>Jugadores filtrados</span><b>{filteredPlayers.length}</b></li>
-                                            <li><span>Promedio puntos</span><b>{filteredPlayers.length ? Math.round(filteredPlayers.reduce((a, b) => a + b.points, 0) / filteredPlayers.length).toLocaleString() : 0}</b></li>
-                                            <li><span>Mejor WR</span><b>{filteredPlayers.length ? `${Math.max(...filteredPlayers.map(p => getWinRate(p.wins, p.losses)))}%` : '0%'}</b></li>
+                                            <li><span>Jugadores</span><b>{filteredPlayers.length}</b></li>
+                                            <li><span>Total titulos</span><b>{filteredPlayers.reduce((acc, p) => acc + getTitleCount(p), 0)}</b></li>
+                                            <li><span>Participaciones</span><b>{filteredPlayers.reduce((acc, p) => acc + getAchievementCount(p), 0)}</b></li>
                                         </ul>
+                                    </div>
+
+                                    <div className="rk-sidebar-card">
+                                        <div className="rk-sidebar-card__header">
+                                            <FaInfoCircle /> Datos en construccion
+                                        </div>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, padding: '0 0.5rem' }}>
+                                            Las estadisticas detalladas (victorias, derrotas, winrate) no estan disponibles aun. Usa el boton "Aportar datos" para contribuir informacion verificada.
+                                        </p>
                                     </div>
                                 </aside>
                             </div>
@@ -582,6 +764,9 @@ export default function Rankings() {
                                         transition={{ delay: idx * 0.05 }}
                                         style={{ '--team-color': team.color }}
                                     >
+                                        {(() => {
+                                            const td = getTeamData(team.name);
+                                            return (<>
                                         <div className="rk-team-card__rank">#{idx + 1}</div>
                                         <div className="rk-team-card__header">
                                             <img src={teamLogo(team.name)} alt={team.name} />
@@ -593,19 +778,44 @@ export default function Rankings() {
                                         <div className="rk-team-card__region">
                                             <FaMapMarkerAlt /> {team.region}
                                         </div>
+                                        {td.isUniversity && (
+                                            <span className="rk-university-badge"><FaBook /> Universitario</span>
+                                        )}
                                         <div className="rk-team-card__games">
                                             {team.games.map(g => (
                                                 <span key={g} className="rk-game-badge">{g}</span>
                                             ))}
                                         </div>
                                         <div className="rk-team-card__stats">
-                                            <div><FaUsers /> {team.players}</div>
-                                            <div><FaTrophy /> {team.trophies}</div>
-                                            <div><FaChartLine /> {team.winRate}%</div>
+                                            {td.members.length > 0 && <div><FaUsers /> {td.members.length} jugador{td.members.length !== 1 ? 'es' : ''}</div>}
+                                            <div><FaTrophy style={{ color: '#ffd700' }} /> {td.titles} título{td.titles !== 1 ? 's' : ''}</div>
+                                            <div><FaMedal /> {td.achievements.length} logro{td.achievements.length !== 1 ? 's' : ''}</div>
+                                            <div><FaCalendarAlt /> {team.founded}</div>
                                         </div>
-                                        <div className="rk-team-card__points">
-                                            {team.points.toLocaleString()} pts
+                                        {td.members.length > 0 && (
+                                            <div className="rk-team-card__members">
+                                                {td.members.slice(0, 5).map(m => (
+                                                    <img key={m.id} src={avatarUrl(m.player)} alt={m.player} title={m.player} />
+                                                ))}
+                                                {td.members.length > 5 && (
+                                                    <span className="rk-team-card__more">+{td.members.length - 5}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="rk-team-card__footer">
+                                            {team.verified && (
+                                                <div className="rk-verified-badge"><FaCheckCircle /> Verificado</div>
+                                            )}
+                                            <button
+                                                className="rk-contribute-btn rk-contribute-btn--card"
+                                                title="Aportar informacion"
+                                                onClick={(e) => { e.stopPropagation(); handleContribute(team.name); }}
+                                            >
+                                                <FaPencilAlt /> Aportar datos
+                                            </button>
                                         </div>
+                                            </>);
+                                        })()}
                                     </motion.div>
                                 )) : (
                                     <div className="rk-empty-full">No se encontraron equipos</div>
@@ -662,6 +872,15 @@ export default function Rankings() {
                                                 )}
                                             </div>
                                         </div>
+                                        {(!t.prize || (t.runnerUp && t.runnerUp.includes('No verificado')) || (t.champion && t.champion.includes('No verificado'))) && (
+                                            <button
+                                                className="rk-contribute-btn"
+                                                title="Aportar informacion"
+                                                onClick={(e) => { e.stopPropagation(); handleContribute(t.name); }}
+                                            >
+                                                <FaPencilAlt /> Aportar datos
+                                            </button>
+                                        )}
                                         <FaChevronRight className="rk-tournament-card__arrow" />
                                     </motion.div>
                                 )) : (
@@ -703,7 +922,16 @@ export default function Rankings() {
                                     </div>
                                 </div>
                                 <div className="rk-modal-header-info">
-                                    <h2>{selectedPlayer.player}</h2>
+                                    <h2>
+                                        {selectedPlayer.player}
+                                        <img 
+                                            src={`https://flagcdn.com/w40/${(selectedPlayer.country || 'DO').toLowerCase()}.png`}
+                                            width="30" 
+                                            height="20"
+                                            alt={selectedPlayer.country || 'DO'} 
+                                            style={{ marginLeft: '10px', verticalAlign: 'baseline', borderRadius: '3px', objectFit: 'cover' }}
+                                        />
+                                    </h2>
                                     <p className="rk-modal-realname">{selectedPlayer.realName}</p>
                                     <div className="rk-modal-tags">
                                         <span className="rk-game-badge">{selectedPlayer.game}</span>
@@ -751,49 +979,59 @@ export default function Rankings() {
                                         animate={{ opacity: 1, y: 0 }}
                                     >
                                         <div className="rk-panel-stats-grid">
-                                            <div className="rk-panel-stat">
-                                                <FaStar className="rk-panel-stat-icon" />
+                                            <div className="rk-panel-stat rk-panel-stat--highlight">
+                                                <FaTrophy className="rk-panel-stat-icon rk-stat-title" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Puntos Ranking</span>
-                                                    <strong>{selectedPlayer.points.toLocaleString()}</strong>
+                                                    <span>Titulos</span>
+                                                    <strong>{getTitleCount(selectedPlayer)}</strong>
                                                 </div>
                                             </div>
                                             <div className="rk-panel-stat">
-                                                <FaTrophy className="rk-panel-stat-icon rk-stat-win" />
+                                                <FaMedal className="rk-panel-stat-icon" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Victorias</span>
-                                                    <strong>{selectedPlayer.wins}</strong>
+                                                    <span>Participaciones</span>
+                                                    <strong>{getAchievementCount(selectedPlayer)}</strong>
                                                 </div>
                                             </div>
                                             <div className="rk-panel-stat">
-                                                <FaTimes className="rk-panel-stat-icon rk-stat-loss" />
+                                                <FaGamepad className="rk-panel-stat-icon" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Derrotas</span>
-                                                    <strong>{selectedPlayer.losses}</strong>
-                                                </div>
-                                            </div>
-                                            <div className="rk-panel-stat">
-                                                <FaChartLine className="rk-panel-stat-icon" />
-                                                <div className="rk-panel-stat-content">
-                                                    <span>Win Rate</span>
-                                                    <strong>{getWinRate(selectedPlayer.wins, selectedPlayer.losses)}%</strong>
-                                                </div>
-                                            </div>
-                                            <div className="rk-panel-stat">
-                                                <FaFire className="rk-panel-stat-icon rk-stat-streak" />
-                                                <div className="rk-panel-stat-content">
-                                                    <span>Racha Actual</span>
-                                                    <strong>{selectedPlayer.streak}W</strong>
+                                                    <span>Juego</span>
+                                                    <strong>{selectedPlayer.game}</strong>
                                                 </div>
                                             </div>
                                             <div className="rk-panel-stat">
                                                 <FaMapMarkerAlt className="rk-panel-stat-icon" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Región</span>
+                                                    <span>Region</span>
                                                     <strong>{selectedPlayer.region}</strong>
                                                 </div>
                                             </div>
+                                            <div className="rk-panel-stat">
+                                                <FaShieldAlt className="rk-panel-stat-icon" />
+                                                <div className="rk-panel-stat-content">
+                                                    <span>Equipo</span>
+                                                    <strong>{selectedPlayer.team}</strong>
+                                                </div>
+                                            </div>
+                                            <div className="rk-panel-stat">
+                                                <FaCheckCircle className="rk-panel-stat-icon" />
+                                                <div className="rk-panel-stat-content">
+                                                    <span>Estado</span>
+                                                    <strong>{selectedPlayer.verified ? 'Verificado' : 'Sin verificar'}</strong>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {!selectedPlayer.verified && (
+                                            <button
+                                                className="rk-contribute-btn rk-contribute-btn--card"
+                                                style={{ marginTop: '1rem' }}
+                                                onClick={() => handleContribute(selectedPlayer.player)}
+                                            >
+                                                <FaPencilAlt /> Aportar datos de este jugador
+                                            </button>
+                                        )}
 
                                         {/* Achievement Summary */}
                                         {selectedPlayer.achievements && (
@@ -887,20 +1125,46 @@ export default function Rankings() {
                                             {selectedPlayer.achievements?.team?.length > 0 ? (
                                                 <div className="rk-achievement-list">
                                                     {selectedPlayer.achievements.team.map((ach, idx) => (
-                                                        <div key={idx} className={`rk-achievement-item rk-place-${ach.place}`}>
-                                                            <div className="rk-achievement-medal">
-                                                                {ach.place === 1 ? <FaCrown /> : <FaMedal />}
+                                                        <div key={idx} className={`rk-achievement-item rk-achievement-item--team rk-place-${ach.place}`}>
+                                                            <div className="rk-achievement-row">
+                                                                <div className="rk-achievement-medal">
+                                                                    {ach.place === 1 ? <FaCrown /> : <FaMedal />}
+                                                                </div>
+                                                                <div className="rk-achievement-info">
+                                                                    <strong>{ach.name}</strong>
+                                                                    <span>{formatDate(ach.date)}</span>
+                                                                    {ach.team && (
+                                                                        <small><FaShieldAlt /> {ach.team}</small>
+                                                                    )}
+                                                                </div>
+                                                                <div className="rk-achievement-place">
+                                                                    #{ach.place}
+                                                                </div>
                                                             </div>
-                                                            <div className="rk-achievement-info">
-                                                                <strong>{ach.name}</strong>
-                                                                <span>{formatDate(ach.date)}</span>
-                                                                {ach.team && (
-                                                                    <small><FaShieldAlt /> {ach.team}</small>
-                                                                )}
-                                                            </div>
-                                                            <div className="rk-achievement-place">
-                                                                #{ach.place}
-                                                            </div>
+                                                            {ach.roster && ach.roster.length > 0 && (
+                                                                <div className="rk-roster">
+                                                                    <span className="rk-roster-label"><FaUsers /> Roster</span>
+                                                                    <div className="rk-roster-grid">
+                                                                        {ach.roster.map((member, mIdx) => (
+                                                                            member ? (
+                                                                                <div key={mIdx} className={`rk-roster-member ${member === selectedPlayer.player ? 'rk-roster-member--self' : ''}`}>
+                                                                                    <div className="rk-roster-avatar">
+                                                                                        <img src={avatarUrl(member)} alt={member} />
+                                                                                    </div>
+                                                                                    <span>{member}</span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div key={mIdx} className="rk-roster-member rk-roster-member--empty">
+                                                                                    <div className="rk-roster-avatar rk-roster-avatar--empty">
+                                                                                        <FaPlus />
+                                                                                    </div>
+                                                                                    <span>Por verificar</span>
+                                                                                </div>
+                                                                            )
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -989,6 +1253,9 @@ export default function Rankings() {
                             <button className="rk-modal-close" onClick={() => setSelectedTeam(null)}>
                                 <FaTimes />
                             </button>
+                            {(() => {
+                                const td = getTeamData(selectedTeam.name);
+                                return (<>
                             <div className="rk-modal-header">
                                 <img src={teamLogo(selectedTeam.name)} alt={selectedTeam.name} />
                                 <div>
@@ -997,75 +1264,180 @@ export default function Rankings() {
                                     <span>{selectedTeam.region} · Fundado en {selectedTeam.founded}</span>
                                 </div>
                             </div>
+                            {td.isUniversity && (
+                                <span className="rk-university-badge" style={{ marginBottom: '8px' }}><FaBook /> Equipo Universitario</span>
+                            )}
                             <div className="rk-modal-games">
                                 {selectedTeam.games.map(g => (
                                     <span key={g} className="rk-game-badge">{g}</span>
                                 ))}
                             </div>
                             <div className="rk-modal-stats">
-                                <div><span>Puntos</span><b>{selectedTeam.points.toLocaleString()}</b></div>
-                                <div><span>Jugadores</span><b>{selectedTeam.players}</b></div>
-                                <div><span>Trofeos</span><b>{selectedTeam.trophies}</b></div>
-                                <div><span>Win Rate</span><b>{selectedTeam.winRate}%</b></div>
+                                <div><span>Jugadores</span><b>{td.members.length}</b></div>
+                                <div><span>Títulos</span><b style={{ color: '#ffd700' }}>{td.titles}</b></div>
+                                <div><span>Logros</span><b>{td.achievements.length}</b></div>
+                                <div><span>Fundado</span><b>{selectedTeam.founded}</b></div>
                             </div>
+
+                            {/* Bandits Gaming Extra Info */}
+                            {selectedTeam.name === "Bandits Gaming" && (
+                                <div className="rk-team-modal-section rk-bandits-extra">
+                                    {/* playersHistory */}
+                                    {selectedTeam.playersHistory && selectedTeam.playersHistory.length > 0 && (
+                                        <div className="rk-bandits-history">
+                                            <h4><FaUsers /> Historial de Jugadores</h4>
+                                            <ul>
+                                                {selectedTeam.playersHistory.map((ph, idx) => (
+                                                    <li key={idx}>
+                                                        <strong>{ph.name}</strong> <span style={{ fontSize: '0.9em', color: '#888' }}>({ph.realName})</span> — <span>{ph.game}</span> <span style={{ fontSize: '0.9em', color: '#888' }}>[{ph.period}]</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {/* smashBrosNote */}
+                                    {selectedTeam.smashBrosNote && (
+                                        <div className="rk-bandits-smash">
+                                            <h4><FaGamepad /> Smash Bros</h4>
+                                            <p>{selectedTeam.smashBrosNote}</p>
+                                        </div>
+                                    )}
+                                    {/* blinkEsportsListed */}
+                                    {selectedTeam.blinkEsportsListed && selectedTeam.blinkEsportsListed.length > 0 && (
+                                        <div className="rk-bandits-blink">
+                                            <h4><FaBook /> Jugadores en Blink Esports</h4>
+                                            <ul>
+                                                {selectedTeam.blinkEsportsListed.map((player, idx) => (
+                                                    <li key={idx}>{player}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Team Members */}
+                            {td.members.length > 0 && (
+                                <div className="rk-team-modal-section">
+                                    <h4><FaUsers /> Miembros ({td.members.length})</h4>
+                                    <div className="rk-team-members-grid">
+                                        {td.members.map(m => (
+                                            <div key={m.id} className="rk-team-member-card" onClick={(e) => { e.stopPropagation(); setSelectedTeam(null); setSelectedPlayer(m); setPlayerPanelTab('overview'); }}>
+                                                <img src={avatarUrl(m.player)} alt={m.player} />
+                                                <div>
+                                                    <strong>{m.player}</strong>
+                                                    <small>
+                                                        {m.role} · {m.game}
+                                                        {(() => {
+                                                            const th = m.teamHistory?.find(t => t.team === selectedTeam.name);
+                                                            if (th) {
+                                                                return (
+                                                                    <span style={{ 
+                                                                        display: 'block', 
+                                                                        marginTop: '2px', 
+                                                                        color: th.to === 'Presente' ? 'var(--primary-color)' : '#9CA3AF' 
+                                                                    }}>
+                                                                        {th.from} — {th.to}
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
+                                                    </small>
+                                                </div>
+                                                <span className="rk-team-member-titles">
+                                                    <FaTrophy /> {getTitleCount(m)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Team Achievements */}
+                            {td.achievements.length > 0 && (
+                                <div className="rk-team-modal-section">
+                                    <h4><FaTrophy /> Logros del Equipo ({td.achievements.length})</h4>
+                                    <div className="rk-achievement-list">
+                                        {td.achievements.map((ach, idx) => (
+                                            <div key={idx} className={`rk-achievement-item rk-place-${ach.place}`}>
+                                                <div className="rk-achievement-medal">
+                                                    {ach.place === 1 ? <FaCrown /> : <FaMedal />}
+                                                </div>
+                                                <div className="rk-achievement-info">
+                                                    <strong>{ach.name}</strong>
+                                                    <span>{formatDate(ach.date)}</span>
+                                                </div>
+                                                <div className="rk-achievement-place">
+                                                    {ach.place ? `#${ach.place}` : '—'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {td.members.length === 0 && td.achievements.length === 0 && (
+                                <div className="rk-team-modal-empty">
+                                    <FaInfoCircle />
+                                    <p>No hay datos registrados aún para este equipo.</p>
+                                    <button className="rk-contribute-btn" onClick={() => { setSelectedTeam(null); handleContribute(selectedTeam.name); }}>
+                                        <FaPencilAlt /> Aportar datos
+                                    </button>
+                                </div>
+                            )}
+                                </>);
+                            })()}
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Achievement Submission Modal */}
+            {/* Achievement Modal (Enviar Mi Logro) */}
             <AnimatePresence>
                 {isAchievementModalOpen && (
-                    <motion.div 
+                    <motion.div
                         className="rk-modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={closeAchievementModal}
                     >
-                        <motion.div 
+                        <motion.div
                             className="rk-modal rk-modal--achievement"
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             onClick={e => e.stopPropagation()}
                         >
-                            <button 
-                                className="rk-modal-close"
-                                onClick={closeAchievementModal}
-                                disabled={isSubmitting}
-                            >
+                            <button className="rk-modal-close" onClick={closeAchievementModal} disabled={isSubmitting}>
                                 <FaTimes />
                             </button>
 
                             <div className="rk-achievement-header">
-                                <div className="rk-achievement-icon">
-                                    <FaTrophy />
-                                </div>
+                                <div className="rk-achievement-icon"><FaTrophy /></div>
                                 <h3>Enviar Mi Logro</h3>
                                 <p>Comparte tus victorias en torneos para aparecer en el ranking</p>
                             </div>
 
                             <form onSubmit={handleSubmitAchievement} className="rk-achievement-form">
-                                {/* Game Selection */}
                                 <div className="rk-form-group">
                                     <label><FaGamepad /> Juego</label>
-                                    <select 
+                                    <select
                                         value={achievementData.game}
                                         onChange={(e) => setAchievementData(prev => ({ ...prev, game: e.target.value }))}
                                         disabled={isSubmitting}
                                         required
                                     >
                                         <option value="">Selecciona un juego</option>
-                                        {SUPPORTED_GAMES.map(game => (
-                                            <option key={game.id} value={game.id}>{game.name}</option>
+                                        {SUPPORTED_GAMES.map(g => (
+                                            <option key={g.id} value={g.id}>{g.name}</option>
                                         ))}
                                     </select>
                                 </div>
 
-                                {/* Mode Selection */}
                                 <div className="rk-form-group">
-                                    <label><FaUsers /> Modo de Competición</label>
+                                    <label><FaUsers /> Modo de Competicion</label>
                                     <div className="rk-mode-selector">
                                         {[
                                             { id: 'solo', label: 'Solo', icon: FaUserAlt },
@@ -1086,11 +1458,10 @@ export default function Rankings() {
                                     </div>
                                 </div>
 
-                                {/* Tournament Info Row */}
                                 <div className="rk-form-row">
                                     <div className="rk-form-group">
                                         <label><FaMedal /> Nombre del Torneo</label>
-                                        <input 
+                                        <input
                                             type="text"
                                             placeholder="Ej: Copa Nacional MLBB 2025"
                                             value={achievementData.tournamentName}
@@ -1101,7 +1472,7 @@ export default function Rankings() {
                                     </div>
                                     <div className="rk-form-group rk-form-group--small">
                                         <label><FaCalendarAlt /> Fecha</label>
-                                        <input 
+                                        <input
                                             type="date"
                                             value={achievementData.tournamentDate}
                                             onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentDate: e.target.value }))}
@@ -1111,18 +1482,17 @@ export default function Rankings() {
                                     </div>
                                 </div>
 
-                                {/* Placement Row */}
                                 <div className="rk-form-row">
                                     <div className="rk-form-group rk-form-group--small">
-                                        <label><FaCrown /> Posición</label>
-                                        <select 
+                                        <label><FaCrown /> Posicion</label>
+                                        <select
                                             value={achievementData.placement}
                                             onChange={(e) => setAchievementData(prev => ({ ...prev, placement: parseInt(e.target.value) }))}
                                             disabled={isSubmitting}
                                         >
-                                            <option value={1}>🥇 1er Lugar</option>
-                                            <option value={2}>🥈 2do Lugar</option>
-                                            <option value={3}>🥉 3er Lugar</option>
+                                            <option value={1}>1er Lugar</option>
+                                            <option value={2}>2do Lugar</option>
+                                            <option value={3}>3er Lugar</option>
                                             <option value={4}>4to Lugar</option>
                                             <option value={5}>Top 5</option>
                                             <option value={8}>Top 8</option>
@@ -1134,7 +1504,7 @@ export default function Rankings() {
                                     {achievementData.mode === 'team' && (
                                         <div className="rk-form-group">
                                             <label><FaShieldAlt /> Nombre del Equipo</label>
-                                            <input 
+                                            <input
                                                 type="text"
                                                 placeholder="Ej: Hispaniola Esports"
                                                 value={achievementData.teamName}
@@ -1147,10 +1517,10 @@ export default function Rankings() {
 
                                     {achievementData.mode === 'duo' && (
                                         <div className="rk-form-group">
-                                            <label><FaUserFriends /> Compañero de Duo</label>
-                                            <input 
+                                            <label><FaUserFriends /> Companero de Duo</label>
+                                            <input
                                                 type="text"
-                                                placeholder="Nombre o IGN del compañero"
+                                                placeholder="Nombre o IGN del companero"
                                                 value={achievementData.partnerName}
                                                 onChange={(e) => setAchievementData(prev => ({ ...prev, partnerName: e.target.value }))}
                                                 disabled={isSubmitting}
@@ -1160,11 +1530,10 @@ export default function Rankings() {
                                     )}
                                 </div>
 
-                                {/* Description */}
                                 <div className="rk-form-group">
-                                    <label><FaBook /> Descripción (opcional)</label>
+                                    <label><FaBook /> Descripcion (opcional)</label>
                                     <textarea
-                                        placeholder="Cuéntanos más sobre este logro, formato del torneo, número de participantes, etc."
+                                        placeholder="Formato del torneo, numero de participantes, etc."
                                         value={achievementData.description}
                                         onChange={(e) => setAchievementData(prev => ({ ...prev, description: e.target.value }))}
                                         disabled={isSubmitting}
@@ -1172,40 +1541,37 @@ export default function Rankings() {
                                     />
                                 </div>
 
-                                {/* Proof Upload */}
                                 <div className="rk-form-group">
-                                    <label><FaImage /> Pruebas de Victoria (máx. 5 imágenes)</label>
+                                    <label><FaImage /> Pruebas de Victoria (max. 5 imagenes)</label>
                                     <div className="rk-proof-upload">
-                                        <input 
-                                            ref={fileInputRef}
+                                        <input
+                                            ref={achievementFileRef}
                                             type="file"
                                             accept="image/*"
                                             multiple
-                                            onChange={handleFileSelect}
+                                            onChange={handleAchievementFileSelect}
                                             disabled={isSubmitting || achievementData.proofFiles.length >= 5}
                                             style={{ display: 'none' }}
                                         />
-                                        
                                         <div className="rk-proof-grid">
                                             {achievementData.proofFiles.map((file, index) => (
                                                 <div key={index} className="rk-proof-item">
                                                     <img src={file.preview} alt={`Prueba ${index + 1}`} />
-                                                    <button 
+                                                    <button
                                                         type="button"
                                                         className="rk-proof-remove"
-                                                        onClick={() => removeProofFile(index)}
+                                                        onClick={() => removeAchievementFile(index)}
                                                         disabled={isSubmitting}
                                                     >
                                                         <FaTrash />
                                                     </button>
                                                 </div>
                                             ))}
-                                            
                                             {achievementData.proofFiles.length < 5 && (
-                                                <button 
+                                                <button
                                                     type="button"
                                                     className="rk-proof-add"
-                                                    onClick={() => fileInputRef.current?.click()}
+                                                    onClick={() => achievementFileRef.current?.click()}
                                                     disabled={isSubmitting}
                                                 >
                                                     <FaCloudUploadAlt />
@@ -1213,16 +1579,14 @@ export default function Rankings() {
                                                 </button>
                                             )}
                                         </div>
-                                        
                                         <p className="rk-proof-hint">
-                                            Sube capturas del scoreboard, bracket, certificado o cualquier imagen que demuestre tu victoria.
+                                            Capturas del scoreboard, bracket, certificado o cualquier imagen que demuestre tu victoria.
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Submit */}
                                 <div className="rk-achievement-footer">
-                                    <button 
+                                    <button
                                         type="button"
                                         className="rk-achievement-btn rk-achievement-btn--ghost"
                                         onClick={closeAchievementModal}
@@ -1230,7 +1594,7 @@ export default function Rankings() {
                                     >
                                         Cancelar
                                     </button>
-                                    <button 
+                                    <button
                                         type="submit"
                                         className="rk-achievement-btn rk-achievement-btn--primary"
                                         disabled={isSubmitting}
@@ -1244,6 +1608,203 @@ export default function Rankings() {
                                             <>
                                                 <FaCheckCircle />
                                                 Enviar Logro
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Contribute Data Modal */}
+            <AnimatePresence>
+                {isContributeModalOpen && (
+                    <motion.div
+                        className="rk-modal-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={closeContributeModal}
+                    >
+                        <motion.div
+                            className="rk-modal rk-modal--achievement"
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button className="rk-modal-close" onClick={closeContributeModal} disabled={isSubmitting}>
+                                <FaTimes />
+                            </button>
+
+                            <div className="rk-achievement-header">
+                                <div className="rk-achievement-icon"><FaPencilAlt /></div>
+                                <h3>Aportar Datos</h3>
+                                <p>Ayuda a completar la informacion de la escena esports dominicana</p>
+                            </div>
+
+                            <form onSubmit={handleSubmitContribute} className="rk-achievement-form">
+                                {/* Player / Team */}
+                                <div className="rk-form-group">
+                                    <label><FaUserAlt /> Jugador o Equipo</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ej: MenaRD, ISKRA, Bot Academy..."
+                                        value={contributeData.playerOrTeam}
+                                        onChange={(e) => setContributeData(prev => ({ ...prev, playerOrTeam: e.target.value }))}
+                                        disabled={isSubmitting}
+                                        required
+                                    />
+                                </div>
+
+                                {/* Game */}
+                                <div className="rk-form-group">
+                                    <label><FaGamepad /> Juego / Disciplina</label>
+                                    <select
+                                        value={contributeData.game}
+                                        onChange={(e) => setContributeData(prev => ({ ...prev, game: e.target.value }))}
+                                        disabled={isSubmitting}
+                                    >
+                                        <option value="">Selecciona (opcional)</option>
+                                        {SUPPORTED_GAMES.map(g => (
+                                            <option key={g.id} value={g.id}>{g.name}</option>
+                                        ))}
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+
+                                {/* Tournament + Date */}
+                                <div className="rk-form-row">
+                                    <div className="rk-form-group">
+                                        <label><FaMedal /> Torneo / Evento</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: Copa Popular 2025, Blink Respawn..."
+                                            value={contributeData.tournamentName}
+                                            onChange={(e) => setContributeData(prev => ({ ...prev, tournamentName: e.target.value }))}
+                                            disabled={isSubmitting}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="rk-form-group rk-form-group--small">
+                                        <label><FaCalendarAlt /> Fecha</label>
+                                        <input
+                                            type="date"
+                                            value={contributeData.tournamentDate}
+                                            onChange={(e) => setContributeData(prev => ({ ...prev, tournamentDate: e.target.value }))}
+                                            disabled={isSubmitting}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Result */}
+                                <div className="rk-form-group">
+                                    <label><FaCrown /> Resultado / Posicion</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ej: Campeon, 2do lugar, Top 8, Representante RD..."
+                                        value={contributeData.result}
+                                        onChange={(e) => setContributeData(prev => ({ ...prev, result: e.target.value }))}
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
+
+                                {/* Source / Link */}
+                                <div className="rk-form-group">
+                                    <label><FaGlobeAmericas /> Fuente o Enlace de Verificacion</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Link de noticia, post de redes, bracket, VOD..."
+                                        value={contributeData.source}
+                                        onChange={(e) => setContributeData(prev => ({ ...prev, source: e.target.value }))}
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
+
+                                {/* Description */}
+                                <div className="rk-form-group">
+                                    <label><FaBook /> Descripcion de los Datos</label>
+                                    <textarea
+                                        placeholder="Describe la informacion que quieres aportar: estadisticas, resultados, miembros del equipo, premios, etc."
+                                        value={contributeData.description}
+                                        onChange={(e) => setContributeData(prev => ({ ...prev, description: e.target.value }))}
+                                        disabled={isSubmitting}
+                                        rows={4}
+                                        required
+                                    />
+                                </div>
+
+                                {/* Proof Images */}
+                                <div className="rk-form-group">
+                                    <label><FaImage /> Imagenes de Prueba (max. 5)</label>
+                                    <div className="rk-proof-upload">
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleFileSelect}
+                                            disabled={isSubmitting || contributeData.proofFiles.length >= 5}
+                                            style={{ display: 'none' }}
+                                        />
+                                        <div className="rk-proof-grid">
+                                            {contributeData.proofFiles.map((file, index) => (
+                                                <div key={index} className="rk-proof-item">
+                                                    <img src={file.preview} alt={`Prueba ${index + 1}`} />
+                                                    <button
+                                                        type="button"
+                                                        className="rk-proof-remove"
+                                                        onClick={() => removeProofFile(index)}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {contributeData.proofFiles.length < 5 && (
+                                                <button
+                                                    type="button"
+                                                    className="rk-proof-add"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={isSubmitting}
+                                                >
+                                                    <FaCloudUploadAlt />
+                                                    <span>Subir</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                        <p className="rk-proof-hint">
+                                            Capturas del bracket, scoreboard, post oficial, certificado o cualquier prueba.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Submit */}
+                                <div className="rk-achievement-footer">
+                                    <button
+                                        type="button"
+                                        className="rk-achievement-btn rk-achievement-btn--ghost"
+                                        onClick={closeContributeModal}
+                                        disabled={isSubmitting}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="rk-achievement-btn rk-achievement-btn--primary"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <i className='bx bx-loader-alt spin' />
+                                                Enviando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaCheckCircle />
+                                                Enviar Datos
                                             </>
                                         )}
                                     </button>
