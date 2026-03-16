@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const STATS = [
-  { label: 'Jugadores Activos', target: 15000, suffix: '+', icon: 'bx-user' },
-  { label: 'Torneos Completados', target: 320, suffix: '+', icon: 'bx-trophy' },
-  { label: 'Equipos Creados', target: 1200, suffix: '+', icon: 'bx-group' },
-  { label: 'Juegos Soportados', target: 25, suffix: '+', icon: 'bx-joystick' },
+  { label: 'Jugadores Activos', target: null, suffix: '', icon: 'bx-user' },
+  { label: 'Torneos Completados', target: null, suffix: '', icon: 'bx-trophy' },
+  { label: 'Equipos Creados', target: null, suffix: '', icon: 'bx-group' },
+  { label: 'Juegos Soportados', target: 3, suffix: '', icon: 'bx-joystick' },
 ];
 
 /* ── Hook: animated count-up ── */
@@ -50,7 +50,10 @@ const StatItem = ({ stat, inView, index }) => {
 
       {/* Number */}
       <div className="text-4xl md:text-5xl font-extrabold text-[var(--text-main)] mb-2 tabular-nums tracking-tight">
-        {count.toLocaleString()}{stat.suffix}
+        {stat.target != null
+          ? <>{count.toLocaleString()}{stat.suffix}</>
+          : <span className="text-lg text-[var(--text-muted)] font-medium">Aportar datos</span>
+        }
       </div>
 
       {/* Label */}

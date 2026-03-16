@@ -17,7 +17,7 @@ import {
     createNewsDetails,
     createNewsSummary,
     getNewsImageValidationMessage,
-    getNewsFeed,
+    fetchNewsFeed,
     readNewsImageFile,
     saveCustomNews,
 } from '../../../utils/customNews';
@@ -89,9 +89,7 @@ export default function Noticias() {
     const navigate = useNavigate();
     const primaryImageInputRef = useRef(null);
     const galleryInputRef = useRef(null);
-    const [newsItems, setNewsItems] = useState(() =>
-        getNewsFeed().filter((item) => item?.game === 'Multigame' || isSupportedGameName(item?.game))
-    );
+    const [newsItems, setNewsItems] = useState([]);
     const [category, setCategory] = useState('Todos');
     const [game, setGame] = useState('Todos');
     const [sortBy, setSortBy] = useState('recent');
@@ -105,23 +103,25 @@ export default function Noticias() {
     const [draft, setDraft] = useState(createInitialDraft);
     const [isProcessingMedia, setIsProcessingMedia] = useState(false);
 
-    // Load bookmarks from localStorage
+    // Load news from API + bookmarks from localStorage
     useEffect(() => {
-        const loadFeed = () => {
-            const nextFeed = getNewsFeed().filter((item) => item?.game === 'Multigame' || isSupportedGameName(item?.game));
-            setNewsItems(nextFeed);
+        const loadFeed = async () => {
+            const items = await fetchNewsFeed();
+            const filtered = items.filter((item) => item?.game === 'Multigame' || isSupportedGameName(item?.game));
+            setNewsItems(filtered);
         };
 
         loadFeed();
 
         const saved = localStorage.getItem('news_bookmarks');
         if (saved) setBookmarks(JSON.parse(saved));
-        
+
         const savedLikes = localStorage.getItem('news_likes');
         if (savedLikes) setLikes(JSON.parse(savedLikes));
 
-        window.addEventListener('custom-news-updated', loadFeed);
-        return () => window.removeEventListener('custom-news-updated', loadFeed);
+        const onNewsUpdated = () => loadFeed();
+        window.addEventListener('custom-news-updated', onNewsUpdated);
+        return () => window.removeEventListener('custom-news-updated', onNewsUpdated);
     }, []);
 
     useEffect(() => {
@@ -270,7 +270,7 @@ export default function Noticias() {
         if (galleryInputRef.current) galleryInputRef.current.value = '';
     };
 
-    const handleCreateNews = (event) => {
+    const handleCreateNews = async (event) => {
         event.preventDefault();
 
         if (!draft.title.trim() || !draft.image.trim() || !draft.body.trim()) {
@@ -281,11 +281,11 @@ export default function Noticias() {
         const article = buildCustomNewsArticle(draft);
 
         try {
-            saveCustomNews(article);
+            await saveCustomNews(article);
             closeComposer();
             showToast('Noticia creada y publicada en el feed.');
         } catch {
-            showToast('No se pudo guardar la noticia. Reduce el peso o cantidad de imagenes e intenta otra vez.');
+            showToast('No se pudo guardar la noticia. Verifica que has iniciado sesion e intenta otra vez.');
         }
     };
 
@@ -625,7 +625,7 @@ export default function Noticias() {
             </AnimatePresence>
 
             {/* Hero Section */}
-            <motion.section 
+            {featuredNews && <motion.section
                 className="nw-hero"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -707,7 +707,7 @@ export default function Noticias() {
                         </div>
                     </motion.div>
                 </div>
-            </motion.section>
+            </motion.section>}
 
             {/* Toolbar */}
             <section className="nw-toolbar">

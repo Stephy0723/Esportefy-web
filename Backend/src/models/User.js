@@ -100,6 +100,14 @@ const UserSchema = new mongoose.Schema({
     // -- Seguridad y Recuperación ---
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
+    passwordChangedAt: { type: Date, default: null },
+
+    // -- 2FA ---
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorSecret: { type: String, select: false },
+    twoFactorPendingSecret: { type: String, select: false },
+    twoFactorBackupCodes: { type: [String], select: false },
+    twoFactorEnabledAt: { type: Date, default: null },
 
     // -- Datos visuales ---
     status: {

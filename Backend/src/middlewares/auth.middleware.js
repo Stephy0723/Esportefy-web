@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import Session from '../models/Session.js';
 
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
 
@@ -38,7 +39,7 @@ const getToken = (req) => {
     return getTokenFromCookie(req) || getTokenFromAuthorizationHeader(req);
 };
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
     try {
         const token = getToken(req);
 
@@ -48,6 +49,20 @@ export const verifyToken = (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.userId = decoded.id;
+
+        // If token has a jti, verify session is not revoked
+        if (decoded.jti) {
+            req.sessionJti = decoded.jti;
+            const session = await Session.findOne({ jti: decoded.jti }).lean();
+            if (session && session.revokedAt) {
+                return res.status(401).json({ message: "Sesión revocada. Inicia sesión nuevamente." });
+            }
+            // Update lastActiveAt (fire-and-forget)
+            if (session) {
+                Session.updateOne({ jti: decoded.jti }, { lastActiveAt: new Date() }).catch(() => {});
+            }
+        }
+
         next();
     } catch (error) {
         return res.status(401).json({ message: "Token inválido o expirado" });

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { useNotification } from '../../context/NotificationContext';
 import './Register.css';
 // 1. IMPORTAR EL CEREBRO DEL TEMA (IGUAL QUE EN SIDEBAR)
 import { useTheme } from '../../context/ThemeContext'; 
@@ -143,6 +144,7 @@ const Register = () => {
   
   // 3. OBTENER SI ESTÁ EN MODO OSCURO (IGUAL QUE EN SIDEBAR)
   const { isDarkMode } = useTheme();
+  const { addToast } = useNotification();
   const redirectTarget = location.state?.from || null;
   const redirectPath = typeof redirectTarget?.pathname === 'string' ? redirectTarget.pathname : '';
   const pendingGameJoinId = getGameIdFromRoutePath(redirectPath);
@@ -198,8 +200,7 @@ const Register = () => {
         ...formData,
         ...(pendingGameJoinId ? { pendingGameJoinId } : {})
       });
-      console.log("Usuario registrado:", response.data);
-      alert("¡Cuenta creada con éxito! Ahora puedes iniciar sesión.");
+      addToast('¡Cuenta creada con éxito! Ahora puedes iniciar sesión.', 'success');
       navigate('/login', { state: location.state });
     } catch (err) {
       const message = err.response?.data?.message || 'Error al procesar el registro';

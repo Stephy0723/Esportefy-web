@@ -1,4 +1,8 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import axios from 'axios';
+import { API_URL } from '../../../config/api';
+import { getAuthToken } from '../../../utils/authSession';
+import { useNotification } from '../../../context/NotificationContext';
 import {
   FaUserCircle,
   FaEnvelope,
@@ -6,27 +10,26 @@ import {
   FaTimesCircle,
   FaKey,
   FaShieldAlt,
-  FaMobileAlt,
-  FaDownload,
-  FaCopy,
   FaDesktop,
-  FaMapMarkerAlt,
-  FaClock,
-  FaSignOutAlt,
-  FaApple,
-  FaWindows,
   FaHeadset,
   FaExclamationTriangle,
-  FaTrash,
   FaLock,
   FaUnlock,
   FaHistory,
-  FaPlus,
   FaEye,
   FaEyeSlash,
+  FaTrash,
+  FaSignOutAlt,
+  FaMobileAlt,
+  FaCopy,
+  FaDownload,
+  FaClock,
+  FaMapMarkerAlt,
 } from 'react-icons/fa';
 
 import './SecurityCenterUI.css';
+
+const authHeaders = () => ({ headers: { Authorization: `Bearer ${getAuthToken()}` } });
 
 const maskEmail = (email) => {
   const value = String(email || '').trim();
@@ -36,146 +39,217 @@ const maskEmail = (email) => {
   return `${safeLocal}@${domain}`;
 };
 
-const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
-  // Core States
-  const [isVerified] = useState(true);
-  const [twoFactorActive, setTwoFactorActive] = useState(true);
-  const [backupCodesReady, setBackupCodesReady] = useState(true);
-  const [confirmText, setConfirmText] = useState('');
-  const [passwordConfirmed, setPasswordConfirmed] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
-  
-  // Sessions & Devices
-  const [sessions, setSessions] = useState([
-    { id: 's1', device: 'Windows Desktop', browser: 'Chrome', location: 'Santo Domingo, DO', activity: 'Hace 2 min', current: true },
-    { id: 's2', device: 'iPhone 15', browser: 'Safari', location: 'Santiago, DO', activity: 'Hace 1 hora', current: false },
-    { id: 's3', device: 'MacBook Pro', browser: 'Firefox', location: 'Bogotá, CO', activity: 'Ayer', current: false },
-  ]);
-  
-  const [trustedDevices, setTrustedDevices] = useState([
-    { id: 'd1', name: 'Gaming PC', lastUsed: 'Hoy' },
-    { id: 'd2', name: 'iPad Pro', lastUsed: 'Hace 3 días' },
-  ]);
-  
-  // const [passkeys, setPasskeys] = useState([
-  //   { id: 'p1', name: 'FaceID', icon: FaApple, status: 'Activo' },
-  //   { id: 'p2', name: 'Windows Hello', icon: FaWindows, status: 'Activo' },
-  // ]);
-  
-  // Activity Log
-  const [activityLog] = useState([
-    { id: 'a1', title: 'Inicio de sesión exitoso', meta: 'Chrome · Santo Domingo', when: 'Hace 2 min', type: 'success' },
-    { id: 'a2', title: 'Cambio de correo solicitado', meta: 'Validación pendiente', when: 'Ayer', type: 'warning' },
-    { id: 'a3', title: 'Dispositivo agregado', meta: 'Gaming PC', when: 'Hace 3 días', type: 'info' },
-  ]);
-  
-  // Loading states
-  const [loading, setLoading] = useState({
-    email: false,
-    password: false,
-    twoFactor: false,
-    backupCodes: false,
-    sessions: false,
-    deleteAccount: false,
-  });
+const formatRelTime = (dateStr) => {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Ahora mismo';
+  if (mins < 60) return `Hace ${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `Hace ${days}d`;
+  return new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+};
 
+const EVENT_LABELS = {
+  login: 'Inicio de sesión',
+  login_failed: 'Intento de login fallido',
+  logout: 'Cierre de sesión',
+  password_change: 'Contraseña actualizada',
+  email_change: 'Email actualizado',
+  '2fa_enabled': '2FA activado',
+  '2fa_disabled': '2FA desactivado',
+  backup_code_used: 'Código de respaldo usado',
+  session_revoked: 'Sesión cerrada remotamente',
+  sessions_revoked_all: 'Todas las sesiones cerradas',
+  account_deleted: 'Cuenta eliminada',
+};
+
+const SecurityCenterUI = ({ email = 'usuario@esportefy.com', isVerified = false }) => {
+  const { addToast } = useNotification();
+  const [showEmail, setShowEmail] = useState(false);
   const maskedEmail = useMemo(() => maskEmail(email), [email]);
 
-  // Handlers
-  const handleChangeEmail = useCallback(async () => {
-    setLoading(prev => ({ ...prev, email: true }));
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setLoading(prev => ({ ...prev, email: false }));
-    alert('Se ha enviado un correo de verificación');
+  // Password
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [loadingPassword, setLoadingPassword] = useState(false);
+
+  // 2FA
+  const [twoFA, setTwoFA] = useState({ enabled: false, enabledAt: null, backupCodesRemaining: 0 });
+  const [qrData, setQrData] = useState(null);
+  const [totpCode, setTotpCode] = useState('');
+  const [backupCodes, setBackupCodes] = useState(null);
+  const [disablePassword, setDisablePassword] = useState('');
+  const [showDisable2FA, setShowDisable2FA] = useState(false);
+  const [loading2FA, setLoading2FA] = useState(false);
+
+  // Sessions
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  // Activity Log
+  const [activityLog, setActivityLog] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
+  // Delete
+  const [showDeleteZone, setShowDeleteZone] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [loadingDelete, setLoadingDelete] = useState(false);
+
+  // ── Fetch on mount ──
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [faRes, sessRes, actRes] = await Promise.all([
+          axios.get(`${API_URL}/api/security/2fa/status`, authHeaders()),
+          axios.get(`${API_URL}/api/security/sessions`, authHeaders()),
+          axios.get(`${API_URL}/api/security/activity-log?limit=10`, authHeaders()),
+        ]);
+        setTwoFA(faRes.data);
+        setSessions(sessRes.data.sessions || []);
+        setActivityLog(actRes.data.logs || []);
+      } catch (_) { /* silently fail on load */ }
+    };
+    load();
   }, []);
 
+  // ── Change Password ──
   const handleChangePassword = useCallback(async () => {
-    setLoading(prev => ({ ...prev, password: true }));
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setLoading(prev => ({ ...prev, password: false }));
-    alert('Enlace de cambio de contraseña enviado');
-  }, []);
+    if (!passwordData.current || !passwordData.new) {
+      addToast('Completa todos los campos', 'error'); return;
+    }
+    if (passwordData.new !== passwordData.confirm) {
+      addToast('Las contraseñas no coinciden', 'error'); return;
+    }
+    if (passwordData.new.length < 8) {
+      addToast('La nueva contraseña debe tener al menos 8 caracteres', 'error'); return;
+    }
+    setLoadingPassword(true);
+    try {
+      await axios.post(`${API_URL}/api/security/change-password`, {
+        currentPassword: passwordData.current,
+        newPassword: passwordData.new,
+      }, authHeaders());
+      addToast('Contraseña actualizada correctamente', 'success');
+      setShowPasswordForm(false);
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al cambiar contraseña', 'error');
+    } finally { setLoadingPassword(false); }
+  }, [passwordData, addToast]);
 
-  const handleToggle2FA = useCallback(async () => {
-    setLoading(prev => ({ ...prev, twoFactor: true }));
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setTwoFactorActive(prev => !prev);
-    setLoading(prev => ({ ...prev, twoFactor: false }));
-  }, []);
+  // ── 2FA: Generate ──
+  const handleGenerate2FA = useCallback(async () => {
+    setLoading2FA(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/security/2fa/generate`, {}, authHeaders());
+      setQrData(res.data);
+      setTotpCode('');
+      setBackupCodes(null);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al generar 2FA', 'error');
+    } finally { setLoading2FA(false); }
+  }, [addToast]);
 
-  const handleGenerateBackupCodes = useCallback(async () => {
-    setLoading(prev => ({ ...prev, backupCodes: true }));
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    setBackupCodesReady(true);
-    setLoading(prev => ({ ...prev, backupCodes: false }));
-    alert('Códigos de respaldo generados. Guárdalos en un lugar seguro.');
-  }, []);
+  // ── 2FA: Verify Setup ──
+  const handleVerify2FA = useCallback(async () => {
+    if (!totpCode || totpCode.length < 6) {
+      addToast('Ingresa el código de 6 dígitos', 'error'); return;
+    }
+    setLoading2FA(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/security/2fa/verify-setup`, { token: totpCode }, authHeaders());
+      setBackupCodes(res.data.backupCodes);
+      setTwoFA(prev => ({ ...prev, enabled: true, enabledAt: new Date().toISOString(), backupCodesRemaining: 10 }));
+      setQrData(null);
+      setTotpCode('');
+      addToast('2FA activado correctamente', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Código incorrecto', 'error');
+    } finally { setLoading2FA(false); }
+  }, [totpCode, addToast]);
 
-  const handleSignOutOtherDevices = useCallback(async () => {
-    setLoading(prev => ({ ...prev, sessions: true }));
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSessions(prev => prev.filter(s => s.current));
-    setLoading(prev => ({ ...prev, sessions: false }));
-  }, []);
+  // ── 2FA: Disable ──
+  const handleDisable2FA = useCallback(async () => {
+    if (!disablePassword) { addToast('Ingresa tu contraseña', 'error'); return; }
+    setLoading2FA(true);
+    try {
+      await axios.post(`${API_URL}/api/security/2fa/disable`, { password: disablePassword }, authHeaders());
+      setTwoFA({ enabled: false, enabledAt: null, backupCodesRemaining: 0 });
+      setShowDisable2FA(false);
+      setDisablePassword('');
+      addToast('2FA desactivado', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al desactivar 2FA', 'error');
+    } finally { setLoading2FA(false); }
+  }, [disablePassword, addToast]);
 
-  const handleRemoveDevice = useCallback((deviceId) => {
-    setTrustedDevices(prev => prev.filter(d => d.id !== deviceId));
-  }, []);
+  // ── Sessions ──
+  const handleRevokeSession = useCallback(async (sessionId) => {
+    try {
+      await axios.delete(`${API_URL}/api/security/sessions/${sessionId}`, authHeaders());
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      addToast('Sesión cerrada', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al cerrar sesión', 'error');
+    }
+  }, [addToast]);
 
-  // const handleRemovePasskey = useCallback((passkeyId) => {
-  //   setPasskeys(prev => prev.filter(p => p.id !== passkeyId));
-  // }, []);
+  const handleRevokeAllOther = useCallback(async () => {
+    setLoadingSessions(true);
+    try {
+      const res = await axios.delete(`${API_URL}/api/security/sessions`, authHeaders());
+      setSessions(prev => prev.filter(s => s.isCurrent));
+      addToast(res.data.message, 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error', 'error');
+    } finally { setLoadingSessions(false); }
+  }, [addToast]);
 
-  const handleConfirmPassword = useCallback(async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setPasswordConfirmed(true);
-  }, []);
-
+  // ── Delete Account ──
   const handleDeleteAccount = useCallback(async () => {
-    if (confirmText !== 'DELETE' || !passwordConfirmed) return;
-    setLoading(prev => ({ ...prev, deleteAccount: true }));
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setLoading(prev => ({ ...prev, deleteAccount: false }));
-    alert('Cuenta programada para eliminación. Período de gracia: 14 días.');
-  }, [confirmText, passwordConfirmed]);
-
-  const canDelete = confirmText === 'DELETE' && passwordConfirmed;
+    if (!deletePassword) { addToast('Ingresa tu contraseña', 'error'); return; }
+    setLoadingDelete(true);
+    try {
+      await axios.delete(`${API_URL}/api/security/account`, { ...authHeaders(), data: { password: deletePassword } });
+      addToast('Cuenta eliminada. Serás redirigido.', 'success');
+      setTimeout(() => { window.location.href = '/'; }, 2000);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al eliminar cuenta', 'error');
+    } finally { setLoadingDelete(false); }
+  }, [deletePassword, addToast]);
 
   return (
     <section className="sc">
       {/* Header */}
       <header className="sc-header">
-        <div className="sc-header__icon">
-          <FaShieldAlt />
-        </div>
+        <div className="sc-header__icon"><FaShieldAlt /></div>
         <div className="sc-header__content">
-          <span className="sc-eyebrow">Account Settings</span>
-          <h2>Security Center</h2>
+          <span className="sc-eyebrow">Configuración de Cuenta</span>
+          <h2>Centro de Seguridad</h2>
           <p>Gestiona identidad, credenciales, sesiones activas y protecciones avanzadas.</p>
         </div>
       </header>
 
-      {/* Account & Password Section */}
+      {/* ═══ Account & Password ═══ */}
       <article className="sc-card">
         <div className="sc-card__header">
           <FaUserCircle className="sc-card__icon" />
           <div>
-            <h3 className="sc-card__title">Account & Password</h3>
+            <h3 className="sc-card__title">Cuenta y Contraseña</h3>
             <p className="sc-card__desc">Gestiona tu correo electrónico y contraseña</p>
           </div>
         </div>
-        
         <div className="sc-grid sc-grid--2">
+          {/* Email */}
           <div className="sc-item">
             <div className="sc-item__header">
               <FaEnvelope className="sc-item__icon" />
               <span className="sc-item__label">Email</span>
-              <button 
-                className="sc-item__toggle" 
-                onClick={() => setShowEmail(prev => !prev)}
-                title={showEmail ? 'Ocultar' : 'Mostrar'}
-              >
+              <button className="sc-item__toggle" onClick={() => setShowEmail(p => !p)}
+                aria-label={showEmail ? 'Ocultar email' : 'Mostrar email'}>
                 {showEmail ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
@@ -185,50 +259,59 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
                 {isVerified ? <><FaCheckCircle /> Verificado</> : <><FaTimesCircle /> Sin verificar</>}
               </span>
             </div>
-            <button 
-              className="sc-btn sc-btn--outline" 
-              onClick={handleChangeEmail}
-              disabled={loading.email}
-            >
-              {loading.email ? 'Enviando...' : 'Cambiar Email'}
-            </button>
           </div>
 
+          {/* Password */}
           <div className="sc-item">
             <div className="sc-item__header">
               <FaKey className="sc-item__icon" />
               <span className="sc-item__label">Contraseña</span>
             </div>
-            <div className="sc-item__value">
-              <strong>Última actualización: hace 41 días</strong>
-              <span className="sc-hint">Usa al menos 12 caracteres</span>
-            </div>
-            <button 
-              className="sc-btn sc-btn--outline" 
-              onClick={handleChangePassword}
-              disabled={loading.password}
-            >
-              {loading.password ? 'Enviando...' : 'Cambiar Contraseña'}
-            </button>
+            {showPasswordForm ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                <input type="password" placeholder="Contraseña actual" value={passwordData.current}
+                  onChange={e => setPasswordData(p => ({ ...p, current: e.target.value }))}
+                  className="sc-input" />
+                <input type="password" placeholder="Nueva contraseña" value={passwordData.new}
+                  onChange={e => setPasswordData(p => ({ ...p, new: e.target.value }))}
+                  className="sc-input" />
+                <input type="password" placeholder="Confirmar nueva contraseña" value={passwordData.confirm}
+                  onChange={e => setPasswordData(p => ({ ...p, confirm: e.target.value }))}
+                  className="sc-input" />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="sc-btn sc-btn--primary sc-btn--sm" onClick={handleChangePassword} disabled={loadingPassword}>
+                    {loadingPassword ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  <button className="sc-btn sc-btn--ghost sc-btn--sm"
+                    onClick={() => { setShowPasswordForm(false); setPasswordData({ current: '', new: '', confirm: '' }); }}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button className="sc-btn sc-btn--outline" onClick={() => setShowPasswordForm(true)}>
+                Cambiar Contraseña
+              </button>
+            )}
           </div>
         </div>
       </article>
 
-      {/* Two Factor Authentication */}
+      {/* ═══ Two Factor Authentication ═══ */}
       <article className="sc-card">
         <div className="sc-card__header">
           <FaShieldAlt className="sc-card__icon" />
           <div>
             <h3 className="sc-card__title">Autenticación de Dos Factores</h3>
-            <p className="sc-card__desc">Añade una capa adicional de seguridad</p>
+            <p className="sc-card__desc">Añade una capa adicional de seguridad con tu app de autenticación</p>
           </div>
         </div>
-        
+
         <div className="sc-grid sc-grid--3">
           <div className="sc-stat">
             <span className="sc-stat__label">Estado</span>
-            <span className={`sc-badge sc-badge--lg ${twoFactorActive ? 'sc-badge--success' : 'sc-badge--danger'}`}>
-              {twoFactorActive ? <><FaLock /> Activo</> : <><FaUnlock /> Inactivo</>}
+            <span className={`sc-badge sc-badge--lg ${twoFA.enabled ? 'sc-badge--success' : 'sc-badge--danger'}`}>
+              {twoFA.enabled ? <><FaLock /> Activo</> : <><FaUnlock /> Inactivo</>}
             </span>
           </div>
           <div className="sc-stat">
@@ -237,132 +320,115 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
           </div>
           <div className="sc-stat">
             <span className="sc-stat__label">Códigos de Respaldo</span>
-            <span className={`sc-badge sc-badge--lg ${backupCodesReady ? 'sc-badge--success' : 'sc-badge--warning'}`}>
-              {backupCodesReady ? 'Listos' : 'No generados'}
+            <span className={`sc-badge sc-badge--lg ${twoFA.backupCodesRemaining > 0 ? 'sc-badge--success' : 'sc-badge--warning'}`}>
+              {twoFA.backupCodesRemaining > 0 ? `${twoFA.backupCodesRemaining} restantes` : 'No generados'}
             </span>
           </div>
         </div>
-        
+
+        {/* QR Setup Flow */}
+        {qrData && (
+          <div style={{ margin: '16px 0', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 12 }}>
+              Escanea este QR con Google Authenticator, Authy u otra app compatible:
+            </p>
+            <img src={qrData.qrCodeDataUrl} alt="QR 2FA" style={{ maxWidth: 200, borderRadius: 8 }} />
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 8 }}>
+              Clave manual: <code style={{ background: 'var(--bg-card)', padding: '2px 6px', borderRadius: 4 }}>{qrData.manualEntryKey}</code>
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+              <input type="text" placeholder="Código de 6 dígitos" value={totpCode} maxLength={6}
+                inputMode="numeric" onChange={e => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                style={{ ...inputStyle, width: 160, textAlign: 'center', fontSize: '1.1rem', letterSpacing: 4 }} />
+              <button className="sc-btn sc-btn--primary sc-btn--sm" onClick={handleVerify2FA} disabled={loading2FA}>
+                {loading2FA ? 'Verificando...' : 'Verificar'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Backup Codes Display (one-time) */}
+        {backupCodes && (
+          <div style={{ margin: '16px 0', padding: 16, background: 'rgba(142,219,21,0.08)', borderRadius: 8, border: '1px solid rgba(142,219,21,0.2)' }}>
+            <p style={{ color: 'var(--text-main)', fontWeight: 600, marginBottom: 8 }}>
+              <FaDownload style={{ marginRight: 6 }} /> Guarda estos códigos de respaldo en un lugar seguro:
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4, fontFamily: 'monospace', fontSize: '0.9rem' }}>
+              {backupCodes.map((code, i) => (
+                <span key={i} style={{ color: 'var(--text-main)', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: 4 }}>{code}</span>
+              ))}
+            </div>
+            <button className="sc-btn sc-btn--ghost sc-btn--sm" style={{ marginTop: 12 }}
+              onClick={() => { navigator.clipboard.writeText(backupCodes.join('\n')); addToast('Códigos copiados', 'success'); }}>
+              <FaCopy /> Copiar todos
+            </button>
+          </div>
+        )}
+
+        {/* Disable 2FA */}
+        {showDisable2FA && (
+          <div style={{ margin: '16px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="password" placeholder="Tu contraseña" value={disablePassword}
+              onChange={e => setDisablePassword(e.target.value)} style={inputStyle} />
+            <button className="sc-btn sc-btn--danger sc-btn--sm" onClick={handleDisable2FA} disabled={loading2FA}>
+              {loading2FA ? 'Procesando...' : 'Confirmar Desactivar'}
+            </button>
+            <button className="sc-btn sc-btn--ghost sc-btn--sm"
+              onClick={() => { setShowDisable2FA(false); setDisablePassword(''); }}>Cancelar</button>
+          </div>
+        )}
+
         <div className="sc-actions">
-          <button 
-            className={`sc-btn ${twoFactorActive ? 'sc-btn--danger' : 'sc-btn--primary'}`}
-            onClick={handleToggle2FA}
-            disabled={loading.twoFactor}
-          >
-            {loading.twoFactor ? 'Procesando...' : (twoFactorActive ? 'Desactivar 2FA' : 'Activar 2FA')}
-          </button>
-          <button 
-            className="sc-btn sc-btn--outline"
-            onClick={handleGenerateBackupCodes}
-            disabled={loading.backupCodes || !twoFactorActive}
-          >
-            <FaCopy /> {loading.backupCodes ? 'Generando...' : 'Generar Códigos'}
-          </button>
-          <button className="sc-btn sc-btn--ghost" disabled={!backupCodesReady}>
-            <FaDownload /> Descargar
-          </button>
+          {!twoFA.enabled ? (
+            <button className="sc-btn sc-btn--primary" onClick={handleGenerate2FA} disabled={loading2FA || !!qrData}>
+              {loading2FA ? 'Generando...' : 'Activar 2FA'}
+            </button>
+          ) : (
+            <>
+              <button className="sc-btn sc-btn--danger" onClick={() => setShowDisable2FA(true)} disabled={showDisable2FA}>
+                Desactivar 2FA
+              </button>
+            </>
+          )}
         </div>
       </article>
 
-      {/* Sessions & Devices */}
+      {/* ═══ Sessions & Devices ═══ */}
       <article className="sc-card">
         <div className="sc-card__header">
           <FaDesktop className="sc-card__icon" />
           <div>
-            <h3 className="sc-card__title">Sesiones y Dispositivos</h3>
+            <h3 className="sc-card__title">Sesiones Activas</h3>
             <p className="sc-card__desc">Controla dónde has iniciado sesión</p>
           </div>
         </div>
-        
-        <div className="sc-grid sc-grid--2">
-          {/* Active Sessions */}
-          <div className="sc-block">
-            <h4 className="sc-block__title">Sesiones Activas</h4>
-            <div className="sc-list">
-              {sessions.map((session) => (
-                <div key={session.id} className={`sc-list__item ${session.current ? 'sc-list__item--current' : ''}`}>
-                  <div className="sc-list__content">
-                    <strong>{session.device} {session.current && <span className="sc-tag">Actual</span>}</strong>
-                    <span>{session.browser}</span>
-                    <span><FaMapMarkerAlt /> {session.location}</span>
-                    <span><FaClock /> {session.activity}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button 
-              className="sc-btn sc-btn--danger sc-btn--sm"
-              onClick={handleSignOutOtherDevices}
-              disabled={loading.sessions || sessions.length <= 1}
-            >
-              <FaSignOutAlt /> {loading.sessions ? 'Cerrando...' : 'Cerrar otras sesiones'}
-            </button>
-          </div>
-
-          {/* Trusted Devices */}
-          <div className="sc-block">
-            <h4 className="sc-block__title">Dispositivos de Confianza</h4>
-            <div className="sc-list">
-              {trustedDevices.length > 0 ? trustedDevices.map((device) => (
-                <div key={device.id} className="sc-list__item sc-list__item--row">
-                  <div className="sc-list__content">
-                    <strong>{device.name}</strong>
-                    <span>Último uso: {device.lastUsed}</span>
-                  </div>
-                  <button 
-                    className="sc-btn sc-btn--ghost sc-btn--xs"
-                    onClick={() => handleRemoveDevice(device.id)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              )) : (
-                <p className="sc-empty">No hay dispositivos de confianza</p>
+        <div className="sc-list">
+          {sessions.length > 0 ? sessions.map(session => (
+            <div key={session.id} className={`sc-list__item ${session.isCurrent ? 'sc-list__item--current' : ''}`}>
+              <div className="sc-list__content">
+                <strong>{session.deviceLabel} {session.isCurrent && <span className="sc-tag">Actual</span>}</strong>
+                <span><FaMapMarkerAlt /> {session.ip || 'IP desconocida'}</span>
+                <span><FaClock /> {formatRelTime(session.lastActiveAt)}</span>
+              </div>
+              {!session.isCurrent && (
+                <button className="sc-btn sc-btn--ghost sc-btn--xs" onClick={() => handleRevokeSession(session.id)}>
+                  Cerrar
+                </button>
               )}
             </div>
-          </div>
-        </div>
-      </article>
-
-      {/* Passkeys */}
-      {/* <article className="sc-card">
-        <div className="sc-card__header">
-          <FaKey className="sc-card__icon" />
-          <div>
-            <h3 className="sc-card__title">Passkeys</h3>
-            <p className="sc-card__desc">Métodos de autenticación sin contraseña</p>
-          </div>
-        </div>
-        
-        <div className="sc-list">
-          {passkeys.length > 0 ? passkeys.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.id} className="sc-list__item sc-list__item--row">
-                <div className="sc-list__content">
-                  <strong><Icon /> {item.name}</strong>
-                  <span className="sc-badge sc-badge--success sc-badge--sm">{item.status}</span>
-                </div>
-                <button 
-                  className="sc-btn sc-btn--ghost sc-btn--xs"
-                  onClick={() => handleRemovePasskey(item.id)}
-                >
-                  Eliminar
-                </button>
-              </div>
-            );
-          }) : (
-            <p className="sc-empty">No hay passkeys configurados</p>
+          )) : (
+            <p className="sc-empty">No hay sesiones activas registradas.</p>
           )}
         </div>
-        <div className="sc-actions">
-          <button className="sc-btn sc-btn--outline sc-btn--sm">
-            <FaPlus /> Añadir Passkey
+        {sessions.filter(s => !s.isCurrent).length > 0 && (
+          <button className="sc-btn sc-btn--danger sc-btn--sm" onClick={handleRevokeAllOther}
+            disabled={loadingSessions} style={{ marginTop: 12 }}>
+            <FaSignOutAlt /> {loadingSessions ? 'Cerrando...' : 'Cerrar todas las demás sesiones'}
           </button>
-        </div>
-      </article> */}
+        )}
+      </article>
 
-      {/* Activity Log */}
+      {/* ═══ Activity Log ═══ */}
       <article className="sc-card">
         <div className="sc-card__header">
           <FaHistory className="sc-card__icon" />
@@ -371,22 +437,23 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
             <p className="sc-card__desc">Historial reciente de seguridad</p>
           </div>
         </div>
-        
         <div className="sc-activity">
-          {activityLog.map((item) => (
-            <div key={item.id} className={`sc-activity__item sc-activity__item--${item.type}`}>
+          {activityLog.length > 0 ? activityLog.map(item => (
+            <div key={item._id} className="sc-activity__item sc-activity__item--info">
               <div className="sc-activity__dot" />
               <div className="sc-activity__content">
-                <strong>{item.title}</strong>
-                <span>{item.meta}</span>
+                <strong>{EVENT_LABELS[item.event] || item.event}</strong>
+                <span>{item.ip ? `${item.ip}` : ''}</span>
               </div>
-              <span className="sc-activity__time">{item.when}</span>
+              <span className="sc-activity__time">{formatRelTime(item.createdAt)}</span>
             </div>
-          ))}
+          )) : (
+            <p className="sc-empty">No hay actividad reciente.</p>
+          )}
         </div>
       </article>
 
-      {/* Support */}
+      {/* ═══ Support ═══ */}
       <article className="sc-card sc-card--support">
         <div className="sc-card__header">
           <FaHeadset className="sc-card__icon" />
@@ -395,12 +462,12 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
             <p className="sc-card__desc">Si detectas actividad sospechosa, contacta soporte inmediatamente</p>
           </div>
         </div>
-        <button className="sc-btn sc-btn--primary">
-          <FaHeadset /> Contactar Soporte
-        </button>
+        <a href="/settings" className="sc-btn sc-btn--primary" style={{ textDecoration: 'none' }}>
+          <FaHeadset /> Ir a Soporte
+        </a>
       </article>
 
-      {/* Danger Zone */}
+      {/* ═══ Danger Zone ═══ */}
       <article className="sc-card sc-card--danger">
         <div className="sc-card__header">
           <FaExclamationTriangle className="sc-card__icon" />
@@ -409,65 +476,38 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com' }) => {
             <p className="sc-card__desc">Esta acción es irreversible y eliminará tu cuenta permanentemente</p>
           </div>
         </div>
-        
-        <div className="sc-danger">
-          <div className="sc-danger__steps">
-            <div className={`sc-danger__step ${passwordConfirmed ? 'sc-danger__step--done' : ''}`}>
-              <span className="sc-danger__num">1</span>
-              <span>Confirmar contraseña</span>
-            </div>
-            <div className={`sc-danger__step ${confirmText === 'DELETE' ? 'sc-danger__step--done' : ''}`}>
-              <span className="sc-danger__num">2</span>
-              <span>Escribir DELETE</span>
-            </div>
-            <div className="sc-danger__step">
-              <span className="sc-danger__num">3</span>
-              <span>Gracia: 14 días</span>
-            </div>
-          </div>
-          
-          <div className="sc-danger__form">
-            <div className="sc-danger__row">
-              <label>Confirmación de contraseña</label>
-              <div className="sc-danger__input-group">
-                <input 
-                  type="password" 
-                  placeholder="Tu contraseña actual"
-                  disabled={passwordConfirmed}
-                />
-                <button 
-                  className="sc-btn sc-btn--ghost sc-btn--sm"
-                  onClick={handleConfirmPassword}
-                  disabled={passwordConfirmed}
-                >
-                  {passwordConfirmed ? <FaCheckCircle /> : 'Confirmar'}
-                </button>
-              </div>
-            </div>
-            
-            <div className="sc-danger__row">
-              <label>Escribe DELETE para confirmar</label>
-              <input
-                type="text"
-                placeholder="DELETE"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                disabled={!passwordConfirmed}
-              />
-            </div>
-          </div>
-          
-          <button 
-            className="sc-btn sc-btn--danger"
-            onClick={handleDeleteAccount}
-            disabled={!canDelete || loading.deleteAccount}
-          >
-            <FaTrash /> {loading.deleteAccount ? 'Eliminando...' : 'Eliminar Cuenta'}
+        {!showDeleteZone ? (
+          <button className="sc-btn sc-btn--danger sc-btn--sm" onClick={() => setShowDeleteZone(true)}>
+            <FaTrash /> Quiero eliminar mi cuenta
           </button>
-        </div>
+        ) : (
+          <div className="sc-danger">
+            <p style={{ marginBottom: 12, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Ingresa tu contraseña para confirmar la eliminación permanente de tu cuenta.
+            </p>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="password" placeholder="Tu contraseña" value={deletePassword}
+                onChange={e => setDeletePassword(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+              <button className="sc-btn sc-btn--danger" onClick={handleDeleteAccount} disabled={!deletePassword || loadingDelete}>
+                <FaTrash /> {loadingDelete ? 'Eliminando...' : 'Eliminar Cuenta'}
+              </button>
+              <button className="sc-btn sc-btn--ghost sc-btn--sm"
+                onClick={() => { setShowDeleteZone(false); setDeletePassword(''); }}>Cancelar</button>
+            </div>
+          </div>
+        )}
       </article>
     </section>
   );
+};
+
+const inputStyle = {
+  padding: '6px 10px',
+  borderRadius: 6,
+  border: '1px solid var(--border-color)',
+  background: 'var(--bg-card)',
+  color: 'var(--text-main)',
+  fontSize: '0.9rem',
 };
 
 export default SecurityCenterUI;

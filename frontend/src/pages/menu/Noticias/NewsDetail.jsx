@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fa';
 import PageHud from '../../../components/PageHud/PageHud';
 import { ORGANISM_PATHS } from '../../../data/esportsOrganismsData';
-import { DEFAULT_NEWS_COMPANY, getNewsFeed } from '../../../utils/customNews';
+import { DEFAULT_NEWS_COMPANY, fetchNewsFeed, fetchNewsById } from '../../../utils/customNews';
 import './NewsDetail.css';
 
 // Format date
@@ -67,24 +67,30 @@ const Bubbles = () => {
 
 export default function NewsDetail() {
     const { id } = useParams();
-    const [newsItems, setNewsItems] = useState(() => getNewsFeed());
+    const [newsItems, setNewsItems] = useState([]);
+    const [news, setNews] = useState(null);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [copied, setCopied] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '' });
-    const news = useMemo(
-        () => newsItems.find((item) => String(item.id) === String(id)),
-        [newsItems, id]
-    );
 
+    // Load current article + full feed for related articles
     useEffect(() => {
-        const loadFeed = () => setNewsItems(getNewsFeed());
+        const load = async () => {
+            const [article, allItems] = await Promise.all([
+                fetchNewsById(id),
+                fetchNewsFeed(),
+            ]);
+            setNews(article);
+            setNewsItems(allItems);
+        };
 
-        loadFeed();
-        window.addEventListener('custom-news-updated', loadFeed);
+        load();
 
-        return () => window.removeEventListener('custom-news-updated', loadFeed);
-    }, []);
+        const onUpdated = () => load();
+        window.addEventListener('custom-news-updated', onUpdated);
+        return () => window.removeEventListener('custom-news-updated', onUpdated);
+    }, [id]);
 
     // Load saved state
     useEffect(() => {

@@ -1,0 +1,313 @@
+import User from '../models/User.js';
+import Session from '../models/Session.js';
+import ActivityLog from '../models/ActivityLog.js';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { generateSecret, generateURI, verifySync } from 'otplib';
+import QRCode from 'qrcode';
+import { recordActivity } from '../services/activityLogger.js';
+
+const SALT_ROUNDS = 10;
+
+// ── Change Password ──
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Se requieren la contraseña actual y la nueva.' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 8 caracteres.' });
+    }
+
+    const user = await User.findById(req.userId).select('+password');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(401).json({ message: 'La contraseña actual es incorrecta.' });
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ message: 'La nueva contraseña debe ser diferente a la actual.' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    await recordActivity({ userId: req.userId, event: 'password_change', req });
+    res.json({ message: 'Contraseña actualizada correctamente.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al cambiar contraseña.' });
+  }
+};
+
+// ── 2FA: Generate Secret ──
+export const generate2FASecret = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    if (user.twoFactorEnabled) {
+      return res.status(400).json({ message: '2FA ya está activo. Desactívalo primero para reconfigurarlo.' });
+    }
+
+    const secret = generateSecret();
+    const uri = generateURI({ issuer: 'Esportefy', label: user.email, secret, type: 'totp' });
+    const qrCodeDataUrl = await QRCode.toDataURL(uri);
+
+    user.twoFactorPendingSecret = secret;
+    await user.save();
+
+    res.json({ qrCodeDataUrl, manualEntryKey: secret });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al generar secreto 2FA.' });
+  }
+};
+
+// ── 2FA: Verify Setup ──
+export const verify2FASetup = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: 'Se requiere el código de verificación.' });
+
+    const user = await User.findById(req.userId).select('+twoFactorPendingSecret');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    if (!user.twoFactorPendingSecret) {
+      return res.status(400).json({ message: 'No hay configuración 2FA pendiente. Genera un nuevo secreto primero.' });
+    }
+
+    const isValid = verifySync({ token, secret: user.twoFactorPendingSecret })?.valid;
+    if (!isValid) return res.status(400).json({ message: 'Código incorrecto. Inténtalo de nuevo.' });
+
+    // Generate backup codes
+    const plainCodes = Array.from({ length: 10 }, () =>
+      crypto.randomBytes(4).toString('hex').toUpperCase()
+    );
+    const hashedCodes = await Promise.all(
+      plainCodes.map(code => bcrypt.hash(code, SALT_ROUNDS))
+    );
+
+    user.twoFactorSecret = user.twoFactorPendingSecret;
+    user.twoFactorPendingSecret = undefined;
+    user.twoFactorEnabled = true;
+    user.twoFactorEnabledAt = new Date();
+    user.twoFactorBackupCodes = hashedCodes;
+    await user.save();
+
+    await recordActivity({ userId: req.userId, event: '2fa_enabled', req });
+    res.json({ message: '2FA activado correctamente.', backupCodes: plainCodes });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al verificar 2FA.' });
+  }
+};
+
+// ── 2FA: Disable ──
+export const disable2FA = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ message: 'Se requiere tu contraseña para desactivar 2FA.' });
+
+    const user = await User.findById(req.userId).select('+password');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: 'Contraseña incorrecta.' });
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = undefined;
+    user.twoFactorPendingSecret = undefined;
+    user.twoFactorBackupCodes = [];
+    user.twoFactorEnabledAt = null;
+    await user.save();
+
+    await recordActivity({ userId: req.userId, event: '2fa_disabled', req });
+    res.json({ message: '2FA desactivado correctamente.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al desactivar 2FA.' });
+  }
+};
+
+// ── 2FA: Regenerate Backup Codes ──
+export const regenerateBackupCodes = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: 'Se requiere un código TOTP para regenerar códigos.' });
+
+    const user = await User.findById(req.userId).select('+twoFactorSecret');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    if (!user.twoFactorEnabled) return res.status(400).json({ message: '2FA no está activo.' });
+
+    const isValid = verifySync({ token, secret: user.twoFactorSecret })?.valid;
+    if (!isValid) return res.status(400).json({ message: 'Código TOTP incorrecto.' });
+
+    const plainCodes = Array.from({ length: 10 }, () =>
+      crypto.randomBytes(4).toString('hex').toUpperCase()
+    );
+    const hashedCodes = await Promise.all(
+      plainCodes.map(code => bcrypt.hash(code, SALT_ROUNDS))
+    );
+
+    user.twoFactorBackupCodes = hashedCodes;
+    await user.save();
+
+    res.json({ message: 'Códigos de respaldo regenerados.', backupCodes: plainCodes });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al regenerar códigos.' });
+  }
+};
+
+// ── 2FA: Verify at Login ──
+export const verify2FALogin = async (req, res) => {
+  try {
+    const { userId, token, backupCode } = req.body;
+    if (!userId) return res.status(400).json({ message: 'Falta userId.' });
+    if (!token && !backupCode) return res.status(400).json({ message: 'Se requiere código TOTP o código de respaldo.' });
+
+    const user = await User.findById(userId).select('+twoFactorSecret +twoFactorBackupCodes');
+    if (!user || !user.twoFactorEnabled) {
+      return res.status(400).json({ message: '2FA no está activo para este usuario.' });
+    }
+
+    let verified = false;
+
+    if (token) {
+      verified = verifySync({ token, secret: user.twoFactorSecret })?.valid;
+    } else if (backupCode) {
+      const upper = backupCode.toUpperCase();
+      for (let i = 0; i < user.twoFactorBackupCodes.length; i++) {
+        const match = await bcrypt.compare(upper, user.twoFactorBackupCodes[i]);
+        if (match) {
+          user.twoFactorBackupCodes.splice(i, 1);
+          await user.save();
+          await recordActivity({ userId, event: 'backup_code_used', req });
+          verified = true;
+          break;
+        }
+      }
+    }
+
+    if (!verified) {
+      return res.status(401).json({ message: 'Código incorrecto.' });
+    }
+
+    res.json({ verified: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al verificar 2FA.' });
+  }
+};
+
+// ── 2FA Status ──
+export const get2FAStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('twoFactorEnabled twoFactorEnabledAt twoFactorBackupCodes');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+    res.json({
+      enabled: user.twoFactorEnabled,
+      enabledAt: user.twoFactorEnabledAt,
+      backupCodesRemaining: user.twoFactorBackupCodes?.length || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener estado 2FA.' });
+  }
+};
+
+// ── Sessions: List ──
+export const listSessions = async (req, res) => {
+  try {
+    const sessions = await Session.find({
+      userId: req.userId,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    }).sort({ lastActiveAt: -1 }).lean();
+
+    const currentJti = req.sessionJti || null;
+    const result = sessions.map(s => ({
+      id: s._id,
+      deviceLabel: s.deviceLabel,
+      ip: s.ip,
+      lastActiveAt: s.lastActiveAt,
+      createdAt: s.createdAt,
+      isCurrent: s.jti === currentJti,
+    }));
+
+    res.json({ sessions: result });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al listar sesiones.' });
+  }
+};
+
+// ── Sessions: Revoke One ──
+export const revokeSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findOne({ _id: sessionId, userId: req.userId, revokedAt: null });
+    if (!session) return res.status(404).json({ message: 'Sesión no encontrada.' });
+
+    session.revokedAt = new Date();
+    await session.save();
+
+    await recordActivity({ userId: req.userId, event: 'session_revoked', meta: { sessionId }, req });
+    res.json({ message: 'Sesión cerrada.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al revocar sesión.' });
+  }
+};
+
+// ── Sessions: Revoke All Others ──
+export const revokeAllOtherSessions = async (req, res) => {
+  try {
+    const currentJti = req.sessionJti;
+    const filter = { userId: req.userId, revokedAt: null };
+    if (currentJti) filter.jti = { $ne: currentJti };
+
+    const result = await Session.updateMany(filter, { revokedAt: new Date() });
+
+    await recordActivity({ userId: req.userId, event: 'sessions_revoked_all', meta: { count: result.modifiedCount }, req });
+    res.json({ message: `${result.modifiedCount} sesiones cerradas.` });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al revocar sesiones.' });
+  }
+};
+
+// ── Activity Log ──
+export const getActivityLog = async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      ActivityLog.find({ userId: req.userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      ActivityLog.countDocuments({ userId: req.userId }),
+    ]);
+
+    res.json({ logs, total, page, pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener registro de actividad.' });
+  }
+};
+
+// ── Delete Account ──
+export const deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ message: 'Se requiere tu contraseña para eliminar la cuenta.' });
+
+    const user = await User.findById(req.userId).select('+password');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: 'Contraseña incorrecta.' });
+
+    // Revoke all sessions
+    await Session.updateMany({ userId: req.userId }, { revokedAt: new Date() });
+
+    // Delete user
+    await User.findByIdAndDelete(req.userId);
+
+    await recordActivity({ userId: req.userId, event: 'account_deleted', req });
+    res.json({ message: 'Cuenta eliminada permanentemente.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al eliminar cuenta.' });
+  }
+};

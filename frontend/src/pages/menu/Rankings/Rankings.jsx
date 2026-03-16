@@ -11,7 +11,7 @@ import {
     FaUserAlt, FaShieldAlt, FaCoins, FaCalendarCheck, FaFlag,
     FaHistory, FaHandshake, FaUserFriends, FaTwitter, FaInstagram, FaAt,
     FaCloudUploadAlt, FaTrash, FaImage, FaBook, FaCheckCircle,
-    FaInfoCircle, FaPencilAlt, FaPlus
+    FaInfoCircle, FaPencilAlt, FaPlus, FaLock
 } from 'react-icons/fa';
 import { GiPodium, GiTrophy, GiSwordsEmblem } from 'react-icons/gi';
 import PageHud from '../../../components/PageHud/PageHud';
@@ -103,6 +103,7 @@ const TABS = [
 export default function Rankings() {
     const fileInputRef = useRef(null);
     const achievementFileRef = useRef(null);
+    const [rankingSource, setRankingSource] = useState('general');
     const [activeTab, setActiveTab] = useState('players');
     const [game, setGame] = useState('Todos');
     const [region, setRegion] = useState('Todas');
@@ -465,6 +466,53 @@ export default function Rankings() {
 
     return (
         <div className="rk-page">
+            {/* Source Switcher: General vs Plataforma */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                margin: '0 16px 16px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 10,
+                padding: 4,
+                width: 'fit-content',
+            }}>
+                <button
+                    onClick={() => setRankingSource('general')}
+                    style={{
+                        padding: '8px 18px',
+                        borderRadius: 8,
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        transition: 'all 0.2s',
+                        background: rankingSource === 'general' ? 'var(--primary, #8EDB15)' : 'transparent',
+                        color: rankingSource === 'general' ? '#111' : 'var(--text-muted)',
+                    }}
+                >
+                    <FaGlobeAmericas style={{ marginRight: 6 }} />
+                    General
+                </button>
+                <button
+                    onClick={() => setRankingSource('plataforma')}
+                    style={{
+                        padding: '8px 18px',
+                        borderRadius: 8,
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        transition: 'all 0.2s',
+                        background: rankingSource === 'plataforma' ? 'var(--primary, #8EDB15)' : 'transparent',
+                        color: rankingSource === 'plataforma' ? '#111' : 'var(--text-muted)',
+                    }}
+                >
+                    <FaChartLine style={{ marginRight: 6 }} />
+                    Plataforma
+                </button>
+            </div>
             <Bubbles />
             <div className="rk-ambient rk-ambient--1" />
             <div className="rk-ambient rk-ambient--2" />
@@ -485,6 +533,27 @@ export default function Rankings() {
 
             <PageHud page="RANKINGS" />
 
+            {rankingSource === 'plataforma' ? (
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '80px 24px',
+                    textAlign: 'center',
+                    gap: 16,
+                }}>
+                    <FaChartLine style={{ fontSize: 48, color: 'var(--primary, #8EDB15)', opacity: 0.6 }} />
+                    <h2 style={{ color: 'var(--text-main)', margin: 0 }}>Rankings de Plataforma</h2>
+                    <p style={{ color: 'var(--text-muted)', maxWidth: 480, margin: 0, lineHeight: 1.6 }}>
+                        Los rankings basados en la actividad dentro de Esportefy están en desarrollo.
+                        Aquí verás clasificaciones generadas a partir de torneos, equipos y partidas registradas en la plataforma.
+                    </p>
+                    <span className="sc-badge sc-badge--warning" style={{ fontSize: '0.85rem', padding: '6px 16px' }}>
+                        <FaLock style={{ marginRight: 6 }} /> Próximamente
+                    </span>
+                </div>
+            ) : (
             <motion.div
                 className="rk-container"
                 initial="hidden"
@@ -669,7 +738,7 @@ export default function Rankings() {
                                                                         width="21" 
                                                                         height="14"
                                                                         alt={p.country || 'DO'} 
-                                                                        style={{ marginLeft: '6px', verticalAlign: 'middle', borderRadius: '2px', objectFit: 'cover' }}
+                                                                        style={{ marginLeft: '6px', verticalAlign: 'middle', borderRadius: '2px', objectFit: 'cover', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
                                                                     />
                                                                 </strong>
                                                                 <small>{p.role}</small>
@@ -678,14 +747,16 @@ export default function Rankings() {
                                                     </td>
                                                     <td>{p.team}</td>
                                                     <td><span className="rk-game-badge">{p.game}</span></td>
-                                                    <td><FaMapMarkerAlt /> {p.region}</td>
-                                                    <td className="rk-points"><FaTrophy className="rk-title-icon" /> {getTitleCount(p)}</td>
+                                                    <td><span className="rk-region-cell"><FaMapMarkerAlt /> {p.region}</span></td>
+                                                    <td><span className="rk-points"><FaTrophy className="rk-title-icon" /> {getTitleCount(p)}</span></td>
                                                     <td>{getAchievementCount(p)}</td>
                                                     <td>
-                                                        {p.verified && <span className="rk-verified-badge"><FaCheckCircle /></span>}
-                                                        <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(p.player); }}>
-                                                            <FaPencilAlt /> Aportar datos
-                                                        </button>
+                                                        <div className="rk-estado-cell">
+                                                            {p.verified && <span className="rk-verified-badge"><FaCheckCircle /></span>}
+                                                            <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(p.player); }}>
+                                                                <FaPencilAlt /> Aportar datos
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </motion.tr>
                                             )) : (
@@ -891,6 +962,7 @@ export default function Rankings() {
                     )}
                 </AnimatePresence>
             </motion.div>
+            )}
 
             {/* Player Modal - DETAILED PANEL */}
             <AnimatePresence>
@@ -926,10 +998,11 @@ export default function Rankings() {
                                         {selectedPlayer.player}
                                         <img 
                                             src={`https://flagcdn.com/w40/${(selectedPlayer.country || 'DO').toLowerCase()}.png`}
-                                            width="30" 
-                                            height="20"
-                                            alt={selectedPlayer.country || 'DO'} 
-                                            style={{ marginLeft: '10px', verticalAlign: 'baseline', borderRadius: '3px', objectFit: 'cover' }}
+                                            srcSet={`https://flagcdn.com/w80/${(selectedPlayer.country || 'DO').toLowerCase()}.png 2x`}
+                                            width="28"
+                                            height="19"
+                                            alt={selectedPlayer.country || 'DO'}
+                                            className="rk-modal-flag"
                                         />
                                     </h2>
                                     <p className="rk-modal-realname">{selectedPlayer.realName}</p>

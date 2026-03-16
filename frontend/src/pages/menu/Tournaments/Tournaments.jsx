@@ -126,14 +126,14 @@ const PROMO_SLIDES = [
    SPONSORS — branding partners
    ═══════════════════════════════════════ */
 const SPONSORS = [
-    { name: 'Razer', icon: 'bx-mouse', color: '#00ff00', url: '#' },
-    { name: 'HyperX', icon: 'bx-headphone', color: '#ff0000', url: '#' },
-    { name: 'Red Bull', icon: 'bx-bolt-circle', color: '#dc0032', url: '#' },
-    { name: 'Discord', icon: 'bxl-discord-alt', color: '#5865F2', url: '#' },
-    { name: 'Logitech', icon: 'bx-game', color: '#00b8fc', url: '#' },
-    { name: 'NVIDIA', icon: 'bx-chip', color: '#76b900', url: '#' },
-    { name: 'SteelSeries', icon: 'bx-joystick', color: '#ff5200', url: '#' },
-    { name: 'MSI', icon: 'bx-desktop', color: '#ff0000', url: '#' },
+    { name: 'Razer', icon: 'bx-mouse', color: '#00ff00', url: 'https://www.razer.com' },
+    { name: 'HyperX', icon: 'bx-headphone', color: '#ff0000', url: 'https://www.hyperx.com' },
+    { name: 'Red Bull', icon: 'bx-bolt-circle', color: '#dc0032', url: 'https://www.redbull.com/gaming' },
+    { name: 'Discord', icon: 'bxl-discord-alt', color: '#5865F2', url: 'https://discord.com' },
+    { name: 'Logitech', icon: 'bx-game', color: '#00b8fc', url: 'https://www.logitechg.com' },
+    { name: 'NVIDIA', icon: 'bx-chip', color: '#76b900', url: 'https://www.nvidia.com' },
+    { name: 'SteelSeries', icon: 'bx-joystick', color: '#ff5200', url: 'https://steelseries.com' },
+    { name: 'MSI', icon: 'bx-desktop', color: '#ff0000', url: 'https://www.msi.com' },
 ];
 
 const STATUS_CONFIG = {

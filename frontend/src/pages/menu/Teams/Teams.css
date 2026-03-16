@@ -877,7 +877,7 @@
     content: '';
     width: 3px;
     height: 14px;
-    background: var(--primary, #8EDB15);
+    background: var(--primary, #8EDB15); 
     border-radius: 2px;
 }
 .info-section > p {

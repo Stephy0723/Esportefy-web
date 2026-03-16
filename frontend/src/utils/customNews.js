@@ -1,3 +1,5 @@
+import axios from 'axios';
+import { API_URL } from '../config/api';
 import { NEWS } from '../data/newsData';
 
 export const CUSTOM_NEWS_STORAGE_KEY = 'glitch_gang_custom_news';
@@ -134,28 +136,50 @@ export const getNewsImageValidationMessage = (file) => {
   return '';
 };
 
-export const getNewsFeed = () => {
-  if (typeof window === 'undefined') return NEWS;
+// ── Fallback síncrono (solo datos estáticos) ──────────────────
+export const getNewsFeed = () => NEWS;
 
+// ── API: obtener noticias (DB + estáticas) ────────────────────
+export const fetchNewsFeed = async ({ category, game, search } = {}) => {
   try {
-    const stored = JSON.parse(localStorage.getItem(CUSTOM_NEWS_STORAGE_KEY) || '[]');
-    const customNews = Array.isArray(stored) ? stored : [];
-    return [...customNews, ...NEWS];
+    const params = new URLSearchParams();
+    if (category && category !== 'Todos') params.set('category', category);
+    if (game && game !== 'Todos') params.set('game', game);
+    if (search) params.set('search', search);
+    params.set('limit', '100');
+
+    const { data } = await axios.get(`${API_URL}/api/news?${params}`);
+    return Array.isArray(data?.items) ? data.items : NEWS;
   } catch {
+    // Si el backend no está disponible, devolver estáticas
     return NEWS;
   }
 };
 
-export const saveCustomNews = (article) => {
-  if (typeof window === 'undefined') return [];
+// ── API: guardar noticia en el servidor ───────────────────────
+export const saveCustomNews = async (article) => {
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-  const current = getNewsFeed().filter((item) => item.isCustom);
-  const next = [article, ...current.filter((item) => item.id !== article.id)];
+  const { data } = await axios.post(`${API_URL}/api/news`, article, { headers });
 
-  localStorage.setItem(CUSTOM_NEWS_STORAGE_KEY, JSON.stringify(next));
-  window.dispatchEvent(new CustomEvent('custom-news-updated', { detail: next }));
+  // Notificar a la UI que hay nueva noticia
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('custom-news-updated'));
+  }
 
-  return next;
+  return data;
+};
+
+// ── API: obtener noticia por ID ───────────────────────────────
+export const fetchNewsById = async (id) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/api/news/${id}`);
+    return data;
+  } catch {
+    // Fallback: buscar en estáticas
+    return NEWS.find((n) => String(n.id) === String(id)) || null;
+  }
 };
 
 export const buildCustomNewsArticle = ({

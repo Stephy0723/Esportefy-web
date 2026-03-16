@@ -17,6 +17,24 @@ import fs from 'fs';
 import { filterSupportedGameNames, isSupportedGameName, SUPPORTED_GAME_NAMES } from '../../../shared/supportedGames.js';
 import { normalizeCommunityGameIds } from '../utils/communityGames.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
+import { recordActivity } from '../services/activityLogger.js';
+import Session from '../models/Session.js';
+
+const parseDeviceLabel = (ua = '') => {
+    const s = String(ua);
+    let browser = 'Navegador';
+    if (s.includes('Chrome') && !s.includes('Edg')) browser = 'Chrome';
+    else if (s.includes('Firefox')) browser = 'Firefox';
+    else if (s.includes('Safari') && !s.includes('Chrome')) browser = 'Safari';
+    else if (s.includes('Edg')) browser = 'Edge';
+    let os = '';
+    if (s.includes('Windows')) os = 'Windows';
+    else if (s.includes('Mac')) os = 'macOS';
+    else if (s.includes('Linux')) os = 'Linux';
+    else if (s.includes('Android')) os = 'Android';
+    else if (s.includes('iPhone') || s.includes('iPad')) os = 'iOS';
+    return os ? `${browser} en ${os}` : browser;
+};
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -613,18 +631,41 @@ export const login = async (req, res) => {
         const sessionTtlMs = useRememberSession ? AUTH_TOKEN_REMEMBER_TTL_MS : AUTH_TOKEN_TTL_MS;
         const sessionTtlSeconds = Math.max(60, Math.floor(sessionTtlMs / 1000));
 
-        // 3. Generar Token
+        // 3. Check if 2FA is enabled
+        if (user.twoFactorEnabled) {
+            return res.status(200).json({
+                requiresTwoFactor: true,
+                userId: user._id,
+            });
+        }
+
+        // 4. Generate Token with jti for session tracking
+        const jti = crypto.randomUUID();
         const token = jwt.sign(
-            { id: user._id }, 
+            { id: user._id, jti },
             process.env.JWT_SECRET,
             { expiresIn: sessionTtlSeconds }
         );
         const csrfToken = generateCsrfToken();
 
+        // Create session record
+        const ua = req.headers?.['user-agent'] || '';
+        const deviceLabel = parseDeviceLabel(ua);
+        await Session.create({
+            userId: user._id,
+            jti,
+            userAgent: ua,
+            ip: req.ip || '',
+            deviceLabel,
+            expiresAt: new Date(Date.now() + sessionTtlMs),
+        });
+
+        await recordActivity({ userId: user._id, event: 'login', req });
+
         res.cookie(AUTH_COOKIE_NAME, token, buildAuthCookieOptions(sessionTtlMs));
         res.cookie(CSRF_COOKIE_NAME, csrfToken, buildCsrfCookieOptions(sessionTtlMs));
 
-        res.status(200).json({ 
+        res.status(200).json({
             session: true,
             token,
             rememberMe: useRememberSession,
@@ -642,7 +683,12 @@ export const login = async (req, res) => {
     }
 };
 
-export const logout = (req, res) => {
+export const logout = async (req, res) => {
+    // Revoke session if jti is present
+    if (req.sessionJti) {
+        await Session.updateOne({ jti: req.sessionJti }, { revokedAt: new Date() }).catch(() => {});
+        recordActivity({ userId: req.userId, event: 'logout', req }).catch(() => {});
+    }
     const clearOptions = { ...buildAuthCookieOptions() };
     delete clearOptions.maxAge;
     clearOptions.expires = new Date(0);

@@ -758,6 +758,38 @@
     flex: 1;
 }
 
+/* ═══════ INPUTS ═══════ */
+.sc-input {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.6rem 0.875rem;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.sc-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.sc-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(142, 219, 21, 0.15);
+}
+
+.sc-input--center {
+    text-align: center;
+    font-size: 1.1rem;
+    letter-spacing: 4px;
+    width: 160px;
+}
+
 /* ═══════ RESPONSIVE ═══════ */
 @media (max-width: 900px) {
     .sc-grid--3 {
