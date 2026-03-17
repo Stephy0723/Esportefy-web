@@ -17,6 +17,7 @@ import { EMPTY_PROFILE_PROGRESSION, normalizeProfileProgression } from '../../..
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
+import { getAuthToken } from '../../../utils/authSession';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import './EditProfile.css';
 
@@ -264,7 +265,7 @@ const EditProfile = () => {
         roleApplications: {}
     });
 
-    const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+    const getToken = () => getAuthToken();
     const normalizePhone = (value = '') => String(value).replace(/[^\d]/g, '');
     const isValidPhone = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
     const sanitizeSocialHandle = (value = '') =>

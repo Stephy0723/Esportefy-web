@@ -102,13 +102,21 @@ export default function Noticias() {
     const [isComposerOpen, setIsComposerOpen] = useState(false);
     const [draft, setDraft] = useState(createInitialDraft);
     const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     // Load news from API + bookmarks from localStorage
     useEffect(() => {
         const loadFeed = async () => {
-            const items = await fetchNewsFeed();
-            const filtered = items.filter((item) => item?.game === 'Multigame' || isSupportedGameName(item?.game));
-            setNewsItems(filtered);
+            try {
+                const items = await fetchNewsFeed();
+                const filtered = items.filter((item) => item?.game === 'Multigame' || isSupportedGameName(item?.game));
+                setNewsItems(filtered);
+            } catch (err) {
+                setError('Error al cargar las noticias. Intenta de nuevo.');
+            } finally {
+                setLoading(false);
+            }
         };
 
         loadFeed();
@@ -394,6 +402,25 @@ export default function Noticias() {
 
             <PageHud page="NOTICIAS" />
 
+            {loading && (
+                <div className="nw-loading" style={{ textAlign: 'center', padding: '100px 0', color: 'var(--text-secondary)' }}>
+                    <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--primary)' }}></i>
+                    <h3>Cargando noticias...</h3>
+                </div>
+            )}
+            
+            {error && (
+                <div className="nw-error" style={{ textAlign: 'center', padding: '100px 0', color: 'var(--text-secondary)' }}>
+                    <i className="bx bx-error-alt" style={{ fontSize: '3rem', marginBottom: '1rem', color: '#ff4655' }}></i>
+                    <h3>{error}</h3>
+                    <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: 'var(--primary)', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#fff', marginTop: '1rem' }}>
+                        Reintentar
+                    </button>
+                </div>
+            )}
+
+            {!loading && !error && (
+                <React.Fragment>
             {/* Toast */}
             <AnimatePresence>
                 {toast.show && (
@@ -1021,6 +1048,8 @@ export default function Noticias() {
                     </motion.div>
                 </aside>
             </div>
+            </React.Fragment>
+            )}
         </div>
     );
 }

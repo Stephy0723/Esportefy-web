@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { useNotification } from '../../context/NotificationContext';
 import './Forgot.css';
 
 // SOLO importamos la imagen blanca, ya que será el único modo
@@ -9,6 +10,7 @@ import bgWhite from '../../assets/images/login-white.png';
 
 const ForgotPasswordFlow = () => {
     const navigate = useNavigate();
+    const { addToast } = useNotification();
     // NOTA: Ya no necesitamos usar el hook useTheme aquí porque forzaremos el blanco.
 
     const [step, setStep] = useState(1);
@@ -190,3 +192,6 @@ const ForgotPasswordFlow = () => {
 };
 
 export default ForgotPasswordFlow;
+
+
+

@@ -464,8 +464,28 @@ export default function Rankings() {
         return <FaMinus className="rk-trend-icon rk-trend-flat" />;
     };
 
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 800);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="rk-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <h2 style={{ color: 'var(--text-main)' }}>Cargando Rankings...</h2>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="rk-page">
+            <div style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid #ffc107', color: '#ffc107', padding: '12px', textAlign: 'center', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', zIndex: 100, position: 'relative' }}>
+                <FaInfoCircle /> Aviso: Los datos mostrados en los rankings actuales son de demostración (Demo).
+            </div>
             {/* Source Switcher: General vs Plataforma */}
             <div style={{
                 display: 'flex',

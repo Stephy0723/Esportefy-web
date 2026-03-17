@@ -5,6 +5,7 @@ import {
   getNews,
   getNewsById,
   createNews,
+  updateNews,
   deleteNews,
 } from '../controllers/news.controller.js';
 
@@ -17,8 +18,9 @@ const rlWrite = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 30,  keyPrefix
 router.get('/',    rlRead, getNews);
 router.get('/:id', rlRead, getNewsById);
 
-// Protected — must be logged in to create/delete
+// Protected — must be logged in to create/update/delete
 router.post('/',       verifyToken, rlWrite, createNews);
+router.put('/:id',     verifyToken, rlWrite, updateNews);
 router.delete('/:id',  verifyToken, rlWrite, deleteNews);
 
 export default router;

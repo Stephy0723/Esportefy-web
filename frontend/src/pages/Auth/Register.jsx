@@ -113,7 +113,7 @@ const getSubmitError = (formData, passwordError) => {
   if (!String(formData.fullName || '').trim()) return 'El nombre completo es obligatorio.';
   if (!String(formData.phone || '').trim()) return 'El teléfono es obligatorio.';
   if (!isValidNonNegativeNumberString(formData.phone)) return 'El teléfono debe contener solo números y no puede ser negativo.';
-  if (!String(formData.country || '').trim()) return 'El país es obligatorio.';
+  if (!String(formData.country || '').trim() || (formData.country === 'Otro' && !String(formData.customCountry || '').trim())) return 'El país es obligatorio.';
   if (!String(formData.birthDate || '').trim()) return 'La fecha de nacimiento es obligatoria.';
   if (!Array.isArray(formData.selectedGames) || formData.selectedGames.length === 0) return 'Debes seleccionar al menos un juego.';
   if (!String(formData.experience || '').trim()) return 'Selecciona tu nivel de experiencia.';
@@ -133,7 +133,7 @@ const getStep1Error = (formData) => {
   if (!String(formData.fullName || '').trim()) return 'El nombre completo es obligatorio.';
   if (!String(formData.phone || '').trim()) return 'El teléfono es obligatorio.';
   if (!isValidNonNegativeNumberString(formData.phone)) return 'El teléfono debe tener solo números (sin +, espacios ni guiones).';
-  if (!String(formData.country || '').trim()) return 'Selecciona tu país.';
+  if (!String(formData.country || '').trim() || (formData.country === 'Otro' && !String(formData.customCountry || '').trim())) return 'Selecciona tu país.';
   if (!String(formData.birthDate || '').trim()) return 'La fecha de nacimiento es obligatoria.';
   return '';
 };
@@ -169,7 +169,7 @@ const Register = () => {
   });
 
   const [formData, setFormData] = useState({
-    fullName: '', phone: '', gender: 'Otro', country: '', birthDate: '',
+    fullName: '', phone: '', gender: 'Otro', country: '', customCountry: '', birthDate: '',
     selectedGames: [], platforms: [],
     experience: '', goals: [],
     username: '', email: '', password: '', confirmPassword: '',
@@ -196,8 +196,9 @@ const Register = () => {
     setLoading(true);
 
     try {
+      const payload = { ...formData, country: formData.country === 'Otro' ? formData.customCountry : formData.country };
       const response = await axios.post(`${API_URL}/api/auth/register`, {
-        ...formData,
+        ...payload,
         ...(pendingGameJoinId ? { pendingGameJoinId } : {})
       });
       addToast('¡Cuenta creada con éxito! Ahora puedes iniciar sesión.', 'success');
@@ -350,7 +351,7 @@ const Register = () => {
     String(formData.fullName || '').trim() &&
     String(formData.phone || '').trim() &&
     isValidNonNegativeNumberString(formData.phone) &&
-    String(formData.country || '').trim() &&
+    (String(formData.country || '').trim() && (formData.country !== 'Otro' || String(formData.customCountry || '').trim())) &&
     String(formData.birthDate || '').trim()
   );
   const step1ErrorHint = getStep1Error(formData);
@@ -379,10 +380,29 @@ const Register = () => {
   ];
 
   const countries = [
-    'Argentina','Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba','Republica Dominicana','Ecuador',
-    'El Salvador','Guatemala','Honduras','México','Nicaragua','Panamá','Paraguay','Perú','Puerto Rico',
-    'Uruguay','Venezuela','España','Estados Unidos'
+    'Antigua y Barbuda', 'Argentina', 'Bahamas', 'Barbados', 'Belice', 'Bolivia', 'Brasil',
+    'Canadá', 'Chile', 'Colombia', 'Costa Rica', 'Cuba', 'Dominica',
+    'Ecuador', 'El Salvador', 'Estados Unidos', 'Granada', 'Guatemala', 'Guyana',
+    'Haití', 'Honduras', 'Jamaica', 'México', 'Nicaragua', 'Panamá', 'Paraguay',
+    'Perú', 'Puerto Rico', 'República Dominicana', 'San Cristóbal y Nieves',
+    'San Vicente y las Granadinas', 'Santa Lucía', 'Surinam',
+    'Trinidad y Tobago', 'Uruguay', 'Venezuela'
   ];
+
+  const COUNTRY_CALLING_CODES = {
+    'Antigua y Barbuda': '1268', 'Argentina': '54', 'Bahamas': '1242', 'Barbados': '1246',
+    'Belice': '501', 'Bolivia': '591', 'Brasil': '55', 'Canadá': '1',
+    'Chile': '56', 'Colombia': '57', 'Costa Rica': '506', 'Cuba': '53',
+    'Dominica': '1767', 'Ecuador': '593', 'El Salvador': '503', 'Estados Unidos': '1',
+    'Granada': '1473', 'Guatemala': '502', 'Guyana': '592', 'Haití': '509',
+    'Honduras': '504', 'Jamaica': '1876', 'México': '52', 'Nicaragua': '505',
+    'Panamá': '507', 'Paraguay': '595', 'Perú': '51', 'Puerto Rico': '1',
+    'República Dominicana': '1', 'San Cristóbal y Nieves': '1869', 
+    'San Vicente y las Granadinas': '1784', 'Santa Lucía': '1758', 'Surinam': '597', 
+    'Trinidad y Tobago': '1868', 'Uruguay': '598', 'Venezuela': '58'
+  };
+
+  const selectedPrefix = COUNTRY_CALLING_CODES[formData.country];
 
   return (
     // 4. USAR isDarkMode PARA LA CLASE CSS DEL COLOR DE FONDO
@@ -422,21 +442,27 @@ const Register = () => {
                     <input type="text" name="fullName" placeholder="Ej: Juan Pérez" value={formData.fullName} onChange={handleChange} />
                     <i className='bx bx-id-card'></i>
                   </div>
-                  <div className="input-wrapper">
+                  <div className={`input-wrapper ${selectedPrefix ? 'has-prefix' : ''}`}>
                     <label>Teléfono</label>
-                    <span className="input-prefix">+1</span>
+                    {selectedPrefix && <span className="input-prefix">+{selectedPrefix}</span>}
                     <input
                       type="tel"
                       name="phone"
-                      placeholder="8095551234"
+                      placeholder={selectedPrefix ? "Ej: 8095551234" : "Ej: +34 600123456"}
                       value={formData.phone}
                       onChange={handleChange}
                       onBlur={() => checkPhoneAvailability(formData.phone)}
+                      style={selectedPrefix ? { paddingLeft: `${40 + (selectedPrefix.length * 8)}px` } : {}}
                     />
                     <i className='bx bxl-whatsapp'></i>
                   </div>
                 </div>
-                <span className="helper-text"><i className='bx bx-info-circle'></i> Ej: +1 8095551234. Escribe solo los números locales, sin espacios.</span>
+                {formData.country === 'Otro' ? (
+                  <span className="helper-text"><i className='bx bx-info-circle'></i> Por favor incluye tu prefijo regional (ej: +34 para España).</span>
+                ) : (
+                  <span className="helper-text"><i className='bx bx-info-circle'></i> Escribe solo los números, sin espacios ni símbolos.</span>
+                )}
+                
                 {phoneAvailability.loading && (
                   <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
                 )}
@@ -452,6 +478,7 @@ const Register = () => {
                     <select name="country" value={formData.country} onChange={handleChange}>
                       <option value="">Selecciona tu país</option>
                       {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="Otro">Otro (Especificar)</option>
                     </select>
                     <i className='bx bx-globe'></i>
                   </div>
@@ -465,6 +492,15 @@ const Register = () => {
                     <i className='bx bx-user'></i>
                   </div>
                 </div>
+                {formData.country === 'Otro' && (
+                  <div className="input-row split step-fade-in">
+                    <div className="input-wrapper">
+                      <label>Especifica tu país</label>
+                      <input type="text" name="customCountry" placeholder="Ej: Japón" value={formData.customCountry} onChange={handleChange} />
+                      <i className='bx bx-map-pin'></i>
+                    </div>
+                  </div>
+                )}
                 <div className="input-row split">
                   <div className="input-wrapper">
                     <label>Fecha Nacimiento</label>

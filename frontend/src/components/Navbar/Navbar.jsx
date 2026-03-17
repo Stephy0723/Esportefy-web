@@ -42,7 +42,6 @@ const QUICK_ACTIONS = [
 
 const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const [scrolled, setScrolled] = useState(false);
-  const [activeUser, setActiveUser] = useState(null);
   const [hasUnread, setHasUnread] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -54,7 +53,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
-  const { logout } = useAuth();
+  const { user: activeUser, logout } = useAuth();
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const actionsRef = useRef(null);
@@ -76,21 +75,9 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     return null;
   }, [location.pathname]);
 
-  /* ── Read user from storage ── */
-  const checkUser = useCallback(() => {
-    const storedUser = localStorage.getItem('esportefyUser');
-    if (storedUser) {
-      try { setActiveUser(JSON.parse(storedUser)); }
-      catch { setActiveUser(null); }
-    } else {
-      setActiveUser(null);
-    }
-  }, []);
-
   /* ── Check notifications ── */
   const checkNotifications = useCallback(async () => {
-    const storedUser = localStorage.getItem('esportefyUser');
-    if (!storedUser) { setHasUnread(false); setUnreadCount(0); return; }
+    if (!activeUser) { setHasUnread(false); setUnreadCount(0); return; }
     try {
       const res = await fetch(`${API_URL}/api/notifications`, {
         credentials: 'include',
@@ -105,7 +92,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     } catch {
       /* silently fail */
     }
-  }, []);
+  }, [activeUser]);
 
   /* ── Clock tick ── */
   useEffect(() => {
@@ -115,22 +102,19 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
   /* ── Bootstrap ── */
   useEffect(() => {
-    checkUser();
     checkNotifications();
 
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('user-update', checkUser);
     window.addEventListener('user-update', checkNotifications);
     const notifTimer = setInterval(checkNotifications, 60000);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('user-update', checkUser);
       window.removeEventListener('user-update', checkNotifications);
       clearInterval(notifTimer);
     };
-  }, [checkUser, checkNotifications]);
+  }, [checkNotifications]);
 
   /* ── Close popovers on outside click ── */
   useEffect(() => {

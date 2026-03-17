@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API_URL } from '../../../config/api';
@@ -198,54 +198,8 @@ const getLocalTournaments = () => {
   }
 };
 
-const seedLocalDemoTournament = () => {
-  const now = Date.now();
-  const day = 24 * 60 * 60 * 1000;
-  return {
-    _id: `local_${now}`,
-    tournamentId: `TOR-LOCAL-${String(now).slice(-6)}`,
-    title: 'MLBB Caribbean Clash 2026',
-    description: 'Torneo demo local para probar flujo completo.',
-    game: 'Mobile Legends',
-    gender: 'Mixto',
-    modality: '5v5',
-    date: new Date(now + 21 * day).toISOString(),
-    time: '19:00',
-    timezone: 'America/Santo_Domingo',
-    prizeMode: 'mixed',
-    prizePool: '250000',
-    currency: 'DOP',
-    prizeDetails: 'Medallas, trofeos y perifericos gamer.',
-    prizesByRank: { first: '150000', second: '70000', third: '30000' },
-    entryFee: 'Gratis',
-    maxSlots: 32,
-    currentSlots: 0,
-    format: 'Doble Eliminacion',
-    server: 'LATAM',
-    platform: 'Mobile',
-    eligibility: { minAge: 16, allowedCountries: ['Republica Dominicana', 'Puerto Rico', 'Mexico', 'Colombia'], notes: 'Demo local' },
-    registrationWindow: { start: new Date(now + day).toISOString(), end: new Date(now + 14 * day).toISOString() },
-    checkInWindow: { start: new Date(now + 20 * day).toISOString(), end: new Date(now + 21 * day).toISOString() },
-    contact: { email: 'tournaments@esportefy.com', phone: '+1 809-555-0199', discordInvite: 'https://discord.gg/ExCguE8e' },
-    broadcast: { streamUrl: 'https://www.twitch.tv/esportefy', streamLanguage: 'es' },
-    matchConfig: { seriesType: 'BO3', mapPool: ['Land of Dawn'], patchVersion: 'MLBB v1.8.90' },
-    legalCompliance: { jurisdiction: 'Republica Dominicana', governingLaw: 'Normativa aplicable al evento', claimsContact: 'legal@esportefy.com', rulesAccepted: true, privacyAccepted: true, organizerDeclaration: true },
-    sponsors: [{ name: 'Razer Caribe', link: 'https://www.razer.com', tier: 'Principal' }, { name: 'Red Bull Gaming', link: 'https://www.redbull.com', tier: 'Partner' }],
-    staff: { moderators: ['Mod_Karina', 'Mod_Rafy'], casters: ['Caster_Axel', 'Caster_Luna'] },
-    organizer: { _id: 'local-organizer', username: 'Organizador Local' },
-    status: 'open',
-    registrationClosed: false,
-    registrations: [],
-    __local: true
-  };
-};
-
 const ensureLocalDemoTournament = () => {
-  const current = getLocalTournaments();
-  if (current.length > 0) return current;
-  const demo = seedLocalDemoTournament();
-  localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify([demo]));
-  return [demo];
+  return [];
 };
 
 const getInitials = (name) => {
@@ -580,7 +534,6 @@ const Tournaments = () => {
   // --- CARGA DINÁMICA DE TORNEOS ---
 useEffect(() => {
     const fetchTournaments = async () => {
-        const localFormatted = ensureLocalDemoTournament().map(formatTournamentFromApi);
         try {
             setLoadingTournaments(true);
             const response = await axios.get(`${API_URL}/api/tournaments`);
@@ -591,13 +544,11 @@ useEffect(() => {
               { nameKey: 'game', allowMissingId: true }
             );
 
-            setTournaments(filterSupportedGameObjects([...localFormatted, ...formattedTournaments], { nameKey: 'game', allowMissingId: true }));
+            setTournaments(formattedTournaments);
         } catch (err) {
             console.error("Error cargando torneos:", err);
-            setTournaments(filterSupportedGameObjects(localFormatted, { nameKey: 'game', allowMissingId: true }));
-            if (!localFormatted.length) {
-              notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
-            }
+            setTournaments([]);
+            notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
         } finally {
             setLoadingTournaments(false);
         }

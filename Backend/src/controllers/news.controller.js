@@ -1,5 +1,4 @@
 import News from '../models/News.js';
-import { NEWS } from '../../../frontend/src/data/newsData.js';
 
 // ── helpers ────────────────────────────────────────────────────
 const clampInt = (raw, min, max, fallback) => {
@@ -8,7 +7,6 @@ const clampInt = (raw, min, max, fallback) => {
 };
 
 // ── GET /api/news ─────────────────────────────────────────────
-// Devuelve noticias de la BD + las estáticas de newsData.js
 export const getNews = async (req, res) => {
   try {
     const limit = clampInt(req.query.limit, 1, 100, 50);
@@ -21,7 +19,6 @@ export const getNews = async (req, res) => {
       ? req.query.game : null;
     const search = (req.query.search || '').trim();
 
-    // Fetch custom news from DB
     const dbFilter = {};
     if (categoryFilter) dbFilter.category = categoryFilter;
     if (gameFilter) dbFilter.game = gameFilter;
@@ -32,32 +29,21 @@ export const getNews = async (req, res) => {
       ];
     }
 
-    const dbNews = await News.find(dbFilter)
-      .sort({ createdAt: -1 })
-      .lean();
+    const [total, items] = await Promise.all([
+      News.countDocuments(dbFilter),
+      News.find(dbFilter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
 
-    // Mark DB news as custom
-    const dbItems = dbNews.map((item) => ({
+    const mapped = items.map((item) => ({
       ...item,
       id: item._id,
-      isCustom: true,
     }));
 
-    // Filter static news
-    let staticItems = NEWS.map((item) => ({ ...item, isCustom: false }));
-    if (categoryFilter) staticItems = staticItems.filter((n) => n.category === categoryFilter);
-    if (gameFilter) staticItems = staticItems.filter((n) => n.game === gameFilter);
-    if (search) {
-      const re = new RegExp(search, 'i');
-      staticItems = staticItems.filter((n) => re.test(n.title) || re.test(n.excerpt));
-    }
-
-    // Combine: custom first, then static
-    const all = [...dbItems, ...staticItems];
-    const total = all.length;
-    const items = all.slice(skip, skip + limit);
-
-    return res.json({ total, page, limit, items });
+    return res.json({ total, page, limit, items: mapped });
   } catch (error) {
     console.error('getNews error:', error);
     return res.status(500).json({ message: 'Error obteniendo noticias' });
@@ -69,13 +55,6 @@ export const getNewsById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check static news first
-    const staticArticle = NEWS.find((n) => String(n.id) === id);
-    if (staticArticle) {
-      return res.json({ ...staticArticle, isCustom: false });
-    }
-
-    // Check DB
     const dbArticle = await News.findById(id).lean();
     if (!dbArticle) {
       return res.status(404).json({ message: 'Noticia no encontrada' });
@@ -84,7 +63,7 @@ export const getNewsById = async (req, res) => {
     // Increment views
     await News.findByIdAndUpdate(id, { $inc: { views: 1 } });
 
-    return res.json({ ...dbArticle, id: dbArticle._id, isCustom: true });
+    return res.json({ ...dbArticle, id: dbArticle._id });
   } catch (error) {
     console.error('getNewsById error:', error);
     return res.status(500).json({ message: 'Error obteniendo noticia' });
@@ -126,11 +105,37 @@ export const createNews = async (req, res) => {
     return res.status(201).json({
       ...news.toObject(),
       id: news._id,
-      isCustom: true,
     });
   } catch (error) {
     console.error('createNews error:', error);
     return res.status(500).json({ message: 'Error creando noticia' });
+  }
+};
+
+// ── PUT /api/news/:id ─────────────────────────────────────────
+export const updateNews = async (req, res) => {
+  try {
+    const news = await News.findById(req.params.id);
+    if (!news) {
+      return res.status(404).json({ message: 'Noticia no encontrada' });
+    }
+
+    if (String(news.createdBy) !== String(req.userId)) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+
+    const allowed = ['title', 'excerpt', 'category', 'game', 'author', 'company', 'date', 'image', 'featured', 'tags', 'details', 'gallery'];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) {
+        news[key] = req.body[key];
+      }
+    }
+
+    await news.save();
+    return res.json({ ...news.toObject(), id: news._id });
+  } catch (error) {
+    console.error('updateNews error:', error);
+    return res.status(500).json({ message: 'Error actualizando noticia' });
   }
 };
 

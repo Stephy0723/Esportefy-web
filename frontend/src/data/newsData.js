@@ -6,14 +6,13 @@ export const NEWS = [
       'ITLA eSports se consagro campeon en League of Legends, Valorant y Smash Bros Ultimate en la Copa Popular celebrada en Sambil, Santo Domingo.',
     category: 'Torneos',
     game: 'Multigame',
-    author: 'Mesa Editorial GLITCH GANG',
+    author: 'Redacción',
     date: '2025-06-15',
-    views: 0,
-    comments: 0,
+    views: 1332,
+    comments: 8,
     image:
       'https://images.unsplash.com/photo-1603810379657-7c147e6406a3?q=80&w=1600&auto=format&fit=crop',
-    featured: true,
-    details: [
+        details: [
       'ITLA eSports domino la Copa Universitaria Popular 2025 ganando League of Legends, Valorant y Super Smash Bros Ultimate, llevandose RD$80,000 por cada disciplina.',
       'UASD Gaming se llevo el titulo en Mobile Legends con un premio de RD$60,000, mientras que UNIBE eSports gano EA Sports FC25 con RD$25,000.',
       'El torneo repartio un total de RD$570,000 en premios en efectivo entre todas las disciplinas, con la final presencial en el Sambil de Santo Domingo.',
@@ -32,14 +31,13 @@ export const NEWS = [
       'La edicion 2023 de Claro Gaming se convirtio en el torneo de esports mas grande del Caribe, con final presencial en el Centro Olimpico Juan Pablo Duarte.',
     category: 'Torneos',
     game: 'Multigame',
-    author: 'Mesa Editorial GLITCH GANG',
+    author: 'Redacción',
     date: '2023-10-20',
-    views: 0,
-    comments: 0,
+    views: 4317,
+    comments: 24,
     image:
       'https://images.unsplash.com/photo-1576990049702-8418081b420e?q=80&w=1400&auto=format&fit=crop',
-    featured: true,
-    details: [
+        details: [
       'Claro Gaming 2023 conto con mas de 3,000 jugadores compitiendo en Valorant, Free Fire, League of Legends, Rocket League, Fortnite y Street Fighter VI.',
       'La final se celebro de forma presencial en el Centro Olimpico Juan Pablo Duarte con miles de espectadores tanto en el lugar como en linea.',
       'El evento repartio mas de RD$5,000,000 en premios incluyendo dinero en efectivo, equipos gaming y servicios de internet.',
@@ -57,10 +55,10 @@ export const NEWS = [
       'La primera gran edicion de Claro Gaming reunio a miles de jugadores en multiples titulos competitivos con premios millonarios.',
     category: 'Torneos',
     game: 'Multigame',
-    author: 'Sara Molina',
+    author: 'Redacción',
     date: '2022-10-15',
-    views: 0,
-    comments: 0,
+    views: 2421,
+    comments: 3,
     image:
       'https://images.unsplash.com/photo-1632017734927-48988a0efae7?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -79,14 +77,13 @@ export const NEWS = [
       'Saul "MenaRD" Mena se convierte en el primer y unico bicampeon de Capcom Cup, consolidando a RD como potencia en fighting games.',
     category: 'Competitivo',
     game: 'Multigame',
-    author: 'Mesa Editorial GLITCH GANG',
+    author: 'Redacción',
     date: '2023-02-19',
-    views: 0,
-    comments: 0,
+    views: 1702,
+    comments: 1,
     image:
       'https://images.unsplash.com/photo-1569409611450-fd401daea0f8?q=80&w=1400&auto=format&fit=crop',
-    featured: true,
-    details: [
+        details: [
       'MenaRD gano su primera Capcom Cup en diciembre de 2017, llevandose US$250,000 y poniendo a Republica Dominicana en el mapa mundial del FGC.',
       'En febrero de 2023, el circuito oficial de Capcom confirmo su victoria en Capcom Cup IX, convirtiendolo en el unico bicampeon en la historia del evento.',
       'Tambien gano el Blink Respawn 2019 localmente y fue campeon de Central America East 2022 en el Capcom Pro Tour.'
@@ -103,10 +100,10 @@ export const NEWS = [
       'El equipo BANDITS, con presencia dominicana en su roster, gana el campeonato mundial de SFL con premio de US$80,000.',
     category: 'Equipos',
     game: 'Multigame',
-    author: 'Victor Pena',
+    author: 'Redacción',
     date: '2024-02-24',
-    views: 0,
-    comments: 0,
+    views: 5097,
+    comments: 12,
     image:
       'https://images.unsplash.com/photo-1614738499301-d2eed34f7b11?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -125,10 +122,10 @@ export const NEWS = [
       'Bot Academy se llevo el titulo en Blink Respawn 2024 y 2025, consolidandose como el equipo dominante en Call of Duty Warzone en RD.',
     category: 'Competitivo',
     game: 'Multigame',
-    author: 'Nicolas Herrera',
+    author: 'Redacción',
     date: '2025-04-10',
-    views: 0,
-    comments: 0,
+    views: 3296,
+    comments: 46,
     image:
       'https://images.unsplash.com/photo-1636036704268-017faa3b6557?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -147,10 +144,10 @@ export const NEWS = [
       'Bryan De Los Santos se llevo la medalla de oro en Street Fighter 6 representando a Republica Dominicana en Arabia Saudita.',
     category: 'Eventos',
     game: 'Multigame',
-    author: 'Daniela Cruz',
+    author: 'Redacción',
     date: '2023-12-14',
-    views: 0,
-    comments: 0,
+    views: 1118,
+    comments: 14,
     image:
       'https://images.unsplash.com/photo-1598701452694-f91f3c48dffe?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -169,10 +166,10 @@ export const NEWS = [
       'Republica Dominicana gano la conferencia Norte y Centroamerica en el FIBA Esports Open III (NBA 2K21), derrotando a Estados Unidos.',
     category: 'Torneos',
     game: 'Multigame',
-    author: 'Leandro Acosta',
+    author: 'Redacción',
     date: '2021-05-09',
-    views: 0,
-    comments: 0,
+    views: 4078,
+    comments: 24,
     image:
       'https://images.unsplash.com/photo-1581852549708-72910bd52cff?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -191,10 +188,10 @@ export const NEWS = [
       'Carlos "Sonix" Perez, dominicano, gana GENESIS X3 en Super Smash Bros. Ultimate, sumando otro major tras su titulo en CEO 2022.',
     category: 'Competitivo',
     game: 'Multigame',
-    author: 'Mesa Editorial GLITCH GANG',
+    author: 'Redacción',
     date: '2026-02-16',
-    views: 0,
-    comments: 0,
+    views: 2473,
+    comments: 28,
     image:
       'https://images.unsplash.com/photo-1548003693-b55d51032288?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -213,10 +210,10 @@ export const NEWS = [
       'Torneos nacionales con premios millonarios y miles de participantes consolidan a Republica Dominicana como centro emergente del gaming competitivo en el Caribe.',
     category: 'Institucional',
     game: 'Multigame',
-    author: 'Mesa Editorial GLITCH GANG',
+    author: 'Redacción',
     date: '2025-08-01',
-    views: 0,
-    comments: 0,
+    views: 2242,
+    comments: 12,
     image:
       'https://images.unsplash.com/photo-1767455471543-055dbc6c6700?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -237,10 +234,10 @@ export const NEWS = [
       'El equipo ISKRA clasifico como seleccion dominicana de Mobile Legends: Bang Bang para el IESF WEC25, compitiendo contra 19 naciones.',
     category: 'Competitivo',
     game: 'Mobile Legends',
-    author: 'Mesa Editorial GLITCH GANG',
+    author: 'Redacción',
     date: '2025-06-15',
-    views: 0,
-    comments: 0,
+    views: 910,
+    comments: 5,
     image:
       'https://images.unsplash.com/photo-1558008258-ec20a83db196?q=80&w=1600&auto=format&fit=crop',
     details: [
@@ -259,10 +256,10 @@ export const NEWS = [
       'La Federacion Dominicana de Deportes Electronicos conformo la seleccion nacional 2022 con representantes en Street Fighter, Tekken, eFootball y mas.',
     category: 'Institucional',
     game: 'Multigame',
-    author: 'Victor Pena',
+    author: 'Redacción',
     date: '2022-06-15',
-    views: 0,
-    comments: 0,
+    views: 5001,
+    comments: 16,
     image:
       'https://images.unsplash.com/photo-1636036766419-4e0e3e628acc?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -281,10 +278,10 @@ export const NEWS = [
       'Fundado por MenaRD, Santo Domingo Tigers se ha convertido en pilar del ecosistema de fighting games en Republica Dominicana con BryanD entre sus filas.',
     category: 'Equipos',
     game: 'Multigame',
-    author: 'Nicolas Herrera',
+    author: 'Redacción',
     date: '2023-11-01',
-    views: 0,
-    comments: 0,
+    views: 2092,
+    comments: 8,
     image:
       'https://images.unsplash.com/photo-1768201493197-55a6f6ac414c?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -303,10 +300,10 @@ export const NEWS = [
       'Gerard Sarante, representante constante de RD desde 2022, gana la serie FDDE 2025 en eFootball y asegura su lugar en la escena competitiva.',
     category: 'Competitivo',
     game: 'Multigame',
-    author: 'Daniela Cruz',
+    author: 'Redacción',
     date: '2025-03-10',
-    views: 0,
-    comments: 0,
+    views: 2749,
+    comments: 5,
     image:
       'https://images.unsplash.com/photo-1558008258-be2e19614dda?q=80&w=1400&auto=format&fit=crop',
     details: [
@@ -325,10 +322,10 @@ export const NEWS = [
       'Organizaciones como Space Rabbit y Mezexis Esports son cantera de jugadores para la representacion nacional en LoL, Valorant y PUBG Mobile.',
     category: 'Equipos',
     game: 'Multigame',
-    author: 'Sara Molina',
+    author: 'Redacción',
     date: '2023-08-20',
-    views: 0,
-    comments: 0,
+    views: 1819,
+    comments: 15,
     image:
       'https://images.unsplash.com/photo-1693328295040-34eb9ae7bfc4?q=80&w=1400&auto=format&fit=crop',
     details: [

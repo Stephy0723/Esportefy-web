@@ -5,7 +5,7 @@ const STATS = [
   { label: 'Jugadores Activos', target: null, suffix: '', icon: 'bx-user' },
   { label: 'Torneos Completados', target: null, suffix: '', icon: 'bx-trophy' },
   { label: 'Equipos Creados', target: null, suffix: '', icon: 'bx-group' },
-  { label: 'Juegos Soportados', target: 3, suffix: '', icon: 'bx-joystick' },
+  { label: 'Juegos Soportados', target: null, suffix: '', icon: 'bx-joystick' },
 ];
 
 /* ── Hook: animated count-up ── */

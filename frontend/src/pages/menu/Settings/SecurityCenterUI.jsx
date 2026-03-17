@@ -117,109 +117,37 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com', isVerified = false 
 
   // ── Change Password ──
   const handleChangePassword = useCallback(async () => {
-    if (!passwordData.current || !passwordData.new) {
-      addToast('Completa todos los campos', 'error'); return;
-    }
-    if (passwordData.new !== passwordData.confirm) {
-      addToast('Las contraseñas no coinciden', 'error'); return;
-    }
-    if (passwordData.new.length < 8) {
-      addToast('La nueva contraseña debe tener al menos 8 caracteres', 'error'); return;
-    }
-    setLoadingPassword(true);
-    try {
-      await axios.post(`${API_URL}/api/security/change-password`, {
-        currentPassword: passwordData.current,
-        newPassword: passwordData.new,
-      }, authHeaders());
-      addToast('Contraseña actualizada correctamente', 'success');
-      setShowPasswordForm(false);
-      setPasswordData({ current: '', new: '', confirm: '' });
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Error al cambiar contraseña', 'error');
-    } finally { setLoadingPassword(false); }
-  }, [passwordData, addToast]);
+    addToast('Próximamente', 'info');
+  }, [addToast]);
 
   // ── 2FA: Generate ──
   const handleGenerate2FA = useCallback(async () => {
-    setLoading2FA(true);
-    try {
-      const res = await axios.post(`${API_URL}/api/security/2fa/generate`, {}, authHeaders());
-      setQrData(res.data);
-      setTotpCode('');
-      setBackupCodes(null);
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Error al generar 2FA', 'error');
-    } finally { setLoading2FA(false); }
+    addToast('Próximamente', 'info');
   }, [addToast]);
 
   // ── 2FA: Verify Setup ──
   const handleVerify2FA = useCallback(async () => {
-    if (!totpCode || totpCode.length < 6) {
-      addToast('Ingresa el código de 6 dígitos', 'error'); return;
-    }
-    setLoading2FA(true);
-    try {
-      const res = await axios.post(`${API_URL}/api/security/2fa/verify-setup`, { token: totpCode }, authHeaders());
-      setBackupCodes(res.data.backupCodes);
-      setTwoFA(prev => ({ ...prev, enabled: true, enabledAt: new Date().toISOString(), backupCodesRemaining: 10 }));
-      setQrData(null);
-      setTotpCode('');
-      addToast('2FA activado correctamente', 'success');
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Código incorrecto', 'error');
-    } finally { setLoading2FA(false); }
-  }, [totpCode, addToast]);
+    addToast('Próximamente', 'info');
+  }, [addToast]);
 
   // ── 2FA: Disable ──
   const handleDisable2FA = useCallback(async () => {
-    if (!disablePassword) { addToast('Ingresa tu contraseña', 'error'); return; }
-    setLoading2FA(true);
-    try {
-      await axios.post(`${API_URL}/api/security/2fa/disable`, { password: disablePassword }, authHeaders());
-      setTwoFA({ enabled: false, enabledAt: null, backupCodesRemaining: 0 });
-      setShowDisable2FA(false);
-      setDisablePassword('');
-      addToast('2FA desactivado', 'success');
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Error al desactivar 2FA', 'error');
-    } finally { setLoading2FA(false); }
-  }, [disablePassword, addToast]);
+    addToast('Próximamente', 'info');
+  }, [addToast]);
 
   // ── Sessions ──
   const handleRevokeSession = useCallback(async (sessionId) => {
-    try {
-      await axios.delete(`${API_URL}/api/security/sessions/${sessionId}`, authHeaders());
-      setSessions(prev => prev.filter(s => s.id !== sessionId));
-      addToast('Sesión cerrada', 'success');
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Error al cerrar sesión', 'error');
-    }
+    addToast('Próximamente', 'info');
   }, [addToast]);
 
   const handleRevokeAllOther = useCallback(async () => {
-    setLoadingSessions(true);
-    try {
-      const res = await axios.delete(`${API_URL}/api/security/sessions`, authHeaders());
-      setSessions(prev => prev.filter(s => s.isCurrent));
-      addToast(res.data.message, 'success');
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Error', 'error');
-    } finally { setLoadingSessions(false); }
+    addToast('Próximamente', 'info');
   }, [addToast]);
 
   // ── Delete Account ──
   const handleDeleteAccount = useCallback(async () => {
-    if (!deletePassword) { addToast('Ingresa tu contraseña', 'error'); return; }
-    setLoadingDelete(true);
-    try {
-      await axios.delete(`${API_URL}/api/security/account`, { ...authHeaders(), data: { password: deletePassword } });
-      addToast('Cuenta eliminada. Serás redirigido.', 'success');
-      setTimeout(() => { window.location.href = '/'; }, 2000);
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Error al eliminar cuenta', 'error');
-    } finally { setLoadingDelete(false); }
-  }, [deletePassword, addToast]);
+    addToast('Próximamente', 'info');
+  }, [addToast]);
 
   return (
     <section className="sc">

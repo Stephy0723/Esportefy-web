@@ -70,7 +70,6 @@ import SponsorPage from './pages/menu/Roles/SponsorPage';
 import AnalystPage from './pages/menu/Roles/AnalystPage';
 import AdminPanel from './pages/menu/Admin/AdminPanel';
 
-const WelcomeTrigger = () => null;
 
 const MainLayout = () => {
   const [isClosed, setIsClosed] = useState(true);
@@ -193,7 +192,6 @@ function App() {
   return (
     <NotificationProvider>
       <ToastContainer />
-      <WelcomeTrigger />
 
       <BrowserRouter>
         <AppRouterContent />

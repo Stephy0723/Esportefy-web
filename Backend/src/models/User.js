@@ -14,6 +14,17 @@ const UserSchema = new mongoose.Schema({
     teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    friendRequests: {
+        sent: [{
+            to: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            createdAt: { type: Date, default: Date.now }
+        }],
+        received: [{
+            from: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            createdAt: { type: Date, default: Date.now }
+        }]
+    },
     isOrganizer: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
     isBanned: { type: Boolean, default: false },
@@ -389,17 +400,63 @@ UserSchema.index(
     }
 );
 
+// Country → 2-letter code mapping for entity IDs
+const COUNTRY_CODES = {
+    'Antigua y Barbuda': 'AG', 'Argentina': 'AR', 'Bahamas': 'BS', 'Barbados': 'BB',
+    'Belice': 'BZ', 'Bolivia': 'BO', 'Brasil': 'BR', 'Canadá': 'CA',
+    'Chile': 'CL', 'Colombia': 'CO', 'Costa Rica': 'CR', 'Cuba': 'CU',
+    'Dominica': 'DM', 'Ecuador': 'EC', 'El Salvador': 'SV', 'Estados Unidos': 'US',
+    'Granada': 'GD', 'Guatemala': 'GT', 'Guyana': 'GY', 'Haití': 'HT',
+    'Honduras': 'HN', 'Jamaica': 'JM', 'México': 'MX', 'Nicaragua': 'NI',
+    'Panamá': 'PA', 'Paraguay': 'PY', 'Perú': 'PE', 'Puerto Rico': 'PR',
+    'República Dominicana': 'DO', // ISO code for Dominican Republic
+    'San Cristóbal y Nieves': 'KN', 'San Vicente y las Granadinas': 'VC',
+    'Santa Lucía': 'LC', 'Surinam': 'SR', 'Trinidad y Tobago': 'TT',
+    'Uruguay': 'UY', 'Venezuela': 'VE'
+};
+
 UserSchema.pre('validate', async function(next) {
     if (this.userCode) return next();
 
     const UserModel = this.constructor;
+    let countryCode = COUNTRY_CODES[this.country];
+    
+    // Si el país no está mapeado, se notifica a los admins
+    if (!countryCode) {
+        countryCode = 'XX'; // Código por defecto para países no reconocidos
+
+        // Notificar a administradores asincrónicamente
+        UserModel.updateMany(
+            { isAdmin: true },
+            {
+                $push: {
+                    notifications: {
+                        type: 'system_alert',
+                        category: 'system',
+                        title: 'País no reconocido en registro',
+                        source: 'Sistema',
+                        message: `Un nuevo usuario intentó registrarse con el país "${this.country}", el cual no está mapeado. El ID asignado usará "XX".`,
+                        visuals: { icon: 'bx-error-alt', color: '#ff4d4d', glow: true },
+                        createdAt: new Date()
+                    }
+                }
+            }
+        ).catch(err => console.error("Error notificando a admins sobre país irreconocible:", err));
+    }
+
+    // Count how many users are registered from this country for the sequential suffix
+    const countryCount = await UserModel.countDocuments({
+        userCode: { $regex: new RegExp(`-${countryCode}\\d+$`) }
+    });
+    const seqNum = String(countryCount + 1).padStart(2, '0');
+
     let isUnique = false;
     let attempts = 0;
 
     while (!isUnique && attempts < 40) {
         attempts += 1;
         const randomDigits = Math.floor(100000 + Math.random() * 900000);
-        const candidate = `${randomDigits}`;
+        const candidate = `${randomDigits}-${countryCode}${seqNum}`;
         const existing = await UserModel.findOne({ userCode: candidate }).select('_id').lean();
         if (!existing) {
             this.userCode = candidate;

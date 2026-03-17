@@ -20,9 +20,12 @@ const TABS = [
     { key: 'settings', icon: 'bx-cog', label: 'Ajustes' },
 ];
 
-const ViewTeamModal = ({ isOpen, onClose, team, currentUser, onTeamUpdated, initialInviteCode, initialTab = 'info' }) => {
-    if (!isOpen || !team) return null;
+const ViewTeamModal = (props) => {
+    if (!props.isOpen || !props.team) return null;
+    return <ViewTeamModalInner {...props} />;
+};
 
+const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated, initialInviteCode, initialTab = 'info' }) => {
     /* ── helpers ── */
     const normalizeGame = (v) => String(v || '').trim().toLowerCase();
     const isRiotGame = (g) => isSupportedRiotGame(g);

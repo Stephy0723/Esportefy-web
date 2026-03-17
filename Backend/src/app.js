@@ -18,6 +18,7 @@ import communityRoutes from './routes/community.routes.js';
 import universityRoutes from './routes/university.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import securityRoutes from './routes/security.routes.js';
+import friendsRoutes from './routes/friends.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +31,6 @@ if (fs.existsSync(backendEnvPath)) {
 }
 
 export const dbReady = connectDB();
-startMlbbMailQueueWorker();
 
 const app = express();
 const uploadsDir = path.resolve(__dirname, '../uploads');
@@ -108,6 +108,7 @@ app.use('/api/community', communityRoutes);
 app.use('/api/university', universityRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/security', securityRoutes);
+app.use('/api/friends', friendsRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {

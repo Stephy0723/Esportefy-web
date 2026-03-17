@@ -14,12 +14,19 @@ import bgWhite from '../../assets/images/login-black.png';
 import bgBlack from '../../assets/images/login-white.png';
 
 
+
+
+
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
   // 3. OBTENER EL VALOR DEL TEMA (isDarkMode)
   const { isDarkMode } = useTheme(); 
+  // 2FA STATES
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [twoFactorUserId, setTwoFactorUserId] = useState(null);
 
   // ESTADOS
   const [showPassword, setShowPassword] = useState(false); 
@@ -36,82 +43,125 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
+
     try {
-            const endpointCandidates = [
-                `${API_URL}/api/auth/login`,
-                `${API_URL}/auth/login`,
-                `${API_URL}/login`
-            ];
-
-            let response = null;
-            let lastError = null;
-            for (const endpoint of endpointCandidates) {
-                try {
-                    response = await axios.post(endpoint, {
-                        email,
-                        password,
-                        rememberMe
-                    }, {
-                        timeout: 15000
-                    });
-                    break;
-                } catch (candidateError) {
-                    const status = Number(candidateError?.response?.status || 0);
-                    lastError = candidateError;
-                    if (status === 404) continue;
-                    throw candidateError;
-                }
-            }
-
-            if (!response) throw lastError || new Error('No se encontró endpoint de login');
-
-            const { user, token, session } = response.data || {};
-            const hasSession = Boolean(token) || Boolean(session);
-            if (!user || !hasSession) {
-                throw new Error('Respuesta de login inválida');
-            }
-            
-            // Persistencia unificada de sesión (remember me => localStorage, caso contrario => sessionStorage)
-            persistAuthSession({
-                user,
-                token: token || 'cookie-session',
-                rememberMe
+        if (requiresTwoFactor) {
+            const response = await axios.post(`${API_URL}/api/security/2fa/verify-login`, {
+                userId: twoFactorUserId,
+                token: twoFactorToken
             });
-            
-            window.dispatchEvent(new Event('user-update'));
 
-            if (pendingGameJoinId) {
-                try {
-                    await joinGameHub(pendingGameJoinId);
-                } catch (_) {
-                    // If the join fails, we still allow login to complete.
+            if (response.data.verified) {
+                const { user, token } = response.data;
+                
+                persistAuthSession({
+                    user,
+                    token: token || 'cookie-session',
+                    rememberMe
+                });
+                
+                window.dispatchEvent(new Event('user-update'));
+                
+                if (pendingGameJoinId) {
+                    try { await joinGameHub(pendingGameJoinId); } catch (_) {}
                 }
-            }
 
-            if (redirectPath) {
-                navigate(redirectPath, { replace: true });
+                if (redirectPath) {
+                    navigate(redirectPath, { replace: true });
+                } else {
+                    navigate('/dashboard');
+                }
+                return;
+            } else {
+                setError('Código de verificación incorrecto.');
+                setSubmitting(false);
                 return;
             }
-
-            navigate('/dashboard');
-
-        } catch (err) {
-            const isTimeout = err.code === 'ECONNABORTED';
-            const message = err.response?.data?.message
-                || (isTimeout ? 'El servidor tardó demasiado en responder. Revisa backend y MongoDB.' : '')
-                || err.message
-                || 'Error al conectar con el servidor';
-            setError(message);
-        } finally {
-            setSubmitting(false);
         }
-    };
+
+        const endpointCandidates = [
+            `${API_URL}/api/auth/login`,
+            `${API_URL}/auth/login`,
+            `${API_URL}/login`
+        ];
+
+        let response = null;
+        let lastError = null;
+        for (const endpoint of endpointCandidates) {
+            try {
+                response = await axios.post(endpoint, {
+                    email,
+                    password,
+                    rememberMe,
+                    twoFactorCode: twoFactorToken // Enviar código si ya lo tiene
+                }, {
+                    timeout: 15000
+                });
+                break;
+            } catch (candidateError) {
+                const status = Number(candidateError?.response?.status || 0);
+                lastError = candidateError;
+                if (status === 404) continue;
+                throw candidateError;
+            }
+        }
+
+        if (!response) throw lastError || new Error('No se encontró endpoint de login');
+
+        // Handle 2FA Requirement
+        if (response.data.requiresTwoFactor) {
+            setRequiresTwoFactor(true);
+            setTwoFactorUserId(response.data.userId);
+            setSubmitting(false);
+            setError('Se requiere autenticación de dos factores. Por favor, introduce el código.');
+            return;
+        }
+
+        const { user, token, session } = response.data || {};
+        const hasSession = Boolean(token) || Boolean(session);
+        if (!user || !hasSession) {
+            throw new Error('Respuesta de login inválida');
+        }
+        
+        // Persistencia unificada de sesión (remember me => localStorage, caso contrario => sessionStorage)
+        persistAuthSession({
+            user,
+            token: token || 'cookie-session',
+            rememberMe
+        });
+        
+        window.dispatchEvent(new Event('user-update'));
+
+        if (pendingGameJoinId) {
+            try {
+                await joinGameHub(pendingGameJoinId);
+            } catch (_) {
+                // If the join fails, we still allow login to complete.
+            }
+        }
+
+        if (redirectPath) {
+            navigate(redirectPath, { replace: true });
+            return;
+        }
+
+        navigate('/dashboard');
+
+    } catch (err) {
+        const isTimeout = err.code === 'ECONNABORTED';
+        const message = err.response?.data?.message
+            || (isTimeout ? 'El servidor tardó demasiado en responder. Revisa backend y MongoDB.' : '')
+            || err.message
+            || 'Error al conectar con el servidor';
+        setError(message);
+    } finally {
+        setSubmitting(false);
+    }
+  };
 
   return (
     // 4. AGREGAR CLASE 'light-mode' SI NO ES MODO OSCURO (Para el formulario)
     <div className={`auth-container-split auth-container-split--login ${!isDarkMode ? 'light-mode' : ''}`}>
-      
-      {/* SECCIÓN IZQUIERDA: FORMULARIO */}
       <div className="auth-left">
         <div className="auth-nav">
       <span className="brand">
@@ -120,6 +170,12 @@ const Login = () => {
             <div className="nav-links">
                 <Link to="/">Inicio</Link>
                 <Link to="/register" state={location.state} className="active">Unirse</Link>
+            </div>
+        </div>
+
+        <div className="auth-content">
+            {/* TEXTOS */}
+            <div className="header-text">
             </div>
         </div>
 
@@ -135,59 +191,103 @@ const Login = () => {
             {error && <div style={{color: '#ff4d4d', marginBottom: '15px', fontSize: '0.9rem'}}>{error}</div>}
 
             <form onSubmit={handleSubmit}>
-                {/* CAMPO EMAIL */}
-                <div className="input-row">
-                    <label>Email Profesional</label>
-                    <div className="input-wrapper">
-                        <input 
-                            type="email" 
-                            placeholder="usuario@team.com" 
-                            value={email}                       
-                            onChange={(e) => setEmail(e.target.value)}
-                            autoComplete="email"
-                            required 
-                        />
-                        <i className='bx bx-envelope'></i>
-                    </div>
-                </div>
+                {!requiresTwoFactor ? (
+                    <>
+                        {/* CAMPO EMAIL */}
+                        <div className="input-row">
+                            <label>Email Profesional</label>
+                            <div className="input-wrapper">
+                                <input 
+                                    type="email" 
+                                    placeholder="usuario@team.com" 
+                                    value={email}                       
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    autoComplete="email"
+                                    required 
+                                />
+                                <i className='bx bx-envelope'></i>
+                            </div>
+                        </div>
 
-                {/* CAMPO CONTRASEÑA */}
-                <div className="input-row">
-                    <label>Contraseña</label>
-                    <div className="input-wrapper">
-                        <input 
-                            type={showPassword ? "text" : "password"} 
-                            placeholder="••••••••" 
-                            value={password}                  
-                            onChange={(e) => setPassword(e.target.value)} 
-                            autoComplete="current-password"
-                            required 
-                        />
-                        <i 
-                            className={`bx ${showPassword ? 'bx-show' : 'bx-hide'} toggle-pass`}
-                            onClick={() => setShowPassword(!showPassword)}
-                            title={showPassword ? "Ocultar" : "Mostrar"}
-                        ></i>
-                    </div>
-                </div>
+                        {/* CAMPO CONTRASEÑA */}
+                        <div className="input-row">
+                            <label>Contraseña</label>
+                            <div className="input-wrapper">
+                                <input 
+                                    type={showPassword ? "text" : "password"} 
+                                    placeholder="••••••••" 
+                                    value={password}                  
+                                    onChange={(e) => setPassword(e.target.value)} 
+                                    autoComplete="current-password"
+                                    required 
+                                />
+                                <i 
+                                    className={`bx ${showPassword ? 'bx-show' : 'bx-hide'} toggle-pass`}
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    title={showPassword ? "Ocultar" : "Mostrar"}
+                                ></i>
+                            </div>
+                        </div>
 
-                {/* OPCIONES */}
-                <div className="options-row">
-                    <label className="remember-me">
-                        <input 
-                            type="checkbox" 
-                            checked={rememberMe}
-                            onChange={(e) => setRememberMe(e.target.checked)}
-                        />
-                        <span>Mantener sesión iniciada</span>
-                    </label>
-                    <Link to="/reset-password" className="forgot-link">¿Recuperar cuenta?</Link>
-                </div>
+                        {/* CAMPO 2FA (Factor de Autenticación) */}
+                        <div className="input-row">
+                            <label>Seguridad (2FA)</label>
+                            <div className="input-wrapper">
+                                <input 
+                                    type="text" 
+                                    placeholder="000000 (Opcional)" 
+                                    value={twoFactorToken}                       
+                                    onChange={(e) => setTwoFactorToken(e.target.value)}
+                                    autoComplete="one-time-code"
+                                />
+                                <i className='bx bx-shield-quarter'></i>
+                            </div>
+                        </div>
+
+                        {/* OPCIONES */}
+                        <div className="options-row">
+                            <label className="remember-me">
+                                <input 
+                                    type="checkbox" 
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                />
+                                <span>Mantener sesión iniciada</span>
+                            </label>
+                            <Link to="/reset-password" className="forgot-link">¿Recuperar cuenta?</Link>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* CAMPO 2FA */}
+                        <div className="input-row">
+                            <label>Código de Verificación (2FA)</label>
+                            <div className="input-wrapper">
+                                <input 
+                                    type="text" 
+                                    placeholder="000000" 
+                                    value={twoFactorToken}                       
+                                    onChange={(e) => setTwoFactorToken(e.target.value)}
+                                    autoComplete="one-time-code"
+                                    required 
+                                />
+                                <i className='bx bx-shield-quarter'></i>
+                            </div>
+                            <p style={{fontSize: '0.8rem', color: '#888', marginTop: '5px'}}>
+                                Abre tu aplicación de autenticación para obtener el código.
+                            </p>
+                        </div>
+                        
+                        <div onClick={() => setRequiresTwoFactor(false)} style={{cursor: 'pointer', color: '#8EDB15', fontSize: '0.9rem', marginBottom: '15px'}}>
+                            ← Volver al login normal
+                        </div>
+                    </>
+                )}
 
                 {/* BOTÓN Y FOOTER */}
                 <div className="form-actions">
                     <button type="submit" className="btn-primary" disabled={submitting}>
-                        {submitting ? 'ACCEDIENDO...' : 'ACCEDER A LA PLATAFORMA'}
+                        {submitting ? 'ACCEDIENDO...' : (requiresTwoFactor ? 'VERIFICAR Y ENTRAR' : 'ACCEDER A LA PLATAFORMA')}
                     </button>
                 </div>
                 

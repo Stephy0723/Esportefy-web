@@ -5,7 +5,24 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { generateSecret, generateURI, verifySync } from 'otplib';
 import QRCode from 'qrcode';
+import jwt from 'jsonwebtoken';
 import { recordActivity } from '../services/activityLogger.js';
+
+// Auth Constants (Sync with auth.controller.js)
+const AUTH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const AUTH_TOKEN_REMEMBER_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
+const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || 'csrf_token';
+
+const buildAuthCookieOptions = (ttlMs) => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: ttlMs,
+    path: '/'
+});
+
+const generateCsrfToken = () => crypto.randomBytes(32).toString('hex');
 
 const SALT_ROUNDS = 10;
 
@@ -189,7 +206,41 @@ export const verify2FALogin = async (req, res) => {
       return res.status(401).json({ message: 'Código incorrecto.' });
     }
 
-    res.json({ verified: true });
+    // Generate Session (Same as login)
+    const jti = crypto.randomUUID();
+    const sessionTtlMs = AUTH_TOKEN_TTL_MS; // Default to standard TTL for 2FA
+    const sessionTtlSeconds = Math.floor(sessionTtlMs / 1000);
+    
+    const sessionToken = jwt.sign(
+        { id: user._id, jti },
+        process.env.JWT_SECRET,
+        { expiresIn: sessionTtlSeconds }
+    );
+    const csrfToken = generateCsrfToken();
+
+    await Session.create({
+        userId: user._id,
+        jti,
+        userAgent: req.headers?.['user-agent'] || '',
+        ip: req.ip || '',
+        expiresAt: new Date(Date.now() + sessionTtlMs),
+    });
+
+    await recordActivity({ userId: user._id, event: 'login_2fa', req });
+
+    res.cookie(AUTH_COOKIE_NAME, sessionToken, buildAuthCookieOptions(sessionTtlMs));
+    res.cookie(CSRF_COOKIE_NAME, csrfToken, buildAuthCookieOptions(sessionTtlMs));
+
+    res.json({ 
+        verified: true,
+        session: true,
+        token: sessionToken,
+        user: {
+            id: user._id,
+            username: user.username,
+            userName: user.username
+        }
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error al verificar 2FA.' });
   }

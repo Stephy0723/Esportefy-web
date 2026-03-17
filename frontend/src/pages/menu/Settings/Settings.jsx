@@ -15,7 +15,7 @@ import { useEffect } from "react";
 import SecurityCenterUI from './SecurityCenterUI';
 import PageHud from '../../../components/PageHud/PageHud';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
-import { getAuthToken } from '../../../utils/authSession';
+import { getAuthToken, cacheAuthUser } from '../../../utils/authSession';
 
 // Animation variants
 const pageVariants = {

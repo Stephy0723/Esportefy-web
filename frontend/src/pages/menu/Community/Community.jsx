@@ -105,14 +105,6 @@ const HeroBanner = ({ onExplore }) => {
                         <i className='bx bxs-rocket'></i>
                         <span>Explorar</span>
                     </motion.button>
-                    <motion.button 
-                        className="cm-hero__btn cm-hero__btn--secondary"
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <i className='bx bxl-discord-alt'></i>
-                        <span>Discord</span>
-                    </motion.button>
                 </div>
                 <div className="cm-hero__dots">
                     {heroes.map((_, i) => (
@@ -704,13 +696,7 @@ const TrendingSidebar = () => (
 );
 
 const ActiveMembers = () => {
-    const members = [
-        { name: 'NexusKing', level: 'Pro', color: 'var(--primary)', rank: 'Diamond' },
-        { name: 'ProGamer_XD', level: 'Elite', color: '#a8e048', rank: 'Master' },
-        { name: 'TeamAlpha', level: 'Veterano', color: '#6bb30a', rank: 'Gold' },
-        { name: 'ClipMaster', level: 'Rising', color: 'var(--primary-hover)', rank: 'Platinum' },
-        { name: 'ShadowStrike', level: 'Pro', color: 'var(--primary)', rank: 'Diamond' },
-    ];
+    const members = [];
 
     return (
         <motion.aside
@@ -730,7 +716,7 @@ const ActiveMembers = () => {
                 <h3>Miembros Activos</h3>
                 <span className="cm-active-members__count">
                     <span className="cm-active-members__count-dot" />
-                    23 online
+                    0 online
                 </span>
             </div>
             <div className="cm-active-members__list">

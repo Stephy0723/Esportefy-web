@@ -11,6 +11,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { verifySync } from 'otplib';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -19,6 +20,7 @@ import { normalizeCommunityGameIds } from '../utils/communityGames.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
 import { recordActivity } from '../services/activityLogger.js';
 import Session from '../models/Session.js';
+import { sendRoleApplicationMail } from '../services/roleMailService.js';
 
 const parseDeviceLabel = (ua = '') => {
     const s = String(ua);
@@ -633,15 +635,28 @@ export const login = async (req, res) => {
 
         // 3. Check if 2FA is enabled
         if (user.twoFactorEnabled) {
-            return res.status(200).json({
-                requiresTwoFactor: true,
-                userId: user._id,
-            });
+            const twoFactorCode = String(req.body.twoFactorCode || req.body.twoFactorToken || '').trim();
+            
+            // If no code provided, ask for it
+            if (!twoFactorCode) {
+                return res.status(200).json({
+                    requiresTwoFactor: true,
+                    userId: user._id,
+                    message: 'Se requiere factor de seguridad (2FA).'
+                });
+            }
+
+            // Verify the code
+            const isValid = verifySync({ token: twoFactorCode, secret: user.twoFactorSecret })?.valid;
+            if (!isValid) {
+                return res.status(401).json({ message: 'Código de seguridad incorrecto.' });
+            }
+            // If valid, proceed to session generation
         }
 
         // 4. Generate Token with jti for session tracking
         const jti = crypto.randomUUID();
-        const token = jwt.sign(
+        const authToken = jwt.sign(
             { id: user._id, jti },
             process.env.JWT_SECRET,
             { expiresIn: sessionTtlSeconds }
@@ -662,12 +677,12 @@ export const login = async (req, res) => {
 
         await recordActivity({ userId: user._id, event: 'login', req });
 
-        res.cookie(AUTH_COOKIE_NAME, token, buildAuthCookieOptions(sessionTtlMs));
+        res.cookie(AUTH_COOKIE_NAME, authToken, buildAuthCookieOptions(sessionTtlMs));
         res.cookie(CSRF_COOKIE_NAME, csrfToken, buildCsrfCookieOptions(sessionTtlMs));
 
         res.status(200).json({
             session: true,
-            token,
+            token: authToken,
             rememberMe: useRememberSession,
             expiresInSeconds: sessionTtlSeconds,
             user: {
@@ -2595,3 +2610,4 @@ export const adminRespondSupportTicket = async (req, res) => {
         res.status(500).json({ message: 'Error al responder el ticket.' });
     }
 };
+

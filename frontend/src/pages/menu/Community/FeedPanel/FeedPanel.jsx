@@ -9,38 +9,7 @@ const GAME_OPTIONS = [
     { id: 'mlbb', name: 'Mobile Legends', color: '#00d2ff' },
 ];
 
-const DEMO_POSTS = [
-    {
-        id: 1, author: 'NexusKing', avatar: 'N', time: 'Hace 2h',
-        game: { id: 'valorant', name: 'Valorant', color: '#ff4655' },
-        content: '¿Alguien mas siente que el nuevo agente esta demasiado roto? Literalmente 1v5 en ranked.',
-        images: ['https://via.placeholder.com/600x340/1a1a2e/ff4655?text=CLUTCH+ACE'],
-        likes: 142, comments: 38, shares: 12, liked: false,
-    },
-    {
-        id: 2, author: 'ProGamer_XD', avatar: 'P', time: 'Hace 4h',
-        game: { id: 'lol', name: 'League of Legends', color: '#0ac8b9' },
-        content: 'Tier list actualizada para la nueva temporada. ¿Que opinan?',
-        poll: {
-            question: '¿Mejor rol para subir de rango?',
-            options: [
-                { text: 'Mid Lane', votes: 234 },
-                { text: 'Jungle', votes: 189 },
-                { text: 'ADC', votes: 98 },
-                { text: 'Support', votes: 156 },
-            ],
-            totalVotes: 677, voted: null,
-        },
-        likes: 89, comments: 52, shares: 23, liked: true,
-    },
-    {
-        id: 3, author: 'MLBB Coach', avatar: 'M', time: 'Hace 6h',
-        game: { id: 'mlbb', name: 'Mobile Legends', color: '#00d2ff' },
-        content: 'Nueva guía para rotaciones y prioridad de objetivos en MLBB. Revísenla antes del próximo scrim.',
-        document: { name: 'Guia_Rotaciones_MLBB.pdf', size: '1.8 MB', type: 'pdf' },
-        likes: 67, comments: 15, shares: 44, liked: false,
-    },
-];
+const DEMO_POSTS = [];
 
 const FEED_SAVED_POSTS_KEY = 'community_feed_saved_posts';
 const FEED_SHARE_COUNTS_KEY = 'community_feed_share_counts';

@@ -21,6 +21,7 @@ const shouldHandleAuthFailure = (error) => {
   const message = String(error?.response?.data?.message || '').toLowerCase();
 
   if (isPublicAuthEndpoint(requestUrl)) return false;
+  if (requestUrl.includes('/api/auth/profile')) return false;
   if (status === 401) return true;
   if (status !== 403) return false;
 

@@ -333,4 +333,26 @@ tournamentSchema.virtual('slotsFormatted').get(function () {
     return `${this.currentSlots}/${this.maxSlots}`;
 });
 
+tournamentSchema.pre('validate', async function(next) {
+    if (this.tournamentId) return next();
+
+    const TournamentModel = this.constructor;
+    let isUnique = false;
+    let attempts = 0;
+
+    while (!isUnique && attempts < 40) {
+        attempts += 1;
+        const randomDigits = Math.floor(100000 + Math.random() * 900000);
+        const candidate = `TOUR-${randomDigits}`;
+        const existing = await TournamentModel.findOne({ tournamentId: candidate }).select('_id').lean();
+        if (!existing) {
+            this.tournamentId = candidate;
+            isUnique = true;
+        }
+    }
+
+    if (!isUnique) return next(new Error('No se pudo generar un tournamentId único.'));
+    return next();
+});
+
 export default mongoose.model('Tournament', tournamentSchema);

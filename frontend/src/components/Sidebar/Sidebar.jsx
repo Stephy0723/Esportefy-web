@@ -5,10 +5,10 @@ import { useTheme, THEMES } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { resolveMediaUrl } from '../../utils/media';
 import { STATUS_LIST } from '../../data/defaultAvatars';
-import Toast from '../Toast/Toast';
 
-import logoWhite from '../../assets/Logo/logo-black.png';
-import logoBlack from '../../assets/Logo/logo-white.png';
+
+import logoWhite from '../../assets/Logo/logo-white.png';
+import logoBlack from '../../assets/Logo/logo-black.png';
 
 /* ─── Definición de rutas del menú ─── */
 const MAIN_LINKS = [
@@ -27,10 +27,10 @@ const EXTRA_LINKS = [
 ];
 
 const SOCIALS = [
-  { href: 'https://twitch.tv', icon: 'bxl-twitch', cls: 'twitch' },
-  { href: 'https://youtube.com', icon: 'bxl-youtube', cls: 'youtube' },
-  { href: 'https://facebook.com', icon: 'bxl-facebook', cls: 'facebook' },
-  { href: '#', icon: 'bxl-discord-alt', cls: 'discord' },
+  { href: 'https://twitch.tv/esportefy', icon: 'bxl-twitch', cls: 'twitch' },
+  { href: 'https://youtube.com/@esportefy', icon: 'bxl-youtube', cls: 'youtube' },
+  { href: 'https://facebook.com/esportefy', icon: 'bxl-facebook', cls: 'facebook' },
+  { href: 'https://discord.gg/esportefy', icon: 'bxl-discord-alt', cls: 'discord' },
 ];
 
 const Sidebar = ({ isClosed, setIsClosed }) => {
@@ -39,7 +39,6 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
   const [user, setUser] = useState(null);
-  const [toastVisible, setToastVisible] = useState(false);
   const sidebarRef = useRef(null);
 
   /* Leer usuario de localStorage */
@@ -88,9 +87,6 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
     </li>
   );
 
-  const showAccountCreatedToast = () => {
-    setToastVisible(true);
-  };
 
   return (
     <>
@@ -221,10 +217,12 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
           )}
 
           {/* Cerrar sesión */}
-          <button type="button" className="sb-logout" onClick={handleLogout}>
-            <i className="bx bx-log-out" />
-            <span className="sb-label">Cerrar Sesión</span>
-          </button>
+          {user && (
+            <button type="button" className="sb-logout" onClick={handleLogout}>
+              <i className="bx bx-log-out" />
+              <span className="sb-label">Cerrar Sesión</span>
+            </button>
+          )}
 
           {/* ─── THEME PICKER (2 grupos × 2 opciones) ─── */}
           {!isClosed ? (
@@ -291,12 +289,6 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
           )}
         </div>
       </nav>
-      <Toast
-        message="¡Tu cuenta ha sido creada exitosamente! Ya puedes iniciar sesión y comenzar a disfrutar de Esportefy."
-        show={toastVisible}
-        onClose={() => setToastVisible(false)}
-        duration={4000}
-      />
     </>
   );
 };
