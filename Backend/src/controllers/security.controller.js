@@ -228,8 +228,18 @@ export const verify2FALogin = async (req, res) => {
 
     await recordActivity({ userId: user._id, event: 'login_2fa', req });
 
+    // Clear any stale httpOnly csrf cookie before setting the new readable one
+    res.clearCookie(CSRF_COOKIE_NAME, { path: '/', httpOnly: true });
+    res.clearCookie(CSRF_COOKIE_NAME, { path: '/', httpOnly: false });
+
     res.cookie(AUTH_COOKIE_NAME, sessionToken, buildAuthCookieOptions(sessionTtlMs));
-    res.cookie(CSRF_COOKIE_NAME, csrfToken, buildAuthCookieOptions(sessionTtlMs));
+    res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: sessionTtlMs,
+        path: '/'
+    });
 
     res.json({ 
         verified: true,

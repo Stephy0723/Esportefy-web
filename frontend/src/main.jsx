@@ -29,12 +29,17 @@ const shouldHandleAuthFailure = (error) => {
     return false;
   }
 
+  // CSRF errors are NOT auth failures — the session is still valid,
+  // only the CSRF token is missing or stale. Don't clear the session.
+  if (message.includes('csrf')) {
+    return false;
+  }
+
   return (
     message.includes('token')
     || message.includes('sesion')
     || message.includes('sesión')
     || message.includes('acceso denegado')
-    || message.includes('csrf')
   );
 };
 
@@ -64,6 +69,20 @@ axios.interceptors.request.use((config) => {
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = Number(error?.response?.status || 0);
+    const message = String(error?.response?.data?.message || '').toLowerCase();
+    const config = error?.config;
+
+    // CSRF error: retry once with a fresh token from the cookie
+    if (status === 403 && message.includes('csrf') && config && !config._csrfRetry) {
+      config._csrfRetry = true;
+      const freshToken = getCsrfToken();
+      if (freshToken) {
+        config.headers[CSRF_HEADER_NAME] = freshToken;
+        return axios(config);
+      }
+    }
+
     if (shouldHandleAuthFailure(error)) {
       clearAuthSession();
       window.dispatchEvent(new Event('user-update'));

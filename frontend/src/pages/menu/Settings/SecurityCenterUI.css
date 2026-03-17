@@ -758,6 +758,46 @@
     flex: 1;
 }
 
+/* ═══════ 2FA NOTICE ═══════ */
+.sc-2fa-notice {
+    display: flex;
+    gap: 0.875rem;
+    padding: 1rem 1.25rem;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+}
+
+.sc-2fa-notice__icon {
+    color: #f59e0b;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.sc-2fa-notice strong {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #f59e0b;
+    margin-bottom: 0.35rem;
+}
+
+.sc-2fa-notice p {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.sc-2fa-notice p strong {
+    display: inline;
+    color: var(--text-main);
+    font-size: inherit;
+    margin: 0;
+}
+
 /* ═══════ INPUTS ═══════ */
 .sc-input {
     width: 100%;

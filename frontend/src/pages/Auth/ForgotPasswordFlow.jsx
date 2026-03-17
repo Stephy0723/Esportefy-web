@@ -56,7 +56,7 @@ const ForgotPasswordFlow = () => {
             await axios.post(`${API_URL}/api/auth/reset-password/${formData.token}`, {
                 password: formData.password
             });
-            alert("¡Contraseña actualizada con éxito!");
+            addToast("¡Contraseña actualizada con éxito!", "success");
             navigate('/login');
         } catch (err) {
             setError(err.response?.data?.message || 'Código incorrecto o expirado.');

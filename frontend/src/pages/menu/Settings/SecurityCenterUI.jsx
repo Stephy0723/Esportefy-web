@@ -117,37 +117,130 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com', isVerified = false 
 
   // ── Change Password ──
   const handleChangePassword = useCallback(async () => {
-    addToast('Próximamente', 'info');
-  }, [addToast]);
+    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+      return addToast('Completa todos los campos.', 'error');
+    }
+    if (passwordData.new !== passwordData.confirm) {
+      return addToast('Las contraseñas no coinciden.', 'error');
+    }
+    if (passwordData.new.length < 8) {
+      return addToast('La contraseña debe tener al menos 8 caracteres.', 'error');
+    }
+    setLoadingPassword(true);
+    try {
+      await axios.post(`${API_URL}/api/security/change-password`, {
+        currentPassword: passwordData.current,
+        newPassword: passwordData.new
+      }, authHeaders());
+      addToast('Contraseña actualizada correctamente.', 'success');
+      setShowPasswordForm(false);
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al cambiar contraseña.', 'error');
+    } finally {
+      setLoadingPassword(false);
+    }
+  }, [addToast, passwordData]);
 
   // ── 2FA: Generate ──
   const handleGenerate2FA = useCallback(async () => {
-    addToast('Próximamente', 'info');
+    setLoading2FA(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/security/2fa/generate`, {}, authHeaders());
+      setQrData(res.data);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al generar 2FA.', 'error');
+    } finally {
+      setLoading2FA(false);
+    }
   }, [addToast]);
 
   // ── 2FA: Verify Setup ──
   const handleVerify2FA = useCallback(async () => {
-    addToast('Próximamente', 'info');
-  }, [addToast]);
+    if (!totpCode || totpCode.length !== 6) {
+      return addToast('Introduce un código de 6 dígitos.', 'error');
+    }
+    setLoading2FA(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/security/2fa/verify-setup`, { token: totpCode }, authHeaders());
+      setTwoFA({ enabled: true, enabledAt: new Date().toISOString(), backupCodesRemaining: res.data.backupCodes?.length || 10 });
+      setBackupCodes(res.data.backupCodes);
+      setQrData(null);
+      setTotpCode('');
+      addToast('2FA activado correctamente.', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Código incorrecto.', 'error');
+    } finally {
+      setLoading2FA(false);
+    }
+  }, [addToast, totpCode]);
 
   // ── 2FA: Disable ──
   const handleDisable2FA = useCallback(async () => {
-    addToast('Próximamente', 'info');
-  }, [addToast]);
+    if (!disablePassword) {
+      return addToast('Introduce tu contraseña.', 'error');
+    }
+    setLoading2FA(true);
+    try {
+      await axios.post(`${API_URL}/api/security/2fa/disable`, { password: disablePassword }, authHeaders());
+      setTwoFA({ enabled: false, enabledAt: null, backupCodesRemaining: 0 });
+      setShowDisable2FA(false);
+      setDisablePassword('');
+      setBackupCodes(null);
+      addToast('2FA desactivado correctamente.', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al desactivar 2FA.', 'error');
+    } finally {
+      setLoading2FA(false);
+    }
+  }, [addToast, disablePassword]);
+
+  // ── Cancel Disable 2FA ──
+  const handleCancelDisable = useCallback(() => {
+    setShowDisable2FA(false);
+    setDisablePassword('');
+  }, []);
 
   // ── Sessions ──
   const handleRevokeSession = useCallback(async (sessionId) => {
-    addToast('Próximamente', 'info');
+    try {
+      await axios.delete(`${API_URL}/api/security/sessions/${sessionId}`, authHeaders());
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      addToast('Sesión cerrada.', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al cerrar sesión.', 'error');
+    }
   }, [addToast]);
 
   const handleRevokeAllOther = useCallback(async () => {
-    addToast('Próximamente', 'info');
+    setLoadingSessions(true);
+    try {
+      await axios.delete(`${API_URL}/api/security/sessions`, authHeaders());
+      setSessions(prev => prev.filter(s => s.isCurrent));
+      addToast('Todas las demás sesiones cerradas.', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al cerrar sesiones.', 'error');
+    } finally {
+      setLoadingSessions(false);
+    }
   }, [addToast]);
 
   // ── Delete Account ──
   const handleDeleteAccount = useCallback(async () => {
-    addToast('Próximamente', 'info');
-  }, [addToast]);
+    if (!deletePassword) {
+      return addToast('Introduce tu contraseña.', 'error');
+    }
+    setLoadingDelete(true);
+    try {
+      await axios.delete(`${API_URL}/api/security/account`, { ...authHeaders(), data: { password: deletePassword } });
+      addToast('Cuenta eliminada.', 'success');
+      window.location.href = '/login';
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Error al eliminar cuenta.', 'error');
+    } finally {
+      setLoadingDelete(false);
+    }
+  }, [addToast, deletePassword]);
 
   return (
     <section className="sc">
@@ -235,6 +328,20 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com', isVerified = false 
           </div>
         </div>
 
+        <div className="sc-2fa-notice">
+          <FaExclamationTriangle className="sc-2fa-notice__icon" />
+          <div>
+            <strong>Importante antes de activar 2FA</strong>
+            <p>
+              Al activar la autenticación de dos factores, cada vez que inicies sesión necesitarás tu contraseña
+              <strong> y </strong> un código temporal de 6 dígitos generado por tu app de autenticación
+              (Google Authenticator, Authy, etc.). Si pierdes acceso a tu app, solo podrás entrar con los
+              <strong> códigos de respaldo</strong> — guárdalos en un lugar seguro. Sin ellos, podrías perder
+              acceso permanente a tu cuenta.
+            </p>
+          </div>
+        </div>
+
         <div className="sc-grid sc-grid--3">
           <div className="sc-stat">
             <span className="sc-stat__label">Estado</span>
@@ -301,8 +408,7 @@ const SecurityCenterUI = ({ email = 'usuario@esportefy.com', isVerified = false 
             <button className="sc-btn sc-btn--danger sc-btn--sm" onClick={handleDisable2FA} disabled={loading2FA}>
               {loading2FA ? 'Procesando...' : 'Confirmar Desactivar'}
             </button>
-            <button className="sc-btn sc-btn--ghost sc-btn--sm"
-              onClick={() => { setShowDisable2FA(false); setDisablePassword(''); }}>Cancelar</button>
+            <button className="sc-btn sc-btn--ghost sc-btn--sm" onClick={handleCancelDisable}>Cancelar</button>
           </div>
         )}
 
