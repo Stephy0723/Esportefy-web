@@ -229,21 +229,6 @@ const Login = () => {
                             </div>
                         </div>
 
-                        {/* CAMPO 2FA (Factor de Autenticación) */}
-                        <div className="input-row">
-                            <label>Seguridad (2FA)</label>
-                            <div className="input-wrapper">
-                                <input 
-                                    type="text" 
-                                    placeholder="000000 (Opcional)" 
-                                    value={twoFactorToken}                       
-                                    onChange={(e) => setTwoFactorToken(e.target.value)}
-                                    autoComplete="one-time-code"
-                                />
-                                <i className='bx bx-shield-quarter'></i>
-                            </div>
-                        </div>
-
                         {/* OPCIONES */}
                         <div className="options-row">
                             <label className="remember-me">
