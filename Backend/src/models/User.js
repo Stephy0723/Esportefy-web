@@ -419,7 +419,22 @@ UserSchema.pre('validate', async function(next) {
     if (this.userCode) return next();
 
     const UserModel = this.constructor;
-    let countryCode = COUNTRY_CODES[this.country];
+    const normalizedCountry = String(this.country || '').trim();
+    let countryCode = COUNTRY_CODES[normalizedCountry];
+
+    // Fallback: case-insensitive and accent-insensitive lookup
+    if (!countryCode) {
+        const lower = normalizedCountry.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        for (const [name, code] of Object.entries(COUNTRY_CODES)) {
+            const nameLower = name.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (nameLower === lower || lower.includes(nameLower) || nameLower.includes(lower)) {
+                countryCode = code;
+                break;
+            }
+        }
+    }
     
     // Si el país no está mapeado, se notifica a los admins
     if (!countryCode) {

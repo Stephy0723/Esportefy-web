@@ -18,6 +18,12 @@ const MAIN_LINKS = [
   { to: '/tv', icon: 'bx-movie-play', label: 'GLITCH GANG TV' },
 ];
 
+const MOBILE_EXTRA_LINKS = [
+  { to: '/profile', icon: 'bx-user', label: 'Mi Perfil' },
+  { to: '/noticias', icon: 'bx-news', label: 'Noticias' },
+  { to: '/notifications', icon: 'bx-bell', label: 'Notificaciones' },
+];
+
 const EXTRA_LINKS = [
   { to: '/comunidad', icon: 'bx-world', label: 'Comunidad', section: 'SOCIAL' },
   { to: '/friends', icon: 'bx-user-plus', label: 'Amigos' },
@@ -122,6 +128,9 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
             {!isClosed && <p className="sb-section-title">MENÚ</p>}
             <ul className="sb-list">
               {MAIN_LINKS.map(renderLink)}
+            </ul>
+            <ul className="sb-list sb-mobile-only">
+              {MOBILE_EXTRA_LINKS.map(renderLink)}
             </ul>
           </div>
 

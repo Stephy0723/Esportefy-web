@@ -419,7 +419,7 @@ const Team = () => {
         })();
     }, []);
 
-    useEffect(() => {
+    useEffect(() => { const handleNavigationState = async () => {
         const navigationTeamId = location.state?.teamId;
         const shouldOpenManage = location.state?.openManage === true;
         const shouldOpenPreview = location.state?.openPreview === true;
@@ -430,9 +430,20 @@ const Team = () => {
             : '';
         const slotIndexFromState = Number(location.state?.slotIndex);
         const slotRoleFromState = String(location.state?.slotRole || '').trim();
-        if (!navigationTeamId || teams.length === 0) return;
+        if (!navigationTeamId) return;
 
-        const targetTeam = teams.find((team) => String(team._id) === String(navigationTeamId));
+        let targetTeam = teams.find((team) => String(team._id) === String(navigationTeamId));
+
+        // If the team isn't in the local list (e.g. invite from notifications), fetch it via invite code
+        if (!targetTeam && inviteCodeFromState) {
+            try {
+                const res = await axios.get(`${API_URL}/api/teams/invite/${inviteCodeFromState}`);
+                targetTeam = res.data;
+            } catch (_) {
+                return;
+            }
+            if (!targetTeam || String(targetTeam._id) !== String(navigationTeamId)) return;
+        }
         if (!targetTeam) return;
 
         setSelectedTeam(targetTeam);
@@ -474,6 +485,7 @@ const Team = () => {
         }
 
         navigate(location.pathname, { replace: true, state: {} });
+    }; handleNavigationState();
     }, [teams, location.state, location.pathname, navigate]);
 
     /* ── filter ── */

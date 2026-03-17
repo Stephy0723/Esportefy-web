@@ -838,6 +838,26 @@ export const toggleFollow = async (req, res) => {
         if (alreadyFollowing) {
             viewerFollowing.delete(targetUserId);
             targetFollowers.delete(String(viewer._id));
+
+            target.notifications = Array.isArray(target.notifications) ? target.notifications : [];
+            target.notifications.unshift({
+                type: 'social',
+                category: 'social',
+                title: 'Dejó de seguirte',
+                source: viewer.fullName || viewer.username || 'Jugador',
+                message: `${viewer.fullName || viewer.username || 'Un usuario'} dejó de seguirte.`,
+                status: 'unread',
+                createdAt: new Date(),
+                visuals: { icon: 'bx-user-minus', color: '#ff4d4d', glow: false },
+                meta: {
+                    userId: String(viewer._id),
+                    action: 'unfollow'
+                }
+            });
+
+            if (target.notifications.length > 80) {
+                target.notifications = target.notifications.slice(0, 80);
+            }
         } else {
             viewerFollowing.add(targetUserId);
             targetFollowers.add(String(viewer._id));

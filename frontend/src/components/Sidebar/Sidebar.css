@@ -664,8 +664,20 @@
   }
 }
 
+/* ─────────── MOBILE-ONLY LINKS ─────────── */
+.sb-mobile-only {
+  display: none !important;
+}
+
 /* ─────────── MOBILE ─────────── */
 @media (max-width: 768px) {
+  .sb-mobile-only {
+    display: flex !important;
+    flex-direction: column;
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
   .sidebar {
     transform: translateX(-100%);
     width: 280px;
