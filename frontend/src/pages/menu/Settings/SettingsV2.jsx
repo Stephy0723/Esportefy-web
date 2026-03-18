@@ -933,7 +933,7 @@ export default function SettingsV2() {
                                 </div>
                                 <div className="stv2-disclaimer__content">
                                     <p>
-                                        <strong>GLITCH GANG</strong> no está respaldado, afiliado, asociado ni patrocinado por 
+                                        <strong>GLITCH GANG by Steliant</strong> no está respaldado, afiliado, asociado ni patrocinado por 
                                         <strong> Riot Games, Inc.</strong>, <strong>Moonton</strong>, <strong>Valve Corporation</strong>, 
                                         <strong> Epic Games, Inc.</strong>, <strong>Microsoft</strong>, <strong>Sony Interactive Entertainment</strong>, 
                                         <strong> Twitch Interactive</strong> ni <strong>Google LLC</strong>.
@@ -1067,7 +1067,7 @@ export default function SettingsV2() {
                             <div className="stv2-form">
                                 <h3 className="stv2-section__subtitle">VALORANT / Riot Sign On</h3>
                                 <p className="stv2-section__desc">
-                                    Este flujo registra el consentimiento del jugador para VALORANT. No usa OTP por correo.
+                                    Este flujo registra el consentimiento del jugador para VALORANT mediante Riot Sign On. Al autorizarlo, permites que Esportefy use los datos necesarios de tu cuenta VALORANT para funciones competitivas y de elegibilidad. No usa OTP por correo.
                                 </p>
                                 <button
                                     className="stv2-btn stv2-btn--primary stv2-btn--lg"
@@ -1092,7 +1092,7 @@ export default function SettingsV2() {
                                 <i className="bx bx-arrow-left"></i> Volver a Conexiones
                             </button>
                             <h2 className="stv2-section__title">Vincular Mobile Legends</h2>
-                            <p className="stv2-section__desc">Ingresa tu User ID + Zone ID de MLBB para vincular tu cuenta.</p>
+                            <p className="stv2-section__desc">Ingresa tu User ID + Zone ID de MLBB para vincular tu cuenta. La mayoría de solicitudes pasan directo; solo escalamos a revisión si detectamos riesgo o cambios inusuales.</p>
 
                             {mlbbVerificationStatus === 'rejected' && (
                                 <div className="stv2-notice stv2-notice--danger">
@@ -1173,7 +1173,7 @@ export default function SettingsV2() {
 
                             <div className="stv2-notice stv2-notice--warning">
                                 <i className="bx bx-info-circle"></i>
-                                <p>La verificación de MLBB es interna y puede pasar por revisión manual.</p>
+                                <p>La verificación de MLBB es interna. Normalmente no pedimos pasos extra, pero algunas solicitudes pueden pasar a revisión manual para proteger cuentas ya reclamadas o con cambios sospechosos.</p>
                             </div>
                         </div>
                     </motion.div>

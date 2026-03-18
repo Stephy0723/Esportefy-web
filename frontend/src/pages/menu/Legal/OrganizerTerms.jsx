@@ -50,6 +50,7 @@ const OrganizerTerms = () => {
               <li>Publicar reglas completas, criterios de desempate y cronograma realista.</li>
               <li>Gestionar disputas con evidencia trazable y decisiones consistentes.</li>
               <li>Respetar politica de pagos y no desviar flujo financiero autorizado.</li>
+              <li>En torneos Riot: usar formatos tradicionales, evitar apuestas y cumplir las reglas de prize pool aplicables si hay inscripcion paga.</li>
               <li>En torneos MLBB beta: no afirmar afiliacion oficial con Moonton y operar sin apuestas.</li>
             </ul>
 
@@ -71,7 +72,7 @@ const OrganizerTerms = () => {
             <p>
               El organizador solo puede tratar datos de participantes para fines del torneo.
               Queda prohibido compartir listados, correos o identificadores con terceros no
-              autorizados por GLITCH GANG o por la normativa aplicable.
+              autorizados por GLITCH GANG by Steliant o por la normativa aplicable.
             </p>
             </section>
 
@@ -86,7 +87,7 @@ const OrganizerTerms = () => {
 
             <h2 className="legal-h"><i className="bx bx-image"></i>Licencia de contenido</h2>
             <p>
-              Conservas derechos sobre tu marca, pero otorgas licencia no exclusiva a GLITCH GANG
+              Conservas derechos sobre tu marca, pero otorgas licencia no exclusiva a GLITCH GANG by Steliant
               para mostrar nombre, arte y clips del torneo en promocion de la plataforma.
             </p>
 

@@ -101,6 +101,19 @@ const UserSchema = new mongoose.Schema({
         instagram: { type: String, default: '' },
         tiktok: { type: String, default: '' }
     },
+    mlbbClaimHistory: [{
+        _id: false,
+        playerId: { type: String, default: '' },
+        zoneId: { type: String, default: '' },
+        ign: { type: String, default: '' },
+        status: {
+            type: String,
+            enum: ['pending', 'verified_auto', 'verified_manual', 'rejected', 'unlinked'],
+            default: 'pending'
+        },
+        at: { type: Date, default: Date.now },
+        reviewedBy: { type: String, default: '' }
+    }],
 
     // --- Etapa 4: Credenciales ---
     username: { type: String, required: true, unique: true }, // unique para que no se repitan gamertags

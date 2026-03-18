@@ -11,6 +11,7 @@ import Footer from './components/Home/Footer';
 import Navbar from './components/Navbar/Navbar';
 import Sidebar from './components/Sidebar/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import AdminRoute from './components/ProtectedRoute/AdminRoute';
 
 import DocsPage from './pages/Docs/DocsPage';
 import Home from './pages/Home/Home';
@@ -152,7 +153,6 @@ const AppRouterContent = () => {
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/rankings" element={<Rankings />} />
-            <Route path="/stats" element={<StatsPage />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NewsDetail />} />
             <Route path="/organismos/:slug" element={<OrganismProfile />} />
@@ -178,6 +178,9 @@ const AppRouterContent = () => {
             <Route path="/group/:id" element={<GroupPage />} />
             <Route path="/organizer/:id" element={<OrganizerPage />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route element={<AdminRoute />}>
+              <Route path="/stats" element={<StatsPage />} />
+            </Route>
             <Route path="/role/content-creator/apply" element={<ContentCreatorPage />} />
             <Route path="/role/coach/apply" element={<CoachPage />} />
             <Route path="/role/caster/apply" element={<CasterPage />} />
