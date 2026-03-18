@@ -749,7 +749,17 @@ const Profile = () => {
                                     </div>
                                 )}
                                 <div className="pf-detail-actions">
-                                    <button className="pf-btn pf-btn--primary" onClick={() => navigate(`/teams/${selectedTeam._id}`)}><i className='bx bx-link-external' /> Ver página</button>
+                                    <button
+                                        className="pf-btn pf-btn--primary"
+                                        onClick={() => navigate('/equipos', {
+                                            state: {
+                                                teamId: selectedTeam._id,
+                                                openPreview: true
+                                            }
+                                        })}
+                                    >
+                                        <i className='bx bx-link-external' /> Ver página
+                                    </button>
                                     <button className="pf-btn" onClick={() => setSelectedTeam(null)}>Cerrar</button>
                                 </div>
                             </div>

@@ -1,0 +1,219 @@
+.stats-display {
+  margin-top: 1.75rem;
+  animation: fadeIn 0.35s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.player-header {
+  display: flex;
+  gap: 1.35rem;
+  align-items: center;
+  padding: 1.2rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1rem;
+}
+
+.player-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  object-fit: cover;
+  border: 2px solid rgba(124, 255, 107, 0.5);
+  background: #0d1014;
+}
+
+.player-avatar--fallback {
+  display: grid;
+  place-items: center;
+  color: #7cff6b;
+  font-size: 2rem;
+  font-weight: 900;
+  background:
+    radial-gradient(circle at top, rgba(124, 255, 107, 0.16), transparent 55%),
+    #0d1014;
+}
+
+.player-header__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.player-header__eyebrow {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(245, 247, 251, 0.58);
+}
+
+.player-name {
+  margin: 0.3rem 0 0.7rem;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  color: #ffffff;
+}
+
+.player-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  align-items: center;
+}
+
+.player-summary__label {
+  color: rgba(245, 247, 251, 0.64);
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.player-summary__value {
+  color: #7cff6b;
+  font-size: 1.1rem;
+}
+
+.player-summary__subtitle {
+  margin: 0.75rem 0 0;
+  color: rgba(245, 247, 251, 0.68);
+  line-height: 1.55;
+}
+
+.stats-notes {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stats-note {
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(124, 255, 107, 0.06);
+  border: 1px solid rgba(124, 255, 107, 0.14);
+  color: #e7ffe2;
+}
+
+.game-stats-container {
+  margin-bottom: 1rem;
+  padding: 1.15rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.game-stats-container__header {
+  margin-bottom: 1rem;
+}
+
+.game-stats-container__header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.game-stats-container__header p {
+  margin: 0.45rem 0 0;
+  color: rgba(245, 247, 251, 0.62);
+  line-height: 1.5;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.85rem;
+}
+
+.stat-card {
+  padding: 1rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(25, 27, 35, 0.96), rgba(14, 16, 22, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 255, 107, 0.22);
+}
+
+.highlight-card {
+  border-color: rgba(124, 255, 107, 0.28);
+  background: linear-gradient(135deg, rgba(124, 255, 107, 0.12), rgba(16, 19, 24, 0.98));
+}
+
+.stat-label {
+  margin-bottom: 0.45rem;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(245, 247, 251, 0.58);
+}
+
+.stat-value {
+  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.highlight-card .stat-value {
+  color: #7cff6b;
+}
+
+.stats-empty-block {
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  color: rgba(245, 247, 251, 0.68);
+}
+
+.raw-json-toggle {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.raw-json-toggle h4 {
+  margin: 0 0 0.7rem;
+  color: rgba(245, 247, 251, 0.72);
+}
+
+.raw-json-toggle details summary {
+  cursor: pointer;
+  color: #7cff6b;
+  font-weight: 700;
+}
+
+.raw-json-toggle pre {
+  margin-top: 0.85rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: #0b0e12;
+  color: #d4d8df;
+  overflow: auto;
+  max-height: 420px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .player-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .player-avatar {
+    width: 78px;
+    height: 78px;
+  }
+}

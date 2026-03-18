@@ -69,6 +69,7 @@ import CasterPage from './pages/menu/Roles/CasterPage';
 import SponsorPage from './pages/menu/Roles/SponsorPage';
 import AnalystPage from './pages/menu/Roles/AnalystPage';
 import AdminPanel from './pages/menu/Admin/AdminPanel';
+import StatsPage from './pages/Stats/StatsPage';
 
 
 const MainLayout = () => {
@@ -151,6 +152,7 @@ const AppRouterContent = () => {
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/stats" element={<StatsPage />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NewsDetail />} />
             <Route path="/organismos/:slug" element={<OrganismProfile />} />
@@ -201,4 +203,3 @@ function App() {
 }
 
 export default App;
-
