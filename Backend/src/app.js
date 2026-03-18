@@ -16,6 +16,7 @@ import notificationRoutes from './routes/notification.routes.js';
 import communityRoutes from './routes/community.routes.js';
 import universityRoutes from './routes/university.routes.js';
 import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
+import trackerRoutes from './routes/tracker.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,6 +105,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/university', universityRoutes);
+app.use('/api/tracker', trackerRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {

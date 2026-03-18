@@ -10,6 +10,7 @@ import {
   getRiotApiKey,
   riotAmericasGet
 } from '../utils/riotApi.js';
+import trackerApi from '../services/tracker.service.js';
 const RIOT_RSO_STATE_TTL_MS = 10 * 60 * 1000;
 const OTP_EXP_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;
@@ -545,6 +546,53 @@ export const confirmRiotLink = async (req, res) => {
         message: `Código inválido. Intentos restantes: ${OTP_MAX_ATTEMPTS - pending.attempts}`
       });
     }
+
+    // --- Inicio: Validación con Tracker Network ---
+    const platformUserIdentifier = `${pending.gameName}#${pending.tagLine}`;
+    try {
+      console.log(`[Tracker] Validando Riot ID: ${platformUserIdentifier}`);
+      
+      // Intentamos obtener stats para Valorant y LoL.
+      // Por ahora, solo nos interesa si la API responde positivamente (el perfil existe).
+      const valorantPromise = trackerApi.get(`valorant/standard/profile/riot/${encodeURIComponent(platformUserIdentifier)}`);
+      const lolPromise = trackerApi.get(`lol/standard/profile/riot/${encodeURIComponent(platformUserIdentifier)}`);
+
+      // Esperamos ambas promesas, pero no nos preocupamos si una falla (puede que el jugador solo juegue un juego).
+      const results = await Promise.allSettled([valorantPromise, lolPromise]);
+      
+      const valorantResult = results[0];
+      const lolResult = results[1];
+
+      let foundProfile = false;
+      if (valorantResult.status === 'fulfilled' && valorantResult.value.data) {
+        console.log(`[Tracker] Perfil de Valorant encontrado para ${platformUserIdentifier}.`);
+        // Aquí podrías añadir lógica de validación específica para Valorant.
+        // Ejemplo: if (valorantResult.value.data.data.level < 20) throw new Error('Nivel de cuenta de Valorant muy bajo.');
+        foundProfile = true;
+      }
+      
+      if (lolResult.status === 'fulfilled' && lolResult.value.data) {
+        console.log(`[Tracker] Perfil de LoL encontrado para ${platformUserIdentifier}.`);
+        // Aquí podrías añadir lógica de validación específica para LoL.
+        foundProfile = true;
+      }
+
+      if (!foundProfile) {
+        console.warn(`[Tracker] No se encontró perfil en Tracker Network para ${platformUserIdentifier} en Valorant ni LoL.`);
+        // Decidimos si bloqueamos o no. Por ahora, solo lo advertimos.
+        // Para bloquear, descomenta la siguiente línea:
+        // return res.status(404).json({ message: 'No se encontró un perfil público en Tracker Network para este Riot ID.' });
+      }
+
+    } catch (error) {
+      // Si el error no es 404, podría ser un problema de configuración o de la API de Tracker.
+      if (error.response?.status !== 404) {
+        console.error(`[Tracker] Error al validar con Tracker Network: ${error.message}`);
+        // Para un sistema en producción, quizás quieras bloquear la vinculación si tu servicio de validación falla.
+        // return res.status(503).json({ message: 'No se pudo validar la cuenta con el servicio anti-cheat. Intenta más tarde.' });
+      }
+    }
+    // --- Fin: Validación con Tracker Network ---
 
     const alreadyLinked = await ensureRiotAccountNotLinkedElsewhere(pending.puuid, req.userId);
     if (alreadyLinked) {

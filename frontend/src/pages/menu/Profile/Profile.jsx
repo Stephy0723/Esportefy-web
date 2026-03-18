@@ -1178,7 +1178,15 @@ const Profile = () => {
                                         </div>
                                     )}
                                     <div className="cyber-team-detail__actions">
-                                        <button className="cyber-btn cyber-btn--primary" onClick={() => navigate(`/teams/${selectedTeam._id}`)}>
+                                        <button
+                                            className="cyber-btn cyber-btn--primary"
+                                            onClick={() => navigate('/equipos', {
+                                                state: {
+                                                    teamId: selectedTeam._id,
+                                                    openPreview: true
+                                                }
+                                            })}
+                                        >
                                             <FaExternalLinkAlt /> Ver página
                                         </button>
                                         <button className="cyber-btn" onClick={() => setSelectedTeam(null)}>

@@ -60,6 +60,7 @@ import CommunityTemplate from './pages/menu/Community/CommunityTemplate/Communit
 import CommunityAdminTemplate from './pages/menu/Community/CommunityAdminTemplate/CommunityAdminTemplate';
 import CommunityGamePageTemplate from './pages/Game/CommunityGamePageTemplate';
 import CommunitySpacePage from './pages/menu/Community/groups/CommunitySpacePage';
+import StatsPage from './pages/Stats/StatsPage';
 
 const WelcomeTrigger = () => null;
 
@@ -135,6 +136,7 @@ const AppRouterContent = () => {
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/stats" element={<StatsPage />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NewsDetail />} />
             <Route path="/organismos/:slug" element={<OrganismProfile />} />

@@ -17,6 +17,7 @@ import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
+import { isSupportedGameId, normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
 import './EditProfile.css';
 
 // ─── Game assets (todos los juegos disponibles) ───
@@ -59,7 +60,7 @@ import imgGtaV from '../../../assets/gameImages/grandtheftautogtav.png';
 import imgAov from '../../../assets/gameImages/ArenaOfValor.webp';
 
 // Categorías de juegos
-const gameCategories = [
+const gameCategoriesBase = [
     { id: 'all', name: 'Todos', icon: 'bx-grid-alt' },
     { id: 'moba', name: 'MOBA', icon: 'bx-shield-quarter' },
     { id: 'shooter', name: 'Shooter', icon: 'bx-crosshair' },
@@ -71,8 +72,9 @@ const gameCategories = [
     { id: 'casual', name: 'Casual', icon: 'bx-happy' },
 ];
 
-// Lista completa de juegos organizados por categoría
-const allGames = [
+// Catálogo extendido para futuras integraciones.
+// Editar perfil solo debe exponer los juegos con soporte real en backend.
+const gameCatalog = [
     // MOBA
     { id: 'lol', name: 'League of Legends', img: imgLol, category: 'moba' },
     { id: 'mlbb', name: 'Mobile Legends', img: imgMlbb, category: 'moba' },
@@ -126,6 +128,27 @@ const allGames = [
     { id: 'amongus', name: 'Among Us', img: imgAmongUs, category: 'casual' },
     { id: 'fallguys', name: 'Fall Guys', img: imgFallGuys, category: 'casual' },
 ];
+
+const allGames = gameCatalog.filter((game) => isSupportedGameId(game.id));
+
+const gameCategories = gameCategoriesBase.filter(
+    (category) => category.id === 'all' || allGames.some((game) => game.category === category.id)
+);
+
+const normalizeSelectedGameIds = (values = []) => {
+    const list = Array.isArray(values) ? values : [values];
+    const seen = new Set();
+    const normalized = [];
+
+    list.forEach((value) => {
+        const gameId = normalizeSupportedGameId(value);
+        if (!gameId || seen.has(gameId)) return;
+        seen.add(gameId);
+        normalized.push(gameId);
+    });
+
+    return normalized;
+};
 
 const platformsList = [
     { id: 'pc', name: 'PC', icon: 'bx-laptop' },
@@ -293,7 +316,7 @@ const EditProfile = () => {
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
                 avatar: resolveMediaUrl(u.avatar) || '',
                 bio: u.bio || '',
-                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : [],
+                selectedGames: normalizeSelectedGameIds(u.selectedGames),
                 platforms: Array.isArray(u.platforms) ? u.platforms : [],
                 goals: Array.isArray(u.goals) ? u.goals : [],
                 experience: Array.isArray(u.experience) ? u.experience : (u.experience ? [u.experience] : []),
@@ -587,6 +610,7 @@ const EditProfile = () => {
             setFile(null);
             // Refresh formData from response
             const u = res.data;
+            const normalizedSelectedGames = normalizeSelectedGameIds(u.selectedGames);
             setFormData(prev => ({
                 ...prev,
                 username: u.username || prev.username,
@@ -597,7 +621,7 @@ const EditProfile = () => {
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : prev.birthDate,
                 avatar: resolveMediaUrl(u.avatar) || prev.avatar,
                 bio: u.bio || prev.bio,
-                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : prev.selectedGames,
+                selectedGames: Array.isArray(u.selectedGames) ? normalizedSelectedGames : prev.selectedGames,
                 platforms: Array.isArray(u.platforms) ? u.platforms : prev.platforms,
                 goals: Array.isArray(u.goals) ? u.goals : prev.goals,
                 experience: Array.isArray(u.experience) ? u.experience : prev.experience,
@@ -1227,6 +1251,9 @@ const EditProfile = () => {
                                         </button>
                                     </div>
                                 </div>
+                                <p className="ep__games-note">
+                                    Por ahora solo puedes usar juegos con soporte activo en perfil: League of Legends, Valorant y Mobile Legends.
+                                </p>
                                 <div className="ep__games-grid">
                                     {filteredGames.map(game => (
                                         <div
