@@ -19,7 +19,7 @@ import universityRoutes from './routes/university.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import securityRoutes from './routes/security.routes.js';
 import friendsRoutes from './routes/friends.routes.js';
-import trackerRoutes from './routes/tracker.routes.js';
+import gameStatsRoutes from './routes/gameStats.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,7 +110,7 @@ app.use('/api/university', universityRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/friends', friendsRoutes);
-app.use('/api/tracker', trackerRoutes);
+app.use('/api/game-stats', gameStatsRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {

@@ -25,6 +25,21 @@ const GAME_CONFIG = {
 
 const normalizeTournamentGame = (value) => String(value || '').trim().toLowerCase();
 const isValorantTournamentGame = (value) => normalizeTournamentGame(value) === 'valorant';
+const formatMoneyAmount = (value) => {
+  const parsed = Number.parseFloat(String(value ?? '').trim().replace(',', '.'));
+  if (!Number.isFinite(parsed) || parsed <= 0) return '';
+  return parsed.toLocaleString('en-US', {
+    minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+};
+const formatEntryFeeBadge = (entryFee = '', entryFeeAmount = '', currency = 'USD') => {
+  const label = String(entryFee || '').trim();
+  if (!label) return '';
+  if (label.toLowerCase() !== 'pago') return label;
+  const formattedAmount = formatMoneyAmount(entryFeeAmount);
+  return formattedAmount ? `Pago · ${formattedAmount} ${currency}` : 'Pago';
+};
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PROMO SLIDES â€” platform-branded carousel
@@ -224,6 +239,7 @@ const formatTournamentFromApi = (t) => ({
   time: t.time,
   entry: t.entryFee || t.entry,
   entryFee: t.entryFee || '',
+  entryFeeAmount: t.entryFeeAmount || '',
   organizer: t.organizer?.username || 'Organizador',
   organizerId: t.organizer?._id || t.organizer || '',
   format: t.format || 'Por definir',
@@ -2728,7 +2744,7 @@ useEffect(() => {
                                             <div className="tn__card-header">
                                                 <span className="tournament-id-tag">{formatTournamentPublicId(torneo)}</span>
                                                 {torneo.entryFee && torneo.entryFee !== 'Gratis' && (
-                                                    <span className="tn__entry-badge"><i className='bx bx-dollar'></i> {torneo.entryFee}</span>
+                                                    <span className="tn__entry-badge"><i className='bx bx-dollar'></i> {formatEntryFeeBadge(torneo.entryFee, torneo.entryFeeAmount, torneo.currency)}</span>
                                                 )}
                                                 {torneo.entryFee === 'Gratis' && (
                                                     <span className="tn__free-badge"><i className='bx bx-gift'></i> Gratis</span>

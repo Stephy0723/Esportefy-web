@@ -1,5 +1,6 @@
 import React from 'react';
 import './StatsDisplay.css';
+import { resolveMediaUrl } from '../../utils/media';
 
 const StatCard = ({ label, value, highlight = false }) => {
   if (!label || value == null || value === '') return null;
@@ -39,7 +40,7 @@ const StatsSection = ({ section }) => {
 };
 
 const PlayerAvatar = ({ profile, game }) => {
-  const avatarUrl = String(profile?.avatarUrl || '').trim();
+  const avatarUrl = resolveMediaUrl(String(profile?.avatarUrl || '').trim());
   if (avatarUrl) {
     return <img src={avatarUrl} alt={`Avatar de ${profile?.handle || 'jugador'}`} className="player-avatar" />;
   }
@@ -62,6 +63,9 @@ function StatsDisplay({ stats }) {
         <div className="player-header__body">
           <div className="player-header__eyebrow">{stats.game?.name || 'Perfil'}</div>
           <h2 className="player-name">{stats.profile?.handle || stats.identifier || 'Jugador'}</h2>
+          {stats.profile?.subtitle ? (
+            <div className="player-header__meta">{stats.profile.subtitle}</div>
+          ) : null}
 
           <div className="player-summary">
             <span className="player-summary__label">{stats.summary?.headline?.label || 'Resumen'}</span>
@@ -89,11 +93,11 @@ function StatsDisplay({ stats }) {
       {sections.length > 0 ? (
         sections.map((section) => <StatsSection key={section.id} section={section} />)
       ) : (
-        <div className="stats-empty-block">Tracker no devolvio una seccion util para este perfil.</div>
+        <div className="stats-empty-block">No hay secciones utiles disponibles para este perfil.</div>
       )}
 
       <div className="raw-json-toggle">
-        <h4>Payload crudo de Tracker</h4>
+        <h4>Payload técnico</h4>
         <details>
           <summary>Ver detalles tecnicos</summary>
           <pre>{JSON.stringify(stats.raw || stats, null, 2)}</pre>

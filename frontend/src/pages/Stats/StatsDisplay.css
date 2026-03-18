@@ -64,6 +64,12 @@
   color: #ffffff;
 }
 
+.player-header__meta {
+  margin: -0.2rem 0 0.75rem;
+  color: rgba(245, 247, 251, 0.64);
+  word-break: break-word;
+}
+
 .player-summary {
   display: flex;
   flex-wrap: wrap;

@@ -12,6 +12,7 @@ import {
 } from '../utils/mlbbStatus.js';
 
 const MAX_USER_NOTIFICATIONS = 80;
+const MAX_MLBB_CLAIM_HISTORY = 12;
 
 function parseMlbbPayload(body = {}) {
   const playerIdRaw = String(body.playerId || body.userId || '').trim();
@@ -143,7 +144,48 @@ const pushMlbbNotification = (user, {
   }
 };
 
-const buildMlbbRiskContext = (user, payload) => {
+const pushMlbbClaimHistory = (user, {
+  playerId = '',
+  zoneId = '',
+  ign = '',
+  status = 'pending',
+  at = new Date(),
+  reviewedBy = ''
+} = {}) => {
+  if (!user) return;
+  const normalizedPlayerId = String(playerId || '').trim();
+  const normalizedZoneId = String(zoneId || '').trim();
+  if (!normalizedPlayerId || !normalizedZoneId) return;
+
+  user.mlbbClaimHistory = Array.isArray(user.mlbbClaimHistory) ? user.mlbbClaimHistory : [];
+  user.mlbbClaimHistory.unshift({
+    playerId: normalizedPlayerId,
+    zoneId: normalizedZoneId,
+    ign: String(ign || '').trim(),
+    status,
+    at,
+    reviewedBy: String(reviewedBy || '').trim()
+  });
+  if (user.mlbbClaimHistory.length > MAX_MLBB_CLAIM_HISTORY) {
+    user.mlbbClaimHistory = user.mlbbClaimHistory.slice(0, MAX_MLBB_CLAIM_HISTORY);
+  }
+};
+
+const countDistinctMlbbIdentitiesRecent = (history = [], now = Date.now()) => {
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+  const unique = new Set();
+  for (const item of Array.isArray(history) ? history : []) {
+    const at = new Date(item?.at || 0).getTime();
+    if (!Number.isFinite(at) || now - at > thirtyDaysMs) continue;
+    const playerId = String(item?.playerId || '').trim();
+    const zoneId = String(item?.zoneId || '').trim();
+    if (!playerId || !zoneId) continue;
+    unique.add(`${playerId}::${zoneId}`);
+  }
+  return unique.size;
+};
+
+const buildMlbbRiskContext = (user, payload, { previousOwner = null } = {}) => {
   const now = Date.now();
   const oneDayMs = 24 * 60 * 60 * 1000;
   const maxAttempts24h = getMlbbMaxAttempts24h();
@@ -182,6 +224,15 @@ const buildMlbbRiskContext = (user, payload) => {
     }
   }
 
+  if (previousOwner) {
+    signals.push('previous_owner_claim_elsewhere');
+  }
+
+  const recentDistinctIdentities = countDistinctMlbbIdentitiesRecent(user?.mlbbClaimHistory, now);
+  if (recentDistinctIdentities >= 2 && (!previousPlayerId || !previousZoneId || `${previousPlayerId}::${previousZoneId}` !== `${incomingPlayerId}::${incomingZoneId}`)) {
+    signals.push('too_many_identity_changes_30d');
+  }
+
   recentAttempts.push(now);
   const nextAttemptDates = recentAttempts
     .slice(-20)
@@ -190,7 +241,14 @@ const buildMlbbRiskContext = (user, payload) => {
   return {
     signals,
     nextAttemptDates,
-    attemptCount24h: nextAttemptCount24h
+    attemptCount24h: nextAttemptCount24h,
+    previousOwner: previousOwner
+      ? {
+          userId: String(previousOwner._id || ''),
+          username: previousOwner.username || '',
+          fullName: previousOwner.fullName || ''
+        }
+      : null
   };
 };
 
@@ -204,6 +262,21 @@ async function ensureMlbbAccountNotLinkedElsewhere(playerId, zoneId, currentUser
       { 'connections.mlbb.verified': true }
     ]
   }).select('_id username fullName connections.mlbb.verificationStatus');
+
+  return existing;
+}
+
+async function findHistoricalMlbbOwnerElsewhere(playerId, zoneId, currentUserId) {
+  const existing = await User.findOne({
+    _id: { $ne: currentUserId },
+    mlbbClaimHistory: {
+      $elemMatch: {
+        playerId,
+        zoneId,
+        status: { $in: ['verified_auto', 'verified_manual', 'unlinked'] }
+      }
+    }
+  }).select('_id username fullName mlbbClaimHistory');
 
   return existing;
 }
@@ -244,13 +317,14 @@ export const linkMlbbAccount = async (req, res) => {
       return res.status(400).json({ message: parsed.message });
     }
 
-    const user = await User.findById(req.userId).select('email username fullName connections.mlbb gameProfiles.mlbb notifications');
+    const user = await User.findById(req.userId).select('email username fullName connections.mlbb gameProfiles.mlbb notifications mlbbClaimHistory');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     const existing = await ensureMlbbAccountNotLinkedElsewhere(parsed.playerId, parsed.zoneId, req.userId);
     if (existing) {
       return res.status(409).json({ message: 'Esta cuenta de Mobile Legends ya está vinculada a otro usuario.' });
     }
+    const previousOwner = await findHistoricalMlbbOwnerElsewhere(parsed.playerId, parsed.zoneId, req.userId);
 
     const mode = getMlbbVerificationMode();
     const isAuto = mode === 'auto';
@@ -267,7 +341,7 @@ export const linkMlbbAccount = async (req, res) => {
       });
     }
 
-    const riskContext = buildMlbbRiskContext(user, parsed);
+    const riskContext = buildMlbbRiskContext(user, parsed, { previousOwner });
     const needsManualReview = !isAuto || riskContext.signals.length > 0;
     const nextStatus = needsManualReview
       ? 'pending'
@@ -290,6 +364,14 @@ export const linkMlbbAccount = async (req, res) => {
       linkAttempts: riskContext.nextAttemptDates,
       riskFlags: riskContext.signals
     };
+    pushMlbbClaimHistory(user, {
+      playerId: parsed.playerId,
+      zoneId: parsed.zoneId,
+      ign: parsed.ign || user.connections?.mlbb?.ign || '',
+      status: nextStatus,
+      at: nowDate,
+      reviewedBy: needsManualReview ? '' : 'system:auto'
+    });
     syncMlbbProfileSnapshot(user, { now: nowDate });
 
     pushMlbbNotification(user, needsManualReview
@@ -394,7 +476,7 @@ export const processMlbbOpsQueue = async (req, res) => {
 
 export const unlinkMlbbAccount = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('connections.mlbb gameProfiles.mlbb notifications');
+    const user = await User.findById(req.userId).select('connections.mlbb gameProfiles.mlbb notifications mlbbClaimHistory');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     const current = user?.connections?.mlbb || {};
@@ -412,6 +494,15 @@ export const unlinkMlbbAccount = async (req, res) => {
     }
 
     const nowDate = new Date();
+    if (hadLinkedAccount) {
+      pushMlbbClaimHistory(user, {
+        playerId: current?.playerId || '',
+        zoneId: current?.zoneId || '',
+        ign: current?.ign || '',
+        status: 'unlinked',
+        at: nowDate
+      });
+    }
     syncMlbbProfileSnapshot(user, { clear: true, now: nowDate });
 
     if (hadLinkedAccount) {
@@ -563,7 +654,7 @@ export const reviewMlbbLink = async (req, res) => {
       return res.status(403).json({ message: 'No autorizado. Solo administradores.' });
     }
 
-    const target = await User.findById(userId).select('connections.mlbb gameProfiles.mlbb notifications username fullName');
+    const target = await User.findById(userId).select('connections.mlbb gameProfiles.mlbb notifications username fullName mlbbClaimHistory');
     if (!target) return res.status(404).json({ message: 'Usuario objetivo no encontrado.' });
 
     const currentStatus = String(target?.connections?.mlbb?.verificationStatus || '');
@@ -595,6 +686,14 @@ export const reviewMlbbLink = async (req, res) => {
         linkedAt: nowDate,
         riskFlags: []
       };
+      pushMlbbClaimHistory(target, {
+        playerId,
+        zoneId,
+        ign: target?.connections?.mlbb?.ign || '',
+        status: 'verified_manual',
+        at: nowDate,
+        reviewedBy: String(req.userId)
+      });
       syncMlbbProfileSnapshot(target, { now: nowDate });
       pushMlbbNotification(target, {
         title: 'Cuenta MLBB aprobada',
@@ -620,6 +719,14 @@ export const reviewMlbbLink = async (req, res) => {
         rejectReason: reason || 'Solicitud rechazada por revisión interna.',
         linkedAt: null
       };
+      pushMlbbClaimHistory(target, {
+        playerId: String(target?.connections?.mlbb?.playerId || '').trim(),
+        zoneId: String(target?.connections?.mlbb?.zoneId || '').trim(),
+        ign: String(target?.connections?.mlbb?.ign || '').trim(),
+        status: 'rejected',
+        at: nowDate,
+        reviewedBy: String(req.userId)
+      });
       syncMlbbProfileSnapshot(target, { now: nowDate });
       pushMlbbNotification(target, {
         title: 'Cuenta MLBB rechazada',

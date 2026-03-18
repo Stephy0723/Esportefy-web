@@ -37,6 +37,7 @@ const tournamentSchema = new mongoose.Schema({
         third: String
     },
     entryFee: { type: String, default: 'Gratis' },
+    entryFeeAmount: { type: String, default: '' },
 
     // Cupos y Gestión
     maxSlots: { type: Number, required: true },

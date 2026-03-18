@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import logoWhite from '../../assets/Logo/logo-white.png';
-import logoBlack from '../../assets/Logo/logo-black.png';
+import logoWhite from '../../assets/Logo/logo-black_Background Removed.png';
+import logoBlack from '../../assets/Logo/logo-black_Background Removed.png';
 
 const LINKS = {
   plataforma: [
@@ -48,10 +48,15 @@ const Footer = () => {
           {/* Brand column */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-4 mb-5">
-              <img src={logo} alt="GLITCH GANG" className="h-14 md:h-16 w-auto shrink-0" />
-              <span className="text-[var(--text-main)] text-2xl md:text-3xl font-bold tracking-[0.18em]">
-                GLITCH GANG
-              </span>
+              <img src={logo} alt="GLITCH GANG by Steliant" className="h-14 md:h-16 w-auto shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[var(--text-main)] text-2xl md:text-3xl font-bold tracking-[0.18em]">
+                  GLITCH GANG
+                </span>
+                <span className="text-[var(--text-muted)] text-xs uppercase tracking-[0.28em]">
+                  by Steliant
+                </span>
+              </div>
             </div>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-6 max-w-xs">
               La plataforma definitiva para gestionar tu carrera en los eSports.
@@ -144,7 +149,7 @@ const Footer = () => {
         <div className="border-t border-[var(--border-color)] pt-6 pb-2">
           <div className="flex flex-col gap-2">
             <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-5xl">
-              GLITCH GANG no esta respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games
+              GLITCH GANG by Steliant no esta respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games
               ni de personas oficialmente involucradas en la produccion o gestion de propiedades de Riot Games.
               Riot Games y todas sus propiedades asociadas son marcas o marcas registradas de Riot Games, Inc.
             </p>
@@ -164,7 +169,7 @@ const Footer = () => {
         {/* Divider */}
         <div className="border-t border-[var(--border-color)] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[var(--text-muted)] text-xs">
-            &copy; {currentYear} GLITCH GANG. Todos los derechos reservados.
+            &copy; {currentYear} GLITCH GANG by Steliant. Todos los derechos reservados.
             Desarrollado por <span className="font-semibold text-[var(--text-main)]">Steliant</span>.
           </p>
           <p className="text-[var(--text-muted)] text-xs">

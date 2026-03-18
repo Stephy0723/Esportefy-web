@@ -48,6 +48,15 @@ const mockFindOneSelect = (value) => {
   }));
 };
 
+const mockFindOneSelectSequence = (...values) => {
+  User.findOne.mockReset();
+  values.forEach((value) => {
+    User.findOne.mockImplementationOnce(() => ({
+      select: jest.fn().mockResolvedValue(value)
+    }));
+  });
+};
+
 describe('MLBB controller hardening', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -126,6 +135,76 @@ describe('MLBB controller hardening', () => {
     expect(res.statusCode).toBe(429);
     expect(String(res.body?.message || '').toLowerCase()).toContain('espera');
     expect(enqueueMlbbReviewEmail).not.toHaveBeenCalled();
+  });
+
+  test('linkMlbbAccount en auto escala a pending si la cuenta fue reclamada antes por otro usuario', async () => {
+    process.env.MLBB_VERIFICATION_MODE = 'auto';
+    const userDoc = {
+      _id: 'u1',
+      username: 'angel',
+      fullName: 'Angel',
+      email: 'angel@mail.com',
+      connections: {},
+      gameProfiles: {},
+      notifications: [],
+      mlbbClaimHistory: [],
+      save: jest.fn().mockResolvedValue(true)
+    };
+
+    mockFindOneSelectSequence(
+      null,
+      { _id: 'other-user', username: 'other', fullName: 'Other User' }
+    );
+    mockFindByIdSelect(userDoc);
+
+    const req = {
+      body: { playerId: '123456789', zoneId: '1234', ign: 'AngelML' },
+      userId: 'u1'
+    };
+    const res = createRes();
+
+    await linkMlbbAccount(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body?.status).toBe('pending');
+    expect(res.body?.risk?.manualReview).toBe(true);
+    expect(res.body?.risk?.flags).toContain('previous_owner_claim_elsewhere');
+    expect(enqueueMlbbReviewEmail).toHaveBeenCalledTimes(1);
+  });
+
+  test('linkMlbbAccount en auto escala a pending si el usuario cambia demasiadas identidades en 30 días', async () => {
+    process.env.MLBB_VERIFICATION_MODE = 'auto';
+    const now = Date.now();
+    const userDoc = {
+      _id: 'u1',
+      username: 'angel',
+      fullName: 'Angel',
+      email: 'angel@mail.com',
+      connections: {},
+      gameProfiles: {},
+      notifications: [],
+      mlbbClaimHistory: [
+        { playerId: '111111111', zoneId: '1111', status: 'verified_auto', at: new Date(now - 3 * 24 * 60 * 60 * 1000) },
+        { playerId: '222222222', zoneId: '2222', status: 'unlinked', at: new Date(now - 7 * 24 * 60 * 60 * 1000) }
+      ],
+      save: jest.fn().mockResolvedValue(true)
+    };
+
+    mockFindOneSelectSequence(null, null);
+    mockFindByIdSelect(userDoc);
+
+    const req = {
+      body: { playerId: '333333333', zoneId: '3333', ign: 'AngelML' },
+      userId: 'u1'
+    };
+    const res = createRes();
+
+    await linkMlbbAccount(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body?.status).toBe('pending');
+    expect(res.body?.risk?.flags).toContain('too_many_identity_changes_30d');
+    expect(enqueueMlbbReviewEmail).toHaveBeenCalledTimes(1);
   });
 
   test('mlbbOpsStatus solo admin y devuelve estado de cola', async () => {

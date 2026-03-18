@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import Session from '../models/Session.js';
+import User from '../models/User.js';
 
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
 
@@ -66,5 +67,22 @@ export const verifyToken = async (req, res, next) => {
         next();
     } catch (error) {
         return res.status(401).json({ message: "Token inválido o expirado" });
+    }
+};
+
+export const requireAdmin = async (req, res, next) => {
+    try {
+        if (!req.userId) {
+            return res.status(401).json({ message: 'Sesión inválida. Inicia sesión nuevamente.' });
+        }
+
+        const user = await User.findById(req.userId).select('isAdmin').lean();
+        if (!user?.isAdmin) {
+            return res.status(403).json({ message: 'No autorizado. Solo administradores.' });
+        }
+
+        next();
+    } catch (error) {
+        return res.status(500).json({ message: 'No se pudo validar el rol de administrador.' });
     }
 };

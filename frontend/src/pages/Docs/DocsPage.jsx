@@ -147,14 +147,14 @@ const GUIDES = [
         ctaTo: '/support',
         ctaLabel: 'Hablar con soporte',
         bullets: [
-            'Verifica el estado del premio antes de retirar.',
-            'Confirma tus datos para evitar devoluciones.',
+            'Verifica el estado del premio antes de solicitar liquidacion.',
+            'Confirma tus datos y el flujo habilitado para ese evento.',
             'Guarda comprobantes si soporte necesita una revision.',
         ],
         steps: [
             'Revisa si tu premio ya fue validado.',
-            'Confirma el metodo de retiro disponible.',
-            'Solicita el retiro con los datos correctos.',
+            'Confirma el metodo de liquidacion o retiro habilitado.',
+            'Envia los datos correctos si el evento lo requiere.',
             'Da seguimiento al estado desde soporte si tarda mas de lo esperado.',
         ],
     },
