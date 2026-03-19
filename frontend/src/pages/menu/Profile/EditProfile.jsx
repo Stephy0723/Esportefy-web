@@ -9,7 +9,7 @@ import {
     FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake, FaTrophy,
     FaDiscord, FaSteam, FaPlaystation, FaXbox
 } from 'react-icons/fa';
-import { SiRiotgames, SiEpicgames, SiNintendoswitch } from 'react-icons/si';
+import { SiRiotgames, SiEpicgames, SiNintendo } from 'react-icons/si';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { PLAYER_TAGS } from '../../../data/playerTags';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
@@ -221,7 +221,7 @@ const gamingConnections = [
     { key: 'epic', icon: <SiEpicgames />, label: 'Epic Games', color: '#2F2D2E', description: 'Fortnite, Rocket League', settingsKey: 'epic' },
     { key: 'playstation', icon: <FaPlaystation />, label: 'PlayStation', color: '#003087', description: 'PSN ID', settingsKey: 'playstation' },
     { key: 'xbox', icon: <FaXbox />, label: 'Xbox', color: '#107C10', description: 'Gamertag', settingsKey: 'xbox' },
-    { key: 'nintendo', icon: <SiNintendoswitch />, label: 'Nintendo', color: '#E60012', description: 'Switch', settingsKey: 'nintendo' },
+    { key: 'nintendo', icon: <SiNintendo />, label: 'Nintendo', color: '#E60012', description: 'Switch', settingsKey: 'nintendo' },
 ];
 
 const EditProfile = () => {
