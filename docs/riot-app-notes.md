@@ -68,6 +68,7 @@ What we do not do:
 Key/security handling:
 - Riot API key is backend-only.
 - Non-production key use is restricted in public contexts.
+- If a private HTTPS review build temporarily uses a dev key, it is gated for reviewer-only access and `RIOT_REVIEW_MODE=true`.
 - Rate limiting is enabled on Riot auth endpoints.
 
 Tournament policy behavior:
@@ -86,7 +87,8 @@ If needed, we can provide:
 
 ### Environment
 - `RIOT_KEY_MODE` configured for the target environment.
-- `ALLOW_RIOT_DEV_KEY_IN_PROD=false`.
+- `ALLOW_RIOT_DEV_KEY_IN_PROD=true` only for a private reviewer-only build.
+- `ALLOW_RIOT_DEV_KEY_IN_PROD=false` once Riot grants the Production Key or if the app opens publicly.
 - `RIOT_REVIEW_MODE=true` in review/staging.
 - `RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS=20`.
 - `VITE_RIOT_REVIEW_MODE=true` and `VITE_RIOT_MIN_ACTIVE_PARTICIPANTS=20` in frontend review env.

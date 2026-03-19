@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { useTheme, THEMES } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { getStoredUser } from '../../utils/authSession';
 import { resolveMediaUrl } from '../../utils/media';
 import { STATUS_LIST } from '../../data/defaultAvatars';
 
@@ -51,8 +52,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   useEffect(() => {
     const loadUser = () => {
       try {
-        const stored = localStorage.getItem('esportefyUser');
-        setUser(stored ? JSON.parse(stored) : null);
+        setUser(getStoredUser());
       } catch { setUser(null); }
     };
     loadUser();

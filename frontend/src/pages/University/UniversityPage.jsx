@@ -855,7 +855,7 @@ const UniversityPage = () => {
               <div className="up-detail-hero__meta">
                 <span><i className='bx bx-map'></i> {selectedUni.city}</span>
                 <span><i className='bx bx-calendar'></i> Fundada en {selectedUni.founded}</span>
-                <span><i className='bx bx-log-in-circle'></i> En GLITCH GANG desde {selectedUni.joinedEsportefy}</span>
+                <span><i className='bx bx-log-in-circle'></i> En GLITCH GANG desde {selectedUni.joinedGlitchGang}</span>
               </div>
             </div>
             <div className="up-detail-hero__actions">
@@ -906,7 +906,7 @@ const UniversityPage = () => {
                 <small>Fundación</small>
               </div>
               <div className="up-detail-bio__stat">
-                <span>{selectedUni.joinedEsportefy}</span>
+                <span>{selectedUni.joinedGlitchGang}</span>
                 <small>En GLITCH GANG</small>
               </div>
               <div className="up-detail-bio__stat">

@@ -13,10 +13,12 @@ export const THEMES = {
 };
 
 const VALID_THEMES = Object.values(THEMES);
+const THEME_STORAGE_KEY = 'glitchgangTheme';
+const LEGACY_THEME_STORAGE_KEY = 'esportefyTheme';
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
-    const saved = localStorage.getItem('esportefyTheme');
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
 
     // Migrar el valor viejo (true/false) al nuevo sistema
     if (saved === 'true') return THEMES.DARK;
@@ -45,7 +47,8 @@ export const ThemeProvider = ({ children }) => {
     // Clase específica del tema activo
     body.classList.add(`theme-${theme}`);
 
-    localStorage.setItem('esportefyTheme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
   }, [theme]);
 
   const setTheme = (newTheme) => {

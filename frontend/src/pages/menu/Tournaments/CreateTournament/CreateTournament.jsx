@@ -4,6 +4,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { getAuthToken } from '../../../../utils/authSession';
+import { saveStoredLocalTournaments, getStoredLocalTournaments } from '../../../../utils/tournamentCalendar';
 import {
   getTournamentServerOptions,
   isValidTournamentServer,
@@ -31,8 +32,6 @@ import {
   FaUsers
 } from 'react-icons/fa';
 import './CreateTournament.css';
-
-const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAMES = [...SUPPORTED_GAME_NAMES];
 
@@ -542,9 +541,9 @@ const CreateTournament = () => {
       updatedAt: new Date().toISOString()
     };
 
-    const current = JSON.parse(localStorage.getItem(LOCAL_TOURNAMENTS_KEY) || '[]');
+    const current = getStoredLocalTournaments();
     current.unshift(localTournament);
-    localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(current));
+    saveStoredLocalTournaments(current);
     return localTournament;
   };
 

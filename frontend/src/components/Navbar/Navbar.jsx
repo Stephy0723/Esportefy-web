@@ -32,7 +32,6 @@ const ROUTE_NAMES = {
   '/docs': 'Documentacion',
   '/support': 'Soporte',
   '/glitchgang': 'GLITCH GANG',
-  '/esportefy': 'GLITCH GANG',
 };
 
 /* ── Quick Actions (only for logged-in users) ── */

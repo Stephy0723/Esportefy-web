@@ -137,6 +137,18 @@ app.use(logger);
 app.use(verifyCsrf);
 app.use('/uploads', express.static(uploadsDir));
 
+const buildHealthPayload = () => ({
+  ok: true,
+  service: 'glitchgang-api',
+  nodeEnv: String(process.env.NODE_ENV || 'development'),
+  frontendUrl: frontendOrigin,
+  riotReviewMode: String(process.env.RIOT_REVIEW_MODE || '').trim().toLowerCase() === 'true',
+  timestamp: new Date().toISOString()
+});
+
+app.get('/healthz', (req, res) => res.status(200).json(buildHealthPayload()));
+app.get('/api/healthz', (req, res) => res.status(200).json(buildHealthPayload()));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/tournaments', tournamentRoutes);

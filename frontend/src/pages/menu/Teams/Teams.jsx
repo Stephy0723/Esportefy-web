@@ -7,7 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import ViewTeamModal from './ViewTeamModal';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
-import { getAuthToken } from '../../../utils/authSession';
+import { getAuthToken, getStoredUser } from '../../../utils/authSession';
 import { formatTeamPublicId, getPublicTeamCode, matchesTeamPublicId } from '../../../utils/publicIds';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import { getSupportedGameRoles, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
@@ -209,13 +209,7 @@ const Team = () => {
     const [joinSuccess, setJoinSuccess] = useState(false);
 
     const storedUser = useMemo(() => {
-        const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-        if (!userString) return null;
-        try {
-            return JSON.parse(userString);
-        } catch (_) {
-            return null;
-        }
+        return getStoredUser();
     }, []);
     const currentUser = authUser || storedUser;
     const mlbbConnection = currentUser?.connections?.mlbb || {};

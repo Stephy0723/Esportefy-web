@@ -11,7 +11,7 @@ const MONTH_NAMES = [
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
-const EsportefyCalendar = () => {
+const GlitchGangCalendar = () => {
   const navigate = useNavigate();
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -378,4 +378,4 @@ const EsportefyCalendar = () => {
   );
 };
 
-export default EsportefyCalendar;
+export default GlitchGangCalendar;
