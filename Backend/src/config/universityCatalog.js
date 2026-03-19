@@ -337,7 +337,7 @@ export const UNIVERSITY_CATALOG_RD = [
   // ═══ REPÚBLICA DOMINICANA ═══
   {
     id: 'uasd', tag: 'UASD', name: 'Universidad Autónoma de Santo Domingo',
-    region: 'rd', city: 'Santo Domingo', founded: 1538, joinedEsportefy: '2024',
+    region: 'rd', city: 'Santo Domingo', founded: 1538, joinedGlitchGang: '2024',
     points: 1800, verified: true,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UASD&backgroundColor=0033a0',
     bio: 'La universidad más antigua de América, fundada en 1538. Más de 200,000 estudiantes activos. Campeona de Mobile Legends en la Copa Universitaria Popular 2025 con un premio de RD$60,000. Participante activa en Claro Gaming y torneos interuniversitarios.',
@@ -352,7 +352,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'pucmm', tag: 'PUCMM', name: 'Pontificia Universidad Católica Madre y Maestra',
-    region: 'rd', city: 'Santiago', founded: 1962, joinedEsportefy: '2024',
+    region: 'rd', city: 'Santiago', founded: 1962, joinedGlitchGang: '2024',
     points: 1420, verified: true,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=PUCMM&backgroundColor=0033a0',
     bio: 'Fundada en 1962, una de las mejores universidades privadas del Caribe. Participante activa en Claro Gaming Warriors y Copa Popular. Campus en Santiago y Santo Domingo con infraestructura de esports.',
@@ -366,7 +366,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'intec', tag: 'INTEC', name: 'Instituto Tecnológico de Santo Domingo',
-    region: 'rd', city: 'Santo Domingo', founded: 1972, joinedEsportefy: '2024',
+    region: 'rd', city: 'Santo Domingo', founded: 1972, joinedGlitchGang: '2024',
     points: 1280, verified: true,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=INTEC&backgroundColor=d31145',
     bio: 'Centro de excelencia en ingeniería y tecnología desde 1972. Participante activa en Claro Gaming y torneos universitarios. Club de desarrollo de videojuegos activo.',
@@ -379,7 +379,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'unibe', tag: 'UNIBE', name: 'Universidad Iberoamericana',
-    region: 'rd', city: 'Santo Domingo', founded: 1982, joinedEsportefy: '2024',
+    region: 'rd', city: 'Santo Domingo', founded: 1982, joinedGlitchGang: '2024',
     points: 1350, verified: true,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UNIBE&backgroundColor=cc0000',
     bio: 'Universidad de élite fundada en 1982. Campeona de EA Sports FC25 en la Copa Universitaria Popular 2025 con un premio de RD$25,000. Infraestructura de primer nivel con fuerte inversión en tecnología y deportes electrónicos.',
@@ -393,7 +393,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'itla', tag: 'ITLA', name: 'Instituto Tecnológico de Las Américas',
-    region: 'rd', city: 'Santo Domingo Este', founded: 2000, joinedEsportefy: '2024',
+    region: 'rd', city: 'Santo Domingo Este', founded: 2000, joinedGlitchGang: '2024',
     points: 2200, verified: true,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ITLA&backgroundColor=0052FF',
     bio: 'Principal centro tecnológico del gobierno dominicano. La universidad más dominante en esports de RD: campeona en League of Legends, Valorant y Smash Bros Ultimate en la Copa Universitaria Popular 2025 (RD$80,000 por disciplina). Tercer lugar en Mobile Legends. Participante activa en Claro Gaming.',
@@ -408,7 +408,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'unapec', tag: 'UNAPEC', name: 'Universidad APEC',
-    region: 'rd', city: 'Santo Domingo', founded: 1965, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 1965, joinedGlitchGang: '2025',
     points: 1020, verified: true,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=APEC&backgroundColor=002d62',
     bio: 'Fundada en 1965 por la Acción Pro Educación y Cultura. Comunidad estudiantil activa en esports. Participante en Claro Gaming y Copa Popular.',
@@ -421,7 +421,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'unphu', tag: 'UNPHU', name: 'Universidad Nacional Pedro Henríquez Ureña',
-    region: 'rd', city: 'Santo Domingo', founded: 1966, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 1966, joinedGlitchGang: '2025',
     points: 980, verified: true,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UNPHU&backgroundColor=006837',
     bio: 'Fundada en 1966. Campus extenso con áreas deportivas y espacios de innovación. Participante en Copa Popular y torneos interuniversitarios.',
@@ -434,7 +434,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'utesa', tag: 'UTESA', name: 'Universidad Tecnológica de Santiago',
-    region: 'rd', city: 'Santiago', founded: 1974, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santiago', founded: 1974, joinedGlitchGang: '2025',
     points: 940, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UTESA&backgroundColor=009b3a',
     bio: 'Fundada en 1974 en Santiago. Una de las universidades con mayor matrícula del país. Participante activa en Claro Gaming y torneos regionales del Cibao.',
@@ -447,7 +447,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'uapa', tag: 'UAPA', name: 'Universidad Abierta para Adultos',
-    region: 'rd', city: 'Santiago', founded: 1991, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santiago', founded: 1991, joinedGlitchGang: '2025',
     points: 870, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UAPA&backgroundColor=fdb813',
     bio: 'Pionera en educación a distancia en RD desde 1991. Su modelo flexible atrae a una comunidad gaming diversa que compite desde múltiples ciudades.',
@@ -457,7 +457,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'ucne', tag: 'UCNE', name: 'Universidad Católica Nordestana',
-    region: 'rd', city: 'San Fco. de Macorís', founded: 1978, joinedEsportefy: '2025',
+    region: 'rd', city: 'San Fco. de Macorís', founded: 1978, joinedGlitchGang: '2025',
     points: 820, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCNE&backgroundColor=0033a0',
     bio: 'Fundada en 1978 en San Francisco de Macorís. Principal centro universitario de la región nordeste del país con fuerte identidad comunitaria.',
@@ -467,7 +467,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'isfodosu', tag: 'ISFODOSU', name: 'Instituto Superior de Formación Docente Salomé Ureña',
-    region: 'rd', city: 'Santo Domingo', founded: 2003, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 2003, joinedGlitchGang: '2025',
     points: 790, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ISFO&backgroundColor=0033a0',
     bio: 'Institución estatal dedicada a la formación de docentes desde 2003. Múltiples recintos a nivel nacional. Promueve esports como herramienta educativa.',
@@ -477,7 +477,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'itsc', tag: 'ITSC', name: 'Instituto Técnico Superior Comunitario',
-    region: 'rd', city: 'San Pedro de Macorís', founded: 2012, joinedEsportefy: '2025',
+    region: 'rd', city: 'San Pedro de Macorís', founded: 2012, joinedGlitchGang: '2025',
     points: 740, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=ITSC&backgroundColor=0052FF',
     bio: 'Centro técnico fundado en 2012 en San Pedro de Macorís. Enfocado en formación técnica y tecnológica accesible para comunidades de la región este.',
@@ -487,7 +487,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'ucateci', tag: 'UCATECI', name: 'Universidad Católica del Cibao',
-    region: 'rd', city: 'La Vega', founded: 1983, joinedEsportefy: '2025',
+    region: 'rd', city: 'La Vega', founded: 1983, joinedGlitchGang: '2025',
     points: 710, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCATECI&backgroundColor=0033a0',
     bio: 'Fundada en 1983 en La Vega. Fuerte presencia en la región del Cibao. Participante en torneos regionales de esports.',
@@ -497,7 +497,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'uniremhos', tag: 'UNIREMHOS', name: 'Universidad Eugenio María de Hostos',
-    region: 'rd', city: 'Santo Domingo', founded: 1981, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 1981, joinedGlitchGang: '2025',
     points: 680, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=REMHOS&backgroundColor=0033a0',
     bio: 'Fundada en 1981, nombrada en honor al educador puertorriqueño Eugenio María de Hostos. Ofrece programas de salud, negocios y humanidades.',
@@ -507,7 +507,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'unicaribe', tag: 'UNICARIBE', name: 'Universidad del Caribe',
-    region: 'rd', city: 'Santo Domingo', founded: 1995, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 1995, joinedGlitchGang: '2025',
     points: 650, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UC&backgroundColor=0033a0',
     bio: 'Institución fundada en 1995 con enfoque en accesibilidad educativa. Ofrece programas vespertinos y sabatinos para estudiantes trabajadores.',
@@ -517,7 +517,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'oym', tag: 'O&M', name: 'Universidad Organización y Método',
-    region: 'rd', city: 'Santo Domingo', founded: 1966, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 1966, joinedGlitchGang: '2025',
     points: 620, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=OM&backgroundColor=000000',
     bio: 'Una de las universidades más populares de RD, fundada en 1966. Gran comunidad estudiantil en todo el país con presencia en torneos locales.',
@@ -527,7 +527,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'uce', tag: 'UCE', name: 'Universidad Central del Este',
-    region: 'rd', city: 'San Pedro de Macorís', founded: 1970, joinedEsportefy: '2025',
+    region: 'rd', city: 'San Pedro de Macorís', founded: 1970, joinedGlitchGang: '2025',
     points: 590, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCE&backgroundColor=009b3a',
     bio: 'Fundada en 1970 en San Pedro de Macorís. Reconocida por su facultad de medicina. Comunidad gaming activa en la zona este.',
@@ -537,7 +537,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'ufhec', tag: 'UFHEC', name: 'Universidad Federico Henríquez y Carvajal',
-    region: 'rd', city: 'Santo Domingo', founded: 2003, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 2003, joinedGlitchGang: '2025',
     points: 560, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UFHEC&backgroundColor=0033a0',
     bio: 'Institución joven fundada en 2003 con visión moderna. Promueve la innovación y la integración tecnológica en todos sus programas académicos.',
@@ -547,7 +547,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'ucsd', tag: 'UCSD', name: 'Universidad Católica Santo Domingo',
-    region: 'rd', city: 'Santo Domingo', founded: 1982, joinedEsportefy: '2025',
+    region: 'rd', city: 'Santo Domingo', founded: 1982, joinedGlitchGang: '2025',
     points: 530, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=UCSD&backgroundColor=0033a0',
     bio: 'Universidad católica fundada en 1982 por la Arquidiócesis de Santo Domingo. Combina formación humanística con programas técnicos modernos.',
@@ -557,7 +557,7 @@ export const UNIVERSITY_CATALOG_RD = [
   },
   {
     id: 'loyola', tag: 'LOYOLA', name: 'Instituto Politécnico Loyola',
-    region: 'rd', city: 'San Cristóbal', founded: 1952, joinedEsportefy: '2025',
+    region: 'rd', city: 'San Cristóbal', founded: 1952, joinedGlitchGang: '2025',
     points: 500, verified: false,
     logo: 'https://api.dicebear.com/7.x/initials/svg?seed=IPL&backgroundColor=0033a0',
     bio: 'El más antiguo politécnico del país, fundado en 1952 por los Padres Jesuitas en San Cristóbal. Formación técnica de excelencia con valores humanísticos.',

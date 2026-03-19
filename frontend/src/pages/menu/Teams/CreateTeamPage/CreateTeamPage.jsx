@@ -13,7 +13,7 @@ import { useNotification } from '../../../../context/NotificationContext';
 import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
-import { getAuthToken as readAuthToken } from '../../../../utils/authSession';
+import { getAuthToken as readAuthToken, getStoredUser } from '../../../../utils/authSession';
 import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../../shared/supportedGames.js';
 import './CreateTeamPage.css';
 
@@ -83,13 +83,7 @@ const CreateTeamPage = () => {
     
     // --- ESTADOS Y DATOS ---
     const storedUser = useMemo(() => {
-        const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-        if (!userString) return { name: "Usuario" };
-        try {
-            return JSON.parse(userString);
-        } catch (_) {
-            return { name: "Usuario" };
-        }
+        return getStoredUser() || { name: "Usuario" };
     }, []);
     const currentUser = authUser || storedUser;
     const currentUserId = String(currentUser?._id || currentUser?.id || '');

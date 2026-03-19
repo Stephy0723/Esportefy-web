@@ -8,7 +8,7 @@ This is a practical checklist we use before submitting the prototype for Riot re
 ## 1) Env setup used for review
 Backend:
 - `RIOT_KEY_MODE=development|production`
-- `ALLOW_RIOT_DEV_KEY_IN_PROD=false`
+- `ALLOW_RIOT_DEV_KEY_IN_PROD=true` solo para review privada con acceso restringido
 - `RIOT_REVIEW_MODE=true`
 - `RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS=20`
 
@@ -35,6 +35,8 @@ Key security and API scope:
   - `Backend/src/controllers/riot.controller.js:41`
   - `Backend/src/controllers/riot.controller.js:46`
   - `Backend/src/controllers/riot.controller.js:52`
+- Dev key override is additionally tied to review mode to reduce accidental public exposure.
+  - `Backend/src/utils/riotApi.js`
 
 Riot ID correctness and uniqueness:
 - Riot ID format + limits (`GameName#TagLine`).

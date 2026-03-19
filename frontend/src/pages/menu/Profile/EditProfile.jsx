@@ -17,7 +17,7 @@ import { EMPTY_PROFILE_PROGRESSION, normalizeProfileProgression } from '../../..
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
-import { getAuthToken } from '../../../utils/authSession';
+import { cacheAuthUser, getAuthToken } from '../../../utils/authSession';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import { isSupportedGameId, normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
 import './EditProfile.css';
@@ -642,7 +642,7 @@ const EditProfile = () => {
                 }
             });
             // Sync localStorage for other components
-            localStorage.setItem('esportefyUser', JSON.stringify(res.data));
+            cacheAuthUser(res.data);
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
             setHasChanges(false);
             setFile(null);

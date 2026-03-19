@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useNotification } from '../../context/NotificationContext';
-import { getAuthToken } from '../../utils/authSession';
+import { getAuthToken, getStoredUser } from '../../utils/authSession';
 import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../shared/supportedGames.js';
 import './Notifications.css';
 
@@ -203,16 +203,6 @@ const Notifications = () => {
     }
   };
 
-  const readStoredUser = () => {
-    const raw = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw);
-    } catch (_) {
-      return null;
-    }
-  };
-
   const loadCurrentProfileForJoin = async (token) => {
     try {
       const response = await axios.get(`${API_URL}/api/auth/profile`, {
@@ -220,7 +210,7 @@ const Notifications = () => {
       });
       return response?.data || null;
     } catch (_) {
-      return readStoredUser();
+      return getStoredUser();
     }
   };
 

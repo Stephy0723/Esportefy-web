@@ -1,9 +1,9 @@
-# Riot Submit Runbook (Sin Dominio)
+# Riot Submit Runbook (HTTPS Ready)
 
 Fecha: 2026-03-08  
 Proyecto: GlitchGang
 
-Este runbook cierra todo lo que se puede completar **antes** de tener dominio final/HTTPS público.
+Este runbook asume que GlitchGang ya tiene HTTPS y un VPS listos para una URL de review privada.
 
 ## 0) Rotacion de secretos antes del submit
 
@@ -67,17 +67,19 @@ Evidencias mínimas:
 - rechazo por duplicado Riot ID
 - rechazo por mínimo de participantes activos
 
-## 4) Lo único pendiente por dominio
+## 4) Corte a VPS
 
-No enviar a Riot hasta tener esto:
-
-- URL pública estable por HTTPS
-- API por dominio (sin exponer IP directa para revisión)
-- `riot.txt` preparado/publicable si Riot lo pide
-
-Checklist de salida a VPS:
+Usa estas guías:
 
 - `docs/riot-review-vps-checklist.md`
+- `docs/riot-glitchgang-vps-cutover.md`
+
+No enviar a Riot hasta tener:
+
+- `https://glitchgang.net` respondiendo por HTTPS
+- `https://api.glitchgang.net/healthz` respondiendo 200
+- `riot.txt` preparado/publicable si Riot lo pide
+- el review build protegido si todavía usa development key
 
 ## 5) Datos para Developer Portal
 

@@ -26,6 +26,13 @@ export const ensureRiotApiAccess = () => {
   const keyMode = getRiotKeyMode();
   const nodeEnv = String(process.env.NODE_ENV || 'development').trim().toLowerCase();
   const allowDevKeyInProd = String(process.env.ALLOW_RIOT_DEV_KEY_IN_PROD || '').trim().toLowerCase() === 'true';
+  const riotReviewMode = String(process.env.RIOT_REVIEW_MODE || '').trim().toLowerCase() === 'true';
+
+  if (allowDevKeyInProd && !riotReviewMode) {
+    const err = new Error('RIOT_KEY_MODE_RESTRICTED');
+    err.code = 'RIOT_KEY_MODE_RESTRICTED';
+    throw err;
+  }
 
   if (keyMode !== 'production' && nodeEnv === 'production' && !allowDevKeyInProd) {
     const err = new Error('RIOT_KEY_MODE_RESTRICTED');

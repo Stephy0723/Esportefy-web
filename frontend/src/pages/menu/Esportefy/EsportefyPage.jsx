@@ -98,7 +98,7 @@ const SCENES = [
 const AUTO_SCROLL_MS = 6000;
 const TOTAL_SECTIONS = SCENES.length;
 
-const EsportefyPage = () => {
+const GlitchGangPage = () => {
   const sectionRefs = useRef([]);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const [autoScroll, setAutoScroll] = useState(true);
@@ -370,4 +370,4 @@ const EsportefyPage = () => {
   );
 };
 
-export default EsportefyPage;
+export default GlitchGangPage;

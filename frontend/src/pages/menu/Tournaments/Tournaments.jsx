@@ -12,9 +12,8 @@ import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../u
 import { getAuthToken } from '../../../utils/authSession';
 import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
+import { getStoredLocalTournaments, saveStoredLocalTournaments } from '../../../utils/tournamentCalendar';
 import { filterSupportedGameObjects, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
-
-const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
@@ -205,8 +204,7 @@ const toAssetUrl = (path) => {
 
 const getLocalTournaments = () => {
   try {
-    const raw = localStorage.getItem(LOCAL_TOURNAMENTS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
+    const parsed = getStoredLocalTournaments();
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -1124,7 +1122,7 @@ useEffect(() => {
     if (!ok) return;
     if (torneo?.__local) {
       const local = getLocalTournaments().filter((t) => String(t._id) !== String(torneo.id));
-      localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(local));
+      saveStoredLocalTournaments(local);
       setSelectedTournament(null);
       setTournaments((prev) => prev.filter((t) => t.id !== torneo.id));
       notify('success', 'Torneo local eliminado', 'El torneo demo fue eliminado del almacenamiento local.');

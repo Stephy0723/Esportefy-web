@@ -167,10 +167,7 @@ export default function Settings() {
 
     const syncCachedUser = (userData) => {
         if (!userData) return;
-        localStorage.setItem('esportefyUser', JSON.stringify(userData));
-        if (sessionStorage.getItem('esportefyUser')) {
-            sessionStorage.setItem('esportefyUser', JSON.stringify(userData));
-        }
+        cacheAuthUser(userData);
         window.dispatchEvent(new Event('user-update'));
     };
 

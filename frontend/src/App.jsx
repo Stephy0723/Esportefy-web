@@ -25,7 +25,7 @@ import OrganismProfile from './pages/menu/Organismos/OrganismProfile';
 import Dashboard from './pages/menu/Dashboard/Dashboard';
 import FriendsPage from './pages/menu/Friends/Friends';
 import Chats from './pages/menu/Chats/Chats';
-import EsportefyPage from './pages/menu/Esportefy/EsportefyPage';
+import GlitchGangPage from './pages/menu/Esportefy/EsportefyPage';
 import Tv from './pages/menu/EsportefyTV/Tv';
 import Notifications from './pages/Notifications/Notifications';
 import Tournaments from './pages/menu/Tournaments/Tournaments';
@@ -147,8 +147,7 @@ const AppRouterContent = () => {
             <Route path="/chats" element={<Chats />} />
             <Route path="/tv" element={<Tv />} />
             <Route path="/settings" element={<SettingsV2 />} />
-            <Route path="/glitchgang" element={<EsportefyPage />} />
-            <Route path="/esportefy" element={<EsportefyPage />} />
+            <Route path="/glitchgang" element={<GlitchGangPage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/torneos" element={<Tournaments />} />
             <Route path="/comunidad" element={<Community />} />

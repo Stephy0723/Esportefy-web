@@ -1,5 +1,12 @@
 # Deploy Templates
 
+Para la review real de Riot en este proyecto, usa primero:
+
+- `docs/riot-glitchgang-vps-cutover.md`
+- `docs/riot-review-vps-checklist.md`
+
+Este archivo queda como referencia general de deploy.
+
 Plantillas base para publicar la URL de revision de Riot o una beta controlada de MLBB.
 
 ## Archivos
