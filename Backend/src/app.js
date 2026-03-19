@@ -31,6 +31,43 @@ if (fs.existsSync(backendEnvPath)) {
   dotenv.config();
 }
 
+const PLACEHOLDER_SECRET_VALUES = new Set([
+  '',
+  'ponerunaclaveaqui',
+  'cambia-esto-en-produccion',
+  'cambia-esto-en-producción',
+  'changeme',
+  'change-me',
+  'secret',
+  'jwtsecret',
+  'tu_jwt_secret',
+  'tu-jwt-secret'
+]);
+
+const isPlaceholderSecret = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return true;
+  if (PLACEHOLDER_SECRET_VALUES.has(normalized)) return true;
+  return normalized.includes('cambia-esto') || normalized.includes('tu_jwt_secret');
+};
+
+const validateRuntimeSecrets = () => {
+  const nodeEnv = String(process.env.NODE_ENV || '').trim().toLowerCase();
+  const frontendUrl = String(process.env.FRONTEND_URL || '').trim();
+  const jwtSecret = String(process.env.JWT_SECRET || '').trim();
+
+  const isProtectedRuntime = nodeEnv === 'production' || frontendUrl.startsWith('https://');
+  if (!isProtectedRuntime) return;
+
+  if (isPlaceholderSecret(jwtSecret) || jwtSecret.length < 24) {
+    throw new Error(
+      'JWT_SECRET inseguro para review/produccion. Usa un secreto unico de al menos 24 caracteres antes de exponer la app.'
+    );
+  }
+};
+
+validateRuntimeSecrets();
+
 export const dbReady = connectDB();
 
 const app = express();

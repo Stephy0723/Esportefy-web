@@ -48,7 +48,7 @@ const findTargetUser = async (emailArg) => {
   }
 
   return User.findOne({
-    email: { $not: /esportefy\.local$/ }
+    email: { $not: /glitchgang\.local$/ }
   }).sort({ createdAt: 1 });
 };
 

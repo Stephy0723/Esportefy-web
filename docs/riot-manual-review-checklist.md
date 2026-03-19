@@ -1,7 +1,7 @@
 # Riot Manual Review Checklist
 
 Fecha: 2026-02-28
-Proyecto: Esportefy
+Proyecto: GlitchGang
 
 Checklist manual para correr antes de enviar la solicitud en el Developer Portal.
 

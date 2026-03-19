@@ -113,7 +113,7 @@ const PaymentPolicy = () => {
             </p>
 
             <h2 className="legal-h"><i className="bx bx-envelope"></i>Contacto de facturacion</h2>
-            <p>Soporte de pagos: pagos@esportefy.com.</p>
+            <p>Soporte de pagos: pagos@glitchgang.net.</p>
             </aside>
           </div>
         </div>

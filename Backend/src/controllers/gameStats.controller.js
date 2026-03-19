@@ -208,7 +208,7 @@ const buildMlbbSection = (user = {}) => {
       createCard('Riesgos', riskFlags)
     ],
     {
-      description: 'Estado interno de la cuenta MLBB dentro de Esportefy, usando la verificación propia del producto.'
+      description: 'Estado interno de la cuenta MLBB dentro de GlitchGang, usando la verificación propia del producto.'
     }
   );
 };
@@ -223,7 +223,7 @@ const buildNotes = (user = {}) => {
   if (riot?.verified && riot?.gameName && riot?.tagLine) {
     notes.push(`Riot enlazado: ${riot.gameName}#${riot.tagLine}.`);
   } else {
-    notes.push('El usuario no tiene una cuenta Riot verificada en Esportefy.');
+    notes.push('El usuario no tiene una cuenta Riot verificada en GlitchGang.');
   }
 
   if (riot?.verified && !lolProfile?.exists) {

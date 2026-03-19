@@ -13,7 +13,7 @@ const JOIN_CONCURRENCY = Number.parseInt(String(process.env.LOAD_JOIN_CONCURRENC
 const REGISTER_TEAMS_TOTAL = Number.parseInt(String(process.env.LOAD_REGISTER_TOTAL || '5'), 10);
 const REGISTER_CONCURRENCY = Number.parseInt(String(process.env.LOAD_REGISTER_CONCURRENCY || '5'), 10);
 const KEEP_DATA = String(process.env.LOAD_KEEP_DATA || '').trim().toLowerCase() === 'true';
-const PASSWORD = 'Esportefy123!';
+const PASSWORD = 'GlitchGang123!';
 
 if (!process.env.MONGO_URI) {
   console.error('Falta MONGO_URI');
@@ -114,7 +114,7 @@ const runConcurrent = async (items, concurrency, fn) => {
 
 const seedJoinScenario = async () => {
   const captain = await createVerifiedMlbbUser({
-    email: `mlbb.load.captain.${runId}@esportefy.local`,
+    email: `mlbb.load.captain.${runId}@glitchgang.local`,
     username: `mlbb_load_captain_${runId}`,
     fullName: 'MLBB Load Captain',
     phone: `80911${suffix}`.slice(0, 10),
@@ -158,7 +158,7 @@ const seedJoinScenario = async () => {
   const joinUsers = [];
   for (let i = 0; i < safeJoinTotal; i += 1) {
     const user = await createVerifiedMlbbUser({
-      email: `mlbb.load.join.${runId}.${i}@esportefy.local`,
+      email: `mlbb.load.join.${runId}.${i}@glitchgang.local`,
       username: `mlbb_load_join_${runId}_${i}`,
       fullName: `MLBB Load Join ${i}`,
       phone: `80921${suffix}${i}`.slice(0, 10),
@@ -208,7 +208,7 @@ const seedRegisterScenario = async () => {
     const players = [];
     for (let i = 0; i < 5; i += 1) {
       const user = await createVerifiedMlbbUser({
-        email: `mlbb.load.team.${runId}.${t}.${i}@esportefy.local`,
+        email: `mlbb.load.team.${runId}.${t}.${i}@glitchgang.local`,
         username: `mlbb_load_team_${runId}_${t}_${i}`,
         fullName: `MLBB Load Team ${t} Player ${i}`,
         phone: `8093${String(t).padStart(2, '0')}${suffix}${i}`.slice(0, 10),
@@ -286,7 +286,7 @@ const seedRegisterScenario = async () => {
       notes: 'Load smoke'
     },
     contact: {
-      email: 'mlbb-load@esportefy.local',
+      email: 'mlbb-load@glitchgang.local',
       phone: '8090000000',
       discordInvite: ''
     },
@@ -302,7 +302,7 @@ const seedRegisterScenario = async () => {
     legalCompliance: {
       jurisdiction: 'República Dominicana',
       governingLaw: 'Ley aplicable de República Dominicana',
-      claimsContact: 'legal@esportefy.local',
+      claimsContact: 'legal@glitchgang.local',
       rulesAccepted: true,
       privacyAccepted: true,
       organizerDeclaration: true

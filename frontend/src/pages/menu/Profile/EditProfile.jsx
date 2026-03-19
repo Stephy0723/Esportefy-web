@@ -1440,7 +1440,7 @@ const EditProfile = () => {
                                             <div style={{ width: `${profileProgression.level.progressPercent}%` }} />
                                         </div>
                                         <p className="ep__progress-note">
-                                            Los puntos se calculan automaticamente segun tus acciones dentro de Esportefy:
+                                            Los puntos se calculan automaticamente segun tus acciones dentro de GlitchGang:
                                             completar el perfil, conectar cuentas, jugar, publicar y competir.
                                         </p>
                                     </div>

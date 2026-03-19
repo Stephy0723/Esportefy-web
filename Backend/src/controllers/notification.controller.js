@@ -121,7 +121,7 @@ export const sendTestAllNotifications = async (req, res) => {
             // ── SISTEMA ──
             {
                 type: 'info', category: 'system',
-                title: 'Bienvenido a Esportefy',
+                title: 'Bienvenido a GlitchGang',
                 source: 'Sistema',
                 message: 'Tu cuenta ha sido creada exitosamente. Explora las funciones disponibles, crea equipos, únete a torneos y conecta con otros jugadores.',
                 visuals: { icon: 'bx-rocket', color: '#8EDB15', glow: true }
@@ -196,14 +196,14 @@ export const sendTestAllNotifications = async (req, res) => {
             {
                 type: 'tournament', category: 'tournament',
                 title: 'Inscripción confirmada al torneo',
-                source: 'Copa Esportefy 2026',
-                message: 'Tu equipo "Shadow Wolves" ha sido inscrito exitosamente en la Copa Esportefy 2026 (Valorant). Las rondas comienzan el 15 de marzo.',
+                source: 'Copa GlitchGang 2026',
+                message: 'Tu equipo "Shadow Wolves" ha sido inscrito exitosamente en la Copa GlitchGang 2026 (Valorant). Las rondas comienzan el 15 de marzo.',
                 visuals: { icon: 'bx-trophy', color: '#FFD700', glow: true }
             },
             {
                 type: 'tournament', category: 'tournament',
                 title: 'Próxima partida en 24h',
-                source: 'Copa Esportefy 2026',
+                source: 'Copa GlitchGang 2026',
                 message: 'Tu próxima partida es mañana: Shadow Wolves vs Cyber Dragons — Cuartos de Final. Horario: 8:00 PM CDMX.',
                 visuals: { icon: 'bx-time-five', color: '#ffa726', glow: false }
             },
@@ -264,7 +264,7 @@ export const sendTestAllNotifications = async (req, res) => {
                 type: 'success', category: 'social',
                 title: '¡Logro desbloqueado: Primer Equipo!',
                 source: 'Logros',
-                message: 'Has creado tu primer equipo en Esportefy. Sigue así para desbloquear más logros y recompensas exclusivas.',
+                message: 'Has creado tu primer equipo en GlitchGang. Sigue así para desbloquear más logros y recompensas exclusivas.',
                 visuals: { icon: 'bx-star', color: '#FFD700', glow: true }
             },
             {

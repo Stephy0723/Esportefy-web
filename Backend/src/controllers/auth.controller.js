@@ -1540,7 +1540,7 @@ export const forgotPassword = async (req, res) => {
 
         const mailOptions = {
     to: user.email,
-    from: 'Esportefy Team <no-reply@esportefy.com>',
+    from: 'GlitchGang Team <no-reply@glitchgang.net>',
     subject: `${token} es tu código de recuperación`,
     html: `
     <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 50px 0;">
@@ -1548,7 +1548,7 @@ export const forgotPassword = async (req, res) => {
             
             <div style="padding: 30px; text-align: center;">
                 <h1 style="color: #000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">
-                    ESPORTEFY<span style="color: #00ff00;">.</span>
+                    GLITCHGANG<span style="color: #00ff00;">.</span>
                 </h1>
                 <p style="color: #666; font-size: 14px; margin-top: 10px;">RECUPERACIÓN DE CUENTA</p>
             </div>
@@ -1571,7 +1571,7 @@ export const forgotPassword = async (req, res) => {
 
             <div style="background-color: #000; padding: 15px; text-align: center;">
                 <p style="color: #fff; font-size: 11px; margin: 0; opacity: 0.7;">
-                    © ${new Date().getFullYear()} Esportefy Platform. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} GlitchGang Platform. Todos los derechos reservados.
                 </p>
             </div>
         </div>
@@ -1897,7 +1897,7 @@ export const applyOrganizer = async (req, res) => {
         });
 
         const mailOptions = {
-            from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
+            from: `"GlitchGang Admin" <${process.env.EMAIL_USER}>`,
             to: 'steliantsoft@gmail.com',
             replyTo: user.email,
             subject: `Solicitud de Organizador: ${orgName || user.username}`,
@@ -2026,7 +2026,7 @@ export const applyRole = async (req, res) => {
                 .join('');
 
             await transporter.sendMail({
-                from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
+                from: `"GlitchGang Admin" <${process.env.EMAIL_USER}>`,
                 to: 'steliantsoft@gmail.com',
                 replyTo: user.email,
                 subject: `Nueva Solicitud de Rol: ${roleLabels[role] || role} — ${user.username}`,

@@ -374,7 +374,7 @@ const getMlbbIdentityBindingIssues = (
             const slotLabel = getMlbbStarters(reg).includes(p) ? 'titular' : 'suplente';
             if (!p?.user) {
                 if (strictLinkedPlayers) {
-                    issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no está vinculado a un usuario de Esportefy.`);
+                    issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no está vinculado a un usuario de GlitchGang.`);
                 }
                 continue;
             }
@@ -521,7 +521,7 @@ const validateUniversityTournamentTeam = async (team) => {
         if (!player?.user) {
             return {
                 ok: false,
-                message: 'En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de Esportefy.'
+                message: 'En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de GlitchGang.'
             };
         }
     }
@@ -679,7 +679,7 @@ export const createTournament = async (req, res) => {
         const data = req.body;
         const normalizedGame = normalizeSupportedGameName(data.game);
         if (!normalizedGame) {
-            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en GlitchGang.' });
         }
         data.game = normalizedGame;
         const organizer = await User.findById(req.userId).select('isOrganizer');
@@ -1035,7 +1035,7 @@ export const updateTournament = async (req, res) => {
 
         const normalizedUpdateGame = data.game !== undefined ? normalizeSupportedGameName(data.game) : '';
         if (data.game !== undefined && !normalizedUpdateGame) {
-            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en GlitchGang.' });
         }
 
         const update = {
@@ -1625,7 +1625,7 @@ export const registerTeam = async (req, res) => {
                     const missingLinkedStarter = starters.slice(0, expected).find((p) => !p?.user);
                     if (missingLinkedStarter) {
                         return res.status(400).json({
-                            message: 'Modo estricto MLBB: todos los titulares deben estar vinculados a usuarios reales de Esportefy.'
+                            message: 'Modo estricto MLBB: todos los titulares deben estar vinculados a usuarios reales de GlitchGang.'
                         });
                     }
                 }
@@ -1633,7 +1633,7 @@ export const registerTeam = async (req, res) => {
                     const missingLinkedPlayer = mlbbRosterPlayers.find((p) => !p?.user);
                     if (missingLinkedPlayer) {
                         return res.status(400).json({
-                            message: 'En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de Esportefy.'
+                            message: 'En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de GlitchGang.'
                         });
                     }
                 }

@@ -1,9 +1,18 @@
 # Riot Submit Runbook (Sin Dominio)
 
 Fecha: 2026-03-08  
-Proyecto: Esportefy
+Proyecto: GlitchGang
 
 Este runbook cierra todo lo que se puede completar **antes** de tener dominio final/HTTPS público.
+
+## 0) Rotacion de secretos antes del submit
+
+Antes de exponer una URL review publica:
+
+- genera un `JWT_SECRET` nuevo, largo y unico,
+- rota cualquier `RIOT_API_KEY` usada en pruebas compartidas,
+- rota credenciales de correo/OAuth si fueron expuestas en screenshots, chat o videos,
+- verifica que el entorno review no use placeholders como `ponerunaclaveaqui`.
 
 ## 1) Configuración local de review
 
@@ -52,6 +61,7 @@ Ejecutar checklist:
 
 Evidencias mínimas:
 - footer legal visible (disclaimer Riot)
+- review landing publica accesible en `/review/riot`
 - flujo de vinculación Riot
 - rechazo por torneo Riot no gratuito (en review mode)
 - rechazo por duplicado Riot ID
@@ -72,14 +82,16 @@ Checklist de salida a VPS:
 ## 5) Datos para Developer Portal
 
 Campos obligatorios:
-- `Product Name`: Esportefy
+- `Product Name`: GlitchGang
 - `Product URL`: URL review HTTPS
 - `Product Game Focus`: League of Legends (y producto separado si luego agregas otro)
 - `Are you organizing tournaments?`: Yes
 
 En `Product Description` describe:
+- el branding publico visible si difiere del nombre legal del producto,
 - que el API key vive solo en backend
 - que el flujo Riot usa vinculación de cuenta + controles anti-duplicado
+- que la review publica tiene una ruta explicativa (`/review/riot`)
 - que torneos Riot usan reglas tradicionales y controles de integridad
 - que no existe afiliación oficial con Riot Games
 

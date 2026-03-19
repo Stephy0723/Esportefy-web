@@ -66,7 +66,7 @@ const EVENT_LABELS = {
   account_deleted: 'Cuenta eliminada',
 };
 
-const SecurityCenterUI = ({ email = 'usuario@esportefy.com', isVerified = false }) => {
+const SecurityCenterUI = ({ email = 'usuario@glitchgang.net', isVerified = false }) => {
   const { addToast } = useNotification();
   const [showEmail, setShowEmail] = useState(false);
   const maskedEmail = useMemo(() => maskEmail(email), [email]);

@@ -51,7 +51,7 @@ Criticas:
 ## 4) Flujo de deploy
 
 ```bash
-cd /var/www/esportefy
+cd /var/www/glitchgang
 git pull origin main
 
 cd Backend
@@ -65,11 +65,11 @@ npm run build
 Luego:
 
 ```bash
-pm2 start /var/www/esportefy/deploy/pm2/backend-ecosystem.config.cjs
+pm2 start /var/www/glitchgang/deploy/pm2/backend-ecosystem.config.cjs
 pm2 save
 ```
 
-Y activa Nginx con una config derivada de `deploy/nginx/esportefy-review.conf`.
+Y activa Nginx con una config derivada de `deploy/nginx/glitchgang-review.conf`.
 
 ## 5) Verificaciones remotas obligatorias
 

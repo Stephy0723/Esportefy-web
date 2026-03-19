@@ -48,7 +48,7 @@ const createUser = async ({ suffix, plainPassword }) => {
     platforms: [],
     goals: [],
     username: `auth-smoke-${suffix}`,
-    email: `auth.smoke.${suffix}@esportefy.local`,
+    email: `auth.smoke.${suffix}@glitchgang.local`,
     password: hashedPassword,
     checkTerms: true
   });

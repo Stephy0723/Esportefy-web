@@ -187,7 +187,7 @@ const SupportPage = () => {
     const quickActions = [
         { icon: FaTrophy, title: 'Enviar Logro', desc: 'Reporta tus victorias en torneos', accent: 'gold', onClick: () => setIsAchievementModalOpen(true) },
         { icon: FaBook, title: 'Documentación', desc: 'Guías y tutoriales completos', accent: 'primary', onClick: () => navigate('/docs') },
-        { icon: FaDiscord, title: 'Discord', desc: 'Comunidad y soporte en vivo', accent: 'discord', onClick: () => window.open('https://discord.gg/esportefy', '_blank') },
+        { icon: FaDiscord, title: 'Discord', desc: 'Comunidad y soporte en vivo', accent: 'discord', onClick: () => window.open('https://discord.gg/glitchgang', '_blank') },
         { icon: FaBug, title: 'Reportar Bug', desc: 'Ayúdanos a mejorar la plataforma', accent: 'warning', onClick: () => { setInquiryType('bug'); setIsModalOpen(true); } },
         { icon: FaLightbulb, title: 'Sugerencias', desc: 'Comparte tus ideas con nosotros', accent: 'info', onClick: () => { setInquiryType('suggestion'); setIsModalOpen(true); } },
     ];
@@ -376,10 +376,10 @@ const SupportPage = () => {
 
                     <div className="sp-direct">
                         <h4>Contacto Directo</h4>
-                        <a href="mailto:soporte@esportefy.com" className="sp-direct__link">
-                            <FaEnvelope /> <span>soporte@esportefy.com</span>
+                        <a href="mailto:soporte@glitchgang.net" className="sp-direct__link">
+                            <FaEnvelope /> <span>soporte@glitchgang.net</span>
                         </a>
-                        <a href="https://discord.gg/esportefy" target="_blank" rel="noopener noreferrer" className="sp-direct__link">
+                        <a href="https://discord.gg/glitchgang" target="_blank" rel="noopener noreferrer" className="sp-direct__link">
                             <FaDiscord /> <span>Servidor de Discord</span>
                         </a>
                     </div>

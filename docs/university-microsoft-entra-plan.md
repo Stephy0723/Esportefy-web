@@ -12,7 +12,7 @@ Objetivo recomendado:
 
 ## Arquitectura minima viable
 
-1. Usuario entra con su cuenta Esportefy.
+1. Usuario entra con su cuenta GlitchGang.
 2. Usuario envia postulacion universitaria:
    - universidad
    - student ID / matricula
@@ -61,7 +61,7 @@ No basta con que una universidad use Microsoft 365. Para leer o sincronizar dato
    - para que se usan
    - cuanto tiempo se retienen
    - como se borran
-3. Politica de privacidad actualizada en Esportefy.
+3. Politica de privacidad actualizada en GlitchGang.
 4. Consentimiento claro del usuario cuando aplique.
 5. Control de acceso interno y auditoria.
 

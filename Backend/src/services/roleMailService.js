@@ -21,7 +21,7 @@ export const sendRoleApplicationMail = async (user, role, documentFile, formData
   
   let htmlContent = `
   <div style="font-family:Arial,sans-serif;background:#0f1115;padding:24px;color:#e7eaf0;">
-    <h2 style="margin:0 0 12px;color:#7CFF6B;">Esportefy · Nueva Solicitud de Rol</h2>
+    <h2 style="margin:0 0 12px;color:#7CFF6B;">GlitchGang · Nueva Solicitud de Rol</h2>
     <p style="margin:0 0 8px;">Un usuario ha solicitado el rol de <strong>${role.toUpperCase()}</strong>.</p>
     <ul style="line-height:1.7;">
       <li><strong>Usuario:</strong> ${user.username || '-'} (${user.email || '-'})</li>
@@ -46,7 +46,7 @@ export const sendRoleApplicationMail = async (user, role, documentFile, formData
   `;
 
   const mailOptions = {
-    from: `"Esportefy Roles" <${process.env.EMAIL_USER}>`,
+    from: `"GlitchGang Roles" <${process.env.EMAIL_USER}>`,
     to: adminEmail,
     subject,
     html: htmlContent,

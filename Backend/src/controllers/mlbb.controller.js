@@ -117,7 +117,7 @@ const pushMlbbNotification = (user, {
   color = '#00b4d8',
   glow = false,
   meta = {},
-  source = 'Esportefy MLBB',
+  source = 'GlitchGang MLBB',
   createdAt = new Date()
 } = {}) => {
   if (!user || !title || !message) return;
@@ -387,7 +387,7 @@ export const linkMlbbAccount = async (req, res) => {
         }
       : {
           title: 'Cuenta MLBB vinculada',
-          message: 'Tu cuenta de Mobile Legends quedó verificada en Esportefy.',
+          message: 'Tu cuenta de Mobile Legends quedó verificada en GlitchGang.',
           type: 'success',
           color: '#22c55e',
           glow: true,
@@ -576,7 +576,7 @@ export const mlbbStatus = async (req, res) => {
             : status === 'verified_manual'
               ? 'Cuenta MLBB verificada manualmente por el equipo admin.'
               : linked
-                ? 'Cuenta MLBB verificada en Esportefy.'
+                ? 'Cuenta MLBB verificada en GlitchGang.'
           : status === 'pending'
             ? 'Tu verificación MLBB está en revisión.'
             : status === 'rejected'
@@ -697,7 +697,7 @@ export const reviewMlbbLink = async (req, res) => {
       syncMlbbProfileSnapshot(target, { now: nowDate });
       pushMlbbNotification(target, {
         title: 'Cuenta MLBB aprobada',
-        message: 'Tu cuenta de Mobile Legends fue aprobada por el equipo de Esportefy.',
+        message: 'Tu cuenta de Mobile Legends fue aprobada por el equipo de GlitchGang.',
         type: 'success',
         color: '#22c55e',
         glow: true,

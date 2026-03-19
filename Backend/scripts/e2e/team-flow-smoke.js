@@ -45,7 +45,7 @@ const createUser = async ({
     platforms: [],
     goals: [],
     username: `team-${suffix}`,
-    email: `team.${suffix}@esportefy.local`,
+    email: `team.${suffix}@glitchgang.local`,
     password: hashedPassword,
     checkTerms: true,
     connections: {

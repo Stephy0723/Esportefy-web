@@ -58,7 +58,7 @@ Frontend (`frontend/.env`):
 
 ## 4) Notas legales y de marca
 
-- Esportefy no debe declarar afiliación oficial con Moonton.
+- GlitchGang no debe declarar afiliación oficial con Moonton.
 - Evitar uso de logos oficiales no autorizados.
 - Evitar apuestas, cuotas, gambling o flujos fuera de política.
 - Mantener contacto legal y de soporte visible para participantes.

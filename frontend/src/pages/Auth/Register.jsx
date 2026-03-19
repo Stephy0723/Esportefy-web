@@ -54,7 +54,7 @@ const WEAK_PASSWORDS = new Set([
   'admin123',
   'abc12345',
   'letmein',
-  'esportefy',
+  'glitchgang',
   'contrasena',
   'contraseña'
 ].map(normalizeForCompare));

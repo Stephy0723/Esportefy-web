@@ -21,7 +21,7 @@ const DEMO_USERS = [
   {
     fullName: 'Valentina Reyes',
     username: 'valreyesgaming',
-    email: 'valentina.reyes@esportefy.local',
+    email: 'valentina.reyes@glitchgang.local',
     phone: '8094521789',
     gender: 'Femenino',
     country: 'México',
@@ -84,7 +84,7 @@ const DEMO_USERS = [
   {
     fullName: 'Carlos Méndez',
     username: 'carlosmendez_gg',
-    email: 'carlos.mendez@esportefy.local',
+    email: 'carlos.mendez@glitchgang.local',
     phone: '8297654321',
     gender: 'Masculino',
     country: 'República Dominicana',
@@ -145,7 +145,7 @@ const DEMO_USERS = [
   {
     fullName: 'Mariana Torres',
     username: 'mari_t0rres',
-    email: 'mariana.torres@esportefy.local',
+    email: 'mariana.torres@glitchgang.local',
     phone: '8095553214',
     gender: 'Femenino',
     country: 'Colombia',
@@ -191,7 +191,7 @@ const DEMO_USERS = [
   {
     fullName: 'Diego Herrera',
     username: 'diegoherrera_pro',
-    email: 'diego.herrera@esportefy.local',
+    email: 'diego.herrera@glitchgang.local',
     phone: '8493217654',
     gender: 'Masculino',
     country: 'Argentina',

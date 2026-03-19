@@ -432,12 +432,12 @@ const CreateTournament = () => {
         notes: 'Se requiere cuenta activa en el servidor LATAM y disponibilidad para horarios nocturnos.'
       },
       contact: {
-        email: 'tournaments@esportefy.com',
+        email: 'tournaments@glitchgang.net',
         phone: '+1 809-555-0199',
         discordInvite: 'https://discord.gg/ExCguE8e'
       },
       broadcast: {
-        streamUrl: 'https://www.twitch.tv/esportefy',
+        streamUrl: 'https://www.twitch.tv/glitchgang',
         streamLanguage: 'es'
       },
       matchConfig: {
@@ -448,7 +448,7 @@ const CreateTournament = () => {
       legalCompliance: {
         jurisdiction: 'Republica Dominicana',
         governingLaw: 'Normativa local de comercio electronico, consumidor y datos personales aplicable al evento',
-        claimsContact: 'legal@esportefy.com',
+        claimsContact: 'legal@glitchgang.net',
         rulesAccepted: true,
         privacyAccepted: true,
         organizerDeclaration: true
