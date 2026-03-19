@@ -127,7 +127,7 @@ const buildTeamStatsSnapshot = (team = {}) => {
             { label: 'Vacantes activas', value: String(vacancies) }
         ],
         access: [
-            { label: 'Miembros Esportefy', value: String(linkedUsers) },
+            { label: 'Miembros GlitchGang', value: String(linkedUsers) },
             { label: 'Entradas manuales', value: String(manualEntries) },
             { label: competitiveIdLabel, value: `${competitiveIdsReady}/${filledCompetitiveSlots || 0}` },
             { label: 'Roles cubiertos', value: String(rolesCovered) }
@@ -1405,7 +1405,7 @@ const Team = () => {
                                         <article className="th__stats-sheet__hero-card">
                                             <span>Miembros vinculados</span>
                                             <strong>{previewStats.linkedUsers}</strong>
-                                            <small>usuarios reales de Esportefy</small>
+                                            <small>usuarios reales de GlitchGang</small>
                                         </article>
                                     </div>
 

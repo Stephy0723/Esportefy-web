@@ -288,6 +288,22 @@
     line-height: 1.5;
 }
 
+.stv2-section__microcopy {
+    margin: 0.85rem 0 0;
+    color: var(--stv2-text-muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.stv2-section__microcopy a {
+    color: var(--stv2-primary);
+    text-decoration: none;
+}
+
+.stv2-section__microcopy a:hover {
+    text-decoration: underline;
+}
+
 .stv2-oauth-notice {
     display: flex;
     align-items: center;
@@ -349,6 +365,18 @@
     letter-spacing: 0.05em;
     color: var(--stv2-text-muted);
     margin: 2rem 0 1rem;
+}
+
+.stv2-consent-list {
+    margin: 0 0 1rem;
+    padding-left: 1.15rem;
+    color: var(--stv2-text-muted);
+    font-size: 0.88rem;
+    line-height: 1.7;
+}
+
+.stv2-consent-list li + li {
+    margin-top: 0.35rem;
 }
 
 /* Back Button */

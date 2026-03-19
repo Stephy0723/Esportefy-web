@@ -53,7 +53,7 @@ const run = async () => {
 
         // 6. Delete ALL demo/test users (keep only the main user)
         const mainUser = await User.findOne({
-            email: { $not: /esportefy\.local$/ }
+            email: { $not: /glitchgang\.local$/ }
         }).sort({ createdAt: 1 });
 
         if (mainUser) {

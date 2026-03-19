@@ -4,7 +4,7 @@ Plantillas base para publicar la URL de revision de Riot o una beta controlada d
 
 ## Archivos
 
-- `deploy/nginx/esportefy-review.conf`
+- `deploy/nginx/glitchgang-review.conf`
   - Nginx para:
     - `review.tudominio.com` -> frontend estatico
     - `api.tudominio.com` -> backend Node en `127.0.0.1:4000`
@@ -31,8 +31,8 @@ Antes de usarlos, cambia:
 - `review.tudominio.com`
 - `api.tudominio.com`
 - rutas:
-  - `/var/www/esportefy/frontend/dist`
-  - `/var/www/esportefy/Backend`
+  - `/var/www/glitchgang/frontend/dist`
+  - `/var/www/glitchgang/Backend`
 
 Si vas a subir MLBB beta en vez de Riot review, usa:
 
@@ -41,7 +41,7 @@ Si vas a subir MLBB beta en vez de Riot review, usa:
 
 ## Flujo recomendado en VPS
 
-1. Clonar repo en `/var/www/esportefy`
+1. Clonar repo en `/var/www/glitchgang`
 2. Instalar dependencias backend y frontend
 3. Crear `.env` real para backend
 4. Build frontend
@@ -52,7 +52,7 @@ Si vas a subir MLBB beta en vez de Riot review, usa:
 ## Comandos tipicos
 
 ```bash
-cd /var/www/esportefy
+cd /var/www/glitchgang
 git pull origin main
 
 cd Backend
@@ -62,15 +62,15 @@ cd ../frontend
 npm install
 npm run build
 
-pm2 start /var/www/esportefy/deploy/pm2/backend-ecosystem.config.cjs
+pm2 start /var/www/glitchgang/deploy/pm2/backend-ecosystem.config.cjs
 pm2 save
 ```
 
 Luego:
 
 ```bash
-sudo cp /var/www/esportefy/deploy/nginx/esportefy-review.conf /etc/nginx/sites-available/esportefy-review.conf
-sudo ln -s /etc/nginx/sites-available/esportefy-review.conf /etc/nginx/sites-enabled/esportefy-review.conf
+sudo cp /var/www/glitchgang/deploy/nginx/glitchgang-review.conf /etc/nginx/sites-available/glitchgang-review.conf
+sudo ln -s /etc/nginx/sites-available/glitchgang-review.conf /etc/nginx/sites-enabled/glitchgang-review.conf
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -99,7 +99,7 @@ dig +short api.tudominio.com
 
 Parte de `deploy/env/backend.review.env.example` y crea:
 
-- `/var/www/esportefy/Backend/.env`
+- `/var/www/glitchgang/Backend/.env`
 
 Puntos criticos:
 
@@ -121,7 +121,7 @@ porque el backend la bloquea en entorno publico.
 
 Parte de `deploy/env/frontend.review.env.example` y crea:
 
-- `/var/www/esportefy/frontend/.env.production`
+- `/var/www/glitchgang/frontend/.env.production`
 
 Minimo:
 
@@ -137,14 +137,14 @@ VITE_RIOT_MIN_ACTIVE_PARTICIPANTS=20
 ### 4. Build y proceso backend
 
 ```bash
-cd /var/www/esportefy/Backend
+cd /var/www/glitchgang/Backend
 npm install
 
-cd /var/www/esportefy/frontend
+cd /var/www/glitchgang/frontend
 npm install
 npm run build
 
-pm2 start /var/www/esportefy/deploy/pm2/backend-ecosystem.config.cjs
+pm2 start /var/www/glitchgang/deploy/pm2/backend-ecosystem.config.cjs
 pm2 save
 pm2 status
 ```
@@ -152,7 +152,7 @@ pm2 status
 Smoke local del backend:
 
 ```bash
-cd /var/www/esportefy
+cd /var/www/glitchgang
 npm --prefix Backend run test:e2e:riot
 ```
 
@@ -161,8 +161,8 @@ npm --prefix Backend run test:e2e:riot
 Publica la plantilla:
 
 ```bash
-sudo cp /var/www/esportefy/deploy/nginx/esportefy-review.conf /etc/nginx/sites-available/esportefy-review.conf
-sudo ln -s /etc/nginx/sites-available/esportefy-review.conf /etc/nginx/sites-enabled/esportefy-review.conf
+sudo cp /var/www/glitchgang/deploy/nginx/glitchgang-review.conf /etc/nginx/sites-available/glitchgang-review.conf
+sudo ln -s /etc/nginx/sites-available/glitchgang-review.conf /etc/nginx/sites-enabled/glitchgang-review.conf
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -171,7 +171,7 @@ Ajusta antes:
 
 - `review.tudominio.com`
 - `api.tudominio.com`
-- `/var/www/esportefy/frontend/dist`
+- `/var/www/glitchgang/frontend/dist`
 - certificados en `/etc/letsencrypt/live/...`
 
 ### 6. SSL
@@ -249,5 +249,5 @@ Antes de enviar a Riot, deberias tener:
 - disclaimer publico de `VALORANT`
 - demo account
 - dos submissions separadas:
-  - `Esportefy - League of Legends`
-  - `Esportefy - VALORANT`
+  - `GlitchGang - League of Legends`
+  - `GlitchGang - VALORANT`

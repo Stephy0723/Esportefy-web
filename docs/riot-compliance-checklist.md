@@ -1,7 +1,7 @@
 # Riot Compliance Checklist (Prototype)
 
 Date: 2026-02-24
-Project: Esportefy
+Project: GlitchGang
 
 This is a practical checklist we use before submitting the prototype for Riot review.
 

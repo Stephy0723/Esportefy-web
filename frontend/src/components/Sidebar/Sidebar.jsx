@@ -29,14 +29,14 @@ const EXTRA_LINKS = [
   { to: '/friends', icon: 'bx-user-plus', label: 'Amigos' },
   { to: '/chats', icon: 'bx-chat', label: 'Chats' },
   { to: '/settings', icon: 'bx-cog', label: 'Ajustes', section: 'CONFIG' },
-  { to: '/esportefy', icon: 'bx-info-circle', label: 'GLITCH GANG', section: 'MARCA' },
+  { to: '/glitchgang', icon: 'bx-info-circle', label: 'GLITCH GANG', section: 'MARCA' },
 ];
 
 const SOCIALS = [
-  { href: 'https://twitch.tv/esportefy', icon: 'bxl-twitch', cls: 'twitch' },
-  { href: 'https://youtube.com/@esportefy', icon: 'bxl-youtube', cls: 'youtube' },
-  { href: 'https://facebook.com/esportefy', icon: 'bxl-facebook', cls: 'facebook' },
-  { href: 'https://discord.gg/esportefy', icon: 'bxl-discord-alt', cls: 'discord' },
+  { href: 'https://twitch.tv/glitchgang', icon: 'bxl-twitch', cls: 'twitch' },
+  { href: 'https://youtube.com/@glitchgang', icon: 'bxl-youtube', cls: 'youtube' },
+  { href: 'https://facebook.com/glitchgang', icon: 'bxl-facebook', cls: 'facebook' },
+  { href: 'https://discord.gg/glitchgang', icon: 'bxl-discord-alt', cls: 'discord' },
 ];
 
 const Sidebar = ({ isClosed, setIsClosed }) => {

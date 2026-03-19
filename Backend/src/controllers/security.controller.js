@@ -68,7 +68,7 @@ export const generate2FASecret = async (req, res) => {
     }
 
     const secret = generateSecret();
-    const uri = generateURI({ issuer: 'Esportefy', label: user.email, secret, type: 'totp' });
+    const uri = generateURI({ issuer: 'GlitchGang', label: user.email, secret, type: 'totp' });
     const qrCodeDataUrl = await QRCode.toDataURL(uri);
 
     user.twoFactorPendingSecret = secret;

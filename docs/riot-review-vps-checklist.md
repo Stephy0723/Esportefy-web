@@ -1,7 +1,7 @@
 # Riot Review VPS Checklist
 
 Fecha: 2026-02-28
-Proyecto: Esportefy
+Proyecto: GlitchGang
 
 Checklist operativo para publicar una URL de revision estable antes de enviar la solicitud de Riot.
 
@@ -156,8 +156,8 @@ git pull origin main
 npm install
 npm --prefix frontend install
 npm --prefix frontend run build
-pm2 restart esportefy-api
-pm2 restart esportefy-web
+pm2 restart glitchgang-api
+pm2 restart glitchgang-web
 ```
 
 Adapta los nombres de procesos a tu VPS.

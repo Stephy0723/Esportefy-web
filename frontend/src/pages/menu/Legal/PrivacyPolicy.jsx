@@ -107,7 +107,7 @@ const PrivacyPolicy = () => {
             </p>
 
             <h2 className="legal-h"><i className="bx bx-envelope"></i>Contacto de privacidad</h2>
-            <p>Solicitudes de privacidad: privacidad@esportefy.com.</p>
+            <p>Solicitudes de privacidad: privacidad@glitchgang.net.</p>
             </aside>
           </div>
         </div>

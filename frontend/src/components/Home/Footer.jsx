@@ -14,9 +14,10 @@ const LINKS = {
   ],
   soporte: [
     { label: 'Documentacion', to: '/docs' },
+    { label: 'Riot Review', to: '/review/riot' },
     { label: 'Centro de Ayuda', to: '/support' },
     { label: 'Reportar un Bug', to: '/settings' },
-    { label: 'Contacto', href: 'mailto:soporte@esportefy.com' },
+    { label: 'Contacto', href: 'mailto:soporte@glitchgang.net' },
   ],
   legal: [
     { label: 'T\u00e9rminos y Condiciones', to: '/legal/terms' },
@@ -28,7 +29,7 @@ const LINKS = {
 
 const SOCIALS = [
   { icon: 'bxl-discord-alt', href: 'https://discord.gg/ExCguE8e', label: 'Discord' },
-  { icon: 'bxl-twitch', href: 'https://www.twitch.tv/esportefy', label: 'Twitch' },
+  { icon: 'bxl-twitch', href: 'https://www.twitch.tv/glitchgang', label: 'Twitch' },
   { icon: 'bxl-youtube', href: 'https://www.youtube.com/channel/UCAwKJv2zibYYEKJOgWW6F9w', label: 'YouTube' },
   { icon: 'bxl-facebook-circle', href: 'https://www.facebook.com/profile.php?id=61585628084470', label: 'Facebook' },
 ];

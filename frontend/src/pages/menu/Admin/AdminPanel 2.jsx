@@ -272,7 +272,7 @@ const AdminPanel = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `esportefy-${dataType}-${Date.now()}.csv`;
+        a.download = `glitchgang-${dataType}-${Date.now()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     };

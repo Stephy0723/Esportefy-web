@@ -56,6 +56,7 @@ import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
 import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
 import TermsConditions from './pages/menu/Legal/TermsConditions';
 import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
+import RiotReviewPage from './pages/Review/RiotReviewPage';
 import GamesPage from './pages/menu/Community/games/GamesPage';
 import GamesFilterTemplate from './pages/menu/Community/games/GamesFilterTemplate';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
@@ -121,6 +122,7 @@ const AppRouterContent = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/docs" element={<DocsPage />} />
+          <Route path="/review/riot" element={<RiotReviewPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} />
@@ -145,6 +147,7 @@ const AppRouterContent = () => {
             <Route path="/chats" element={<Chats />} />
             <Route path="/tv" element={<Tv />} />
             <Route path="/settings" element={<SettingsV2 />} />
+            <Route path="/glitchgang" element={<EsportefyPage />} />
             <Route path="/esportefy" element={<EsportefyPage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/torneos" element={<Tournaments />} />

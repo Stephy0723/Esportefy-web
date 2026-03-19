@@ -1,0 +1,129 @@
+.riot-review-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+  color: var(--text-main);
+}
+
+.riot-review-page__hero,
+.riot-review-page__card,
+.riot-review-page__note {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+}
+
+.riot-review-page__hero {
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.riot-review-page__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--primary-rgb), 0.28);
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.riot-review-page__hero h1 {
+  margin: 1rem 0 0.75rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.riot-review-page__hero p {
+  margin: 0;
+  max-width: 760px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.riot-review-page__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.riot-review-page__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.riot-review-page__chip.is-active {
+  border-color: rgba(var(--primary-rgb), 0.28);
+  color: var(--primary);
+}
+
+.riot-review-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.riot-review-page__card {
+  padding: 1.5rem;
+}
+
+.riot-review-page__card h2 {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+}
+
+.riot-review-page__card ul,
+.riot-review-page__card ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  line-height: 1.75;
+}
+
+.riot-review-page__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.riot-review-page__links a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.riot-review-page__links a:hover {
+  text-decoration: underline;
+}
+
+.riot-review-page__note {
+  padding: 1rem 1.25rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.riot-review-page__note strong {
+  color: var(--text-main);
+}
+
+@media (max-width: 820px) {
+  .riot-review-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .riot-review-page__hero,
+  .riot-review-page__card {
+    padding: 1.25rem;
+  }
+}

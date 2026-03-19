@@ -124,8 +124,8 @@ Cuando pases a VPS:
 Ejemplo mínimo coherente en VPS:
 
 ```env
-FRONTEND_URL=https://app.esportefy.com
-CORS_ORIGINS=https://app.esportefy.com
+FRONTEND_URL=https://app.glitchgang.net
+CORS_ORIGINS=https://app.glitchgang.net
 ```
 
 ## 9) Checklist de prueba

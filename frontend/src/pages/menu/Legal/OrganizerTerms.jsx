@@ -102,7 +102,7 @@ const OrganizerTerms = () => {
               ante autoridades competentes segun jurisdiccion aplicable.
             </div>
 
-            <p style={{ marginTop: 12 }}>Contacto de organizadores: organizers@esportefy.com.</p>
+            <p style={{ marginTop: 12 }}>Contacto de organizadores: organizers@glitchgang.net.</p>
             </aside>
           </div>
         </div>

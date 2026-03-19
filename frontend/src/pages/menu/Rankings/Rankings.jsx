@@ -566,7 +566,7 @@ export default function Rankings() {
                     <FaChartLine style={{ fontSize: 48, color: 'var(--primary, #8EDB15)', opacity: 0.6 }} />
                     <h2 style={{ color: 'var(--text-main)', margin: 0 }}>Rankings de Plataforma</h2>
                     <p style={{ color: 'var(--text-muted)', maxWidth: 480, margin: 0, lineHeight: 1.6 }}>
-                        Los rankings basados en la actividad dentro de Esportefy están en desarrollo.
+                        Los rankings basados en la actividad dentro de GlitchGang están en desarrollo.
                         Aquí verás clasificaciones generadas a partir de torneos, equipos y partidas registradas en la plataforma.
                     </p>
                     <span className="sc-badge sc-badge--warning" style={{ fontSize: '0.85rem', padding: '6px 16px' }}>

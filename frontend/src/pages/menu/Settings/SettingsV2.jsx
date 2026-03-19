@@ -645,7 +645,7 @@ export default function SettingsV2() {
                 if (loading) return <div className="stv2-loading">Cargando...</div>;
                 return (
                     <motion.div key="security" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                        <SecurityCenterUI email={connections?.email || 'usuario@esportefy.com'} />
+                        <SecurityCenterUI email={connections?.email || 'usuario@glitchgang.net'} />
                     </motion.div>
                 );
 
@@ -1067,7 +1067,15 @@ export default function SettingsV2() {
                             <div className="stv2-form">
                                 <h3 className="stv2-section__subtitle">VALORANT / Riot Sign On</h3>
                                 <p className="stv2-section__desc">
-                                    Este flujo registra el consentimiento del jugador para VALORANT mediante Riot Sign On. Al autorizarlo, permites que Esportefy use los datos necesarios de tu cuenta VALORANT para funciones competitivas y de elegibilidad. No usa OTP por correo.
+                                    Este flujo registra el consentimiento del jugador para VALORANT mediante Riot Sign On. Al autorizarlo, permites que GlitchGang use los datos necesarios de tu cuenta VALORANT para funciones competitivas y de elegibilidad. No usa OTP por correo.
+                                </p>
+                                <ul className="stv2-consent-list">
+                                    <li>Autoriza verificaciones de elegibilidad, integridad competitiva y controles anti-smurf para VALORANT.</li>
+                                    <li>No reemplaza tus ajustes de privacidad: mostrar el Riot ID en publico sigue dependiendo de tu configuracion.</li>
+                                    <li>Puedes retirar este consentimiento desvinculando tu cuenta Riot desde este mismo panel.</li>
+                                </ul>
+                                <p className="stv2-section__microcopy">
+                                    Para entornos de revision, el alcance publico del flujo tambien queda resumido en <a href="/review/riot">/review/riot</a>.
                                 </p>
                                 <button
                                     className="stv2-btn stv2-btn--primary stv2-btn--lg"
@@ -1508,7 +1516,7 @@ export default function SettingsV2() {
                                     <FaChevronRight className="stv2-support-card__arrow" />
                                 </div>
 
-                                <div className="stv2-support-card" onClick={() => window.open('https://discord.gg/esportefy', '_blank')}>
+                                <div className="stv2-support-card" onClick={() => window.open('https://discord.gg/glitchgang', '_blank')}>
                                     <div className="stv2-support-card__icon-wrapper stv2-support-card__icon-wrapper--discord">
                                         <FaDiscord className="stv2-support-card__icon" />
                                     </div>
@@ -1549,43 +1557,43 @@ export default function SettingsV2() {
                             {/* Contact Options */}
                             <h3 className="stv2-section__subtitle">Contacto Directo</h3>
                             <div className="stv2-contact-grid">
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('soporte@esportefy.com')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('soporte@glitchgang.net')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-envelope' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Soporte General</span>
-                                        <span className="stv2-contact-item__value">soporte@esportefy.com</span>
+                                        <span className="stv2-contact-item__value">soporte@glitchgang.net</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('security@esportefy.com')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('security@glitchgang.net')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-shield-quarter' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Seguridad y Antifraude</span>
-                                        <span className="stv2-contact-item__value">security@esportefy.com</span>
+                                        <span className="stv2-contact-item__value">security@glitchgang.net</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('partners@esportefy.com')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('partners@glitchgang.net')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-briefcase' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Asociaciones y Negocios</span>
-                                        <span className="stv2-contact-item__value">partners@esportefy.com</span>
+                                        <span className="stv2-contact-item__value">partners@glitchgang.net</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('press@esportefy.com')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('press@glitchgang.net')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-news' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Prensa y Medios</span>
-                                        <span className="stv2-contact-item__value">press@esportefy.com</span>
+                                        <span className="stv2-contact-item__value">press@glitchgang.net</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
@@ -1594,19 +1602,19 @@ export default function SettingsV2() {
                             {/* Social Links */}
                             <h3 className="stv2-section__subtitle">Síguenos</h3>
                             <div className="stv2-social-links">
-                                <a href="https://twitter.com/esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--twitter">
+                                <a href="https://twitter.com/glitchgang" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--twitter">
                                     <i className='bx bxl-twitter' />
                                     <span>Twitter</span>
                                 </a>
-                                <a href="https://instagram.com/esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--instagram">
+                                <a href="https://instagram.com/glitchgang" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--instagram">
                                     <i className='bx bxl-instagram' />
                                     <span>Instagram</span>
                                 </a>
-                                <a href="https://tiktok.com/@esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--tiktok">
+                                <a href="https://tiktok.com/@glitchgang" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--tiktok">
                                     <i className='bx bxl-tiktok' />
                                     <span>TikTok</span>
                                 </a>
-                                <a href="https://youtube.com/@esportefy" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--youtube">
+                                <a href="https://youtube.com/@glitchgang" target="_blank" rel="noopener noreferrer" className="stv2-social-link stv2-social-link--youtube">
                                     <i className='bx bxl-youtube' />
                                     <span>YouTube</span>
                                 </a>

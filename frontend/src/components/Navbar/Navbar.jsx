@@ -31,6 +31,7 @@ const ROUTE_NAMES = {
   '/university': 'Universidad',
   '/docs': 'Documentacion',
   '/support': 'Soporte',
+  '/glitchgang': 'GLITCH GANG',
   '/esportefy': 'GLITCH GANG',
 };
 
