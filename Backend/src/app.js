@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoSanitize from 'express-mongo-sanitize';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -132,6 +133,7 @@ try {
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+app.use(mongoSanitize());
 app.use(securityMiddleware);
 app.use(logger);
 app.use(verifyCsrf);

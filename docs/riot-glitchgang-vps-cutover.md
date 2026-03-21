@@ -52,6 +52,7 @@ ALLOW_RIOT_DEV_KEY_IN_PROD=true
 RIOT_REVIEW_MODE=true
 RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS=20
 RIOT_TOURNAMENT_CALLBACK=https://api.glitchgang.net/api/riot/tournament/callback
+MLBB_EMAIL_QUEUE_ENABLED=false
 ```
 
 ## 4) Frontend env recomendado
@@ -61,7 +62,7 @@ Basado en `frontend/.env.riot.review.example`:
 ```env
 VITE_API_URL=https://api.glitchgang.net
 VITE_MEDIA_URL=https://api.glitchgang.net
-VITE_CHAT_URL=https://chat.glitchgang.net
+VITE_CHAT_URL=https://glitchgang.net
 VITE_RIOT_REVIEW_MODE=true
 VITE_RIOT_MIN_ACTIVE_PARTICIPANTS=20
 VITE_MLBB_BETA_MODE=true
