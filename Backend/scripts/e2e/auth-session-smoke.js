@@ -80,6 +80,14 @@ const run = async () => {
     const user = await createUser({ suffix, plainPassword });
     createdUserId = String(user._id);
 
+    const invalidPayloadLogin = await request(app)
+      .post('/api/auth/login')
+      .send({ email: { $gt: '' }, password: ['AuthSmoke123!'] });
+    assert(
+      invalidPayloadLogin.status === 400,
+      `Login con tipos inválidos debería devolver 400 y devolvió ${invalidPayloadLogin.status}`
+    );
+
     // Flujo 1: sesión normal + refresh + logout.
     const normalAgent = request.agent(app);
     const normalLogin = await loginWithAgent({

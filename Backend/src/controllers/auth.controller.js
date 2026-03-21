@@ -38,6 +38,8 @@ const parseDeviceLabel = (ua = '') => {
     return os ? `${browser} en ${os}` : browser;
 };
 
+const isStringField = (value) => typeof value === 'string';
+
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const ALLOWED_DOCUMENT_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
@@ -606,8 +608,19 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { email, password, rememberMe } = req.body;
-        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const body = req.body;
+
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return res.status(400).json({ message: 'Payload inválido' });
+        }
+
+        const { email, password, rememberMe } = body;
+
+        if (!isStringField(email) || !isStringField(password)) {
+            return res.status(400).json({ message: 'Correo y contraseña deben ser texto válido' });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
 
         if (!normalizedEmail || !password) {
             return res.status(400).json({ message: 'Correo y contraseña son requeridos' });
@@ -635,7 +648,7 @@ export const login = async (req, res) => {
 
         // 3. Check if 2FA is enabled
         if (user.twoFactorEnabled) {
-            const twoFactorCode = String(req.body.twoFactorCode || req.body.twoFactorToken || '').trim();
+            const twoFactorCode = String(body.twoFactorCode || body.twoFactorToken || '').trim();
             
             // If no code provided, ask for it
             if (!twoFactorCode) {
@@ -2630,4 +2643,3 @@ export const adminRespondSupportTicket = async (req, res) => {
         res.status(500).json({ message: 'Error al responder el ticket.' });
     }
 };
-
