@@ -902,59 +902,7 @@ export const createTournament = async (req, res) => {
             return res.status(400).json({ message: 'Debes aceptar los términos, privacidad y declaración de organizador' });
         }
 
-        const newTournament = new Tournament({
-            ...safeData,
-            tournamentId,
-            prizesByRank: parsedPrizesByRank,
-            sponsors: sponsorsWithLogos,
-            staff: { moderators: cleanModerators },
-            timezone: data.timezone || 'America/Santo_Domingo',
-            registrationWindow: {
-                start: regStart,
-                end: regEnd
-            },
-            checkInWindow: {
-                start: checkStart,
-                end: checkEnd
-            },
-            eligibility: {
-                minAge: Number(parsedEligibility.minAge) > 0 ? Number(parsedEligibility.minAge) : 13,
-                allowedCountries: normalizeStringArray(parsedEligibility.allowedCountries),
-                notes: parsedEligibility.notes || '',
-                universityOnly: wantsUniversityOnly
-            },
-            contact: {
-                email: parsedContact.email || '',
-                phone: parsedContact.phone || '',
-                discordInvite: parsedContact.discordInvite || ''
-            },
-            broadcast: {
-                streamUrl: parsedBroadcast.streamUrl || '',
-                streamLanguage: parsedBroadcast.streamLanguage || 'es'
-            },
-            matchConfig: {
-                seriesType: parsedMatchConfig.seriesType || 'BO3',
-                mapPool: normalizeTournamentMapPool(data.game, parsedMatchConfig.mapPool),
-                patchVersion: parsedMatchConfig.patchVersion || ''
-            },
-            legalCompliance: {
-                jurisdiction: parsedLegalCompliance.jurisdiction || '',
-                governingLaw: parsedLegalCompliance.governingLaw || '',
-                claimsContact: parsedLegalCompliance.claimsContact || '',
-                rulesAccepted: parsedLegalCompliance.rulesAccepted === true,
-                privacyAccepted: parsedLegalCompliance.privacyAccepted === true,
-                organizerDeclaration: parsedLegalCompliance.organizerDeclaration === true
-            },
-            server: normalizedServer || '',
-            maxSlots: normalizedMaxSlots,
-            bannerImage: bannerPath,
-            rulesPdf: pdfPath,
-            organizer: req.userId,
-
-            status: 'open',
-            registrationClosed: false,
-            currentSlots: 0
-        });
+      
 
         if (isSupportedMlbbGame(data.game)) {
             const mlbbIssues = getMlbbComplianceIssues({
