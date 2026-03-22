@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaUsers, FaMapMarkerAlt, FaGlobeAmericas, FaGamepad } from 'react-icons/fa';
 import '../Community.css';
@@ -15,6 +15,7 @@ import {
   updateMemberRoleInCommunityByShortUrl,
   transferCommunityOwnershipByShortUrl
 } from '../community.service';
+import { getCommunitySocialEntries } from '../communitySocials';
 
 const MEMBER_ROLE_OPTIONS = [
   { value: 'member', label: 'Miembro' },
@@ -64,8 +65,13 @@ const CommunitySpacePage = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState('');
+  const [confirmModal, setConfirmModal] = useState(null);
 
   const currentUserId = String(user?._id || user?.id || '');
+  const socialEntries = useMemo(
+    () => getCommunitySocialEntries(community?.socialLinks),
+    [community?.socialLinks]
+  );
 
   const loadAuditLogs = async (communitySlug) => {
     if (!communitySlug) return;
@@ -124,14 +130,17 @@ const CommunitySpacePage = () => {
     }
   };
 
-  const handleRemoveMember = async (member) => {
+  const handleRemoveMember = (member) => {
     const targetUserId = String(member?.user?.id || '');
     if (!targetUserId || !community?.shortUrl) return;
+    setConfirmModal({
+      message: `¿Remover a @${member.user?.username || 'usuario'} de la comunidad?`,
+      onConfirm: () => { setConfirmModal(null); executeRemoveMember(member); }
+    });
+  };
 
-    if (!window.confirm(`¿Remover a @${member.user?.username || 'usuario'} de la comunidad?`)) {
-      return;
-    }
-
+  const executeRemoveMember = async (member) => {
+    const targetUserId = String(member?.user?.id || '');
     setRemovingMemberId(targetUserId);
     try {
       const updated = await removeMemberFromCommunityByShortUrl(community.shortUrl, targetUserId);
@@ -169,16 +178,19 @@ const CommunitySpacePage = () => {
     }
   };
 
-  const handleTransferOwnership = async (member) => {
+  const handleTransferOwnership = (member) => {
     const targetUserId = String(member?.user?.id || '');
     if (!community?.isOwner || !community?.shortUrl || !targetUserId) return;
-
     const username = member?.user?.username || 'usuario';
-    const shouldContinue = window.confirm(
-      `Vas a transferir el ownership a @${username}. Esta acción te cambiará a admin. ¿Continuar?`
-    );
-    if (!shouldContinue) return;
+    setConfirmModal({
+      message: `Vas a transferir el ownership a @${username}. Esta acción te cambiará a admin. ¿Continuar?`,
+      onConfirm: () => { setConfirmModal(null); executeTransferOwnership(member); }
+    });
+  };
 
+  const executeTransferOwnership = async (member) => {
+    const targetUserId = String(member?.user?.id || '');
+    const username = member?.user?.username || 'usuario';
     setTransferringOwnerMemberId(targetUserId);
     try {
       const updated = await transferCommunityOwnershipByShortUrl(community.shortUrl, targetUserId);
@@ -257,6 +269,22 @@ const CommunitySpacePage = () => {
                 </span>
                 <span className="community-chip">{community.role || 'member'}</span>
               </div>
+              {socialEntries.length > 0 && (
+                <div className="community-space-chips">
+                  {socialEntries.map((entry) => (
+                    <a
+                      key={entry.key}
+                      href={entry.url}
+                      className="community-chip"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <i className={entry.iconClass} aria-hidden="true" />
+                      <span>{entry.label}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="community-space-actions">
               {community.isOwner ? (
@@ -414,6 +442,19 @@ const CommunitySpacePage = () => {
           </section>
         )}
       </div>
+
+      {confirmModal && (
+        <div className="csp-confirm-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="csp-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="csp-confirm-icon"><i className='bx bx-error-circle'></i></div>
+            <p className="csp-confirm-msg">{confirmModal.message}</p>
+            <div className="csp-confirm-actions">
+              <button className="csp-confirm-btn csp-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className="csp-confirm-btn csp-confirm-btn--confirm" onClick={confirmModal.onConfirm}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

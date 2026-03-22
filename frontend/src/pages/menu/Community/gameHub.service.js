@@ -67,6 +67,21 @@ export const joinGameHub = async (gameId) => {
   };
 };
 
+export const fetchGameHubDetails = async (gameId) => {
+  const response = await axios.get(
+    `${API_BASE_URL}/api/community/games/${encodeURIComponent(String(gameId || ''))}/details`,
+    buildAuthConfig()
+  );
+  const d = response.data || {};
+  return {
+    stats: normalizeStats(d.stats || {}),
+    teams: Array.isArray(d.teams) ? d.teams : [],
+    tournaments: Array.isArray(d.tournaments) ? d.tournaments : [],
+    communities: Array.isArray(d.communities) ? d.communities : [],
+    organizers: Array.isArray(d.organizers) ? d.organizers : [],
+  };
+};
+
 export const getGameIdFromRoutePath = (pathname = '') => {
   const match = String(pathname || '').match(/^\/(?:game|games)\/([^/?#]+)/i);
   return match ? decodeURIComponent(match[1]) : '';

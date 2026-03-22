@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { useNotification } from '../../../../context/NotificationContext';
 import {
   TournamentAdminShell,
   useTournamentAdminData,
@@ -42,6 +43,7 @@ const STATUS_LABELS = {
 
 const TournamentReportsPage = () => {
   const { code } = useParams();
+  const { addToast } = useNotification();
   const { loading, tournament, registrations, bracket, setBracket } = useTournamentAdminData(code);
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const authConfig = useMemo(() => ({
@@ -64,6 +66,7 @@ const TournamentReportsPage = () => {
   const [evidence, setEvidence] = useState('');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState('medium');
+  const [confirmModal, setConfirmModal] = useState(null);
 
   const approvedTeams = useMemo(
     () => (registrations || []).filter((r) => r.status === 'approved').map((r) => r.teamName),

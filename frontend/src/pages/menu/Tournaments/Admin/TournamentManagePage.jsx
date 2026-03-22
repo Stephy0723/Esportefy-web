@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { useNotification } from '../../../../context/NotificationContext';
 import {
   TournamentAdminShell,
   STATUS_LABELS,
@@ -87,6 +88,7 @@ const GUIDE_STEPS = [
 const TournamentManagePage = () => {
   const { code } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useNotification();
   const {
     loading,
     tournament,
@@ -106,6 +108,7 @@ const TournamentManagePage = () => {
   const [statusLoading, setStatusLoading] = useState(false);
   const [expandedRoster, setExpandedRoster] = useState(null);
   const [seedLoading, setSeedLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null);
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
   const seedTeams = async () => {
@@ -114,24 +117,38 @@ const TournamentManagePage = () => {
       const maxSlots = tournament?.maxSlots || 8;
       const current = tournament?.currentSlots || 0;
       const count = maxSlots - current;
-      if (count <= 0) return alert('No hay cupos disponibles.');
+      if (count <= 0) { addToast('No hay cupos disponibles.', 'warning'); return; }
       await axios.post(
         `${API_URL}/api/tournaments/${code}/seed-teams`,
         { count },
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
       );
+      addToast('Equipos ficticios agregados', 'success');
       window.location.reload();
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudieron agregar equipos ficticios.');
+      addToast(err.response?.data?.message || 'No se pudieron agregar equipos ficticios.', 'error');
     } finally {
       setSeedLoading(false);
     }
   };
 
-  const changeStatus = async (newStatus) => {
-    if (newStatus === 'cancelled' && !window.confirm('Estas seguro de cancelar el torneo? Esta accion no se puede deshacer.')) return;
-    if (newStatus === 'finished' && !window.confirm('Deseas finalizar el torneo? Asegurate de que todos los matches esten completados.')) return;
+  const CONFIRM_STATUS_MESSAGES = {
+    cancelled: '¿Estás seguro de cancelar el torneo? Esta acción no se puede deshacer.',
+    finished: '¿Deseas finalizar el torneo? Asegúrate de que todos los matches estén completados.',
+  };
 
+  const changeStatus = (newStatus) => {
+    if (CONFIRM_STATUS_MESSAGES[newStatus]) {
+      setConfirmModal({
+        message: CONFIRM_STATUS_MESSAGES[newStatus],
+        onConfirm: () => { setConfirmModal(null); executeChangeStatus(newStatus); }
+      });
+      return;
+    }
+    executeChangeStatus(newStatus);
+  };
+
+  const executeChangeStatus = async (newStatus) => {
     setStatusLoading(true);
     try {
       await axios.patch(
@@ -139,9 +156,10 @@ const TournamentManagePage = () => {
         { action: STATUS_TO_ACTION[newStatus] || newStatus },
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
       );
+      addToast('Estado actualizado', 'success');
       window.location.reload();
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo cambiar el estado del torneo.');
+      addToast(err.response?.data?.message || 'No se pudo cambiar el estado del torneo.', 'error');
     } finally {
       setStatusLoading(false);
     }
@@ -481,6 +499,18 @@ const TournamentManagePage = () => {
         </section>
       </div>
 
+      {confirmModal && (
+        <div className="ta-confirm-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="ta-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="ta-confirm-icon"><i className='bx bx-error-circle'></i></div>
+            <p className="ta-confirm-msg">{confirmModal.message}</p>
+            <div className="ta-confirm-actions">
+              <button className="ta-confirm-btn ta-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className="ta-confirm-btn ta-confirm-btn--confirm" onClick={confirmModal.onConfirm}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </TournamentAdminShell>
   );
 };

@@ -18,6 +18,8 @@ import { applyImageFallback, getAvatarFallback, getTeamFallback, resolveMediaUrl
 import { getAuthToken } from '../../../utils/authSession';
 import { useAuth } from '../../../context/AuthContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
+import { fetchMyCommunities } from '../Community/community.service';
+import { getCommunitySocialEntries } from '../Community/communitySocials';
 
 /* ── Animated count-up ── */
 const AnimatedNumber = ({ target, duration = 1800 }) => {
@@ -232,8 +234,8 @@ const Dashboard = () => {
         const fetchComms = async () => {
             if (!getAuthToken()) return;
             try {
-                const res = await axios.get(`${API_URL}/api/community/communities/mine`);
-                setMyCommunities(Array.isArray(res.data) ? res.data : []);
+                const communities = await fetchMyCommunities();
+                setMyCommunities(Array.isArray(communities) ? communities : []);
             } catch (err) {
                 console.error('Error cargando comunidades:', err);
             }
@@ -1665,7 +1667,7 @@ const Dashboard = () => {
                     {myCommunities.length > 0 ? (
                         <motion.div className="db__comms-grid" variants={stagger}>
                             {myCommunities.slice(0, 6).map(c => (
-                                <motion.div key={c._id || c.id} className="db__comm-card" variants={fadeChild} onClick={() => navigate(`/community/${c.shortUrl}`)}>
+                                <motion.div key={c._id || c.id} className="db__comm-card" variants={fadeChild} onClick={() => navigate(`/communities/${c.shortUrl}`)}>
                                     <div className="db__comm-banner">
                                         {c.bannerUrl ? (
                                             <img
@@ -1691,6 +1693,22 @@ const Dashboard = () => {
                                     {c.mainGames?.length > 0 && (
                                         <div className="db__comm-games">
                                             {c.mainGames.slice(0, 2).map((g, i) => <span key={i} className="db__comm-game-tag">{g}</span>)}
+                                        </div>
+                                    )}
+                                    {getCommunitySocialEntries(c.socialLinks).length > 0 && (
+                                        <div className="db__comm-games">
+                                            {getCommunitySocialEntries(c.socialLinks).slice(0, 4).map((entry) => (
+                                                <a
+                                                    key={entry.key}
+                                                    href={entry.url}
+                                                    className="db__comm-game-tag"
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <i className={entry.iconClass} aria-hidden="true" /> {entry.label}
+                                                </a>
+                                            ))}
                                         </div>
                                     )}
                                 </motion.div>

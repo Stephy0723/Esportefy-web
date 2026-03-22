@@ -144,8 +144,8 @@ const Footer = () => {
         <div className="border-t border-[var(--border-color)] pt-6 pb-2">
           <div className="flex flex-col gap-2">
             <p className="text-[var(--text-muted)] text-xs leading-relaxed max-w-5xl">
-              GLITCH GANG no esta respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games
-              ni de personas oficialmente involucradas en la produccion o gestion de propiedades de Riot Games.
+              GLITCH GANG no está respaldado por Riot Games y no refleja las opiniones o puntos de vista de Riot Games
+              ni de personas oficialmente involucradas en la producción o gestión de propiedades de Riot Games.
               Riot Games y todas sus propiedades asociadas son marcas o marcas registradas de Riot Games, Inc.
             </p>
             <p className="text-[var(--text-muted)] text-xs">

@@ -410,6 +410,7 @@ const Profile = () => {
                             {user.university?.verified && <span className="pf-verified"><i className='bx bxs-check-circle' /></span>}
                         </div>
                         {user.fullName && <p className="pf-identity__realname">{user.fullName}</p>}
+                        {user.userCode && <span className="pf-identity__code">#{user.userCode}</span>}
                         <div className="pf-tags">
                             <span className="pf-tag"><i className='bx bx-joystick' /> Player</span>
                             {(user.roles || []).includes('organizer') || user.isOrganizer ? (

@@ -16,6 +16,11 @@ import {
     FaCheck
 } from 'react-icons/fa';
 import { createCommunitySpace } from '../community.service';
+import {
+    COMMUNITY_SOCIAL_FIELDS,
+    getSuggestedCommunityWebsite,
+    isRiotCommunitySelection
+} from '../communitySocials';
 import { useNotification } from '../../../../context/NotificationContext';
 import { SUPPORTED_GAME_NAMES } from '../../../../../../shared/supportedGames.js';
 import './CreateCommunityModal.css';
@@ -65,6 +70,15 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
         language: 'Español',
         region: 'LATAM',
         launchDate: '',
+        socialLinks: {
+            website: '',
+            discord: '',
+            twitter: '',
+            instagram: '',
+            youtube: '',
+            twitch: '',
+            tiktok: ''
+        },
         mainGames: [],
         allowAllGames: false,
         contentCategories: { noticias: true, memes: true, opinion: true, clips: true, fanart: true, guias: true },
@@ -102,6 +116,14 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
         () => formData.shortUrl || slugify(formData.name),
         [formData.shortUrl, formData.name]
     );
+    const suggestedWebsite = useMemo(
+        () => getSuggestedCommunityWebsite(formData.mainGames),
+        [formData.mainGames]
+    );
+    const isRiotCommunity = useMemo(
+        () => isRiotCommunitySelection(formData.mainGames),
+        [formData.mainGames]
+    );
 
     const handleClose = () => {
         if (isSaving) return;
@@ -117,6 +139,16 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
         setFormData((prev) => ({
             ...prev,
             [category]: { ...prev[category], [key]: !prev[category][key] }
+        }));
+    };
+
+    const handleSocialLinkChange = (key, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            socialLinks: {
+                ...(prev.socialLinks || {}),
+                [key]: value
+            }
         }));
     };
 
@@ -329,6 +361,38 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
                                                         <option value="Inglés">Inglés</option>
                                                     </select>
                                                 </label>
+                                            </div>
+
+                                            <div className="ccm-field">
+                                                <span>Redes y enlaces</span>
+                                                <small>Solo mostraremos los enlaces que llenes. Todo es opcional.</small>
+                                                {isRiotCommunity && (
+                                                    <small>
+                                                        Si esta comunidad es de Riot, puedes usar el sitio oficial del juego y dejar solo las redes que realmente existan.
+                                                    </small>
+                                                )}
+                                                {suggestedWebsite?.url && !String(formData.socialLinks?.website || '').trim() && (
+                                                    <button
+                                                        type="button"
+                                                        className="ccm-btn ccm-btn--ghost"
+                                                        onClick={() => handleSocialLinkChange('website', suggestedWebsite.url)}
+                                                    >
+                                                        Usar sitio oficial de {suggestedWebsite.gameName}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="ccm-grid">
+                                                {COMMUNITY_SOCIAL_FIELDS.map((field) => (
+                                                    <label key={field.key} className="ccm-field">
+                                                        <span>{field.label}</span>
+                                                        <input
+                                                            value={formData.socialLinks?.[field.key] || ''}
+                                                            onChange={(e) => handleSocialLinkChange(field.key, e.target.value)}
+                                                            placeholder={field.placeholder}
+                                                        />
+                                                    </label>
+                                                ))}
                                             </div>
                                         </div>
                                     )}

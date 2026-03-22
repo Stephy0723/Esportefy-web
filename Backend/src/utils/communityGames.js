@@ -145,3 +145,27 @@ export const normalizeCommunityGameIds = (values = []) => {
 };
 
 export const isCommunityGameId = (value = '') => Boolean(normalizeCommunityGameId(value));
+
+// Build reverse map: gameId → Set of all alias strings that resolve to it
+const GAME_NAME_VARIANTS_MAP = (() => {
+  const map = new Map();
+  for (const id of COMMUNITY_GAME_IDS) {
+    map.set(id, new Set([id]));
+  }
+  for (const [alias, id] of COMMUNITY_GAME_ALIASES) {
+    if (!map.has(id)) map.set(id, new Set([id]));
+    map.get(id).add(alias);
+  }
+  return map;
+})();
+
+/**
+ * Returns all known name variants for a gameId (e.g. 'lol' → ['lol', 'league of legends']).
+ * Useful for querying DB collections that may store the game under any variant.
+ */
+export const getGameNameVariants = (gameId = '') => {
+  const normalized = normalizeCommunityGameId(gameId);
+  if (!normalized) return [String(gameId || '').trim()].filter(Boolean);
+  const variants = GAME_NAME_VARIANTS_MAP.get(normalized);
+  return variants ? Array.from(variants) : [normalized];
+};

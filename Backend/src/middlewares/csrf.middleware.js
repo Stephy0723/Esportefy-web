@@ -10,7 +10,8 @@ const PUBLIC_AUTH_PREFIXES = [
     '/api/auth/check-username',
     '/api/auth/forgot-password',
     '/api/auth/reset-password',
-    '/api/security/2fa/verify-login'
+    '/api/security/2fa/verify-login',
+    '/api/newsletter/subscribe'
 ];
 
 const parseCookies = (cookieHeader = '') => {

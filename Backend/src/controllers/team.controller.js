@@ -1799,6 +1799,7 @@ export const getTeams = async (req, res) => {
     try {
         const teams = await Team.find()
             .populate('captain', 'fullName avatar')
+            .populate('community', 'name shortUrl')
             .sort({ createdAt: -1 });
 
         const supportedTeams = teams.filter((team) => isSupportedGameName(team?.game));
@@ -1899,7 +1900,8 @@ export const updateTeam = async (req, res) => {
         }
 
         const allowed = [
-            'name','slogan','category','game','teamGender','teamCountry','teamLevel','teamLanguage'
+            'name','slogan','category','game','teamGender','teamCountry','teamLevel','teamLanguage',
+            'community','sponsor'
         ];
         allowed.forEach((key) => {
             if (data[key] !== undefined) team[key] = data[key];

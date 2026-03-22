@@ -96,6 +96,15 @@ const communitySchema = new mongoose.Schema(
     futureTournaments: { type: Boolean, default: false },
 
     admins: { type: [String], default: [] },
+    socialLinks: {
+      website: { type: String, trim: true, default: '' },
+      discord: { type: String, trim: true, default: '' },
+      twitter: { type: String, trim: true, default: '' },
+      instagram: { type: String, trim: true, default: '' },
+      youtube: { type: String, trim: true, default: '' },
+      twitch: { type: String, trim: true, default: '' },
+      tiktok: { type: String, trim: true, default: '' }
+    },
     media: {
       bannerUrl: { type: String, default: '' },
       avatarUrl: { type: String, default: '' },

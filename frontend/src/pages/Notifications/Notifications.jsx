@@ -118,11 +118,11 @@ const Notifications = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
-    } catch (error) {
-      void error;
+      await fetchNotifications();
+      addToast('Notificación eliminada', 'success');
+    } catch {
+      addToast('Error al eliminar notificación', 'error');
     }
-    await fetchNotifications();
-    addToast('Notificación eliminada', 'success');
   };
 
   const handleArchive = async (id) => {
@@ -135,11 +135,11 @@ const Notifications = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
-    } catch (error) {
-      void error;
+      await fetchNotifications();
+      addToast(newArchived ? 'Notificación archivada' : 'Notificación restaurada', 'info');
+    } catch {
+      addToast('Error al archivar notificación', 'error');
     }
-    await fetchNotifications();
-    addToast(newArchived ? 'Notificación archivada' : 'Notificación restaurada', 'info');
   };
 
   const handleMarkRead = async (id) => {
@@ -150,10 +150,10 @@ const Notifications = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
-    } catch (error) {
-      void error;
+      await fetchNotifications();
+    } catch {
+      addToast('Error al marcar como leída', 'error');
     }
-    await fetchNotifications();
   };
 
   const handleMarkAllRead = async () => {
@@ -166,8 +166,7 @@ const Notifications = () => {
       }
       await fetchNotifications();
       addToast('Todas marcadas como leídas', 'success');
-    } catch (error) {
-      void error;
+    } catch {
       addToast('Error al marcar', 'error');
     }
   };
@@ -182,8 +181,7 @@ const Notifications = () => {
       }
       await fetchNotifications();
       addToast('Historial limpiado', 'success');
-    } catch (error) {
-      void error;
+    } catch {
       addToast('Error al limpiar', 'error');
     }
   };
@@ -197,8 +195,7 @@ const Notifications = () => {
       });
       await fetchNotifications();
       addToast(`${res.data.count} notificaciones enviadas`, 'success');
-    } catch (error) {
-      void error;
+    } catch {
       addToast('Error al enviar test', 'error');
     }
   };

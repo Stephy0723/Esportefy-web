@@ -1,585 +1,731 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { 
-    FaUsers, FaCircle, FaEllipsisH, FaSearch, FaPen, 
-    FaFire, FaGavel, FaGamepad, FaImage, FaShareAlt,
-    FaCheck, FaInfoCircle, FaUserShield, FaClock, FaGlobe,
-    FaTrophy, FaCalendarAlt, FaClipboardList, FaChessBoard,
-    FaFilePdf, FaExclamationTriangle, FaSignOutAlt, FaEdit, 
-    FaSave, FaTimes, FaTrash, FaBan, FaUserCog, FaShieldAlt,
-    FaCloudUploadAlt, FaLink , FaDiscord, FaTwitter, FaTwitch,
-    FaBriefcase, FaCheckCircle
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  FaArrowLeft,
+  FaBan,
+  FaCalendarAlt,
+  FaCheck,
+  FaCheckCircle,
+  FaClipboardList,
+  FaCloudUploadAlt,
+  FaCrown,
+  FaDiscord,
+  FaEdit,
+  FaGlobe,
+  FaImage,
+  FaInfoCircle,
+  FaLink,
+  FaPen,
+  FaSave,
+  FaSearch,
+  FaShieldAlt,
+  FaSignOutAlt,
+  FaTimes,
+  FaTrash,
+  FaTwitch,
+  FaTwitter,
+  FaUserCog,
+  FaUsers,
 } from 'react-icons/fa';
-import './CommunityAdminTemplate.css';
+import { fetchCommunityByShortUrl } from '../community.service';
+import '../CommunityTemplate/communityTemplateV2.css';
+
+const TAB_OPTIONS = [
+  { id: 'feed', label: 'Moderacion', icon: FaShieldAlt },
+  { id: 'about', label: 'Informacion', icon: FaEdit },
+  { id: 'staff', label: 'Staff', icon: FaUserCog },
+  { id: 'recruitment', label: 'Solicitudes', icon: FaCheckCircle },
+  { id: 'logs', label: 'Logs', icon: FaClipboardList },
+];
+
+const INITIAL_POSTS = [
+  { id: 1, author: 'Player_X', text: 'Clip de jugada', status: 'pending' },
+  { id: 2, author: 'ToxicUser', text: 'Comentario ofensivo', status: 'pending' },
+];
+
+const INITIAL_RECRUITMENT = [
+  { id: 101, user: 'ModHunter', role: 'moderador', exp: '6 meses', status: 'pending' },
+  { id: 102, user: 'TourneyPro', role: 'organizador', exp: '1 ano', status: 'pending' },
+];
+
+const buildCommunityState = (source = {}, slug = '') => ({
+  name: source.name || 'Comunidad Ejemplo',
+  tagline: source.tagline || source.description || 'Panel de administracion',
+  description: source.description || 'Sin descripcion.',
+  banner: source.banner || source.bannerUrl || 'https://via.placeholder.com/1400x560/111827/9ca3af?text=Comunidad',
+  avatar: source.avatar || source.avatarUrl || 'https://via.placeholder.com/180/8EDB15/08120d?text=C',
+  stats: source.stats || { members: Number(source.membersCount || 0), online: 0 },
+  region: source.region || 'Global',
+  createdAt: source.created_at || (source.createdAt ? String(new Date(source.createdAt).getFullYear()) : '2024'),
+  shortUrl: source.shortUrl || slug,
+  socialLinks: source.socialLinks || {},
+  isOwner: Boolean(source.isOwner ?? true),
+  members: Array.isArray(source.members) ? source.members : [],
+});
+
+const buildAboutDraft = (community) => ({
+  tagline: community.tagline || '',
+  region: community.region || '',
+  description: community.description || 'Sin descripcion.',
+  banner: community.banner || '',
+  avatar: community.avatar || '',
+  socialLinks: {
+    discord: community.socialLinks?.discord || '',
+    twitter: community.socialLinks?.twitter || '',
+    twitch: community.socialLinks?.twitch || '',
+  },
+});
+
+const buildStaffMembers = (community) => {
+  if (Array.isArray(community.members) && community.members.length > 0) {
+    return community.members
+      .filter((member) => ['owner', 'admin', 'moderator'].includes(String(member?.role || '').toLowerCase()))
+      .map((member, index) => ({
+        id: member?.user?.id || member?._id || index + 1,
+        name: member?.user?.username || 'Usuario',
+        role: String(member?.role || 'member').toLowerCase(),
+        status: 'active',
+        avatar: member?.user?.avatar || '',
+      }));
+  }
+
+  return [
+    { id: 1, name: 'Admin_Master', role: 'owner', status: 'active', avatar: '' },
+    { id: 2, name: 'Mod_Leader', role: 'admin', status: 'active', avatar: '' },
+  ];
+};
 
 const CommunityAdminTemplate = () => {
   const location = useLocation();
-  const incomingData = location.state || {};
-  const [isAdminMode, setIsAdminMode] = useState(true);
-  const communityData = {
-    name: incomingData.name || ' || Comunidad Ejemplo',
-    tagline: incomingData.tagline || 'Panel de Administración',
-    description: incomingData.description || 'Sin descripción.',
-    banner: incomingData.banner || 'https://via.placeholder.com/1200x350/000/000',
-    avatar: incomingData.avatar || 'https://via.placeholder.com/150/8EDB15/000',
-    stats: incomingData.stats || { members: 1240, online: 45 },
-    created_at: incomingData.created_at || '2024',
-    admins: incomingData.admins || ['Admin_Master', 'Mod_Leader'],
-    region: incomingData.region || 'Global'
-  };
+  const navigate = useNavigate();
+  const { id: communitySlug } = useParams();
 
-  const dynamicStyles = {
-    '--hero-banner': `url(${communityData.banner})`,
-    '--hero-avatar': `url(${communityData.avatar})`
-  };
-
-  const [activeTab, setActiveTab] = useState('feed');
-  const [isJoined, setIsJoined] = useState(false);
+  const [community, setCommunity] = useState(() => buildCommunityState(location.state || {}, communitySlug));
+  const [loading, setLoading] = useState(Boolean(communitySlug));
+  const [accessError, setAccessError] = useState('');
+  const [activeTab, setActiveTab] = useState('about');
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditingAbout, setIsEditingAbout] = useState(false);
-
-
-const [aboutDraft, setAboutDraft] = useState({
-  tagline: communityData.tagline || '',
-  region: communityData.region || '',
-  description: communityData.description || 'Sin descripción.',
-  banner: communityData.banner || '',
-  avatar: communityData.avatar || ''
-});
-
-  const [posts, setPosts] = useState([
-    { id: 1, author: 'Player_X', text: 'Clip de jugada', status: 'pending' },
-    { id: 2, author: 'ToxicUser', text: 'Comentario ofensivo', status: 'pending' }
-  ]);
-
-  const [staffMembers, setStaffMembers] = useState(
-    communityData.admins.map((name, idx) => ({
-      id: idx + 1,
-      name,
-      role: 'admin',
-      status: 'active'
-    }))
-  );
-
-  const [recruitmentApps, setRecruitmentApps] = useState([
-    { id: 101, user: 'ModHunter', role: 'moderador', exp: '6 meses', status: 'pending' },
-    { id: 102, user: 'TourneyPro', role: 'organizador', exp: '1 año', status: 'pending' }
-  ]);
-
+  const [aboutDraft, setAboutDraft] = useState(() => buildAboutDraft(buildCommunityState(location.state || {}, communitySlug)));
+  const [posts, setPosts] = useState(INITIAL_POSTS);
+  const [recruitmentApps, setRecruitmentApps] = useState(INITIAL_RECRUITMENT);
   const [logs, setLogs] = useState([]);
+
+  const bannerInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadCommunity = async () => {
+      if (!communitySlug) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setAccessError('');
+        const data = await fetchCommunityByShortUrl(communitySlug);
+        if (ignore || !data) return;
+
+        const nextCommunity = buildCommunityState(data, communitySlug);
+        setCommunity(nextCommunity);
+        setAboutDraft(buildAboutDraft(nextCommunity));
+
+        if (data.isOwner === false) {
+          setAccessError('Solo el creador de la comunidad puede administrar este panel.');
+        }
+      } catch (error) {
+        if (ignore) return;
+        setAccessError(error?.response?.data?.message || 'No se pudo cargar la comunidad.');
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadCommunity();
+
+    return () => {
+      ignore = true;
+    };
+  }, [communitySlug]);
+
+  const staffMembers = useMemo(() => buildStaffMembers(community), [community]);
+  const returnTo = location.state?.returnTo || (community.shortUrl ? `/communities/${community.shortUrl}` : '/comunidad');
 
   const addLog = (action) => {
     setLogs((prev) => [{ id: Date.now() + Math.random(), action, at: new Date().toLocaleString() }, ...prev]);
   };
 
-  const handleJoin = () => setIsJoined((prev) => !prev);
+  const filteredPosts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return posts;
+    return posts.filter((post) =>
+      post.author.toLowerCase().includes(query) ||
+      post.text.toLowerCase().includes(query) ||
+      post.status.toLowerCase().includes(query)
+    );
+  }, [posts, searchQuery]);
 
-  const approvePost = (id) => {
-    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'approved' } : p)));
-    addLog(`Post aprobado #${id}`);
+  const filteredStaff = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return staffMembers;
+    return staffMembers.filter((member) =>
+      member.name.toLowerCase().includes(query) ||
+      member.role.toLowerCase().includes(query)
+    );
+  }, [staffMembers, searchQuery]);
+
+  const filteredRecruitment = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return recruitmentApps;
+    return recruitmentApps.filter((item) =>
+      item.user.toLowerCase().includes(query) ||
+      item.role.toLowerCase().includes(query) ||
+      item.status.toLowerCase().includes(query)
+    );
+  }, [recruitmentApps, searchQuery]);
+
+  const filteredLogs = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return logs;
+    return logs.filter((item) => item.action.toLowerCase().includes(query));
+  }, [logs, searchQuery]);
+
+  const visibleSocialLinks = useMemo(
+    () => Object.entries(aboutDraft.socialLinks || {}).filter(([, value]) => String(value || '').trim()),
+    [aboutDraft.socialLinks]
+  );
+
+  const metrics = useMemo(
+    () => [
+      { label: 'Miembros', value: Number(community.stats?.members || 0) },
+      { label: 'Staff', value: staffMembers.length },
+      { label: 'Posts pendientes', value: posts.filter((post) => post.status === 'pending').length },
+      { label: 'Solicitudes', value: recruitmentApps.filter((item) => item.status === 'pending').length },
+    ],
+    [community.stats?.members, staffMembers.length, posts, recruitmentApps]
+  );
+
+  const handleApprovePost = (postId) => {
+    setPosts((prev) => prev.map((post) => (post.id === postId ? { ...post, status: 'approved' } : post)));
+    addLog(`Post aprobado #${postId}`);
   };
 
-  const deletePost = (id) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id));
-    addLog(`Post eliminado #${id}`);
+  const handleDeletePost = (postId) => {
+    setPosts((prev) => prev.filter((post) => post.id !== postId));
+    addLog(`Post eliminado #${postId}`);
   };
 
-  const removeStaff = (id) => {
-    setStaffMembers((prev) => prev.filter((m) => m.id !== id));
-    addLog(`Miembro staff eliminado #${id}`);
-  };
-
-  const blockUser = (username) => {
+  const handleBlockUser = (username) => {
     addLog(`Usuario bloqueado: ${username}`);
   };
 
-  const acceptApplication = (id) => {
-    const app = recruitmentApps.find((a) => a.id === id);
+  const handleRemoveStaff = (staffId) => {
+    addLog(`Miembro staff eliminado #${staffId}`);
+  };
+
+  const handleAcceptApplication = (applicationId) => {
+    const app = recruitmentApps.find((item) => item.id === applicationId);
     if (!app) return;
-
-    setStaffMembers((prev) => [
-      ...prev,
-      { id: Date.now(), name: app.user, role: app.role, status: 'active' }
-    ]);
-
-    setRecruitmentApps((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: 'accepted' } : a))
-    );
-
+    setRecruitmentApps((prev) => prev.map((item) => (item.id === applicationId ? { ...item, status: 'accepted' } : item)));
     addLog(`Solicitud aceptada: ${app.user}`);
   };
 
-  const rejectApplication = (id) => {
-    setRecruitmentApps((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: 'rejected' } : a))
-    );
-    addLog(`Solicitud rechazada #${id}`);
+  const handleRejectApplication = (applicationId) => {
+    setRecruitmentApps((prev) => prev.map((item) => (item.id === applicationId ? { ...item, status: 'rejected' } : item)));
+    addLog(`Solicitud rechazada #${applicationId}`);
   };
 
-  const saveAbout = () => {
+  const handleBannerChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setAboutDraft((prev) => ({ ...prev, banner: preview }));
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setAboutDraft((prev) => ({ ...prev, avatar: preview }));
+  };
+
+  const handleCancelEdit = () => {
+    setAboutDraft(buildAboutDraft(community));
     setIsEditingAbout(false);
-    addLog('Se actualizó la información de la comunidad');
   };
 
-  const q = searchQuery.trim().toLowerCase();
+  const handleSaveAbout = () => {
+    const nextCommunity = {
+      ...community,
+      tagline: aboutDraft.tagline,
+      description: aboutDraft.description,
+      banner: aboutDraft.banner,
+      avatar: aboutDraft.avatar,
+      region: aboutDraft.region,
+      socialLinks: {
+        ...(community.socialLinks || {}),
+        ...(aboutDraft.socialLinks || {}),
+      },
+    };
 
-  const filteredPosts = posts.filter(
-    (p) =>
-      !q ||
-      p.author.toLowerCase().includes(q) ||
-      p.text.toLowerCase().includes(q) ||
-      p.status.toLowerCase().includes(q)
-  );
+    setCommunity(nextCommunity);
+    setAboutDraft(buildAboutDraft(nextCommunity));
+    setIsEditingAbout(false);
+    addLog('Se actualizo la informacion de la comunidad');
+  };
 
-  const filteredStaff = staffMembers.filter(
-    (m) => !q || m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q)
-  );
-
-  const filteredRecruitment = recruitmentApps.filter(
-    (a) =>
-      !q ||
-      a.user.toLowerCase().includes(q) ||
-      a.role.toLowerCase().includes(q) ||
-      a.status.toLowerCase().includes(q)
-  );
-
-  const filteredLogs = logs.filter((l) => !q || l.action.toLowerCase().includes(q));
-const renderFeedAdmin = () => (
-    <div className="full-width-tab fade-in">
-      <div className="tech-section-header">
-          <div className="header-icon-box">
-              <FaShieldAlt /> 
-          </div>
-          <div>
-              <h3>Centro de Moderación</h3>
-              <p>Revisa y gestiona el comportamiento de los usuarios.</p>
-          </div>
-      </div>
-
-      <div className="admin-feed-list">
-        {filteredPosts.length === 0 ? (
-          <div className="empty-state-tech">
-             <FaCheck className="empty-icon"/>
-             <h3>Todo limpio</h3>
-             <p>No hay publicaciones pendientes de revisión.</p>
-          </div>
-        ) : (
-          filteredPosts.map((p) => (
-            <div key={p.id} className="admin-post-card">
-              
-              {/* CABECERA DEL POST: Usuario y Estado */}
-              <div className="post-admin-header">
-                <div className="user-meta">
-                    <div className="mini-avatar">
-                        {p.author.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="meta-info">
-                        <span className="author-name">{p.author}</span>
-                        <span className="post-time"><FaClock/> Hace un momento</span>
-                    </div>
-                </div>
-                <span className={`status-pill ${p.status.toLowerCase()}`}>
-                    {p.status}
-                </span>
-              </div>
-
-              {/* CONTENIDO DEL MENSAJE */}
-              <div className="post-admin-body">
-                <p>"{p.text}"</p>
-              </div>
-
-              {/* BARRA DE ACCIONES */}
-              <div className="post-admin-actions">
-                <button className="btn-tech primary small" onClick={() => approvePost(p.id)}>
-                  <FaCheck /> APROBAR
-                </button>
-                <button className="btn-tech glass small warning" onClick={() => deletePost(p.id)}>
-                  <FaTrash /> ELIMINAR
-                </button>
-              </div>
-
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-  const renderAboutAdmin = () => (
-    <div className="full-width-tab fade-in">
-      <div className="admin-container-tech">
-        
-        {/* CABECERA DE EDICIÓN */}
-        <div className="tech-section-header">
-            <div className="header-icon-box">
-                <FaEdit />
-            </div>
-            <div>
-                <h3>Editar Perfil de Comunidad</h3>
-                <p>Gestiona la información pública y enlaces de tu organización.</p>
-            </div>
-             {/* BOTONES DE ACCIÓN FLOTANTES */}
-            <div className="admin-actions-top">
-                {!isEditingAbout ? (
-                    <button className="btn-tech glass" onClick={() => setIsEditingAbout(true)}>
-                        <FaPen /> EDITAR DATOS
-                    </button>
-                ) : (
-                    <div className="edit-controls">
-                        <button className="btn-tech ghost" onClick={() => setIsEditingAbout(false)}>
-                            <FaTimes /> CANCELAR
-                        </button>
-                        <button className="btn-tech primary" onClick={saveAbout}>
-                            <FaSave /> GUARDAR CAMBIOS
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
-
-        {/* FORMULARIO (Deshabilitado si no se está editando) */}
-        <div className={`admin-form-layout ${isEditingAbout ? 'editing' : 'view-only'}`}>
-            
-            {/* 1. IDENTIDAD */}
-            <div className="form-section">
-                <h4 className="form-title"> <FaGlobe className="neon-icon"/> Identidad & Región</h4>
-                <div className="inputs-grid-2">
-                    <div className="input-group-tech">
-                        <label>Slogan (Tagline)</label>
-                        <input
-                            type="text"
-                            placeholder="Ej: La casa de los campeones..."
-                            value={aboutDraft.tagline}
-                            onChange={(e) => setAboutDraft({...aboutDraft, tagline: e.target.value})}
-                            disabled={!isEditingAbout}
-                        />
-                    </div>
-                    <div className="input-group-tech">
-                        <label>Región / País</label>
-                        <input
-                            type="text"
-                            placeholder="Ej: LATAM, España, Global..."
-                            value={aboutDraft.region}
-                            onChange={(e) => setAboutDraft({...aboutDraft, region: e.target.value})}
-                            disabled={!isEditingAbout}
-                        />
-                    </div>
-                </div>
-            </div>
-
-           {/* 2. BRANDING (SUBIDA DE IMÁGENES LOCALES) */}
-            <div className="form-section">
-                <h4 className="form-title"> <FaImage className="neon-icon"/> Branding Visual</h4>
-                <div className="inputs-grid-2">
-                    
-                    {/* SUBIR BANNER */}
-                    <div className="input-group-tech">
-                        <label>Banner de la Comunidad</label>
-                        {/* Input invisible real */}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            id="upload-banner"
-                            style={{ display: 'none' }}
-                            disabled={!isEditingAbout}
-                            onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                    const localUrl = URL.createObjectURL(e.target.files[0]);
-                                    setAboutDraft({ ...aboutDraft, banner: localUrl });
-                                }
-                            }}
-                        />
-                        {/* Botón visual personalizado */}
-                        <label htmlFor="upload-banner" className={`file-upload-zone ${!isEditingAbout ? 'disabled' : ''}`}>
-                            {aboutDraft.banner ? (
-                                <div className="preview-container" style={{backgroundImage: `url(${aboutDraft.banner})`}}>
-                                    <div className="preview-overlay"><FaPen /> CAMBIAR</div>
-                                </div>
-                            ) : (
-                                <div className="upload-placeholder">
-                                    <FaCloudUploadAlt className="upload-icon"/>
-                                    <span>Subir Banner (1200x350)</span>
-                                </div>
-                            )}
-                        </label>
-                    </div>
-
-                    {/* SUBIR AVATAR */}
-                    <div className="input-group-tech">
-                        <label>Avatar / Logo</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            id="upload-avatar"
-                            style={{ display: 'none' }}
-                            disabled={!isEditingAbout}
-                            onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                    const localUrl = URL.createObjectURL(e.target.files[0]);
-                                    setAboutDraft({ ...aboutDraft, avatar: localUrl });
-                                }
-                            }}
-                        />
-                        <label htmlFor="upload-avatar" className={`file-upload-zone avatar-mode ${!isEditingAbout ? 'disabled' : ''}`}>
-                            {aboutDraft.avatar ? (
-                                <div className="preview-container avatar-preview" style={{backgroundImage: `url(${aboutDraft.avatar})`}}>
-                                    <div className="preview-overlay circle"><FaPen /></div>
-                                </div>
-                            ) : (
-                                <div className="upload-placeholder">
-                                    <FaCloudUploadAlt className="upload-icon"/>
-                                    <span>Subir Logo</span>
-                                </div>
-                            )}
-                        </label>
-                    </div>
-
-                </div>
-            </div>
-
-            {/* 3. REDES SOCIALES */}
-            <div className="form-section">
-                <h4 className="form-title"> <FaLink className="neon-icon"/> Redes Sociales</h4>
-                <div className="inputs-grid-3">
-                    <div className="input-group-tech social discord">
-                        <label><FaDiscord/> Discord</label>
-                        <input
-                            type="text"
-                            placeholder="Invite Link"
-                            disabled={!isEditingAbout}
-                            // Asumiendo que agregas estos campos a tu estado aboutDraft
-                        />
-                    </div>
-                    <div className="input-group-tech social twitter">
-                        <label><FaTwitter/> Twitter / X</label>
-                        <input type="text" placeholder="@usuario" disabled={!isEditingAbout} />
-                    </div>
-                    <div className="input-group-tech social twitch">
-                        <label><FaTwitch/> Twitch</label>
-                        <input type="text" placeholder="twitch.tv/..." disabled={!isEditingAbout} />
-                    </div>
-                </div>
-            </div>
-
-            {/* 4. DESCRIPCIÓN */}
-            <div className="form-section full">
-                <h4 className="form-title"> <FaInfoCircle className="neon-icon"/> Descripción Detallada</h4>
-                <div className="input-group-tech">
-                    <textarea
-                        rows="5"
-                        placeholder="Escribe sobre la historia de tu comunidad, logros, objetivos..."
-                        value={aboutDraft.description}
-                        onChange={(e) => setAboutDraft({...aboutDraft, description: e.target.value})}
-                        disabled={!isEditingAbout}
-                    />
-                </div>
-            </div>
-
+  if (loading) {
+    return (
+      <div className="ct">
+        <div className="ct__loader">
+          <div className="ct__spinner" />
+          <span>Cargando panel de administracion...</span>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
- const renderStaffAdmin = () => (
-    <div className="full-width-tab fade-in">
-      {/* Cabecera de Sección */}
-      <div className="tech-section-header">
-          <div className="header-icon-box">
-              <FaUserCog />
+  if (accessError) {
+    return (
+      <div className="ct">
+        <div className="ct__empty-state">
+          <button className="ct__back" onClick={() => navigate(returnTo)}>
+            <FaArrowLeft /> Volver
+          </button>
+          <div className="ct__empty-card">
+            <FaShieldAlt className="ct__empty-icon" />
+            <h2>Acceso restringido</h2>
+            <p>{accessError}</p>
           </div>
-          <div>
-              <h3>Gestión de Staff</h3>
-              <p>Administra permisos, rangos y accesos del equipo.</p>
-          </div>
+        </div>
       </div>
-
-      <div className="admin-staff-grid">
-        {filteredStaff.length === 0 ? (
-          <div className="empty-state-tech">
-             <FaShieldAlt className="empty-icon"/>
-             <h3>Sin miembros</h3>
-             <p>Aún no hay nadie en el equipo de staff.</p>
-          </div>
-        ) : (
-          filteredStaff.map((m) => (
-            <div key={m.id} className="staff-admin-card">
-              {/* Decoración visual tech */}
-              <div className="card-corner-accent"></div>
-              
-              <div className="staff-card-content">
-                {/* Avatar y Rol */}
-                <div className="staff-identity">
-                    <div className="mini-avatar-tech">
-                        {m.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="staff-text">
-                        <h4>{m.name}</h4>
-                        {/* Renderizado condicional de badge según rol (puedes ajustar lógica) */}
-                        <span className={`role-pill ${m.role.toLowerCase().includes('admin') ? 'admin' : 'mod'}`}>
-                            {m.role.toUpperCase()}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Botonera de Acciones */}
-                <div className="staff-actions-row">
-                  <button 
-                    className="btn-action-icon warning" 
-                    onClick={() => blockUser(m.name)} 
-                    title="Bloquear Acceso"
-                  >
-                    <FaBan />
-                  </button>
-                  <button 
-                    className="btn-action-icon danger" 
-                    onClick={() => removeStaff(m.id)} 
-                    title="Expulsar del Staff"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-
-  const renderRecruitmentAdmin = () => (
-    <div className="full-width-tab fade-in">
-      <div className="section-header-tech"><h3>Reclutamiento</h3></div>
-      {filteredRecruitment.length === 0 ? (
-        <div className="widget-tech" style={{ padding: 16 }}>Sin solicitudes.</div>
-      ) : (
-        filteredRecruitment.map((a) => (
-          <div key={a.id} className="widget-tech" style={{ padding: 16, marginBottom: 12 }}>
-            <p><strong>{a.user}</strong> — {a.role} — Exp: {a.exp}</p>
-            <p>Estado: {a.status}</p>
-            <div className="t-actions">
-              <button className="btn-tech neon" onClick={() => acceptApplication(a.id)}>
-                <FaCheckCircle /> Aceptar
-              </button>
-              <button className="btn-tech glass" onClick={() => rejectApplication(a.id)}>
-                <FaTrash /> Rechazar
-              </button>
-              <button className="btn-tech glass" onClick={() => blockUser(a.user)}>
-                <FaBan /> Bloquear
-              </button>
-            </div>
-          </div>
-        ))
-      )}
-      <div className="widget-tech" style={{ padding: 16 }}>
-        <p><FaBriefcase /> Reclutamiento activo para moderadores.</p>
-      </div>
-    </div>
-  );
-
-  const renderLogs = () => (
-    <div className="full-width-tab fade-in">
-      <div className="section-header-tech"><h3>Logs de Moderación</h3></div>
-      {filteredLogs.length === 0 ? (
-        <div className="widget-tech" style={{ padding: 16 }}>Sin acciones registradas.</div>
-      ) : (
-        filteredLogs.map((log) => (
-          <div key={log.id} className="widget-tech" style={{ padding: 12, marginBottom: 8 }}>
-            <p>{log.action}</p>
-            <small>{log.at}</small>
-          </div>
-        ))
-      )}
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="community-layout" style={dynamicStyles}>
-      <header className="tech-header">
-        <div className="hero-banner">
-          <div className="scanline"></div>
-          <div className="hero-overlay"></div>
-        </div>
+    <div className="ct">
+      <header className="ct__hero">
+        {community.banner && (
+          <img src={community.banner} alt="" className="ct__hero-bg" />
+        )}
+        <div className="ct__hero-overlay" />
 
-        <div className="header-content container-limit">
-          <div className="profile-grid">
-            <div className="avatar-container">
-              <div className="tech-avatar"></div>
-              <div className="status-light"></div>
+        <div className="ct__hero-inner">
+          <button className="ct__back ct__back--hero" onClick={() => navigate(returnTo)}>
+            <FaArrowLeft />
+          </button>
+
+          <div className="ct__hero-profile">
+            {community.avatar ? (
+              <img src={community.avatar} alt={community.name} className="ct__avatar" />
+            ) : (
+              <div className="ct__avatar ct__avatar--fallback">
+                {(community.name || 'C')[0].toUpperCase()}
+              </div>
+            )}
+
+            <div className="ct__hero-info">
+              <h1 className="ct__title">{community.name}</h1>
+              <p className="ct__tagline">Panel de administracion de comunidad</p>
+
+              <div className="ct__meta-row">
+                <span className="ct__meta-chip">
+                  <FaUsers /> {community.stats?.members || 0} miembros
+                </span>
+                <span className="ct__meta-chip">
+                  <FaGlobe /> {aboutDraft.region || 'Global'}
+                </span>
+                <span className="ct__meta-chip">
+                  <FaCalendarAlt /> {community.createdAt}
+                </span>
+                <span className="ct__meta-chip ct__meta-chip--role">
+                  <FaCrown /> Owner
+                </span>
+              </div>
             </div>
-
-            <div className="profile-info">
-              <h1 className="glitch-text">{communityData.name} ADMIN</h1>
-              <div className="badges-row">
-                <span className="tech-badge official">PANEL</span>
-                <span className="tech-badge region">{aboutDraft.region}</span>
-              </div>
-              <div className="stats-row">
-                <span><strong className="neon-text">{communityData.stats.members}</strong> Miembros</span>
-                <span><strong className="neon-text">{communityData.stats.online}</strong> Online</span>
-              </div>
-              <div className="stats-row">
-                <span><FaGlobe /> {aboutDraft.region}</span>
-                <span><FaClock /> {communityData.created_at}</span>
-              </div>
-            </div>
-
-           
-
-            <div className="profile-actions">
-    <button className="btn-tech glass">
-        <FaShareAlt /> COMPARTIR
-    </button>
-
-    <button 
-        className="btn-tech exit-admin" 
-        onClick={() => {
-            // Usamos el nombre de la comunidad para construir el link exacto
-            const communitySlug = communityData.name.toLowerCase().replace(/\s+/g, '-');
-            window.location.href = `/community/${communitySlug}`;
-        }} 
-    >
-        <FaSignOutAlt /> SALIR ADMIN
-    </button>
-
-    <button className="btn-tech glass icon-only">
-        <FaEllipsisH />
-    </button>
-</div>
           </div>
-        </div>
 
-        <div className="tech-nav-bar">
-          <div className="container-limit nav-flex">
-            <nav className="nav-menu-container">
-              {['feed', 'about', 'staff', 'recruitment', 'logs'].map((tab) => (
-                <button
-                  key={tab}
-                  className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab.toUpperCase()}
-                </button>
-              ))}
-            </nav>
-
-            <div className="search-box">
-              <FaSearch />
-              <input
-                type="text"
-                placeholder="BUSCAR..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+          <div className="ct__hero-actions">
+            <span className="ct__badge-owner"><FaCrown /> Admin</span>
+            <button className="ct__btn-action ct__btn-action--manage" onClick={() => navigate(returnTo)}>
+              <FaSignOutAlt /> Salir admin
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="main-content container-limit">
-        {activeTab === 'feed' && renderFeedAdmin()}
-        {activeTab === 'about' && renderAboutAdmin()}
-        {activeTab === 'staff' && renderStaffAdmin()}
-        {activeTab === 'recruitment' && renderRecruitmentAdmin()}
-        {activeTab === 'logs' && renderLogs()}
+      <main className="ct__body">
+        <section className="ct__section">
+          <div className="ct__admin-tabs">
+            {TAB_OPTIONS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`ct__admin-tab ${activeTab === tab.id ? 'ct__admin-tab--active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <Icon /> {tab.label}
+                </button>
+              );
+            })}
+
+            <label className="ct__admin-search">
+              <FaSearch />
+              <input
+                type="search"
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </label>
+          </div>
+        </section>
+
+        {activeTab === 'feed' && (
+          <section className="ct__section ct__admin-section">
+            <div className="ct__admin-section-header">
+              <div>
+                <h2 className="ct__section-title"><FaShieldAlt /> Centro de moderacion</h2>
+                <p className="ct__admin-subtitle">Revisa publicaciones pendientes y toma accion rapida.</p>
+              </div>
+            </div>
+
+            {filteredPosts.length === 0 ? (
+              <div className="ct__empty-section">
+                <FaCheckCircle />
+                <p>No hay publicaciones pendientes de revision.</p>
+              </div>
+            ) : (
+              <div className="ct__admin-logs">
+                {filteredPosts.map((post) => (
+                  <div key={post.id} className="ct__admin-log-item" style={{ alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <p>@{post.author}</p>
+                      <small>{post.text}</small>
+                    </div>
+                    <div className="ct__admin-staff-actions">
+                      <button type="button" className="ct__admin-action-btn" title="Aprobar" onClick={() => handleApprovePost(post.id)}>
+                        <FaCheck />
+                      </button>
+                      <button type="button" className="ct__admin-action-btn ct__admin-action-btn--danger" title="Eliminar" onClick={() => handleDeletePost(post.id)}>
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === 'about' && (
+          <section className="ct__section ct__admin-section">
+            <div className="ct__admin-section-header">
+              <div>
+                <h2 className="ct__section-title"><FaEdit /> Editar perfil de comunidad</h2>
+                <p className="ct__admin-subtitle">Mismo estilo del layout de comunidad, con contenido administrativo.</p>
+              </div>
+
+              <div className="ct__admin-header-actions">
+                {!isEditingAbout ? (
+                  <button className="ct__btn-action ct__btn-action--manage" onClick={() => setIsEditingAbout(true)}>
+                    <FaPen /> Editar
+                  </button>
+                ) : (
+                  <>
+                    <button className="ct__btn-action ct__btn-action--manage" onClick={handleCancelEdit}>
+                      <FaTimes /> Cancelar
+                    </button>
+                    <button className="ct__btn-action" onClick={handleSaveAbout}>
+                      <FaSave /> Guardar
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className={`ct__admin-form ${!isEditingAbout ? 'ct__admin-form--readonly' : ''}`}>
+              <div className="ct__admin-form-group">
+                <h3 className="ct__admin-form-title"><FaGlobe /> Identidad y region</h3>
+                <div className="ct__admin-form-grid">
+                  <div className="ct__admin-input-group">
+                    <label>Slogan</label>
+                    <input
+                      type="text"
+                      value={aboutDraft.tagline}
+                      onChange={(event) => setAboutDraft((prev) => ({ ...prev, tagline: event.target.value }))}
+                      placeholder="Ej: La casa de los campeones"
+                      disabled={!isEditingAbout}
+                    />
+                  </div>
+
+                  <div className="ct__admin-input-group">
+                    <label>Region</label>
+                    <input
+                      type="text"
+                      value={aboutDraft.region}
+                      onChange={(event) => setAboutDraft((prev) => ({ ...prev, region: event.target.value }))}
+                      placeholder="Ej: LATAM"
+                      disabled={!isEditingAbout}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="ct__admin-form-group">
+                <h3 className="ct__admin-form-title"><FaImage /> Branding visual</h3>
+                <div className="ct__admin-form-grid">
+                  <div className="ct__admin-input-group">
+                    <label>Banner</label>
+                    <input ref={bannerInputRef} type="file" accept="image/*" hidden onChange={handleBannerChange} />
+                    <label
+                      className={`ct__admin-upload ${!isEditingAbout ? 'ct__admin-upload--disabled' : ''}`}
+                      onClick={() => isEditingAbout && bannerInputRef.current?.click()}
+                    >
+                      {aboutDraft.banner ? (
+                        <div className="ct__admin-upload-preview" style={{ backgroundImage: `url(${aboutDraft.banner})` }}>
+                          <div className="ct__admin-upload-overlay"><FaCloudUploadAlt /> Cambiar</div>
+                        </div>
+                      ) : (
+                        <div className="ct__admin-upload-placeholder">
+                          <FaCloudUploadAlt />
+                          <span>Subir banner</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  <div className="ct__admin-input-group">
+                    <label>Avatar / logo</label>
+                    <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={handleAvatarChange} />
+                    <label
+                      className={`ct__admin-upload ct__admin-upload--avatar ${!isEditingAbout ? 'ct__admin-upload--disabled' : ''}`}
+                      onClick={() => isEditingAbout && avatarInputRef.current?.click()}
+                    >
+                      {aboutDraft.avatar ? (
+                        <div className="ct__admin-upload-preview ct__admin-upload-preview--avatar" style={{ backgroundImage: `url(${aboutDraft.avatar})` }}>
+                          <div className="ct__admin-upload-overlay ct__admin-upload-overlay--circle"><FaPen /></div>
+                        </div>
+                      ) : (
+                        <div className="ct__admin-upload-placeholder">
+                          <FaImage />
+                          <span>Subir logo</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ct__admin-form-group">
+                <h3 className="ct__admin-form-title"><FaLink /> Redes sociales</h3>
+                <div className="ct__admin-form-grid ct__admin-form-grid--3">
+                  <div className="ct__admin-input-group">
+                    <label className="ct__admin-label--discord"><FaDiscord /> Discord</label>
+                    <input
+                      type="text"
+                      value={aboutDraft.socialLinks.discord}
+                      onChange={(event) => setAboutDraft((prev) => ({
+                        ...prev,
+                        socialLinks: { ...prev.socialLinks, discord: event.target.value },
+                      }))}
+                      placeholder="https://discord.gg/tucomunidad"
+                      disabled={!isEditingAbout}
+                    />
+                  </div>
+
+                  <div className="ct__admin-input-group">
+                    <label className="ct__admin-label--twitter"><FaTwitter /> Twitter / X</label>
+                    <input
+                      type="text"
+                      value={aboutDraft.socialLinks.twitter}
+                      onChange={(event) => setAboutDraft((prev) => ({
+                        ...prev,
+                        socialLinks: { ...prev.socialLinks, twitter: event.target.value },
+                      }))}
+                      placeholder="https://x.com/tucomunidad"
+                      disabled={!isEditingAbout}
+                    />
+                  </div>
+
+                  <div className="ct__admin-input-group">
+                    <label className="ct__admin-label--twitch"><FaTwitch /> Twitch</label>
+                    <input
+                      type="text"
+                      value={aboutDraft.socialLinks.twitch}
+                      onChange={(event) => setAboutDraft((prev) => ({
+                        ...prev,
+                        socialLinks: { ...prev.socialLinks, twitch: event.target.value },
+                      }))}
+                      placeholder="https://twitch.tv/tucomunidad"
+                      disabled={!isEditingAbout}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="ct__admin-form-group">
+                <h3 className="ct__admin-form-title"><FaInfoCircle /> Descripcion</h3>
+                <div className="ct__admin-input-group">
+                  <textarea
+                    rows="5"
+                    value={aboutDraft.description}
+                    onChange={(event) => setAboutDraft((prev) => ({ ...prev, description: event.target.value }))}
+                    placeholder="Describe la comunidad, su historia y enfoque."
+                    disabled={!isEditingAbout}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'staff' && (
+          <section className="ct__section ct__admin-section">
+            <div className="ct__admin-section-header">
+              <div>
+                <h2 className="ct__section-title"><FaUserCog /> Gestion de staff</h2>
+                <p className="ct__admin-subtitle">Administra permisos, rangos y accesos del equipo.</p>
+              </div>
+            </div>
+
+            {filteredStaff.length === 0 ? (
+              <div className="ct__empty-section">
+                <FaUsers />
+                <p>No hay miembros en el equipo de staff.</p>
+              </div>
+            ) : (
+              <div className="ct__members-grid">
+                {filteredStaff.map((member) => (
+                  <div key={member.id} className={`ct__member ${member.role === 'owner' ? 'ct__member--owner' : ''}`}>
+                    {member.avatar ? (
+                      <img src={member.avatar} alt={member.name} className="ct__member-avatar" />
+                    ) : (
+                      <div className="ct__member-avatar ct__member-avatar--fallback">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+
+                    <div className="ct__member-info" style={{ flex: 1 }}>
+                      <strong>{member.name}</strong>
+                      <span className={`ct__role ct__role--${member.role}`}>{member.role}</span>
+                    </div>
+
+                    <div className="ct__admin-staff-actions">
+                      <button type="button" className="ct__admin-action-btn ct__admin-action-btn--warn" title="Bloquear" onClick={() => handleBlockUser(member.name)}>
+                        <FaBan />
+                      </button>
+                      <button type="button" className="ct__admin-action-btn ct__admin-action-btn--danger" title="Eliminar" onClick={() => handleRemoveStaff(member.id)}>
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === 'recruitment' && (
+          <section className="ct__section ct__admin-section">
+            <div className="ct__admin-section-header">
+              <div>
+                <h2 className="ct__section-title"><FaCheckCircle /> Solicitudes</h2>
+                <p className="ct__admin-subtitle">Gestiona reclutamiento y aplicaciones al staff.</p>
+              </div>
+            </div>
+
+            {filteredRecruitment.length === 0 ? (
+              <div className="ct__empty-section">
+                <FaCheckCircle />
+                <p>Sin solicitudes pendientes.</p>
+              </div>
+            ) : (
+              <div className="ct__members-grid">
+                {filteredRecruitment.map((item) => (
+                  <div key={item.id} className="ct__member">
+                    <div className="ct__member-avatar ct__member-avatar--fallback">
+                      {item.user.charAt(0).toUpperCase()}
+                    </div>
+
+                    <div className="ct__member-info" style={{ flex: 1 }}>
+                      <strong>{item.user}</strong>
+                      <span className="ct__role ct__role--moderator">{item.role}</span>
+                      <span className="ct__role ct__role--member">Exp: {item.exp}</span>
+                    </div>
+
+                    <div className="ct__admin-staff-actions">
+                      <button type="button" className="ct__admin-action-btn" title="Aceptar" onClick={() => handleAcceptApplication(item.id)}>
+                        <FaCheck />
+                      </button>
+                      <button type="button" className="ct__admin-action-btn ct__admin-action-btn--danger" title="Rechazar" onClick={() => handleRejectApplication(item.id)}>
+                        <FaTimes />
+                      </button>
+                      <button type="button" className="ct__admin-action-btn ct__admin-action-btn--warn" title="Bloquear" onClick={() => handleBlockUser(item.user)}>
+                        <FaBan />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === 'logs' && (
+          <section className="ct__section ct__admin-section">
+            <div className="ct__admin-section-header">
+              <div>
+                <h2 className="ct__section-title"><FaClipboardList /> Logs de moderacion</h2>
+                <p className="ct__admin-subtitle">Historial reciente de acciones dentro del panel.</p>
+              </div>
+            </div>
+
+            {filteredLogs.length === 0 ? (
+              <div className="ct__empty-section">
+                <FaClipboardList />
+                <p>Sin acciones registradas.</p>
+              </div>
+            ) : (
+              <div className="ct__admin-logs">
+                {filteredLogs.map((item) => (
+                  <div key={item.id} className="ct__admin-log-item">
+                    <p>{item.action}</p>
+                    <small>{item.at}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        <section className="ct__section">
+          <h2 className="ct__section-title"><FaLink /> Redes visibles</h2>
+          {visibleSocialLinks.length === 0 ? (
+            <div className="ct__empty-section">
+              <FaLink />
+              <p>Esta comunidad aun no tiene redes configuradas.</p>
+            </div>
+          ) : (
+            <div className="ct__meta-row">
+              {visibleSocialLinks.map(([key, value]) => (
+                <a key={key} href={value} className="ct__meta-chip" target="_blank" rel="noreferrer">
+                  <FaLink /> {key}
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <footer className="ct__info-footer">
+          <FaCalendarAlt />
+          <span>Panel administrativo de comunidad</span>
+        </footer>
       </main>
     </div>
   );

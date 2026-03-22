@@ -628,7 +628,7 @@ const Register = () => {
                   <span className="helper-text"><i className='bx bx-info-circle'></i> {usernameAvailability.message}</span>
                 )}
                 <div className="input-row">
-                  <div className="input-wrapper"><label>Email</label><input type="email" name="email" value={formData.email} onChange={handleChange} autoComplete="email" placeholder='Email'/><i className='bx bx-envelope'></i></div>
+                  <div className="input-wrapper"><label>Correo electrónico</label><input type="email" name="email" value={formData.email} onChange={handleChange} autoComplete="email" placeholder='correo@ejemplo.com'/><i className='bx bx-envelope'></i></div>
                 </div>
                 <div className="input-row">
                   <div className={`input-wrapper ${formData.password && passwordError ? 'input-error' : ''}`}>
@@ -658,12 +658,12 @@ const Register = () => {
                 </label>
 
                 {!canSubmit && submitErrorHint && (
-                  <div className="error-alert" style={{ color: '#ff4d4d', marginTop: '10px' }}>
+                  <div className="auth-error-msg" style={{ marginTop: '10px' }}>
                     {submitErrorHint}
                   </div>
                 )}
 
-                {error && <div className="error-alert" style={{color: '#ff4d4d', marginTop: '10px'}}>{error}</div>}
+                {error && <div className="auth-error-msg" style={{ marginTop: '10px' }}>{error}</div>}
 
                 <div className="form-actions">
                   <button type="button" className="btn-secondary" onClick={() => setStep(3)}>Atrás</button>

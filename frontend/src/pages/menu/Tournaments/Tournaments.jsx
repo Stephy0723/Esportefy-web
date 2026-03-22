@@ -417,6 +417,7 @@ const Tournaments = () => {
   const [dragSeedRefId, setDragSeedRefId] = useState('');
   const [dragOverSeedRefId, setDragOverSeedRefId] = useState('');
   const [bracketScale, setBracketScale] = useState(1);
+  const [confirmModal, setConfirmModal] = useState(null);
   const rightPanelRef = useRef(null);
   const bracketPanRef = useRef({
     active: false,
@@ -845,20 +846,26 @@ useEffect(() => {
     }
   };
 
-  const updateTournamentStatus = async (torneo, action) => {
+  const confirmStatusMessages = {
+    start: '¿Seguro que deseas iniciar este torneo? Se cerrarán las inscripciones.',
+    finish: '¿Seguro que deseas finalizar este torneo?',
+    cancel: '¿Seguro que deseas cancelar este torneo?'
+  };
+
+  const requestStatusChange = (torneo, action) => {
     if (!torneo?.tournamentId || !action) {
       notify('danger', 'Error', 'No se pudo determinar el torneo o la acción.');
       return;
     }
     if (statusActionLoading) return;
+    if (confirmStatusMessages[action]) {
+      setConfirmModal({ message: confirmStatusMessages[action], onConfirm: () => { setConfirmModal(null); executeStatusChange(torneo, action); } });
+      return;
+    }
+    executeStatusChange(torneo, action);
+  };
 
-    const confirmations = {
-      start: '¿Seguro que deseas iniciar este torneo? Se cerrarán las inscripciones.',
-      finish: '¿Seguro que deseas finalizar este torneo?',
-      cancel: '¿Seguro que deseas cancelar este torneo?'
-    };
-    if (confirmations[action] && !window.confirm(confirmations[action])) return;
-
+  const executeStatusChange = async (torneo, action) => {
     try {
       const token = getAuthToken();
       if (!token) {
@@ -1103,9 +1110,14 @@ useEffect(() => {
     }
   };
 
-  const deleteTournament = async (torneo) => {
-    const ok = window.confirm(`¿Eliminar el torneo "${torneo.title}"? Esta acción no se puede deshacer.`);
-    if (!ok) return;
+  const deleteTournament = (torneo) => {
+    setConfirmModal({
+      message: `¿Eliminar el torneo "${torneo.title}"? Esta acción no se puede deshacer.`,
+      onConfirm: () => { setConfirmModal(null); executeDeleteTournament(torneo); }
+    });
+  };
+
+  const executeDeleteTournament = async (torneo) => {
     if (torneo?.__local) {
       const local = getLocalTournaments().filter((t) => String(t._id) !== String(torneo.id));
       localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(local));
@@ -2960,6 +2972,25 @@ useEffect(() => {
             </div>
             
             {isRightPanelOpen && <div className="sidebar-overlay-mobile"></div>}
+
+            {confirmModal && (
+                <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>
+                    <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+                        <div className="confirm-modal__icon">
+                            <i className='bx bx-error-circle'></i>
+                        </div>
+                        <p className="confirm-modal__msg">{confirmModal.message}</p>
+                        <div className="confirm-modal__actions">
+                            <button className="confirm-modal__btn confirm-modal__btn--cancel" onClick={() => setConfirmModal(null)}>
+                                Cancelar
+                            </button>
+                            <button className="confirm-modal__btn confirm-modal__btn--confirm" onClick={confirmModal.onConfirm}>
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
   );

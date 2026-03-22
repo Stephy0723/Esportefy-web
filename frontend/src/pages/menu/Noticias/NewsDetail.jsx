@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    FaArrowLeft, FaChartLine, FaCommentDots, FaEye,
+    FaArrowLeft, FaChartLine, FaEye,
     FaGlobeAmericas, FaLayerGroup, FaRegClock, FaShareAlt,
     FaStar, FaBookmark, FaRegBookmark, FaHeart, FaRegHeart,
     FaTwitter, FaFacebook, FaCopy, FaCheck
@@ -17,6 +17,10 @@ const formatDate = (iso) => {
     const d = new Date(`${iso}T00:00:00`);
     return d.toLocaleDateString('es', { day: '2-digit', month: 'long', year: 'numeric' });
 };
+
+const hasDisplayDate = (item) => Boolean(String(item?.date || '').trim());
+const hasDisplayViews = (item) => Number(item?.views) > 0;
+const getNewsBadgeLabel = (item) => (item?.isNew || !hasDisplayDate(item) || !hasDisplayViews(item) ? 'Nueva' : 'Publicada');
 
 // Escape regex special chars
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -184,7 +188,7 @@ export default function NewsDetail() {
     const galleryItems = Array.isArray(news.gallery) && news.gallery.length
         ? news.gallery
         : [news.image].filter(Boolean);
-    const publisherName = news.company || DEFAULT_NEWS_COMPANY;
+    const publisherName = news.company || (news.isCustom ? DEFAULT_NEWS_COMPANY : '');
     const articleTags = Array.isArray(news.tags) ? news.tags.filter(Boolean).slice(0, 4) : [];
     const readMinutes = Math.max(2, Math.ceil((news.excerpt.length + storyDetails.join(' ').length) / 420));
     const highlightLines = storyDetails.slice(0, 3);
@@ -227,7 +231,7 @@ export default function NewsDetail() {
                     </Link>
                     <div className="nd-topbar__meta">
                         <span><FaRegClock /> {readMinutes} min lectura</span>
-                        <span><FaShareAlt /> {publisherName}</span>
+                        {publisherName && <span><FaShareAlt /> {publisherName}</span>}
                     </div>
                 </motion.div>
 
@@ -254,16 +258,15 @@ export default function NewsDetail() {
                             ))}
                         </div>
 
-                        <p className="nd-kicker">{publisherName}</p>
+                        {publisherName && <p className="nd-kicker">{publisherName}</p>}
                         <h1><LinkedKeywordsText text={news.title} /></h1>
                         <p className="nd-lead"><LinkedKeywordsText text={news.excerpt} /></p>
 
                         <div className="nd-meta">
-                            <span>{formatDate(news.date)}</span>
-                            <span>{news.author}</span>
-                            <span>{publisherName}</span>
-                            <span>{news.views.toLocaleString()} vistas</span>
-                            <span>{news.comments} comentarios</span>
+                            <span>{hasDisplayDate(news) ? formatDate(news.date) : getNewsBadgeLabel(news)}</span>
+                            {news.author && <span>{news.author}</span>}
+                            {publisherName && <span>{publisherName}</span>}
+                            {hasDisplayViews(news) && <span>{news.views.toLocaleString()} vistas</span>}
                         </div>
                     </div>
 
@@ -304,13 +307,13 @@ export default function NewsDetail() {
                         <div className="nd-statgrid">
                             <div className="nd-statbox">
                                 <FaEye />
-                                <strong>{formatCompact(news.views)}</strong>
-                                <span>audiencia</span>
+                                <strong>{hasDisplayViews(news) ? formatCompact(news.views) : 'Nueva'}</strong>
+                                <span>{hasDisplayViews(news) ? 'audiencia' : 'estado'}</span>
                             </div>
                             <div className="nd-statbox">
-                                <FaCommentDots />
-                                <strong>{news.comments}</strong>
-                                <span>debate</span>
+                                <FaStar />
+                                <strong>{getNewsBadgeLabel(news)}</strong>
+                                <span>novedad</span>
                             </div>
                             <div className="nd-statbox">
                                 <FaLayerGroup />
@@ -445,16 +448,20 @@ export default function NewsDetail() {
                             </div>
                             <div className="nd-sidecard__row">
                                 <span>Publicado</span>
-                                <strong>{formatDate(news.date)}</strong>
+                                <strong>{hasDisplayDate(news) ? formatDate(news.date) : getNewsBadgeLabel(news)}</strong>
                             </div>
-                            <div className="nd-sidecard__row">
-                                <span>Autor</span>
-                                <strong>{news.author}</strong>
-                            </div>
-                            <div className="nd-sidecard__row">
-                                <span>Empresa</span>
-                                <strong>{publisherName}</strong>
-                            </div>
+                            {news.author && (
+                                <div className="nd-sidecard__row">
+                                    <span>Autor</span>
+                                    <strong>{news.author}</strong>
+                                </div>
+                            )}
+                            {publisherName && (
+                                <div className="nd-sidecard__row">
+                                    <span>Empresa</span>
+                                    <strong>{publisherName}</strong>
+                                </div>
+                            )}
                             {articleTags.length > 0 && (
                                 <div className="nd-sidecard__stack">
                                     <span>Tags</span>

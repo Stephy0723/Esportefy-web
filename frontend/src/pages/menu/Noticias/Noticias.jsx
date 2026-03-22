@@ -1,13 +1,16 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { API_URL } from '../../../config/api';
 import { 
-    FaFire, FaClock, FaEye, FaComment, FaChevronRight, FaChevronDown,
+    FaFire, FaClock, FaEye, FaChevronRight, FaChevronDown,
     FaGamepad, FaTrophy, FaCalendarAlt, FaBuilding, FaUsers,
     FaNewspaper, FaArrowRight, FaSearch, FaTimes, FaBookmark,
     FaRegBookmark, FaShare, FaHeart, FaRegHeart, FaSortAmountDown, FaPlus
 } from 'react-icons/fa';
 import PageHud from '../../../components/PageHud/PageHud';
+import { useAuth } from '../../../context/AuthContext';
 import { isSupportedGameName } from '../../../../../shared/supportedGames.js';
 import {
     ALLOWED_NEWS_IMAGE_TYPES,
@@ -65,6 +68,19 @@ const formatDate = (iso) => {
     return d.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+const hasDisplayDate = (item) => Boolean(String(item?.date || '').trim());
+const hasDisplayViews = (item) => Number(item?.views) > 0;
+const getNewsBadgeLabel = (item) => (item?.isNew || !hasDisplayDate(item) || !hasDisplayViews(item) ? 'Nueva' : '');
+const getNewsSortTime = (item) => {
+    const createdAt = Date.parse(item?.createdAt || '');
+    if (Number.isFinite(createdAt)) return createdAt;
+
+    const dated = hasDisplayDate(item) ? Date.parse(`${item.date}T00:00:00`) : NaN;
+    if (Number.isFinite(dated)) return dated;
+
+    return item?.isNew ? Date.now() : 0;
+};
+
 // Bubble component for dynamic background
 const Bubbles = () => {
     return (
@@ -87,6 +103,7 @@ const Bubbles = () => {
 
 export default function Noticias() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const primaryImageInputRef = useRef(null);
     const galleryInputRef = useRef(null);
     const [newsItems, setNewsItems] = useState([]);
@@ -104,6 +121,8 @@ export default function Noticias() {
     const [isProcessingMedia, setIsProcessingMedia] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [newsletterEmail, setNewsletterEmail] = useState('');
+    const [newsletterLoading, setNewsletterLoading] = useState(false);
 
     // Load news from API + bookmarks from localStorage
     useEffect(() => {
@@ -346,8 +365,7 @@ export default function Noticias() {
         
         rows.sort((a, b) => {
             if (sortBy === 'popular') return b.views - a.views;
-            if (sortBy === 'comments') return b.comments - a.comments;
-            return new Date(b.createdAt || `${b.date}T00:00:00`) - new Date(a.createdAt || `${a.date}T00:00:00`);
+            return getNewsSortTime(b) - getNewsSortTime(a);
         });
         
         return rows;
@@ -361,14 +379,20 @@ export default function Noticias() {
 
     // Trending news (top 5)
     const trendingNews = useMemo(() => {
-        return [...newsItems].sort((a, b) => b.views - a.views).slice(0, 5);
+        return [...newsItems]
+            .sort((a, b) => {
+                const viewDiff = (Number(b.views) || 0) - (Number(a.views) || 0);
+                if (viewDiff !== 0) return viewDiff;
+                return getNewsSortTime(b) - getNewsSortTime(a);
+            })
+            .slice(0, 5);
     }, [newsItems]);
 
     // Stats
     const stats = useMemo(() => ({
         total: newsItems.length,
-        views: newsItems.reduce((acc, n) => acc + n.views, 0),
-        comments: newsItems.reduce((acc, n) => acc + n.comments, 0),
+        fresh: newsItems.filter((n) => n.isNew || !hasDisplayDate(n) || !hasDisplayViews(n)).length,
+        featured: newsItems.filter((n) => n.featured).length,
     }), [newsItems]);
 
     // Animation variants
@@ -403,17 +427,17 @@ export default function Noticias() {
             <PageHud page="NOTICIAS" />
 
             {loading && (
-                <div className="nw-loading" style={{ textAlign: 'center', padding: '100px 0', color: 'var(--text-secondary)' }}>
-                    <i className="bx bx-loader-alt bx-spin" style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--primary)' }}></i>
+                <div className="nw-state-msg">
+                    <i className="bx bx-loader-alt bx-spin nw-state-msg__icon nw-state-msg__icon--primary"></i>
                     <h3>Cargando noticias...</h3>
                 </div>
             )}
-            
+
             {error && (
-                <div className="nw-error" style={{ textAlign: 'center', padding: '100px 0', color: 'var(--text-secondary)' }}>
-                    <i className="bx bx-error-alt" style={{ fontSize: '3rem', marginBottom: '1rem', color: '#ff4655' }}></i>
+                <div className="nw-state-msg">
+                    <i className="bx bx-error-alt nw-state-msg__icon nw-state-msg__icon--error"></i>
                     <h3>{error}</h3>
-                    <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: 'var(--primary)', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#fff', marginTop: '1rem' }}>
+                    <button className="nw-state-msg__retry" onClick={() => window.location.reload()}>
                         Reintentar
                     </button>
                 </div>
@@ -679,10 +703,9 @@ export default function Noticias() {
                         <h1>{featuredNews.title}</h1>
                         <p>{featuredNews.excerpt}</p>
                         <div className="nw-hero__meta">
-                            <span><FaClock /> {formatDate(featuredNews.date)}</span>
-                            <span><FaEye /> {featuredNews.views.toLocaleString()}</span>
-                            <span><FaComment /> {featuredNews.comments}</span>
-                            <span className="nw-hero__author">Por {featuredNews.author}</span>
+                            <span><FaClock /> {hasDisplayDate(featuredNews) ? formatDate(featuredNews.date) : (getNewsBadgeLabel(featuredNews) || 'Nueva')}</span>
+                            {hasDisplayViews(featuredNews) && <span><FaEye /> {featuredNews.views.toLocaleString()}</span>}
+                            {featuredNews.author && <span className="nw-hero__author">Por {featuredNews.author}</span>}
                             {(featuredNews.company || featuredNews.isCustom) && (
                                 <span className="nw-hero__company"><FaBuilding /> {featuredNews.company || DEFAULT_NEWS_COMPANY}</span>
                             )}
@@ -720,17 +743,17 @@ export default function Noticias() {
                         </div>
                     </motion.div>
                     <motion.div className="nw-stat" whileHover={{ scale: 1.05 }}>
-                        <FaEye className="nw-stat__icon" />
+                        <FaFire className="nw-stat__icon" />
                         <div>
-                            <span className="nw-stat__value">{stats.views.toLocaleString()}</span>
-                            <span className="nw-stat__label">Lecturas</span>
+                            <span className="nw-stat__value">{stats.fresh}</span>
+                            <span className="nw-stat__label">Nuevas</span>
                         </div>
                     </motion.div>
                     <motion.div className="nw-stat" whileHover={{ scale: 1.05 }}>
-                        <FaComment className="nw-stat__icon" />
+                        <FaTrophy className="nw-stat__icon" />
                         <div>
-                            <span className="nw-stat__value">{stats.comments}</span>
-                            <span className="nw-stat__label">Comentarios</span>
+                            <span className="nw-stat__value">{stats.featured}</span>
+                            <span className="nw-stat__label">Destacadas</span>
                         </div>
                     </motion.div>
                 </div>
@@ -765,10 +788,20 @@ export default function Noticias() {
                         <FaChevronDown className={showFilters ? 'rotated' : ''} />
                     </button>
 
-                    <button className="nw-create-btn" onClick={() => setIsComposerOpen(true)}>
-                        <FaPlus />
-                        Haz noticias
-                    </button>
+                    {user?.isAdmin || user?.roles?.includes('content-creator') ? (
+                        <button className="nw-create-btn" onClick={() => setIsComposerOpen(true)}>
+                            <FaPlus />
+                            Crear noticia
+                        </button>
+                    ) : (
+                        <button
+                            className="nw-create-btn nw-create-btn--disabled"
+                            onClick={() => showToast('Necesitas ser administrador o creador de contenido para publicar noticias')}
+                        >
+                            <FaPlus />
+                            Crear noticia
+                        </button>
+                    )}
 
                     {/* Desktop filters */}
                     <div className="nw-toolbar__filters">
@@ -778,7 +811,6 @@ export default function Noticias() {
                         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="nw-select">
                             <option value="recent">Más reciente</option>
                             <option value="popular">Más popular</option>
-                            <option value="comments">Más comentado</option>
                         </select>
                     </div>
                 </div>
@@ -798,7 +830,6 @@ export default function Noticias() {
                             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="nw-select">
                                 <option value="recent">Más reciente</option>
                                 <option value="popular">Más popular</option>
-                                <option value="comments">Más comentado</option>
                             </select>
                         </motion.div>
                     )}
@@ -857,7 +888,7 @@ export default function Noticias() {
                             filtered.map((n, index) => (
                                 <motion.article 
                                     key={n.id}
-                                    className={`nw-card ${index === 0 && !searchTerm && category === 'Todos' && game === 'Todos' ? 'nw-card--large' : ''}`}
+                                    className="nw-card"
                                     variants={cardVariants}
                                     layout
                                     onClick={() => navigate(`/noticias/${n.id}`)}
@@ -897,27 +928,19 @@ export default function Noticias() {
                                         <p>{n.excerpt}</p>
                                         <div className="nw-card__footer">
                                             <div className="nw-card__meta">
-                                                <span className="nw-card__date">{formatDate(n.date)}</span>
-                                                <span className="nw-card__views"><FaEye /> {n.views.toLocaleString()}</span>
-                                                <span className="nw-card__comments"><FaComment /> {n.comments}</span>
+                                                <span className="nw-card__date">{hasDisplayDate(n) ? formatDate(n.date) : (getNewsBadgeLabel(n) || 'Nueva')}</span>
+                                                {hasDisplayViews(n) && <span className="nw-card__views"><FaEye /> {n.views.toLocaleString()}</span>}
                                             </div>
                                             <div className="nw-card__author-block">
-                                                <span className="nw-card__author">{n.author}</span>
+                                                {n.author && <span className="nw-card__author">{n.author}</span>}
                                                 {(n.company || n.isCustom) && (
                                                     <span className="nw-card__company">{n.company || DEFAULT_NEWS_COMPANY}</span>
                                                 )}
                                             </div>
                                         </div>
-                                        <motion.div 
-                                            className="nw-card__read-more"
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ 
-                                                opacity: hoveredCard === n.id ? 1 : 0, 
-                                                x: hoveredCard === n.id ? 0 : -10 
-                                            }}
-                                        >
+                                        <div className="nw-card__read-more">
                                             Leer más <FaChevronRight />
-                                        </motion.div>
+                                        </div>
                                     </div>
                                 </motion.article>
                             ))
@@ -962,7 +985,9 @@ export default function Noticias() {
                                     <div className="nw-trending__content">
                                         <span className="nw-trending__game">{n.game}</span>
                                         <h4>{n.title}</h4>
-                                        <span className="nw-trending__views"><FaEye /> {n.views.toLocaleString()}</span>
+                                        <span className="nw-trending__views">
+                                            {hasDisplayViews(n) ? <><FaEye /> {n.views.toLocaleString()}</> : (getNewsBadgeLabel(n) || 'Nueva')}
+                                        </span>
                                     </div>
                                 </motion.div>
                             ))}
@@ -990,7 +1015,7 @@ export default function Noticias() {
                                             className="nw-bookmarks__item"
                                             onClick={() => navigate(`/noticias/${id}`)}
                                         >
-                                            <img src={news.image} alt="" />
+                                            <img src={news.image} alt={news.title || 'Noticia'} />
                                             <span>{news.title}</span>
                                         </div>
                                     );
@@ -1000,7 +1025,7 @@ export default function Noticias() {
                     )}
 
                     {/* Newsletter */}
-                    <motion.div 
+                    <motion.div
                         className="nw-newsletter"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -1009,14 +1034,35 @@ export default function Noticias() {
                         <h3 className="nw-sidebar__title">
                             <FaNewspaper /> Newsletter
                         </h3>
-                        <p>Recibe las últimas noticias directo en tu correo</p>
-                        <input type="email" placeholder="tu@email.com" />
+                        <p>Recibe noticias diarias de torneos LATAM — MLBB, LoL, Valorant y Wild Rift directo en tu correo</p>
+                        <input
+                            type="email"
+                            placeholder="tu@email.com"
+                            value={newsletterEmail}
+                            onChange={(e) => setNewsletterEmail(e.target.value)}
+                        />
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => showToast('¡Suscrito correctamente!')}
+                            disabled={newsletterLoading}
+                            onClick={async () => {
+                                if (!newsletterEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail)) {
+                                    showToast('Ingresa un email válido');
+                                    return;
+                                }
+                                setNewsletterLoading(true);
+                                try {
+                                    const { data } = await axios.post(`${API_URL}/api/newsletter/subscribe`, { email: newsletterEmail });
+                                    showToast(data.message || '¡Suscrito correctamente!');
+                                    setNewsletterEmail('');
+                                } catch (err) {
+                                    showToast(err.response?.data?.message || 'Error al suscribirte');
+                                } finally {
+                                    setNewsletterLoading(false);
+                                }
+                            }}
                         >
-                            Suscribirme
+                            {newsletterLoading ? 'Suscribiendo...' : 'Suscribirme'}
                         </motion.button>
                     </motion.div>
 

@@ -62,7 +62,6 @@ import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
 import CommunityTemplate from './pages/menu/Community/CommunityTemplate/CommunityTemplateV2';
 import CommunityAdminTemplate from './pages/menu/Community/CommunityAdminTemplate/CommunityAdminTemplate';
 import CommunityGamePageTemplate from './pages/Game/CommunityGamePageTemplate';
-import CommunitySpacePage from './pages/menu/Community/groups/CommunitySpacePage';
 import ContentCreatorPage from './pages/menu/Roles/ContentCreatorPage';
 import CoachPage from './pages/menu/Roles/CoachPage';
 import CasterPage from './pages/menu/Roles/CasterPage';
@@ -171,7 +170,7 @@ const AppRouterContent = () => {
             <Route path="/university" element={<UniversityPage />} />
             <Route path="/game/:gameId" element={<CommunityGamePageTemplate />} />
             <Route path="/community/:slug" element={<CommunityTemplate />} />
-            <Route path="/communities/:shortUrl" element={<CommunitySpacePage />} />
+            <Route path="/communities/:shortUrl" element={<CommunityTemplate />} />
             <Route path="/community/:id/admin" element={<CommunityAdminTemplate />} />
             <Route path="/group/:id" element={<GroupPage />} />
             <Route path="/organizer/:id" element={<OrganizerPage />} />

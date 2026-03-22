@@ -86,6 +86,12 @@ const communityPostSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    community: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Community',
+      default: null,
+      index: true
+    },
     text: {
       type: String,
       trim: true,
@@ -98,6 +104,26 @@ const communityPostSchema = new mongoose.Schema(
       default: 'Public'
     },
     attachment: attachmentSchema,
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CommunityPost',
+      default: null,
+      index: true
+    },
+    mentions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ],
+    hashtags: [
+      {
+        type: String,
+        trim: true,
+        lowercase: true,
+        maxlength: 60
+      }
+    ],
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -118,5 +144,6 @@ const communityPostSchema = new mongoose.Schema(
 
 communityPostSchema.index({ createdAt: -1 });
 communityPostSchema.index({ hiddenBy: 1, createdAt: -1 });
+communityPostSchema.index({ community: 1, createdAt: -1 });
 
 export default mongoose.model('CommunityPost', communityPostSchema);

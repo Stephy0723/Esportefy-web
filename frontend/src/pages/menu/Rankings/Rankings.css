@@ -2812,3 +2812,102 @@
     margin-top: 0;
 }
 
+/* ── Loading state ── */
+.rk-page--loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.rk-state-msg {
+    text-align: center;
+    color: var(--text-main);
+}
+
+/* ── Demo banner ── */
+.rk-demo-banner {
+    background-color: rgba(255, 193, 7, 0.1);
+    border: 1px solid #ffc107;
+    color: #ffc107;
+    padding: 12px;
+    text-align: center;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 100;
+    position: relative;
+}
+
+/* ── Source switcher ── */
+.rk-source-switcher {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 16px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 4px;
+    width: fit-content;
+}
+
+.rk-source-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rk-source-btn--active {
+    background: var(--primary, #8EDB15);
+    color: #111;
+}
+
+/* ── GG placeholder ── */
+.rk-gg-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    text-align: center;
+    gap: 16px;
+}
+
+.rk-gg-placeholder__icon {
+    font-size: 48px;
+    color: var(--primary, #8EDB15);
+    opacity: 0.6;
+}
+
+.rk-gg-placeholder__title {
+    color: var(--text-main);
+    margin: 0;
+}
+
+.rk-gg-placeholder__desc {
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.rk-gg-placeholder__badge {
+    font-size: 0.85rem;
+    padding: 6px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find /c/Users/salyl/esportefy-web -name *.js -path */backend/* -o -name *.ts -path */backend/*)",
-      "Bash(find /c/Users/salyl/esportefy-web/frontend/src -name *[Mm]odal* -o -name *[Cc]ard* -o -name *[Pp]opup*)"
+      "Bash(find /c/Users/salyl/esportefy-web/frontend/src -name *[Mm]odal* -o -name *[Cc]ard* -o -name *[Pp]opup*)",
+      "Bash(node -e \"import\\(''''./backend/src/services/newsletterService.js''''\\).then\\(\\(\\) => console.log\\(''''OK''''\\)\\).catch\\(e => console.error\\(e.message\\)\\)\")"
     ]
   }
 }

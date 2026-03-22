@@ -8,6 +8,7 @@ import { resolveMediaUrl } from '../../../../utils/media';
 import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/publicIds';
 import { getAuthToken } from '../../../../utils/authSession';
 import { useAuth } from '../../../../context/AuthContext';
+import { useNotification } from '../../../../context/NotificationContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import { isSupportedMlbbGame, isSupportedRiotGame, normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
 import './TeamRegistration.css';
@@ -22,6 +23,7 @@ const TeamRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user: authUser } = useAuth();
+  const { notify } = useNotification();
 
   const DEFAULT_IMAGE =
     'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop';
@@ -157,59 +159,59 @@ const TeamRegistration = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!tournament.tournamentId) {
-      alert('No se pudo identificar el torneo.');
+      notify('danger', 'Error', 'No se pudo identificar el torneo.');
       return;
     }
     if (!selectedTeamId) {
-      alert('Selecciona un equipo.');
+      notify('warning', 'Equipo requerido', 'Selecciona un equipo para inscribirte.');
       return;
     }
     if (!gameMatches) {
-      alert('El juego del equipo no coincide con el torneo.');
+      notify('danger', 'Juego incompatible', 'El juego del equipo no coincide con el torneo.');
       return;
     }
     if (!teamComplete) {
-      alert('El equipo no esta completo.');
+      notify('warning', 'Roster incompleto', 'El equipo no está completo para inscribirse.');
       return;
     }
     if (requiresRiot && !hasRiotLinked) {
-      alert('Debes vincular tu cuenta Riot para inscribirte.');
+      notify('danger', 'Cuenta Riot requerida', 'Debes vincular tu cuenta Riot para inscribirte.');
       return;
     }
     if (requiresValorantRso && !hasValorantRso) {
-      alert('Debes autorizar VALORANT con Riot Sign On en Settings para inscribirte.');
+      notify('danger', 'VALORANT RSO requerido', 'Debes autorizar VALORANT con Riot Sign On en Settings para inscribirte.');
       return;
     }
     if (requiresRiot && startersMissingRiotId) {
-      alert('Todos los titulares deben tener Riot ID.');
+      notify('danger', 'Riot ID faltante', 'Todos los titulares deben tener Riot ID.');
       return;
     }
     if (requiresUniversityTeam && !requesterCanRegisterSelectedTeam) {
-      alert('Solo el capitán, coach o un admin puede inscribir este equipo universitario.');
+      notify('danger', 'Sin permisos', 'Solo el capitán, coach o un admin puede inscribir este equipo universitario.');
       return;
     }
     if (requiresUniversityTeam && !universityTeamValid) {
-      alert('Este torneo solo acepta equipos universitarios verificados.');
+      notify('danger', 'Equipo no válido', 'Este torneo solo acepta equipos universitarios verificados.');
       return;
     }
     if (requiresUniversityTeam && universityPlayersMissingLinkedUser) {
-      alert('En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de GLITCH GANG.');
+      notify('danger', 'Jugadores sin vincular', 'En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de GLITCH GANG.');
       return;
     }
     if (requiresUniversityTeam && universityMismatch) {
-      alert('Tu cuenta universitaria no coincide con la universidad del equipo seleccionado.');
+      notify('danger', 'Universidad no coincide', 'Tu cuenta universitaria no coincide con la universidad del equipo seleccionado.');
       return;
     }
     if (requiresMlbb && !hasMlbbLinked) {
-      alert('Debes verificar tu cuenta MLBB para inscribirte.');
+      notify('danger', 'Cuenta MLBB requerida', 'Debes verificar tu cuenta MLBB para inscribirte.');
       return;
     }
     if (requiresMlbb && mlbbPlayersMissingLinkedUser) {
-      alert('En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de GLITCH GANG.');
+      notify('danger', 'Jugadores sin vincular', 'En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de GLITCH GANG.');
       return;
     }
     if (requiresMlbb && mlbbPlayersMissingId) {
-      alert('Todos los jugadores del roster MLBB deben tener User ID y Zone ID.');
+      notify('danger', 'IDs MLBB faltantes', 'Todos los jugadores del roster MLBB deben tener User ID y Zone ID.');
       return;
     }
 
@@ -217,7 +219,7 @@ const TeamRegistration = () => {
       setSubmitting(true);
       const token = getAuthToken();
       if (!token) {
-        alert('Debes iniciar sesion para registrar tu equipo.');
+        notify('danger', 'Sesión expirada', 'Debes iniciar sesión para registrar tu equipo.');
         return;
       }
       await axios.post(
@@ -225,11 +227,11 @@ const TeamRegistration = () => {
         { teamId: selectedTeamId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert('Equipo registrado. GL HF.');
+      notify('success', 'Equipo registrado', 'Tu equipo fue inscrito correctamente. GL HF.');
       navigate('/tournaments');
     } catch (err) {
       const msg = err.response?.data?.message || 'No se pudo registrar el equipo';
-      alert(msg);
+      notify('danger', 'Error de registro', msg);
     } finally {
       setSubmitting(false);
     }
