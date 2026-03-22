@@ -110,7 +110,7 @@ const TermsConditions = () => {
             </ul>
 
             <h2 className="legal-h"><i className="bx bx-envelope"></i>Canal formal</h2>
-            <p>Para notificaciones legales y solicitudes formales: soporte@esportefy.com.</p>
+            <p>Para notificaciones legales y solicitudes formales: soporte@glitchgang.net.</p>
             </aside>
           </div>
         </div>

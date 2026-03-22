@@ -41,7 +41,7 @@ const createUser = async ({ suffix, isAdmin = false, isOrganizer = false }) => {
     platforms: [],
     goals: [],
     username: `${isAdmin ? 'uniadmin' : 'uniplayer'}-${suffix}`,
-    email: `${isAdmin ? 'uniadmin' : 'uniplayer'}.${suffix}@esportefy.local`,
+    email: `${isAdmin ? 'uniadmin' : 'uniplayer'}.${suffix}@glitchgang.local`,
     password: hashedPassword,
     checkTerms: true,
     isAdmin,
@@ -475,7 +475,7 @@ const run = async () => {
       .field('legalCompliance', JSON.stringify({
         jurisdiction: 'República Dominicana',
         governingLaw: 'Legislación dominicana',
-        claimsContact: `legal.${suffix}@esportefy.local`,
+        claimsContact: `legal.${suffix}@glitchgang.local`,
         rulesAccepted: true,
         privacyAccepted: true,
         organizerDeclaration: true

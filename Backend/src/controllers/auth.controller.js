@@ -38,6 +38,8 @@ const parseDeviceLabel = (ua = '') => {
     return os ? `${browser} en ${os}` : browser;
 };
 
+const isStringField = (value) => typeof value === 'string';
+
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const ALLOWED_DOCUMENT_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
@@ -606,8 +608,19 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { email, password, rememberMe } = req.body;
-        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const body = req.body;
+
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return res.status(400).json({ message: 'Payload inválido' });
+        }
+
+        const { email, password, rememberMe } = body;
+
+        if (!isStringField(email) || !isStringField(password)) {
+            return res.status(400).json({ message: 'Correo y contraseña deben ser texto válido' });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
 
         if (!normalizedEmail || !password) {
             return res.status(400).json({ message: 'Correo y contraseña son requeridos' });
@@ -635,7 +648,7 @@ export const login = async (req, res) => {
 
         // 3. Check if 2FA is enabled
         if (user.twoFactorEnabled) {
-            const twoFactorCode = String(req.body.twoFactorCode || req.body.twoFactorToken || '').trim();
+            const twoFactorCode = String(body.twoFactorCode || body.twoFactorToken || '').trim();
             
             // If no code provided, ask for it
             if (!twoFactorCode) {
@@ -1540,7 +1553,7 @@ export const forgotPassword = async (req, res) => {
 
         const mailOptions = {
     to: user.email,
-    from: 'Esportefy Team <no-reply@esportefy.com>',
+    from: 'GlitchGang Team <no-reply@glitchgang.net>',
     subject: `${token} es tu código de recuperación`,
     html: `
     <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 50px 0;">
@@ -1548,7 +1561,7 @@ export const forgotPassword = async (req, res) => {
             
             <div style="padding: 30px; text-align: center;">
                 <h1 style="color: #000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">
-                    ESPORTEFY<span style="color: #00ff00;">.</span>
+                    GLITCHGANG<span style="color: #00ff00;">.</span>
                 </h1>
                 <p style="color: #666; font-size: 14px; margin-top: 10px;">RECUPERACIÓN DE CUENTA</p>
             </div>
@@ -1571,7 +1584,7 @@ export const forgotPassword = async (req, res) => {
 
             <div style="background-color: #000; padding: 15px; text-align: center;">
                 <p style="color: #fff; font-size: 11px; margin: 0; opacity: 0.7;">
-                    © ${new Date().getFullYear()} Esportefy Platform. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} GlitchGang Platform. Todos los derechos reservados.
                 </p>
             </div>
         </div>
@@ -1897,7 +1910,7 @@ export const applyOrganizer = async (req, res) => {
         });
 
         const mailOptions = {
-            from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
+            from: `"GlitchGang Admin" <${process.env.EMAIL_USER}>`,
             to: 'steliantsoft@gmail.com',
             replyTo: user.email,
             subject: `Solicitud de Organizador: ${orgName || user.username}`,
@@ -2026,7 +2039,7 @@ export const applyRole = async (req, res) => {
                 .join('');
 
             await transporter.sendMail({
-                from: `"Esportefy Admin" <${process.env.EMAIL_USER}>`,
+                from: `"GlitchGang Admin" <${process.env.EMAIL_USER}>`,
                 to: 'steliantsoft@gmail.com',
                 replyTo: user.email,
                 subject: `Nueva Solicitud de Rol: ${roleLabels[role] || role} — ${user.username}`,
@@ -2630,4 +2643,3 @@ export const adminRespondSupportTicket = async (req, res) => {
         res.status(500).json({ message: 'Error al responder el ticket.' });
     }
 };
-

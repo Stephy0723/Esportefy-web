@@ -11,6 +11,7 @@ import Footer from './components/Home/Footer';
 import Navbar from './components/Navbar/Navbar';
 import Sidebar from './components/Sidebar/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import AdminRoute from './components/ProtectedRoute/AdminRoute';
 
 import DocsPage from './pages/Docs/DocsPage';
 import Home from './pages/Home/Home';
@@ -24,7 +25,7 @@ import OrganismProfile from './pages/menu/Organismos/OrganismProfile';
 import Dashboard from './pages/menu/Dashboard/Dashboard';
 import FriendsPage from './pages/menu/Friends/Friends';
 import Chats from './pages/menu/Chats/Chats';
-import EsportefyPage from './pages/menu/Esportefy/EsportefyPage';
+import GlitchGangPage from './pages/menu/Esportefy/EsportefyPage';
 import Tv from './pages/menu/EsportefyTV/Tv';
 import Notifications from './pages/Notifications/Notifications';
 import Tournaments from './pages/menu/Tournaments/Tournaments';
@@ -55,6 +56,7 @@ import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
 import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
 import TermsConditions from './pages/menu/Legal/TermsConditions';
 import PrivacyPolicy from './pages/menu/Legal/PrivacyPolicy';
+import RiotReviewPage from './pages/Review/RiotReviewPage';
 import GamesPage from './pages/menu/Community/games/GamesPage';
 import GamesFilterTemplate from './pages/menu/Community/games/GamesFilterTemplate';
 import GroupPage from './pages/menu/Community/groups/GroupPage';
@@ -68,6 +70,7 @@ import CasterPage from './pages/menu/Roles/CasterPage';
 import SponsorPage from './pages/menu/Roles/SponsorPage';
 import AnalystPage from './pages/menu/Roles/AnalystPage';
 import AdminPanel from './pages/menu/Admin/AdminPanel';
+import StatsPage from './pages/Stats/StatsPage';
 
 
 const MainLayout = () => {
@@ -118,6 +121,7 @@ const AppRouterContent = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/docs" element={<DocsPage />} />
+          <Route path="/review/riot" element={<RiotReviewPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} />
@@ -142,7 +146,7 @@ const AppRouterContent = () => {
             <Route path="/chats" element={<Chats />} />
             <Route path="/tv" element={<Tv />} />
             <Route path="/settings" element={<SettingsV2 />} />
-            <Route path="/esportefy" element={<EsportefyPage />} />
+            <Route path="/glitchgang" element={<GlitchGangPage />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/torneos" element={<Tournaments />} />
             <Route path="/comunidad" element={<Community />} />
@@ -175,6 +179,9 @@ const AppRouterContent = () => {
             <Route path="/group/:id" element={<GroupPage />} />
             <Route path="/organizer/:id" element={<OrganizerPage />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route element={<AdminRoute />}>
+              <Route path="/stats" element={<StatsPage />} />
+            </Route>
             <Route path="/role/content-creator/apply" element={<ContentCreatorPage />} />
             <Route path="/role/coach/apply" element={<CoachPage />} />
             <Route path="/role/caster/apply" element={<CasterPage />} />
@@ -200,4 +207,3 @@ function App() {
 }
 
 export default App;
-

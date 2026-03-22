@@ -37,7 +37,7 @@ const createUser = async ({ suffix }) => {
     platforms: [],
     goals: [],
     username: `social-${suffix}`,
-    email: `social.${suffix}@esportefy.local`,
+    email: `social.${suffix}@glitchgang.local`,
     password: hashedPassword,
     checkTerms: true
   });

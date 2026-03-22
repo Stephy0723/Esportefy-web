@@ -96,7 +96,7 @@ const TournamentReportsPage = () => {
       const res = await axios.get(`${API_URL}/api/tournaments/${code}/reports`, authConfig);
       setReports(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('Error cargando reportes:', err);
+      addToast('Error cargando reportes.', 'error');
     } finally {
       setReportsLoading(false);
     }
@@ -132,9 +132,9 @@ const TournamentReportsPage = () => {
 
   const submitReport = async () => {
     if (!reportedTeam && !reportedPlayer && !reportedStaff) {
-      return alert('Indica el equipo, jugador o miembro de staff reportado.');
+      return addToast('Indica el equipo, jugador o miembro de staff reportado.', 'error');
     }
-    if (!description.trim()) return alert('Agrega una descripcion del reporte.');
+    if (!description.trim()) return addToast('Agrega una descripcion del reporte.', 'error');
 
     try {
       const res = await axios.post(`${API_URL}/api/tournaments/${code}/reports`, {
@@ -151,7 +151,7 @@ const TournamentReportsPage = () => {
       setShowForm(false);
       resetForm();
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo crear el reporte.');
+      addToast(err.response?.data?.message || 'No se pudo crear el reporte.', 'error');
     }
   };
 
@@ -170,17 +170,23 @@ const TournamentReportsPage = () => {
         window.location.reload();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo actualizar el reporte.');
+      addToast(err.response?.data?.message || 'No se pudo actualizar el reporte.', 'error');
     }
   };
 
-  const removeReport = async (reportId) => {
-    if (!window.confirm('Eliminar este reporte permanentemente?')) return;
+  const triggerRemoveReport = (reportId) => {
+    setConfirmModal({
+      message: '¿Eliminar este reporte permanentemente?',
+      onConfirm: () => { setConfirmModal(null); executeRemoveReport(reportId); }
+    });
+  };
+
+  const executeRemoveReport = async (reportId) => {
     try {
       await axios.delete(`${API_URL}/api/tournaments/${code}/reports/${reportId}`, authConfig);
       setReports((prev) => prev.filter((r) => r.reportId !== reportId));
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo eliminar el reporte.');
+      addToast(err.response?.data?.message || 'No se pudo eliminar el reporte.', 'error');
     }
   };
 
@@ -481,7 +487,7 @@ const TournamentReportsPage = () => {
                       <button
                         className="ta-btn-sm ta-btn-sm--danger"
                         style={{ marginLeft: 'auto', fontSize: '0.72rem', padding: '4px 10px' }}
-                        onClick={() => removeReport(report.reportId)}
+                        onClick={() => triggerRemoveReport(report.reportId)}
                       >
                         Eliminar
                       </button>
@@ -493,6 +499,18 @@ const TournamentReportsPage = () => {
           </div>
         )}
       </section>
+      {confirmModal && (
+        <div className="ta-confirm-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="ta-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="ta-confirm-icon"><i className='bx bx-error-circle'></i></div>
+            <p className="ta-confirm-msg">{confirmModal.message}</p>
+            <div className="ta-confirm-actions">
+              <button className="ta-confirm-btn ta-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className="ta-confirm-btn ta-confirm-btn--confirm" onClick={confirmModal.onConfirm}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </TournamentAdminShell>
   );
 };

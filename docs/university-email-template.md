@@ -2,7 +2,7 @@ Asunto: Propuesta de alianza universitaria para competencias oficiales de esport
 
 Estimado/a [Nombre / Cargo],
 
-Le compartimos una propuesta para habilitar, junto a Esportefy, un programa de competencias universitarias de esports donde estudiantes verificados puedan representar formalmente a su institución.
+Le compartimos una propuesta para habilitar, junto a GlitchGang, un programa de competencias universitarias de esports donde estudiantes verificados puedan representar formalmente a su institución.
 
 El objetivo es ofrecer a la universidad:
 - visibilidad institucional,
@@ -22,6 +22,6 @@ Quedamos atentos.
 Saludos cordiales,
 [Nombre]
 [Rol]
-Esportefy
+GlitchGang
 [Correo]
 [Teléfono]

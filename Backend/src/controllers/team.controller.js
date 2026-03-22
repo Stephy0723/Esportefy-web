@@ -90,7 +90,7 @@ export const createTeam = async (req, res) => {
 
         const normalizedGame = normalizeSupportedGameName(parsedFormData?.game);
         if (!normalizedGame) {
-            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en GlitchGang.' });
         }
         parsedFormData.game = normalizedGame;
 
@@ -376,7 +376,7 @@ const ensureUserNotInOtherTeam = async (game, userId, currentTeamId, targetTeamL
     if (!userId) return { ok: true };
     const normalizedGame = normalizeSupportedGameName(game);
     if (!normalizedGame) {
-        return { ok: false, message: 'Ese juego todavía no está soportado en Esportefy.' };
+        return { ok: false, message: 'Ese juego todavía no está soportado en GlitchGang.' };
     }
     const query = {
         game: normalizedGame,
@@ -414,7 +414,7 @@ const ensureRiotIdNotInOtherTeam = async (game, nickname, gameId, currentTeamId,
     const { targetTeamLike = null, targetUserId = null } = options;
     const normalizedGame = normalizeSupportedGameName(game);
     if (!normalizedGame) {
-        return { ok: false, message: 'Ese juego todavía no está soportado en Esportefy.' };
+        return { ok: false, message: 'Ese juego todavía no está soportado en GlitchGang.' };
     }
     const gn = String(nickname || '').trim();
     const tl = String(gameId || '').trim();
@@ -722,7 +722,7 @@ const validateUniversityTeamRoster = async (teamLike = {}, expectedUniversityId 
         if (!player?.user) {
             return {
                 ok: false,
-                message: 'En equipos universitarios todos los jugadores del roster deben ser usuarios verificados de Esportefy.'
+                message: 'En equipos universitarios todos los jugadores del roster deben ser usuarios verificados de GlitchGang.'
             };
         }
         const universityCheck = await ensureUserMatchesUniversityTeam(player.user, universityId);
@@ -851,7 +851,7 @@ const ensureMlbbIdNotInOtherTeam = async (game, playerId, zoneId, currentTeamId,
     const { targetTeamLike = null, targetUserId = null } = options;
     const normalizedGame = normalizeSupportedGameName(game);
     if (!normalizedGame) {
-        return { ok: false, message: 'Ese juego todavía no está soportado en Esportefy.' };
+        return { ok: false, message: 'Ese juego todavía no está soportado en GlitchGang.' };
     }
     const pid = String(playerId || '').trim();
     const zid = String(zoneId || '').trim();
@@ -902,7 +902,7 @@ const validateMlbbRosterEntries = async (game, roster, currentTeamId, targetTeam
         if (!player?.user) {
             return {
                 ok: false,
-                message: 'En equipos MLBB todos los jugadores del roster deben ser usuarios vinculados de Esportefy.'
+                message: 'En equipos MLBB todos los jugadores del roster deben ser usuarios vinculados de GlitchGang.'
             };
         }
 
@@ -2202,7 +2202,7 @@ export const seedThirdPartyTeams = async (req, res) => {
         const buildCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
         // Create or find a "phantom" user to act as captain
-        let phantom = await User.findOne({ email: 'phantom_captain@esportefy.demo' });
+        let phantom = await User.findOne({ email: 'phantom_captain@glitchgang.demo' });
         if (!phantom) {
             phantom = await User.findOne({ username: /^PhantomCaptain/i });
         }
@@ -2210,7 +2210,7 @@ export const seedThirdPartyTeams = async (req, res) => {
             const hashedPw = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
             phantom = await User.create({
                 username: 'PhantomCaptain_' + Date.now(),
-                email: 'phantom_captain@esportefy.demo',
+                email: 'phantom_captain@glitchgang.demo',
                 password: hashedPw,
                 checkTerms: true,
                 fullName: 'Phantom Captain',

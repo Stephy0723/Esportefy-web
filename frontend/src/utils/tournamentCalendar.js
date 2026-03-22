@@ -5,7 +5,8 @@ import { formatTournamentPublicId } from './publicIds';
 import { resolveMediaUrl } from './media';
 import { isSupportedGameName } from '../../../shared/supportedGames.js';
 
-export const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
+export const LOCAL_TOURNAMENTS_KEY = 'glitchgang_local_tournaments';
+export const LEGACY_LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAME_CONFIG = {
   'Valorant': { color: '#ff4655', icon: 'bx-crosshair' },
@@ -83,10 +84,41 @@ export const normalizeTournamentCalendarEntry = (tournament = {}) => {
   };
 };
 
+export const getStoredLocalTournaments = () => {
+  try {
+    const currentRaw = localStorage.getItem(LOCAL_TOURNAMENTS_KEY);
+    if (currentRaw) {
+      const parsed = JSON.parse(currentRaw);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    const legacyRaw = localStorage.getItem(LEGACY_LOCAL_TOURNAMENTS_KEY);
+    const parsed = legacyRaw ? JSON.parse(legacyRaw) : [];
+    const list = Array.isArray(parsed) ? parsed : [];
+    if (list.length > 0) {
+      localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(list));
+      localStorage.removeItem(LEGACY_LOCAL_TOURNAMENTS_KEY);
+    }
+    return list;
+  } catch {
+    return [];
+  }
+};
+
+export const saveStoredLocalTournaments = (items = []) => {
+  const normalized = Array.isArray(items) ? items : [];
+  try {
+    localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(normalized));
+    localStorage.removeItem(LEGACY_LOCAL_TOURNAMENTS_KEY);
+  } catch {
+    // no-op
+  }
+  return normalized;
+};
+
 export const getLocalTournamentCalendarEntries = () => {
   try {
-    const raw = localStorage.getItem(LOCAL_TOURNAMENTS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
+    const parsed = getStoredLocalTournaments();
     return Array.isArray(parsed)
       ? parsed.map(normalizeTournamentCalendarEntry).filter(Boolean)
       : [];

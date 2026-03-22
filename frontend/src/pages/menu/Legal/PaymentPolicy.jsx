@@ -19,7 +19,7 @@ const PaymentPolicy = () => {
               <p className="legal-mini">Reglas de cobros, premios y reembolsos</p>
               <h1 className="legal-hero-title">Politica de <span className="legal-accent">Pagos</span></h1>
               <p className="legal-hero-lead">
-                Resume flujo de custodia, liquidacion, comisiones y controles antifraude para eventos con dinero real.
+                Resume el flujo de custodia, liquidacion, comisiones y controles antifraude para eventos con dinero real dentro de GLITCH GANG by Steliant.
               </p>
               <p className="legal-mini">Ultima actualizacion: 23 de febrero de 2026</p>
               <p className="legal-mini">Version legal RD: v1.0 | Fecha efectiva: 23 de febrero de 2026</p>
@@ -55,7 +55,8 @@ const PaymentPolicy = () => {
             <p className="legal-section-mini">La tarifa aplicable se fija al publicar el torneo y puede variar por metodo.</p>
             <ul>
               <li>Torneos gratuitos: <span className="legal-key">comision de plataforma 0%</span>.</li>
-              <li>Torneos pagos: comision vigente al momento de publicacion del evento.</li>
+              <li>Torneos pagos: la comision vigente se informa al momento de publicar el evento.</li>
+              <li>En torneos Riot con inscripcion paga, al menos el <span className="legal-key">70%</span> de las inscripciones debe reflejarse en el prize pool publicado.</li>
               <li>Retiros: pueden incluir costos de pasarela, banco o conversion de moneda.</li>
             </ul>
             <p>
@@ -67,7 +68,7 @@ const PaymentPolicy = () => {
             <p className="legal-section-mini">Las reversiones bancarias activan controles extra y conciliacion manual.</p>
             <p>
               Si una transaccion es revertida por emisor financiero o proveedor de pagos,
-              GLITCH GANG puede retener saldos, pausar funcionalidades de cuenta o requerir
+              GLITCH GANG by Steliant puede retener saldos, pausar funcionalidades de cuenta o requerir
               <span className="legal-key">documentacion adicional</span> para conciliacion.
             </p>
 
@@ -95,11 +96,15 @@ const PaymentPolicy = () => {
             <h2 className="legal-h"><i className="bx bx-shield-x"></i>Pagos fuera de plataforma</h2>
             <p>
               No permitimos solicitar pagos externos cuando el torneo se publica bajo flujo
-              financiero interno de GLITCH GANG. Este control protege a jugadores y organizadores.
+              financiero interno de GLITCH GANG by Steliant. Este control protege a jugadores y organizadores.
             </p>
             <p>
-              En la beta de Mobile Legends se priorizan torneos gratuitos y se bloquean
-              referencias a apuestas o gambling para reducir riesgo legal y operativo.
+              En torneos Riot y en la beta de Mobile Legends se bloquean referencias a apuestas,
+              gambling, cuotas o dinamicas equivalentes para reducir riesgo legal y operativo.
+            </p>
+            <p>
+              Si un torneo Riot usa inscripcion paga, debe mantener un prize pool compatible con
+              la politica del publisher y con las validaciones internas del servicio antes de publicarse.
             </p>
             <p>
               Para prevencion de fraude y riesgos financieros, podemos aplicar verificaciones
@@ -108,7 +113,7 @@ const PaymentPolicy = () => {
             </p>
 
             <h2 className="legal-h"><i className="bx bx-envelope"></i>Contacto de facturacion</h2>
-            <p>Soporte de pagos: pagos@esportefy.com.</p>
+            <p>Soporte de pagos: pagos@glitchgang.net.</p>
             </aside>
           </div>
         </div>

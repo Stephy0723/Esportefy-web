@@ -312,7 +312,7 @@ async function sendEmailOtp(to, code) {
 
   const mailOptions = {
     to,
-    from: `"Esportefy" <${process.env.EMAIL_USER}>`,
+    from: `"GlitchGang" <${process.env.EMAIL_USER}>`,
     subject: `${code} es tu código para vincular Riot`,
     html: `
       <div style="margin:0; padding:0; background:#0f1115;">
@@ -323,7 +323,7 @@ async function sendEmailOtp(to, code) {
                 <tr>
                   <td style="padding:24px 28px; background:linear-gradient(135deg,#1e2a3a,#151a24); border-bottom:1px solid #1f2530;">
                     <div style="font-family:Arial, sans-serif; color:#fff; font-size:18px; font-weight:700; letter-spacing:0.5px;">
-                      ESPORTEFY
+                      GLITCHGANG
                       <span style="color:#7CFF6B;">.</span>
                     </div>
                     <div style="font-family:Arial, sans-serif; color:#9aa4b2; font-size:12px; margin-top:6px;">
@@ -355,7 +355,7 @@ async function sendEmailOtp(to, code) {
                 </tr>
                 <tr>
                   <td style="padding:16px 28px; border-top:1px solid #1f2530; font-family:Arial, sans-serif; font-size:11px; color:#6d7785;">
-                    © ${new Date().getFullYear()} Esportefy. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} GlitchGang. Todos los derechos reservados.
                   </td>
                 </tr>
               </table>
@@ -606,7 +606,7 @@ export const confirmRiotLink = async (req, res) => {
       source: 'Conexiones',
       message: syncResult?.warning
         ? `Tu cuenta Riot quedó vinculada, pero la sincronización automática reportó: ${syncResult.warning}`
-        : `Tu cuenta Riot ${pending.gameName}#${pending.tagLine} quedó vinculada correctamente en Esportefy.`,
+        : `Tu cuenta Riot ${pending.gameName}#${pending.tagLine} quedó vinculada correctamente en GlitchGang.`,
       meta: {
         riotId: `${pending.gameName}#${pending.tagLine}`,
         syncOk: syncResult?.ok === true,
@@ -662,8 +662,8 @@ export const unlinkRiotAccount = async (req, res) => {
         title: 'Cuenta Riot desvinculada',
         source: 'Conexiones',
         message: riotId
-          ? `Tu cuenta Riot ${riotId} fue desvinculada de Esportefy.`
-          : 'Tu cuenta Riot fue desvinculada de Esportefy.',
+          ? `Tu cuenta Riot ${riotId} fue desvinculada de GlitchGang.`
+          : 'Tu cuenta Riot fue desvinculada de GlitchGang.',
         meta: {
           riotId,
           action: 'unlink'
@@ -826,7 +826,7 @@ export const valorantRsoCallback = async (req, res) => {
     }
 
     if (user?.connections?.riot?.verified && user?.connections?.riot?.puuid && String(user.connections.riot.puuid) !== puuid) {
-      return res.redirect(getFrontendSettingsUrl('error', 'La cuenta Riot autorizada no coincide con la ya vinculada en Esportefy.'));
+      return res.redirect(getFrontendSettingsUrl('error', 'La cuenta Riot autorizada no coincide con la ya vinculada en GlitchGang.'));
     }
 
     const alreadyLinked = await ensureRiotAccountNotLinkedElsewhere(puuid, user._id);

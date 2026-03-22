@@ -115,10 +115,11 @@
 }
 
 .pf-hero__game {
-    position: absolute;
-    right: 32px;
-    bottom: 32px;
+    position: relative;
     z-index: 1;
+    margin-left: auto;
+    flex-shrink: 0;
+    align-self: flex-end;
 }
 
 /* ── Avatar ── */
@@ -1974,11 +1975,7 @@
     }
 
     .pf-hero__game {
-        position: relative;
-        right: auto;
-        bottom: auto;
         margin-top: 18px;
-        align-self: flex-end;
     }
 
     .pf-game-card {
@@ -2113,10 +2110,8 @@
     }
 
     .pf-hero__game {
-        position: relative;
-        right: auto;
-        bottom: auto;
         margin-top: 16px;
+        margin-left: 0;
         display: flex;
         justify-content: center;
     }

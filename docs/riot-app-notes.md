@@ -1,19 +1,22 @@
 # Riot App Notes (Submission Ready)
 
 Date: 2026-02-25
-Project: Esportefy
+Project: GlitchGang
 
 ## 1) Copy/Paste for Riot Developer Portal
 
 ### Product Name
-Esportefy
+GlitchGang
+
+If the public review build uses a visible brand variant, mention it explicitly in the description so the reviewer can map the site to the portal submission.
 
 ### Product Description
-Esportefy is a community tournament platform focused on fair, organized competition for amateur and semi-competitive players.
+GlitchGang is a community tournament platform focused on fair, organized competition for amateur and semi-competitive players.
 
 In this prototype, Riot APIs are used only for account identity and eligibility checks:
 - validate Riot ID format and ownership flow,
-- link one Riot account to one Esportefy user,
+- link one Riot account to one GlitchGang user,
+- record a separate player consent flow for VALORANT through Riot Sign On when enabled,
 - enforce tournament integrity rules for Riot-scoped events.
 
 For Riot-related tournaments, we enforce policy-safe behavior in-app:
@@ -25,11 +28,14 @@ For Riot-related tournaments, we enforce policy-safe behavior in-app:
 The project does not expose undocumented endpoints, does not claim Riot partnership, does not provide alternate official ranking systems, and does not include player-shaming features.
 
 ### Product Group
-Default Group (or your Esportefy team group in Developer Portal)
+Default Group (or your GlitchGang team group in Developer Portal)
 
 ### Product URL
 Use your public HTTPS prototype URL (staging/review environment).
-Example: `https://esportefy-demo.com`
+Example: `https://glitchgang.net`
+
+Suggested reviewer helper URL:
+- `https://glitchgang.net/review/riot`
 
 ### Product Game Focus
 Register one product per game if needed.
@@ -43,11 +49,12 @@ Yes.
 
 ## 2) App Notes (paste in the application)
 
-Esportefy is a tournament platform where Riot integration is limited to identity verification and tournament integrity checks.
+GlitchGang is a tournament platform where Riot integration is limited to identity verification and tournament integrity checks.
 
 What we do:
 - Validate Riot ID (`GameName#TagLine`) using official Riot endpoints.
-- Link one Riot account to one Esportefy user.
+- Link one Riot account to one GlitchGang user.
+- Use a separate Riot Sign On consent step for VALORANT when that environment has RSO enabled.
 - Enforce eligibility checks in Riot-scoped tournaments.
 - Block duplicate Riot IDs inside a roster and across tournament registrations.
 
@@ -61,6 +68,7 @@ What we do not do:
 Key/security handling:
 - Riot API key is backend-only.
 - Non-production key use is restricted in public contexts.
+- If a private HTTPS review build temporarily uses a dev key, it is gated for reviewer-only access and `RIOT_REVIEW_MODE=true`.
 - Rate limiting is enabled on Riot auth endpoints.
 
 Tournament policy behavior:
@@ -71,6 +79,7 @@ Tournament policy behavior:
 
 If needed, we can provide:
 - reviewer test accounts,
+- a public reviewer landing page at `/review/riot`,
 - short walkthrough video,
 - endpoint-by-endpoint mapping.
 
@@ -78,7 +87,8 @@ If needed, we can provide:
 
 ### Environment
 - `RIOT_KEY_MODE` configured for the target environment.
-- `ALLOW_RIOT_DEV_KEY_IN_PROD=false`.
+- `ALLOW_RIOT_DEV_KEY_IN_PROD=true` only for a private reviewer-only build.
+- `ALLOW_RIOT_DEV_KEY_IN_PROD=false` once Riot grants the Production Key or if the app opens publicly.
 - `RIOT_REVIEW_MODE=true` in review/staging.
 - `RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS=20`.
 - `VITE_RIOT_REVIEW_MODE=true` and `VITE_RIOT_MIN_ACTIVE_PARTICIPANTS=20` in frontend review env.

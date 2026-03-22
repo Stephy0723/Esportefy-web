@@ -3272,3 +3272,70 @@
   padding-top: 6px;
   border-top: 1px solid var(--border-color, #2a2a40);
 }
+
+/* ── Confirm Modal ── */
+
+.ta-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.ta-confirm-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+
+.ta-confirm-icon {
+  font-size: 2.4rem;
+  color: #f59e0b;
+  margin-bottom: 12px;
+}
+
+.ta-confirm-msg {
+  color: var(--text-main);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.ta-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.ta-confirm-btn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.ta-confirm-btn:hover {
+  opacity: 0.85;
+}
+
+.ta-confirm-btn--cancel {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.ta-confirm-btn--confirm {
+  background: var(--primary);
+  color: #fff;
+}

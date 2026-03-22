@@ -12,9 +12,8 @@ import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../u
 import { getAuthToken } from '../../../utils/authSession';
 import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
+import { getStoredLocalTournaments, saveStoredLocalTournaments } from '../../../utils/tournamentCalendar';
 import { filterSupportedGameObjects, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
-
-const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
@@ -25,6 +24,21 @@ const GAME_CONFIG = {
 
 const normalizeTournamentGame = (value) => String(value || '').trim().toLowerCase();
 const isValorantTournamentGame = (value) => normalizeTournamentGame(value) === 'valorant';
+const formatMoneyAmount = (value) => {
+  const parsed = Number.parseFloat(String(value ?? '').trim().replace(',', '.'));
+  if (!Number.isFinite(parsed) || parsed <= 0) return '';
+  return parsed.toLocaleString('en-US', {
+    minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+};
+const formatEntryFeeBadge = (entryFee = '', entryFeeAmount = '', currency = 'USD') => {
+  const label = String(entryFee || '').trim();
+  if (!label) return '';
+  if (label.toLowerCase() !== 'pago') return label;
+  const formattedAmount = formatMoneyAmount(entryFeeAmount);
+  return formattedAmount ? `Pago · ${formattedAmount} ${currency}` : 'Pago';
+};
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PROMO SLIDES â€” platform-branded carousel
@@ -190,8 +204,7 @@ const toAssetUrl = (path) => {
 
 const getLocalTournaments = () => {
   try {
-    const raw = localStorage.getItem(LOCAL_TOURNAMENTS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
+    const parsed = getStoredLocalTournaments();
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -224,6 +237,7 @@ const formatTournamentFromApi = (t) => ({
   time: t.time,
   entry: t.entryFee || t.entry,
   entryFee: t.entryFee || '',
+  entryFeeAmount: t.entryFeeAmount || '',
   organizer: t.organizer?.username || 'Organizador',
   organizerId: t.organizer?._id || t.organizer || '',
   format: t.format || 'Por definir',
@@ -547,7 +561,6 @@ useEffect(() => {
 
             setTournaments(formattedTournaments);
         } catch (err) {
-            console.error("Error cargando torneos:", err);
             setTournaments([]);
             notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
         } finally {
@@ -615,7 +628,6 @@ useEffect(() => {
       const formatted = await fetchTournamentDetails(torneo.tournamentId);
       setSelectedTournament({ ...torneo, ...formatted });
     } catch (err) {
-      console.error('Error cargando detalle del torneo:', err);
       notify('danger', 'Error', 'No se pudo cargar el detalle del torneo.');
     } finally {
       setDetailLoading(false);
@@ -650,7 +662,6 @@ useEffect(() => {
         if (!cancelled) setSelectedTournament(formatted);
       } catch (err) {
         if (!cancelled) {
-          console.error('Error cargando torneo por URL:', err);
           notify('warning', 'Torneo no encontrado', `No existe el torneo "${routeTournamentId}".`);
         }
       } finally {
@@ -826,7 +837,6 @@ useEffect(() => {
       setSelectedTournament((prev) => (prev ? { ...prev, ...fresh } : prev));
       notify('success', 'Estado actualizado', `Equipo ${status === 'approved' ? 'aprobado' : 'rechazado'}.`);
     } catch (err) {
-      console.error('Error actualizando registro:', err);
       notify('danger', 'Error', err.response?.data?.message || 'No se pudo actualizar el estado del equipo.');
     }
   };
@@ -910,7 +920,6 @@ useEffect(() => {
         successMessages[action] || `El torneo ahora está ${getTournamentStatusLabel(response.data.status).toLowerCase()}.`
       );
     } catch (err) {
-      console.error('Error actualizando estado:', err);
       notify('danger', 'Error', err.response?.data?.message || 'No se pudo actualizar el estado del torneo.');
     } finally {
       setStatusActionLoading('');
@@ -1120,7 +1129,7 @@ useEffect(() => {
   const executeDeleteTournament = async (torneo) => {
     if (torneo?.__local) {
       const local = getLocalTournaments().filter((t) => String(t._id) !== String(torneo.id));
-      localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(local));
+      saveStoredLocalTournaments(local);
       setSelectedTournament(null);
       setTournaments((prev) => prev.filter((t) => t.id !== torneo.id));
       notify('success', 'Torneo local eliminado', 'El torneo demo fue eliminado del almacenamiento local.');
@@ -1135,7 +1144,6 @@ useEffect(() => {
       setTournaments((prev) => prev.filter((t) => t.id !== torneo.id));
       notify('success', 'Torneo eliminado', 'El torneo fue eliminado correctamente.');
     } catch (err) {
-      console.error('Error eliminando torneo:', err);
       notify('danger', 'Error', 'No se pudo eliminar el torneo.');
     }
   };
@@ -2740,7 +2748,7 @@ useEffect(() => {
                                             <div className="tn__card-header">
                                                 <span className="tournament-id-tag">{formatTournamentPublicId(torneo)}</span>
                                                 {torneo.entryFee && torneo.entryFee !== 'Gratis' && (
-                                                    <span className="tn__entry-badge"><i className='bx bx-dollar'></i> {torneo.entryFee}</span>
+                                                    <span className="tn__entry-badge"><i className='bx bx-dollar'></i> {formatEntryFeeBadge(torneo.entryFee, torneo.entryFeeAmount, torneo.currency)}</span>
                                                 )}
                                                 {torneo.entryFee === 'Gratis' && (
                                                     <span className="tn__free-badge"><i className='bx bx-gift'></i> Gratis</span>

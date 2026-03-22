@@ -1,7 +1,7 @@
 # Riot Manual Review Checklist
 
 Fecha: 2026-02-28
-Proyecto: Esportefy
+Proyecto: GlitchGang
 
 Checklist manual para correr antes de enviar la solicitud en el Developer Portal.
 
@@ -10,7 +10,8 @@ Checklist manual para correr antes de enviar la solicitud en el Developer Portal
 - [ ] Frontend accesible por `HTTPS`
 - [ ] Backend accesible por dominio publico o proxy interno estable
 - [ ] `RIOT_REVIEW_MODE=true`
-- [ ] `ALLOW_RIOT_DEV_KEY_IN_PROD=false`
+- [ ] Si sigues con dev key: `ALLOW_RIOT_DEV_KEY_IN_PROD=true`
+- [ ] Si sigues con dev key: la URL review está protegida con basic auth o allowlist
 - [ ] `VITE_RIOT_REVIEW_MODE=true`
 - [ ] Smoke automatizado ejecutado: `npm --prefix Backend run test:e2e:riot`
 - [ ] Footer legal visible con disclaimer Riot
@@ -153,4 +154,5 @@ Solo enviar si:
 - [ ] todos los casos criticos pasan
 - [ ] la URL review es estable
 - [ ] la cuenta demo funciona
+- [ ] si aún usas dev key, la review URL no está abierta al público general
 - [ ] el reviewer puede probar el flujo sin soporte manual constante

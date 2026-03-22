@@ -46,7 +46,7 @@ const createMailer = () =>
 
 const buildHtml = (payload = {}) => `
   <div style="font-family:Arial,sans-serif;background:#0f1115;padding:24px;color:#e7eaf0;">
-    <h2 style="margin:0 0 12px;color:#7CFF6B;">Esportefy · Solicitud MLBB</h2>
+    <h2 style="margin:0 0 12px;color:#7CFF6B;">GlitchGang · Solicitud MLBB</h2>
     <p style="margin:0 0 8px;">Se recibió una nueva solicitud de verificación de Mobile Legends.</p>
     <ul style="line-height:1.7;">
       <li><strong>Usuario:</strong> ${payload.username || '-'}</li>
@@ -70,7 +70,7 @@ const sendMlbbReviewMail = async (payload = {}) => {
   const subject = `Nueva solicitud MLBB - ${payload.username || payload.fullName || payload.userId || 'usuario'}`;
   await transporter.sendMail({
     to: inbox,
-    from: `"Esportefy" <${process.env.EMAIL_USER}>`,
+    from: `"GlitchGang" <${process.env.EMAIL_USER}>`,
     subject,
     html: buildHtml(payload)
   });

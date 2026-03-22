@@ -6,6 +6,7 @@ import PageHud from '../../../components/PageHud/PageHud';
 import FeedPanel from './FeedPanel/FeedPanel';
 import CreateCommunityModal from './CreateCommunityModal/CreateCommunityModal';
 import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
+import { getStoredUser } from '../../../utils/authSession';
 import { fetchGameHubStatsIndex, formatGameHubCount } from './gameHub.service';
 import { fetchAllCommunities } from './community.service';
 import { getCommunitySocialEntries } from './communitySocials';
@@ -996,8 +997,7 @@ const Community = () => {
                     gameFilter={gameFilter} setGameFilter={setGameFilter}
                     onCreateCommunity={() => {
                         try {
-                            const stored = localStorage.getItem('esportefyUser');
-                            const u = stored ? JSON.parse(stored) : null;
+                            const u = getStoredUser();
                             const roles = u?.roles || [];
                             if (roles.includes('organizer') || roles.includes('content-creator') || u?.isOrganizer || u?.isAdmin) {
                                 setShowCreateModal(true);

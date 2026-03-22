@@ -3,18 +3,16 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { formatTournamentPublicId } from '../../../../utils/publicIds';
+import { getStoredLocalTournaments } from '../../../../utils/tournamentCalendar';
 import { normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
 import { GAME_IMAGES } from '../../../../data/gameImages';
 import { getTournamentGameByName } from '../../../../data/tournamentGames/tournamentGames';
 import './TournamentPublic.css';
 import './TournamentPublicView.overrides.css';
 
-const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
-
 const getLocalTournamentByCode = (code) => {
   try {
-    const raw = localStorage.getItem(LOCAL_TOURNAMENTS_KEY);
-    const list = raw ? JSON.parse(raw) : [];
+    const list = getStoredLocalTournaments();
     if (!Array.isArray(list)) return null;
     return list.find((item) => String(item?.tournamentId || '').toUpperCase() === String(code || '').toUpperCase()) || null;
   } catch {

@@ -148,7 +148,6 @@ const Dashboard = () => {
             setUser(response.data);
             return response.data;
         } catch (error) {
-            console.error(error);
             const status = Number(error?.response?.status || 0);
             if ((status === 401 || status === 403) && !authUser?._id) {
                 navigate('/login');
@@ -190,7 +189,7 @@ const Dashboard = () => {
                 setMyTeams(list);
                 setActiveTeam(list[0] || null);
             } catch (err) {
-                console.error('Error cargando equipos:', err);
+                /* silent — UI shows empty state */
             }
         };
         fetchTeams();
@@ -205,7 +204,7 @@ const Dashboard = () => {
                 const res = await axios.get(`${API_URL}/api/tournaments`);
                 setTournaments(res.data || []);
             } catch (err) {
-                console.error('Error cargando torneos:', err);
+                /* silent — UI shows empty state */
             }
         };
         fetchTournaments();
@@ -221,7 +220,7 @@ const Dashboard = () => {
                 const res = await axios.get(`${API_URL}/api/notifications`);
                 setNotifications(res.data || []);
             } catch (err) {
-                console.error('Error cargando notificaciones:', err);
+                /* silent — UI shows empty state */
             }
         };
         if (user) fetchNotifs();
@@ -237,7 +236,7 @@ const Dashboard = () => {
                 const communities = await fetchMyCommunities();
                 setMyCommunities(Array.isArray(communities) ? communities : []);
             } catch (err) {
-                console.error('Error cargando comunidades:', err);
+                /* silent — UI shows empty state */
             }
         };
         if (user) fetchComms();
@@ -302,7 +301,7 @@ const Dashboard = () => {
             const freshTeam = await fetchTeamDetail(team._id);
             if (freshTeam) setTeamPanel(freshTeam);
         } catch (error) {
-            console.error('Error cargando detalle del equipo:', error);
+            /* silent */
         } finally {
             setTeamPanelLoading(false);
         }

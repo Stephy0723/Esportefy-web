@@ -53,7 +53,7 @@ const SCENES = [
       { icon: 'bx-bracket', title: 'Brackets inteligentes', body: 'Eliminación simple, doble, round robin y formatos híbridos con gestión automatizada de resultados.' },
       { icon: 'bx-user-check', title: 'Verificación de cuentas', body: 'Sistema anti-smurf que vincula tu cuenta real del juego para garantizar competencia en tu nivel.' },
       { icon: 'bx-video', title: 'Streams integrados', body: 'Conecta tu transmisión directamente al torneo. Los espectadores siguen la acción en tiempo real.' },
-      { icon: 'bx-wallet', title: 'Wallet y premios', body: 'Sistema de pagos integrado con retiros por PayPal, transferencia bancaria y criptomonedas.' },
+      { icon: 'bx-wallet', title: 'Premios y liquidacion', body: 'Gestiona validacion de premios, flujo de liquidacion y soporte operativo para eventos con dinero real.' },
       { icon: 'bx-shield', title: 'Staff de torneo', body: 'Asigna administradores, árbitros y moderadores con permisos granulares para cada evento.' },
       { icon: 'bx-bar-chart-alt-2', title: 'Centro de partidos', body: 'Gestión centralizada de cada match: scores, evidencias, disputas y resultados en un solo lugar.' },
     ],
@@ -98,7 +98,7 @@ const SCENES = [
 const AUTO_SCROLL_MS = 6000;
 const TOTAL_SECTIONS = SCENES.length;
 
-const EsportefyPage = () => {
+const GlitchGangPage = () => {
   const sectionRefs = useRef([]);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const [autoScroll, setAutoScroll] = useState(true);
@@ -370,4 +370,4 @@ const EsportefyPage = () => {
   );
 };
 
-export default EsportefyPage;
+export default GlitchGangPage;

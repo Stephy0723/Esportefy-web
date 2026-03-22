@@ -9,7 +9,7 @@ import {
     FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake, FaTrophy,
     FaDiscord, FaSteam, FaPlaystation, FaXbox
 } from 'react-icons/fa';
-import { SiRiotgames, SiEpicgames, SiNintendoswitch } from 'react-icons/si';
+import { SiRiotgames, SiEpicgames } from 'react-icons/si';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { PLAYER_TAGS } from '../../../data/playerTags';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
@@ -17,8 +17,9 @@ import { EMPTY_PROFILE_PROGRESSION, normalizeProfileProgression } from '../../..
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
 import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
-import { getAuthToken } from '../../../utils/authSession';
+import { cacheAuthUser, getAuthToken } from '../../../utils/authSession';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
+import { isSupportedGameId, normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
 import './EditProfile.css';
 
 // ─── Game assets (todos los juegos disponibles) ───
@@ -61,7 +62,7 @@ import imgGtaV from '../../../assets/gameImages/grandtheftautogtav.png';
 import imgAov from '../../../assets/gameImages/ArenaOfValor.webp';
 
 // Categorías de juegos
-const gameCategories = [
+const gameCategoriesBase = [
     { id: 'all', name: 'Todos', icon: 'bx-grid-alt' },
     { id: 'moba', name: 'MOBA', icon: 'bx-shield-quarter' },
     { id: 'shooter', name: 'Shooter', icon: 'bx-crosshair' },
@@ -73,8 +74,9 @@ const gameCategories = [
     { id: 'casual', name: 'Casual', icon: 'bx-happy' },
 ];
 
-// Lista completa de juegos organizados por categoría
-const allGames = [
+// Catálogo extendido para futuras integraciones.
+// Editar perfil solo debe exponer los juegos con soporte real en backend.
+const gameCatalog = [
     // MOBA
     { id: 'lol', name: 'League of Legends', img: imgLol, category: 'moba' },
     { id: 'mlbb', name: 'Mobile Legends', img: imgMlbb, category: 'moba' },
@@ -128,6 +130,27 @@ const allGames = [
     { id: 'amongus', name: 'Among Us', img: imgAmongUs, category: 'casual' },
     { id: 'fallguys', name: 'Fall Guys', img: imgFallGuys, category: 'casual' },
 ];
+
+const allGames = gameCatalog.filter((game) => isSupportedGameId(game.id));
+
+const gameCategories = gameCategoriesBase.filter(
+    (category) => category.id === 'all' || allGames.some((game) => game.category === category.id)
+);
+
+const normalizeSelectedGameIds = (values = []) => {
+    const list = Array.isArray(values) ? values : [values];
+    const seen = new Set();
+    const normalized = [];
+
+    list.forEach((value) => {
+        const gameId = normalizeSupportedGameId(value);
+        if (!gameId || seen.has(gameId)) return;
+        seen.add(gameId);
+        normalized.push(gameId);
+    });
+
+    return normalized;
+};
 
 const platformsList = [
     { id: 'pc', name: 'PC', icon: 'bx-laptop' },
@@ -198,7 +221,7 @@ const gamingConnections = [
     { key: 'epic', icon: <SiEpicgames />, label: 'Epic Games', color: '#2F2D2E', description: 'Fortnite, Rocket League', settingsKey: 'epic' },
     { key: 'playstation', icon: <FaPlaystation />, label: 'PlayStation', color: '#003087', description: 'PSN ID', settingsKey: 'playstation' },
     { key: 'xbox', icon: <FaXbox />, label: 'Xbox', color: '#107C10', description: 'Gamertag', settingsKey: 'xbox' },
-    { key: 'nintendo', icon: <SiNintendoswitch />, label: 'Nintendo', color: '#E60012', description: 'Switch', settingsKey: 'nintendo' },
+    { key: 'nintendo', icon: <FaGamepad />, label: 'Nintendo', color: '#E60012', description: 'Switch', settingsKey: 'nintendo' },
 ];
 
 const EditProfile = () => {
@@ -322,7 +345,7 @@ const EditProfile = () => {
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
                 avatar: resolveMediaUrl(u.avatar) || '',
                 bio: u.bio || '',
-                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : [],
+                selectedGames: normalizeSelectedGameIds(u.selectedGames),
                 platforms: Array.isArray(u.platforms) ? u.platforms : [],
                 goals: Array.isArray(u.goals) ? u.goals : [],
                 experience: Array.isArray(u.experience) ? u.experience : (u.experience ? [u.experience] : []),
@@ -619,12 +642,13 @@ const EditProfile = () => {
                 }
             });
             // Sync localStorage for other components
-            localStorage.setItem('esportefyUser', JSON.stringify(res.data));
+            cacheAuthUser(res.data);
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
             setHasChanges(false);
             setFile(null);
             // Refresh formData from response
             const u = res.data;
+            const normalizedSelectedGames = normalizeSelectedGameIds(u.selectedGames);
             setFormData(prev => ({
                 ...prev,
                 username: u.username || prev.username,
@@ -635,7 +659,7 @@ const EditProfile = () => {
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : prev.birthDate,
                 avatar: resolveMediaUrl(u.avatar) || prev.avatar,
                 bio: u.bio || prev.bio,
-                selectedGames: Array.isArray(u.selectedGames) ? u.selectedGames : prev.selectedGames,
+                selectedGames: Array.isArray(u.selectedGames) ? normalizedSelectedGames : prev.selectedGames,
                 platforms: Array.isArray(u.platforms) ? u.platforms : prev.platforms,
                 goals: Array.isArray(u.goals) ? u.goals : prev.goals,
                 experience: Array.isArray(u.experience) ? u.experience : prev.experience,
@@ -1337,6 +1361,9 @@ const EditProfile = () => {
                                         </button>
                                     </div>
                                 </div>
+                                <p className="ep__games-note">
+                                    Por ahora solo puedes usar juegos con soporte activo en perfil: League of Legends, Valorant y Mobile Legends.
+                                </p>
                                 <div className="ep__games-grid">
                                     {filteredGames.map(game => (
                                         <div
@@ -1413,7 +1440,7 @@ const EditProfile = () => {
                                             <div style={{ width: `${profileProgression.level.progressPercent}%` }} />
                                         </div>
                                         <p className="ep__progress-note">
-                                            Los puntos se calculan automaticamente segun tus acciones dentro de Esportefy:
+                                            Los puntos se calculan automaticamente segun tus acciones dentro de GlitchGang:
                                             completar el perfil, conectar cuentas, jugar, publicar y competir.
                                         </p>
                                     </div>

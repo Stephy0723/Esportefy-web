@@ -74,6 +74,7 @@ const MLBB_BANNED_TERMS = [
     'cuota',
     'cuotas'
 ];
+const RIOT_BANNED_TERMS = [...MLBB_BANNED_TERMS];
 const normalizeUniversityText = (value = '') => String(value || '').trim();
 const isUniversityOnlyTournament = (tournament = {}) => tournament?.eligibility?.universityOnly === true;
 
@@ -102,6 +103,18 @@ const normalizeTournamentFormat = (value = '') => {
 };
 
 const normalizeEntryFee = (value = '') => normalizeText(value).trim();
+const normalizeMoneyAmount = (value = '') => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    const normalized = raw
+        .replace(/,/g, '.')
+        .replace(/[^0-9.]/g, '')
+        .trim();
+    if (!normalized) return null;
+    const parsed = Number(normalized);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return parsed;
+};
 const normalizeTournamentSearchQuery = (value = '') =>
     String(value || '')
         .trim()
@@ -114,6 +127,15 @@ const normalizeTournamentSearchQuery = (value = '') =>
 const findBannedMlbbTerm = (text = '') => {
     const normalized = normalizeText(text);
     for (const term of MLBB_BANNED_TERMS) {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+        if (regex.test(normalized)) return term;
+    }
+    return '';
+};
+const findBannedRiotTerm = (text = '') => {
+    const normalized = normalizeText(text);
+    for (const term of RIOT_BANNED_TERMS) {
         const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`\\b${escaped}\\b`, 'i');
         if (regex.test(normalized)) return term;
@@ -144,6 +166,25 @@ const getProjectedActiveParticipants = ({ maxSlots = 0, modality = '' }) => {
     const slots = parsePositiveIntValue(maxSlots, 0);
     const teamSize = parseTeamSizeFromModality(modality);
     return slots * teamSize;
+};
+const getEntryFeePerSlotAmount = ({ entryFee = '', entryFeeAmount = '' }) => {
+    const normalizedEntryFee = normalizeEntryFee(entryFee);
+    if (!normalizedEntryFee || isFreeEntryFeeValue(normalizedEntryFee)) return 0;
+    if (['invitacion', 'password'].includes(normalizedEntryFee)) return 0;
+    if (normalizedEntryFee === 'pago') return normalizeMoneyAmount(entryFeeAmount);
+
+    const inlineAmount = normalizeMoneyAmount(entryFee);
+    if (inlineAmount !== null && inlineAmount > 0) return inlineAmount;
+
+    return null;
+};
+const formatMoneyAmount = (value = 0) => {
+    const parsed = Number(value || 0);
+    if (!Number.isFinite(parsed)) return '0';
+    return parsed.toLocaleString('en-US', {
+        minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2
+    });
 };
 const resolveSeedingMode = (bracket = {}) => {
     const direct = String(bracket?.seedingMode || '').trim().toLowerCase();
@@ -341,7 +382,7 @@ const getMlbbIdentityBindingIssues = (
             const slotLabel = getMlbbStarters(reg).includes(p) ? 'titular' : 'suplente';
             if (!p?.user) {
                 if (strictLinkedPlayers) {
-                    issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no está vinculado a un usuario de Esportefy.`);
+                    issues.push(`El ${slotLabel} "${p?.nickname || 'N/A'}" de "${teamName}" no está vinculado a un usuario de GlitchGang.`);
                 }
                 continue;
             }
@@ -409,7 +450,12 @@ const getMlbbComplianceIssues = ({
 
 const getRiotComplianceIssues = ({
     game = '',
+    title = '',
+    description = '',
+    prizeDetails = '',
+    prizePool = '',
     entryFee = '',
+    entryFeeAmount = '',
     maxSlots = 0,
     modality = '',
     format = '',
@@ -423,6 +469,11 @@ const getRiotComplianceIssues = ({
         issues.push('En modo review de Riot solo se permiten torneos gratuitos (entry fee = Gratis).');
     }
 
+    const banned = findBannedRiotTerm([title, description, prizeDetails].join(' '));
+    if (banned) {
+        issues.push(`Texto no permitido para cumplimiento Riot: "${banned}".`);
+    }
+
     const normalizedFormat = normalizeTournamentFormat(format);
     if (!RIOT_ALLOWED_FORMATS.has(normalizedFormat)) {
         issues.push('Formato no permitido para torneos Riot. Usa eliminación directa, doble eliminación, suizo o round robin.');
@@ -432,6 +483,23 @@ const getRiotComplianceIssues = ({
     const minimumParticipants = getRiotMinActiveParticipants();
     if (projectedParticipants < minimumParticipants) {
         issues.push(`La capacidad del torneo no alcanza el mínimo de ${minimumParticipants} participantes activos requerido por Riot.`);
+    }
+
+    const entryFeePerSlot = getEntryFeePerSlotAmount({ entryFee, entryFeeAmount });
+    if (normalizeEntryFee(entryFee) === 'pago' && (!Number.isFinite(entryFeePerSlot) || entryFeePerSlot <= 0)) {
+        issues.push('Para torneos Riot con registro de pago debes indicar un monto válido por cupo.');
+    }
+
+    if (Number.isFinite(entryFeePerSlot) && entryFeePerSlot > 0) {
+        const totalEntryFees = entryFeePerSlot * Math.max(0, parsePositiveIntEnv(maxSlots, 0));
+        const minimumPrizePool = totalEntryFees * 0.7;
+        const prizePoolAmount = normalizeMoneyAmount(prizePool);
+
+        if (!Number.isFinite(prizePoolAmount) || prizePoolAmount < minimumPrizePool) {
+            issues.push(
+                `El prize pool debe cubrir al menos el 70% de las inscripciones. Mínimo requerido: ${formatMoneyAmount(minimumPrizePool)}.`
+            );
+        }
     }
 
     if (!registrationClosed && resolveSeedingMode(bracket) === 'custom') {
@@ -461,7 +529,7 @@ const validateUniversityTournamentTeam = async (team) => {
         if (!player?.user) {
             return {
                 ok: false,
-                message: 'En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de Esportefy.'
+                message: 'En torneos universitarios todos los jugadores del roster deben ser usuarios verificados de GlitchGang.'
             };
         }
     }
@@ -619,7 +687,7 @@ export const createTournament = async (req, res) => {
         const data = req.body;
         const normalizedGame = normalizeSupportedGameName(data.game);
         if (!normalizedGame) {
-            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en GlitchGang.' });
         }
         data.game = normalizedGame;
         const organizer = await User.findById(req.userId).select('isOrganizer');
@@ -654,6 +722,7 @@ export const createTournament = async (req, res) => {
         const parsedBroadcast = parseField(data.broadcast) || {};
         const parsedMatchConfig = parseField(data.matchConfig) || {};
         const parsedLegalCompliance = parseField(data.legalCompliance) || {};
+        const normalizedEntryFeeAmount = String(data.entryFeeAmount || '').trim();
 
         const normalizeDateValue = (value) => {
             if (!value) return null;
@@ -727,6 +796,60 @@ export const createTournament = async (req, res) => {
             sponsorLogos: _sl, sponsorsData: _sd, ...safeData } = data;
 
         // ── Validation (before creating the document) ──
+        const newTournament = new Tournament({
+            ...safeData,
+            tournamentId,
+            prizesByRank: parsedPrizesByRank,
+            sponsors: sponsorsWithLogos,
+            staff: { moderators: cleanModerators },
+            timezone: data.timezone || 'America/Santo_Domingo',
+            registrationWindow: {
+                start: normalizeDateValue(parsedRegistrationWindow.start),
+                end: normalizeDateValue(parsedRegistrationWindow.end)
+            },
+            checkInWindow: {
+                start: normalizeDateValue(parsedCheckInWindow.start),
+                end: normalizeDateValue(parsedCheckInWindow.end)
+            },
+            eligibility: {
+                minAge: Number(parsedEligibility.minAge) > 0 ? Number(parsedEligibility.minAge) : 13,
+                allowedCountries: normalizeStringArray(parsedEligibility.allowedCountries),
+                notes: parsedEligibility.notes || '',
+                universityOnly: wantsUniversityOnly
+            },
+            contact: {
+                email: parsedContact.email || '',
+                phone: parsedContact.phone || '',
+                discordInvite: parsedContact.discordInvite || ''
+            },
+            broadcast: {
+                streamUrl: parsedBroadcast.streamUrl || '',
+                streamLanguage: parsedBroadcast.streamLanguage || 'es'
+            },
+            matchConfig: {
+                seriesType: parsedMatchConfig.seriesType || 'BO3',
+                mapPool: normalizeStringArray(parsedMatchConfig.mapPool),
+                patchVersion: parsedMatchConfig.patchVersion || ''
+            },
+            legalCompliance: {
+                jurisdiction: parsedLegalCompliance.jurisdiction || '',
+                governingLaw: parsedLegalCompliance.governingLaw || '',
+                claimsContact: parsedLegalCompliance.claimsContact || '',
+                rulesAccepted: parsedLegalCompliance.rulesAccepted === true,
+                privacyAccepted: parsedLegalCompliance.privacyAccepted === true,
+                organizerDeclaration: parsedLegalCompliance.organizerDeclaration === true
+            },
+            entryFeeAmount: normalizeEntryFee(data.entryFee) === 'pago' ? normalizedEntryFeeAmount : '',
+            server: normalizedServer || '',
+            bannerImage: bannerPath,
+            rulesPdf: pdfPath,
+            organizer: req.userId,
+
+            status: 'open',
+            registrationClosed: false,
+            currentSlots: 0
+        });
+
         if (!data.date || new Date(data.date) < new Date()) {
             return res.status(400).json({ message: 'La fecha del torneo no es válida' });
         }
@@ -735,6 +858,13 @@ export const createTournament = async (req, res) => {
         }
         if (normalizedMaxSlots < MIN_TOURNAMENT_SLOTS) {
             return res.status(400).json({ message: `El torneo debe tener al menos ${MIN_TOURNAMENT_SLOTS} cupos` });
+        }
+
+        if (normalizeEntryFee(data.entryFee) === 'pago') {
+            const amount = normalizeMoneyAmount(normalizedEntryFeeAmount);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                return res.status(400).json({ message: 'Si el torneo es de pago debes indicar un monto de inscripción válido.' });
+            }
         }
 
         const prizeValues = [
@@ -846,8 +976,14 @@ export const createTournament = async (req, res) => {
         if (isRiotTournamentGame(data.game)) {
             const riotIssues = getRiotComplianceIssues({
                 game: data.game,
+                title: data.title,
+                description: data.description,
+                prizeDetails: data.prizeDetails,
+                prizePool: data.prizePool,
                 entryFee: data.entryFee,
                 maxSlots: normalizedMaxSlots,
+                entryFeeAmount: normalizedEntryFeeAmount,
+                maxSlots: data.maxSlots,
                 modality: data.modality,
                 format: data.format,
                 registrationClosed: false,
@@ -935,6 +1071,7 @@ export const updateTournament = async (req, res) => {
         const parsedBroadcast = parseField(data.broadcast);
         const parsedMatchConfig = parseField(data.matchConfig);
         const parsedLegalCompliance = parseField(data.legalCompliance);
+        const normalizedEntryFeeAmount = data.entryFeeAmount !== undefined ? String(data.entryFeeAmount || '').trim() : undefined;
 
         const normalizeDateValue = (value) => {
             if (!value) return null;
@@ -979,7 +1116,7 @@ export const updateTournament = async (req, res) => {
 
         const normalizedUpdateGame = data.game !== undefined ? normalizeSupportedGameName(data.game) : '';
         if (data.game !== undefined && !normalizedUpdateGame) {
-            return res.status(400).json({ message: 'Ese juego todavía no está soportado en Esportefy.' });
+            return res.status(400).json({ message: 'Ese juego todavía no está soportado en GlitchGang.' });
         }
 
         const update = {
@@ -1092,10 +1229,21 @@ export const updateTournament = async (req, res) => {
         }
         const targetContact = update.contact || tournament.contact || {};
         const targetEntryFee = update.entryFee !== undefined ? update.entryFee : tournament.entryFee;
+        const targetEntryFeeAmount = normalizedEntryFeeAmount !== undefined
+            ? normalizedEntryFeeAmount
+            : String(tournament.entryFeeAmount || '').trim();
         const targetFormat = update.format !== undefined ? update.format : tournament.format;
         const targetDescription = update.description !== undefined ? update.description : tournament.description;
         const targetTitle = update.title !== undefined ? update.title : tournament.title;
         const targetPrizeDetails = update.prizeDetails !== undefined ? update.prizeDetails : tournament.prizeDetails;
+        const targetPrizePool = update.prizePool !== undefined ? update.prizePool : tournament.prizePool;
+
+        if (normalizeEntryFee(targetEntryFee) === 'pago') {
+            const amount = normalizeMoneyAmount(targetEntryFeeAmount);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                return res.status(400).json({ message: 'Si el torneo es de pago debes indicar un monto de inscripción válido.' });
+            }
+        }
 
         if (isSupportedMlbbGame(targetGame)) {
             const mlbbIssues = getMlbbComplianceIssues({
@@ -1117,7 +1265,12 @@ export const updateTournament = async (req, res) => {
         if (isRiotTournamentGame(targetGame)) {
             const riotIssues = getRiotComplianceIssues({
                 game: targetGame,
+                title: targetTitle,
+                description: targetDescription,
+                prizeDetails: targetPrizeDetails,
+                prizePool: targetPrizePool,
                 entryFee: targetEntryFee,
+                entryFeeAmount: targetEntryFeeAmount,
                 maxSlots: data.maxSlots !== undefined ? data.maxSlots : tournament.maxSlots,
                 modality: data.modality !== undefined ? data.modality : tournament.modality,
                 format: targetFormat,
@@ -1133,6 +1286,7 @@ export const updateTournament = async (req, res) => {
         }
 
         if (sponsorsWithLogos !== undefined) update.sponsors = sponsorsWithLogos;
+        update.entryFeeAmount = normalizeEntryFee(targetEntryFee) === 'pago' ? targetEntryFeeAmount : '';
         if (bannerPath) update.bannerImage = bannerPath;
         if (pdfPath) update.rulesPdf = pdfPath;
 
@@ -1555,7 +1709,7 @@ export const registerTeam = async (req, res) => {
                     const missingLinkedStarter = starters.slice(0, expected).find((p) => !p?.user);
                     if (missingLinkedStarter) {
                         return res.status(400).json({
-                            message: 'Modo estricto MLBB: todos los titulares deben estar vinculados a usuarios reales de Esportefy.'
+                            message: 'Modo estricto MLBB: todos los titulares deben estar vinculados a usuarios reales de GlitchGang.'
                         });
                     }
                 }
@@ -1563,7 +1717,7 @@ export const registerTeam = async (req, res) => {
                     const missingLinkedPlayer = mlbbRosterPlayers.find((p) => !p?.user);
                     if (missingLinkedPlayer) {
                         return res.status(400).json({
-                            message: 'En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de Esportefy.'
+                            message: 'En torneos MLBB todos los jugadores del roster deben ser usuarios vinculados de GlitchGang.'
                         });
                     }
                 }
@@ -1933,7 +2087,12 @@ export const getTournamentCompliance = async (req, res) => {
         if (isRiotTournament) {
             const riotPolicyIssues = getRiotComplianceIssues({
                 game,
+                title: tournament.title,
+                description: tournament.description,
+                prizeDetails: tournament.prizeDetails,
+                prizePool: tournament.prizePool,
                 entryFee: tournament.entryFee,
+                entryFeeAmount: tournament.entryFeeAmount,
                 maxSlots: tournament.maxSlots,
                 modality: tournament.modality,
                 format: tournament.format,

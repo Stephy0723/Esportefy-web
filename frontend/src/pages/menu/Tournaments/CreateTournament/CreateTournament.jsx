@@ -4,6 +4,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { getAuthToken } from '../../../../utils/authSession';
+import { saveStoredLocalTournaments, getStoredLocalTournaments } from '../../../../utils/tournamentCalendar';
 import {
   getTournamentServerOptions,
   isValidTournamentServer,
@@ -37,8 +38,6 @@ import {
 } from 'react-icons/fa';
 import './CreateTournament.css';
 
-const LOCAL_TOURNAMENTS_KEY = 'esportefy_local_tournaments';
-
 const GAMES = [...SUPPORTED_GAME_NAMES];
 
 const baseState = (name) => ({
@@ -56,6 +55,7 @@ const baseState = (name) => ({
   prizeDetails: '',
   prizesByRank: { first: '', second: '', third: '' },
   entryFee: 'Gratis',
+  entryFeeAmount: '',
   maxSlots: '',
   format: 'single_elimination',
   server: '',
@@ -108,6 +108,7 @@ const RIOT_MIN_ACTIVE_PARTICIPANTS = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 20;
 })();
 const MLBB_BANNED_TERMS = ['apuesta', 'apuestas', 'bet', 'bets', 'betting', 'wager', 'wagering', 'gambling', 'casino', 'odds', 'parlay', 'cuota', 'cuotas'];
+const RIOT_BANNED_TERMS = [...MLBB_BANNED_TERMS];
 
 const normalizeText = (value = '') =>
   String(value || '')
@@ -118,6 +119,14 @@ const normalizeText = (value = '') =>
 const findMlbbBannedTerm = (text = '') => {
   const normalized = normalizeText(text);
   return MLBB_BANNED_TERMS.find((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${escaped}\\b`, 'i').test(normalized);
+  }) || '';
+};
+
+const findRiotBannedTerm = (text = '') => {
+  const normalized = normalizeText(text);
+  return RIOT_BANNED_TERMS.find((term) => {
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp(`\\b${escaped}\\b`, 'i').test(normalized);
   }) || '';
@@ -167,6 +176,21 @@ const normalizeMoneyValue = (value) => {
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) return '';
   return parsed.toString();
+};
+
+const parseMoneyAmount = (value) => {
+  const normalized = normalizeMoneyValue(value);
+  if (!normalized) return 0;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+const formatMoneyAmount = (value) => {
+  const parsed = Number(value || 0);
+  if (!Number.isFinite(parsed)) return '0';
+  return parsed.toLocaleString('en-US', {
+    minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  });
 };
 
 const resolveMaxSlotsSelection = (value = '') => {
@@ -224,6 +248,7 @@ const CreateTournament = () => {
       prizeDetails: editTournament.prizeDetails || '',
       prizesByRank: editTournament.prizesByRank || prev.prizesByRank,
       entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
+      entryFeeAmount: editTournament.entryFeeAmount || prev.entryFeeAmount,
       maxSlots: editMaxSlots || prev.maxSlots,
       format: normalizeFormatValue(editTournament.format || prev.format),
       server: editTournament.server || '',
@@ -315,9 +340,22 @@ const CreateTournament = () => {
     return maxSlots * teamSize;
   }, [tournament.maxSlots, tournament.modality]);
   const riotReviewLocked = RIOT_REVIEW_MODE && isRiotTournament;
+  const isPaidEntry = useMemo(
+    () => normalizeText(tournament.entryFee).trim() === 'pago',
+    [tournament.entryFee]
+  );
+  const entryFeeAmountValue = useMemo(
+    () => (isPaidEntry ? parseMoneyAmount(tournament.entryFeeAmount) : 0),
+    [isPaidEntry, tournament.entryFeeAmount]
+  );
+  const riotMinimumPrizePool = useMemo(() => {
+    if (!isRiotTournament || !isPaidEntry) return 0;
+    return entryFeeAmountValue * parsePositiveInt(tournament.maxSlots, 0) * 0.7;
+  }, [entryFeeAmountValue, isPaidEntry, isRiotTournament, tournament.maxSlots]);
 
   const identityReady = Boolean(tournament.title?.trim() && tournament.game && tournament.description?.trim() && tournament.date && tournament.time);
   const formatReady = Boolean(tournament.maxSlots && tournament.modality && tournament.format);
+  const entryConfigReady = !isPaidEntry || entryFeeAmountValue > 0;
   const hasMoneyPrize = Boolean(
     String(tournament.prizePool || '').trim()
     || String(tournament.prizesByRank.first || '').trim()
@@ -387,6 +425,7 @@ const CreateTournament = () => {
   const unlockSponsors = unlockBroadcast && contactReady;
   const unlockLegal = unlockBroadcast;
   const canSubmit = unlockLegal
+    && entryConfigReady
     && Boolean(tournament.legalCompliance.jurisdiction?.trim())
     && Boolean(tournament.legalCompliance.governingLaw?.trim())
     && tournament.legalCompliance.rulesAccepted
@@ -483,6 +522,11 @@ const CreateTournament = () => {
     setField('entryFee', 'Gratis');
   }, [riotReviewLocked, tournament.entryFee]);
 
+  useEffect(() => {
+    if (isPaidEntry || !tournament.entryFeeAmount) return;
+    setField('entryFeeAmount', '');
+  }, [isPaidEntry, tournament.entryFeeAmount]);
+
   const hasUnsavedChanges = Boolean(tournament.title || tournament.game || tournament.description);
   useEffect(() => {
     if (isPublished || !hasUnsavedChanges) return;
@@ -506,6 +550,7 @@ const CreateTournament = () => {
       prizeDetails: 'Medallas oficiales, jerseys gamer y perifericos para top 8.',
       prizesByRank: { first: '150000', second: '70000', third: '30000' },
       entryFee: 'Gratis',
+      entryFeeAmount: '',
       maxSlots: '32',
       format: 'double_elimination',
       server: 'LATAM',
@@ -521,12 +566,12 @@ const CreateTournament = () => {
         notes: 'Se requiere cuenta activa en el servidor LATAM y disponibilidad para horarios nocturnos.'
       },
       contact: {
-        email: 'tournaments@esportefy.com',
+        email: 'tournaments@glitchgang.net',
         phone: '+1 809-555-0199',
         discordInvite: 'https://discord.gg/ExCguE8e'
       },
       broadcast: {
-        streamUrl: 'https://www.twitch.tv/esportefy',
+        streamUrl: 'https://www.twitch.tv/glitchgang',
         streamLanguage: 'es'
       },
       matchConfig: {
@@ -537,7 +582,7 @@ const CreateTournament = () => {
       legalCompliance: {
         jurisdiction: 'Republica Dominicana',
         governingLaw: 'Normativa local de comercio electronico, consumidor y datos personales aplicable al evento',
-        claimsContact: 'legal@esportefy.com',
+        claimsContact: 'legal@glitchgang.net',
         rulesAccepted: true,
         privacyAccepted: true,
         organizerDeclaration: true
@@ -579,6 +624,7 @@ const CreateTournament = () => {
       prizeDetails: source.prizeDetails,
       prizesByRank: source.prizesByRank,
       entryFee: source.entryFee,
+      entryFeeAmount: source.entryFeeAmount,
       maxSlots: Number(source.maxSlots) || 0,
       currentSlots: 0,
       format: source.format,
@@ -640,9 +686,9 @@ const CreateTournament = () => {
       updatedAt: new Date().toISOString()
     };
 
-    const current = JSON.parse(localStorage.getItem(LOCAL_TOURNAMENTS_KEY) || '[]');
+    const current = getStoredLocalTournaments();
     current.unshift(localTournament);
-    localStorage.setItem(LOCAL_TOURNAMENTS_KEY, JSON.stringify(current));
+    saveStoredLocalTournaments(current);
     return localTournament;
   };
 
@@ -650,7 +696,7 @@ const CreateTournament = () => {
     const data = new FormData();
     [
       'title', 'description', 'game', 'modality', 'date', 'time', 'timezone',
-      'prizePool', 'currency', 'prizeMode', 'prizeDetails', 'entryFee', 'maxSlots', 'format', 'server', 'platform', 'gender'
+      'prizePool', 'currency', 'prizeMode', 'prizeDetails', 'entryFee', 'entryFeeAmount', 'maxSlots', 'format', 'server', 'platform', 'gender'
     ].forEach((k) => data.append(k, source[k]));
     data.append('prizesByRank', JSON.stringify(source.prizesByRank));
     const staffPayload = {
@@ -752,6 +798,10 @@ const CreateTournament = () => {
       alert('La fecha "Check-in desde" debe ser antes del inicio del torneo.');
       return;
     }
+    if (isPaidEntry && entryFeeAmountValue <= 0) {
+      alert('Si el torneo es de pago debes indicar un monto de inscripcion valido por cupo.');
+      return;
+    }
 
     const parsedMaxSlots = parsePositiveInt(tournament.maxSlots, 0);
     if (parsedMaxSlots < 4) {
@@ -760,8 +810,17 @@ const CreateTournament = () => {
     }
 
     if (isRiotTournament) {
-      const ALLOWED_FORMATS = ['single_elimination', 'double_elimination', 'swiss', 'round_robin'];
-      if (!ALLOWED_FORMATS.includes(tournament.format)) {
+      const banned = findRiotBannedTerm(
+        [tournament.title, tournament.description, tournament.prizeDetails].join(' ')
+      );
+      if (banned) {
+        notify('danger', 'Cumplimiento Riot', `Texto no permitido: "${banned}".`);
+        return;
+      }
+
+      const ALLOWED_FORMATS = ['single_elimination', 'double_elimination', 'swiss', 'round_robin',
+        'Eliminacion Directa', 'Doble Eliminacion', 'Swiss', 'Round Robin'];
+      if (!ALLOWED_FORMATS.includes(String(tournament.format || '').trim())) {
         alert('En torneos Riot solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
         return;
       }
@@ -774,6 +833,14 @@ const CreateTournament = () => {
       if (projectedActiveParticipants < RIOT_MIN_ACTIVE_PARTICIPANTS) {
         alert(`La configuración actual no llega al mínimo de ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos para torneos Riot.`);
         return;
+      }
+
+      if (isPaidEntry) {
+        const prizePoolAmount = parseMoneyAmount(tournament.prizePool);
+        if (prizePoolAmount < riotMinimumPrizePool) {
+          alert(`El prize pool debe cubrir al menos el 70% de las inscripciones. Minimo requerido: ${formatMoneyAmount(riotMinimumPrizePool)} ${tournament.currency}.`);
+          return;
+        }
       }
     }
 
@@ -1022,7 +1089,7 @@ const CreateTournament = () => {
               <label className="ct-field"><span>Check-in desde</span><input type="date" min={tournament.registrationWindow.end || undefined} max={tournament.checkInWindow.end || tournament.date || undefined} value={tournament.checkInWindow.start} onChange={(e) => setNested('checkInWindow', 'start', e.target.value)} /></label>
               <label className="ct-field"><span>Check-in hasta</span><input type="date" min={tournament.checkInWindow.start || undefined} max={tournament.date || undefined} value={tournament.checkInWindow.end} onChange={(e) => setNested('checkInWindow', 'end', e.target.value)} /></label>
             </div>
-            <div className="ct-grid three">
+            <div className="ct-grid four">
               <label className="ct-field"><span>Edad minima</span><input type="number" min="13" value={tournament.eligibility.minAge} onChange={(e) => setNested('eligibility', 'minAge', e.target.value)} /></label>
               <label className="ct-field"><span>Paises permitidos</span><input placeholder="Global, Republica Dominicana, Mexico, Espana" value={tournament.eligibility.allowedCountries} onChange={(e) => setNested('eligibility', 'allowedCountries', e.target.value)} /></label>
               <label className="ct-field">
@@ -1034,12 +1101,34 @@ const CreateTournament = () => {
                   {!riotReviewLocked && <option>Pago</option>}
                 </select>
               </label>
+              <label className="ct-field">
+                <span>Monto por cupo</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={isPaidEntry ? 'Ej: 500 o 19.99' : 'Solo aplica si es Pago'}
+                  value={tournament.entryFeeAmount}
+                  onChange={(e) => {
+                    if (MONEY_INPUT_REGEX.test(e.target.value)) {
+                      setField('entryFeeAmount', e.target.value);
+                    }
+                  }}
+                  disabled={!isPaidEntry}
+                />
+                <small>Monto unitario por equipo/cupo inscrito.</small>
+              </label>
             </div>
             {isRiotTournament && (
               <p className="ct-inline-help">
                 {riotReviewLocked
                   ? `Modo review Riot activo: solo se permite inscripción gratis y un mínimo de ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos.`
                   : `Recomendación Riot: usa formato tradicional y configura al menos ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos.`}
+              </p>
+            )}
+            {isRiotTournament && isPaidEntry && (
+              <p className="ct-inline-help">
+                En torneos Riot con inscripción paga, el prize pool debe cubrir al menos el 70% de lo recaudado.
+                {riotMinimumPrizePool > 0 && ` Minimo actual: ${formatMoneyAmount(riotMinimumPrizePool)} ${tournament.currency}.`}
               </p>
             )}
             <label className="ct-field">

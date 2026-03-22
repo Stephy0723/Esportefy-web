@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { getAuthToken } from '../../../../utils/authSession';
+import { useNotification } from '../../../../context/NotificationContext';
 
 export const createEmptyMatch = () => ({
   teamA: { refId: '', teamName: '', isPlaceholder: true },
@@ -46,6 +47,7 @@ export const STATUS_LABELS = {
 };
 
 export const useTournamentAdminData = (code) => {
+  const { addToast } = useNotification();
   const [loading, setLoading] = useState(true);
   const [tournament, setTournament] = useState(null);
   const [compliance, setCompliance] = useState(null);
@@ -84,7 +86,7 @@ export const useTournamentAdminData = (code) => {
         setSettings((prev) => ({ ...prev, ...(res.data?.publicSettings || {}) }));
         setBracket(res.data?.bracket || createEmptyBracket());
       } catch (error) {
-        console.error('Error cargando torneo:', error);
+        /* silent — UI shows loading/empty state */
       } finally {
         setLoading(false);
       }
@@ -108,7 +110,7 @@ export const useTournamentAdminData = (code) => {
       complianceFetchedRef.current = true;
     } catch (error) {
       if (error.response?.status !== 429) {
-        console.error('Error cargando cumplimiento:', error);
+        /* silent */
       }
       setCompliance(null);
     } finally {
@@ -160,18 +162,18 @@ export const useTournamentAdminData = (code) => {
     try {
       await axios.patch(`${API_URL}/api/tournaments/${code}/public-settings`, settings, authConfig);
       await refreshCompliance();
-      alert('Configuracion publica guardada.');
+      addToast('Configuracion publica guardada.', 'success');
     } catch (error) {
-      alert(error.response?.data?.message || 'No se pudo guardar la configuracion publica.');
+      addToast(error.response?.data?.message || 'No se pudo guardar la configuracion publica.', 'error');
     }
   };
 
   const saveBracket = async () => {
     try {
       await axios.patch(`${API_URL}/api/tournaments/${code}/bracket`, { bracket }, authConfig);
-      alert('Bracket guardado.');
+      addToast('Bracket guardado.', 'success');
     } catch (error) {
-      alert(error.response?.data?.message || 'No se pudo guardar el bracket.');
+      addToast(error.response?.data?.message || 'No se pudo guardar el bracket.', 'error');
     }
   };
 
@@ -186,7 +188,7 @@ export const useTournamentAdminData = (code) => {
       }));
       await refreshCompliance();
     } catch (error) {
-      alert(error.response?.data?.message || 'No se pudo actualizar el estado.');
+      addToast(error.response?.data?.message || 'No se pudo actualizar el estado.', 'error');
     }
   };
 
@@ -199,7 +201,7 @@ export const useTournamentAdminData = (code) => {
       }));
       await refreshCompliance();
     } catch (error) {
-      alert(error.response?.data?.message || 'No se pudo eliminar la inscripcion.');
+      addToast(error.response?.data?.message || 'No se pudo eliminar la inscripcion.', 'error');
     }
   };
 

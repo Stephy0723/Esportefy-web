@@ -7,7 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import ViewTeamModal from './ViewTeamModal';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
-import { getAuthToken } from '../../../utils/authSession';
+import { getAuthToken, getStoredUser } from '../../../utils/authSession';
 import { formatTeamPublicId, getPublicTeamCode, matchesTeamPublicId } from '../../../utils/publicIds';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import { getSupportedGameRoles, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
@@ -127,7 +127,7 @@ const buildTeamStatsSnapshot = (team = {}) => {
             { label: 'Vacantes activas', value: String(vacancies) }
         ],
         access: [
-            { label: 'Miembros Esportefy', value: String(linkedUsers) },
+            { label: 'Miembros GlitchGang', value: String(linkedUsers) },
             { label: 'Entradas manuales', value: String(manualEntries) },
             { label: competitiveIdLabel, value: `${competitiveIdsReady}/${filledCompetitiveSlots || 0}` },
             { label: 'Roles cubiertos', value: String(rolesCovered) }
@@ -209,13 +209,7 @@ const Team = () => {
     const [joinSuccess, setJoinSuccess] = useState(false);
 
     const storedUser = useMemo(() => {
-        const userString = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-        if (!userString) return null;
-        try {
-            return JSON.parse(userString);
-        } catch (_) {
-            return null;
-        }
+        return getStoredUser();
     }, []);
     const currentUser = authUser || storedUser;
     const mlbbConnection = currentUser?.connections?.mlbb || {};
@@ -1405,7 +1399,7 @@ const Team = () => {
                                         <article className="th__stats-sheet__hero-card">
                                             <span>Miembros vinculados</span>
                                             <strong>{previewStats.linkedUsers}</strong>
-                                            <small>usuarios reales de Esportefy</small>
+                                            <small>usuarios reales de GlitchGang</small>
                                         </article>
                                     </div>
 

@@ -1,7 +1,7 @@
 # Riot Review VPS Checklist
 
 Fecha: 2026-02-28
-Proyecto: Esportefy
+Proyecto: GlitchGang
 
 Checklist operativo para publicar una URL de revision estable antes de enviar la solicitud de Riot.
 
@@ -15,11 +15,12 @@ La URL de revision debe permitir que Riot:
 - valide que el producto no aparenta afiliacion oficial.
 
 No debe operar como beta publica abierta si todavia depende de development key.
+Si sigues con dev key, protege la URL con basic auth o allowlist.
 
 ## 2) Estructura recomendada
 
-- Frontend: `https://review.tudominio.com`
-- Backend/API: `https://api.tudominio.com`
+- Frontend: `https://glitchgang.net`
+- Backend/API: `https://api.glitchgang.net`
 
 Si usas una sola IP publica, coloca un dominio encima antes de enviar la solicitud.
 
@@ -43,10 +44,10 @@ MONGO_URI=tu_mongo_uri
 JWT_SECRET=tu_jwt_secret
 RIOT_API_KEY=tu_riot_api_key
 RIOT_KEY_MODE=development
-ALLOW_RIOT_DEV_KEY_IN_PROD=false
+ALLOW_RIOT_DEV_KEY_IN_PROD=true
 RIOT_REVIEW_MODE=true
 RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS=20
-CLIENT_URL=https://review.tudominio.com
+FRONTEND_URL=https://glitchgang.net
 ```
 
 ## 5) Variables de entorno frontend
@@ -54,7 +55,7 @@ CLIENT_URL=https://review.tudominio.com
 Minimo:
 
 ```env
-VITE_API_URL=https://api.tudominio.com
+VITE_API_URL=https://api.glitchgang.net
 VITE_RIOT_REVIEW_MODE=true
 VITE_RIOT_MIN_ACTIVE_PARTICIPANTS=20
 ```
@@ -64,8 +65,8 @@ VITE_RIOT_MIN_ACTIVE_PARTICIPANTS=20
 Backend no debe quedar expuesto directamente al navegador por IP y puerto si puedes evitarlo.
 
 Ejemplo de flujo:
-- Nginx recibe `https://review.tudominio.com` y sirve `frontend/dist`
-- Nginx recibe `https://api.tudominio.com` y hace proxy a `localhost:4000`
+- Nginx recibe `https://glitchgang.net` y sirve `frontend/dist`
+- Nginx recibe `https://api.glitchgang.net` y hace proxy a `localhost:4000`
 
 ## 7) SSL
 
@@ -80,7 +81,7 @@ Riot puede pedir verificacion del dominio antes o durante la revision.
 
 Deja previsto esto:
 - un archivo `riot.txt` en la raiz publica del frontend,
-- accesible como `https://review.tudominio.com/riot.txt`,
+- accesible como `https://glitchgang.net/riot.txt`,
 - con el contenido exacto que Riot te entregue en el portal o por correo.
 
 No inventes ese contenido. Riot te da el token/cadena exacta.
@@ -90,7 +91,7 @@ No inventes ese contenido. Riot te da el token/cadena exacta.
 No dejes `*`.
 
 Permite solo:
-- `https://review.tudominio.com`
+- `https://glitchgang.net`
 - cualquier otro dominio tuyo estrictamente necesario
 
 ## 9) Seguridad de la key
@@ -156,8 +157,8 @@ git pull origin main
 npm install
 npm --prefix frontend install
 npm --prefix frontend run build
-pm2 restart esportefy-api
-pm2 restart esportefy-web
+pm2 restart glitchgang-api
+pm2 restart glitchgang-web
 ```
 
 Adapta los nombres de procesos a tu VPS.

@@ -208,7 +208,7 @@ const Profile = () => {
             const token = getAuthToken();
             const res = await axios.get(`${API_URL}/api/auth/user-card/${friend.id}`, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedFriend(prev => ({ ...(prev || {}), ...(res.data || {}) }));
-        } catch (err) { console.error('No se pudo cargar la tarjeta del amigo:', err); }
+        } catch {}
         finally { setSelectedFriendLoading(false); }
     };
 
@@ -479,19 +479,19 @@ const Profile = () => {
                             <span className="pf-stat__label">EQUIPOS</span>
                         </div>
                     </div>
-                </motion.div>
 
-                {mainGame && (
-                    <motion.div className="pf-hero__game" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-                        <div className="pf-game-card" onClick={() => setSelectedGame(mainGameData || { id: mainGame, name: mainGameName, img: mainGameImg })}>
-                            <img src={mainGameImg} alt={mainGameName} />
-                            <div className="pf-game-card__info">
-                                <span className="pf-game-card__badge">MAIN</span>
-                                <span className="pf-game-card__name">{mainGameName}</span>
+                    {mainGame && (
+                        <div className="pf-hero__game">
+                            <div className="pf-game-card" onClick={() => setSelectedGame(mainGameData || { id: mainGame, name: mainGameName, img: mainGameImg })}>
+                                <img src={mainGameImg} alt={mainGameName} />
+                                <div className="pf-game-card__info">
+                                    <span className="pf-game-card__badge">MAIN</span>
+                                    <span className="pf-game-card__name">{mainGameName}</span>
+                                </div>
                             </div>
                         </div>
-                    </motion.div>
-                )}
+                    )}
+                </motion.div>
             </section>
 
             {/* ═══ MAIN GRID ═══ */}
@@ -750,7 +750,17 @@ const Profile = () => {
                                     </div>
                                 )}
                                 <div className="pf-detail-actions">
-                                    <button className="pf-btn pf-btn--primary" onClick={() => navigate(`/teams/${selectedTeam._id}`)}><i className='bx bx-link-external' /> Ver página</button>
+                                    <button
+                                        className="pf-btn pf-btn--primary"
+                                        onClick={() => navigate('/equipos', {
+                                            state: {
+                                                teamId: selectedTeam._id,
+                                                openPreview: true
+                                            }
+                                        })}
+                                    >
+                                        <i className='bx bx-link-external' /> Ver página
+                                    </button>
                                     <button className="pf-btn" onClick={() => setSelectedTeam(null)}>Cerrar</button>
                                 </div>
                             </div>

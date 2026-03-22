@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import logoWhite from '../../assets/Logo/logo-white.png';
-import logoBlack from '../../assets/Logo/logo-black.png';
+import logoWhite from '../../assets/Logo/logo-black_Background Removed.png';
+import logoBlack from '../../assets/Logo/logo-black_Background Removed.png';
 
 const LINKS = {
   plataforma: [
@@ -14,9 +14,10 @@ const LINKS = {
   ],
   soporte: [
     { label: 'Documentacion', to: '/docs' },
+    { label: 'Riot Review', to: '/review/riot' },
     { label: 'Centro de Ayuda', to: '/support' },
     { label: 'Reportar un Bug', to: '/settings' },
-    { label: 'Contacto', href: 'mailto:soporte@esportefy.com' },
+    { label: 'Contacto', href: 'mailto:soporte@glitchgang.net' },
   ],
   legal: [
     { label: 'T\u00e9rminos y Condiciones', to: '/legal/terms' },
@@ -28,7 +29,7 @@ const LINKS = {
 
 const SOCIALS = [
   { icon: 'bxl-discord-alt', href: 'https://discord.gg/ExCguE8e', label: 'Discord' },
-  { icon: 'bxl-twitch', href: 'https://www.twitch.tv/esportefy', label: 'Twitch' },
+  { icon: 'bxl-twitch', href: 'https://www.twitch.tv/glitchgang', label: 'Twitch' },
   { icon: 'bxl-youtube', href: 'https://www.youtube.com/channel/UCAwKJv2zibYYEKJOgWW6F9w', label: 'YouTube' },
   { icon: 'bxl-facebook-circle', href: 'https://www.facebook.com/profile.php?id=61585628084470', label: 'Facebook' },
 ];
@@ -48,10 +49,15 @@ const Footer = () => {
           {/* Brand column */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-4 mb-5">
-              <img src={logo} alt="GLITCH GANG" className="h-14 md:h-16 w-auto shrink-0" />
-              <span className="text-[var(--text-main)] text-2xl md:text-3xl font-bold tracking-[0.18em]">
-                GLITCH GANG
-              </span>
+              <img src={logo} alt="GLITCH GANG by Steliant" className="h-14 md:h-16 w-auto shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[var(--text-main)] text-2xl md:text-3xl font-bold tracking-[0.18em]">
+                  GLITCH GANG
+                </span>
+                <span className="text-[var(--text-muted)] text-xs uppercase tracking-[0.28em]">
+                  by Steliant
+                </span>
+              </div>
             </div>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-6 max-w-xs">
               La plataforma definitiva para gestionar tu carrera en los eSports.
@@ -164,7 +170,7 @@ const Footer = () => {
         {/* Divider */}
         <div className="border-t border-[var(--border-color)] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[var(--text-muted)] text-xs">
-            &copy; {currentYear} GLITCH GANG. Todos los derechos reservados.
+            &copy; {currentYear} GLITCH GANG by Steliant. Todos los derechos reservados.
             Desarrollado por <span className="font-semibold text-[var(--text-main)]">Steliant</span>.
           </p>
           <p className="text-[var(--text-muted)] text-xs">

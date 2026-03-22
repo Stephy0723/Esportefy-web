@@ -4,7 +4,7 @@
 
 Agregar una capa de progreso al perfil del usuario para que:
 
-- los puntos se ganen con acciones reales dentro de Esportefy,
+- los puntos se ganen con acciones reales dentro de GlitchGang,
 - existan 20 logros desbloqueables con progreso visible,
 - `Perfil` muestre el estado competitivo/social del usuario,
 - `Editar Perfil` explique que acciones faltan para subir de nivel.

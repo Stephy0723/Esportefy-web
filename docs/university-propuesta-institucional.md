@@ -1,7 +1,7 @@
-# Propuesta Institucional — Programa Universitario Esportefy
+# Propuesta Institucional — Programa Universitario GlitchGang
 
 ## Resumen ejecutivo
-Esportefy propone una alianza con universidades de República Dominicana para habilitar competencias oficiales de esports entre estudiantes verificados, con control institucional, visibilidad de marca universitaria y métricas de impacto estudiantil.
+GlitchGang propone una alianza con universidades de República Dominicana para habilitar competencias oficiales de esports entre estudiantes verificados, con control institucional, visibilidad de marca universitaria y métricas de impacto estudiantil.
 
 ## ¿Qué gana la universidad?
 - Representación institucional formal en torneos universitarios.
@@ -11,7 +11,7 @@ Esportefy propone una alianza con universidades de República Dominicana para ha
 - Panel de control con métricas: estudiantes activos, equipos, participación y resultados.
 - Verificación institucional para evitar uso indebido del nombre de la universidad.
 
-## ¿Qué resuelve Esportefy?
+## ¿Qué resuelve GlitchGang?
 - Gestión centralizada de equipos y torneos (registro, calendario, estado competitivo).
 - Validación de estudiantes por universidad antes de competir en modalidad universitaria.
 - Reglas de elegibilidad para que solo miembros válidos representen la institución.
@@ -44,7 +44,7 @@ Esportefy propone una alianza con universidades de República Dominicana para ha
 La universidad obtiene una estructura competitiva moderna, medible y controlada para representar su institución en esports, sin cargar con la complejidad técnica y operativa de montar el sistema desde cero.
 
 ## Contacto
-- Plataforma: Esportefy
+- Plataforma: GlitchGang
 - Responsable: Steliant
 - Correo: [correo@dominio.com]
 - Teléfono/WhatsApp: [número]

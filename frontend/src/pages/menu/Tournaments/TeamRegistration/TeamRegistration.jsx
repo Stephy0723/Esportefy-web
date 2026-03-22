@@ -6,7 +6,7 @@ import PageHud from '../../../../components/PageHud/PageHud';
 import { getTournamentGameByName } from '../../../../data/tournamentGames/tournamentGames';
 import { resolveMediaUrl } from '../../../../utils/media';
 import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/publicIds';
-import { getAuthToken } from '../../../../utils/authSession';
+import { getAuthToken, getStoredUser } from '../../../../utils/authSession';
 import { useAuth } from '../../../../context/AuthContext';
 import { useNotification } from '../../../../context/NotificationContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
@@ -43,8 +43,7 @@ const TeamRegistration = () => {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [loadingTeams, setLoadingTeams] = useState(true);
 
-  const storedUser = localStorage.getItem('esportefyUser') || sessionStorage.getItem('esportefyUser');
-  const currentUser = authUser || (storedUser ? JSON.parse(storedUser) : null);
+  const currentUser = authUser || getStoredUser();
   const tournamentGameNormalized = normalizeGame(tournament.game);
 
   const filteredTeams = useMemo(() => {
@@ -142,7 +141,7 @@ const TeamRegistration = () => {
           : visibleTeams;
         setUserTeams(scopedTeams);
       } catch (err) {
-        console.error('Error cargando equipos:', err);
+        /* silent — UI shows empty state */
       } finally {
         setLoadingTeams(false);
       }
