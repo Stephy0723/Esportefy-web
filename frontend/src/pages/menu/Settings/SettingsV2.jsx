@@ -264,10 +264,10 @@ export default function SettingsV2() {
 
         const checkSystemStatus = async () => {
             const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
-                pingService(`${API_URL}/api/health`),
-                pingService(`${API_URL}/api/tournaments/health`),
-                pingService(`${API_URL}/api/health`),
-                pingService(`${CHAT_URL}/health`),
+                pingService(`${API_URL}/api/healthz`),
+                pingService(`${API_URL}/api/tournaments/healthz`),
+                pingService(`${API_URL}/api/healthz`),
+                pingService(`${CHAT_URL}/healthz`),
             ]);
 
             const services = { gameServers, tournamentApi, matchmaking, liveChat };
@@ -343,10 +343,10 @@ export default function SettingsV2() {
         };
 
         const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
-            pingService(`${API_URL}/api/health`),
-            pingService(`${API_URL}/api/tournaments/health`),
-            pingService(`${API_URL}/api/health`),
-            pingService(`${CHAT_URL}/health`),
+            pingService(`${API_URL}/api/healthz`),
+            pingService(`${API_URL}/api/tournaments/healthz`),
+            pingService(`${API_URL}/api/healthz`),
+            pingService(`${CHAT_URL}/healthz`),
         ]);
 
         const services = { gameServers, tournamentApi, matchmaking, liveChat };
