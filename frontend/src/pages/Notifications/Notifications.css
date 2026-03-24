@@ -578,6 +578,38 @@
 }
 
 @media (max-width: 480px) {
+    .nt__layout {
+        padding: 70px 8px 20px;
+    }
+
+    .nt__sidebar {
+        padding: 10px 8px;
+        gap: 6px;
+    }
+
+    .nt__filters {
+        gap: 3px;
+    }
+
+    .nt__filter-btn {
+        padding: 6px 8px;
+        font-size: 10.5px;
+        gap: 6px;
+    }
+
+    .nt__filter-btn i {
+        font-size: 14px;
+    }
+
+    .nt__sidebar-actions {
+        gap: 2px;
+    }
+
+    .nt__action-btn {
+        padding: 6px 8px;
+        font-size: 10.5px;
+    }
+
     .nt__card-time {
         display: none;
     }
@@ -592,7 +624,41 @@
         display: none;
     }
 
+    .nt__card {
+        padding: 10px 10px;
+        gap: 10px;
+    }
+
+    .nt__card-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+        border-radius: 8px;
+    }
+
+    .nt__card-title {
+        font-size: 12.5px;
+    }
+
     .nt__card-actions {
         gap: 0;
+        flex-wrap: wrap;
+    }
+
+    .nt__btn-action {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
+
+    .nt__btn-action i {
+        font-size: 12px;
+    }
+
+    .nt__feed-title {
+        font-size: 16px;
+    }
+
+    .nt__empty {
+        padding: 40px 16px;
     }
 }

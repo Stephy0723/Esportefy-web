@@ -2655,7 +2655,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {/* ═══ SPONSORS SHOWCASE ═══ */}
+                    {/* ═══ POWERED BY — Próximamente ═══ */}
                     <div className="tn__sponsors-showcase">
                         <div className="tn__spn-header">
                             <div className="tn__spn-badge">
@@ -2663,23 +2663,9 @@ useEffect(() => {
                                 <span>POWERED BY</span>
                             </div>
                         </div>
-                        <div className="tn__spn-grid">
-                            {SPONSORS.map((sp, i) => (
-                                <a 
-                                    key={`sp-${i}`} 
-                                    className="tn__spn-card" 
-                                    href={sp.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    style={{ '--sp-color': sp.color }}
-                                >
-                                    <div className="tn__spn-icon-wrap">
-                                        <i className={`bx ${sp.icon}`}></i>
-                                    </div>
-                                    <span className="tn__spn-name">{sp.name}</span>
-                                    <span className="tn__spn-tag">Partner</span>
-                                </a>
-                            ))}
+                        <div className="tn__spn-coming-soon">
+                            <i className='bx bx-ghost tn__spn-ghost'></i>
+                            <span className="tn__spn-coming-label">Próximamente</span>
                         </div>
                     </div>
 

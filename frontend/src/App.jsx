@@ -71,6 +71,7 @@ import SponsorPage from './pages/menu/Roles/SponsorPage';
 import AnalystPage from './pages/menu/Roles/AnalystPage';
 import AdminPanel from './pages/menu/Admin/AdminPanel';
 import StatsPage from './pages/Stats/StatsPage';
+import StatusPage from './pages/Status/StatusPage';
 
 
 const MainLayout = () => {
@@ -123,6 +124,7 @@ const AppRouterContent = () => {
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/review/riot" element={<RiotReviewPage />} />
           <Route path="/support" element={<SupportPage />} />
+          <Route path="/status" element={<StatusPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} />
           <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />

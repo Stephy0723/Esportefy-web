@@ -191,7 +191,7 @@ const GameCard = ({ game, index, stats }) => {
     const [isHovered, setIsHovered] = useState(false);
     const cardRef = useRef(null);
     const goToGame = useCallback(() => {
-        navigate('/game/' + game.id);
+        navigate('/games/' + game.id);
     }, [navigate, game.id]);
 
     const handleMouseMove = useCallback((e) => {

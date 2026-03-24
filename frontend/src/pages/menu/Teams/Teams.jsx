@@ -12,7 +12,6 @@ import { formatTeamPublicId, getPublicTeamCode, matchesTeamPublicId } from '../.
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import { getSupportedGameRoles, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
 import './Teams.css';
-import { SCORE_DISTRIBUTION_INFO } from '../../../utils/scoreDistribution';
 // ...existing code...
 
 /* ═══════════════════════════════════════
@@ -165,7 +164,6 @@ const TABS = [
    COMPONENT
    ═══════════════════════════════════════ */
 const Team = () => {
-    const [showScoreInfo, setShowScoreInfo] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const { addToast } = useNotification();
@@ -533,14 +531,6 @@ const Team = () => {
                                         <h1 className="th__title">
                                                 <i className='bx bx-shield-quarter'></i>
                                                 Hub de Equipos
-                                                <button
-                                                    className="th__score-info-btn"
-                                                    title="¿Cómo se calculan los puntos?"
-                                                    style={{ marginLeft: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary, #8EDB15)', fontSize: '1.2rem' }}
-                                                    onClick={() => setShowScoreInfo(true)}
-                                                >
-                                                    <i className='bx bx-question-mark'></i>
-                                                </button>
                                         </h1>
                                         <p className="th__subtitle">Explora, crea y unete a escuadras competitivas</p>
                                 </div>
@@ -571,30 +561,6 @@ const Team = () => {
                                 </div>
                         </header>
 
-                        {/* Modal de información de puntos */}
-                        {showScoreInfo && (
-                            <div className="modal-overlay" style={{ zIndex: 2000 }} onClick={() => setShowScoreInfo(false)}>
-                                <div className="modal-content-dark" style={{ maxWidth: 400, margin: 'auto' }} onClick={e => e.stopPropagation()}>
-                                    <div className="modal-header-text" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <h2 style={{ fontSize: '1.1rem', margin: 0 }}>¿Cómo se calculan los puntos?</h2>
-                                        <button className="btn-close-x" onClick={() => setShowScoreInfo(false)}><i className='bx bx-x'></i></button>
-                                    </div>
-                                    <div className="team-info-body">
-                                        <p>El ranking prioriza los títulos ganados sobre la cantidad de participaciones. Así se distribuyen los puntos:</p>
-                                        <ul style={{ paddingLeft: 18, margin: 0 }}>
-                                            {SCORE_DISTRIBUTION_INFO.map((item, i) => (
-                                                <li key={i} style={{ marginBottom: 6, fontSize: '0.95em' }}>
-                                                    <b>{item.label}:</b> <span style={{ color: 'var(--primary, #8EDB15)' }}>{item.points} pts</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <p style={{ fontSize: '0.93em', color: 'var(--text-muted, #888)', marginTop: 12 }}>
-                                            Ganar un título (1er lugar) vale mucho más que solo participar muchas veces. ¡La calidad importa más que la cantidad!
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
             {/* ── HUB SECTION NAV ── */}
             <nav className="th__hub-nav">
