@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoSanitize from 'express-mongo-sanitize';
 import fs from 'fs';
+import { parse as parseQueryString } from 'node:querystring';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
@@ -20,16 +21,22 @@ import universityRoutes from './routes/university.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import securityRoutes from './routes/security.routes.js';
 import friendsRoutes from './routes/friends.routes.js';
+import gameStatsRoutes from './routes/gameStats.routes.js';
 import newsletterRoutes from './routes/newsletter.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendEnvPath = path.resolve(__dirname, '../.env');
+const backendEnvLocalPath = path.resolve(__dirname, '../.env.local');
 
 if (fs.existsSync(backendEnvPath)) {
   dotenv.config({ path: backendEnvPath });
 } else {
   dotenv.config();
+}
+
+if (fs.existsSync(backendEnvLocalPath)) {
+  dotenv.config({ path: backendEnvLocalPath, override: true });
 }
 
 const PLACEHOLDER_SECRET_VALUES = new Set([
@@ -74,6 +81,8 @@ export const dbReady = connectDB();
 const app = express();
 const uploadsDir = path.resolve(__dirname, '../uploads');
 const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+app.set('query parser', (queryString) => mongoSanitize.sanitize(parseQueryString(queryString)));
 
 const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000', frontendOrigin];
 const allowedOrigins = (process.env.CORS_ORIGINS || defaultAllowedOrigins.join(','))
@@ -131,8 +140,18 @@ try {
   console.warn('helmet no está instalado. Usando headers de seguridad manuales.');
 }
 
+const sanitizeMutableRequestData = (req, res, next) => {
+  [req.body, req.params, req.headers].forEach((target) => {
+    if (target && typeof target === 'object') {
+      mongoSanitize.sanitize(target);
+    }
+  });
+  next();
+};
+
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+app.use(sanitizeMutableRequestData);
 app.use(securityMiddleware);
 app.use(logger);
 app.use(verifyCsrf);
@@ -160,6 +179,8 @@ app.use('/api/university', universityRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/friends', friendsRoutes);
+app.use('/api/game-stats', gameStatsRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {
