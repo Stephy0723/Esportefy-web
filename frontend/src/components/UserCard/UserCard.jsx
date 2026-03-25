@@ -42,7 +42,7 @@ const UserCard = ({ userId, children }) => {
             });
             setData(res.data);
         } catch (err) {
-            console.error('UserCard fetch error:', err);
+            /* silently handle fetch errors */
         } finally {
             setLoading(false);
         }
@@ -73,7 +73,7 @@ const UserCard = ({ userId, children }) => {
                     : (prev.followers || []).slice(0, -1)
             }));
         } catch (err) {
-            console.error('Follow error:', err);
+            /* silent */
         } finally {
             setFollowLoading(false);
         }

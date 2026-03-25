@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
@@ -6,8 +6,9 @@ import {
     FaCamera, FaUser, FaUserAstronaut, FaCheckCircle, FaPlus, FaWhatsapp, 
     FaArrowLeft, FaIdCard, FaGlobe, FaTrophy, FaVenusMars, FaLanguage, 
     FaMapMarkerAlt, FaCheck, FaCopy, FaSearch, FaDiscord, FaTwitter, 
-    FaFacebook, FaPaperPlane, FaGamepad, FaUpload, FaLock
+    FaFacebook, FaPaperPlane, FaGamepad, FaUpload, FaLock, FaUsers
 } from 'react-icons/fa';
+import axios from 'axios';
 import { withCsrfHeaders } from '../../../../utils/csrf';
 import { useNotification } from '../../../../context/NotificationContext';
 import { useAuth } from '../../../../context/AuthContext';
@@ -113,6 +114,8 @@ const CreateTeamPage = () => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
+    const copyBtnRef = useRef(null);
+    const copyCodeBtnRef = useRef(null);
     const [createdTeamId, setCreatedTeamId] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [friendsList, setFriendsList] = useState([]);
@@ -122,6 +125,16 @@ const CreateTeamPage = () => {
     const [reservedInviteSlots, setReservedInviteSlots] = useState([]);
     const [useCustomCountry, setUseCustomCountry] = useState(false);
     const [useCustomRegion, setUseCustomRegion] = useState(false);
+    const [communityOptions, setCommunityOptions] = useState([]);
+
+    useEffect(() => {
+        axios.get(`${API_URL}/api/community/communities`)
+            .then((res) => {
+                const list = Array.isArray(res.data?.communities) ? res.data.communities : [];
+                setCommunityOptions(list.map((c) => ({ id: c.id || c._id, name: c.name, shortUrl: c.shortUrl })));
+            })
+            .catch(() => setCommunityOptions([]));
+    }, []);
 
     // Datos del formulario COMPLETO
     const [formData, setFormData] = useState({
@@ -135,9 +148,12 @@ const CreateTeamPage = () => {
         teamCountry: '',          
         teamLevel: presetTeamLevel || 'Amateur',     
         teamLanguage: 'Español',  
+        // Comunidad y Patrocinador
+        community: '',
+        sponsor: '',
         // Lógica interna
-        maxMembers: 0, 
-        maxSubstitutes: 0, 
+        maxMembers: 0,
+        maxSubstitutes: 0,
         // Datos Capitán
         leaderRealName: '', 
         leaderIgn: '',      
@@ -502,7 +518,7 @@ const CreateTeamPage = () => {
     };
 
     const saveSlot = () => {
-        if (!slotData.nickname) return alert("Nickname requerido.");
+        if (!slotData.nickname) return addToast("Nickname requerido.", "error");
         if (currentSlot.type === 'coach') {
             setRoster({ ...roster, coach: slotData });
         } else {
@@ -562,10 +578,8 @@ const CreateTeamPage = () => {
             addToast('Equipo creado exitosamente', 'success');
         } else {
             addToast(result.message || 'Error al guardar equipo', 'error');
-            console.warn('[CreateTeam] Server error:', res.status, result.message);
         }
-    } catch (error) {
-        console.error('Error de red:', error);
+    } catch {
         addToast('No se pudo conectar con el servidor', 'error');
     } finally {
         setSubmitting(false);
@@ -574,7 +588,7 @@ const CreateTeamPage = () => {
 
     const copyLink = () => {
         navigator.clipboard.writeText(inviteLink);
-        const btn = document.getElementById('copy-btn');
+        const btn = copyBtnRef.current;
         if(btn) btn.classList.add('copied');
         setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
     };
@@ -593,7 +607,7 @@ const CreateTeamPage = () => {
     const copyCode = () => {
         if (!inviteCode) return;
         navigator.clipboard.writeText(inviteCode);
-        const btn = document.getElementById('copy-code-btn');
+        const btn = copyCodeBtnRef.current;
         if(btn) btn.classList.add('copied');
         setTimeout(() => { if(btn) btn.classList.remove('copied'); }, 2000);
     };
@@ -902,6 +916,45 @@ const CreateTeamPage = () => {
                                         value={formData.teamLanguage} 
                                         onChange={e => setFormData({...formData, teamLanguage: e.target.value})} 
                                     />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2.5 COMUNIDAD Y PATROCINADOR */}
+                        <div className="section-card">
+                            <h3 style={{marginBottom: '1rem', color: 'var(--theme-color)', fontSize: '1.2rem'}}>
+                                <FaUsers style={{marginRight: '8px'}}/> Comunidad & Patrocinador
+                            </h3>
+                            <div className="split-row">
+                                <div className="form-group">
+                                    <label className="section-label"><FaUsers/> Comunidad (Opcional)</label>
+                                    <select
+                                        className="select-modern"
+                                        value={formData.community || ''}
+                                        onChange={e => setFormData({...formData, community: e.target.value || ''})}
+                                    >
+                                        <option value="">Sin comunidad</option>
+                                        {communityOptions.map((c) => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                                        Asocia tu equipo a una comunidad existente.
+                                    </small>
+                                </div>
+                                <div className="form-group">
+                                    <label className="section-label"><FaTrophy/> Patrocinador (Opcional)</label>
+                                    <input
+                                        type="text"
+                                        className="input-modern"
+                                        placeholder="Ej: Red Bull, HyperX..."
+                                        value={formData.sponsor}
+                                        onChange={e => setFormData({...formData, sponsor: e.target.value})}
+                                        maxLength={120}
+                                    />
+                                    <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                                        Nombre del patrocinador o marca asociada al equipo.
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -1274,7 +1327,7 @@ const CreateTeamPage = () => {
                                     <label className="sub-label">Link Único</label>
                                     <div className="link-action-box-pro">
                                         <div className="link-text-mask">{inviteLink}</div>
-                                        <button id="copy-btn" onClick={copyLink} title="Copiar">
+                                        <button ref={copyBtnRef} onClick={copyLink} title="Copiar">
                                             <FaCopy />
                                         </button>
                                     </div>
@@ -1284,7 +1337,7 @@ const CreateTeamPage = () => {
                                     <label className="sub-label">Código de Invitación</label>
                                     <div className="code-action-box-pro">
                                         <div className="code-text-mask">{inviteCode || '---'}</div>
-                                        <button id="copy-code-btn" onClick={copyCode} title="Copiar código" disabled={!inviteCode}>
+                                        <button ref={copyCodeBtnRef} onClick={copyCode} title="Copiar código" disabled={!inviteCode}>
                                             <FaCopy />
                                         </button>
                                     </div>
@@ -1294,9 +1347,9 @@ const CreateTeamPage = () => {
                                     <label className="sub-label">Redes</label>
                                     <div className="social-grid-pro">
                                         <button className="social-btn-pro whatsapp" onClick={() => window.open(`https://wa.me/?text=${inviteLink}`)}><FaWhatsapp /></button>
-                                        <button className="social-btn-pro discord" onClick={() => window.open(`https://discord.com`)}><FaDiscord /></button>
-                                        <button className="social-btn-pro twitter" onClick={() => window.open(`https://twitter.com`)}><FaTwitter /></button>
-                                        <button className="social-btn-pro facebook" onClick={() => window.open(`https://facebook.com`)}><FaFacebook /></button>
+                                        <button className="social-btn-pro discord" onClick={() => { navigator.clipboard?.writeText(inviteLink).then(() => addToast('Link copiado — pégalo en Discord', 'success')); }}><FaDiscord /></button>
+                                        <button className="social-btn-pro twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Únete a mi equipo en Glitch Gang! ' + inviteLink)}`)}><FaTwitter /></button>
+                                        <button className="social-btn-pro facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteLink)}`)}><FaFacebook /></button>
                                     </div>
                                 </div>
                             </div>

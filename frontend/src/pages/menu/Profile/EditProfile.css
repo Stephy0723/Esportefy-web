@@ -79,6 +79,8 @@
     position: relative;
     z-index: 1;
     padding: 16px 4% 30px;
+    width: 100%;
+    max-width: 100%;
 }
 
 @keyframes epFadeIn {
@@ -100,6 +102,42 @@
     border: 1px solid rgba(var(--primary-rgb), 0.15);
     border-radius: 14px;
     box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+.ep__header,
+.ep__header-left,
+.ep__header-right,
+.ep__layout,
+.ep__sidebar,
+.ep__content,
+.ep__tab,
+.ep__section,
+.ep__section-content,
+.ep__section-title,
+.ep__avatar-actions,
+.ep__games-toolbar,
+.ep__games-search-wrap,
+.ep__games-actions,
+.ep__social-item,
+.ep__social-input-wrap,
+.ep__social-input,
+.ep__manual-conn-item,
+.ep__manual-conn-content,
+.ep__connection-card,
+.ep__connection-header,
+.ep__connection-info,
+.ep__privacy-option,
+.ep__privacy-option > div,
+.ep__lft-card,
+.ep__lft-info,
+.ep__progress-main,
+.ep__progress-highlights,
+.ep__progress-highlight,
+.ep__points-card,
+.ep__achievement-card,
+.ep__save-bar,
+.ep__toast {
+    min-width: 0;
 }
 
 .ep__header-left {
@@ -153,6 +191,7 @@
 .ep__header-title span {
     font-size: .75rem;
     color: var(--text-muted);
+    overflow-wrap: anywhere;
 }
 
 .ep__header-right {
@@ -243,7 +282,12 @@
     border-radius: 14px;
     padding: 24px;
     min-height: 400px;
+    width: 100%;
+    max-width: 100%;
     box-shadow: 0 8px 32px var(--shadow-color);
+}
+.ep__tab {
+    width: 100%;
 }
 .ep__tab h3 {
     font-size: 1.3rem;
@@ -2292,7 +2336,22 @@
 
 /* ─── Responsive ─── */
 @media (max-width: 900px) {
-    .ep { padding: 80px 3% 30px; }
+    .ep { padding: 0; }
+    .ep__wrapper {
+        padding: 70px 3% 30px;
+    }
+    .ep__header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+    .ep__header-right {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
     .ep__layout {
         grid-template-columns: 1fr;
     }
@@ -2304,6 +2363,7 @@
         flex-direction: row;
         overflow-x: auto;
         gap: 0;
+        -webkit-overflow-scrolling: touch;
     }
     .ep__sidebar nav button {
         white-space: nowrap;
@@ -2311,12 +2371,13 @@
         border-bottom: 3px solid transparent;
         border-radius: 0;
         padding: 10px 14px;
+        font-size: .78rem;
     }
     .ep__sidebar nav button.active {
         border-left-color: transparent;
         border-bottom-color: var(--primary);
     }
-    .ep__content { padding: 24px 16px; }
+    .ep__content { padding: 20px 12px; }
     .ep__fields-grid { grid-template-columns: 1fr; }
     .ep__levels-row { flex-direction: column; }
     .ep__status-grid { grid-template-columns: 1fr; }
@@ -2330,15 +2391,21 @@
     }
     .ep__games-search-wrap {
         max-width: none;
+        min-width: 0;
+        width: 100%;
     }
-    .ep__default-avatars { 
-        grid-template-columns: repeat(5, 1fr); 
+    .ep__games-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    .ep__default-avatars {
+        grid-template-columns: repeat(5, 1fr);
     }
     .ep__section-header {
-        padding: 14px 16px;
+        padding: 14px 12px;
     }
     .ep__section-content {
-        padding: 16px;
+        padding: 14px 12px;
     }
     .ep__categories-row {
         overflow-x: auto;
@@ -2366,6 +2433,49 @@
 }
 
 @media (max-width: 600px) {
+    .ep__wrapper {
+        padding: 64px 2% 20px;
+    }
+    .ep__header {
+        padding: 10px 10px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+    .ep__header-left {
+        gap: 10px;
+        width: 100%;
+        min-width: 0;
+        align-items: flex-start;
+    }
+    .ep__header-title {
+        min-width: 0;
+        flex: 1;
+    }
+    .ep__back {
+        width: 34px;
+        height: 34px;
+    }
+    .ep__header-title h1 {
+        font-size: .95rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+    .ep__header-title span {
+        font-size: .68rem;
+        white-space: normal;
+    }
+    .ep__unsaved {
+        font-size: .6rem;
+        padding: 4px 10px;
+    }
+    .ep__sidebar nav button {
+        padding: 8px 10px;
+        font-size: .72rem;
+    }
+    .ep__content {
+        padding: 14px 8px;
+        border-radius: 10px;
+    }
     .ep__avatar-section { flex-direction: column; text-align: center; }
     .ep__upload-btn { width: 100%; justify-content: center; }
     .ep__games-grid { grid-template-columns: repeat(3, 1fr); }
@@ -2375,8 +2485,8 @@
     .ep__lft-card { flex-direction: column; text-align: center; }
     .ep__lft-info { flex-direction: column; text-align: center; }
     .ep__roles-grid { justify-content: center; }
-    .ep__default-avatars { 
-        grid-template-columns: repeat(3, 1fr); 
+    .ep__default-avatars {
+        grid-template-columns: repeat(3, 1fr);
         gap: 10px;
     }
     .ep__default-av img {
@@ -2387,6 +2497,12 @@
         width: 36px;
         height: 36px;
         font-size: 1rem;
+    }
+    .ep__section-header {
+        padding: 10px 10px;
+    }
+    .ep__section-content {
+        padding: 12px 8px;
     }
     .ep__categories-row {
         gap: 6px;
@@ -2402,12 +2518,29 @@
         flex-wrap: wrap;
         gap: 6px;
     }
+    .ep__games-search-wrap,
+    .ep__games-actions {
+        width: 100%;
+        min-width: 0;
+    }
     .ep__games-count {
         width: 100%;
         justify-content: center;
     }
+    .ep__privacy-option {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .ep__switch {
+        align-self: flex-end;
+    }
     .ep__connection-card {
         padding: 12px;
+    }
+    .ep__connection-header {
+        flex-wrap: wrap;
+        align-items: flex-start;
     }
     .ep__connection-icon {
         width: 36px;
@@ -2485,6 +2618,32 @@
     .ep__achievement-card-top {
         align-items: flex-start;
         flex-direction: column;
+    }
+    .ep__save-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .ep__toast,
+    .ep__save-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 420px) {
+    .ep__wrapper {
+        padding: 60px 8px 18px;
+    }
+    .ep__games-grid,
+    .ep__frames-grid,
+    .ep__gaming-icons-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .ep__default-avatars {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .ep__roles-grid {
+        grid-template-columns: 1fr;
     }
 }
 

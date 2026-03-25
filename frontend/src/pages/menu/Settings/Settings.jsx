@@ -1239,7 +1239,7 @@ export default function Settings() {
                         </div>
 
                         <div className="app-version">
-                            <span>GLITCH GANG Web v1.0.4 (Beta)</span>
+                            <span>GLITCH GANG Web v1.0.5 (Beta)</span>
                         </div>
                     </div>
                 );

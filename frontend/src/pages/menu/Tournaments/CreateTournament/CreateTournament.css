@@ -150,6 +150,20 @@
   color: var(--primary);
   border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--border-color));
   background: color-mix(in srgb, var(--primary) 10%, var(--bg-elevated));
+  transition: background 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.ct-step--done {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.ct-step-check {
+  margin-left: auto;
+  color: #22c55e;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .ct-lead {
@@ -263,6 +277,10 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.ct-inline-pair--count {
+  grid-template-columns: minmax(0, 1.15fr) minmax(124px, 0.85fr);
 }
 
 .ct-inline-title {
@@ -500,4 +518,287 @@
   .ct-actions {
     flex-direction: column;
   }
+
+  .ct-staff-search-row {
+    flex-direction: column;
+  }
+
+  .ct-staff-role-select {
+    width: 100%;
+  }
+}
+
+/* ── Character counter ── */
+.ct-char-count {
+  display: block;
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Prize warning ── */
+.ct-prize-warning {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #f59e0b 12%, var(--bg-elevated));
+  border: 1px solid color-mix(in srgb, #f59e0b 40%, var(--border-color));
+  color: #f59e0b;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ── Banner preview ── */
+.ct-banner-preview {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  max-height: 180px;
+}
+
+.ct-banner-preview img {
+  width: 100%;
+  height: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Map pool chips ── */
+.ct-map-pool {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ct-map-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ct-map-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 15%, var(--bg-elevated));
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ct-map-chip button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.7;
+}
+
+.ct-map-chip button:hover {
+  opacity: 1;
+}
+
+.ct-map-empty {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.ct-map-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ct-map-actions select {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  font-size: 0.85rem;
+}
+
+.ct-map-all-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg-elevated));
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.ct-map-all-btn:hover {
+  background: color-mix(in srgb, var(--primary) 20%, var(--bg-elevated));
+}
+
+.ct-map-clear-btn {
+  color: var(--text-muted);
+  border-color: var(--border-color);
+  background: var(--bg-elevated);
+}
+
+.ct-map-clear-btn:hover {
+  background: color-mix(in srgb, var(--text-muted) 10%, var(--bg-elevated));
+}
+
+/* ── Staff section ── */
+.ct-staff-search-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ct-staff-role-select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  min-width: 140px;
+}
+
+.ct-staff-autocomplete {
+  position: relative;
+  flex: 1;
+}
+
+.ct-staff-autocomplete input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  font-size: 0.88rem;
+}
+
+.ct-staff-autocomplete input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.ct-staff-loading {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ct-staff-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.ct-staff-suggestions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ct-staff-suggestions li:hover {
+  background: color-mix(in srgb, var(--primary) 12%, var(--bg-elevated));
+}
+
+.ct-staff-suggestion-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ct-staff-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ct-staff-suggestion-info strong {
+  font-size: 0.88rem;
+}
+
+.ct-staff-fullname {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ct-staff-roles {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.ct-staff-role-tag {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 15%, var(--bg-elevated));
+  color: var(--primary);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.ct-staff-add-btn {
+  white-space: nowrap;
+  padding: 10px 16px !important;
+}
+
+.ct-staff-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ct-staff-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+}
+
+.ct-staff-member-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.ct-staff-member .ct-remove {
+  padding: 4px;
+  font-size: 0.7rem;
 }

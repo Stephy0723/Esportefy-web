@@ -431,6 +431,7 @@ const Tournaments = () => {
   const [dragSeedRefId, setDragSeedRefId] = useState('');
   const [dragOverSeedRefId, setDragOverSeedRefId] = useState('');
   const [bracketScale, setBracketScale] = useState(1);
+  const [confirmModal, setConfirmModal] = useState(null);
   const rightPanelRef = useRef(null);
   const bracketPanRef = useRef({
     active: false,
@@ -560,7 +561,6 @@ useEffect(() => {
 
             setTournaments(formattedTournaments);
         } catch (err) {
-            console.error("Error cargando torneos:", err);
             setTournaments([]);
             notify('danger', 'Error', 'No se pudieron cargar los torneos de la base de datos.');
         } finally {
@@ -628,7 +628,6 @@ useEffect(() => {
       const formatted = await fetchTournamentDetails(torneo.tournamentId);
       setSelectedTournament({ ...torneo, ...formatted });
     } catch (err) {
-      console.error('Error cargando detalle del torneo:', err);
       notify('danger', 'Error', 'No se pudo cargar el detalle del torneo.');
     } finally {
       setDetailLoading(false);
@@ -663,7 +662,6 @@ useEffect(() => {
         if (!cancelled) setSelectedTournament(formatted);
       } catch (err) {
         if (!cancelled) {
-          console.error('Error cargando torneo por URL:', err);
           notify('warning', 'Torneo no encontrado', `No existe el torneo "${routeTournamentId}".`);
         }
       } finally {
@@ -839,7 +837,6 @@ useEffect(() => {
       setSelectedTournament((prev) => (prev ? { ...prev, ...fresh } : prev));
       notify('success', 'Estado actualizado', `Equipo ${status === 'approved' ? 'aprobado' : 'rechazado'}.`);
     } catch (err) {
-      console.error('Error actualizando registro:', err);
       notify('danger', 'Error', err.response?.data?.message || 'No se pudo actualizar el estado del equipo.');
     }
   };
@@ -859,20 +856,26 @@ useEffect(() => {
     }
   };
 
-  const updateTournamentStatus = async (torneo, action) => {
+  const confirmStatusMessages = {
+    start: '¿Seguro que deseas iniciar este torneo? Se cerrarán las inscripciones.',
+    finish: '¿Seguro que deseas finalizar este torneo?',
+    cancel: '¿Seguro que deseas cancelar este torneo?'
+  };
+
+  const requestStatusChange = (torneo, action) => {
     if (!torneo?.tournamentId || !action) {
       notify('danger', 'Error', 'No se pudo determinar el torneo o la acción.');
       return;
     }
     if (statusActionLoading) return;
+    if (confirmStatusMessages[action]) {
+      setConfirmModal({ message: confirmStatusMessages[action], onConfirm: () => { setConfirmModal(null); executeStatusChange(torneo, action); } });
+      return;
+    }
+    executeStatusChange(torneo, action);
+  };
 
-    const confirmations = {
-      start: '¿Seguro que deseas iniciar este torneo? Se cerrarán las inscripciones.',
-      finish: '¿Seguro que deseas finalizar este torneo?',
-      cancel: '¿Seguro que deseas cancelar este torneo?'
-    };
-    if (confirmations[action] && !window.confirm(confirmations[action])) return;
-
+  const executeStatusChange = async (torneo, action) => {
     try {
       const token = getAuthToken();
       if (!token) {
@@ -917,7 +920,6 @@ useEffect(() => {
         successMessages[action] || `El torneo ahora está ${getTournamentStatusLabel(response.data.status).toLowerCase()}.`
       );
     } catch (err) {
-      console.error('Error actualizando estado:', err);
       notify('danger', 'Error', err.response?.data?.message || 'No se pudo actualizar el estado del torneo.');
     } finally {
       setStatusActionLoading('');
@@ -1117,9 +1119,14 @@ useEffect(() => {
     }
   };
 
-  const deleteTournament = async (torneo) => {
-    const ok = window.confirm(`¿Eliminar el torneo "${torneo.title}"? Esta acción no se puede deshacer.`);
-    if (!ok) return;
+  const deleteTournament = (torneo) => {
+    setConfirmModal({
+      message: `¿Eliminar el torneo "${torneo.title}"? Esta acción no se puede deshacer.`,
+      onConfirm: () => { setConfirmModal(null); executeDeleteTournament(torneo); }
+    });
+  };
+
+  const executeDeleteTournament = async (torneo) => {
     if (torneo?.__local) {
       const local = getLocalTournaments().filter((t) => String(t._id) !== String(torneo.id));
       saveStoredLocalTournaments(local);
@@ -1137,7 +1144,6 @@ useEffect(() => {
       setTournaments((prev) => prev.filter((t) => t.id !== torneo.id));
       notify('success', 'Torneo eliminado', 'El torneo fue eliminado correctamente.');
     } catch (err) {
-      console.error('Error eliminando torneo:', err);
       notify('danger', 'Error', 'No se pudo eliminar el torneo.');
     }
   };
@@ -2649,7 +2655,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {/* ═══ SPONSORS SHOWCASE ═══ */}
+                    {/* ═══ POWERED BY — Próximamente ═══ */}
                     <div className="tn__sponsors-showcase">
                         <div className="tn__spn-header">
                             <div className="tn__spn-badge">
@@ -2657,23 +2663,9 @@ useEffect(() => {
                                 <span>POWERED BY</span>
                             </div>
                         </div>
-                        <div className="tn__spn-grid">
-                            {SPONSORS.map((sp, i) => (
-                                <a 
-                                    key={`sp-${i}`} 
-                                    className="tn__spn-card" 
-                                    href={sp.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    style={{ '--sp-color': sp.color }}
-                                >
-                                    <div className="tn__spn-icon-wrap">
-                                        <i className={`bx ${sp.icon}`}></i>
-                                    </div>
-                                    <span className="tn__spn-name">{sp.name}</span>
-                                    <span className="tn__spn-tag">Partner</span>
-                                </a>
-                            ))}
+                        <div className="tn__spn-coming-soon">
+                            <i className='bx bx-ghost tn__spn-ghost'></i>
+                            <span className="tn__spn-coming-label">Próximamente</span>
                         </div>
                     </div>
 
@@ -2974,6 +2966,25 @@ useEffect(() => {
             </div>
             
             {isRightPanelOpen && <div className="sidebar-overlay-mobile"></div>}
+
+            {confirmModal && (
+                <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>
+                    <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+                        <div className="confirm-modal__icon">
+                            <i className='bx bx-error-circle'></i>
+                        </div>
+                        <p className="confirm-modal__msg">{confirmModal.message}</p>
+                        <div className="confirm-modal__actions">
+                            <button className="confirm-modal__btn confirm-modal__btn--cancel" onClick={() => setConfirmModal(null)}>
+                                Cancelar
+                            </button>
+                            <button className="confirm-modal__btn confirm-modal__btn--confirm" onClick={confirmModal.onConfirm}>
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
   );

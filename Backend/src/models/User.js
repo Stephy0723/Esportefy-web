@@ -30,6 +30,7 @@ const UserSchema = new mongoose.Schema({
     isBanned: { type: Boolean, default: false },
     banReason: { type: String, default: '' },
     bannedAt: { type: Date, default: null },
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     roles: {
         type: [String],
         enum: ['player', 'organizer', 'content-creator', 'coach', 'caster', 'sponsor', 'analyst'],
@@ -422,7 +423,7 @@ const COUNTRY_CODES = {
     'Granada': 'GD', 'Guatemala': 'GT', 'Guyana': 'GY', 'Haití': 'HT',
     'Honduras': 'HN', 'Jamaica': 'JM', 'México': 'MX', 'Nicaragua': 'NI',
     'Panamá': 'PA', 'Paraguay': 'PY', 'Perú': 'PE', 'Puerto Rico': 'PR',
-    'República Dominicana': 'DO', // ISO code for Dominican Republic
+    'República Dominicana': 'DR', // Custom: DR instead of ISO "DO" per platform convention
     'San Cristóbal y Nieves': 'KN', 'San Vicente y las Granadinas': 'VC',
     'Santa Lucía': 'LC', 'Surinam': 'SR', 'Trinidad y Tobago': 'TT',
     'Uruguay': 'UY', 'Venezuela': 'VE'
@@ -435,16 +436,18 @@ UserSchema.pre('validate', async function(next) {
     const normalizedCountry = String(this.country || '').trim();
     let countryCode = COUNTRY_CODES[normalizedCountry];
 
-    // Fallback: case-insensitive and accent-insensitive lookup
+    // Fallback: case-insensitive and accent-insensitive exact match
     if (!countryCode) {
         const lower = normalizedCountry.toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        for (const [name, code] of Object.entries(COUNTRY_CODES)) {
-            const nameLower = name.toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            if (nameLower === lower || lower.includes(nameLower) || nameLower.includes(lower)) {
-                countryCode = code;
-                break;
+        if (lower) {
+            for (const [name, code] of Object.entries(COUNTRY_CODES)) {
+                const nameLower = name.toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                if (nameLower === lower) {
+                    countryCode = code;
+                    break;
+                }
             }
         }
     }
@@ -472,11 +475,21 @@ UserSchema.pre('validate', async function(next) {
         ).catch(err => console.error("Error notificando a admins sobre país irreconocible:", err));
     }
 
-    // Count how many users are registered from this country for the sequential suffix
-    const countryCount = await UserModel.countDocuments({
+    // Find the highest sequential number already used for this country
+    const countryUsers = await UserModel.find({
         userCode: { $regex: new RegExp(`-${countryCode}\\d+$`) }
-    });
-    const seqNum = String(countryCount + 1).padStart(2, '0');
+    }).select('userCode').lean();
+
+    let maxSeq = 0;
+    const seqRegex = new RegExp(`-${countryCode}(\\d+)$`);
+    for (const u of countryUsers) {
+        const m = u.userCode?.match(seqRegex);
+        if (m) {
+            const num = parseInt(m[1], 10);
+            if (num > maxSeq) maxSeq = num;
+        }
+    }
+    const seqNum = String(maxSeq + 1).padStart(2, '0');
 
     let isUnique = false;
     let attempts = 0;

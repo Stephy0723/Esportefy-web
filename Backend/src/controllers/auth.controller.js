@@ -1,6 +1,6 @@
 // Backend/src/controllers/auth.controller.js
 
-import User from "../models/User.js";
+import User from '../models/User.js';
 import Team from "../models/Team.js";
 import Tournament from "../models/Tournament.js";
 import CommunityPost from "../models/CommunityPost.js";

@@ -1,22 +1,31 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import { useNotification } from '../../../../context/NotificationContext';
+import {
+    fetchCommunityPosts,
+    publishCommunityPost,
+    toggleCommunityPostLike,
+    publishCommunityComment,
+    reportCommunityPost,
+    hideCommunityPost,
+    deleteCommunityPost,
+} from '../community.service';
+import { resolveMediaUrl } from '../../../../utils/media';
 import './FeedPanel.css';
 
 const GAME_OPTIONS = [
     { id: 'valorant', name: 'Valorant', color: '#ff4655' },
     { id: 'lol', name: 'League of Legends', color: '#0ac8b9' },
     { id: 'mlbb', name: 'Mobile Legends', color: '#00d2ff' },
+    { id: 'fortnite', name: 'Fortnite', color: '#9d4dbb' },
+    { id: 'cs2', name: 'Counter-Strike 2', color: '#de9b35' },
+    { id: 'wildrift', name: 'Wild Rift', color: '#00d4aa' },
 ];
 
-const DEMO_POSTS = [];
-
 const FEED_SAVED_POSTS_KEY = 'community_feed_saved_posts';
-const FEED_SHARE_COUNTS_KEY = 'community_feed_share_counts';
 
 const readStoredValue = (key, fallback) => {
     if (typeof window === 'undefined') return fallback;
-
     try {
         const raw = window.localStorage.getItem(key);
         return raw ? JSON.parse(raw) : fallback;
@@ -27,12 +36,9 @@ const readStoredValue = (key, fallback) => {
 
 const writeStoredValue = (key, value) => {
     if (typeof window === 'undefined') return;
-
     try {
         window.localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-        // Ignore storage write failures in demo feed actions.
-    }
+    } catch { /* ignore */ }
 };
 
 const getPostShareUrl = (postId) => {
@@ -41,14 +47,74 @@ const getPostShareUrl = (postId) => {
 };
 
 const buildShareText = (post) => {
-    const base = (post.content || '').trim();
+    const base = (post.text || post.content || '').trim();
     if (base.length <= 140) return base;
     return `${base.slice(0, 137).trim()}...`;
 };
 
+const getAccountAvatar = (account) => resolveMediaUrl(
+    account?.avatar
+    || account?.connections?.steam?.avatar
+    || account?.profilePicture
+    || ''
+);
+
+const getCreatedAtValue = (item) => {
+    const timestamp = new Date(item?.createdAt || 0).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+};
+
+const sortByCreatedAtAsc = (a, b) => getCreatedAtValue(a) - getCreatedAtValue(b);
+const sortByCreatedAtDesc = (a, b) => getCreatedAtValue(b) - getCreatedAtValue(a);
+
+const buildPostThreads = (items = []) => {
+    const nodeMap = new Map(
+        items.map((post) => [
+            post.id,
+            {
+                ...post,
+                replies: [],
+            },
+        ])
+    );
+
+    const roots = [];
+
+    nodeMap.forEach((node) => {
+        const parentId = node.replyTo?.id;
+        if (parentId && nodeMap.has(parentId)) {
+            nodeMap.get(parentId).replies.push(node);
+            return;
+        }
+
+        roots.push(node);
+    });
+
+    const collectReplies = (node) => {
+        const descendants = [];
+
+        node.replies.forEach((reply) => {
+            descendants.push(reply);
+            descendants.push(...collectReplies(reply));
+        });
+
+        return descendants
+            .sort(sortByCreatedAtAsc)
+            .map((reply) => ({
+                ...reply,
+                replies: [],
+            }));
+    };
+
+    return roots.sort(sortByCreatedAtDesc).map((root) => ({
+        ...root,
+        replies: collectReplies(root),
+    }));
+};
+
 /* ───────────── POST CREATOR ───────────── */
 
-const PostCreator = ({ onPost }) => {
+const PostCreator = ({ onPost, loading }) => {
     const { user } = useAuth();
     const [text, setText] = useState('');
     const [images, setImages] = useState([]);
@@ -63,12 +129,13 @@ const PostCreator = ({ onPost }) => {
     const docInputRef = useRef(null);
     const gamePickerRef = useRef(null);
 
-    // Obtener iniciales del nombre para fallback
     const getUserInitials = () => {
         if (!user) return '?';
         const name = user.username || user.name || user.email || '';
         return name.charAt(0).toUpperCase();
     };
+
+    const userAvatar = getAccountAvatar(user);
 
     const handleImageSelect = (e) => {
         const files = Array.from(e.target.files);
@@ -82,7 +149,7 @@ const PostCreator = ({ onPost }) => {
     const handleDocSelect = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setDocument({ name: file.name, size: (file.size / (1024 * 1024)).toFixed(1) + ' MB', type: file.name.split('.').pop() });
+            setDocument({ file, name: file.name, size: (file.size / (1024 * 1024)).toFixed(1) + ' MB', type: file.name.split('.').pop() });
             setExpanded(true);
         }
     };
@@ -92,6 +159,7 @@ const PostCreator = ({ onPost }) => {
     const updatePollOption = (idx, val) => { const copy = [...pollOptions]; copy[idx] = val; setPollOptions(copy); };
 
     const handlePost = () => {
+        if (loading) return;
         if (!text.trim() && images.length === 0 && !showPoll && !document) return;
         onPost({
             text, images, poll: showPoll ? { question: pollQuestion, options: pollOptions.filter(o => o.trim()) } : null,
@@ -107,8 +175,8 @@ const PostCreator = ({ onPost }) => {
         <div className={'fp-creator' + (expanded ? ' expanded' : '')}>
             <div className="fp-creator__top">
                 <div className="fp-creator__avatar">
-                    {user?.profilePicture ? (
-                        <img src={user.profilePicture} alt={user.username || 'Usuario'} />
+                    {userAvatar ? (
+                        <img src={userAvatar} alt={user.username || 'Usuario'} />
                     ) : (
                         <span className="fp-creator__avatar-initial">{getUserInitials()}</span>
                     )}
@@ -226,8 +294,8 @@ const PostCreator = ({ onPost }) => {
                         )}
                     </div>
                 </div>
-                <button className={'fp-creator__post-btn' + (hasContent ? ' ready' : '')} onClick={handlePost} disabled={!hasContent}>
-                    <i className='bx bx-send'></i> Publicar
+                <button className={'fp-creator__post-btn' + (hasContent ? ' ready' : '')} onClick={handlePost} disabled={!hasContent || loading}>
+                    <i className='bx bx-send'></i> {loading ? 'Publicando...' : 'Publicar'}
                 </button>
             </div>
 
@@ -237,60 +305,35 @@ const PostCreator = ({ onPost }) => {
     );
 };
 
-/* ───────────── POLL COMPONENT ───────────── */
-
-const PollWidget = ({ poll }) => {
-    const [voted, setVoted] = useState(poll.voted);
-    const total = poll.totalVotes + (voted !== null && poll.voted === null ? 1 : 0);
-
-    const handleVote = (idx) => { if (voted === null) setVoted(idx); };
-
-    return (
-        <div className="fp-poll">
-            <div className="fp-poll__question">
-                <i className='bx bxs-bar-chart-alt-2'></i> {poll.question}
-            </div>
-            <div className="fp-poll__options">
-                {poll.options.map((opt, i) => {
-                    const votes = opt.votes + (voted === i ? 1 : 0);
-                    const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
-                    const isSelected = voted === i;
-                    return (
-                        <button key={i} className={'fp-poll__opt' + (voted !== null ? ' voted' : '') + (isSelected ? ' selected' : '')}
-                            onClick={() => handleVote(i)} disabled={voted !== null}>
-                            <div className="fp-poll__opt-bar" style={{ width: voted !== null ? pct + '%' : '0%' }} />
-                            <span className="fp-poll__opt-text">{opt.text}</span>
-                            {voted !== null && <span className="fp-poll__opt-pct">{pct}%</span>}
-                            {isSelected && <i className='bx bx-check'></i>}
-                        </button>
-                    );
-                })}
-            </div>
-            <div className="fp-poll__footer">{total} votos</div>
-        </div>
-    );
-};
-
 /* ───────────── SINGLE POST ───────────── */
 
 const FeedPost = ({
     post,
-    isSaved,
+    replies = [],
+    depth = 0,
+    savedPosts = [],
     onToggleSave,
     onShare,
     onCopyText,
     onCopyLink,
     onHidePost,
     onReportPost,
+    onDeletePost,
+    onToggleLike,
+    onAddComment,
 }) => {
     const { user } = useAuth();
     const [liked, setLiked] = useState(post.liked);
     const [likes, setLikes] = useState(post.likes);
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
+    const [comments, setComments] = useState(post.comments || []);
     const [imgIdx, setImgIdx] = useState(0);
     const [showMenu, setShowMenu] = useState(false);
+    const [submittingComment, setSubmittingComment] = useState(false);
     const menuRef = useRef(null);
+    const orderedComments = [...comments].sort(sortByCreatedAtAsc);
+    const isSaved = savedPosts.includes(post.id);
 
     const getUserInitials = () => {
         if (!user) return '?';
@@ -298,31 +341,48 @@ const FeedPost = ({
         return name.charAt(0).toUpperCase();
     };
 
-    const hasAvatarImage = typeof post.avatar === 'string' && /^(https?:|data:image)/.test(post.avatar);
+    const currentUserAvatar = getAccountAvatar(user);
+    const authorAvatar = resolveMediaUrl(post.avatar || ((post.author || post.user) === user?.username ? currentUserAvatar : ''));
+    const hasAvatarImage = typeof authorAvatar === 'string' && /^(https?:|data:image|\/uploads)/.test(authorAvatar);
 
-    const toggleLike = () => {
+    const toggleLike = async () => {
+        const prev = liked;
         setLiked(!liked);
-        setLikes(prev => liked ? prev - 1 : prev + 1);
+        setLikes(l => prev ? l - 1 : l + 1);
+        try {
+            const result = await onToggleLike(post.id);
+            setLiked(result.likedByMe);
+            setLikes(result.likesCount);
+        } catch {
+            setLiked(prev);
+            setLikes(l => prev ? l + 1 : l - 1);
+        }
+    };
+
+    const handleComment = async () => {
+        if (!commentText.trim() || submittingComment) return;
+        setSubmittingComment(true);
+        try {
+            const newComment = await onAddComment(post.id, commentText.trim());
+            setComments(prev => [...prev, newComment]);
+            setCommentText('');
+        } catch { /* toast handled upstream */ }
+        setSubmittingComment(false);
     };
 
     const formatNum = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
 
+    // Images from backend attachment
+    const postImages = post.image ? [post.image] : (post.images || []);
+
     useEffect(() => {
         if (!showMenu) return undefined;
-
         const handlePointerDown = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setShowMenu(false);
-            }
+            if (menuRef.current && !menuRef.current.contains(event.target)) setShowMenu(false);
         };
-
-        const handleEscape = (event) => {
-            if (event.key === 'Escape') setShowMenu(false);
-        };
-
+        const handleEscape = (event) => { if (event.key === 'Escape') setShowMenu(false); };
         document.addEventListener('mousedown', handlePointerDown);
         window.addEventListener('keydown', handleEscape);
-
         return () => {
             document.removeEventListener('mousedown', handlePointerDown);
             window.removeEventListener('keydown', handleEscape);
@@ -330,18 +390,22 @@ const FeedPost = ({
     }, [showMenu]);
 
     return (
-        <article id={`post-${post.id}`} className="fp-post" style={{ '--post-color': post.game?.color || '#a35ddf' }}>
+        <article
+            id={`post-${post.id}`}
+            className={`fp-post ${depth > 0 ? 'fp-post--reply' : ''}`}
+            style={{ '--post-color': post.game?.color || '#a35ddf', '--reply-depth': depth }}
+        >
             {/* Header */}
             <div className="fp-post__header">
                 <div className="fp-post__avatar">
                     {hasAvatarImage ? (
-                        <img src={post.avatar} alt={post.author} />
+                        <img src={authorAvatar} alt={post.author || post.user} />
                     ) : (
-                        post.avatar
+                        <span>{(post.author || post.user || '?').charAt(0).toUpperCase()}</span>
                     )}
                 </div>
                 <div className="fp-post__meta">
-                    <span className="fp-post__author">{post.author}</span>
+                    <span className="fp-post__author">{post.author || post.user}</span>
                     <span className="fp-post__time">{post.time}</span>
                 </div>
                 {post.game && (
@@ -354,8 +418,6 @@ const FeedPost = ({
                         className={'fp-post__more' + (showMenu ? ' active' : '')}
                         onClick={() => setShowMenu(prev => !prev)}
                         aria-label="Acciones de la publicacion"
-                        aria-expanded={showMenu}
-                        aria-haspopup="menu"
                     >
                         <i className='bx bx-dots-horizontal-rounded'></i>
                     </button>
@@ -377,6 +439,12 @@ const FeedPost = ({
                                 <i className='bx bx-flag'></i>
                                 <span>Reportar</span>
                             </button>
+                            {post.isOwner && (
+                                <button className="fp-post__menu-item fp-post__menu-item--danger" onClick={() => { onDeletePost(post.id); setShowMenu(false); }}>
+                                    <i className='bx bx-trash'></i>
+                                    <span>Eliminar</span>
+                                </button>
+                            )}
                             <button className="fp-post__menu-item fp-post__menu-item--danger" onClick={() => { onHidePost(post.id); setShowMenu(false); }}>
                                 <i className='bx bx-hide'></i>
                                 <span>Ocultar del feed</span>
@@ -386,16 +454,25 @@ const FeedPost = ({
                 </div>
             </div>
 
+            {post.replyTo && (
+                <div className="fp-post__reply-ref">
+                    <i className='bx bx-reply'></i>
+                    <span>
+                        Respuesta a <strong>{post.replyTo.author?.username || post.replyTo.author?.fullName || 'otro mensaje'}</strong>
+                    </span>
+                </div>
+            )}
+
             {/* Content */}
-            <p className="fp-post__content">{post.content}</p>
+            <p className="fp-post__content">{post.text || post.content}</p>
 
             {/* Images */}
-            {post.images && post.images.length > 0 && (
-                <div className={'fp-post__gallery' + (post.images.length > 1 ? ' multi' : '')}>
-                    <img src={post.images[imgIdx]} alt="" className="fp-post__img" />
-                    {post.images.length > 1 && (
+            {postImages.length > 0 && (
+                <div className={'fp-post__gallery' + (postImages.length > 1 ? ' multi' : '')}>
+                    <img src={postImages[imgIdx]} alt="" className="fp-post__img" />
+                    {postImages.length > 1 && (
                         <div className="fp-post__gallery-nav">
-                            {post.images.map((_, i) => (
+                            {postImages.map((_, i) => (
                                 <button key={i} className={'fp-post__gallery-dot' + (i === imgIdx ? ' active' : '')} onClick={() => setImgIdx(i)} />
                             ))}
                         </div>
@@ -403,20 +480,18 @@ const FeedPost = ({
                 </div>
             )}
 
-            {/* Poll */}
-            {post.poll && <PollWidget poll={post.poll} />}
-
             {/* Document */}
-            {post.document && (
+            {post.file && (
                 <div className="fp-post__doc">
                     <div className="fp-post__doc-icon">
                         <i className='bx bxs-file-pdf'></i>
                     </div>
                     <div className="fp-post__doc-info">
-                        <span className="fp-post__doc-name">{post.document.name}</span>
-                        <span className="fp-post__doc-size">{post.document.size}</span>
+                        <span className="fp-post__doc-name">{post.file.name}</span>
                     </div>
-                    <button className="fp-post__doc-btn"><i className='bx bx-download'></i> Descargar</button>
+                    <a href={post.file.url} target="_blank" rel="noopener noreferrer" className="fp-post__doc-btn">
+                        <i className='bx bx-download'></i> Descargar
+                    </a>
                 </div>
             )}
 
@@ -428,11 +503,10 @@ const FeedPost = ({
                 </button>
                 <button className="fp-post__action" onClick={() => setShowComments(!showComments)}>
                     <i className='bx bx-message-rounded'></i>
-                    <span>{formatNum(post.comments)}</span>
+                    <span>{formatNum(comments.length)}</span>
                 </button>
                 <button className="fp-post__action" onClick={() => onShare(post)}>
                     <i className='bx bx-share-alt'></i>
-                    <span>{formatNum(post.shares)}</span>
                 </button>
                 <button
                     className={'fp-post__action fp-post__action--save' + (isSaved ? ' saved' : '')}
@@ -443,22 +517,66 @@ const FeedPost = ({
                 </button>
             </div>
 
+            {replies.length > 0 && (
+                <div className="fp-post__thread">
+                    {replies.map((reply) => (
+                        <FeedPost
+                            key={reply.id}
+                            post={reply}
+                            replies={reply.replies || []}
+                            depth={depth + 1}
+                            savedPosts={savedPosts}
+                            onToggleSave={onToggleSave}
+                            onShare={onShare}
+                            onCopyText={onCopyText}
+                            onCopyLink={onCopyLink}
+                            onHidePost={onHidePost}
+                            onReportPost={onReportPost}
+                            onDeletePost={onDeletePost}
+                            onToggleLike={onToggleLike}
+                            onAddComment={onAddComment}
+                        />
+                    ))}
+                </div>
+            )}
+
             {/* Comments Section */}
             {showComments && (
                 <div className="fp-post__comments">
+                    {orderedComments.length > 0 && (
+                        <div className="fp-post__comments-list">
+                            {orderedComments.map((c) => (
+                                <div key={c.id} className="fp-post__comment">
+                                    <div className="fp-post__comment-avatar">
+                                        {resolveMediaUrl(c.avatar || (c.user === user?.username ? currentUserAvatar : ''))
+                                            ? <img src={resolveMediaUrl(c.avatar || (c.user === user?.username ? currentUserAvatar : ''))} alt={c.user} />
+                                            : <span>{(c.user || '?').charAt(0).toUpperCase()}</span>}
+                                    </div>
+                                    <div className="fp-post__comment-body">
+                                        <span className="fp-post__comment-user">{c.user}</span>
+                                        <span className="fp-post__comment-text">{c.text}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <div className="fp-post__comment-input">
                         <div className="fp-post__comment-avatar">
-                            {user?.profilePicture ? (
-                                <img src={user.profilePicture} alt={user.username || 'Usuario'} />
+                            {currentUserAvatar ? (
+                                <img src={currentUserAvatar} alt={user.username || 'Usuario'} />
                             ) : (
                                 <span>{getUserInitials()}</span>
                             )}
                         </div>
                         <input
                             placeholder="Escribe un comentario..."
-                            value={commentText} onChange={e => setCommentText(e.target.value)}
+                            value={commentText}
+                            onChange={e => setCommentText(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleComment(); }}
                         />
-                        <button disabled={!commentText.trim()}><i className='bx bx-send'></i></button>
+                        <button disabled={!commentText.trim() || submittingComment} onClick={handleComment}>
+                            <i className='bx bx-send'></i>
+                        </button>
                     </div>
                 </div>
             )}
@@ -472,37 +590,111 @@ const FeedPanel = ({ communityName, filterGame }) => {
     const { user } = useAuth();
     const { addToast, notify } = useNotification();
     const [savedPosts, setSavedPosts] = useState(() => readStoredValue(FEED_SAVED_POSTS_KEY, []));
-    const [posts, setPosts] = useState(() => {
-        const storedShares = readStoredValue(FEED_SHARE_COUNTS_KEY, {});
-        return DEMO_POSTS.map((post) => ({
-            ...post,
-            shares: storedShares[post.id] ?? post.shares,
-        }));
-    });
+    const [posts, setPosts] = useState([]);
     const [feedFilter, setFeedFilter] = useState('all');
+    const [loadingPosts, setLoadingPosts] = useState(true);
+    const [publishing, setPublishing] = useState(false);
 
-    const handleNewPost = useCallback((postData) => {
-        const authorName = user?.username || user?.name || 'Usuario';
-        const authorInitial = authorName.charAt(0).toUpperCase();
-        
-        const newPost = {
-            id: Date.now(),
-            author: authorName,
-            avatar: user?.profilePicture || authorInitial,
-            time: 'Ahora',
-            game: postData.game,
-            content: postData.text,
-            images: postData.images?.map(i => i.preview) || [],
-            poll: postData.poll ? {
-                question: postData.poll.question,
-                options: postData.poll.options.map(o => ({ text: o, votes: 0 })),
-                totalVotes: 0, voted: null,
-            } : null,
-            document: postData.document,
-            likes: 0, comments: 0, shares: 0, liked: false,
+    // Fetch posts from API on mount
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            setLoadingPosts(true);
+            try {
+                const fetched = await fetchCommunityPosts();
+                if (!cancelled) setPosts(fetched);
+            } catch (err) {
+                if (!cancelled) addToast('Error cargando publicaciones', 'error');
+            } finally {
+                if (!cancelled) setLoadingPosts(false);
+            }
         };
-        setPosts(prev => [newPost, ...prev]);
-    }, [user]);
+        load();
+        return () => { cancelled = true; };
+    }, [addToast]);
+
+    // Create post via API
+    const handleNewPost = useCallback(async (postData) => {
+        if (!user) {
+            addToast('Inicia sesion para publicar', 'error');
+            return;
+        }
+        setPublishing(true);
+        try {
+            // Determine which file to attach (first image or document)
+            let attachmentFile = null;
+            let attachmentType = null;
+            if (postData.images?.length > 0 && postData.images[0].file) {
+                attachmentFile = postData.images[0].file;
+                attachmentType = 'media';
+            } else if (postData.document?.file) {
+                attachmentFile = postData.document.file;
+                attachmentType = 'file';
+            }
+
+            const newPost = await publishCommunityPost({
+                text: postData.text,
+                privacy: 'Public',
+                attachmentFile,
+                attachmentType,
+            });
+
+            setPosts(prev => [newPost, ...prev]);
+            addToast('Publicacion creada', 'success');
+        } catch (err) {
+            addToast(err.response?.data?.message || 'Error al publicar', 'error');
+        } finally {
+            setPublishing(false);
+        }
+    }, [user, addToast]);
+
+    // Like toggle via API
+    const handleToggleLike = useCallback(async (postId) => {
+        return await toggleCommunityPostLike(postId);
+    }, []);
+
+    // Add comment via API
+    const handleAddComment = useCallback(async (postId, text) => {
+        try {
+            const comment = await publishCommunityComment(postId, { text });
+            return comment;
+        } catch (err) {
+            addToast('Error al comentar', 'error');
+            throw err;
+        }
+    }, [addToast]);
+
+    // Delete post via API
+    const handleDeletePost = useCallback(async (postId) => {
+        try {
+            await deleteCommunityPost(postId);
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            addToast('Publicacion eliminada', 'success');
+        } catch (err) {
+            addToast('Error al eliminar', 'error');
+        }
+    }, [addToast]);
+
+    // Hide post via API
+    const handleHidePost = useCallback(async (postId) => {
+        try {
+            await hideCommunityPost(postId);
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            addToast('Publicacion ocultada del feed', 'info');
+        } catch {
+            addToast('Error al ocultar', 'error');
+        }
+    }, [addToast]);
+
+    // Report post via API
+    const handleReportPost = useCallback(async (post) => {
+        try {
+            await reportCommunityPost(post.id, { reason: 'spam', details: '' });
+            notify('info', 'Reporte enviado', `Revisaremos la publicacion de ${post.user || post.author}.`);
+        } catch {
+            addToast('Error al reportar', 'error');
+        }
+    }, [notify, addToast]);
 
     const copyToClipboard = useCallback(async (value, successMessage) => {
         try {
@@ -521,89 +713,62 @@ const FeedPanel = ({ communityName, filterGame }) => {
             const alreadySaved = prev.includes(post.id);
             const next = alreadySaved ? prev.filter((id) => id !== post.id) : [...prev, post.id];
             writeStoredValue(FEED_SAVED_POSTS_KEY, next);
-            addToast(alreadySaved ? 'Publicacion eliminada de guardados.' : 'Publicacion guardada en tu lista.', alreadySaved ? 'info' : 'success');
+            addToast(alreadySaved ? 'Publicacion eliminada de guardados.' : 'Publicacion guardada.', alreadySaved ? 'info' : 'success');
             return next;
         });
     }, [addToast]);
 
     const copyPostText = useCallback(async (post) => {
-        await copyToClipboard(`${post.author}\n${post.content}`, 'Texto de la publicacion copiado.');
+        await copyToClipboard(`${post.user || post.author}\n${post.text || post.content}`, 'Texto copiado.');
     }, [copyToClipboard]);
 
     const copyPostLink = useCallback(async (post) => {
-        await copyToClipboard(getPostShareUrl(post.id), 'Enlace de la publicacion copiado.');
+        await copyToClipboard(getPostShareUrl(post.id), 'Enlace copiado.');
     }, [copyToClipboard]);
 
     const handleSharePost = useCallback(async (post) => {
         const shareUrl = getPostShareUrl(post.id);
         const sharePayload = {
-            title: `Publicacion de ${post.author}`,
+            title: `Publicacion de ${post.user || post.author}`,
             text: buildShareText(post),
             url: shareUrl,
         };
-
         try {
             if (navigator.share) {
                 await navigator.share(sharePayload);
-                addToast('Publicacion compartida correctamente.', 'success');
+                addToast('Publicacion compartida.', 'success');
             } else {
-                const copied = await copyToClipboard(`${sharePayload.text}\n${shareUrl}`, 'Enlace listo para compartir.');
-                if (!copied) return;
+                await copyToClipboard(`${sharePayload.text}\n${shareUrl}`, 'Enlace listo para compartir.');
             }
-
-            const currentPost = posts.find((item) => item.id === post.id);
-            const nextShares = (currentPost?.shares ?? post.shares ?? 0) + 1;
-
-            setPosts((prev) => prev.map((item) => (
-                item.id === post.id ? { ...item, shares: nextShares } : item
-            )));
-
-            writeStoredValue(
-                FEED_SHARE_COUNTS_KEY,
-                posts.reduce((acc, item) => {
-                    acc[item.id] = item.id === post.id ? nextShares : item.shares;
-                    return acc;
-                }, {})
-            );
         } catch (error) {
             if (error?.name !== 'AbortError') {
-                addToast('No se pudo compartir la publicacion.', 'error');
+                addToast('No se pudo compartir.', 'error');
             }
         }
-    }, [addToast, copyToClipboard, posts]);
-
-    const hidePost = useCallback((postId) => {
-        setPosts((prev) => prev.filter((post) => post.id !== postId));
-        addToast('Publicacion ocultada del feed.', 'info');
-    }, [addToast]);
-
-    const reportPost = useCallback((post) => {
-        notify('info', 'Reporte enviado', `Revisaremos la publicacion de ${post.author}.`);
-    }, [notify]);
+    }, [addToast, copyToClipboard]);
 
     const filteredPosts = feedFilter === 'all'
         ? posts
         : posts.filter(p => {
-            if (feedFilter === 'images') return p.images && p.images.length > 0;
-            if (feedFilter === 'polls') return p.poll;
-            if (feedFilter === 'docs') return p.document;
+            if (feedFilter === 'images') return p.image;
+            if (feedFilter === 'docs') return p.file;
             return true;
         });
 
     const displayPosts = filterGame
         ? filteredPosts.filter(p => p.game?.id === filterGame)
         : filteredPosts;
+    const threadedPosts = buildPostThreads(displayPosts);
 
     return (
         <div className="fp-feed">
-            <PostCreator onPost={handleNewPost} />
+            <PostCreator onPost={handleNewPost} loading={publishing} />
 
             {/* Feed Filters */}
             <div className="fp-feed__filters">
                 {[
                     { id: 'all', label: 'Todo', icon: 'bx bx-grid-alt' },
                     { id: 'images', label: 'Imagenes', icon: 'bx bxs-image' },
-                    { id: 'polls', label: 'Encuestas', icon: 'bx bxs-bar-chart-alt-2' },
                     { id: 'docs', label: 'Documentos', icon: 'bx bxs-file-doc' },
                 ].map(f => (
                     <button key={f.id} className={'fp-feed__filter' + (feedFilter === f.id ? ' active' : '')}
@@ -615,18 +780,27 @@ const FeedPanel = ({ communityName, filterGame }) => {
 
             {/* Posts */}
             <div className="fp-feed__posts">
-                {displayPosts.length > 0 ? (
-                    displayPosts.map((p) => (
+                {loadingPosts ? (
+                    <div className="fp-feed__empty">
+                        <i className='bx bx-loader-alt bx-spin'></i>
+                        <h3>Cargando publicaciones...</h3>
+                    </div>
+                ) : threadedPosts.length > 0 ? (
+                    threadedPosts.map((p) => (
                         <FeedPost
                             key={p.id}
                             post={p}
-                            isSaved={savedPosts.includes(p.id)}
+                            replies={p.replies || []}
+                            savedPosts={savedPosts}
                             onToggleSave={toggleSavedPost}
                             onShare={handleSharePost}
                             onCopyText={copyPostText}
                             onCopyLink={copyPostLink}
-                            onHidePost={hidePost}
-                            onReportPost={reportPost}
+                            onHidePost={handleHidePost}
+                            onReportPost={handleReportPost}
+                            onDeletePost={handleDeletePost}
+                            onToggleLike={handleToggleLike}
+                            onAddComment={handleAddComment}
                         />
                     ))
                 ) : (

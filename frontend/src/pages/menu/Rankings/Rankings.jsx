@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
@@ -103,7 +103,7 @@ const TABS = [
 export default function Rankings() {
     const fileInputRef = useRef(null);
     const achievementFileRef = useRef(null);
-    const [rankingSource, setRankingSource] = useState('general');
+    const [rankingSource, setRankingSource] = useState('rd');
     const [activeTab, setActiveTab] = useState('players');
     const [game, setGame] = useState('Todos');
     const [region, setRegion] = useState('Todas');
@@ -302,7 +302,6 @@ export default function Rankings() {
             setIsContributeModalOpen(false);
             showToast('Datos enviados. Nuestro equipo los revisara en 24-48 horas.');
         } catch (err) {
-            console.error('Error submitting contribute data:', err);
             showToast(err.response?.data?.error || 'Error al enviar los datos', 'error');
         } finally {
             setIsSubmitting(false);
@@ -324,8 +323,9 @@ export default function Rankings() {
         let rows = [...PLAYERS_DATA].filter((player) => {
             if (player.isTeam) return false;
             if (!RANKINGS_VISIBLE_GAMES.has(player.game)) return false;
+            // Filtrar por fuente de ranking
+            if (rankingSource === 'rd' && player.country !== 'DO') return false;
             // Solo mostrar jugadores con logros individuales (solo/duo)
-            // Los que solo tienen logros de equipo se ven en la pestaña Equipos
             const hasSolo = player.achievements?.solo?.length > 0;
             const hasDuo = player.achievements?.duo?.length > 0;
             return hasSolo || hasDuo;
@@ -349,7 +349,7 @@ export default function Rankings() {
             if (bTitles !== aTitles) return bTitles - aTitles;
             return getAchievementCount(b) - getAchievementCount(a);
         });
-    }, [game, region, searchTerm]);
+    }, [game, region, searchTerm, rankingSource]);
 
     const podiumPlayers = filteredPlayers.slice(0, 3);
     const topPlayer = filteredPlayers[0];
@@ -473,9 +473,9 @@ export default function Rankings() {
 
     if (isLoading) {
         return (
-            <div className="rk-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-                <div style={{ textAlign: 'center' }}>
-                    <h2 style={{ color: 'var(--text-main)' }}>Cargando Rankings...</h2>
+            <div className="rk-page rk-page--loading">
+                <div className="rk-state-msg">
+                    <h2>Cargando Rankings...</h2>
                 </div>
             </div>
         );
@@ -483,55 +483,25 @@ export default function Rankings() {
 
     return (
         <div className="rk-page">
-            <div style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)', border: '1px solid #ffc107', color: '#ffc107', padding: '12px', textAlign: 'center', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', zIndex: 100, position: 'relative' }}>
+            <div className="rk-demo-banner">
                 <FaInfoCircle /> Aviso: Los datos mostrados en los rankings actuales son de demostración (Demo).
             </div>
             {/* Source Switcher: General vs Plataforma */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                margin: '0 16px 16px',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 10,
-                padding: 4,
-                width: 'fit-content',
-            }}>
-                <button
-                    onClick={() => setRankingSource('general')}
-                    style={{
-                        padding: '8px 18px',
-                        borderRadius: 8,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        transition: 'all 0.2s',
-                        background: rankingSource === 'general' ? 'var(--primary, #8EDB15)' : 'transparent',
-                        color: rankingSource === 'general' ? '#111' : 'var(--text-muted)',
-                    }}
-                >
-                    <FaGlobeAmericas style={{ marginRight: 6 }} />
-                    General
-                </button>
-                <button
-                    onClick={() => setRankingSource('plataforma')}
-                    style={{
-                        padding: '8px 18px',
-                        borderRadius: 8,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        transition: 'all 0.2s',
-                        background: rankingSource === 'plataforma' ? 'var(--primary, #8EDB15)' : 'transparent',
-                        color: rankingSource === 'plataforma' ? '#111' : 'var(--text-muted)',
-                    }}
-                >
-                    <FaChartLine style={{ marginRight: 6 }} />
-                    Plataforma
-                </button>
+            <div className="rk-source-switcher">
+                {[
+                    { id: 'rd', label: 'Ranking RD', icon: <FaFlag /> },
+                    { id: 'global', label: 'Global', icon: <FaGlobeAmericas /> },
+                    { id: 'gg', label: 'Ranking GG', icon: <FaChartLine /> },
+                ].map(src => (
+                    <button
+                        key={src.id}
+                        onClick={() => setRankingSource(src.id)}
+                        className={`rk-source-btn${rankingSource === src.id ? ' rk-source-btn--active' : ''}`}
+                    >
+                        {src.icon}
+                        {src.label}
+                    </button>
+                ))}
             </div>
             <Bubbles />
             <div className="rk-ambient rk-ambient--1" />
@@ -553,24 +523,16 @@ export default function Rankings() {
 
             <PageHud page="RANKINGS" />
 
-            {rankingSource === 'plataforma' ? (
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '80px 24px',
-                    textAlign: 'center',
-                    gap: 16,
-                }}>
-                    <FaChartLine style={{ fontSize: 48, color: 'var(--primary, #8EDB15)', opacity: 0.6 }} />
-                    <h2 style={{ color: 'var(--text-main)', margin: 0 }}>Rankings de Plataforma</h2>
-                    <p style={{ color: 'var(--text-muted)', maxWidth: 480, margin: 0, lineHeight: 1.6 }}>
-                        Los rankings basados en la actividad dentro de GlitchGang están en desarrollo.
-                        Aquí verás clasificaciones generadas a partir de torneos, equipos y partidas registradas en la plataforma.
+            {rankingSource === 'gg' ? (
+                <div className="rk-gg-placeholder">
+                    <FaChartLine className="rk-gg-placeholder__icon" />
+                    <h2 className="rk-gg-placeholder__title">Ranking de Plataforma</h2>
+                    <p className="rk-gg-placeholder__desc">
+                        Los rankings basados en torneos jugados dentro de la plataforma están en desarrollo.
+                        Cuando haya torneos completados, aquí aparecerán las clasificaciones automáticas.
                     </p>
-                    <span className="sc-badge sc-badge--warning" style={{ fontSize: '0.85rem', padding: '6px 16px' }}>
-                        <FaLock style={{ marginRight: 6 }} /> Próximamente
+                    <span className="sc-badge sc-badge--warning rk-gg-placeholder__badge">
+                        <FaLock /> Próximamente
                     </span>
                 </div>
             ) : (

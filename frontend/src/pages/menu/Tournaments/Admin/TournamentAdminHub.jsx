@@ -40,7 +40,7 @@ const TournamentAdminHub = () => {
         });
         setItems(Array.isArray(res.data) ? res.data : []);
       } catch (e) {
-        console.error('Error cargando torneos administrables:', e);
+        /* silent — UI shows empty state */
       } finally {
         setLoading(false);
       }

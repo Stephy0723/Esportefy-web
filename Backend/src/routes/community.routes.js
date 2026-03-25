@@ -4,6 +4,7 @@ import { createRateLimiter } from '../middlewares/rateLimit.js';
 import {
   uploadCommunityAttachment,
   uploadCommunityAssets,
+  listCommunities,
   getPosts,
   createPost,
   togglePostLike,
@@ -12,6 +13,10 @@ import {
   reportPost,
   toggleHidePost,
   deletePost,
+  blockUser,
+  unblockUser,
+  searchUsers,
+  getReplies,
   createCommunity,
   getMyCommunities,
   getCommunityByShortUrl,
@@ -23,6 +28,7 @@ import {
   transferCommunityOwnership,
   getGameHubStatsIndex,
   getGameHubStats,
+  getGameHubDetails,
   joinGameHub
 } from '../controllers/community.controller.js';
 
@@ -39,9 +45,15 @@ router.post('/posts/:postId/comments/:commentId/like', verifyToken, rlWrite, tog
 router.post('/posts/:postId/report', verifyToken, rlWrite, reportPost);
 router.post('/posts/:postId/hide', verifyToken, rlWrite, toggleHidePost);
 router.delete('/posts/:postId', verifyToken, rlWrite, deletePost);
+router.get('/posts/:postId/replies', verifyToken, rlRead, getReplies);
+router.get('/users/search', verifyToken, rlRead, searchUsers);
+router.post('/users/:userId/block', verifyToken, rlWrite, blockUser);
+router.delete('/users/:userId/block', verifyToken, rlWrite, unblockUser);
 router.get('/games/stats', verifyToken, rlRead, getGameHubStatsIndex);
+router.get('/games/:gameId/details', verifyToken, rlRead, getGameHubDetails);
 router.get('/games/:gameId/stats', verifyToken, rlRead, getGameHubStats);
 router.post('/games/:gameId/join', verifyToken, rlWrite, joinGameHub);
+router.get('/communities', verifyToken, rlRead, listCommunities);
 router.get('/communities/mine', verifyToken, rlRead, getMyCommunities);
 router.post('/communities', verifyToken, rlWrite, uploadCommunityAssets, createCommunity);
 router.post('/communities/:shortUrl/join', verifyToken, rlWrite, joinCommunity);

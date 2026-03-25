@@ -188,7 +188,7 @@ const Login = () => {
             </div>
 
             {/* MENSAJE DE ERROR */}
-            {error && <div style={{color: '#ff4d4d', marginBottom: '15px', fontSize: '0.9rem'}}>{error}</div>}
+            {error && <div className="auth-error-msg">{error}</div>}
 
             <form onSubmit={handleSubmit}>
                 {!requiresTwoFactor ? (
@@ -248,24 +248,30 @@ const Login = () => {
                         <div className="input-row">
                             <label>Código de Verificación (2FA)</label>
                             <div className="input-wrapper">
-                                <input 
-                                    type="text" 
-                                    placeholder="000000" 
-                                    value={twoFactorToken}                       
-                                    onChange={(e) => setTwoFactorToken(e.target.value)}
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength={6}
+                                    placeholder="000000"
+                                    value={twoFactorToken}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                        setTwoFactorToken(val);
+                                    }}
                                     autoComplete="one-time-code"
-                                    required 
+                                    required
                                 />
                                 <i className='bx bx-shield-quarter'></i>
                             </div>
-                            <p style={{fontSize: '0.8rem', color: '#888', marginTop: '5px'}}>
-                                Abre tu aplicación de autenticación para obtener el código.
+                            <p className="auth-hint">
+                                Abre tu aplicación de autenticación para obtener el código de 6 dígitos.
                             </p>
                         </div>
-                        
-                        <div onClick={() => setRequiresTwoFactor(false)} style={{cursor: 'pointer', color: '#8EDB15', fontSize: '0.9rem', marginBottom: '15px'}}>
+
+                        <button type="button" className="auth-back-link" onClick={() => { setRequiresTwoFactor(false); setTwoFactorToken(''); setError(''); }}>
                             ← Volver al login normal
-                        </div>
+                        </button>
                     </>
                 )}
 

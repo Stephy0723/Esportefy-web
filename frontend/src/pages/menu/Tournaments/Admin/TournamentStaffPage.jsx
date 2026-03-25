@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { useNotification } from '../../../../context/NotificationContext';
 import {
   TournamentAdminShell,
   useTournamentAdminData,
@@ -26,6 +27,7 @@ const ROLE_COLORS = {
 
 const TournamentStaffPage = () => {
   const { code } = useParams();
+  const { addToast } = useNotification();
   const { loading, tournament } = useTournamentAdminData(code);
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const authConfig = useMemo(() => ({
@@ -36,6 +38,7 @@ const TournamentStaffPage = () => {
   const [staffLoading, setStaffLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
 
   // Add form
   const [username, setUsername] = useState('');
@@ -49,7 +52,7 @@ const TournamentStaffPage = () => {
       const res = await axios.get(`${API_URL}/api/tournaments/${code}/staff`);
       setStaff(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('Error cargando staff:', err);
+      addToast('Error cargando staff.', 'error');
     } finally {
       setStaffLoading(false);
     }
@@ -58,7 +61,7 @@ const TournamentStaffPage = () => {
   useEffect(() => { fetchStaff(); }, [fetchStaff]);
 
   const addMember = async () => {
-    if (!username.trim()) return alert('Ingresa un nombre de usuario.');
+    if (!username.trim()) return addToast('Ingresa un nombre de usuario.', 'error');
     try {
       const res = await axios.post(`${API_URL}/api/tournaments/${code}/staff`, {
         username: username.trim(),
@@ -71,7 +74,7 @@ const TournamentStaffPage = () => {
       setDisplayRole('');
       setShowForm(false);
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo agregar al staff.');
+      addToast(err.response?.data?.message || 'No se pudo agregar al staff.', 'error');
     }
   };
 
@@ -85,17 +88,23 @@ const TournamentStaffPage = () => {
       setStaff((prev) => prev.map((m) => m.username === memberUsername ? { ...m, ...res.data } : m));
       setEditingMember(null);
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo actualizar el miembro.');
+      addToast(err.response?.data?.message || 'No se pudo actualizar el miembro.', 'error');
     }
   };
 
-  const removeMember = async (memberUsername) => {
-    if (!window.confirm(`Remover a ${memberUsername} del staff?`)) return;
+  const triggerRemoveMember = (memberUsername) => {
+    setConfirmModal({
+      message: `¿Remover a ${memberUsername} del staff?`,
+      onConfirm: () => { setConfirmModal(null); executeRemoveMember(memberUsername); }
+    });
+  };
+
+  const executeRemoveMember = async (memberUsername) => {
     try {
       await axios.delete(`${API_URL}/api/tournaments/${code}/staff/${memberUsername}`, authConfig);
       setStaff((prev) => prev.filter((m) => m.username !== memberUsername));
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo remover al miembro.');
+      addToast(err.response?.data?.message || 'No se pudo remover al miembro.', 'error');
     }
   };
 
@@ -252,7 +261,7 @@ const TournamentStaffPage = () => {
                       <button className="ta-btn-sm ta-btn-sm--secondary" onClick={() => setEditingMember(member.username)}>
                         Editar
                       </button>
-                      <button className="ta-btn-sm ta-btn-sm--danger" onClick={() => removeMember(member.username)}>
+                      <button className="ta-btn-sm ta-btn-sm--danger" onClick={() => triggerRemoveMember(member.username)}>
                         Remover
                       </button>
                     </div>
@@ -292,6 +301,18 @@ const TournamentStaffPage = () => {
           })}
         </div>
       </section>
+      {confirmModal && (
+        <div className="ta-confirm-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="ta-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="ta-confirm-icon"><i className='bx bx-error-circle'></i></div>
+            <p className="ta-confirm-msg">{confirmModal.message}</p>
+            <div className="ta-confirm-actions">
+              <button className="ta-confirm-btn ta-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className="ta-confirm-btn ta-confirm-btn--confirm" onClick={confirmModal.onConfirm}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </TournamentAdminShell>
   );
 };

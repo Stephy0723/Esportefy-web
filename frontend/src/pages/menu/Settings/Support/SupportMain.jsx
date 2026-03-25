@@ -376,8 +376,8 @@ const SupportPage = () => {
 
                     <div className="sp-direct">
                         <h4>Contacto Directo</h4>
-                        <a href="mailto:soporte@glitchgang.net" className="sp-direct__link">
-                            <FaEnvelope /> <span>soporte@glitchgang.net</span>
+                        <a href="mailto:steliantsoft@gmail.com" className="sp-direct__link">
+                            <FaEnvelope /> <span>steliantsoft@gmail.com</span>
                         </a>
                         <a href="https://discord.gg/glitchgang" target="_blank" rel="noopener noreferrer" className="sp-direct__link">
                             <FaDiscord /> <span>Servidor de Discord</span>

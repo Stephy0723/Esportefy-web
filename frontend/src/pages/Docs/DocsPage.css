@@ -413,6 +413,70 @@
     font-weight: 700;
 }
 
+.docs-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.docs-fact-card {
+    padding: 0.9rem;
+    border-radius: 14px;
+    border: 1px solid var(--docs-border);
+    background: var(--docs-card-soft);
+}
+
+.docs-fact-card span {
+    display: block;
+    color: var(--docs-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.docs-fact-card strong {
+    display: block;
+    margin-top: 0.45rem;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.docs-fact-card p {
+    margin: 0.45rem 0 0;
+    color: var(--docs-muted);
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
+
+.docs-reference-list {
+    display: grid;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.docs-reference-list li {
+    display: grid;
+    gap: 0.22rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 12px;
+    border: 1px solid var(--docs-border);
+    background: var(--docs-card-soft);
+}
+
+.docs-reference-list strong {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.docs-reference-list span {
+    color: var(--docs-muted);
+    font-size: 0.88rem;
+    line-height: 1.55;
+}
+
 .docs-detail__cta,
 .docs-link-card,
 .docs-empty button {
@@ -533,6 +597,10 @@
 
     .docs-guide-card,
     .docs-detail__header {
+        grid-template-columns: 1fr;
+    }
+
+    .docs-facts {
         grid-template-columns: 1fr;
     }
 

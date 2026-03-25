@@ -80,6 +80,7 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
     const [activeTab, setActiveTab] = useState(initialTab === 'roster' ? 'roster' : 'info');
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null);
+    const [confirmModal, setConfirmModal] = useState(null);
 
     // Edit info
     const [editing, setEditing] = useState(false);
@@ -107,6 +108,16 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
         note: ''
     });
 
+    const [communityOptions, setCommunityOptions] = useState([]);
+    useEffect(() => {
+        axios.get(`${API_URL}/api/community/communities`)
+            .then((res) => {
+                const list = Array.isArray(res.data?.communities) ? res.data.communities : [];
+                setCommunityOptions(list.map((c) => ({ id: c.id || c._id, name: c.name })));
+            })
+            .catch(() => setCommunityOptions([]));
+    }, []);
+
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 3000);
@@ -127,6 +138,8 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
             teamCountry: team.teamCountry || '',
             teamLevel: team.teamLevel || '',
             teamLanguage: team.teamLanguage || 'Español',
+            community: team.community?._id || team.community || '',
+            sponsor: team.sponsor || '',
         });
         setLogoFile(null);
         setLogoPreview(null);
@@ -196,8 +209,14 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
         }
     };
 
-    const handleRemovePlayer = async (entry) => {
-        if (!window.confirm(`Remover a ${entry.name}?`)) return;
+    const handleRemovePlayer = (entry) => {
+        setConfirmModal({
+            message: `¿Remover a ${entry.name} del roster?`,
+            onConfirm: () => { setConfirmModal(null); executeRemovePlayer(entry); }
+        });
+    };
+
+    const executeRemovePlayer = async (entry) => {
         try {
             const token = getAuthToken();
             const res = await axios.patch(`${API_URL}/api/teams/${team._id}/roster/remove`,
@@ -382,8 +401,14 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
         }
     };
 
-    const handleLeaveTeam = async () => {
-        if (!window.confirm('¿Seguro que quieres salir del equipo?')) return;
+    const handleLeaveTeam = () => {
+        setConfirmModal({
+            message: '¿Seguro que quieres salir del equipo?',
+            onConfirm: () => { setConfirmModal(null); executeLeaveTeam(); }
+        });
+    };
+
+    const executeLeaveTeam = async () => {
         try {
             const token = getAuthToken();
             await axios.post(`${API_URL}/api/teams/leave/${team._id}`, {}, {
@@ -397,8 +422,14 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
         }
     };
 
-    const handleDeleteTeam = async () => {
-        if (!window.confirm('¿ELIMINAR este equipo permanentemente? Esta acción no se puede deshacer.')) return;
+    const handleDeleteTeam = () => {
+        setConfirmModal({
+            message: '¿ELIMINAR este equipo permanentemente? Esta acción no se puede deshacer.',
+            onConfirm: () => { setConfirmModal(null); executeDeleteTeam(); }
+        });
+    };
+
+    const executeDeleteTeam = async () => {
         try {
             const token = getAuthToken();
             await axios.delete(`${API_URL}/api/teams/${team._id}`, {
@@ -406,10 +437,8 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
             });
             showToast('Equipo eliminado');
             window.dispatchEvent(new Event('user-update'));
-            setTimeout(() => {
-                onClose();
-                window.location.reload();
-            }, 250);
+            if (onTeamUpdated) onTeamUpdated(null);
+            setTimeout(() => onClose(), 250);
         } catch (err) {
             showToast(err.response?.data?.message || 'Error', 'error');
         }
@@ -641,6 +670,21 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                                             <select value={editForm.teamLanguage} onChange={e => setEditForm({ ...editForm, teamLanguage: e.target.value })}>
                                                 {LANGUAGE_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
                                             </select>
+                                        </div>
+                                    </div>
+                                    <div className="vtm-form-row">
+                                        <div className="vtm-form-group">
+                                            <label>Comunidad</label>
+                                            <select value={editForm.community || ''} onChange={e => setEditForm({ ...editForm, community: e.target.value || '' })}>
+                                                <option value="">Sin comunidad</option>
+                                                {communityOptions.map((c) => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="vtm-form-group">
+                                            <label>Patrocinador</label>
+                                            <input value={editForm.sponsor || ''} onChange={e => setEditForm({ ...editForm, sponsor: e.target.value })} placeholder="Ej: Red Bull, HyperX..." maxLength={120} />
                                         </div>
                                     </div>
                                     <div className="vtm-form-group">
@@ -1098,6 +1142,19 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                     )}
                 </div>
             </div>
+
+            {confirmModal && (
+                <div className="vtm-confirm-overlay" onClick={() => setConfirmModal(null)}>
+                    <div className="vtm-confirm-modal" onClick={e => e.stopPropagation()}>
+                        <div className="vtm-confirm-icon"><i className='bx bx-error-circle'></i></div>
+                        <p className="vtm-confirm-msg">{confirmModal.message}</p>
+                        <div className="vtm-confirm-actions">
+                            <button className="vtm-btn vtm-btn--ghost" onClick={() => setConfirmModal(null)}>Cancelar</button>
+                            <button className="vtm-btn vtm-btn--danger" onClick={confirmModal.onConfirm}>Confirmar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

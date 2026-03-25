@@ -625,6 +625,41 @@
   opacity: 1;
 }
 
+/* ─────────── ADMIN LINK ─────────── */
+.sb-item a[href="/admin"] .sb-icon-wrap {
+  background: rgba(251, 191, 36, 0.10);
+}
+.sb-item a[href="/admin"] .sb-icon-wrap i {
+  color: #fbbf24;
+}
+.sb-item a[href="/admin"] .sb-label {
+  color: #fbbf24;
+  font-weight: 600;
+}
+.sb-item a[href="/admin"]:hover {
+  background: rgba(251, 191, 36, 0.08);
+}
+.sb-item a[href="/admin"]:hover .sb-icon-wrap {
+  background: rgba(251, 191, 36, 0.18);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+}
+.sb-item a[href="/admin"]:hover .sb-icon-wrap i {
+  color: #fbbf24;
+}
+.sb-item.sb-active a[href="/admin"] {
+  background: rgba(251, 191, 36, 0.10);
+}
+.sb-item.sb-active a[href="/admin"]::before {
+  background: #fbbf24;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+.sb-item.sb-active a[href="/admin"] .sb-icon-wrap {
+  background: rgba(251, 191, 36, 0.18);
+}
+.sb-item.sb-active a[href="/admin"] .sb-icon-wrap i {
+  color: #fbbf24 !important;
+}
+
 /* ─────────── TOOLTIP on close ─────────── */
 .sidebar.close .sb-item a {
   position: relative;

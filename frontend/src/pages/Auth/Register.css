@@ -990,3 +990,13 @@
 .sidebar.close .sidebar-credit {
     display: none;
 }
+
+/* ── Auth error message (shared pattern) ── */
+.auth-error-msg {
+    color: #ff4d4d;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255, 77, 77, 0.08);
+    border: 1px solid rgba(255, 77, 77, 0.2);
+}

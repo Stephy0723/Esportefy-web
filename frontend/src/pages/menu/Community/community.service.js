@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
+import { resolveMediaUrl } from '../../../utils/media';
+import { normalizeCommunitySocialLinks } from './communitySocials';
 
 const API_BASE_URL = API_URL;
 
@@ -47,7 +49,7 @@ const mapComment = (comment) => {
   return {
     id: String(comment?.id || ''),
     user: comment?.author?.username || comment?.author?.fullName || 'Usuario',
-    avatar: comment?.author?.avatar || '',
+    avatar: resolveMediaUrl(comment?.author?.avatar || comment?.author?.connections?.steam?.avatar || ''),
     text: comment?.text || '',
     image,
     file,
@@ -61,17 +63,23 @@ const mapPost = (post) => {
   const { image, file } = mapAttachment(post?.attachment);
   return {
     id: String(post?.id || ''),
+    authorId: post?.author?.id || '',
     user: post?.author?.username || post?.author?.fullName || 'Usuario',
-    avatar: post?.author?.avatar || '',
+    avatar: resolveMediaUrl(post?.author?.avatar || post?.author?.connections?.steam?.avatar || ''),
     time: formatRelativeTime(post?.createdAt),
     text: post?.text || '',
     image,
     file,
+    replyTo: post?.replyTo || null,
+    mentions: Array.isArray(post?.mentions) ? post.mentions : [],
+    hashtags: Array.isArray(post?.hashtags) ? post.hashtags : [],
     likes: Number(post?.likesCount || 0),
     liked: Boolean(post?.likedByMe),
     showComments: false,
     isOwner: Boolean(post?.isOwner),
-    comments: Array.isArray(post?.comments) ? post.comments.map(mapComment) : []
+    comments: Array.isArray(post?.comments) ? post.comments.map(mapComment) : [],
+    createdAt: post?.createdAt || null,
+    updatedAt: post?.updatedAt || null
   };
 };
 
@@ -87,6 +95,7 @@ const mapCommunity = (community) => {
     region: community?.region || '',
     language: community?.language || '',
     mainGames: Array.isArray(community?.mainGames) ? community.mainGames : [],
+    socialLinks: normalizeCommunitySocialLinks(community?.socialLinks),
     role: community?.role || 'guest',
     isOwner: Boolean(community?.isOwner),
     joined: Boolean(community?.joined),
@@ -129,23 +138,27 @@ const mapCommunityAuditLog = (entry) => {
   };
 };
 
-const buildFormData = ({ text, privacy, attachmentFile, attachmentType }) => {
+const buildFormData = ({ text, privacy, attachmentFile, attachmentType, replyTo, shortUrl }) => {
   const formData = new FormData();
   if (text && String(text).trim()) formData.append('text', String(text).trim());
   if (privacy) formData.append('privacy', String(privacy));
   if (attachmentFile) formData.append('attachment', attachmentFile);
   if (attachmentType) formData.append('attachmentType', String(attachmentType));
+  if (replyTo) formData.append('replyTo', String(replyTo));
+  if (shortUrl) formData.append('shortUrl', String(shortUrl));
   return formData;
 };
 
-export const fetchCommunityPosts = async () => {
-  const response = await axios.get(`${API_BASE_URL}/api/community/posts`);
+export const fetchCommunityPosts = async ({ shortUrl } = {}) => {
+  const params = {};
+  if (shortUrl) params.shortUrl = String(shortUrl);
+  const response = await axios.get(`${API_BASE_URL}/api/community/posts`, { params });
   const list = Array.isArray(response.data?.posts) ? response.data.posts : [];
   return list.map(mapPost);
 };
 
-export const publishCommunityPost = async ({ text, privacy, attachmentFile, attachmentType }) => {
-  const payload = buildFormData({ text, privacy, attachmentFile, attachmentType });
+export const publishCommunityPost = async ({ text, privacy, attachmentFile, attachmentType, replyTo, shortUrl }) => {
+  const payload = buildFormData({ text, privacy, attachmentFile, attachmentType, replyTo, shortUrl });
   const response = await axios.post(`${API_BASE_URL}/api/community/posts`, payload);
   return mapPost(response.data?.post || {});
 };
@@ -186,6 +199,15 @@ export const hideCommunityPost = async (postId) => {
 
 export const deleteCommunityPost = async (postId) => {
   await axios.delete(`${API_BASE_URL}/api/community/posts/${postId}`);
+};
+
+export const fetchAllCommunities = async ({ search, game } = {}) => {
+  const params = {};
+  if (search) params.search = search;
+  if (game && game !== 'all') params.game = game;
+  const response = await axios.get(`${API_BASE_URL}/api/community/communities`, { params });
+  const list = Array.isArray(response.data?.communities) ? response.data.communities : [];
+  return list.map(mapCommunity);
 };
 
 export const fetchMyCommunities = async () => {
@@ -231,6 +253,7 @@ export const createCommunitySpace = async ({ formData, media, admins }) => {
   payload.append('futureTournaments', String(Boolean(formData?.futureTournaments)));
 
   payload.append('admins', JSON.stringify(Array.isArray(admins) ? admins : []));
+  payload.append('socialLinks', JSON.stringify(normalizeCommunitySocialLinks(formData?.socialLinks)));
 
   if (media?.banner?.file) payload.append('banner', media.banner.file);
   if (media?.avatar?.file) payload.append('avatar', media.avatar.file);
@@ -304,6 +327,27 @@ export const transferCommunityOwnershipByShortUrl = async (shortUrl, newOwnerUse
     { newOwnerUserId }
   );
   return mapCommunityDetailFromResponse(response);
+};
+
+export const fetchPostReplies = async (postId) => {
+  const response = await axios.get(`${API_BASE_URL}/api/community/posts/${postId}/replies`);
+  const list = Array.isArray(response.data?.replies) ? response.data.replies : [];
+  return list.map(mapPost);
+};
+
+export const searchCommunityUsers = async (q) => {
+  const response = await axios.get(`${API_BASE_URL}/api/community/users/search`, { params: { q } });
+  return Array.isArray(response.data?.users) ? response.data.users : [];
+};
+
+export const blockCommunityUser = async (userId) => {
+  const response = await axios.post(`${API_BASE_URL}/api/community/users/${userId}/block`, {});
+  return response.data;
+};
+
+export const unblockCommunityUser = async (userId) => {
+  const response = await axios.delete(`${API_BASE_URL}/api/community/users/${userId}/block`);
+  return response.data;
 };
 
 export const fetchCommunityAuditLogsByShortUrl = async (shortUrl, limit = 40) => {

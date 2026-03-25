@@ -43,6 +43,12 @@ const teamSchema = new mongoose.Schema({
         subs: [playerSchema],
         coach: playerSchema
     },
+    community: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Community',
+        default: null
+    },
+    sponsor: { type: String, trim: true, maxlength: 120, default: '' },
     inviteCode: { type: String, unique: true },
     joinRequests: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -25,6 +25,7 @@
     position: relative;
     overflow: visible;
     isolation: isolate;
+    min-width: 0;
 }
 
 .ph__strip::after {
@@ -66,6 +67,7 @@
     color: inherit;
     text-shadow: none;
     white-space: nowrap;
+    min-width: 0;
 }
 
 .ph__left {
@@ -99,10 +101,22 @@ body.theme-gray .ph__strip {
         gap: 6px;
     }
 
+    .ph__left,
     .ph__right {
         width: 100%;
+        white-space: normal;
+    }
+
+    .ph__left {
+        flex-wrap: wrap;
+        row-gap: 4px;
+        overflow-wrap: anywhere;
+    }
+
+    .ph__right {
         justify-content: flex-start;
         font-size: 0.6rem;
         letter-spacing: 0.14em;
+        overflow-wrap: anywhere;
     }
 }

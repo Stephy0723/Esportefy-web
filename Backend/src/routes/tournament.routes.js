@@ -24,7 +24,8 @@ import {
   updateStaffMember,
   removeStaffMember,
   seedFakeTeams,
-  uploadMatchProofHandler
+  uploadMatchProofHandler,
+  searchStaffCandidates
 } from '../controllers/tournament.controller.js';
 import { uploadTournamentFiles, uploadMatchProof } from '../middlewares/multer.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
@@ -40,6 +41,7 @@ router.get('/', getTournaments);
 router.get('/public/search', searchPublicTournaments);
 router.get('/public/:code', getPublicTournamentByCode);
 
+router.get('/staff-search', verifyToken, searchStaffCandidates);
 router.get('/manage/mine', verifyToken, rlManage, getManageableTournaments);
 router.post('/', verifyToken, rlCreate, uploadTournamentFiles, createTournament);
 router.get('/:code', getTournamentByCode);

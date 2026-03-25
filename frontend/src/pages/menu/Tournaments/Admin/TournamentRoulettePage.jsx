@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { useNotification } from '../../../../context/NotificationContext';
 import {
   TournamentAdminShell,
   createEmptyMatch,
@@ -615,6 +616,7 @@ const TournamentRoulettePage = () => {
   const { code } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { addToast } = useNotification();
   const liveScene = location.pathname.endsWith('/live/single')
     ? 'single'
     : location.pathname.endsWith('/live/duel')
@@ -636,10 +638,10 @@ const TournamentRoulettePage = () => {
         { bracket },
         { headers: authHeaders }
       );
-      alert('Bracket generado desde la ruleta. Redirigiendo al bracket...');
+      addToast('Bracket generado desde la ruleta. Redirigiendo...', 'success');
       navigate(`/tournaments/manage/${tournament.tournamentId}/bracket`);
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo guardar el bracket.');
+      addToast(err.response?.data?.message || 'No se pudo guardar el bracket.', 'error');
     }
   }, [code, authHeaders, navigate, tournament?.tournamentId]);
 

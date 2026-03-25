@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
+import { useNotification } from '../../../../context/NotificationContext';
 import {
   TournamentAdminShell,
   useTournamentAdminData,
@@ -44,6 +45,7 @@ const isMatchReady = (match) => {
 const TournamentMatchCenter = () => {
   const { code } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useNotification();
   const { loading, tournament, bracket, setBracket } = useTournamentAdminData(code);
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
@@ -161,7 +163,7 @@ const TournamentMatchCenter = () => {
       setProofUrl(res.data.proofUrl);
       return res.data.proofUrl;
     } catch {
-      alert('No se pudo subir la captura.');
+      addToast('No se pudo subir la captura.', 'error');
       return '';
     } finally {
       setProofUploading(false);
@@ -195,7 +197,7 @@ const TournamentMatchCenter = () => {
       let finalProofUrl = proofUrl;
       if (proofFile && !proofUrl) finalProofUrl = await uploadProof();
       if (!finalProofUrl && !selectedMatch.proofUrl) {
-        alert('Sube una captura de resultado antes de finalizar.');
+        addToast('Sube una captura de resultado antes de finalizar.', 'warning');
         return;
       }
     }
@@ -223,7 +225,7 @@ const TournamentMatchCenter = () => {
       await patchBracket(updated);
       closeEditor();
     } catch (err) {
-      alert(err.response?.data?.message || 'No se pudo guardar el resultado.');
+      addToast(err.response?.data?.message || 'No se pudo guardar el resultado.', 'error');
     } finally {
       setSaving(false);
     }
@@ -235,7 +237,7 @@ const TournamentMatchCenter = () => {
       const updated = updateMatchInBracket(match.ri, match.mi, (m) => ({ ...m, status }));
       await patchBracket(updated);
     } catch {
-      alert('No se pudo actualizar el estado.');
+      addToast('No se pudo actualizar el estado.', 'error');
     } finally {
       setSaving(false);
     }
@@ -252,7 +254,7 @@ const TournamentMatchCenter = () => {
       }));
       await patchBracket(updated);
     } catch {
-      alert('No se pudo resolver la disputa.');
+      addToast('No se pudo resolver la disputa.', 'error');
     } finally {
       setSaving(false);
     }

@@ -2,11 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     FaArrowRight,
+    FaBell,
     FaBook,
     FaCheckCircle,
     FaCreditCard,
     FaGamepad,
     FaHeadset,
+    FaMedal,
+    FaNewspaper,
     FaPlayCircle,
     FaRocket,
     FaSearch,
@@ -20,9 +23,22 @@ const DOC_CATEGORIES = [
     { id: 'all', label: 'Todo', icon: FaBook },
     { id: 'inicio', label: 'Inicio', icon: FaRocket },
     { id: 'cuenta', label: 'Cuenta', icon: FaShieldAlt },
+    { id: 'perfil', label: 'Perfil', icon: FaMedal },
     { id: 'equipos', label: 'Equipos', icon: FaUsers },
     { id: 'torneos', label: 'Torneos', icon: FaTrophy },
+    { id: 'contenido', label: 'Contenido', icon: FaNewspaper },
     { id: 'pagos', label: 'Pagos', icon: FaCreditCard },
+];
+
+const POINT_LEVELS = [
+    { name: 'Rookie', minPoints: 0 },
+    { name: 'Aspirante', minPoints: 200 },
+    { name: 'Competidor', minPoints: 500 },
+    { name: 'Estratega', minPoints: 900 },
+    { name: 'Capitan', minPoints: 1400 },
+    { name: 'Elite', minPoints: 2000 },
+    { name: 'Campeon', minPoints: 2600 },
+    { name: 'Leyenda', minPoints: 3200 },
 ];
 
 const GUIDES = [
@@ -46,6 +62,61 @@ const GUIDES = [
             'Verifica tu correo si el flujo lo solicita.',
             'Entra a tu perfil y agrega tu informacion competitiva.',
             'Explora torneos, equipos y comunidad desde el menu principal.',
+        ],
+    },
+    {
+        id: 'sistema-puntos',
+        category: 'perfil',
+        icon: FaMedal,
+        title: 'Como se distribuyen los puntos del perfil',
+        summary: 'Consulta las fuentes reales del sistema, los umbrales de nivel y que acciones pesan mas dentro del progreso competitivo.',
+        level: 'Importante',
+        time: '6 min',
+        ctaTo: '/edit-profile',
+        ctaLabel: 'Ver progreso',
+        bullets: [
+            'Los puntos se recalculan automaticamente a partir de acciones reales dentro de la plataforma.',
+            'El sistema actual usa 19 fuentes de puntos y 20 logros con progreso visible.',
+            'El bloque competitivo es el que mas empuja tu nivel frente al perfil visual o la actividad social.',
+        ],
+        steps: [
+            'Abre Editar perfil para revisar tu total, nivel actual y progreso por fuente.',
+            'Completa datos base, bio, juegos, roles, idiomas y cuentas vinculadas para cerrar la parte de perfil.',
+            'Suma comunidades, amistades y publicaciones para crecer la parte social.',
+            'Participa en torneos, juega partidas oficiales, gana matches y consigue titulos para subir mas rapido.',
+        ],
+        highlights: [
+            { label: 'Fuentes activas', value: '19', note: 'Perfil, social, equipos y competitivo.' },
+            { label: 'Logros', value: '20', note: 'Se desbloquean con progreso real.' },
+            { label: 'Niveles', value: '8', note: 'Van de Rookie a Leyenda.' },
+            { label: 'Maximo teorico', value: '3308 pts', note: 'Con la configuracion vigente del sistema.' },
+        ],
+        detailGroups: [
+            {
+                title: 'Distribucion actual',
+                items: [
+                    { label: 'Perfil', value: 'hasta 208 pts' },
+                    { label: 'Social', value: 'hasta 300 pts' },
+                    { label: 'Equipos', value: 'hasta 300 pts' },
+                    { label: 'Competitivo', value: 'hasta 2500 pts' },
+                ],
+            },
+            {
+                title: 'Fuentes que mas pesan',
+                items: [
+                    { label: 'Titulos de campeon', value: '250 pts por titulo, max 1250' },
+                    { label: 'Torneos jugados', value: '100 pts por torneo, max 500' },
+                    { label: 'Victorias oficiales', value: '50 pts por victoria, max 500' },
+                    { label: 'Capitanias', value: '75 pts por equipo liderado, max 150' },
+                ],
+            },
+            {
+                title: 'Niveles vigentes',
+                items: POINT_LEVELS.map((level) => ({
+                    label: level.name,
+                    value: `desde ${level.minPoints} pts`,
+                })),
+            },
         ],
     },
     {
@@ -137,6 +208,93 @@ const GUIDES = [
         ],
     },
     {
+        id: 'crear-noticias',
+        category: 'contenido',
+        icon: FaNewspaper,
+        title: 'Crear y publicar noticias',
+        summary: 'Publica al feed desde el editor interno con imagenes locales, resumen automatico y control de categoria, juego y portada.',
+        level: 'Editor',
+        time: '5 min',
+        ctaTo: '/noticias',
+        ctaLabel: 'Abrir noticias',
+        bullets: [
+            'El boton Crear noticia vive dentro del modulo de noticias.',
+            'Solo pueden publicar usuarios admin o con rol content-creator.',
+            'El resumen del feed y los bloques de detalle se generan automaticamente desde el texto base.',
+        ],
+        steps: [
+            'Entra a Noticias y pulsa Crear noticia.',
+            'Completa titular, categoria, juego y decide si quieres marcarla como primicia.',
+            'Sube una imagen principal, agrega galeria opcional, tags y el texto base completo.',
+            'Revisa la previsualizacion y publica para que la noticia entre al feed.',
+        ],
+        highlights: [
+            { label: 'Permisos', value: 'Admin o content-creator', note: 'Sin ese rol el boton queda bloqueado.' },
+            { label: 'Minimo para publicar', value: 'Titular + imagen + contenido', note: 'Es lo que el flujo valida antes de guardar.' },
+            { label: 'Imagenes', value: 'JPG, PNG o WEBP', note: 'Cada archivo debe pesar menos de 8MB.' },
+            { label: 'Galeria', value: 'Hasta 5 extras', note: 'La portada se maneja aparte.' },
+        ],
+        detailGroups: [
+            {
+                title: 'Campos del editor',
+                items: [
+                    { label: 'Texto', value: 'titular, autor, empresa, fecha y tags' },
+                    { label: 'Clasificacion', value: 'categoria, juego y bandera de primicia' },
+                    { label: 'Media', value: 'portada obligatoria y galeria opcional' },
+                    { label: 'Contenido', value: 'texto base para resumen y detalle automatico' },
+                ],
+            },
+            {
+                title: 'Datos utiles del modulo',
+                items: [
+                    { label: 'Ruta', value: '/noticias' },
+                    { label: 'Categorias', value: 'Torneos, Competitivo, Eventos, Institucional y Equipos' },
+                    { label: 'Juegos', value: 'MLBB, Valorant, LoL o Multigame' },
+                    { label: 'Publicacion', value: 'entra al feed apenas se guarda' },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'newsletter-alertas',
+        category: 'contenido',
+        icon: FaBell,
+        title: 'Newsletter y alertas de noticias',
+        summary: 'Activa correos y usa el buzon para seguir el feed sin perder resumenes, publicaciones nuevas o movimientos del modulo.',
+        level: 'Util',
+        time: '3 min',
+        ctaTo: '/noticias',
+        ctaLabel: 'Ver newsletter',
+        bullets: [
+            'La suscripcion al newsletter se hace desde la misma pagina de noticias.',
+            'La app tambien puede dejar avisos dentro del buzon cuando llegan resumenes o noticias nuevas.',
+            'Puedes darte de baja desde el enlace de cancelacion que llega al correo.',
+        ],
+        steps: [
+            'Abre Noticias y baja hasta el bloque Newsletter.',
+            'Escribe tu correo y confirma la suscripcion.',
+            'Consulta el feed o tus notificaciones cuando llegue un resumen o una noticia nueva.',
+            'Si ya no lo quieres, usa el enlace de baja del correo para cancelar.',
+        ],
+        highlights: [
+            { label: 'Alta', value: 'Desde /noticias', note: 'El formulario vive dentro del modulo.' },
+            { label: 'Canal', value: 'Correo y buzon', note: 'Segun tu sesion y suscripcion activa.' },
+            { label: 'Resumen', value: 'Diario', note: 'El servicio esta configurado como envio recurrente.' },
+            { label: 'Baja', value: 'Automatica', note: 'Cada correo incluye la salida del newsletter.' },
+        ],
+        detailGroups: [
+            {
+                title: 'Datos utiles del feed',
+                items: [
+                    { label: 'Busqueda', value: 'por titulo, extracto, categoria o juego' },
+                    { label: 'Filtros', value: 'categoria, juego y orden reciente o popular' },
+                    { label: 'Acciones', value: 'guardar, dar like y compartir enlaces' },
+                    { label: 'Detalle', value: 'cada noticia abre vista propia con galeria y relacionadas' },
+                ],
+            },
+        ],
+    },
+    {
         id: 'pagos-retiros',
         category: 'pagos',
         icon: FaCreditCard,
@@ -160,7 +318,15 @@ const GUIDES = [
     },
 ];
 
+const DOC_STATS = [
+    { value: GUIDES.length, label: 'Guias publicadas' },
+    { value: '19', label: 'Fuentes reales de puntos' },
+    { value: '5', label: 'Imagenes extra por noticia' },
+];
+
 const QUICK_LINKS = [
+    { label: 'Ver progreso', to: '/edit-profile', icon: FaMedal },
+    { label: 'Noticias y editor', to: '/noticias', icon: FaNewspaper },
     { label: 'Centro de ayuda', to: '/support', icon: FaHeadset },
     { label: 'Configurar cuenta', to: '/settings', icon: FaShieldAlt },
     { label: 'Explorar torneos', to: '/torneos', icon: FaTrophy },
@@ -170,7 +336,7 @@ const QUICK_LINKS = [
 const DocsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
-    const [selectedGuideId, setSelectedGuideId] = useState(GUIDES[0].id);
+    const [selectedGuideId, setSelectedGuideId] = useState('sistema-puntos');
 
     const filteredGuides = useMemo(() => {
         return GUIDES.filter((guide) => {
@@ -201,8 +367,8 @@ const DocsPage = () => {
                     </div>
                     <h1>Documentacion, guias y tutoriales</h1>
                     <p>
-                        Reune lo esencial para empezar en GLITCH GANG, organizar tu equipo, competir en
-                        torneos y resolver dudas comunes desde una sola ruta.
+                        Reune lo esencial para empezar en GLITCH GANG, entender como suben los puntos,
+                        publicar noticias, competir en torneos y resolver dudas comunes desde una sola ruta.
                     </p>
 
                     <div className="docs-search">
@@ -217,18 +383,12 @@ const DocsPage = () => {
                 </div>
 
                 <div className="docs-hero__stats">
-                    <div className="docs-stat">
-                        <strong>{GUIDES.length}</strong>
-                        <span>Guias publicadas</span>
-                    </div>
-                    <div className="docs-stat">
-                        <strong>24/7</strong>
-                        <span>Apoyo del equipo de soporte</span>
-                    </div>
-                    <div className="docs-stat">
-                        <strong>5 min</strong>
-                        <span>Lectura promedio</span>
-                    </div>
+                    {DOC_STATS.map((stat) => (
+                        <div key={stat.label} className="docs-stat">
+                            <strong>{stat.value}</strong>
+                            <span>{stat.label}</span>
+                        </div>
+                    ))}
                 </div>
             </section>
 
@@ -328,6 +488,37 @@ const DocsPage = () => {
                                     ))}
                                 </ol>
                             </div>
+
+                            {Array.isArray(activeGuide.highlights) && activeGuide.highlights.length > 0 && (
+                                <div className="docs-detail__section">
+                                    <h3>Datos clave</h3>
+                                    <div className="docs-facts">
+                                        {activeGuide.highlights.map((item) => (
+                                            <article key={`${item.label}-${item.value}`} className="docs-fact-card">
+                                                <span>{item.label}</span>
+                                                <strong>{item.value}</strong>
+                                                {item.note && <p>{item.note}</p>}
+                                            </article>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {Array.isArray(activeGuide.detailGroups) && activeGuide.detailGroups.length > 0 && (
+                                activeGuide.detailGroups.map((group) => (
+                                    <div key={group.title} className="docs-detail__section">
+                                        <h3>{group.title}</h3>
+                                        <ul className="docs-reference-list">
+                                            {group.items.map((item) => (
+                                                <li key={`${item.label}-${item.value}`}>
+                                                    <strong>{item.label}</strong>
+                                                    <span>{item.value}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))
+                            )}
 
                             <Link to={activeGuide.ctaTo} className="docs-detail__cta">
                                 <span>{activeGuide.ctaLabel}</span>

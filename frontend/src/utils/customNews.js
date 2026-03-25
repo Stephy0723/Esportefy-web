@@ -8,8 +8,18 @@ export const DEFAULT_NEWS_EDITORIAL = 'Mesa Editorial GLITCH GANG';
 export const MAX_NEWS_IMAGE_BYTES = 8 * 1024 * 1024;
 export const MAX_NEWS_GALLERY_ITEMS = 5;
 export const ALLOWED_NEWS_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const STATIC_NEWS_ID_ALIASES = new Map([
+  ['static-1', '1'],
+  ['static-2', '2'],
+  ['static-3', '4'],
+  ['static-4', '11'],
+  ['static-5', '9'],
+]);
 
 const normalizeInlineText = (value = '') => String(value).replace(/\s+/g, ' ').trim();
+const normalizeNewsId = (value = '') => String(value || '').trim();
+const resolveNewsLookupId = (value = '') => STATIC_NEWS_ID_ALIASES.get(normalizeNewsId(value)) || normalizeNewsId(value);
+const isMongoObjectId = (value = '') => /^[a-f0-9]{24}$/i.test(normalizeNewsId(value));
 
 const readFileAsDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -136,11 +146,156 @@ export const getNewsImageValidationMessage = (file) => {
   return '';
 };
 
+const getNewsTimestamp = (item = {}) => {
+  const rawValue = item.createdAt || item.date || '';
+  if (!rawValue) return 0;
+
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(String(rawValue))
+    ? `${rawValue}T00:00:00`
+    : rawValue;
+
+  const timestamp = Date.parse(normalizedValue);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const mergeNewsRecords = (primaryItem = {}, fallbackItem = {}) => {
+  const primary = normalizeNewsItem(primaryItem);
+  const fallback = normalizeNewsItem(fallbackItem);
+
+  return normalizeNewsItem({
+    ...fallback,
+    ...primary,
+    id: normalizeNewsId(primary.id) || normalizeNewsId(fallback.id),
+    title: primary.title || fallback.title,
+    excerpt: primary.excerpt || fallback.excerpt,
+    category: primary.category || fallback.category,
+    game: primary.game || fallback.game,
+    author: primary.author || fallback.author,
+    company: primary.company || fallback.company,
+    date: primary.date || fallback.date,
+    image: primary.image || fallback.image,
+    views: Number(primary.views) > 0 ? primary.views : fallback.views,
+    comments: Number(primary.comments) > 0 ? primary.comments : fallback.comments,
+    tags: Array.isArray(primary.tags) && primary.tags.length ? primary.tags : fallback.tags,
+    details: Array.isArray(primary.details) && primary.details.length ? primary.details : fallback.details,
+    gallery: Array.isArray(primary.gallery) && primary.gallery.length ? primary.gallery : fallback.gallery,
+  });
+};
+
+const normalizeNewsItem = (item = {}) => {
+  const normalizedImage = normalizeInlineText(item.image);
+  const normalizedExcerpt = normalizeInlineText(
+    item.excerpt
+    || (Array.isArray(item.details) ? item.details[0] : '')
+    || ''
+  );
+  const normalizedDetails = Array.isArray(item.details)
+    ? item.details.map((detail) => normalizeInlineText(detail)).filter(Boolean)
+    : [];
+  const normalizedDate = normalizeInlineText(item.date)
+    || (item.createdAt ? String(item.createdAt).slice(0, 10) : '');
+  const normalizedGallery = parseGalleryInput(
+    Array.isArray(item.gallery) ? item.gallery : [],
+    normalizedImage
+  );
+  const explicitViews = Number(item.views);
+  const explicitComments = Number(item.comments);
+  const hasDate = Boolean(normalizedDate);
+  const hasViews = Number.isFinite(explicitViews) && explicitViews > 0;
+
+  return {
+    ...item,
+    id: resolveNewsLookupId(item._id || item.id),
+    title: normalizeInlineText(item.title),
+    excerpt: normalizedExcerpt,
+    category: normalizeInlineText(item.category) || 'Institucional',
+    game: normalizeInlineText(item.game) || 'Multigame',
+    author: normalizeInlineText(item.author),
+    company: normalizeInlineText(item.company),
+    date: normalizedDate,
+    image: normalizedImage,
+    views: hasViews ? Math.trunc(explicitViews) : 0,
+    comments: Number.isFinite(explicitComments) && explicitComments > 0 ? Math.trunc(explicitComments) : 0,
+    tags: Array.isArray(item.tags)
+      ? item.tags.map((tag) => normalizeInlineText(tag)).filter(Boolean)
+      : [],
+    details: normalizedDetails.length
+      ? normalizedDetails
+      : createNewsDetails(normalizedExcerpt),
+    gallery: normalizedGallery.length
+      ? normalizedGallery
+      : [normalizedImage].filter(Boolean),
+    isNew: Boolean(item.isNew) || !hasDate || !hasViews,
+  };
+};
+
+const sortNewsItems = (items = []) => (
+  [...items].sort((a, b) => getNewsTimestamp(b) - getNewsTimestamp(a))
+);
+
+const mergeNewsItems = (...groups) => {
+  const records = new Map();
+  const aliases = new Map();
+
+  groups
+    .flat()
+    .forEach((item) => {
+      const normalizedItem = normalizeNewsItem(item);
+      const normalizedId = normalizeNewsId(normalizedItem.id);
+      const normalizedTitle = normalizeInlineText(normalizedItem.title).toLowerCase();
+      const existingKey = [normalizedId, normalizedTitle]
+        .filter(Boolean)
+        .map((alias) => aliases.get(alias))
+        .find(Boolean);
+      const canonicalKey = existingKey || normalizedId || normalizedTitle;
+
+      if (!normalizedItem.title) return;
+
+      if (existingKey) {
+        const mergedItem = mergeNewsRecords(records.get(existingKey), normalizedItem);
+        records.set(existingKey, mergedItem);
+
+        const mergedId = normalizeNewsId(mergedItem.id);
+        const mergedTitle = normalizeInlineText(mergedItem.title).toLowerCase();
+        [mergedId, mergedTitle].filter(Boolean).forEach((alias) => aliases.set(alias, existingKey));
+        return;
+      }
+
+      records.set(canonicalKey, normalizedItem);
+      [normalizedId, normalizedTitle].filter(Boolean).forEach((alias) => aliases.set(alias, canonicalKey));
+    });
+
+  return sortNewsItems([...records.values()]);
+};
+
+const matchesNewsFilters = (item = {}, { category, game, search } = {}) => {
+  if (category && category !== 'Todos' && item.category !== category) return false;
+  if (game && game !== 'Todos' && item.game !== game) return false;
+
+  const normalizedSearch = normalizeInlineText(search).toLowerCase();
+  if (!normalizedSearch) return true;
+
+  const haystack = [
+    item.title,
+    item.excerpt,
+    item.author,
+    item.company,
+    item.category,
+    item.game,
+  ]
+    .map((value) => normalizeInlineText(value).toLowerCase())
+    .join(' ');
+
+  return haystack.includes(normalizedSearch);
+};
+
 // ── Fallback síncrono (solo datos estáticos) ──────────────────
-export const getNewsFeed = () => NEWS;
+export const getNewsFeed = () => mergeNewsItems(NEWS);
 
 // ── API: obtener noticias (DB + estáticas) ────────────────────
 export const fetchNewsFeed = async ({ category, game, search } = {}) => {
+  const staticItems = getNewsFeed().filter((item) => matchesNewsFilters(item, { category, game, search }));
+
   try {
     const params = new URLSearchParams();
     if (category && category !== 'Todos') params.set('category', category);
@@ -149,10 +304,11 @@ export const fetchNewsFeed = async ({ category, game, search } = {}) => {
     params.set('limit', '100');
 
     const { data } = await axios.get(`${API_URL}/api/news?${params}`);
-    return Array.isArray(data?.items) ? data.items : NEWS;
+    const apiItems = Array.isArray(data?.items) ? data.items : [];
+    return mergeNewsItems(apiItems, staticItems);
   } catch {
     // Si el backend no está disponible, devolver estáticas
-    return NEWS;
+    return staticItems;
   }
 };
 
@@ -173,12 +329,20 @@ export const saveCustomNews = async (article) => {
 
 // ── API: obtener noticia por ID ───────────────────────────────
 export const fetchNewsById = async (id) => {
+  const lookupId = resolveNewsLookupId(id);
+
+  if (!isMongoObjectId(lookupId)) {
+    return getNewsFeed().find((newsItem) => normalizeNewsId(newsItem.id) === lookupId) || null;
+  }
+
   try {
-    const { data } = await axios.get(`${API_URL}/api/news/${id}`);
-    return data;
+    if (isMongoObjectId(lookupId)) {
+      const { data } = await axios.get(`${API_URL}/api/news/${lookupId}`);
+      return normalizeNewsItem(data);
+    }
   } catch {
     // Fallback: buscar en estáticas
-    return NEWS.find((n) => String(n.id) === String(id)) || null;
+    return getNewsFeed().find((newsItem) => normalizeNewsId(newsItem.id) === lookupId) || null;
   }
 };
 

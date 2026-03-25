@@ -128,9 +128,11 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
             {!isClosed && <p className="sb-section-title">MENÚ</p>}
             <ul className="sb-list">
               {MAIN_LINKS.map(renderLink)}
+              {user?.isAdmin && renderLink({ to: '/admin', icon: 'bx-shield-quarter', label: 'Admin' })}
             </ul>
             <ul className="sb-list sb-mobile-only">
               {MOBILE_EXTRA_LINKS.map(renderLink)}
+              {user?.isAdmin && renderLink({ to: '/admin', icon: 'bx-shield-quarter', label: 'Admin Panel' })}
             </ul>
           </div>
 

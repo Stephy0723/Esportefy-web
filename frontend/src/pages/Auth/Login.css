@@ -371,3 +371,42 @@ color: var(--text-main) !important;
         font-size: 1.45rem;
     }
 }
+
+/* ── Auth shared utility classes ── */
+.auth-error-msg {
+    color: #ff4d4d;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255, 77, 77, 0.08);
+    border: 1px solid rgba(255, 77, 77, 0.2);
+}
+
+.auth-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 5px;
+}
+
+.auth-back-link {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 15px;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.auth-back-link:hover {
+    opacity: 0.8;
+}
+
+.auth-back-link:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+}

@@ -64,7 +64,6 @@ import OrganizerPage from './pages/menu/Community/organizers/OrganizerPage';
 import CommunityTemplate from './pages/menu/Community/CommunityTemplate/CommunityTemplateV2';
 import CommunityAdminTemplate from './pages/menu/Community/CommunityAdminTemplate/CommunityAdminTemplate';
 import CommunityGamePageTemplate from './pages/Game/CommunityGamePageTemplate';
-import CommunitySpacePage from './pages/menu/Community/groups/CommunitySpacePage';
 import ContentCreatorPage from './pages/menu/Roles/ContentCreatorPage';
 import CoachPage from './pages/menu/Roles/CoachPage';
 import CasterPage from './pages/menu/Roles/CasterPage';
@@ -72,6 +71,7 @@ import SponsorPage from './pages/menu/Roles/SponsorPage';
 import AnalystPage from './pages/menu/Roles/AnalystPage';
 import AdminPanel from './pages/menu/Admin/AdminPanel';
 import StatsPage from './pages/Stats/StatsPage';
+import StatusPage from './pages/Status/StatusPage';
 
 
 const MainLayout = () => {
@@ -124,6 +124,7 @@ const AppRouterContent = () => {
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/review/riot" element={<RiotReviewPage />} />
           <Route path="/support" element={<SupportPage />} />
+          <Route path="/status" element={<StatusPage />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/CalendarPage" element={<CalendarPage />} />
           <Route path="/legal/organizer-terms" element={<OrganizerTerms />} />
@@ -175,7 +176,7 @@ const AppRouterContent = () => {
             <Route path="/university" element={<UniversityPage />} />
             <Route path="/game/:gameId" element={<CommunityGamePageTemplate />} />
             <Route path="/community/:slug" element={<CommunityTemplate />} />
-            <Route path="/communities/:shortUrl" element={<CommunitySpacePage />} />
+            <Route path="/communities/:shortUrl" element={<CommunityTemplate />} />
             <Route path="/community/:id/admin" element={<CommunityAdminTemplate />} />
             <Route path="/group/:id" element={<GroupPage />} />
             <Route path="/organizer/:id" element={<OrganizerPage />} />

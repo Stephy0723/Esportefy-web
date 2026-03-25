@@ -208,7 +208,7 @@ const Profile = () => {
             const token = getAuthToken();
             const res = await axios.get(`${API_URL}/api/auth/user-card/${friend.id}`, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedFriend(prev => ({ ...(prev || {}), ...(res.data || {}) }));
-        } catch (err) { console.error('No se pudo cargar la tarjeta del amigo:', err); }
+        } catch {}
         finally { setSelectedFriendLoading(false); }
     };
 
@@ -410,6 +410,7 @@ const Profile = () => {
                             {user.university?.verified && <span className="pf-verified"><i className='bx bxs-check-circle' /></span>}
                         </div>
                         {user.fullName && <p className="pf-identity__realname">{user.fullName}</p>}
+                        {user.userCode && <span className="pf-identity__code">#{user.userCode}</span>}
                         <div className="pf-tags">
                             <span className="pf-tag"><i className='bx bx-joystick' /> Player</span>
                             {(user.roles || []).includes('organizer') || user.isOrganizer ? (
@@ -478,19 +479,19 @@ const Profile = () => {
                             <span className="pf-stat__label">EQUIPOS</span>
                         </div>
                     </div>
-                </motion.div>
 
-                {mainGame && (
-                    <motion.div className="pf-hero__game" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-                        <div className="pf-game-card" onClick={() => setSelectedGame(mainGameData || { id: mainGame, name: mainGameName, img: mainGameImg })}>
-                            <img src={mainGameImg} alt={mainGameName} />
-                            <div className="pf-game-card__info">
-                                <span className="pf-game-card__badge">MAIN</span>
-                                <span className="pf-game-card__name">{mainGameName}</span>
+                    {mainGame && (
+                        <div className="pf-hero__game">
+                            <div className="pf-game-card" onClick={() => setSelectedGame(mainGameData || { id: mainGame, name: mainGameName, img: mainGameImg })}>
+                                <img src={mainGameImg} alt={mainGameName} />
+                                <div className="pf-game-card__info">
+                                    <span className="pf-game-card__badge">MAIN</span>
+                                    <span className="pf-game-card__name">{mainGameName}</span>
+                                </div>
                             </div>
                         </div>
-                    </motion.div>
-                )}
+                    )}
+                </motion.div>
             </section>
 
             {/* ═══ MAIN GRID ═══ */}

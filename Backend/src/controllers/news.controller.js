@@ -1,9 +1,18 @@
 import News from '../models/News.js';
+import User from '../models/User.js';
 
 // ── helpers ────────────────────────────────────────────────────
 const clampInt = (raw, min, max, fallback) => {
   const n = Number(raw);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.trunc(n))) : fallback;
+};
+
+const canManageNews = async (userId) => {
+  const user = await User.findById(userId).select('isAdmin roles').lean();
+  if (!user) return false;
+  if (user.isAdmin) return true;
+  if (Array.isArray(user.roles) && user.roles.includes('content-creator')) return true;
+  return false;
 };
 
 // ── GET /api/news ─────────────────────────────────────────────
@@ -70,16 +79,20 @@ export const getNewsById = async (req, res) => {
   }
 };
 
-// ── POST /api/news ────────────────────────────────────────────
+// ── POST /api/news (admin only) ─────────────────────────────
 export const createNews = async (req, res) => {
   try {
+    if (!(await canManageNews(req.userId))) {
+      return res.status(403).json({ message: 'Necesitas ser administrador o creador de contenido para publicar noticias' });
+    }
+
     const {
       title, excerpt, category, game, author, company,
       date, image, featured, tags, details, gallery,
     } = req.body;
 
     if (!title || !image) {
-      return res.status(400).json({ message: 'Título e imagen son requeridos' });
+      return res.status(400).json({ message: 'Titulo e imagen son requeridos' });
     }
 
     const news = new News({
@@ -112,16 +125,16 @@ export const createNews = async (req, res) => {
   }
 };
 
-// ── PUT /api/news/:id ─────────────────────────────────────────
+// ── PUT /api/news/:id (admin only) ──────────────────────────
 export const updateNews = async (req, res) => {
   try {
+    if (!(await canManageNews(req.userId))) {
+      return res.status(403).json({ message: 'Necesitas ser administrador o creador de contenido para editar noticias' });
+    }
+
     const news = await News.findById(req.params.id);
     if (!news) {
       return res.status(404).json({ message: 'Noticia no encontrada' });
-    }
-
-    if (String(news.createdBy) !== String(req.userId)) {
-      return res.status(403).json({ message: 'No autorizado' });
     }
 
     const allowed = ['title', 'excerpt', 'category', 'game', 'author', 'company', 'date', 'image', 'featured', 'tags', 'details', 'gallery'];
@@ -139,16 +152,16 @@ export const updateNews = async (req, res) => {
   }
 };
 
-// ── DELETE /api/news/:id ──────────────────────────────────────
+// ── DELETE /api/news/:id (admin only) ────────────────────────
 export const deleteNews = async (req, res) => {
   try {
+    if (!(await canManageNews(req.userId))) {
+      return res.status(403).json({ message: 'Necesitas ser administrador o creador de contenido para eliminar noticias' });
+    }
+
     const news = await News.findById(req.params.id);
     if (!news) {
       return res.status(404).json({ message: 'Noticia no encontrada' });
-    }
-
-    if (String(news.createdBy) !== String(req.userId)) {
-      return res.status(403).json({ message: 'No autorizado' });
     }
 
     await News.findByIdAndDelete(req.params.id);
@@ -156,5 +169,20 @@ export const deleteNews = async (req, res) => {
   } catch (error) {
     console.error('deleteNews error:', error);
     return res.status(500).json({ message: 'Error eliminando noticia' });
+  }
+};
+
+// ── DELETE /api/news/all (admin only — borrar todas) ─────────
+export const deleteAllNews = async (req, res) => {
+  try {
+    if (!(await canManageNews(req.userId))) {
+      return res.status(403).json({ message: 'Necesitas ser administrador o creador de contenido para eliminar noticias' });
+    }
+
+    const result = await News.deleteMany({});
+    return res.json({ message: `${result.deletedCount} noticias eliminadas` });
+  } catch (error) {
+    console.error('deleteAllNews error:', error);
+    return res.status(500).json({ message: 'Error eliminando noticias' });
   }
 };

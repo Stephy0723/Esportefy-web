@@ -5,7 +5,9 @@ import mongoose from 'mongoose';
 import CommunityPost from '../models/CommunityPost.js';
 import Community from '../models/Community.js';
 import User from '../models/User.js';
-import { normalizeCommunityGameId, normalizeCommunityGameIds } from '../utils/communityGames.js';
+import { normalizeCommunityGameId, normalizeCommunityGameIds, getGameNameVariants } from '../utils/communityGames.js';
+import Team from '../models/Team.js';
+import Tournament from '../models/Tournament.js';
 
 const UPLOAD_DIR = './uploads/community/';
 const POST_MAX_LENGTH = 1200;
@@ -35,6 +37,7 @@ const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const COMMUNITY_SLUG_REGEX = /^[a-z0-9-]{3,50}$/;
 const COMMUNITY_MANAGEABLE_ROLES = new Set(['member', 'moderator', 'admin']);
 const COMMUNITY_AUDIT_LOG_LIMIT = 200;
+const COMMUNITY_SOCIAL_LINK_KEYS = ['website', 'discord', 'twitter', 'instagram', 'youtube', 'twitch', 'tiktok'];
 
 const ensureUploadDir = () => {
   if (!fs.existsSync(UPLOAD_DIR)) {
@@ -98,6 +101,32 @@ const parseBooleanMap = (value, allowedKeys = []) => {
   }, {});
 };
 
+const sanitizeUrl = (value, maxLength = 240) => {
+  const raw = String(value || '').trim().slice(0, maxLength);
+  if (!raw) return '';
+
+  const normalized = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, '')}`;
+
+  try {
+    const parsed = new URL(normalized);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return parsed.toString();
+  } catch (_) {
+    return '';
+  }
+};
+
+const parseCommunitySocialLinks = (value) => {
+  const raw = parseJsonField(value, {});
+  if (!raw || typeof raw !== 'object') return {};
+
+  return COMMUNITY_SOCIAL_LINK_KEYS.reduce((acc, key) => {
+    const normalized = sanitizeUrl(raw[key]);
+    if (normalized) acc[key] = normalized;
+    return acc;
+  }, {});
+};
+
 const toDateOrNull = (value) => {
   if (!value) return null;
   const date = new Date(value);
@@ -147,14 +176,96 @@ const buildFileUrl = (req, filename) => {
   return `${req.protocol}://${req.get('host')}/uploads/community/${filename}`;
 };
 
+const COMMUNITY_USER_SELECT = 'username fullName avatar connections.steam.avatar';
+
+const resolveUserAvatar = (userDoc) => {
+  const candidates = [
+    userDoc?.avatar,
+    userDoc?.connections?.steam?.avatar
+  ];
+
+  return candidates.find((value) => String(value || '').trim()) || '';
+};
+
 const toUserPayload = (userDoc) => {
   if (!userDoc) return { id: null, username: 'Usuario', fullName: 'Usuario', avatar: '' };
   return {
     id: String(userDoc._id || ''),
     username: userDoc.username || userDoc.fullName || 'Usuario',
     fullName: userDoc.fullName || userDoc.username || 'Usuario',
-    avatar: userDoc.avatar || ''
+    avatar: resolveUserAvatar(userDoc)
   };
+};
+
+/* ─── Mention & Hashtag parsing ─── */
+const MENTION_REGEX = /@([a-zA-Z0-9_.-]{2,30})/g;
+const HASHTAG_REGEX = /#([a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ_]{1,40})/g;
+
+const extractMentionUsernames = (text) => {
+  if (!text) return [];
+  const matches = [...text.matchAll(MENTION_REGEX)];
+  return [...new Set(matches.map((m) => m[1].toLowerCase()))];
+};
+
+const extractHashtags = (text) => {
+  if (!text) return [];
+  const matches = [...text.matchAll(HASHTAG_REGEX)];
+  return [...new Set(matches.map((m) => m[1].toLowerCase()))];
+};
+
+const resolveMentionedUsers = async (usernames) => {
+  if (!usernames.length) return [];
+  const regexArr = usernames.map((u) => new RegExp(`^${u}$`, 'i'));
+  return User.find({ username: { $in: regexArr } }).select('_id username').lean();
+};
+
+const sendMentionNotifications = async (mentionedUsers, authorId, authorUsername, postId, textSnippet) => {
+  const snippet = (textSnippet || '').slice(0, 100);
+  const bulkOps = mentionedUsers
+    .filter((u) => String(u._id) !== String(authorId))
+    .map((u) => ({
+      updateOne: {
+        filter: { _id: u._id },
+        update: {
+          $push: {
+            notifications: {
+              type: 'social',
+              category: 'social',
+              title: `${authorUsername} te mencionó`,
+              source: 'Hub',
+              message: snippet ? `"${snippet}..."` : 'Te mencionaron en una publicación',
+              status: 'unread',
+              meta: { postId: String(postId), authorId: String(authorId) },
+              visuals: { icon: 'bx-at', color: '#f093fb', glow: false },
+              createdAt: new Date()
+            }
+          }
+        }
+      }
+    }));
+  if (bulkOps.length) await User.bulkWrite(bulkOps);
+};
+
+const sendReplyNotification = async (originalAuthorId, replierUsername, postId, textSnippet) => {
+  const snippet = (textSnippet || '').slice(0, 100);
+  await User.updateOne(
+    { _id: originalAuthorId },
+    {
+      $push: {
+        notifications: {
+          type: 'social',
+          category: 'social',
+          title: `${replierUsername} respondió a tu mensaje`,
+          source: 'Hub',
+          message: snippet ? `"${snippet}..."` : 'Tienes una nueva respuesta',
+          status: 'unread',
+          meta: { postId: String(postId) },
+          visuals: { icon: 'bx-reply', color: '#4facfe', glow: false },
+          createdAt: new Date()
+        }
+      }
+    }
+  );
 };
 
 const toCommentPayload = (commentDoc, userId) => {
@@ -178,12 +289,29 @@ const toPostPayload = (postDoc, userId) => {
   const likedByMe = likes.some((likedUserId) => String(likedUserId) === String(userId));
   const isOwner = String(postDoc.author?._id || postDoc.author) === String(userId);
 
+  let replyToData = null;
+  if (postDoc.replyTo) {
+    const rt = postDoc.replyTo;
+    if (rt._id) {
+      replyToData = {
+        id: String(rt._id),
+        author: toUserPayload(rt.author),
+        text: (rt.text || '').slice(0, 120)
+      };
+    } else {
+      replyToData = { id: String(rt) };
+    }
+  }
+
   return {
     id: String(postDoc._id),
     author: toUserPayload(postDoc.author),
     text: postDoc.text || '',
     privacy: postDoc.privacy || 'Public',
     attachment: postDoc.attachment || null,
+    replyTo: replyToData,
+    mentions: Array.isArray(postDoc.mentions) ? postDoc.mentions.map((m) => (m._id ? toUserPayload(m) : String(m))) : [],
+    hashtags: Array.isArray(postDoc.hashtags) ? postDoc.hashtags : [],
     likesCount: likes.length,
     likedByMe,
     commentsCount: comments.length,
@@ -214,6 +342,11 @@ const toCommunityPayload = (communityDoc, userId) => {
     region: communityDoc.region || 'LATAM',
     language: communityDoc.language || 'Español',
     mainGames: Array.isArray(communityDoc.mainGames) ? communityDoc.mainGames : [],
+    socialLinks: COMMUNITY_SOCIAL_LINK_KEYS.reduce((acc, key) => {
+      const value = String(communityDoc.socialLinks?.[key] || '').trim();
+      if (value) acc[key] = value;
+      return acc;
+    }, {}),
     createdAt: communityDoc.createdAt,
     isOwner,
     joined,
@@ -462,7 +595,8 @@ const parseCommunityPayload = (body) => {
     welcomeEmail: toBoolean(body?.welcomeEmail, true),
     futureEvents: toBoolean(body?.futureEvents, false),
     futureTournaments: toBoolean(body?.futureTournaments, false),
-    admins: normalizeAdmins(body?.admins)
+    admins: normalizeAdmins(body?.admins),
+    socialLinks: parseCommunitySocialLinks(body?.socialLinks)
   };
 };
 
@@ -527,6 +661,7 @@ export const createCommunity = async (req, res) => {
       futureEvents: parsed.futureEvents,
       futureTournaments: parsed.futureTournaments,
       admins: parsed.admins,
+      socialLinks: parsed.socialLinks,
       media,
 
       createdBy: req.userId,
@@ -552,6 +687,39 @@ export const createCommunity = async (req, res) => {
       return res.status(409).json({ message: 'La URL corta ya está en uso' });
     }
     return res.status(500).json({ message: 'Error al crear comunidad', error: error.message });
+  }
+};
+
+export const listCommunities = async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(Number(req.query?.limit || 50), 1), 100);
+    const search = (req.query?.search || '').trim();
+    const game = (req.query?.game || '').trim();
+
+    const filter = { isActive: true };
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+    if (game && game !== 'all') {
+      filter.mainGames = { $in: [game] };
+    }
+
+    const communities = await Community.find(filter)
+      .sort({ membersCount: -1, createdAt: -1 })
+      .limit(limit)
+      .populate('createdBy', 'username fullName avatar');
+
+    return res.status(200).json({
+      communities: communities.map((c) => ({
+        ...toCommunityPayload(c, req.userId),
+        createdBy: toUserPayload(c.createdBy),
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al listar comunidades', error: error.message });
   }
 };
 
@@ -1036,24 +1204,162 @@ export const joinGameHub = async (req, res) => {
   }
 };
 
+// ── GET /api/community/games/:gameId/details ──────────────────────
+export const getGameHubDetails = async (req, res) => {
+  try {
+    const gameId = normalizeCommunityGameId(req.params?.gameId);
+    if (!gameId) {
+      return res.status(400).json({ message: 'Juego invalido' });
+    }
+
+    const nameVariants = getGameNameVariants(gameId);
+    // Build regex that matches any variant (case-insensitive)
+    const escapedVariants = nameVariants.map((v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const variantsRegex = new RegExp(`^(${escapedVariants.join('|')})$`, 'i');
+
+    const viewer = await User.findById(req.userId).select('communityGameSubscriptions').lean();
+    const joinedIds = getNormalizedUserGameSubscriptions(viewer);
+
+    const [aggregatedStats, teams, tournaments, communities] = await Promise.all([
+      aggregateCommunityGameSubscriptions(),
+
+      Team.find({ game: { $regex: variantsRegex } })
+        .populate('captain', 'username fullName avatar')
+        .sort({ createdAt: -1 })
+        .limit(12)
+        .lean(),
+
+      Tournament.find({ game: { $regex: variantsRegex }, status: { $ne: 'draft' } })
+        .populate('organizer', 'username fullName avatar')
+        .sort({ date: -1 })
+        .limit(12)
+        .lean(),
+
+      Community.find({ mainGames: { $in: nameVariants }, isActive: true })
+        .sort({ membersCount: -1 })
+        .limit(12)
+        .lean(),
+    ]);
+
+    const baseStats = aggregatedStats[gameId] || buildGameHubStatsPayload({ gameId });
+    const stats = buildGameHubStatsPayload({
+      ...baseStats,
+      gameId,
+      joined: joinedIds.includes(gameId),
+    });
+
+    // Map teams
+    const mappedTeams = teams.map((t) => ({
+      id: t._id,
+      name: t.name,
+      teamCode: t.teamCode || '',
+      game: t.game || '',
+      logo: t.logo || '',
+      category: t.category || '',
+      country: t.teamCountry || '',
+      level: t.teamLevel || '',
+      startersCount: Array.isArray(t.roster?.starters) ? t.roster.starters.filter((p) => p?.user).length : 0,
+      subsCount: Array.isArray(t.roster?.subs) ? t.roster.subs.filter((p) => p?.user).length : 0,
+      captain: t.captain
+        ? { id: t.captain._id, username: t.captain.username || t.captain.fullName || '', avatar: t.captain.avatar || '' }
+        : null,
+    }));
+
+    // Map tournaments
+    const mappedTournaments = tournaments.map((t) => ({
+      id: t._id,
+      code: t.tournamentId || '',
+      title: t.title || '',
+      game: t.game || '',
+      status: t.status || 'open',
+      date: t.date || null,
+      prizePool: t.prizePool || '',
+      prizeMode: t.prizeMode || 'none',
+      currency: t.currency || 'USD',
+      format: t.format || '',
+      modality: t.modality || '',
+      platform: t.platform || '',
+      maxSlots: t.maxSlots || 0,
+      currentSlots: t.currentSlots || 0,
+      registeredTeams: Array.isArray(t.registrations) ? t.registrations.length : 0,
+      organizer: t.organizer
+        ? { id: t.organizer._id, username: t.organizer.username || t.organizer.fullName || '', avatar: t.organizer.avatar || '' }
+        : null,
+    }));
+
+    // Map communities
+    const mappedCommunities = communities.map((c) => ({
+      id: c._id,
+      name: c.name || '',
+      shortUrl: c.shortUrl || '',
+      description: c.description || '',
+      membersCount: c.membersCount || 0,
+      avatarUrl: c.avatarUrl || '',
+      bannerUrl: c.bannerUrl || '',
+      mainGames: Array.isArray(c.mainGames) ? c.mainGames : [],
+      region: c.region || '',
+    }));
+
+    // Extract unique organizers from tournaments
+    const organizerMap = new Map();
+    for (const t of mappedTournaments) {
+      if (!t.organizer?.id) continue;
+      const key = String(t.organizer.id);
+      if (!organizerMap.has(key)) {
+        organizerMap.set(key, { ...t.organizer, tournamentsCount: 0 });
+      }
+      organizerMap.get(key).tournamentsCount += 1;
+    }
+    const mappedOrganizers = Array.from(organizerMap.values());
+
+    return res.status(200).json({
+      stats,
+      teams: mappedTeams,
+      tournaments: mappedTournaments,
+      communities: mappedCommunities,
+      organizers: mappedOrganizers,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al obtener detalles del hub', error: error.message });
+  }
+};
+
 const getPostForMutation = async (postId) => {
   return CommunityPost.findById(postId)
-    .populate('author', 'username fullName avatar')
-    .populate('comments.author', 'username fullName avatar');
+    .populate('author', COMMUNITY_USER_SELECT)
+    .populate('comments.author', COMMUNITY_USER_SELECT)
+    .populate('replyTo', 'author text')
+    .populate({ path: 'replyTo', populate: { path: 'author', select: COMMUNITY_USER_SELECT } })
+    .populate('mentions', COMMUNITY_USER_SELECT);
 };
 
 export const getPosts = async (req, res) => {
   try {
     const limit = Math.min(Math.max(Number(req.query?.limit || 30), 1), 80);
     const userId = req.userId;
+    const requestedShortUrl = slugify(req.query?.shortUrl || req.query?.community || '');
+    let communityFilter = null;
+
+    if (requestedShortUrl) {
+      const community = await findCommunityBySlug(requestedShortUrl);
+      if (!community) {
+        return res.status(404).json({ message: 'Comunidad no encontrada' });
+      }
+      communityFilter = community._id;
+    }
+
     const posts = await CommunityPost.find({
+      community: communityFilter,
       hiddenBy: { $ne: userId },
       $or: [{ privacy: { $in: ['Public', 'Friends'] } }, { author: userId }]
     })
       .sort({ createdAt: -1 })
       .limit(limit)
-      .populate('author', 'username fullName avatar')
-      .populate('comments.author', 'username fullName avatar');
+      .populate('author', COMMUNITY_USER_SELECT)
+      .populate('comments.author', COMMUNITY_USER_SELECT)
+      .populate('replyTo', 'author text')
+      .populate({ path: 'replyTo', populate: { path: 'author', select: COMMUNITY_USER_SELECT } })
+      .populate('mentions', COMMUNITY_USER_SELECT);
 
     return res.status(200).json({
       posts: posts.map((post) => toPostPayload(post, userId))
@@ -1068,18 +1374,72 @@ export const createPost = async (req, res) => {
     const text = sanitizeText(req.body?.text);
     const privacy = normalizePrivacy(req.body?.privacy);
     const attachment = resolveAttachmentFromRequest(req);
+    const replyToId = req.body?.replyTo || null;
+    const requestedShortUrl = slugify(req.body?.shortUrl || req.body?.communityShortUrl || req.query?.shortUrl || '');
 
     if (!text && !attachment) {
       return res.status(400).json({ message: 'Debes escribir texto o adjuntar un archivo.' });
     }
 
     const nextText = text || `Adjunto: ${attachment?.name || 'archivo'}`;
+
+    // Parse mentions & hashtags
+    const mentionUsernames = extractMentionUsernames(nextText);
+    const hashtags = extractHashtags(nextText);
+    const mentionedUsers = await resolveMentionedUsers(mentionUsernames);
+    const mentionIds = mentionedUsers.map((u) => u._id);
+
+    // Validate replyTo if provided
+    let replyTo = null;
+    let community = null;
+    if (replyToId && mongoose.Types.ObjectId.isValid(replyToId)) {
+      const parentPost = await CommunityPost.findById(replyToId).select('author community').lean();
+      if (parentPost) {
+        replyTo = parentPost._id;
+        community = parentPost.community || null;
+      }
+    }
+
+    if (!community && requestedShortUrl) {
+      const communityDoc = await findCommunityBySlug(requestedShortUrl);
+      if (!communityDoc) {
+        return res.status(404).json({ message: 'Comunidad no encontrada' });
+      }
+
+      const isOwner = String(communityDoc.createdBy) === String(req.userId);
+      const memberEntry = getMemberEntry(communityDoc, req.userId);
+      if (!isOwner && !memberEntry) {
+        return res.status(403).json({ message: 'Debes pertenecer a esta comunidad para publicar.' });
+      }
+
+      community = communityDoc._id;
+    }
+
     const post = await CommunityPost.create({
       author: req.userId,
+      community,
       text: nextText,
       privacy,
-      attachment
+      attachment,
+      replyTo,
+      mentions: mentionIds,
+      hashtags
     });
+
+    // Send mention notifications (non-blocking)
+    if (mentionedUsers.length) {
+      const author = await User.findById(req.userId).select('username').lean();
+      sendMentionNotifications(mentionedUsers, req.userId, author?.username || 'Alguien', post._id, nextText).catch(() => {});
+    }
+
+    // Send reply notification (non-blocking)
+    if (replyTo) {
+      const parentPost = await CommunityPost.findById(replyTo).select('author').lean();
+      if (parentPost && String(parentPost.author) !== String(req.userId)) {
+        const author = await User.findById(req.userId).select('username').lean();
+        sendReplyNotification(parentPost.author, author?.username || 'Alguien', post._id, nextText).catch(() => {});
+      }
+    }
 
     const hydratedPost = await getPostForMutation(post._id);
     return res.status(201).json({ post: toPostPayload(hydratedPost, req.userId) });
@@ -1140,7 +1500,7 @@ export const addComment = async (req, res) => {
     });
 
     await post.save();
-    await post.populate('comments.author', 'username fullName avatar');
+    await post.populate('comments.author', COMMUNITY_USER_SELECT);
 
     const createdComment = post.comments[post.comments.length - 1];
     return res.status(201).json({ comment: toCommentPayload(createdComment, userId) });
@@ -1256,5 +1616,88 @@ export const deletePost = async (req, res) => {
     return res.status(200).json({ message: 'Publicación eliminada' });
   } catch (error) {
     return res.status(500).json({ message: 'Error al eliminar publicación', error: error.message });
+  }
+};
+
+/* ─── Block / Unblock user ─── */
+export const blockUser = async (req, res) => {
+  try {
+    const targetId = req.params.userId;
+    if (String(targetId) === String(req.userId)) {
+      return res.status(400).json({ message: 'No puedes bloquearte a ti mismo' });
+    }
+    const target = await User.findById(targetId).select('_id username').lean();
+    if (!target) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    const user = await User.findById(req.userId);
+    const blocked = (user.blockedUsers || []).map((id) => String(id));
+    if (blocked.includes(String(targetId))) {
+      return res.status(200).json({ message: 'Usuario ya bloqueado', blocked: true });
+    }
+    user.blockedUsers.push(targetId);
+    await user.save();
+    return res.status(200).json({ message: `${target.username} bloqueado`, blocked: true });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al bloquear usuario', error: error.message });
+  }
+};
+
+export const unblockUser = async (req, res) => {
+  try {
+    const targetId = req.params.userId;
+    const user = await User.findById(req.userId);
+    user.blockedUsers = (user.blockedUsers || []).filter((id) => String(id) !== String(targetId));
+    await user.save();
+    return res.status(200).json({ message: 'Usuario desbloqueado', blocked: false });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al desbloquear usuario', error: error.message });
+  }
+};
+
+/* ─── Search users (for @mention autocomplete) ─── */
+export const searchUsers = async (req, res) => {
+  try {
+    const q = String(req.query?.q || '').trim();
+    if (q.length < 2) return res.status(200).json({ users: [] });
+
+    const users = await User.find({
+      username: { $regex: q, $options: 'i' },
+      isBanned: { $ne: true }
+    })
+      .select(`_id ${COMMUNITY_USER_SELECT}`)
+      .limit(8)
+      .lean();
+
+    return res.status(200).json({
+      users: users.map((u) => ({ id: String(u._id), username: u.username, avatar: resolveUserAvatar(u) }))
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al buscar usuarios', error: error.message });
+  }
+};
+
+/* ─── Get replies to a post ─── */
+export const getReplies = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.userId;
+    const limit = Math.min(Math.max(Number(req.query?.limit || 20), 1), 50);
+
+    const replies = await CommunityPost.find({
+      replyTo: postId,
+      hiddenBy: { $ne: userId }
+    })
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .populate('author', COMMUNITY_USER_SELECT)
+      .populate('replyTo', 'author text')
+      .populate({ path: 'replyTo', populate: { path: 'author', select: COMMUNITY_USER_SELECT } })
+      .populate('mentions', COMMUNITY_USER_SELECT);
+
+    return res.status(200).json({
+      replies: replies.map((r) => toPostPayload(r, userId))
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al obtener respuestas', error: error.message });
   }
 };

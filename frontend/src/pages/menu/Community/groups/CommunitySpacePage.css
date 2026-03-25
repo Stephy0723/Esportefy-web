@@ -463,3 +463,78 @@
     width: 100%;
   }
 }
+
+/* ── Confirm Modal ── */
+.csp-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10200;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.csp-confirm-modal {
+  background: var(--bg-elevated, #1a1a2e);
+  border: 1px solid var(--border-color, #2a2a3e);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  animation: cspConfirmIn 0.2s ease;
+}
+
+@keyframes cspConfirmIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.csp-confirm-icon {
+  font-size: 2.5rem;
+  color: #f59e0b;
+  margin-bottom: 12px;
+}
+
+.csp-confirm-msg {
+  color: var(--text-main, #fff);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.csp-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.csp-confirm-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.csp-confirm-btn:hover { transform: translateY(-1px); }
+
+.csp-confirm-btn--cancel {
+  background: var(--bg-card, #22223a);
+  color: var(--text-muted, #888);
+  border: 1px solid var(--border-color, #2a2a3e);
+}
+
+.csp-confirm-btn--confirm {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+.csp-confirm-btn--confirm:hover {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}

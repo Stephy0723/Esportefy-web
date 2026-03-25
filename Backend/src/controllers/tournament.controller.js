@@ -4,6 +4,7 @@ import Team from '../models/Team.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import { normalizeTournamentServer } from '../../../shared/tournamentServerOptions.js';
+import { normalizeTournamentMapPool } from '../../../shared/tournamentMapOptions.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
 import {
     filterSupportedGameNames,
@@ -30,7 +31,14 @@ const parsePositiveIntEnv = (value, fallback) => {
     return parsed;
 };
 
+const parsePositiveIntValue = (value, fallback = 0) => {
+    const parsed = Number.parseInt(String(value ?? '').trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    return parsed;
+};
+
 const MLBB_BETA_MODE = parseBooleanEnv(process.env.MLBB_BETA_MODE, true);
+const MIN_TOURNAMENT_SLOTS = 4;
 const MLBB_MIN_APPROVED_TEAMS = parsePositiveIntEnv(process.env.MLBB_MIN_APPROVED_TEAMS, 2);
 const MLBB_REQUIRE_LINKED_STARTERS = parseBooleanEnv(process.env.MLBB_REQUIRE_LINKED_STARTERS, true);
 const MLBB_REQUIRE_LINKED_PLAYERS = parseBooleanEnv(process.env.MLBB_REQUIRE_LINKED_PLAYERS, true);
@@ -155,7 +163,7 @@ const parseTeamSizeFromModality = (modality = '') => {
     return Math.max(left, right);
 };
 const getProjectedActiveParticipants = ({ maxSlots = 0, modality = '' }) => {
-    const slots = parsePositiveIntEnv(maxSlots, 0);
+    const slots = parsePositiveIntValue(maxSlots, 0);
     const teamSize = parseTeamSizeFromModality(modality);
     return slots * teamSize;
 };
@@ -749,24 +757,37 @@ export const createTournament = async (req, res) => {
             });
         }
         const normalizedServer = normalizeTournamentServer(data.game, data.server);
+        const normalizedMaxSlots = parsePositiveIntValue(data.maxSlots, 0);
         if (String(data.server || '').trim() && !normalizedServer) {
             return res.status(400).json({
                 message: 'Selecciona un servidor válido para el juego elegido.'
             });
         }
 
-        // Sanitize staff: filter empty/invalid moderator entries and ensure valid shape
-        const cleanModerators = Array.isArray(parsedStaff?.moderators)
-            ? parsedStaff.moderators
-                .filter((m) => m && typeof m === 'object' && String(m.username || '').trim())
-                .map((m) => ({
-                    user: m.user || null,
-                    username: String(m.username).trim(),
-                    role: m.role || 'moderator',
-                    displayRole: m.displayRole || '',
-                    addedAt: m.addedAt || new Date()
-                }))
-            : [];
+        // Sanitize staff: accept both string entries and object entries
+        const normalizeStaffEntry = (entry, defaultRole) => {
+            if (typeof entry === 'string') {
+                const username = entry.trim();
+                if (!username) return null;
+                return { user: null, username, role: defaultRole, displayRole: '', addedAt: new Date() };
+            }
+            if (entry && typeof entry === 'object' && String(entry.username || '').trim()) {
+                return {
+                    user: entry.user || null,
+                    username: String(entry.username).trim(),
+                    role: entry.role || defaultRole,
+                    displayRole: entry.displayRole || '',
+                    addedAt: entry.addedAt || new Date()
+                };
+            }
+            return null;
+        };
+        const rawModerators = Array.isArray(parsedStaff?.moderators) ? parsedStaff.moderators : [];
+        const rawCasters = Array.isArray(parsedStaff?.casters) ? parsedStaff.casters : [];
+        const cleanModerators = [
+            ...rawModerators.map((m) => normalizeStaffEntry(m, 'moderator')),
+            ...rawCasters.map((m) => normalizeStaffEntry(m, 'caster'))
+        ].filter(Boolean);
 
         // Remove raw FormData string keys that get properly parsed below
         const { sponsors: _s, staff: _st, prizesByRank: _p, registrationWindow: _rw,
@@ -774,6 +795,7 @@ export const createTournament = async (req, res) => {
             matchConfig: _mc, legalCompliance: _lc, bannerFile: _bf, rulesPdf: _rp,
             sponsorLogos: _sl, sponsorsData: _sd, ...safeData } = data;
 
+        // ── Validation (before creating the document) ──
         const newTournament = new Tournament({
             ...safeData,
             tournamentId,
@@ -831,13 +853,11 @@ export const createTournament = async (req, res) => {
         if (!data.date || new Date(data.date) < new Date()) {
             return res.status(400).json({ message: 'La fecha del torneo no es válida' });
         }
-
         if (!data.time || !String(data.time).trim()) {
             return res.status(400).json({ message: 'La hora del torneo es requerida' });
         }
-
-        if (!data.maxSlots || data.maxSlots < 2) {
-            return res.status(400).json({ message: 'El torneo debe tener al menos 2 cupos' });
+        if (normalizedMaxSlots < MIN_TOURNAMENT_SLOTS) {
+            return res.status(400).json({ message: `El torneo debe tener al menos ${MIN_TOURNAMENT_SLOTS} cupos` });
         }
 
         if (normalizeEntryFee(data.entryFee) === 'pago') {
@@ -882,6 +902,8 @@ export const createTournament = async (req, res) => {
             return res.status(400).json({ message: 'Debes aceptar los términos, privacidad y declaración de organizador' });
         }
 
+      
+
         if (isSupportedMlbbGame(data.game)) {
             const mlbbIssues = getMlbbComplianceIssues({
                 title: data.title,
@@ -907,6 +929,7 @@ export const createTournament = async (req, res) => {
                 prizeDetails: data.prizeDetails,
                 prizePool: data.prizePool,
                 entryFee: data.entryFee,
+                maxSlots: normalizedMaxSlots,
                 entryFeeAmount: normalizedEntryFeeAmount,
                 maxSlots: data.maxSlots,
                 modality: data.modality,
@@ -1029,7 +1052,13 @@ export const updateTournament = async (req, res) => {
             return res.status(400).json({ message: 'La hora del torneo es requerida' });
         }
 
-        if (data.maxSlots && Number(data.maxSlots) < Number(tournament.currentSlots)) {
+        const normalizedUpdateMaxSlots = data.maxSlots !== undefined
+            ? parsePositiveIntValue(data.maxSlots, 0)
+            : null;
+        if (data.maxSlots !== undefined && normalizedUpdateMaxSlots < MIN_TOURNAMENT_SLOTS) {
+            return res.status(400).json({ message: `El torneo debe tener al menos ${MIN_TOURNAMENT_SLOTS} cupos` });
+        }
+        if (normalizedUpdateMaxSlots !== null && normalizedUpdateMaxSlots < Number(tournament.currentSlots)) {
             return res.status(400).json({ message: 'Los cupos no pueden ser menores a los inscritos' });
         }
 
@@ -1045,6 +1074,9 @@ export const updateTournament = async (req, res) => {
         };
         if (normalizedUpdateGame) {
             update.game = normalizedUpdateGame;
+        }
+        if (normalizedUpdateMaxSlots !== null) {
+            update.maxSlots = normalizedUpdateMaxSlots;
         }
 
         if (data.timezone) {
@@ -1093,7 +1125,7 @@ export const updateTournament = async (req, res) => {
         if (parsedMatchConfig) {
             update.matchConfig = {
                 seriesType: parsedMatchConfig.seriesType || 'BO3',
-                mapPool: normalizeStringArray(parsedMatchConfig.mapPool),
+                mapPool: normalizeTournamentMapPool(normalizedUpdateGame || tournament.game, parsedMatchConfig.mapPool),
                 patchVersion: parsedMatchConfig.patchVersion || ''
             };
         }
@@ -2650,6 +2682,51 @@ export const seedFakeTeams = async (req, res) => {
 };
 
 /* ── Upload match proof ── */
+
+export const searchStaffCandidates = async (req, res) => {
+    try {
+        const { q = '', game = '' } = req.query;
+        const search = String(q).trim();
+        if (search.length < 2) {
+            return res.json([]);
+        }
+
+        const STAFF_ROLES = ['caster', 'coach', 'analyst', 'content-creator', 'organizer'];
+
+        const filter = {
+            isBanned: { $ne: true },
+            roles: { $in: STAFF_ROLES },
+            $or: [
+                { username: { $regex: search, $options: 'i' } },
+                { fullName: { $regex: search, $options: 'i' } }
+            ]
+        };
+
+        const normalizedGame = game ? normalizeSupportedGameName(game) : '';
+        if (normalizedGame) {
+            filter.selectedGames = normalizedGame;
+        }
+
+        const users = await User.find(filter)
+            .select('username fullName avatar roles selectedGames')
+            .limit(10)
+            .lean();
+
+        const results = users.map((u) => ({
+            id: u._id,
+            username: u.username,
+            fullName: u.fullName || '',
+            avatar: u.avatar || '',
+            roles: (u.roles || []).filter((r) => STAFF_ROLES.includes(r)),
+            games: u.selectedGames || []
+        }));
+
+        res.json(results);
+    } catch (error) {
+        console.error('Error searching staff candidates:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
 
 export const uploadMatchProofHandler = async (req, res) => {
     try {

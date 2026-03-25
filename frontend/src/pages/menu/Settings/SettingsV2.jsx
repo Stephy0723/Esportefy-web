@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { API_URL } from '../../../config/api';
+import { API_URL, CHAT_URL } from '../../../config/api';
 import { useTheme, THEMES } from '../../../context/ThemeContext';
 import SecurityCenterUI from './SecurityCenterUI';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
@@ -253,36 +253,44 @@ export default function SettingsV2() {
         fetchMlbbOpsStatus();
     }, [token, isAdmin, activeTab]);
 
-    // Simulate system status check
+    // Real system status check via endpoint pings
     useEffect(() => {
-        const checkSystemStatus = () => {
-            // Simulate realistic status - 95% chance all operational
-            const statuses = ['operational', 'operational', 'operational', 'operational', 'operational', 
-                              'operational', 'operational', 'operational', 'operational', 'degraded'];
-            const getRandomStatus = () => statuses[Math.floor(Math.random() * statuses.length)];
-            
-            const services = {
-                gameServers: getRandomStatus(),
-                tournamentApi: getRandomStatus(),
-                matchmaking: getRandomStatus(),
-                liveChat: getRandomStatus()
-            };
-            
+        const pingService = async (url) => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
+                clearTimeout(timeoutId);
+                return res.ok ? 'operational' : 'degraded';
+            } catch {
+                return 'outage';
+            }
+        };
+
+        const checkSystemStatus = async () => {
+            const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
+                pingService(`${API_URL}/api/healthz`),
+                pingService(`${API_URL}/api/tournaments/healthz`),
+                pingService(`${API_URL}/api/healthz`),
+                pingService(`${CHAT_URL}/healthz`),
+            ]);
+
+            const services = { gameServers, tournamentApi, matchmaking, liveChat };
             const hasIssue = Object.values(services).some(s => s !== 'operational');
-            
+
             setSystemStatus({
                 overall: hasIssue ? 'degraded' : 'operational',
                 services,
                 lastChecked: new Date()
             });
         };
-        
+
         // Initial check with a small delay to show "checking"
-        const timeout = setTimeout(checkSystemStatus, 1500);
-        
+        const timeout = setTimeout(checkSystemStatus, 800);
+
         // Refresh every 30 seconds
         const interval = setInterval(checkSystemStatus, 30000);
-        
+
         return () => {
             clearTimeout(timeout);
             clearInterval(interval);
@@ -319,28 +327,42 @@ export default function SettingsV2() {
         showSupportToast('✅ ¡Gracias por tu feedback! Lo revisaremos pronto.');
     };
 
-    const refreshSystemStatus = () => {
+    const refreshSystemStatus = async () => {
         setSystemStatus(prev => ({ ...prev, overall: 'checking', services: {
             gameServers: 'checking',
             tournamentApi: 'checking',
             matchmaking: 'checking',
             liveChat: 'checking'
         }}));
-        
-        setTimeout(() => {
-            const services = {
-                gameServers: 'operational',
-                tournamentApi: 'operational',
-                matchmaking: 'operational',
-                liveChat: 'operational'
-            };
-            setSystemStatus({
-                overall: 'operational',
-                services,
-                lastChecked: new Date()
-            });
-            showSupportToast('✓ Estado actualizado');
-        }, 2000);
+
+        const pingService = async (url) => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
+                clearTimeout(timeoutId);
+                return res.ok ? 'operational' : 'degraded';
+            } catch {
+                return 'outage';
+            }
+        };
+
+        const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
+            pingService(`${API_URL}/api/healthz`),
+            pingService(`${API_URL}/api/tournaments/healthz`),
+            pingService(`${API_URL}/api/healthz`),
+            pingService(`${CHAT_URL}/healthz`),
+        ]);
+
+        const services = { gameServers, tournamentApi, matchmaking, liveChat };
+        const hasIssue = Object.values(services).some(s => s !== 'operational');
+
+        setSystemStatus({
+            overall: hasIssue ? 'degraded' : 'operational',
+            services,
+            lastChecked: new Date()
+        });
+        showSupportToast('Estado actualizado');
     };
 
     // Privacy update
@@ -1605,43 +1627,43 @@ export default function SettingsV2() {
                             {/* Contact Options */}
                             <h3 className="stv2-section__subtitle">Contacto Directo</h3>
                             <div className="stv2-contact-grid">
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('soporte@glitchgang.net')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('steliantsoft@gmail.com')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-envelope' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Soporte General</span>
-                                        <span className="stv2-contact-item__value">soporte@glitchgang.net</span>
+                                        <span className="stv2-contact-item__value">steliantsoft@gmail.com</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('security@glitchgang.net')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('steliantsoft@gmail.com')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-shield-quarter' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Seguridad y Antifraude</span>
-                                        <span className="stv2-contact-item__value">security@glitchgang.net</span>
+                                        <span className="stv2-contact-item__value">steliantsoft@gmail.com</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('partners@glitchgang.net')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('steliantsoft@gmail.com')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-briefcase' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Asociaciones y Negocios</span>
-                                        <span className="stv2-contact-item__value">partners@glitchgang.net</span>
+                                        <span className="stv2-contact-item__value">steliantsoft@gmail.com</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
-                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('press@glitchgang.net')}>
+                                <div className="stv2-contact-item" onClick={() => copyEmailToClipboard('steliantsoft@gmail.com')}>
                                     <div className="stv2-contact-item__icon">
                                         <i className='bx bx-news' />
                                     </div>
                                     <div className="stv2-contact-item__info">
                                         <span className="stv2-contact-item__label">Prensa y Medios</span>
-                                        <span className="stv2-contact-item__value">press@glitchgang.net</span>
+                                        <span className="stv2-contact-item__value">steliantsoft@gmail.com</span>
                                     </div>
                                     <i className='bx bx-copy stv2-contact-item__copy' />
                                 </div>
@@ -1677,11 +1699,11 @@ export default function SettingsV2() {
                                 <div className="stv2-app-info__details">
                                     <div className="stv2-app-info__row">
                                         <span>Versión</span>
-                                        <span>1.0.4-beta.2</span>
+                                        <span>1.0.5-beta.1</span>
                                     </div>
                                     <div className="stv2-app-info__row">
                                         <span>Última actualización</span>
-                                        <span>3 de marzo, 2026</span>
+                                        <span>23 de marzo, 2026</span>
                                     </div>
                                     <div className="stv2-app-info__row">
                                         <span>Entorno</span>

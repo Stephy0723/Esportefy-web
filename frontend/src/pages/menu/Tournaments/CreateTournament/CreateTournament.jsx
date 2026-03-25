@@ -11,6 +11,10 @@ import {
   normalizeTournamentServer
 } from '../../../../../../shared/tournamentServerOptions.js';
 import {
+  getTournamentMapOptions,
+  normalizeTournamentMapPool
+} from '../../../../../../shared/tournamentMapOptions.js';
+import {
   SUPPORTED_GAME_NAMES,
   SUPPORTED_MLBB_GAME_NAMES,
   SUPPORTED_RIOT_GAME_NAMES,
@@ -29,6 +33,7 @@ import {
   FaShieldAlt,
   FaSitemap,
   FaTrash,
+  FaUserShield,
   FaUsers
 } from 'react-icons/fa';
 import './CreateTournament.css';
@@ -52,7 +57,7 @@ const baseState = (name) => ({
   entryFee: 'Gratis',
   entryFeeAmount: '',
   maxSlots: '',
-  format: 'Eliminacion Directa',
+  format: 'single_elimination',
   server: '',
   platform: 'PC',
   bannerFile: null,
@@ -63,7 +68,7 @@ const baseState = (name) => ({
   eligibility: { minAge: 13, allowedCountries: 'Global', notes: '', universityOnly: false },
   contact: { email: '', phone: '', discordInvite: '' },
   broadcast: { streamUrl: '', streamLanguage: 'es' },
-  matchConfig: { seriesType: 'BO3', mapPool: '', patchVersion: '' },
+  matchConfig: { seriesType: 'BO3', mapPool: [], patchVersion: '' },
   legalCompliance: {
     jurisdiction: '',
     governingLaw: '',
@@ -73,7 +78,7 @@ const baseState = (name) => ({
     organizerDeclaration: false
   },
   sponsors: [{ name: '', link: '', tier: 'Partner', logoFile: null }],
-  staff: { moderators: [''], casters: [''] }
+  staffMembers: []
 });
 
 const FORMAT_OPTIONS = [
@@ -89,7 +94,7 @@ const PLATFORM_OPTIONS = [
   { value: 'Console', label: 'Consola' },
   { value: 'Crossplay', label: 'Crossplay' }
 ];
-const BRACKET_SLOT_PRESETS = ['4', '8', '16', '32', '64'];
+const BRACKET_SLOT_PRESETS = ['4', '8', '16', '32', '64', '128', '256'];
 const INTEGER_INPUT_REGEX = /^\d*$/;
 const MONEY_INPUT_REGEX = /^\d*(?:[.,]\d{0,2})?$/;
 
@@ -202,7 +207,11 @@ const CreateTournament = () => {
   const { user } = useAuth();
   const token = getAuthToken();
   const [isPublished, setIsPublished] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bannerPreview, setBannerPreview] = useState(null);
   const [tournament, setTournament] = useState(baseState(user?.username || 'Organizador Oficial'));
+  const [slotInputMode, setSlotInputMode] = useState('preset');
+  const [pendingMap, setPendingMap] = useState('');
   const editTournament = location.state?.editTournament;
   const isEditMode = Boolean(editTournament?.tournamentId);
   const formatInputDate = (date) => {
@@ -222,6 +231,7 @@ const CreateTournament = () => {
     if (!isEditMode) return;
     const toDate = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
     const editMaxSlots = String(editTournament.maxSlots ?? editTournament.slots ?? '').trim();
+    setSlotInputMode(resolveMaxSlotsSelection(editMaxSlots) === 'custom' ? 'custom' : 'preset');
     setTournament((prev) => ({
       ...prev,
       title: editTournament.title || '',
@@ -264,9 +274,10 @@ const CreateTournament = () => {
       broadcast: editTournament.broadcast || prev.broadcast,
       matchConfig: {
         seriesType: editTournament.matchConfig?.seriesType || prev.matchConfig.seriesType,
-        mapPool: Array.isArray(editTournament.matchConfig?.mapPool)
-          ? editTournament.matchConfig.mapPool.join(', ')
-          : '',
+        mapPool: normalizeTournamentMapPool(
+          editTournament.game || prev.game,
+          editTournament.matchConfig?.mapPool
+        ),
         patchVersion: editTournament.matchConfig?.patchVersion || ''
       },
       legalCompliance: {
@@ -280,7 +291,17 @@ const CreateTournament = () => {
       sponsors: Array.isArray(editTournament.sponsors) && editTournament.sponsors.length
         ? editTournament.sponsors.map((s) => ({ name: s.name || '', link: s.link || '', tier: s.tier || 'Partner', logoFile: null }))
         : prev.sponsors,
-      staff: editTournament.staff || prev.staff
+      staffMembers: (() => {
+        const s = editTournament.staff;
+        if (Array.isArray(s)) return s;
+        if (s && typeof s === 'object') {
+          const arr = [];
+          (s.moderators || []).forEach((m) => arr.push({ username: typeof m === 'string' ? m : m.username, role: 'moderator' }));
+          (s.casters || []).forEach((c) => arr.push({ username: typeof c === 'string' ? c : c.username, role: 'caster' }));
+          return arr.filter((e) => e.username);
+        }
+        return prev.staffMembers;
+      })()
     }));
   }, [isEditMode, editTournament]);
 
@@ -306,6 +327,13 @@ const CreateTournament = () => {
     () => getTournamentServerOptions(tournament.game, tournament.server),
     [tournament.game, tournament.server]
   );
+  const mapOptions = useMemo(
+    () => getTournamentMapOptions(tournament.game, tournament.matchConfig.mapPool),
+    [tournament.game, tournament.matchConfig.mapPool]
+  );
+  const selectedSlotPreset = slotInputMode === 'custom'
+    ? 'custom'
+    : resolveMaxSlotsSelection(tournament.maxSlots);
   const projectedActiveParticipants = useMemo(() => {
     const maxSlots = parsePositiveInt(tournament.maxSlots, 0);
     const teamSize = parseTeamSizeFromModality(tournament.modality);
@@ -341,7 +369,55 @@ const CreateTournament = () => {
     || (tournament.prizeMode === 'items' && hasItemPrize)
     || (tournament.prizeMode === 'mixed' && (hasMoneyPrize || hasItemPrize))
   );
-  const contactReady = Boolean(tournament.contact.email?.trim() && (tournament.contact.discordInvite?.trim() || tournament.broadcast.streamUrl?.trim()));
+  const contactReady = Boolean(tournament.contact.email?.trim() && (tournament.contact.discordInvite?.trim() || tournament.broadcast.streamUrl?.trim() || tournament.contact.phone?.trim()));
+
+  const [staffQuery, setStaffQuery] = useState('');
+  const [staffSuggestions, setStaffSuggestions] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffRole, setStaffRole] = useState('moderator');
+
+  useEffect(() => {
+    if (!staffQuery.trim() || staffQuery.trim().length < 2) {
+      setStaffSuggestions([]);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setStaffLoading(true);
+      try {
+        const res = await axios.get(`${API_URL}/api/tournaments/staff-search`, {
+          params: { q: staffQuery.trim(), game: tournament.game || '' },
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const existing = new Set((tournament.staffMembers || []).map((m) => m.username.toLowerCase()));
+        setStaffSuggestions((res.data || []).filter((u) => !existing.has(u.username.toLowerCase())));
+      } catch {
+        setStaffSuggestions([]);
+      } finally {
+        setStaffLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(timeout);
+  }, [staffQuery, tournament.game, tournament.staffMembers, token]);
+
+  const addStaffMember = (username, role) => {
+    if (!username.trim()) return;
+    const exists = tournament.staffMembers.some((m) => m.username.toLowerCase() === username.toLowerCase());
+    if (exists) return;
+    setTournament((p) => ({ ...p, staffMembers: [...p.staffMembers, { username: username.trim(), role }] }));
+    setStaffQuery('');
+    setStaffSuggestions([]);
+  };
+
+  const removeStaffMember = (index) => {
+    setTournament((p) => ({ ...p, staffMembers: p.staffMembers.filter((_, i) => i !== index) }));
+  };
+
+  const STAFF_ROLE_OPTIONS = [
+    { value: 'moderator', label: 'Moderador' },
+    { value: 'caster', label: 'Caster' },
+    { value: 'coach', label: 'Coach' },
+    { value: 'analyst', label: 'Analista' }
+  ];
 
   const unlockFormat = identityReady;
   const unlockPayments = unlockFormat && formatReady;
@@ -358,6 +434,7 @@ const CreateTournament = () => {
 
   const setField = (field, value) => setTournament((p) => ({ ...p, [field]: value }));
   const setGameField = (value) => {
+    setPendingMap('');
     setTournament((prev) => {
       const nextServer = isValidTournamentServer(value, prev.server)
         ? normalizeTournamentServer(value, prev.server)
@@ -365,12 +442,55 @@ const CreateTournament = () => {
       return {
         ...prev,
         game: value,
-        server: nextServer
+        server: nextServer,
+        matchConfig: {
+          ...prev.matchConfig,
+          mapPool: []
+        }
       };
     });
   };
   const setNested = (group, key, value) => setTournament((p) => ({ ...p, [group]: { ...p[group], [key]: value } }));
   const setPrize = (key, value) => setTournament((p) => ({ ...p, prizesByRank: { ...p.prizesByRank, [key]: value } }));
+  const setMaxSlotsPreset = (value) => {
+    if (value === 'custom') {
+      setSlotInputMode('custom');
+      setField('maxSlots', BRACKET_SLOT_PRESETS.includes(String(tournament.maxSlots || '').trim()) ? '' : tournament.maxSlots);
+      return;
+    }
+
+    setSlotInputMode('preset');
+    setField('maxSlots', value);
+  };
+  const setCustomMaxSlots = (value) => {
+    if (!INTEGER_INPUT_REGEX.test(value)) return;
+    setField('maxSlots', value);
+  };
+  const addMapToPool = (value) => {
+    const mapName = String(value || '').trim();
+    if (!mapName) return;
+
+    setTournament((prev) => ({
+      ...prev,
+      matchConfig: {
+        ...prev.matchConfig,
+        mapPool: normalizeTournamentMapPool(prev.game, [...(prev.matchConfig.mapPool || []), mapName])
+      }
+    }));
+    setPendingMap('');
+  };
+  const removeMapFromPool = (value) => {
+    const target = String(value || '').trim().toLowerCase();
+    if (!target) return;
+
+    setTournament((prev) => ({
+      ...prev,
+      matchConfig: {
+        ...prev.matchConfig,
+        mapPool: (prev.matchConfig.mapPool || []).filter((mapName) => String(mapName || '').trim().toLowerCase() !== target)
+      }
+    }));
+  };
   const setSponsor = (index, key, value) =>
     setTournament((p) => {
       const sponsors = [...p.sponsors];
@@ -381,7 +501,14 @@ const CreateTournament = () => {
   const delSponsor = (index) => setTournament((p) => ({ ...p, sponsors: p.sponsors.filter((_, i) => i !== index) }));
   const setFile = (e, key, sponsorIndex = null) => {
     const file = e.target.files[0];
-    if (sponsorIndex === null) return setField(key, file);
+    if (sponsorIndex === null) {
+      setField(key, file);
+      if (key === 'bannerFile' && file) {
+        const url = URL.createObjectURL(file);
+        setBannerPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return url; });
+      }
+      return;
+    }
     setTournament((p) => {
       const sponsors = [...p.sponsors];
       sponsors[sponsorIndex].logoFile = file;
@@ -400,6 +527,14 @@ const CreateTournament = () => {
     setField('entryFeeAmount', '');
   }, [isPaidEntry, tournament.entryFeeAmount]);
 
+  const hasUnsavedChanges = Boolean(tournament.title || tournament.game || tournament.description);
+  useEffect(() => {
+    if (isPublished || !hasUnsavedChanges) return;
+    const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges, isPublished]);
+
   const buildMlbbDemoTournament = () => ({
       title: 'MLBB Caribbean Clash 2026',
       description: 'Torneo profesional de Mobile Legends con fase suiza, playoffs y transmision oficial.',
@@ -417,7 +552,7 @@ const CreateTournament = () => {
       entryFee: 'Gratis',
       entryFeeAmount: '',
       maxSlots: '32',
-      format: 'Doble Eliminacion',
+      format: 'double_elimination',
       server: 'LATAM',
       platform: 'Mobile',
       bannerFile: null,
@@ -441,7 +576,7 @@ const CreateTournament = () => {
       },
       matchConfig: {
         seriesType: 'BO3',
-        mapPool: 'Land of Dawn (ranked pool)',
+        mapPool: ['Land of Dawn'],
         patchVersion: 'MLBB v1.8.90'
       },
       legalCompliance: {
@@ -456,13 +591,17 @@ const CreateTournament = () => {
         { name: 'Razer Caribe', link: 'https://www.razer.com', tier: 'Principal', logoFile: null },
         { name: 'Red Bull Gaming', link: 'https://www.redbull.com', tier: 'Partner', logoFile: null }
       ],
-      staff: {
-        moderators: ['Mod_Karina', 'Mod_Rafy'],
-        casters: ['Caster_Axel', 'Caster_Luna']
-      }
+      staffMembers: [
+        { username: 'Mod_Karina', role: 'moderator' },
+        { username: 'Mod_Rafy', role: 'moderator' },
+        { username: 'Caster_Axel', role: 'caster' },
+        { username: 'Caster_Luna', role: 'caster' }
+      ]
   });
 
   const loadMlbbDemo = () => {
+    setSlotInputMode('preset');
+    setPendingMap('');
     setTournament(buildMlbbDemoTournament());
   };
 
@@ -506,7 +645,13 @@ const CreateTournament = () => {
         tier: s.tier || 'Partner',
         logoUrl: ''
       })),
-      staff: source.staff || { moderators: [], casters: [] },
+      staff: (() => {
+        const members = source.staffMembers || [];
+        return {
+          moderators: members.filter((m) => m.role === 'moderator').map((m) => ({ username: m.username, role: m.role })),
+          casters: members.filter((m) => m.role !== 'moderator').map((m) => ({ username: m.username, role: m.role }))
+        };
+      })(),
       organizer: {
         _id: user?._id || 'local-organizer',
         username: user?.username || source.organizerName || 'Organizador Local'
@@ -554,7 +699,11 @@ const CreateTournament = () => {
       'prizePool', 'currency', 'prizeMode', 'prizeDetails', 'entryFee', 'entryFeeAmount', 'maxSlots', 'format', 'server', 'platform', 'gender'
     ].forEach((k) => data.append(k, source[k]));
     data.append('prizesByRank', JSON.stringify(source.prizesByRank));
-    data.append('staff', JSON.stringify(source.staff));
+    const staffPayload = {
+      moderators: (source.staffMembers || []).filter((m) => m.role === 'moderator').map((m) => ({ username: m.username, role: m.role })),
+      casters: (source.staffMembers || []).filter((m) => m.role !== 'moderator').map((m) => ({ username: m.username, role: m.role }))
+    };
+    data.append('staff', JSON.stringify(staffPayload));
     data.append('registrationWindow', JSON.stringify(source.registrationWindow));
     data.append('checkInWindow', JSON.stringify(source.checkInWindow));
     data.append('eligibility', JSON.stringify(source.eligibility));
@@ -616,6 +765,8 @@ const CreateTournament = () => {
   const createMlbbDemoNow = async () => {
     const demo = buildMlbbDemoTournament();
     try {
+      setSlotInputMode('preset');
+      setPendingMap('');
       saveTournamentToLocal(demo);
       setTournament(demo);
       setIsPublished(true);
@@ -652,26 +803,24 @@ const CreateTournament = () => {
       return;
     }
 
+    const parsedMaxSlots = parsePositiveInt(tournament.maxSlots, 0);
+    if (parsedMaxSlots < 4) {
+      alert('La cantidad del torneo debe ser de al menos 4 cupos.');
+      return;
+    }
+
     if (isRiotTournament) {
       const banned = findRiotBannedTerm(
         [tournament.title, tournament.description, tournament.prizeDetails].join(' ')
       );
       if (banned) {
-        alert(`Texto no permitido para cumplimiento Riot: "${banned}".`);
+        notify('danger', 'Cumplimiento Riot', `Texto no permitido: "${banned}".`);
         return;
       }
 
-      const formatAllowed = [
-        'Eliminacion Directa',
-        'Doble Eliminacion',
-        'Swiss',
-        'Round Robin',
-        'single_elimination',
-        'double_elimination',
-        'swiss',
-        'round_robin'
-      ].includes(String(tournament.format || '').trim());
-      if (!formatAllowed) {
+      const ALLOWED_FORMATS = ['single_elimination', 'double_elimination', 'swiss', 'round_robin',
+        'Eliminacion Directa', 'Doble Eliminacion', 'Swiss', 'Round Robin'];
+      if (!ALLOWED_FORMATS.includes(String(tournament.format || '').trim())) {
         alert('En torneos Riot solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
         return;
       }
@@ -696,17 +845,8 @@ const CreateTournament = () => {
     }
 
     if (isMlbbTournament) {
-      const formatAllowed = [
-        'Eliminacion Directa',
-        'Doble Eliminacion',
-        'Swiss',
-        'Round Robin',
-        'single_elimination',
-        'double_elimination',
-        'swiss',
-        'round_robin'
-      ].includes(String(tournament.format || '').trim());
-      if (!formatAllowed) {
+      const ALLOWED_FORMATS = ['single_elimination', 'double_elimination', 'swiss', 'round_robin'];
+      if (!ALLOWED_FORMATS.includes(tournament.format)) {
         alert('En MLBB solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
         return;
       }
@@ -735,12 +875,26 @@ const CreateTournament = () => {
       }
     }
 
+    if (tournament.prizeMode === 'money' || tournament.prizeMode === 'mixed') {
+      const pool = Number(tournament.prizePool) || 0;
+      const rankSum = (Number(tournament.prizesByRank.first) || 0)
+        + (Number(tournament.prizesByRank.second) || 0)
+        + (Number(tournament.prizesByRank.third) || 0);
+      if (pool > 0 && rankSum > pool) {
+        alert(`La suma de premios por puesto (${rankSum}) supera el prize pool total (${pool}).`);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
     try {
       await createTournamentRequest(tournament, false);
       setIsPublished(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       alert(error.response?.data?.message || 'No fue posible guardar el torneo.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -789,7 +943,7 @@ const CreateTournament = () => {
         </header>
 
         <section className="ct-card">
-          <div className="ct-card-title"><span className="ct-step">01</span><FaGamepad /><h3>Identidad del torneo</h3></div>
+          <div className="ct-card-title"><span className={`ct-step ${identityReady ? 'ct-step--done' : ''}`}>01</span><FaGamepad /><h3>Identidad del torneo</h3>{identityReady && <FaCheckCircle className="ct-step-check" />}</div>
           <p className="ct-lead">Datos base visibles para jugadores: nombre, juego, fecha y reglamento.</p>
           <fieldset className="ct-fieldset">
             <div className="ct-grid three">
@@ -813,34 +967,121 @@ const CreateTournament = () => {
               </label>
             </div>
             <div className="ct-grid four">
-              <label className="ct-field"><span>Plataforma</span><select value={tournament.platform} onChange={(e) => setField('platform', e.target.value)}><option>PC</option><option>Mobile</option><option>Consola</option><option>Crossplay</option></select></label>
+              <label className="ct-field"><span>Plataforma</span><select value={tournament.platform} onChange={(e) => setField('platform', e.target.value)}>{PLATFORM_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
               <label className="ct-field"><span>Zona horaria</span><select value={tournament.timezone} onChange={(e) => setField('timezone', e.target.value)}><option value="UTC">UTC</option><option value="America/Santo_Domingo">America/Santo_Domingo</option><option value="America/New_York">America/New_York</option><option value="America/Mexico_City">America/Mexico_City</option><option value="America/Bogota">America/Bogota</option><option value="Europe/Madrid">Europe/Madrid</option><option value="Europe/London">Europe/London</option><option value="Asia/Tokyo">Asia/Tokyo</option></select></label>
               <label className="ct-field"><span>Fecha inicio</span><input type="date" min={todayInput} required value={tournament.date} onChange={(e) => setField('date', e.target.value)} /></label>
               <label className="ct-field"><span>Hora inicio</span><input type="time" required value={tournament.time} onChange={(e) => setField('time', e.target.value)} /></label>
             </div>
-            <label className="ct-field"><span>Descripcion</span><textarea rows="3" value={tournament.description} onChange={(e) => setField('description', e.target.value)} /></label>
+            <label className="ct-field">
+              <span>Descripcion</span>
+              <textarea rows="3" maxLength={1500} value={tournament.description} onChange={(e) => setField('description', e.target.value)} />
+              <small className="ct-char-count">{tournament.description.length} / 1500</small>
+            </label>
             <div className="ct-grid two">
               <label className="ct-field ct-file"><span>Banner</span><input type="file" accept="image/*" onChange={(e) => setFile(e, 'bannerFile')} /><small><FaFileUpload /> Imagen del torneo</small></label>
               <label className="ct-field ct-file"><span>Reglamento PDF</span><input type="file" accept=".pdf" onChange={(e) => setFile(e, 'rulesPdf')} /><small><FaFilePdf /> Recomendado para validez legal</small></label>
             </div>
+            {bannerPreview && (
+              <div className="ct-banner-preview">
+                <img src={bannerPreview} alt="Preview del banner" />
+              </div>
+            )}
           </fieldset>
         </section>
 
         <section className={`ct-card ${!unlockFormat ? 'is-locked' : ''}`}>
-          <div className="ct-card-title"><span className="ct-step">02</span><FaSitemap /><h3>Formato y elegibilidad</h3></div>
+          <div className="ct-card-title"><span className={`ct-step ${formatReady ? 'ct-step--done' : ''}`}>02</span><FaSitemap /><h3>Formato y elegibilidad</h3>{formatReady && <FaCheckCircle className="ct-step-check" />}</div>
           <p className="ct-lead">Define estructura competitiva, ventanas de registro y requisitos de participacion.</p>
           {!unlockFormat && <p className="ct-locked-note">Completa el Paso 01 para desbloquear este bloque.</p>}
           <fieldset className="ct-fieldset" disabled={!unlockFormat}>
             <div className="ct-grid four">
-              <label className="ct-field"><span>Cupos</span><input type="number" min="2" required value={tournament.maxSlots} onChange={(e) => setField('maxSlots', e.target.value)} /></label>
+              <label className="ct-field">
+                <span>Cantidad</span>
+                <div className="ct-inline-pair ct-inline-pair--count">
+                  <select
+                    required
+                    value={selectedSlotPreset}
+                    onChange={(e) => setMaxSlotsPreset(e.target.value)}
+                  >
+                    <option value="">Seleccionar</option>
+                    {BRACKET_SLOT_PRESETS.map((slots) => (
+                      <option key={slots} value={slots}>{slots}</option>
+                    ))}
+                    <option value="custom">Escribir cantidad</option>
+                  </select>
+                  <input
+                    type="number"
+                    min="4"
+                    step="1"
+                    placeholder="Ej: 48"
+                    value={slotInputMode === 'custom' ? tournament.maxSlots : ''}
+                    onChange={(e) => setCustomMaxSlots(e.target.value)}
+                    disabled={slotInputMode !== 'custom'}
+                  />
+                </div>
+                <small>Presets rapidos desde 4 equipos y opcion manual si necesitas otro numero.</small>
+              </label>
               <label className="ct-field"><span>Genero</span><select value={tournament.gender} onChange={(e) => setField('gender', e.target.value)}><option>Masculino</option><option>Femenino</option><option>Mixto</option></select></label>
               <label className="ct-field"><span>Equipo</span><select value={tournament.modality} onChange={(e) => setField('modality', e.target.value)}><option value="">Seleccionar</option><option>1v1</option><option>2v2</option><option>3v3</option><option>5v5</option></select></label>
-              <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}><option>Eliminacion Directa</option><option>Doble Eliminacion</option><option>Swiss</option><option>Round Robin</option></select></label>
+              <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}>{FORMAT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
             </div>
             <div className="ct-grid three">
               <label className="ct-field"><span>Serie</span><select value={tournament.matchConfig.seriesType} onChange={(e) => setNested('matchConfig', 'seriesType', e.target.value)}><option>BO1</option><option>BO3</option><option>BO5</option><option>FT2</option></select></label>
               <label className="ct-field"><span>Patch</span><input placeholder="Ej: 15.4" value={tournament.matchConfig.patchVersion} onChange={(e) => setNested('matchConfig', 'patchVersion', e.target.value)} /></label>
-              <label className="ct-field"><span>Map pool</span><input placeholder="Ascent, Bind, Haven" value={tournament.matchConfig.mapPool} onChange={(e) => setNested('matchConfig', 'mapPool', e.target.value)} /></label>
+              <label className="ct-field">
+                <span>Map pool</span>
+                {mapOptions.length > 0 ? (
+                  <div className="ct-map-pool">
+                    {tournament.matchConfig.mapPool.length > 0 ? (
+                      <div className="ct-map-chips">
+                        {tournament.matchConfig.mapPool.map((map) => (
+                          <span key={map} className="ct-map-chip">
+                            {map}
+                            <button type="button" onClick={() => setTournament((p) => ({ ...p, matchConfig: { ...p.matchConfig, mapPool: p.matchConfig.mapPool.filter((m) => m !== map) } }))}>×</button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <small className="ct-map-empty">Sin mapas seleccionados</small>
+                    )}
+                    <div className="ct-map-actions">
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val) return;
+                          setTournament((p) => {
+                            if (p.matchConfig.mapPool.includes(val)) return p;
+                            return { ...p, matchConfig: { ...p.matchConfig, mapPool: [...p.matchConfig.mapPool, val] } };
+                          });
+                        }}
+                      >
+                        <option value="">Agregar mapa...</option>
+                        {mapOptions.filter((o) => !tournament.matchConfig.mapPool.includes(o.value)).map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      {tournament.matchConfig.mapPool.length < mapOptions.length && (
+                        <button type="button" className="ct-map-all-btn" onClick={() => setTournament((p) => ({ ...p, matchConfig: { ...p.matchConfig, mapPool: mapOptions.map((o) => o.value) } }))}>
+                          Todos
+                        </button>
+                      )}
+                      {tournament.matchConfig.mapPool.length > 0 && (
+                        <button type="button" className="ct-map-all-btn ct-map-clear-btn" onClick={() => setTournament((p) => ({ ...p, matchConfig: { ...p.matchConfig, mapPool: [] } }))}>
+                          Limpiar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <input placeholder="Ascent, Bind, Haven" value={pendingMap} onChange={(e) => setPendingMap(e.target.value)} onBlur={() => {
+                    if (!pendingMap.trim()) return;
+                    const maps = pendingMap.split(',').map((m) => m.trim()).filter(Boolean);
+                    setTournament((p) => ({ ...p, matchConfig: { ...p.matchConfig, mapPool: [...new Set([...p.matchConfig.mapPool, ...maps])] } }));
+                    setPendingMap('');
+                  }} />
+                )}
+              </label>
             </div>
             <div className="ct-grid four">
               <label className="ct-field"><span>Registro desde</span><input type="date" max={tournament.registrationWindow.end || tournament.date || undefined} value={tournament.registrationWindow.start} onChange={(e) => setNested('registrationWindow', 'start', e.target.value)} /></label>
@@ -890,7 +1131,11 @@ const CreateTournament = () => {
                 {riotMinimumPrizePool > 0 && ` Minimo actual: ${formatMoneyAmount(riotMinimumPrizePool)} ${tournament.currency}.`}
               </p>
             )}
-            <label className="ct-field"><span>Notas de elegibilidad</span><textarea rows="2" value={tournament.eligibility.notes} onChange={(e) => setNested('eligibility', 'notes', e.target.value)} /></label>
+            <label className="ct-field">
+              <span>Notas de elegibilidad</span>
+              <textarea rows="2" maxLength={500} value={tournament.eligibility.notes} onChange={(e) => setNested('eligibility', 'notes', e.target.value)} />
+              {tournament.eligibility.notes && <small className="ct-char-count">{tournament.eligibility.notes.length} / 500</small>}
+            </label>
             <label className="ct-checkline">
               <input
                 type="checkbox"
@@ -908,7 +1153,7 @@ const CreateTournament = () => {
         </section>
 
         <section className={`ct-card ct-card--payments ${!unlockPayments ? 'is-locked' : ''}`}>
-          <div className="ct-card-title"><span className="ct-step">03</span><FaMoneyBillWave /><h3>Pagos y premios</h3></div>
+          <div className="ct-card-title"><span className={`ct-step ${paymentsReady ? 'ct-step--done' : ''}`}>03</span><FaMoneyBillWave /><h3>Pagos y premios</h3>{paymentsReady && <FaCheckCircle className="ct-step-check" />}</div>
           <p className="ct-lead">Define si el evento tendra premios en dinero, en objetos, mixto o sin premio.</p>
           {!unlockPayments && <p className="ct-locked-note">Completa el Paso 02 para desbloquear este bloque.</p>}
           <fieldset className="ct-fieldset" disabled={!unlockPayments}>
@@ -920,23 +1165,34 @@ const CreateTournament = () => {
               <label className="ct-field"><span>2do / 3ro</span><div className="ct-inline-pair"><input type="number" min="0" placeholder="0" value={tournament.prizesByRank.second} onChange={(e) => setPrize('second', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'items'} /><input type="number" min="0" placeholder="0" value={tournament.prizesByRank.third} onChange={(e) => setPrize('third', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'items'} /></div></label>
             </div>
             <label className="ct-field"><span>Premios en objetos / beneficios</span><textarea rows="2" placeholder="Ej: medallas, trofeos, periféricos, becas, gift cards" value={tournament.prizeDetails} onChange={(e) => setField('prizeDetails', e.target.value)} disabled={tournament.prizeMode === 'none' || tournament.prizeMode === 'money'} /></label>
+            {(tournament.prizeMode === 'money' || tournament.prizeMode === 'mixed') && (() => {
+              const pool = Number(tournament.prizePool) || 0;
+              const rankSum = (Number(tournament.prizesByRank.first) || 0) + (Number(tournament.prizesByRank.second) || 0) + (Number(tournament.prizesByRank.third) || 0);
+              if (pool > 0 && rankSum > pool) {
+                return <p className="ct-prize-warning">La suma de premios por puesto ({rankSum}) supera el prize pool ({pool}).</p>;
+              }
+              return null;
+            })()}
           </fieldset>
         </section>
 
         <section className={`ct-card ct-card--broadcast ${!unlockBroadcast ? 'is-locked' : ''}`}>
-          <div className="ct-card-title"><span className="ct-step">04</span><FaBullhorn /><h3>Contacto y difusion</h3></div>
+          <div className="ct-card-title"><span className={`ct-step ${contactReady ? 'ct-step--done' : ''}`}>04</span><FaBullhorn /><h3>Contacto y difusion</h3>{contactReady && <FaCheckCircle className="ct-step-check" />}</div>
           <p className="ct-lead">Canales para soporte, comunicacion y transmision del torneo.</p>
           {!unlockBroadcast && <p className="ct-locked-note">Completa el Paso 03 para desbloquear este bloque.</p>}
           <fieldset className="ct-fieldset" disabled={!unlockBroadcast}>
             <div className="ct-grid three">
-              <label className="ct-field"><span>Email</span><input type="email" value={tournament.contact.email} onChange={(e) => setNested('contact', 'email', e.target.value)} /></label>
-              <label className="ct-field"><span>Telefono</span><input value={tournament.contact.phone} onChange={(e) => setNested('contact', 'phone', e.target.value)} /></label>
-              <label className="ct-field"><span>Discord</span><input type="url" value={tournament.contact.discordInvite} onChange={(e) => setNested('contact', 'discordInvite', e.target.value)} /><small><FaDiscord /> Soporte oficial</small></label>
+              <label className="ct-field"><span>Email de contacto</span><input type="email" placeholder="torneos@ejemplo.com" value={tournament.contact.email} onChange={(e) => setNested('contact', 'email', e.target.value)} /><small>Requerido para publicar</small></label>
+              <label className="ct-field"><span>Telefono / WhatsApp</span><input type="tel" placeholder="+1 809-555-0199" value={tournament.contact.phone} onChange={(e) => setNested('contact', 'phone', e.target.value)} /><small>Alternativa a Discord para desbloquear</small></label>
+              <label className="ct-field"><span>Discord (invite)</span><input type="url" placeholder="https://discord.gg/..." value={tournament.contact.discordInvite} onChange={(e) => setNested('contact', 'discordInvite', e.target.value)} /><small><FaDiscord /> Canal de soporte oficial</small></label>
             </div>
             <div className="ct-grid two">
               <label className="ct-field"><span>Stream oficial</span><input type="url" placeholder="https://www.twitch.tv/..." value={tournament.broadcast.streamUrl} onChange={(e) => setNested('broadcast', 'streamUrl', e.target.value)} /></label>
               <label className="ct-field"><span>Idioma stream</span><select value={tournament.broadcast.streamLanguage} onChange={(e) => setNested('broadcast', 'streamLanguage', e.target.value)}><option value="es">Espanol</option><option value="en">Ingles</option><option value="pt">Portugues</option><option value="fr">Frances</option></select></label>
             </div>
+            {!contactReady && unlockBroadcast && (
+              <p className="ct-inline-help">Completa email + al menos un canal (Discord, stream o telefono) para desbloquear el siguiente paso.</p>
+            )}
           </fieldset>
         </section>
 
@@ -960,8 +1216,71 @@ const CreateTournament = () => {
           </fieldset>
         </section>
 
+        <section className={`ct-card ${!unlockSponsors ? 'is-locked' : ''}`}>
+          <div className="ct-card-title"><span className="ct-step">05b</span><FaUserShield /><h3>Staff del torneo</h3></div>
+          <p className="ct-lead">Agrega moderadores, casters, coaches o analistas. Se sugieren usuarios con roles de esports del mismo juego.</p>
+          {!unlockSponsors && <p className="ct-locked-note">Completa el Paso 04 para desbloquear este bloque.</p>}
+          <fieldset className="ct-fieldset" disabled={!unlockSponsors}>
+            <div className="ct-staff-search-row">
+              <select className="ct-staff-role-select" value={staffRole} onChange={(e) => setStaffRole(e.target.value)}>
+                {STAFF_ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <div className="ct-staff-autocomplete">
+                <input
+                  placeholder="Nombre o ID del staff"
+                  value={staffQuery}
+                  onChange={(e) => setStaffQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (staffSuggestions.length > 0) {
+                        addStaffMember(staffSuggestions[0].username, staffRole);
+                      } else if (staffQuery.trim()) {
+                        addStaffMember(staffQuery, staffRole);
+                      }
+                    }
+                  }}
+                />
+                {staffLoading && <span className="ct-staff-loading">Buscando...</span>}
+                {staffSuggestions.length > 0 && (
+                  <ul className="ct-staff-suggestions">
+                    {staffSuggestions.map((u) => (
+                      <li key={u.id || u.username} onClick={() => addStaffMember(u.username, staffRole)}>
+                        <div className="ct-staff-suggestion-info">
+                          {u.avatar && <img src={u.avatar} alt="" className="ct-staff-avatar" />}
+                          <div>
+                            <strong>{u.username}</strong>
+                            {u.fullName && <span className="ct-staff-fullname">{u.fullName}</span>}
+                          </div>
+                        </div>
+                        <div className="ct-staff-roles">
+                          {(u.roles || []).map((r) => <span key={r} className="ct-staff-role-tag">{r}</span>)}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <button type="button" className="ct-btn ct-btn-outline ct-staff-add-btn" onClick={() => { if (staffQuery.trim()) addStaffMember(staffQuery, staffRole); }}>
+                <FaPlus /> Agregar
+              </button>
+            </div>
+            {tournament.staffMembers.length > 0 && (
+              <div className="ct-staff-list">
+                {tournament.staffMembers.map((m, i) => (
+                  <div className="ct-staff-member" key={`${m.username}-${i}`}>
+                    <span className="ct-staff-member-name">{m.username}</span>
+                    <span className="ct-staff-role-tag">{STAFF_ROLE_OPTIONS.find((r) => r.value === m.role)?.label || m.role}</span>
+                    <button type="button" className="ct-remove" onClick={() => removeStaffMember(i)}><FaTrash /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </fieldset>
+        </section>
+
         <section className={`ct-card ct-legal ${!unlockLegal ? 'is-locked' : ''}`}>
-          <div className="ct-card-title"><span className="ct-step">06</span><FaShieldAlt /><h3>Cumplimiento legal internacional</h3></div>
+          <div className="ct-card-title"><span className={`ct-step ${canSubmit ? 'ct-step--done' : ''}`}>06</span><FaShieldAlt /><h3>Cumplimiento legal internacional</h3>{canSubmit && <FaCheckCircle className="ct-step-check" />}</div>
           <p className="ct-lead">Define la jurisdiccion legal del torneo y confirma los requisitos minimos antes de publicar.</p>
           {!unlockLegal && <p className="ct-locked-note">Completa el Paso 05 para desbloquear este bloque.</p>}
           <fieldset className="ct-fieldset" disabled={!unlockLegal}>
@@ -1029,7 +1348,7 @@ const CreateTournament = () => {
 
         <div className="ct-actions">
           {isEditMode && <button type="button" className="ct-btn ct-btn-outline" onClick={() => navigate('/tournaments')}>Cancelar</button>}
-          <button type="submit" className="ct-btn ct-btn-main" disabled={!canSubmit}>{isEditMode ? 'Guardar cambios' : 'Publicar torneo'}</button>
+          <button type="submit" className="ct-btn ct-btn-main" disabled={!canSubmit || isSubmitting}>{isSubmitting ? 'Publicando...' : isEditMode ? 'Guardar cambios' : 'Publicar torneo'}</button>
         </div>
       </form>
     </div>
