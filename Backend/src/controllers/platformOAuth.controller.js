@@ -122,6 +122,17 @@ const ensureEpicConfig = () => {
   return { clientId, clientSecret, redirectUri };
 };
 
+export const requireEpicOAuthConfig = (_req, res, next) => {
+  try {
+    ensureEpicConfig();
+    return next();
+  } catch (error) {
+    return res.status(503).json({
+      message: 'Epic Games OAuth no está configurado todavía. Faltan EPIC_CLIENT_ID, EPIC_CLIENT_SECRET o EPIC_REDIRECT_URI.'
+    });
+  }
+};
+
 const assertConnectionNotLinkedElsewhere = async ({ provider, providerId, currentUserId }) => {
   const normalizedProvider = String(provider || '').trim().toLowerCase();
   const normalizedProviderId = String(providerId || '').trim();

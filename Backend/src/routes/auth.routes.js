@@ -44,6 +44,7 @@ import {
 import {
   epicAuthCallback,
   epicAuthStart,
+  requireEpicOAuthConfig,
   steamAuthFinalize,
   steamAuthStart,
   unlinkEpic,
@@ -105,7 +106,7 @@ router.delete('/discord', verifyToken, unlinkDiscord);
 router.post('/steam/start', verifyToken, rlPlatformOAuth, steamAuthStart);
 router.post('/steam/finalize', verifyToken, rlPlatformOAuth, steamAuthFinalize);
 router.delete('/steam', verifyToken, unlinkSteam);
-router.post('/epic/start', verifyToken, rlPlatformOAuth, epicAuthStart);
+router.post('/epic/start', verifyToken, requireEpicOAuthConfig, rlPlatformOAuth, epicAuthStart);
 router.get('/epic/callback', epicAuthCallback);
 router.delete('/epic', verifyToken, unlinkEpic);
 
