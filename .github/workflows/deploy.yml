@@ -30,10 +30,10 @@ jobs:
 
             # 3. Construcción del Frontend
             echo "🏗️ Construyendo Frontend..."
-            cd ../frontend
+            cd ..
+            cd frontend
             npm install
             npm run build
-            
             echo "🚀 Esportefy-web actualizado correctamente."
 
       - name: Success Notification
