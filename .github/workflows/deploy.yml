@@ -30,7 +30,7 @@ jobs:
 
             # 3. Construcción del Frontend
             echo "🏗️ Construyendo Frontend..."
-            cd ../Frontend
+            cd ../frontend
             npm install
             npm run build
             
@@ -45,7 +45,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "✅ Deploy Exitoso: Esportefy-web"
-          to: felizarlinton@gmail.com
+          to: steliantsoft@gmail.com
           from: GitHub Actions (CI/CD)
           body: |
             ¡El despliegue de Esportefy-web fue exitoso!
@@ -64,7 +64,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "❌ ERROR de Deploy: Esportefy-web"
-          to: felizarlinton@gmail.com
+          to: steliantsoft@gmail.com
           from: GitHub Actions (CI/CD)
           body: |
             Hubo un error al intentar desplegar Esportefy-web.
