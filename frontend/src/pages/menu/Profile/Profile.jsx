@@ -406,7 +406,7 @@ const Profile = () => {
 
                     <div className="pf-identity">
                         <div className="pf-identity__name">
-                            <PlayerTag name={user.username || "Player"} tagId={user.selectedTagId} size="xlarge" />
+                            <PlayerTag nickname={user.nickname || user.username} name={user.name} tagId={user.selectedTagId} size="xlarge" />
                             {user.university?.verified && <span className="pf-verified"><i className='bx bxs-check-circle' /></span>}
                         </div>
                         {user.fullName && <p className="pf-identity__realname">{user.fullName}</p>}

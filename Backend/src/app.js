@@ -1,13 +1,15 @@
 import express from 'express';
 import cors from 'cors';
+import mongoSanitize from 'express-mongo-sanitize';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
-import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
 import { logger } from './middlewares/logger.js';
 import { verifyCsrf } from './middlewares/csrf.middleware.js';
+import newsletterRoutes from './routes/newsletter.routes.js';
+import rankingRoutes from './routes/ranking.routes.js';
 
 import authRoutes from './routes/auth.routes.js';
 import teamRoutes from './routes/team.routes.js';
@@ -56,6 +58,16 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token']
 };
 
+const sanitizeRequest = (req, _res, next) => {
+  ['body', 'params', 'headers', 'query'].forEach((key) => {
+    const target = req[key];
+    if (target && typeof target === 'object') {
+      mongoSanitize.sanitize(target);
+    }
+  });
+  next();
+};
+
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
@@ -95,7 +107,7 @@ try {
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
-app.use(mongoSanitize());
+app.use(sanitizeRequest);
 app.use(securityMiddleware);
 app.use(logger);
 app.use(verifyCsrf);
@@ -103,7 +115,10 @@ app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/team', teamRoutes);
 app.use('/api/tournaments', tournamentRoutes);
+app.use('/api/rankings', rankingRoutes);
+app.use('/api/ranking', rankingRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/community', communityRoutes);

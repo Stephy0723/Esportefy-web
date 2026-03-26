@@ -247,6 +247,11 @@ const EditProfile = () => {
         message: '',
         warning: false
     });
+    const [fieldRestrictions, setFieldRestrictions] = useState({
+        countryLocked: false,
+        birthDateLocked: false,
+        nextNameChangeDate: null
+    });
 
     const fetchProfileOverview = useCallback(async (token) => {
         try {
@@ -383,6 +388,12 @@ const EditProfile = () => {
             } else {
                 setProfileProgression(EMPTY_PROFILE_PROGRESSION);
             }
+            // Check field restrictions
+            setFieldRestrictions({
+                countryLocked: Boolean(u.countrySetAt),
+                birthDateLocked: Boolean(u.birthDateSetAt),
+                nextNameChangeDate: u.lastNameChangeAt ? new Date(new Date(u.lastNameChangeAt).getTime() + 21 * 24 * 60 * 60 * 1000) : null
+            });
             setLoading(false);
         } catch (err) {
             console.error('Error fetching profile:', err);
@@ -609,14 +620,17 @@ const EditProfile = () => {
             'avatar', 'bio', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId'
         ];
         stringFields.forEach(key => {
+            // Skip locked fields
+            if (key === 'country' && fieldRestrictions.countryLocked) return;
+            
             const val = key === 'phone' ? normalizedPhone : formData[key];
             if (val !== undefined && val !== null && val !== '') {
                 data.append(key, val);
             }
         });
 
-        // Date fields — only send if valid (not empty)
-        if (formData.birthDate) {
+        // Date fields — only send if valid (not empty) and not locked
+        if (formData.birthDate && !fieldRestrictions.birthDateLocked) {
             data.append('birthDate', formData.birthDate);
         }
 
@@ -692,7 +706,27 @@ const EditProfile = () => {
             if (u.avatar) setPreview(resolveMediaUrl(u.avatar));
             await fetchProfileOverview(token);
         } catch (err) {
-            const msg = err.response?.data?.message || 'Error al guardar los cambios.';
+            const status = err.response?.status;
+            const data = err.response?.data;
+            let msg = data?.message || 'Error al guardar los cambios.';
+
+            // Handle field restriction errors
+            if (status === 403) {
+                // Field is locked permanently
+                if (data?.restriction === 'country_locked') {
+                    msg = 'Tu país no puede ser modificado. Esta información es permanente.';
+                } else if (data?.restriction === 'birthdate_locked') {
+                    msg = 'Tu fecha de nacimiento no puede ser modificada. Esta información es permanente.';
+                }
+            } else if (status === 429) {
+                // Name change throttle
+                if (data?.restriction === 'name_throttle' && data?.nextAvailableAt) {
+                    const nextDate = new Date(data.nextAvailableAt);
+                    const formattedDate = nextDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                    msg = `Solo puedes cambiar tu nombre una vez cada 3 semanas. Próximo cambio disponible: ${formattedDate}`;
+                }
+            }
+            
             setSaveMsg({ type: 'error', text: msg });
         } finally {
             setSaving(false);
@@ -873,13 +907,31 @@ const EditProfile = () => {
                                     <div className="ep__field">
                                         <label>Nombre Completo <span className="ep__req">*</span></label>
                                         <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} />
+                                        {fieldRestrictions.nextNameChangeDate && new Date() < fieldRestrictions.nextNameChangeDate && (
+                                            <span className="ep__helper-text" style={{ color: '#FF9500' }}>
+                                                <i className='bx bx-time' style={{ marginRight: '6px' }}></i>
+                                                Próximo cambio disponible: {fieldRestrictions.nextNameChangeDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="ep__field">
-                                        <label>País</label>
-                                        <select name="country" value={formData.country} onChange={handleChange}>
+                                        <label>País {fieldRestrictions.countryLocked && <span style={{ color: '#FF6B6B', marginLeft: '4px' }}>🔒</span>}</label>
+                                        <select 
+                                            name="country" 
+                                            value={formData.country} 
+                                            onChange={handleChange}
+                                            disabled={fieldRestrictions.countryLocked}
+                                            style={{ opacity: fieldRestrictions.countryLocked ? 0.6 : 1, cursor: fieldRestrictions.countryLocked ? 'not-allowed' : 'pointer' }}
+                                        >
                                             <option value="">Seleccionar...</option>
                                             {countryList.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
+                                        {fieldRestrictions.countryLocked && (
+                                            <span className="ep__helper-text" style={{ color: '#FF6B6B' }}>
+                                                <i className='bx bx-lock' style={{ marginRight: '6px' }}></i>
+                                                Este dato no puede ser modificado (permanente)
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="ep__field">
                                         <label>Teléfono</label>
@@ -903,8 +955,22 @@ const EditProfile = () => {
                                         )}
                                     </div>
                                     <div className="ep__field">
-                                        <label>Fecha de Nacimiento</label>
-                                        <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} className="ep__date-input" />
+                                        <label>Fecha de Nacimiento {fieldRestrictions.birthDateLocked && <span style={{ color: '#FF6B6B', marginLeft: '4px' }}>🔒</span>}</label>
+                                        <input 
+                                            type="date" 
+                                            name="birthDate" 
+                                            value={formData.birthDate} 
+                                            onChange={handleChange} 
+                                            className="ep__date-input"
+                                            disabled={fieldRestrictions.birthDateLocked}
+                                            style={{ opacity: fieldRestrictions.birthDateLocked ? 0.6 : 1, cursor: fieldRestrictions.birthDateLocked ? 'not-allowed' : 'pointer' }}
+                                        />
+                                        {fieldRestrictions.birthDateLocked && (
+                                            <span className="ep__helper-text" style={{ color: '#FF6B6B' }}>
+                                                <i className='bx bx-lock' style={{ marginRight: '6px' }}></i>
+                                                Este dato no puede ser modificado (permanente)
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="ep__field">
                                         <label>Género</label>

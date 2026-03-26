@@ -2460,3 +2460,111 @@
         padding: 10px;
     }
 }
+
+/* ═══════════════════════════════════════
+   PLAYER PROFILE (public view) — pp__ prefix
+   ═══════════════════════════════════════ */
+
+/* About section */
+.pp-about {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pp-about__bio {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.pp-about__row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pp-about__label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.pp-about__label i {
+    font-size: 0.9rem;
+    color: var(--primary);
+}
+
+.pp-about__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Mutual badge */
+.pp-mutual {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 14px 18px;
+    background: color-mix(in srgb, var(--primary) 8%, var(--bg-card));
+    border-color: color-mix(in srgb, var(--primary) 25%, var(--border-color));
+}
+
+.pp-mutual i {
+    font-size: 1.3rem;
+}
+
+/* Stats grid */
+.pp-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.pp-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 8px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--primary) 4%, transparent);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.pp-stat-item:hover {
+    border-color: color-mix(in srgb, var(--primary) 30%, var(--border-color));
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.pp-stat-item__val {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.pp-stat-item__label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+    .pp-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

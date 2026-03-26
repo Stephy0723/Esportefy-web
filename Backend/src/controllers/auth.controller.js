@@ -567,6 +567,9 @@ export const register = async (req, res) => {
             gender: payload.gender,
             country,
             birthDate,
+            // Mark when country and birthDate are established (can't be changed later)
+            countrySetAt: new Date(),
+            birthDateSetAt: new Date(),
             selectedGames,
             communityGameSubscriptions,
             experience: normalizeStringArray(payload.experience),
@@ -819,6 +822,194 @@ export const getUserCard = async (req, res) => {
     } catch (error) {
         console.error('Error en getUserCard:', error);
         return res.status(500).json({ message: 'Error al cargar la tarjeta de usuario.' });
+    }
+};
+
+export const getPublicProfile = async (req, res) => {
+    try {
+        const param = String(req.params?.userIdOrCode || req.params?.userId || '').trim();
+        if (!param) {
+            return res.status(400).json({ message: 'Usuario inválido.' });
+        }
+
+        const viewerIdStr = String(req.userId);
+
+        const isObjectId = isValidObjectIdLike(param);
+        const query = isObjectId ? { _id: param } : { userCode: param };
+
+        const target = await User.findOne(query)
+            .select('username fullName avatar bio status country selectedGames experience preferredRoles languages socialLinks lookingForTeam selectedFrameId selectedBgId selectedTagId userCode university connections.riot connections.discord.verified connections.steam.verified connections.epic.verified connections.mlbb.verified isOrganizer roles createdAt followers following privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
+            .lean();
+
+        if (!target) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        const targetUserId = String(target._id);
+
+        const viewer = await User.findById(req.userId).select('following friends').lean();
+        const viewerFollowing = new Set(toIdArray(viewer?.following));
+        const isFollowing = viewerFollowing.has(String(target._id));
+
+        const targetFollowingIds = toIdArray(target.following);
+        const targetFollowerSet = new Set(toIdArray(target.followers));
+        const isMutual = viewerFollowing.has(String(target._id)) && targetFollowerSet.has(viewerIdStr);
+
+        const teams = await Team.find({
+            game: { $in: SUPPORTED_GAME_NAMES },
+            $or: [
+                { captain: targetUserId },
+                { 'roster.starters.user': targetUserId },
+                { 'roster.subs.user': targetUserId },
+                { 'roster.coach.user': targetUserId }
+            ]
+        })
+            .select('name logo game teamCode captain roster createdAt slogan teamCountry category teamLevel')
+            .lean();
+
+        const teamIds = teams.map(t => t._id);
+        const teamIdSet = new Set(teamIds.map(id => String(id)));
+        const captainTeams = teams.filter(t => String(t?.captain || '') === String(targetUserId)).length;
+
+        const tournaments = teamIds.length
+            ? await Tournament.find({ 'registrations.teamId': { $in: teamIds } })
+                .select('title game status date registrations.teamId registrations.status bracket.rounds.round bracket.rounds.matches.teamA.teamId bracket.rounds.matches.teamB.teamId bracket.rounds.matches.winnerTeamId bracket.rounds.matches.status')
+                .lean()
+            : [];
+
+        let matchesPlayed = 0, matchesWon = 0, tournamentsJoined = 0, tournamentsWon = 0;
+
+        tournaments.forEach(tournament => {
+            const registrations = Array.isArray(tournament?.registrations) ? tournament.registrations : [];
+            const joined = registrations.some(reg => teamIdSet.has(String(reg?.teamId || '')) && String(reg?.status || '').toLowerCase() !== 'rejected');
+            if (joined) tournamentsJoined += 1;
+
+            const rounds = Array.isArray(tournament?.bracket?.rounds) ? tournament.bracket.rounds : [];
+            rounds.forEach(round => {
+                const matches = Array.isArray(round?.matches) ? round.matches : [];
+                matches.forEach(match => {
+                    if (String(match?.status || '').toLowerCase() !== 'finished') return;
+                    const tA = String(match?.teamA?.teamId || '');
+                    const tB = String(match?.teamB?.teamId || '');
+                    if (!teamIdSet.has(tA) && !teamIdSet.has(tB)) return;
+                    matchesPlayed += 1;
+                    if (teamIdSet.has(String(match?.winnerTeamId || ''))) matchesWon += 1;
+                });
+            });
+
+            if (String(tournament?.status || '').toLowerCase() === 'finished' && rounds.length > 0) {
+                const sorted = [...rounds].sort((a, b) => Number(a?.round || 0) - Number(b?.round || 0));
+                const finalMatches = Array.isArray(sorted[sorted.length - 1]?.matches) ? sorted[sorted.length - 1].matches : [];
+                const champion = finalMatches.find(m => m?.winnerTeamId);
+                if (champion && teamIdSet.has(String(champion.winnerTeamId))) tournamentsWon += 1;
+            }
+        });
+
+        const winRate = matchesPlayed > 0 ? Math.round((matchesWon / matchesPlayed) * 100) : 0;
+
+        const communitiesDocs = await Community.find({
+            isActive: true,
+            $or: [{ createdBy: targetUserId }, { 'members.user': targetUserId }]
+        })
+            .sort({ createdAt: -1 })
+            .limit(8)
+            .select('name shortUrl membersCount mainGames media.avatarUrl createdAt createdBy members.user members.role')
+            .lean();
+
+        const communities = communitiesDocs.map(community => {
+            const members = Array.isArray(community?.members) ? community.members : [];
+            const isOwner = String(community?.createdBy || '') === String(targetUserId);
+            const memberEntry = members.find(e => String(e?.user || '') === String(targetUserId));
+            return {
+                id: String(community?._id || ''),
+                name: community?.name || 'Comunidad',
+                shortUrl: community?.shortUrl || '',
+                image: community?.media?.avatarUrl || '',
+                members: Number(community?.membersCount || members.length || 0),
+                role: formatCommunityRoleLabel(isOwner ? 'owner' : memberEntry?.role || 'member')
+            };
+        });
+
+        const mutualFriendIds = targetFollowingIds.filter(id => targetFollowerSet.has(id) && id !== String(targetUserId));
+        const mutualFriendUsers = mutualFriendIds.length > 0
+            ? await User.find({ _id: { $in: mutualFriendIds } })
+                .select('username avatar status selectedGames userCode privacy.showOnlineStatus privacy.showPublicUserCode')
+                .limit(24)
+                .lean()
+            : [];
+        const friends = mutualFriendUsers.map(f => mapFriendPreview(f))
+            .sort((a, b) => {
+                const pa = PROFILE_STATUS_PRIORITY[String(a.status || '').toLowerCase()] ?? 99;
+                const pb = PROFILE_STATUS_PRIORITY[String(b.status || '').toLowerCase()] ?? 99;
+                return pa !== pb ? pa - pb : String(a.name).localeCompare(String(b.name), 'es');
+            });
+
+        const recognitions = [];
+        if (tournamentsWon > 0) recognitions.push({ id: 'recognition-tournament-winner', name: tournamentsWon > 1 ? `${tournamentsWon} títulos logrados` : 'Campeón de torneo', event: 'Competencia oficial', type: 'gold' });
+        if (target?.university?.verified) recognitions.push({ id: 'recognition-university-verified', name: 'Estudiante verificado', event: target?.university?.universityName || 'Universidad', type: 'silver' });
+        if (captainTeams > 0) recognitions.push({ id: 'recognition-team-leader', name: captainTeams > 1 ? `Lidera ${captainTeams} equipos` : 'Líder de equipo', event: 'Gestión competitiva', type: 'gold' });
+        if (winRate >= 60 && matchesPlayed >= 5) recognitions.push({ id: 'recognition-winrate', name: `Win rate ${winRate}%`, event: `${matchesWon} victorias oficiales`, type: 'silver' });
+
+        const achievements = [];
+        if (captainTeams > 0) achievements.push({ id: 'team-captain', name: 'Capitán de equipo', icon: '👑', tournament: 'Gestión de equipos', date: formatMonthYear(target?.createdAt), verified: true });
+        if (tournamentsJoined > 0) achievements.push({ id: 'tournament-competitor', name: 'Competidor activo', icon: '🎮', tournament: `${tournamentsJoined} torneos`, date: formatMonthYear(Date.now()), verified: true });
+        if (tournamentsWon > 0) achievements.push({ id: 'tournament-winner', name: 'Campeón de torneo', icon: '🏆', tournament: `${tournamentsWon} título(s)`, date: formatMonthYear(Date.now()), verified: true });
+        if (target?.university?.verified) achievements.push({ id: 'university-verified', name: 'Verificación universitaria', icon: '🎓', tournament: target?.university?.universityName || 'Universidad', date: formatMonthYear(target?.university?.verifiedAt), verified: true });
+
+        const teamsPublic = teams.filter(t => isSupportedGameName(t?.game)).map(t => ({
+            _id: String(t._id),
+            name: t.name,
+            logo: t.logo || '',
+            game: t.game,
+            teamCode: t.teamCode || '',
+            slogan: t.slogan || '',
+            teamCountry: t.teamCountry || '',
+            category: t.category || '',
+            teamLevel: t.teamLevel || '',
+            memberCount: (t.roster?.starters?.length || 0) + (t.roster?.subs?.length || 0) + (t.roster?.coach ? 1 : 0),
+            isCaptain: String(t?.captain || '') === String(targetUserId)
+        }));
+
+        return res.status(200).json({
+            id: String(target._id),
+            username: target.username || 'Jugador',
+            fullName: target.fullName || '',
+            avatar: target.avatar || '',
+            bio: target.bio || '',
+            status: extractVisibleStatus(target),
+            country: target.country || '',
+            selectedGames: Array.isArray(target.selectedGames) ? target.selectedGames : [],
+            experience: Array.isArray(target.experience) ? target.experience : [],
+            preferredRoles: Array.isArray(target.preferredRoles) ? target.preferredRoles : [],
+            languages: Array.isArray(target.languages) ? target.languages : [],
+            socialLinks: target.socialLinks || {},
+            lookingForTeam: Boolean(target.lookingForTeam),
+            isOrganizer: Boolean(target.isOrganizer),
+            roles: target.roles || {},
+            selectedTagId: target.selectedTagId || null,
+            selectedFrameId: target.selectedFrameId || null,
+            selectedBgId: target.selectedBgId || null,
+            userCode: extractVisibleUserCode(target),
+            university: {
+                verified: Boolean(target?.university?.verified),
+                universityName: target?.university?.verified ? String(target?.university?.universityName || '') : ''
+            },
+            connections: buildPublicLinkedConnections(target),
+            createdAt: target.createdAt,
+            followersCount: Array.isArray(target.followers) ? target.followers.length : 0,
+            followingCount: Array.isArray(target.following) ? target.following.length : 0,
+            isFollowing,
+            isMutual,
+            stats: { matches: matchesPlayed, wins: matchesWon, winRate, tournaments: tournamentsJoined, tournamentsWon, teams: teams.length },
+            teams: teamsPublic,
+            communities,
+            friends,
+            achievements,
+            recognitions
+        });
+    } catch (error) {
+        console.error('Error en getPublicProfile:', error);
+        return res.status(500).json({ message: 'Error al cargar el perfil público.' });
     }
 };
 
@@ -1651,14 +1842,48 @@ export const resetPassword = async (req, res) => {
 // 3. Actualizar perfil
 export const updateProfile = async (req, res) => {
     try {
-        const currentUser = await User.findById(req.userId).select('avatar socialLinks privacy');
+        const currentUser = await User.findById(req.userId).select('avatar socialLinks privacy countrySetAt birthDateSetAt lastNameChangeAt fullName country birthDate');
         if (!currentUser) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
 
+        // ⚠️ RESTRICTION: Country & BirthDate can only be set ONCE (at registration)
+        // Cannot be changed after creation
+        if (req.body.country !== undefined && currentUser.countrySetAt) {
+            return res.status(403).json({ 
+                message: 'No puedes cambiar el país después de creada tu cuenta. Esta información es permanente.',
+                restriction: 'country_locked'
+            });
+        }
+        if (req.body.birthDate !== undefined && currentUser.birthDateSetAt) {
+            return res.status(403).json({ 
+                message: 'No puedes cambiar tu fecha de nacimiento después de creada tu cuenta. Esta información es permanente.',
+                restriction: 'birthdate_locked'
+            });
+        }
+
+        // ⚠️ RESTRICTION: Name changes are throttled - can only change every 3 weeks (21 days)
+        if (req.body.fullName !== undefined && req.body.fullName !== currentUser.fullName) {
+            const now = new Date();
+            const lastChange = currentUser.lastNameChangeAt;
+            if (lastChange) {
+                const threeWeeksMs = 21 * 24 * 60 * 60 * 1000;
+                const timeSinceLastChange = now - new Date(lastChange);
+                if (timeSinceLastChange < threeWeeksMs) {
+                    const nextChangeDate = new Date(new Date(lastChange).getTime() + threeWeeksMs);
+                    return res.status(429).json({ 
+                        message: `Solo puedes cambiar tu nombre una vez cada 3 semanas. Próximo cambio disponible: ${nextChangeDate.toLocaleDateString()}`,
+                        restriction: 'name_throttle',
+                        nextAvailableAt: nextChangeDate.toISOString()
+                    });
+                }
+            }
+        }
+
         // Solo permitimos actualizar campos seguros del perfil
         const allowedFields = [
-            'avatar', 'bio', 'fullName', 'phone', 'gender', 'country', 'birthDate',
+            'avatar', 'bio', 'fullName', 'phone', 'gender',
+            // country y birthDate NO SON permitidos (bloqueados arriba)
             'selectedGames', 'platforms', 'experience', 'goals',
             'username', 'email', 'status', 'selectedFrameId', 'selectedBgId', 'selectedTagId',
             'languages', 'preferredRoles', 'lookingForTeam', 'isProfileHidden'
@@ -1722,12 +1947,13 @@ export const updateProfile = async (req, res) => {
         // 2.2 Normalización de strings
         if (updateData.fullName !== undefined) {
             updateData.fullName = normalizeProfileText(updateData.fullName, { max: 80 });
+            // If name is being changed, update the lastNameChangeAt timestamp
+            if (updateData.fullName !== currentUser.fullName) {
+                updateData.lastNameChangeAt = new Date();
+            }
         }
         if (updateData.bio !== undefined) {
             updateData.bio = normalizeProfileText(updateData.bio, { max: 300, trim: false });
-        }
-        if (updateData.country !== undefined) {
-            updateData.country = normalizeProfileText(updateData.country, { max: 60 });
         }
         if (updateData.gender !== undefined) {
             updateData.gender = normalizeProfileText(updateData.gender, { max: 20 });
@@ -1740,61 +1966,6 @@ export const updateProfile = async (req, res) => {
         }
         if (updateData.email !== undefined) {
             updateData.email = normalizeProfileText(updateData.email, { max: 120 }).toLowerCase();
-        }
-        if (updateData.birthDate !== undefined && updateData.birthDate !== '') {
-            const dt = new Date(updateData.birthDate);
-            if (Number.isNaN(dt.getTime())) {
-                return res.status(400).json({ message: 'Fecha de nacimiento inválida.' });
-            }
-            const now = Date.now();
-            const minAgeMs = 13 * 365 * 24 * 60 * 60 * 1000;
-            if (dt.getTime() > now || now - dt.getTime() < minAgeMs) {
-                return res.status(400).json({ message: 'Debes tener al menos 13 años.' });
-            }
-            updateData.birthDate = dt;
-        }
-
-        // 2.3 Normalización de booleanos
-        if (updateData.lookingForTeam !== undefined) {
-            updateData.lookingForTeam = normalizeBoolean(updateData.lookingForTeam, false);
-        }
-        if (updateData.isProfileHidden !== undefined) {
-            updateData.isProfileHidden = normalizeBoolean(updateData.isProfileHidden, false);
-        }
-
-        const rawShowPublicUserCode = req.body.showPublicUserCode
-            ?? req.body['privacy.showPublicUserCode']
-            ?? req.body['privacy[showPublicUserCode]'];
-        const rawShowPublicRiotHandle = req.body.showPublicRiotHandle
-            ?? req.body['privacy.showPublicRiotHandle']
-            ?? req.body['privacy[showPublicRiotHandle]'];
-        if (rawShowPublicUserCode !== undefined || rawShowPublicRiotHandle !== undefined) {
-            const currentPrivacy = currentUser.privacy?.toObject
-                ? currentUser.privacy.toObject()
-                : (currentUser.privacy || {});
-            updateData.privacy = {
-                ...currentPrivacy,
-                showPublicUserCode: rawShowPublicUserCode !== undefined
-                    ? normalizeBoolean(rawShowPublicUserCode, currentPrivacy.showPublicUserCode !== false)
-                    : currentPrivacy.showPublicUserCode !== false,
-                showPublicRiotHandle: rawShowPublicRiotHandle !== undefined
-                    ? normalizeBoolean(rawShowPublicRiotHandle, currentPrivacy.showPublicRiotHandle === true)
-                    : currentPrivacy.showPublicRiotHandle === true
-            };
-        }
-
-        // 2.4 Validaciones de formato
-        if (updateData.fullName !== undefined && updateData.fullName.length < 2) {
-            return res.status(400).json({ message: 'El nombre completo debe tener al menos 2 caracteres.' });
-        }
-        if (updateData.username !== undefined && !USERNAME_REGEX.test(updateData.username)) {
-            return res.status(400).json({ message: 'El nickname debe tener 3-20 caracteres y solo letras, números, . _ -' });
-        }
-        if (updateData.email !== undefined && !EMAIL_REGEX.test(updateData.email)) {
-            return res.status(400).json({ message: 'Correo inválido.' });
-        }
-        if (updateData.phone !== undefined && !isValidNonNegativeNumberString(updateData.phone)) {
-            return res.status(400).json({ message: 'El teléfono debe contener solo números y no puede ser negativo.' });
         }
 
         // 2.5 Unicidad al editar

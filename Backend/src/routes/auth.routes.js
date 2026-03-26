@@ -9,6 +9,7 @@ import {
   logout,
   getProfile,
   getProfileOverview,
+  getPublicProfile,
   getUserCard,
   getFriends,
   getSocialOverview,
@@ -121,6 +122,7 @@ router.post('/logout', verifyToken, logout);
 router.get('/profile', verifyToken, rlProfile, getProfile);
 router.get('/profile/overview', verifyToken, rlProfile, getProfileOverview);
 router.get('/user-card/:userId', verifyToken, rlProfile, getUserCard);
+router.get('/profile/public/:userIdOrCode', verifyToken, rlProfile, getPublicProfile);
 router.get('/friends', verifyToken, rlProfile, getFriends);
 router.get('/social', verifyToken, rlProfile, getSocialOverview);
 router.get('/users/search', verifyToken, rlSocialSearch, searchUsers);
