@@ -13,6 +13,7 @@ import { getAuthToken } from '../../../utils/authSession';
 import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
 import { getStoredLocalTournaments, saveStoredLocalTournaments } from '../../../utils/tournamentCalendar';
+import { normalizeTournamentFormat } from '../../../../../shared/tournamentCatalog.js';
 import { filterSupportedGameObjects, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
 
 const GAME_CONFIG = {
@@ -356,19 +357,7 @@ const BRACKET_SCALE_MIN = 0.75;
 const BRACKET_SCALE_MAX = 1.35;
 const BRACKET_SCALE_STEP = 0.1;
 
-const normalizeBracketFormat = (value = '') => {
-  const raw = String(value || '').trim().toLowerCase();
-  if (!raw) return 'single_elimination';
-
-  if (raw.includes('double') || raw.includes('doble')) return 'double_elimination';
-  if (raw.includes('round robin') || raw.includes('round_robin') || raw.includes('todos contra todos')) return 'round_robin';
-  if (raw.includes('swiss') || raw.includes('suizo')) return 'swiss';
-  if (raw.includes('single') || raw.includes('directa') || raw.includes('simple')) return 'single_elimination';
-
-  return raw.replace(/\s+/g, '_');
-};
-
-const isSingleEliminationFormat = (formatValue) => normalizeBracketFormat(formatValue) === 'single_elimination';
+const isSingleEliminationFormat = (formatValue) => normalizeTournamentFormat(formatValue) === 'single_elimination';
 
 const getRegistrationByParticipant = (participant, registrations = []) => {
   const registrationId = String(participant?.registrationId || '');
@@ -507,7 +496,7 @@ const Tournaments = () => {
     || selectedTournament?.formatKey
     || selectedTournament?.format
     || '';
-  const bracketFormatKey = normalizeBracketFormat(bracketFormat);
+  const bracketFormatKey = normalizeTournamentFormat(bracketFormat);
   const useClassicBracketLayout = hasVisibleBracket && isSingleEliminationFormat(bracketFormatKey);
   const useDoubleEliminationLayout = hasVisibleBracket && bracketFormatKey === 'double_elimination';
   const useRoundRobinLayout = hasVisibleBracket && bracketFormatKey === 'round_robin';

@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { resolveMediaUrl } from '../../../utils/media';
+import {
+  normalizeCommunityGameNames,
+  normalizeCommunityMemberRole
+} from '../../../../../shared/communityCatalog.js';
 import { normalizeCommunitySocialLinks } from './communitySocials';
 
 const API_BASE_URL = API_URL;
@@ -94,7 +98,7 @@ const mapCommunity = (community) => {
     membersCount: Number(community?.membersCount || 0),
     region: community?.region || '',
     language: community?.language || '',
-    mainGames: Array.isArray(community?.mainGames) ? community.mainGames : [],
+    mainGames: normalizeCommunityGameNames(community?.mainGames),
     socialLinks: normalizeCommunitySocialLinks(community?.socialLinks),
     role: community?.role || 'guest',
     isOwner: Boolean(community?.isOwner),
@@ -106,7 +110,7 @@ const mapCommunity = (community) => {
 
 const mapCommunityMember = (member) => {
   return {
-    role: member?.role || 'member',
+    role: normalizeCommunityMemberRole(member?.role, 'member'),
     joinedAt: member?.joinedAt || null,
     user: {
       id: member?.user?.id || '',
@@ -227,7 +231,7 @@ export const createCommunitySpace = async ({ formData, media, admins }) => {
   payload.append('region', formData?.region || '');
   payload.append('launchDate', formData?.launchDate || '');
 
-  payload.append('mainGames', JSON.stringify(Array.isArray(formData?.mainGames) ? formData.mainGames : []));
+  payload.append('mainGames', JSON.stringify(normalizeCommunityGameNames(formData?.mainGames)));
   payload.append('allowAllGames', String(Boolean(formData?.allowAllGames)));
   payload.append('contentCategories', JSON.stringify(formData?.contentCategories || {}));
   payload.append('contentProhibited', formData?.contentProhibited || '');

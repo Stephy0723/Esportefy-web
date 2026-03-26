@@ -26,15 +26,18 @@ import {
   deleteCommunityPost
 } from '../community.service';
 import { getCommunitySocialEntries } from '../communitySocials';
+import {
+  COMMUNITY_REPORT_REASON_OPTIONS,
+  getCommunityMemberRoleLabel,
+  normalizeCommunityGameId,
+  sortCommunityMembersByRole
+} from '../../../../../../shared/communityCatalog.js';
 import './communityTemplateV2.css';
 
 /* ═══════════════════════════════════════════════════════════════
    COMMUNITY TEMPLATE V2 — Real data, esports aesthetic
    Route: /community/:slug
    ═══════════════════════════════════════════════════════════════ */
-
-const ROLE_LABELS = { owner: 'Owner', admin: 'Admin', moderator: 'Moderador', member: 'Miembro' };
-const ROLE_ORDER = ['owner', 'admin', 'moderator', 'member'];
 
 const STATUS_LABELS = {
   open: 'Inscripciones abiertas',
@@ -55,19 +58,10 @@ const CHAT_PROMPTS = [
   { emoji: '🤝', text: 'Buscamos coach / staff para ' },
 ];
 
-const sortMembers = (members) => {
-  if (!Array.isArray(members)) return [];
-  return [...members].sort((a, b) => {
-    const ai = ROLE_ORDER.indexOf(a.role || 'member');
-    const bi = ROLE_ORDER.indexOf(b.role || 'member');
-    return ai - bi;
-  });
-};
-
 const matchesGames = (itemGame, communityGames) => {
   if (!itemGame || !Array.isArray(communityGames) || communityGames.length === 0) return false;
-  const normalized = String(itemGame).trim().toLowerCase();
-  return communityGames.some((g) => String(g).trim().toLowerCase() === normalized);
+  const normalized = normalizeCommunityGameId(itemGame);
+  return communityGames.some((game) => normalizeCommunityGameId(game) === normalized);
 };
 
 /* ─── Render text with @mentions and #hashtags ─── */
@@ -607,7 +601,7 @@ const CommunityTemplateV2 = () => {
     );
   }
 
-  const members = sortMembers(community.members);
+  const members = sortCommunityMembersByRole(community.members);
   const owner = community.createdBy;
   const games = Array.isArray(community.mainGames) ? community.mainGames : [];
 
@@ -1059,7 +1053,7 @@ const CommunityTemplateV2 = () => {
                     <div className="ct__member-info">
                       <strong>{username}</strong>
                       <span className={`ct__role ct__role--${role}`}>
-                        {ROLE_LABELS[role] || role}
+                        {getCommunityMemberRoleLabel(role) || role}
                       </span>
                     </div>
                   </div>
@@ -1091,12 +1085,11 @@ const CommunityTemplateV2 = () => {
               onChange={(e) => setReportReason(e.target.value)}
             >
               <option value="">Selecciona un motivo...</option>
-              <option value="Spam">Spam</option>
-              <option value="Contenido ofensivo">Contenido ofensivo</option>
-              <option value="Acoso">Acoso</option>
-              <option value="Desinformación">Desinformación</option>
-              <option value="Contenido inapropiado">Contenido inapropiado</option>
-              <option value="Otro">Otro</option>
+              {COMMUNITY_REPORT_REASON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             <div className="ct__modal-actions">
               <button className="ct__modal-btn ct__modal-btn--cancel" onClick={() => { setReportModal(null); setReportReason(''); }}>

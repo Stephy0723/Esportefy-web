@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getTournamentFormatLabel, TOURNAMENT_FORMAT_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
 import './TournamentAdmin.css';
 
 /* ── Fake Data ── */
@@ -12,6 +13,9 @@ const TEAM_NAMES = [
 ];
 
 const GAMES = ['Valorant', 'League of Legends', 'Mobile Legends', 'Free Fire'];
+const SUPPORTED_SIMULATOR_FORMATS = TOURNAMENT_FORMAT_OPTIONS.filter((option) =>
+  ['single_elimination', 'swiss', 'round_robin'].includes(option.value)
+);
 
 const randomScore = () => Math.floor(Math.random() * 4);
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -197,7 +201,7 @@ const TournamentSimulatorPage = () => {
     }
     setRounds(generatedRounds);
     setPhase('bracket');
-    addLog(`Bracket generado: ${format === 'single_elimination' ? 'Eliminacion directa' : format === 'swiss' ? 'Suizo' : 'Round Robin'}`);
+    addLog(`Bracket generado: ${getTournamentFormatLabel(format)}`);
     await delay(speed);
 
     // 3. Play matches
@@ -436,9 +440,9 @@ const TournamentSimulatorPage = () => {
                 <label>
                   <span>Formato</span>
                   <select value={format} onChange={(e) => setFormat(e.target.value)}>
-                    <option value="single_elimination">Eliminacion directa</option>
-                    <option value="swiss">Sistema Suizo</option>
-                    <option value="round_robin">Round Robin</option>
+                    {SUPPORTED_SIMULATOR_FORMATS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </label>
                 <label>
@@ -492,7 +496,7 @@ const TournamentSimulatorPage = () => {
               <div className="ta-panel__head">
                 <div>
                   <span className="ta-kicker">
-                    {format === 'single_elimination' ? 'Eliminacion directa' : format === 'swiss' ? 'Suizo' : 'Round Robin'}
+                    {getTournamentFormatLabel(format)}
                   </span>
                   <h2>Cuadro de partidas</h2>
                 </div>

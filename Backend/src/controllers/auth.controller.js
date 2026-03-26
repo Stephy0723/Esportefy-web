@@ -16,6 +16,14 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { filterSupportedGameNames, isSupportedGameName, SUPPORTED_GAME_NAMES } from '../../../shared/supportedGames.js';
+import { normalizeCountryName } from '../../../shared/countries.js';
+import {
+    normalizeExperienceValues,
+    normalizeGenderValue,
+    normalizeGoalValues,
+    normalizeLanguageValues,
+    normalizePlatformValues
+} from '../../../shared/profileCatalog.js';
 import { normalizeCommunityGameIds } from '../utils/communityGames.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
 import { recordActivity } from '../services/activityLogger.js';
@@ -506,7 +514,7 @@ export const register = async (req, res) => {
         const confirmPassword = String(payload.confirmPassword || '');
         const fullName = String(payload.fullName || '').trim();
         const phone = String(payload.phone || '').trim();
-        const country = String(payload.country || '').trim();
+        const country = normalizeCountryName(String(payload.country || '').trim());
         const birthDate = payload.birthDate;
         const checkTerms = payload.checkTerms === true;
 
@@ -567,14 +575,14 @@ export const register = async (req, res) => {
         const user = await User.create({
             fullName,
             phone,
-            gender: payload.gender,
+            gender: normalizeGenderValue(payload.gender),
             country,
             birthDate,
             selectedGames,
             communityGameSubscriptions,
-            experience: normalizeStringArray(payload.experience),
-            platforms: normalizeStringArray(payload.platforms),
-            goals: normalizeStringArray(payload.goals),
+            experience: normalizeExperienceValues(payload.experience),
+            platforms: normalizePlatformValues(payload.platforms),
+            goals: normalizeGoalValues(payload.goals),
             username,
             email,
             password: hashedPassword,
@@ -1693,6 +1701,18 @@ export const updateProfile = async (req, res) => {
         if (updateData.selectedGames !== undefined) {
             updateData.selectedGames = filterSupportedGameNames(updateData.selectedGames);
         }
+        if (updateData.platforms !== undefined) {
+            updateData.platforms = normalizePlatformValues(updateData.platforms);
+        }
+        if (updateData.experience !== undefined) {
+            updateData.experience = normalizeExperienceValues(updateData.experience);
+        }
+        if (updateData.goals !== undefined) {
+            updateData.goals = normalizeGoalValues(updateData.goals);
+        }
+        if (updateData.languages !== undefined) {
+            updateData.languages = normalizeLanguageValues(updateData.languages);
+        }
 
         // 2.1 Social links (JSON, dot notation o bracket notation)
         const parsedSocialLinks = {};
@@ -1730,10 +1750,14 @@ export const updateProfile = async (req, res) => {
             updateData.bio = normalizeProfileText(updateData.bio, { max: 300, trim: false });
         }
         if (updateData.country !== undefined) {
-            updateData.country = normalizeProfileText(updateData.country, { max: 60 });
+            updateData.country = normalizeCountryName(
+                normalizeProfileText(updateData.country, { max: 60 })
+            );
         }
         if (updateData.gender !== undefined) {
-            updateData.gender = normalizeProfileText(updateData.gender, { max: 20 });
+            updateData.gender = normalizeGenderValue(
+                normalizeProfileText(updateData.gender, { max: 20 })
+            );
         }
         if (updateData.phone !== undefined) {
             updateData.phone = String(updateData.phone).replace(/[^\d]/g, '');

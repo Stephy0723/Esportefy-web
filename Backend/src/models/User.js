@@ -1,6 +1,7 @@
 // Backend/src/models/User.js
 
 import mongoose from "mongoose";
+import { COUNTRY_CODE_BY_NAME, normalizeCountryName } from "../../../shared/countries.js";
 
 const UserSchema = new mongoose.Schema({
     // --- Identidad Visual ---
@@ -414,34 +415,22 @@ UserSchema.index(
     }
 );
 
-// Country → 2-letter code mapping for entity IDs
-const COUNTRY_CODES = {
-    'Antigua y Barbuda': 'AG', 'Argentina': 'AR', 'Bahamas': 'BS', 'Barbados': 'BB',
-    'Belice': 'BZ', 'Bolivia': 'BO', 'Brasil': 'BR', 'Canadá': 'CA',
-    'Chile': 'CL', 'Colombia': 'CO', 'Costa Rica': 'CR', 'Cuba': 'CU',
-    'Dominica': 'DM', 'Ecuador': 'EC', 'El Salvador': 'SV', 'Estados Unidos': 'US',
-    'Granada': 'GD', 'Guatemala': 'GT', 'Guyana': 'GY', 'Haití': 'HT',
-    'Honduras': 'HN', 'Jamaica': 'JM', 'México': 'MX', 'Nicaragua': 'NI',
-    'Panamá': 'PA', 'Paraguay': 'PY', 'Perú': 'PE', 'Puerto Rico': 'PR',
-    'República Dominicana': 'DR', // Custom: DR instead of ISO "DO" per platform convention
-    'San Cristóbal y Nieves': 'KN', 'San Vicente y las Granadinas': 'VC',
-    'Santa Lucía': 'LC', 'Surinam': 'SR', 'Trinidad y Tobago': 'TT',
-    'Uruguay': 'UY', 'Venezuela': 'VE'
-};
-
 UserSchema.pre('validate', async function(next) {
+    if (this.country) {
+        this.country = normalizeCountryName(this.country);
+    }
     if (this.userCode) return next();
 
     const UserModel = this.constructor;
     const normalizedCountry = String(this.country || '').trim();
-    let countryCode = COUNTRY_CODES[normalizedCountry];
+    let countryCode = COUNTRY_CODE_BY_NAME[normalizedCountry];
 
     // Fallback: case-insensitive and accent-insensitive exact match
     if (!countryCode) {
         const lower = normalizedCountry.toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         if (lower) {
-            for (const [name, code] of Object.entries(COUNTRY_CODES)) {
+            for (const [name, code] of Object.entries(COUNTRY_CODE_BY_NAME)) {
                 const nameLower = name.toLowerCase()
                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 if (nameLower === lower) {

@@ -1,3 +1,5 @@
+import { normalizeTournamentFormat } from '../../../shared/tournamentCatalog.js';
+
 const UNIVERSITY_POINTS = {
   participation: 25,
   sizeMultipliers: [
@@ -54,30 +56,8 @@ const getTeamIdString = (value = null) => (value ? String(value) : '');
 const isFinishedMatch = (match = null) =>
   Boolean(match && String(match.status || '').trim().toLowerCase() === 'finished' && match.winnerTeamId);
 
-const normalizeTournamentFormat = (value = '') => {
-  const raw = normalizeText(value, 80)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-  if (!raw) return DEFAULT_FORMAT_KEY;
-  if (raw === 'single_elimination' || raw.includes('eliminacion directa') || raw.includes('single elimination')) {
-    return 'single_elimination';
-  }
-  if (raw === 'double_elimination' || raw.includes('doble eliminacion') || raw.includes('double elimination')) {
-    return 'double_elimination';
-  }
-  if (raw === 'swiss' || raw.includes('suizo')) {
-    return 'swiss';
-  }
-  if (raw === 'round_robin' || raw.includes('round robin') || raw.includes('todos contra todos')) {
-    return 'round_robin';
-  }
-  return DEFAULT_FORMAT_KEY;
-};
-
 const getPointsForFormat = (tournament = {}) => {
-  const formatKey = normalizeTournamentFormat(tournament?.bracket?.format || tournament?.format || '');
+  const formatKey = normalizeTournamentFormat(tournament?.bracket?.format || tournament?.format || DEFAULT_FORMAT_KEY, DEFAULT_FORMAT_KEY);
   return {
     formatKey,
     ...UNIVERSITY_POINTS.formats[formatKey]

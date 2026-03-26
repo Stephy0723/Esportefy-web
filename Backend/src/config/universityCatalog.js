@@ -1,24 +1,19 @@
 import { getUniversityAllowedDomains } from './universityVerificationRules.js';
+import {
+  isUniversityAllowedGame,
+  UNIVERSITY_ALLOWED_GAME_NAMES
+} from '../../../shared/universityRules.js';
 
-const UNIVERSITY_ALLOWED_GAME_NAMES = [
-  'Valorant',
-  'League of Legends',
-  'Mobile Legends',
-  'Mobile Legends: Bang Bang',
-  'MLBB'
-];
-const normalizeGameName = (value = '') => String(value || '').trim().toLowerCase();
-const UNIVERSITY_ALLOWED_GAMES_SET = new Set(UNIVERSITY_ALLOWED_GAME_NAMES.map(normalizeGameName));
 const sanitizeUniversityGames = (games = []) =>
   Array.from(new Set(
     (Array.isArray(games) ? games : [])
       .map((game) => String(game || '').trim())
       .filter(Boolean)
-      .filter((game) => UNIVERSITY_ALLOWED_GAMES_SET.has(normalizeGameName(game)))
+      .filter((game) => isUniversityAllowedGame(game))
   ));
 const sanitizeUniversityTeams = (teams = []) =>
   (Array.isArray(teams) ? teams : []).filter((team) =>
-    UNIVERSITY_ALLOWED_GAMES_SET.has(normalizeGameName(team?.game))
+    isUniversityAllowedGame(team?.game)
   );
 
 const UNIVERSITY_CAMPUSES_BY_ID = {
@@ -597,4 +592,4 @@ export const getUniversityCatalogItem = (universityId = '') => {
 };
 
 export const UNIVERSITY_ALLOWED_GAMES = [...UNIVERSITY_ALLOWED_GAME_NAMES];
-export const isUniversityGameAllowed = (game = '') => UNIVERSITY_ALLOWED_GAMES_SET.has(normalizeGameName(game));
+export const isUniversityGameAllowed = (game = '') => isUniversityAllowedGame(game);

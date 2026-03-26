@@ -3,27 +3,12 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { useNotification } from '../../../../context/NotificationContext';
+import { TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
 import {
   TournamentAdminShell,
   useTournamentAdminData,
 } from './TournamentAdminShared';
 import './TournamentAdmin.css';
-
-const STAFF_ROLES = [
-  { value: 'admin', label: 'Administrador', desc: 'Control total del torneo', icon: 'bx-crown' },
-  { value: 'moderator', label: 'Moderador', desc: 'Gestion de equipos y reportes', icon: 'bx-shield' },
-  { value: 'referee', label: 'Arbitro', desc: 'Supervision de partidas', icon: 'bx-bullseye' },
-  { value: 'caster', label: 'Caster', desc: 'Narrador del torneo', icon: 'bx-microphone' },
-  { value: 'producer', label: 'Productor', desc: 'Produccion de stream', icon: 'bx-camera-movie' },
-];
-
-const ROLE_COLORS = {
-  admin: '#ef4444',
-  moderator: '#8EDB15',
-  referee: '#f59e0b',
-  caster: '#3b82f6',
-  producer: '#a855f7',
-};
 
 const TournamentStaffPage = () => {
   const { code } = useParams();
@@ -110,7 +95,7 @@ const TournamentStaffPage = () => {
 
   const roleStats = useMemo(() => {
     const counts = {};
-    STAFF_ROLES.forEach((r) => { counts[r.value] = 0; });
+    TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.forEach((r) => { counts[r.value] = 0; });
     staff.forEach((m) => { if (counts[m.role] !== undefined) counts[m.role]++; });
     return counts;
   }, [staff]);
@@ -126,9 +111,9 @@ const TournamentStaffPage = () => {
           <strong>{staff.length}</strong>
           <span>Total staff</span>
         </div>
-        {STAFF_ROLES.filter((r) => roleStats[r.value] > 0).map((r) => (
+        {TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.filter((r) => roleStats[r.value] > 0).map((r) => (
           <div key={r.value} className="ta-metric">
-            <strong style={{ color: ROLE_COLORS[r.value] }}>{roleStats[r.value]}</strong>
+            <strong style={{ color: r.color }}>{roleStats[r.value]}</strong>
             <span>{r.label}s</span>
           </div>
         ))}
@@ -152,12 +137,12 @@ const TournamentStaffPage = () => {
           </div>
 
           <div className="ta-staff-role-selector">
-            {STAFF_ROLES.map((r) => (
+            {TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.map((r) => (
               <button
                 key={r.value}
                 className={`ta-staff-role-btn ${role === r.value ? 'is-active' : ''}`}
                 onClick={() => setRole(r.value)}
-                style={{ '--role-color': ROLE_COLORS[r.value] }}
+                style={{ '--role-color': r.color }}
               >
                 <i className={`bx ${r.icon}`} />
                 <strong>{r.label}</strong>
@@ -221,12 +206,13 @@ const TournamentStaffPage = () => {
             <div className="ta-empty" style={{ gridColumn: '1 / -1' }}>Cargando staff...</div>
           ) : staff.length === 0 ? (
             <div className="ta-empty" style={{ gridColumn: '1 / -1' }}>
-              No hay miembros en el staff. Agrega moderadores, arbitros o casters.
+              No hay miembros en el staff. Agrega moderadores, árbitros o casters.
             </div>
           ) : (
             staff.map((member) => {
-              const roleMeta = STAFF_ROLES.find((r) => r.value === member.role) || STAFF_ROLES[1];
-              const color = ROLE_COLORS[member.role] || '#8EDB15';
+              const roleMeta = TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.find((r) => r.value === member.role)
+                || TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS[1];
+              const color = roleMeta?.color || '#8EDB15';
               const isEditing = editingMember === member.username;
 
               return (
@@ -248,7 +234,7 @@ const TournamentStaffPage = () => {
                         value={member.role}
                         onChange={(e) => updateMember(member.username, { role: e.target.value })}
                       >
-                        {STAFF_ROLES.map((r) => (
+                        {TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.map((r) => (
                           <option key={r.value} value={r.value}>{r.label}</option>
                         ))}
                       </select>
@@ -289,8 +275,9 @@ const TournamentStaffPage = () => {
             <span>Organizador</span>
           </div>
           {staff.map((member) => {
-            const roleMeta = STAFF_ROLES.find((r) => r.value === member.role) || STAFF_ROLES[1];
-            const color = ROLE_COLORS[member.role] || '#8EDB15';
+            const roleMeta = TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.find((r) => r.value === member.role)
+              || TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS[1];
+            const color = roleMeta?.color || '#8EDB15';
             return (
               <div key={member.username} className="ta-staff-public-card">
                 <i className={`bx ${roleMeta.icon}`} style={{ color, fontSize: '1.6rem' }} />

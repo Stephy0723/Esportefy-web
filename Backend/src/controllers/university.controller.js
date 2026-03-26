@@ -6,6 +6,11 @@ import {
   isUniversityDomainAllowed
 } from '../config/universityVerificationRules.js';
 import { getUniversityCatalogByRegion, getUniversityCatalogItem, isUniversityGameAllowed } from '../config/universityCatalog.js';
+import {
+  ALLOWED_ACADEMIC_LEVELS,
+  getEmailDomain,
+  PUBLIC_EMAIL_DOMAINS
+} from '../../../shared/universityRules.js';
 import User from '../models/User.js';
 import UniversityApplication from '../models/UniversityApplication.js';
 import AdminAuditLog from '../models/AdminAuditLog.js';
@@ -38,23 +43,6 @@ const STATUS_UNLINKED = {
 const normalizeText = (value, max = 120) => String(value || '').trim().slice(0, max);
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 const STUDENT_ID_REGEX = /^[A-Za-z0-9][A-Za-z0-9._/-]{3,31}$/;
-const PUBLIC_EMAIL_DOMAINS = new Set([
-  'gmail.com',
-  'hotmail.com',
-  'outlook.com',
-  'live.com',
-  'yahoo.com',
-  'icloud.com',
-  'proton.me',
-  'protonmail.com'
-]);
-const ALLOWED_ACADEMIC_LEVELS = new Set(['1', '2', '3', '4', 'egresado', 'maestria']);
-
-const getEmailDomain = (value) => {
-  const email = String(value || '').trim().toLowerCase();
-  const atIndex = email.lastIndexOf('@');
-  return atIndex === -1 ? '' : email.slice(atIndex + 1);
-};
 
 const getMicrosoftAuthority = () => normalizeText(process.env.MICROSOFT_TENANT_AUTHORITY || 'organizations', 60) || 'organizations';
 const getMicrosoftClientId = () => normalizeText(process.env.MICROSOFT_CLIENT_ID, 180);

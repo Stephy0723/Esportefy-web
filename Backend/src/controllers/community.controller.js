@@ -8,6 +8,17 @@ import User from '../models/User.js';
 import { normalizeCommunityGameId, normalizeCommunityGameIds, getGameNameVariants } from '../utils/communityGames.js';
 import Team from '../models/Team.js';
 import Tournament from '../models/Tournament.js';
+import {
+  COMMUNITY_CONTENT_CATEGORY_KEYS,
+  COMMUNITY_MANAGEABLE_ROLE_KEYS,
+  COMMUNITY_POST_TYPE_KEYS,
+  COMMUNITY_REPORT_REASON_KEYS,
+  COMMUNITY_ROLE_KEYS,
+  COMMUNITY_SOCIAL_LINK_KEYS,
+  normalizeCommunityGameName,
+  normalizeCommunityGameNames,
+  normalizeCommunityMemberRole
+} from '../../../shared/communityCatalog.js';
 
 const UPLOAD_DIR = './uploads/community/';
 const POST_MAX_LENGTH = 1200;
@@ -35,9 +46,8 @@ const ALLOWED_FILE_EXTENSIONS = new Set([
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const COMMUNITY_SLUG_REGEX = /^[a-z0-9-]{3,50}$/;
-const COMMUNITY_MANAGEABLE_ROLES = new Set(['member', 'moderator', 'admin']);
+const COMMUNITY_MANAGEABLE_ROLES = new Set(COMMUNITY_MANAGEABLE_ROLE_KEYS);
 const COMMUNITY_AUDIT_LOG_LIMIT = 200;
-const COMMUNITY_SOCIAL_LINK_KEYS = ['website', 'discord', 'twitter', 'instagram', 'youtube', 'twitch', 'tiktok'];
 
 const ensureUploadDir = () => {
   if (!fs.existsSync(UPLOAD_DIR)) {
@@ -326,7 +336,8 @@ const toCommunityPayload = (communityDoc, userId) => {
   const members = Array.isArray(communityDoc.members) ? communityDoc.members : [];
   const ownMemberEntry = members.find((entry) => String(entry.user?._id || entry.user) === String(userId));
   const isOwner = String(communityDoc.createdBy?._id || communityDoc.createdBy) === String(userId);
-  const isAdmin = ownMemberEntry?.role === 'admin';
+  const ownRole = normalizeCommunityMemberRole(ownMemberEntry?.role, '');
+  const isAdmin = ownRole === 'admin';
   const joined = isOwner || Boolean(ownMemberEntry);
 
   return {
@@ -341,7 +352,7 @@ const toCommunityPayload = (communityDoc, userId) => {
     membersCount: Number(communityDoc.membersCount || members.length || 0),
     region: communityDoc.region || 'LATAM',
     language: communityDoc.language || 'Español',
-    mainGames: Array.isArray(communityDoc.mainGames) ? communityDoc.mainGames : [],
+    mainGames: normalizeCommunityGameNames(communityDoc.mainGames),
     socialLinks: COMMUNITY_SOCIAL_LINK_KEYS.reduce((acc, key) => {
       const value = String(communityDoc.socialLinks?.[key] || '').trim();
       if (value) acc[key] = value;
@@ -352,13 +363,13 @@ const toCommunityPayload = (communityDoc, userId) => {
     joined,
     canLeave: joined && !isOwner,
     canManageMembers: isOwner || isAdmin,
-    role: isOwner ? 'owner' : ownMemberEntry?.role || 'guest'
+    role: isOwner ? 'owner' : ownRole || 'guest'
   };
 };
 
 const toCommunityMemberPayload = (memberDoc) => {
   return {
-    role: memberDoc?.role || 'member',
+    role: normalizeCommunityMemberRole(memberDoc?.role, 'member'),
     joinedAt: memberDoc?.joinedAt || null,
     user: toUserPayload(memberDoc?.user)
   };
@@ -485,11 +496,6 @@ export const uploadCommunityAttachment = multer({
   }
 });
 
-const CONTENT_CATEGORY_KEYS = ['noticias', 'memes', 'opinion', 'clips', 'fanart', 'guias'];
-const POST_TYPE_KEYS = ['texto', 'imagen', 'video', 'enlace', 'encuestas'];
-const ROLE_KEYS = ['owner', 'admin', 'moderator', 'user', 'visitor'];
-const REPORT_REASON_KEYS = ['spam', 'hate', 'nsfw', 'spoiler'];
-
 export const uploadCommunityAssets = multer({
   storage,
   limits: { fileSize: 12 * 1024 * 1024 },
@@ -571,24 +577,24 @@ const parseCommunityPayload = (body) => {
     region: sanitizeText(body?.region, 40),
     launchDate: toDateOrNull(body?.launchDate),
 
-    mainGames: parseStringArrayField(body?.mainGames, 5),
+    mainGames: normalizeCommunityGameNames(parseStringArrayField(body?.mainGames, 5)),
     allowAllGames: toBoolean(body?.allowAllGames, false),
-    contentCategories: parseBooleanMap(body?.contentCategories, CONTENT_CATEGORY_KEYS),
+    contentCategories: parseBooleanMap(body?.contentCategories, COMMUNITY_CONTENT_CATEGORY_KEYS),
     contentProhibited: sanitizeText(body?.contentProhibited, 600),
 
-    postTypes: parseBooleanMap(body?.postTypes, POST_TYPE_KEYS),
+    postTypes: parseBooleanMap(body?.postTypes, COMMUNITY_POST_TYPE_KEYS),
     whoCanPost: ['all', 'verified', 'staff'].includes(body?.whoCanPost) ? body.whoCanPost : 'all',
     allowComments: toBoolean(body?.allowComments, true),
     preModeration: toBoolean(body?.preModeration, false),
     allowReactions: toBoolean(body?.allowReactions, true),
     allowShare: toBoolean(body?.allowShare, true),
 
-    roles: parseBooleanMap(body?.roles, ROLE_KEYS),
+    roles: parseBooleanMap(body?.roles, COMMUNITY_ROLE_KEYS),
     rulesText: sanitizeText(body?.rulesText, 6000),
     toxicityFilter: toBoolean(body?.toxicityFilter, true),
     spoilerTag: toBoolean(body?.spoilerTag, true),
     nsfwAllowed: toBoolean(body?.nsfwAllowed, false),
-    reportReasons: parseBooleanMap(body?.reportReasons, REPORT_REASON_KEYS),
+    reportReasons: parseBooleanMap(body?.reportReasons, COMMUNITY_REPORT_REASON_KEYS),
     emailVerification: toBoolean(body?.emailVerification, true),
     antiSpamControl: toBoolean(body?.antiSpamControl, true),
     discordIntegration: toBoolean(body?.discordIntegration, false),
@@ -704,7 +710,7 @@ export const listCommunities = async (req, res) => {
       ];
     }
     if (game && game !== 'all') {
-      filter.mainGames = { $in: [game] };
+      filter.mainGames = { $in: [normalizeCommunityGameName(game) || game] };
     }
 
     const communities = await Community.find(filter)
@@ -783,7 +789,7 @@ export const getCommunityAuditLogs = async (req, res) => {
 
     const currentIsOwner = String(community.createdBy?._id || community.createdBy) === String(req.userId);
     const currentEntry = getMemberEntry(community, req.userId);
-    const currentIsAdmin = currentEntry?.role === 'admin';
+    const currentIsAdmin = normalizeCommunityMemberRole(currentEntry?.role, '') === 'admin';
     if (!currentIsOwner && !currentIsAdmin) {
       return res.status(403).json({ message: 'No tienes permisos para ver la bitácora de la comunidad' });
     }
@@ -881,7 +887,7 @@ export const leaveCommunity = async (req, res) => {
       actor: req.userId,
       target: req.userId,
       metadata: {
-        previousRole: leavingEntry?.role || 'member'
+        previousRole: normalizeCommunityMemberRole(leavingEntry?.role, 'member')
       }
     });
 
@@ -920,7 +926,7 @@ export const removeCommunityMember = async (req, res) => {
 
     const currentIsOwner = String(community.createdBy?._id || community.createdBy) === String(req.userId);
     const currentEntry = getMemberEntry(community, req.userId);
-    const currentIsAdmin = currentEntry?.role === 'admin';
+    const currentIsAdmin = normalizeCommunityMemberRole(currentEntry?.role, '') === 'admin';
     const canManage = currentIsOwner || currentIsAdmin;
 
     if (!canManage) {
@@ -937,7 +943,9 @@ export const removeCommunityMember = async (req, res) => {
       return res.status(404).json({ message: 'Miembro no encontrado en la comunidad' });
     }
 
-    if (!currentIsOwner && targetEntry.role !== 'member') {
+    const targetRole = normalizeCommunityMemberRole(targetEntry.role, 'member');
+
+    if (!currentIsOwner && targetRole !== 'member') {
       return res.status(403).json({ message: 'Solo el owner puede remover admins o moderadores' });
     }
 
@@ -949,7 +957,7 @@ export const removeCommunityMember = async (req, res) => {
       actor: req.userId,
       target: targetUserId,
       metadata: {
-        removedRole: targetEntry.role || 'member'
+        removedRole: targetRole
       }
     });
 
@@ -973,9 +981,7 @@ export const updateCommunityMemberRole = async (req, res) => {
   try {
     const shortUrl = slugify(req.params?.shortUrl);
     const targetUserId = String(req.params?.userId || '').trim();
-    const nextRole = String(req.body?.role || '')
-      .trim()
-      .toLowerCase();
+    const nextRole = normalizeCommunityMemberRole(req.body?.role, '');
 
     if (!shortUrl) {
       return res.status(400).json({ message: 'Short URL inválida' });
@@ -1007,8 +1013,10 @@ export const updateCommunityMemberRole = async (req, res) => {
       return res.status(404).json({ message: 'Miembro no encontrado en la comunidad' });
     }
 
-    if (targetEntry.role !== nextRole) {
-      const previousRole = targetEntry.role;
+    const currentRole = normalizeCommunityMemberRole(targetEntry.role, 'member');
+
+    if (currentRole !== nextRole) {
+      const previousRole = currentRole;
       targetEntry.role = nextRole;
       appendCommunityAuditLog(community, {
         action: 'member_role_updated',

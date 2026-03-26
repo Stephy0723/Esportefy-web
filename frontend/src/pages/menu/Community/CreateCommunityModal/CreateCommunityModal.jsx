@@ -22,10 +22,22 @@ import {
     isRiotCommunitySelection
 } from '../communitySocials';
 import { useNotification } from '../../../../context/NotificationContext';
-import { SUPPORTED_GAME_NAMES } from '../../../../../../shared/supportedGames.js';
+import {
+    COMMUNITY_AUDIENCE_OPTIONS,
+    COMMUNITY_CONTENT_CATEGORY_DEFAULTS,
+    COMMUNITY_GAME_NAMES,
+    COMMUNITY_LANGUAGE_OPTIONS,
+    COMMUNITY_POST_TYPE_DEFAULTS,
+    COMMUNITY_REGION_OPTIONS,
+    COMMUNITY_REPORT_REASON_DEFAULTS,
+    COMMUNITY_ROLE_DEFAULTS,
+    COMMUNITY_ROLE_OPTIONS,
+    COMMUNITY_SOCIAL_LINK_DEFAULTS,
+    COMMUNITY_WHO_CAN_POST_OPTIONS
+} from '../../../../../../shared/communityCatalog.js';
 import './CreateCommunityModal.css';
 
-const AVAILABLE_GAMES = [...SUPPORTED_GAME_NAMES];
+const AVAILABLE_GAMES = [...COMMUNITY_GAME_NAMES];
 const TAB_ORDER = ['identity', 'content', 'rules', 'team', 'settings'];
 
 const StepperBar = ({ activeTab }) => {
@@ -70,31 +82,23 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
         language: 'Español',
         region: 'LATAM',
         launchDate: '',
-        socialLinks: {
-            website: '',
-            discord: '',
-            twitter: '',
-            instagram: '',
-            youtube: '',
-            twitch: '',
-            tiktok: ''
-        },
+        socialLinks: { ...COMMUNITY_SOCIAL_LINK_DEFAULTS },
         mainGames: [],
         allowAllGames: false,
-        contentCategories: { noticias: true, memes: true, opinion: true, clips: true, fanart: true, guias: true },
+        contentCategories: { ...COMMUNITY_CONTENT_CATEGORY_DEFAULTS },
         contentProhibited: '',
-        postTypes: { texto: true, imagen: true, video: true, enlace: true, encuestas: true },
+        postTypes: { ...COMMUNITY_POST_TYPE_DEFAULTS },
         whoCanPost: 'all',
         allowComments: true,
         preModeration: false,
         allowReactions: true,
         allowShare: true,
-        roles: { owner: true, admin: true, moderator: true, user: true, visitor: true },
+        roles: { ...COMMUNITY_ROLE_DEFAULTS },
         rulesText: '',
         toxicityFilter: true,
         spoilerTag: true,
         nsfwAllowed: false,
-        reportReasons: { spam: true, hate: true, nsfw: true, spoiler: true },
+        reportReasons: { ...COMMUNITY_REPORT_REASON_DEFAULTS },
         emailVerification: true,
         antiSpamControl: true,
         discordIntegration: false,
@@ -349,16 +353,21 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
                                                 <label className="ccm-field">
                                                     <span>Región</span>
                                                     <select name="region" value={formData.region} onChange={handleChange}>
-                                                        <option value="LATAM">LATAM</option>
-                                                        <option value="NA">NA</option>
-                                                        <option value="Global">Global</option>
+                                                        {COMMUNITY_REGION_OPTIONS.map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </label>
                                                 <label className="ccm-field">
                                                     <span>Idioma</span>
                                                     <select name="language" value={formData.language} onChange={handleChange}>
-                                                        <option value="Español">Español</option>
-                                                        <option value="Inglés">Inglés</option>
+                                                        {COMMUNITY_LANGUAGE_OPTIONS.map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </label>
                                             </div>
@@ -419,17 +428,21 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
                                                 <label className="ccm-field">
                                                     <span>Quién puede publicar</span>
                                                     <select name="whoCanPost" value={formData.whoCanPost} onChange={handleChange}>
-                                                        <option value="all">Todos</option>
-                                                        <option value="verified">Verificados</option>
-                                                        <option value="staff">Solo staff</option>
+                                                        {COMMUNITY_WHO_CAN_POST_OPTIONS.map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </label>
                                                 <label className="ccm-field">
                                                     <span>Audiencia</span>
                                                     <select name="targetAudience" value={formData.targetAudience} onChange={handleChange}>
-                                                        <option value="Mixto">Mixto</option>
-                                                        <option value="Competitivo">Competitivo</option>
-                                                        <option value="Casual">Casual</option>
+                                                        {COMMUNITY_AUDIENCE_OPTIONS.map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </label>
                                             </div>
@@ -500,9 +513,9 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
                                             <div className="ccm-field">
                                                 <span>Roles disponibles</span>
                                                 <div className="ccm-toggle-grid">
-                                                    {Object.keys(formData.roles).map((role) => (
-                                                        <button key={role} type="button" className={`ccm-toggle ${formData.roles[role] ? 'is-on' : ''}`} onClick={() => handleNestedCheck('roles', role)}>
-                                                            <FaCheck /> {role}
+                                                    {COMMUNITY_ROLE_OPTIONS.map((role) => (
+                                                        <button key={role.value} type="button" className={`ccm-toggle ${formData.roles[role.value] ? 'is-on' : ''}`} onClick={() => handleNestedCheck('roles', role.value)}>
+                                                            <FaCheck /> {role.label}
                                                         </button>
                                                     ))}
                                                 </div>

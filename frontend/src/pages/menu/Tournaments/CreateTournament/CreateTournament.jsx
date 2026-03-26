@@ -15,10 +15,18 @@ import {
   normalizeTournamentMapPool
 } from '../../../../../../shared/tournamentMapOptions.js';
 import {
+  normalizeTournamentFormat,
+  normalizeTournamentPlatform,
+  TOURNAMENT_CREATOR_STAFF_ROLE_OPTIONS,
+  TOURNAMENT_FORMAT_OPTIONS,
+  TOURNAMENT_PLATFORM_OPTIONS
+} from '../../../../../../shared/tournamentCatalog.js';
+import {
   SUPPORTED_GAME_NAMES,
   SUPPORTED_MLBB_GAME_NAMES,
   SUPPORTED_RIOT_GAME_NAMES,
 } from '../../../../../../shared/supportedGames.js';
+import { TEAM_GENDER_OPTIONS } from '../../../../../../shared/teamCatalog.js';
 import {
   FaBullhorn,
   FaCheckCircle,
@@ -81,19 +89,6 @@ const baseState = (name) => ({
   staffMembers: []
 });
 
-const FORMAT_OPTIONS = [
-  { value: 'single_elimination', label: 'Eliminación Directa' },
-  { value: 'double_elimination', label: 'Doble Eliminación' },
-  { value: 'swiss', label: 'Suizo (Swiss)' },
-  { value: 'round_robin', label: 'Round Robin' }
-];
-
-const PLATFORM_OPTIONS = [
-  { value: 'PC', label: 'PC' },
-  { value: 'Mobile', label: 'Mobile' },
-  { value: 'Console', label: 'Consola' },
-  { value: 'Crossplay', label: 'Crossplay' }
-];
 const BRACKET_SLOT_PRESETS = ['4', '8', '16', '32', '64', '128', '256'];
 const INTEGER_INPUT_REGEX = /^\d*$/;
 const MONEY_INPUT_REGEX = /^\d*(?:[.,]\d{0,2})?$/;
@@ -141,27 +136,6 @@ const parseTeamSizeFromModality = (modality = '') => {
   if (!Number.isFinite(left) || left <= 0) return 1;
   if (!Number.isFinite(right) || right <= 0) return left;
   return Math.max(left, right);
-};
-
-const normalizeFormatValue = (value) => {
-  const raw = String(value || '').trim().toLowerCase();
-  if (!raw) return 'single_elimination';
-  if (['single_elimination', 'double_elimination', 'swiss', 'round_robin'].includes(raw)) return raw;
-  if (raw.includes('doble')) return 'double_elimination';
-  if (raw.includes('swiss') || raw.includes('suizo')) return 'swiss';
-  if (raw.includes('round robin') || raw.includes('round_robin')) return 'round_robin';
-  if (raw.includes('elim')) return 'single_elimination';
-  return 'single_elimination';
-};
-
-const normalizePlatformValue = (value) => {
-  const raw = String(value || '').trim().toLowerCase();
-  if (!raw) return 'PC';
-  if (raw === 'pc') return 'PC';
-  if (raw === 'mobile') return 'Mobile';
-  if (raw === 'console' || raw === 'consola') return 'Console';
-  if (raw === 'crossplay') return 'Crossplay';
-  return 'PC';
 };
 
 const parsePositiveInt = (value, fallback = 0) => {
@@ -250,9 +224,9 @@ const CreateTournament = () => {
       entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
       entryFeeAmount: editTournament.entryFeeAmount || prev.entryFeeAmount,
       maxSlots: editMaxSlots || prev.maxSlots,
-      format: normalizeFormatValue(editTournament.format || prev.format),
+      format: normalizeTournamentFormat(editTournament.format || prev.format),
       server: editTournament.server || '',
-      platform: normalizePlatformValue(editTournament.platform || prev.platform),
+      platform: normalizeTournamentPlatform(editTournament.platform || prev.platform),
       organizerName: editTournament.organizer || prev.organizerName,
       registrationWindow: {
         start: toDate(editTournament.registrationWindow?.start),
@@ -411,13 +385,6 @@ const CreateTournament = () => {
   const removeStaffMember = (index) => {
     setTournament((p) => ({ ...p, staffMembers: p.staffMembers.filter((_, i) => i !== index) }));
   };
-
-  const STAFF_ROLE_OPTIONS = [
-    { value: 'moderator', label: 'Moderador' },
-    { value: 'caster', label: 'Caster' },
-    { value: 'coach', label: 'Coach' },
-    { value: 'analyst', label: 'Analista' }
-  ];
 
   const unlockFormat = identityReady;
   const unlockPayments = unlockFormat && formatReady;
@@ -967,7 +934,7 @@ const CreateTournament = () => {
               </label>
             </div>
             <div className="ct-grid four">
-              <label className="ct-field"><span>Plataforma</span><select value={tournament.platform} onChange={(e) => setField('platform', e.target.value)}>{PLATFORM_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
+              <label className="ct-field"><span>Plataforma</span><select value={tournament.platform} onChange={(e) => setField('platform', e.target.value)}>{TOURNAMENT_PLATFORM_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
               <label className="ct-field"><span>Zona horaria</span><select value={tournament.timezone} onChange={(e) => setField('timezone', e.target.value)}><option value="UTC">UTC</option><option value="America/Santo_Domingo">America/Santo_Domingo</option><option value="America/New_York">America/New_York</option><option value="America/Mexico_City">America/Mexico_City</option><option value="America/Bogota">America/Bogota</option><option value="Europe/Madrid">Europe/Madrid</option><option value="Europe/London">Europe/London</option><option value="Asia/Tokyo">Asia/Tokyo</option></select></label>
               <label className="ct-field"><span>Fecha inicio</span><input type="date" min={todayInput} required value={tournament.date} onChange={(e) => setField('date', e.target.value)} /></label>
               <label className="ct-field"><span>Hora inicio</span><input type="time" required value={tournament.time} onChange={(e) => setField('time', e.target.value)} /></label>
@@ -1021,9 +988,9 @@ const CreateTournament = () => {
                 </div>
                 <small>Presets rapidos desde 4 equipos y opcion manual si necesitas otro numero.</small>
               </label>
-              <label className="ct-field"><span>Genero</span><select value={tournament.gender} onChange={(e) => setField('gender', e.target.value)}><option>Masculino</option><option>Femenino</option><option>Mixto</option></select></label>
+              <label className="ct-field"><span>Genero</span><select value={tournament.gender} onChange={(e) => setField('gender', e.target.value)}>{TEAM_GENDER_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
               <label className="ct-field"><span>Equipo</span><select value={tournament.modality} onChange={(e) => setField('modality', e.target.value)}><option value="">Seleccionar</option><option>1v1</option><option>2v2</option><option>3v3</option><option>5v5</option></select></label>
-              <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}>{FORMAT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
+              <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}>{TOURNAMENT_FORMAT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
             </div>
             <div className="ct-grid three">
               <label className="ct-field"><span>Serie</span><select value={tournament.matchConfig.seriesType} onChange={(e) => setNested('matchConfig', 'seriesType', e.target.value)}><option>BO1</option><option>BO3</option><option>BO5</option><option>FT2</option></select></label>
@@ -1223,7 +1190,7 @@ const CreateTournament = () => {
           <fieldset className="ct-fieldset" disabled={!unlockSponsors}>
             <div className="ct-staff-search-row">
               <select className="ct-staff-role-select" value={staffRole} onChange={(e) => setStaffRole(e.target.value)}>
-                {STAFF_ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                {TOURNAMENT_CREATOR_STAFF_ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
               <div className="ct-staff-autocomplete">
                 <input
@@ -1270,7 +1237,7 @@ const CreateTournament = () => {
                 {tournament.staffMembers.map((m, i) => (
                   <div className="ct-staff-member" key={`${m.username}-${i}`}>
                     <span className="ct-staff-member-name">{m.username}</span>
-                    <span className="ct-staff-role-tag">{STAFF_ROLE_OPTIONS.find((r) => r.value === m.role)?.label || m.role}</span>
+                    <span className="ct-staff-role-tag">{TOURNAMENT_CREATOR_STAFF_ROLE_OPTIONS.find((r) => r.value === m.role)?.label || m.role}</span>
                     <button type="button" className="ct-remove" onClick={() => removeStaffMember(i)}><FaTrash /></button>
                   </div>
                 ))}

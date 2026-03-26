@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
@@ -20,6 +20,8 @@ import PageHud from '../../../components/PageHud/PageHud';
 import { cacheAuthUser, getAuthToken } from '../../../utils/authSession';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import { isSupportedGameId, normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
+import { COUNTRY_OPTIONS, normalizeCountryName } from '../../../../../shared/countries.js';
+import { EXPERIENCE_LEVELS, GENDER_OPTIONS, GOAL_OPTIONS, LANGUAGE_OPTIONS, PLATFORM_OPTIONS } from '../../../../../shared/profileCatalog.js';
 import './EditProfile.css';
 
 // ─── Game assets (todos los juegos disponibles) ───
@@ -152,46 +154,6 @@ const normalizeSelectedGameIds = (values = []) => {
     return normalized;
 };
 
-const platformsList = [
-    { id: 'pc', name: 'PC', icon: 'bx-laptop' },
-    { id: 'mobile', name: 'Mobile', icon: 'bx-mobile' },
-    { id: 'console', name: 'Consola', icon: 'bx-joystick' }
-];
-
-const goalsList = [
-    { id: 'Torneos', label: 'Torneos', icon: 'bx-joystick' },
-    { id: 'Equipo', label: 'Equipo / Duo', icon: 'bx-group' },
-    { id: 'Fun', label: 'Diversión', icon: 'bx-smile' }
-];
-
-const experienceLevels = [
-    { id: 'Rookie', label: 'ROOKIE', desc: 'Principiante', icon: 'bx-user' },
-    { id: 'Mid', label: 'MID', desc: 'Intermedio', icon: 'bx-medal' },
-    { id: 'Pro', label: 'PRO', desc: 'Avanzado', icon: 'bx-trophy' }
-];
-
-const genderOptions = [
-    { id: 'Masculino', label: 'Masculino' },
-    { id: 'Femenino', label: 'Femenino' },
-    { id: 'Otro', label: 'Otro' }
-];
-
-const countryList = [
-    'Argentina', 'Bolivia', 'Brasil', 'Chile', 'Colombia', 'Costa Rica',
-    'Cuba', 'Ecuador', 'El Salvador', 'España', 'Estados Unidos', 'Guatemala',
-    'Honduras', 'México', 'Nicaragua', 'Panamá', 'Paraguay', 'Perú',
-    'Puerto Rico', 'Rep. Dominicana', 'Uruguay', 'Venezuela'
-];
-
-const languagesList = [
-    { id: 'Español', label: 'Español', flag: '🇪🇸' },
-    { id: 'English', label: 'English', flag: '🇺🇸' },
-    { id: 'Português', label: 'Português', flag: '🇧🇷' },
-    { id: 'Français', label: 'Français', flag: '🇫🇷' },
-    { id: 'Deutsch', label: 'Deutsch', flag: '🇩🇪' },
-    { id: 'Italiano', label: 'Italiano', flag: '🇮🇹' }
-];
-
 const rolesList = [
     { id: 'Top', label: 'Top', icon: 'bx-shield' },
     { id: 'Jungle', label: 'Jungle', icon: 'bx-leaf' },
@@ -313,6 +275,13 @@ const EditProfile = () => {
         const matchesSearch = game.name.toLowerCase().includes(gameQuery.toLowerCase().trim());
         return matchesCategory && matchesSearch;
     });
+    const countryOptions = useMemo(() => {
+        const currentCountry = normalizeCountryName(formData.country);
+        if (!currentCountry) return COUNTRY_OPTIONS;
+        return COUNTRY_OPTIONS.includes(currentCountry)
+            ? COUNTRY_OPTIONS
+            : [...COUNTRY_OPTIONS, currentCountry].sort((a, b) => a.localeCompare(b, 'es'));
+    }, [formData.country]);
 
     // ─── Fetch profile from API (not stale localStorage) ───
     const fetchProfile = useCallback(async () => {
@@ -339,7 +308,7 @@ const EditProfile = () => {
             setFormData({
                 username: u.username || '',
                 fullName: u.fullName || '',
-                country: u.country || '',
+                country: normalizeCountryName(u.country || ''),
                 phone: u.phone || '',
                 gender: u.gender || 'Otro',
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
@@ -653,7 +622,7 @@ const EditProfile = () => {
                 ...prev,
                 username: u.username || prev.username,
                 fullName: u.fullName || prev.fullName,
-                country: u.country || prev.country,
+                country: normalizeCountryName(u.country || prev.country),
                 phone: u.phone || prev.phone,
                 gender: u.gender || prev.gender,
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : prev.birthDate,
@@ -878,7 +847,7 @@ const EditProfile = () => {
                                         <label>País</label>
                                         <select name="country" value={formData.country} onChange={handleChange}>
                                             <option value="">Seleccionar...</option>
-                                            {countryList.map(c => <option key={c} value={c}>{c}</option>)}
+                                            {countryOptions.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                     <div className="ep__field">
@@ -909,7 +878,7 @@ const EditProfile = () => {
                                     <div className="ep__field">
                                         <label>Género</label>
                                         <div className="ep__gender-row">
-                                            {genderOptions.map(g => (
+                                            {GENDER_OPTIONS.map(g => (
                                                 <button
                                                     key={g.id}
                                                     type="button"
@@ -1123,7 +1092,7 @@ const EditProfile = () => {
                                     </div>
                                 </div>
                                 <div className="ep__chips-row">
-                                    {languagesList.map(lang => (
+                                    {LANGUAGE_OPTIONS.map(lang => (
                                         <div
                                             key={lang.id}
                                             className={`ep__chip ep__chip--lang ${formData.languages.includes(lang.id) ? 'selected' : ''}`}
@@ -1269,7 +1238,7 @@ const EditProfile = () => {
                                 {/* Experience level */}
                                 <label className="ep__label">Nivel de Experiencia</label>
                                 <div className="ep__levels-row">
-                                    {experienceLevels.map(lvl => (
+                                    {EXPERIENCE_LEVELS.map(lvl => (
                                         <div
                                             key={lvl.id}
                                             className={`ep__level-card ${formData.experience.includes(lvl.id) ? 'selected' : ''}`}
@@ -1392,7 +1361,7 @@ const EditProfile = () => {
                                 {/* Platforms */}
                                 <label className="ep__label">Plataformas</label>
                                 <div className="ep__chips-row">
-                                    {platformsList.map(p => (
+                                    {PLATFORM_OPTIONS.map(p => (
                                         <div
                                             key={p.id}
                                             className={`ep__chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`}
@@ -1406,7 +1375,7 @@ const EditProfile = () => {
                                 {/* Goals */}
                                 <label className="ep__label">¿Qué buscas?</label>
                                 <div className="ep__chips-row">
-                                    {goalsList.map(goal => (
+                                    {GOAL_OPTIONS.map(goal => (
                                         <div
                                             key={goal.id}
                                             className={`ep__chip ${formData.goals.includes(goal.id) ? 'selected' : ''}`}

@@ -16,12 +16,10 @@ import {
   transferCommunityOwnershipByShortUrl
 } from '../community.service';
 import { getCommunitySocialEntries } from '../communitySocials';
-
-const MEMBER_ROLE_OPTIONS = [
-  { value: 'member', label: 'Miembro' },
-  { value: 'moderator', label: 'Moderador' },
-  { value: 'admin', label: 'Admin' }
-];
+import {
+  COMMUNITY_MANAGEABLE_ROLE_OPTIONS,
+  getCommunityMemberRoleLabel
+} from '../../../../../../shared/communityCatalog.js';
 
 const formatAuditTimestamp = (value) => {
   if (!value) return 'Ahora';
@@ -34,10 +32,10 @@ const describeAuditLog = (entry) => {
   const action = String(entry?.action || '');
   const actor = entry?.actor?.username || 'Usuario';
   const target = entry?.target?.username || 'usuario';
-  const fromRole = String(entry?.metadata?.fromRole || '');
-  const toRole = String(entry?.metadata?.toRole || '');
-  const removedRole = String(entry?.metadata?.removedRole || '');
-  const previousRole = String(entry?.metadata?.previousRole || '');
+  const fromRole = getCommunityMemberRoleLabel(entry?.metadata?.fromRole || '') || String(entry?.metadata?.fromRole || '');
+  const toRole = getCommunityMemberRoleLabel(entry?.metadata?.toRole || '') || String(entry?.metadata?.toRole || '');
+  const removedRole = getCommunityMemberRoleLabel(entry?.metadata?.removedRole || '') || String(entry?.metadata?.removedRole || '');
+  const previousRole = getCommunityMemberRoleLabel(entry?.metadata?.previousRole || '') || String(entry?.metadata?.previousRole || '');
 
   if (action === 'community_created') return `@${actor} creó la comunidad`;
   if (action === 'member_joined') return `@${actor} se unió a la comunidad`;
@@ -170,7 +168,7 @@ const CommunitySpacePage = () => {
       if (updated?.canManageMembers) {
         await loadAuditLogs(updated.shortUrl);
       }
-      addToast(`Rol actualizado a ${nextRole}`, 'success');
+      addToast(`Rol actualizado a ${getCommunityMemberRoleLabel(nextRole) || nextRole}`, 'success');
     } catch (error) {
       addToast(error?.response?.data?.message || 'No se pudo actualizar el rol', 'error');
     } finally {
@@ -320,7 +318,7 @@ const CommunitySpacePage = () => {
               <img src={community.createdBy?.avatar || ValorantImg} alt={community.createdBy?.username || 'owner'} />
               <div className="community-member-meta">
                 <strong>{community.createdBy?.username || 'Organizador'}</strong>
-                <span>owner</span>
+                <span>{getCommunityMemberRoleLabel('owner')}</span>
               </div>
             </div>
           </aside>
@@ -335,12 +333,12 @@ const CommunitySpacePage = () => {
                   <img src={member.user?.avatar || ValorantImg} alt={member.user?.username || 'user'} />
                   <div className="community-member-meta">
                     <strong>{member.user?.username || 'Usuario'}</strong>
-                    <span>{member.role || 'member'}</span>
+                    <span>{getCommunityMemberRoleLabel(member.role || 'member') || member.role || 'member'}</span>
                   </div>
                   <div className="community-member-controls">
                     {community.isOwner && member.role !== 'owner' && (
                       <div className="community-member-role-actions">
-                        {MEMBER_ROLE_OPTIONS.map((option) => (
+                        {COMMUNITY_MANAGEABLE_ROLE_OPTIONS.map((option) => (
                           <button
                             key={`${member.user?.id || idx}-${option.value}`}
                             className={`community-member-role-btn ${

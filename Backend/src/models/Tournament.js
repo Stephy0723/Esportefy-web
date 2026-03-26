@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { normalizeTournamentFormat, normalizeTournamentPlatform, normalizeTournamentStaffRole } from '../../../shared/tournamentCatalog.js';
+import { normalizeTeamGender } from '../../../shared/teamCatalog.js';
 
 const tournamentSchema = new mongoose.Schema({
     tournamentId: {
@@ -18,7 +20,7 @@ const tournamentSchema = new mongoose.Schema({
     modality: { type: String }, // Ej: 5v5, 1v1
     platform: { type: String, default: 'PC' },
     server: String,
-    format: { type: String, default: 'Eliminación Directa' },
+    format: { type: String, default: 'single_elimination' },
     date: { type: Date, required: true },
     time: { type: String, required: true },
 
@@ -335,6 +337,16 @@ tournamentSchema.virtual('slotsFormatted').get(function () {
 });
 
 tournamentSchema.pre('validate', async function(next) {
+    this.gender = normalizeTeamGender(this.gender, 'Mixto');
+    this.platform = normalizeTournamentPlatform(this.platform, 'PC');
+    this.format = normalizeTournamentFormat(this.format, 'single_elimination');
+    if (Array.isArray(this.staff?.moderators)) {
+        this.staff.moderators = this.staff.moderators.map((member) => ({
+            ...member,
+            role: normalizeTournamentStaffRole(member?.role, 'moderator')
+        }));
+    }
+
     if (this.tournamentId) return next();
 
     const TournamentModel = this.constructor;

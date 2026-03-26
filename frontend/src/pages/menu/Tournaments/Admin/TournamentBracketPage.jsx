@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getTournamentFormatLabel, TOURNAMENT_FORMAT_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
 import {
   TournamentAdminShell,
   createEmptyBracket,
@@ -8,13 +9,6 @@ import {
   useTournamentAdminData,
 } from './TournamentAdminShared';
 import './TournamentAdmin.css';
-
-const FORMAT_OPTIONS = [
-  { value: 'single_elimination', label: 'Eliminacion directa' },
-  { value: 'double_elimination', label: 'Doble eliminacion' },
-  { value: 'swiss', label: 'Sistema Suizo' },
-  { value: 'round_robin', label: 'Round Robin (todos contra todos)' },
-];
 
 const toTeamObj = (name) => {
   if (!name) return { refId: '', teamName: '', isBye: true };
@@ -506,7 +500,7 @@ const TournamentBracketPage = () => {
           {bracket?.format && (
             <div className="ta-editor-block">
               <span className="ta-editor-label">Formato activo</span>
-              <strong>{FORMAT_OPTIONS.find((f) => f.value === bracket.format)?.label || bracket.format}</strong>
+              <strong>{getTournamentFormatLabel(bracket.format) || bracket.format}</strong>
               <p className="ta-hint">Este es el formato con el que se genero el bracket actual.</p>
             </div>
           )}

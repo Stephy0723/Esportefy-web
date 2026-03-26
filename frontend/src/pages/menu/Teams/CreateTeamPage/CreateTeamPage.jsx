@@ -16,23 +16,15 @@ import { API_URL } from '../../../../config/api';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import { getAuthToken as readAuthToken, getStoredUser } from '../../../../utils/authSession';
 import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../../shared/supportedGames.js';
+import {
+    TEAM_COUNTRY_OPTIONS,
+    TEAM_GENDER_OPTIONS,
+    TEAM_LANGUAGE_OPTIONS,
+    TEAM_LEVEL_OPTIONS
+} from '../../../../../../shared/teamCatalog.js';
 import './CreateTeamPage.css';
 
 const CUSTOM_OPTION = '__custom__';
-
-const COUNTRY_OPTIONS = [
-    'República Dominicana',
-    'México',
-    'Colombia',
-    'Argentina',
-    'Chile',
-    'Perú',
-    'España',
-    'Estados Unidos',
-    'Canadá',
-    'Brasil',
-    'Internacional'
-];
 
 const RIOT_REGION_OPTIONS = [
     'LATAM',
@@ -123,7 +115,6 @@ const CreateTeamPage = () => {
     const [inviteBusyByUser, setInviteBusyByUser] = useState({});
     const [invitedUserIds, setInvitedUserIds] = useState(new Set());
     const [reservedInviteSlots, setReservedInviteSlots] = useState([]);
-    const [useCustomCountry, setUseCustomCountry] = useState(false);
     const [useCustomRegion, setUseCustomRegion] = useState(false);
     const [communityOptions, setCommunityOptions] = useState([]);
 
@@ -372,12 +363,6 @@ const CreateTeamPage = () => {
                 : { ...prev, teamLevel: presetTeamLevel }
         ));
     }, [presetTeamLevel]);
-
-    useEffect(() => {
-        if (formData.teamCountry && !COUNTRY_OPTIONS.includes(formData.teamCountry)) {
-            setUseCustomCountry(true);
-        }
-    }, [formData.teamCountry]);
 
     useEffect(() => {
         if (lockMlbbIdentity) {
@@ -843,43 +828,26 @@ const CreateTeamPage = () => {
                                 <div className="form-group">
                                     <label className="section-label"><FaVenusMars/> Composición (Género)</label>
                                     <select className="select-modern" value={formData.teamGender} onChange={e => setFormData({...formData, teamGender: e.target.value})}>
-                                        <option value="Mixto">Mixto (Cualquiera)</option>
-                                        <option value="Masculino">Masculino</option>
-                                        <option value="Femenino">Femenino</option>
+                                        {TEAM_GENDER_OPTIONS.map((option) => (
+                                            <option key={option.id} value={option.id}>{option.label}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="form-group">
                                     <label className="section-label"><FaMapMarkerAlt/> País / Región Base</label>
-                                    <select
-                                        className="select-modern"
-                                        value={useCustomCountry ? CUSTOM_OPTION : (formData.teamCountry || '')}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            if (value === CUSTOM_OPTION) {
-                                                setUseCustomCountry(true);
-                                                setFormData({ ...formData, teamCountry: '' });
-                                                return;
-                                            }
-                                            setUseCustomCountry(false);
-                                            setFormData({ ...formData, teamCountry: value });
-                                        }}
-                                    >
-                                        <option value="">Selecciona país</option>
-                                        {COUNTRY_OPTIONS.map((country) => (
-                                            <option key={country} value={country}>{country}</option>
+                                    <input
+                                        type="text"
+                                        list="team-country-options"
+                                        className="input-modern"
+                                        placeholder="Selecciona o escribe un país"
+                                        value={formData.teamCountry}
+                                        onChange={(e) => setFormData({ ...formData, teamCountry: e.target.value })}
+                                    />
+                                    <datalist id="team-country-options">
+                                        {TEAM_COUNTRY_OPTIONS.map((country) => (
+                                            <option key={country} value={country} />
                                         ))}
-                                        <option value={CUSTOM_OPTION}>Personalizado</option>
-                                    </select>
-                                    {useCustomCountry && (
-                                        <input
-                                            type="text"
-                                            className="input-modern"
-                                            placeholder="Escribe el país o región"
-                                            value={formData.teamCountry}
-                                            onChange={(e) => setFormData({ ...formData, teamCountry: e.target.value })}
-                                            style={{ marginTop: '8px' }}
-                                        />
-                                    )}
+                                    </datalist>
                                 </div>
                             </div>
 
@@ -887,12 +855,9 @@ const CreateTeamPage = () => {
                                 <div className="form-group">
                                     <label className="section-label"><FaTrophy/> Nivel / Tipo de Equipo</label>
                                     <select className="select-modern" value={formData.teamLevel} onChange={e => setFormData({...formData, teamLevel: e.target.value})}>
-                                        <option value="Casual">Casual / Fun</option>
-                                        <option value="Amateur">Amateur (Torneos Menores)</option>
-                                        <option value="Universitario">Universitario (Institucional)</option>
-                                        <option value="Semi-Pro">Semi-Pro (Ligas)</option>
-                                        <option value="Profesional">Profesional (Tier 1)</option>
-                                        <option value="Leyenda">Leyenda (Elite)</option>
+                                        {TEAM_LEVEL_OPTIONS.map((option) => (
+                                            <option key={option.id} value={option.id}>{option.label}</option>
+                                        ))}
                                     </select>
                                     {presetTeamLevel === 'Universitario' && (
                                         <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
@@ -909,13 +874,19 @@ const CreateTeamPage = () => {
                                 </div>
                                 <div className="form-group">
                                     <label className="section-label"><FaLanguage/> Idioma Principal</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
+                                        list="team-language-options"
                                         className="input-modern" 
-                                        placeholder="Ej: Español / Inglés" 
+                                        placeholder="Selecciona o escribe el idioma principal"
                                         value={formData.teamLanguage} 
                                         onChange={e => setFormData({...formData, teamLanguage: e.target.value})} 
                                     />
+                                    <datalist id="team-language-options">
+                                        {TEAM_LANGUAGE_OPTIONS.map((option) => (
+                                            <option key={option.id} value={option.id} />
+                                        ))}
+                                    </datalist>
                                 </div>
                             </div>
                         </div>

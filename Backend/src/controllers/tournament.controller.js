@@ -3,6 +3,12 @@ import User from '../models/User.js';
 import Team from '../models/Team.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
+import {
+    normalizeTournamentFormat,
+    normalizeTournamentPlatform,
+    normalizeTournamentStaffRole,
+    TOURNAMENT_ALLOWED_FORMAT_VALUES
+} from '../../../shared/tournamentCatalog.js';
 import { normalizeTournamentServer } from '../../../shared/tournamentServerOptions.js';
 import { normalizeTournamentMapPool } from '../../../shared/tournamentMapOptions.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
@@ -14,6 +20,7 @@ import {
     isSupportedRiotGame,
     normalizeSupportedGameName
 } from '../../../shared/supportedGames.js';
+import { normalizeTeamGender } from '../../../shared/teamCatalog.js';
 
 import fs from 'fs';
 
@@ -47,18 +54,8 @@ const RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS = parsePositiveIntEnv(
     process.env.RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS,
     20
 );
-const MLBB_ALLOWED_FORMATS = new Set([
-    'single_elimination',
-    'double_elimination',
-    'swiss',
-    'round_robin'
-]);
-const RIOT_ALLOWED_FORMATS = new Set([
-    'single_elimination',
-    'double_elimination',
-    'swiss',
-    'round_robin'
-]);
+const MLBB_ALLOWED_FORMATS = new Set(TOURNAMENT_ALLOWED_FORMAT_VALUES);
+const RIOT_ALLOWED_FORMATS = new Set(TOURNAMENT_ALLOWED_FORMAT_VALUES);
 const MLBB_BANNED_TERMS = [
     'apuesta',
     'apuestas',
@@ -83,24 +80,6 @@ const normalizeText = (value = '') =>
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase();
-
-const normalizeTournamentFormat = (value = '') => {
-    const raw = normalizeText(value).trim();
-    if (!raw) return '';
-    if (raw === 'single_elimination' || raw.includes('eliminacion directa') || raw.includes('single elimination')) {
-        return 'single_elimination';
-    }
-    if (raw === 'double_elimination' || raw.includes('doble eliminacion') || raw.includes('double elimination')) {
-        return 'double_elimination';
-    }
-    if (raw === 'swiss' || raw.includes('suizo')) {
-        return 'swiss';
-    }
-    if (raw === 'round_robin' || raw.includes('round robin')) {
-        return 'round_robin';
-    }
-    return raw;
-};
 
 const normalizeEntryFee = (value = '') => normalizeText(value).trim();
 const normalizeMoneyAmount = (value = '') => {
@@ -769,13 +748,19 @@ export const createTournament = async (req, res) => {
             if (typeof entry === 'string') {
                 const username = entry.trim();
                 if (!username) return null;
-                return { user: null, username, role: defaultRole, displayRole: '', addedAt: new Date() };
+                return {
+                    user: null,
+                    username,
+                    role: normalizeTournamentStaffRole(defaultRole, 'moderator'),
+                    displayRole: '',
+                    addedAt: new Date()
+                };
             }
             if (entry && typeof entry === 'object' && String(entry.username || '').trim()) {
                 return {
                     user: entry.user || null,
                     username: String(entry.username).trim(),
-                    role: entry.role || defaultRole,
+                    role: normalizeTournamentStaffRole(entry.role || defaultRole, 'moderator'),
                     displayRole: entry.displayRole || '',
                     addedAt: entry.addedAt || new Date()
                 };
@@ -798,6 +783,9 @@ export const createTournament = async (req, res) => {
         // ── Validation (before creating the document) ──
         const newTournament = new Tournament({
             ...safeData,
+            gender: normalizeTeamGender(data.gender, 'Mixto'),
+            platform: normalizeTournamentPlatform(data.platform, 'PC'),
+            format: normalizeTournamentFormat(data.format, 'single_elimination'),
             tournamentId,
             prizesByRank: parsedPrizesByRank,
             sponsors: sponsorsWithLogos,
@@ -1074,6 +1062,15 @@ export const updateTournament = async (req, res) => {
         };
         if (normalizedUpdateGame) {
             update.game = normalizedUpdateGame;
+        }
+        if (data.gender !== undefined) {
+            update.gender = normalizeTeamGender(data.gender, 'Mixto');
+        }
+        if (data.platform !== undefined) {
+            update.platform = normalizeTournamentPlatform(data.platform, 'PC');
+        }
+        if (data.format !== undefined) {
+            update.format = normalizeTournamentFormat(data.format, 'single_elimination');
         }
         if (normalizedUpdateMaxSlots !== null) {
             update.maxSlots = normalizedUpdateMaxSlots;
@@ -2531,7 +2528,7 @@ export const addStaffMember = async (req, res) => {
         const member = {
             user: user?._id || null,
             username,
-            role: role || 'moderator',
+            role: normalizeTournamentStaffRole(role, 'moderator'),
             displayRole: displayRole || '',
             addedAt: new Date(),
         };
@@ -2556,7 +2553,7 @@ export const updateStaffMember = async (req, res) => {
         if (!member) return res.status(404).json({ message: 'Miembro no encontrado.' });
 
         const { role, displayRole } = req.body;
-        if (role) member.role = role;
+        if (role) member.role = normalizeTournamentStaffRole(role, member.role || 'moderator');
         if (displayRole !== undefined) member.displayRole = displayRole;
 
         await tournament.save({ validateBeforeSave: false });

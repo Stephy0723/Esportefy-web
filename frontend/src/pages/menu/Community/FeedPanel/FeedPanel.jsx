@@ -11,16 +11,10 @@ import {
     deleteCommunityPost,
 } from '../community.service';
 import { resolveMediaUrl } from '../../../../utils/media';
+import { COMMUNITY_FEED_GAME_OPTIONS } from '../../../../../../shared/communityCatalog.js';
 import './FeedPanel.css';
 
-const GAME_OPTIONS = [
-    { id: 'valorant', name: 'Valorant', color: '#ff4655' },
-    { id: 'lol', name: 'League of Legends', color: '#0ac8b9' },
-    { id: 'mlbb', name: 'Mobile Legends', color: '#00d2ff' },
-    { id: 'fortnite', name: 'Fortnite', color: '#9d4dbb' },
-    { id: 'cs2', name: 'Counter-Strike 2', color: '#de9b35' },
-    { id: 'wildrift', name: 'Wild Rift', color: '#00d4aa' },
-];
+const GAME_OPTIONS = COMMUNITY_FEED_GAME_OPTIONS;
 
 const FEED_SAVED_POSTS_KEY = 'community_feed_saved_posts';
 

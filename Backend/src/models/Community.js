@@ -1,4 +1,18 @@
 import mongoose from 'mongoose';
+import {
+  COMMUNITY_MEMBER_ROLE_KEYS,
+  COMMUNITY_SOCIAL_LINK_KEYS,
+  normalizeCommunityGameNames,
+  normalizeCommunityMemberRole
+} from '../../../shared/communityCatalog.js';
+
+const buildCommunitySocialLinkSchema = () =>
+  Object.fromEntries(
+    COMMUNITY_SOCIAL_LINK_KEYS.map((key) => [
+      key,
+      { type: String, trim: true, default: '' }
+    ])
+  );
 
 const memberSchema = new mongoose.Schema(
   {
@@ -9,7 +23,7 @@ const memberSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['owner', 'admin', 'moderator', 'member'],
+      enum: COMMUNITY_MEMBER_ROLE_KEYS,
       default: 'member'
     },
     joinedAt: {
@@ -96,15 +110,7 @@ const communitySchema = new mongoose.Schema(
     futureTournaments: { type: Boolean, default: false },
 
     admins: { type: [String], default: [] },
-    socialLinks: {
-      website: { type: String, trim: true, default: '' },
-      discord: { type: String, trim: true, default: '' },
-      twitter: { type: String, trim: true, default: '' },
-      instagram: { type: String, trim: true, default: '' },
-      youtube: { type: String, trim: true, default: '' },
-      twitch: { type: String, trim: true, default: '' },
-      tiktok: { type: String, trim: true, default: '' }
-    },
+    socialLinks: buildCommunitySocialLinkSchema(),
     media: {
       bannerUrl: { type: String, default: '' },
       avatarUrl: { type: String, default: '' },
@@ -129,5 +135,17 @@ const communitySchema = new mongoose.Schema(
 communitySchema.index({ createdAt: -1 });
 communitySchema.index({ createdBy: 1, createdAt: -1 });
 communitySchema.index({ 'members.user': 1, createdAt: -1 });
+
+communitySchema.pre('validate', function normalizeCommunityMetadata(next) {
+  this.mainGames = normalizeCommunityGameNames(this.mainGames);
+
+  if (Array.isArray(this.members)) {
+    this.members.forEach((member) => {
+      member.role = normalizeCommunityMemberRole(member.role, 'member');
+    });
+  }
+
+  next();
+});
 
 export default mongoose.model('Community', communitySchema);

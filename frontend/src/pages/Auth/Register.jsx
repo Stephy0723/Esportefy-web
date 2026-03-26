@@ -13,6 +13,8 @@ import bgBlack from '../../assets/images/login-white.png'; // Imagen Clara (Aseg
 
 import { GAME_IMAGES } from '../../data/gameImages';
 import { getGameIdFromRoutePath } from '../menu/Community/gameHub.service';
+import { COUNTRY_OPTIONS, getCountryCallingCode, normalizeCountryName } from '../../../../shared/countries.js';
+import { EXPERIENCE_LEVELS, GENDER_OPTIONS, GOAL_OPTIONS, PLATFORM_OPTIONS } from '../../../../shared/profileCatalog.js';
 
 const normalizeForCompare = (value = '') =>
   String(value)
@@ -196,7 +198,10 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const payload = { ...formData, country: formData.country === 'Otro' ? formData.customCountry : formData.country };
+      const payload = {
+        ...formData,
+        country: normalizeCountryName(formData.country === 'Otro' ? formData.customCountry : formData.country)
+      };
       const response = await axios.post(`${API_URL}/api/auth/register`, {
         ...payload,
         ...(pendingGameJoinId ? { pendingGameJoinId } : {})
@@ -373,36 +378,7 @@ const Register = () => {
     ? (usernameAvailability.message || 'Este GamerTag ya está en uso.')
     : getSubmitError(formData, passwordError);
 
-  const platformsList = [
-    { id: 'pc', name: 'PC', icon: 'bx-laptop' },
-    { id: 'mobile', name: 'Mobile', icon: 'bx-mobile' },
-    { id: 'console', name: 'Consola', icon: 'bx-joystick' }
-  ];
-
-  const countries = [
-    'Antigua y Barbuda', 'Argentina', 'Bahamas', 'Barbados', 'Belice', 'Bolivia', 'Brasil',
-    'Canadá', 'Chile', 'Colombia', 'Costa Rica', 'Cuba', 'Dominica',
-    'Ecuador', 'El Salvador', 'Estados Unidos', 'Granada', 'Guatemala', 'Guyana',
-    'Haití', 'Honduras', 'Jamaica', 'México', 'Nicaragua', 'Panamá', 'Paraguay',
-    'Perú', 'Puerto Rico', 'República Dominicana', 'San Cristóbal y Nieves',
-    'San Vicente y las Granadinas', 'Santa Lucía', 'Surinam',
-    'Trinidad y Tobago', 'Uruguay', 'Venezuela'
-  ];
-
-  const COUNTRY_CALLING_CODES = {
-    'Antigua y Barbuda': '1268', 'Argentina': '54', 'Bahamas': '1242', 'Barbados': '1246',
-    'Belice': '501', 'Bolivia': '591', 'Brasil': '55', 'Canadá': '1',
-    'Chile': '56', 'Colombia': '57', 'Costa Rica': '506', 'Cuba': '53',
-    'Dominica': '1767', 'Ecuador': '593', 'El Salvador': '503', 'Estados Unidos': '1',
-    'Granada': '1473', 'Guatemala': '502', 'Guyana': '592', 'Haití': '509',
-    'Honduras': '504', 'Jamaica': '1876', 'México': '52', 'Nicaragua': '505',
-    'Panamá': '507', 'Paraguay': '595', 'Perú': '51', 'Puerto Rico': '1',
-    'República Dominicana': '1', 'San Cristóbal y Nieves': '1869', 
-    'San Vicente y las Granadinas': '1784', 'Santa Lucía': '1758', 'Surinam': '597', 
-    'Trinidad y Tobago': '1868', 'Uruguay': '598', 'Venezuela': '58'
-  };
-
-  const selectedPrefix = COUNTRY_CALLING_CODES[formData.country];
+  const selectedPrefix = getCountryCallingCode(formData.country);
 
   return (
     // 4. USAR isDarkMode PARA LA CLASE CSS DEL COLOR DE FONDO
@@ -477,7 +453,7 @@ const Register = () => {
                     <label>País</label>
                     <select name="country" value={formData.country} onChange={handleChange}>
                       <option value="">Selecciona tu país</option>
-                      {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                      {COUNTRY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                       <option value="Otro">Otro (Especificar)</option>
                     </select>
                     <i className='bx bx-globe'></i>
@@ -485,9 +461,9 @@ const Register = () => {
                   <div className="input-wrapper">
                     <label>Género</label>
                     <select name="gender" value={formData.gender} onChange={handleChange}>
-                      <option value="Masculino">Masculino</option>
-                      <option value="Femenino">Femenino</option>
-                      <option value="Otro">Otro</option>
+                      {GENDER_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>{option.label}</option>
+                      ))}
                     </select>
                     <i className='bx bx-user'></i>
                   </div>
@@ -559,7 +535,7 @@ const Register = () => {
               <div className="step-fade-in">
                 <h3 className="step-title">Tu Nivel de Experiencia</h3>
                 <div className="levels-row">
-                  {[{ id: 'Rookie', label: 'ROOKIE', desc: 'Principiante', icon: 'bx-user' }, { id: 'Mid', label: 'MID', desc: 'Intermedio', icon: 'bx-medal' }, { id: 'Pro', label: 'PRO', desc: 'Avanzado', icon: 'bx-trophy' }].map((lvl) => (
+                  {EXPERIENCE_LEVELS.map((lvl) => (
                     <div key={lvl.id} className={`level-card ${formData.experience === lvl.id ? 'selected' : ''}`} onClick={() => setFormData({...formData, experience: lvl.id})}>
                       {formData.experience === lvl.id && <span className="selection-check" aria-hidden="true" />}
                       <i className={`bx ${lvl.icon} level-icon`}></i>
@@ -569,7 +545,7 @@ const Register = () => {
                 </div>
                 <h3 className="step-title mt-4">Plataforma Principal</h3>
                 <div className="platforms-row">
-                  {platformsList.map(p => (
+                  {PLATFORM_OPTIONS.map(p => (
                     <div key={p.id} className={`platform-chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`} onClick={() => toggleSelection('platforms', p.id)}>
                       {formData.platforms.includes(p.id) && <span className="selection-check selection-check--inline" aria-hidden="true" />}
                       <i className={`bx ${p.icon}`}></i> {p.name}
@@ -578,7 +554,7 @@ const Register = () => {
                 </div>
                 <h3 className="step-title mt-4">¿Qué buscas?</h3>
                 <div className="goals-row">
-                  {[{ id: 'Torneos', label: 'Torneos', icon: 'bx-joystick' }, { id: 'Equipo', label: 'Equipo / Duo', icon: 'bx-group' }, { id: 'Fun', label: 'Diversión', icon: 'bx-smile' }].map((goal) => (
+                  {GOAL_OPTIONS.map((goal) => (
                     <div key={goal.id} className={`goal-card ${formData.goals.includes(goal.id) ? 'selected' : ''}`} onClick={() => toggleSelection('goals', goal.id)}>
                       {formData.goals.includes(goal.id) && <span className="selection-check" aria-hidden="true" />}
                       <i className={`bx ${goal.icon}`}></i><span>{goal.label}</span>

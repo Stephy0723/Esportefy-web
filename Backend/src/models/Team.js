@@ -1,4 +1,10 @@
 import mongoose from "mongoose";
+import {
+    normalizeTeamCountry,
+    normalizeTeamGender,
+    normalizeTeamLanguage,
+    normalizeTeamLevel
+} from "../../../shared/teamCatalog.js";
 
 const playerSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -61,6 +67,11 @@ const teamSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 teamSchema.pre('validate', async function(next) {
+    this.teamGender = this.teamGender ? normalizeTeamGender(this.teamGender, '') : '';
+    this.teamCountry = this.teamCountry ? normalizeTeamCountry(this.teamCountry) : '';
+    this.teamLevel = this.teamLevel ? normalizeTeamLevel(this.teamLevel, '') : '';
+    this.teamLanguage = this.teamLanguage ? normalizeTeamLanguage(this.teamLanguage, '') : '';
+
     if (this.teamCode) return next();
 
     const TeamModel = this.constructor;

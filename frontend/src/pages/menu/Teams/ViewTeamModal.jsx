@@ -6,12 +6,18 @@ import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMedia
 import { getAuthToken } from '../../../utils/authSession';
 import { formatTeamPublicId } from '../../../utils/publicIds';
 import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
+import {
+    normalizeTeamCountry,
+    normalizeTeamGender,
+    normalizeTeamLanguage,
+    normalizeTeamLevel,
+    TEAM_COUNTRY_OPTIONS,
+    TEAM_GENDER_OPTIONS,
+    TEAM_LANGUAGE_OPTIONS,
+    TEAM_LEVEL_OPTIONS
+} from '../../../../../shared/teamCatalog.js';
 import './ViewTeamModal.css';
 const REGION_OPTIONS = ["LAN", "LAS", "NA", "BR", "EUW", "EUNE", "TR", "RU", "OCE", "KR", "JP", "PH", "SG", "TH", "TW", "VN", "LATAM", "GLOBAL"];
-
-const LEVEL_OPTIONS = ['Casual', 'Amateur', 'Semi-Pro', 'Universitario', 'Profesional', 'Leyenda (Elite)'];
-const GENDER_OPTIONS = ['Mixto', 'Femenino', 'Masculino'];
-const LANGUAGE_OPTIONS = ['Español', 'English', 'Português', 'Français'];
 
 const TABS = [
     { key: 'info', icon: 'bx-info-circle', label: 'Info' },
@@ -134,10 +140,10 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
             slogan: team.slogan || '',
             category: team.category || '',
             game: team.game || '',
-            teamGender: team.teamGender || 'Mixto',
-            teamCountry: team.teamCountry || '',
-            teamLevel: team.teamLevel || '',
-            teamLanguage: team.teamLanguage || 'Español',
+            teamGender: normalizeTeamGender(team.teamGender, 'Mixto'),
+            teamCountry: normalizeTeamCountry(team.teamCountry),
+            teamLevel: normalizeTeamLevel(team.teamLevel, ''),
+            teamLanguage: normalizeTeamLanguage(team.teamLanguage, 'Español'),
             community: team.community?._id || team.community || '',
             sponsor: team.sponsor || '',
         });
@@ -650,26 +656,48 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                                             <label>Nivel</label>
                                             <select value={editForm.teamLevel} onChange={e => setEditForm({ ...editForm, teamLevel: e.target.value })}>
                                                 <option value="">Seleccionar...</option>
-                                                {LEVEL_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                                                {TEAM_LEVEL_OPTIONS.map((option) => (
+                                                    <option key={option.id} value={option.id}>{option.label}</option>
+                                                ))}
                                             </select>
                                         </div>
                                         <div className="vtm-form-group">
                                             <label>Género</label>
                                             <select value={editForm.teamGender} onChange={e => setEditForm({ ...editForm, teamGender: e.target.value })}>
-                                                {GENDER_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+                                                {TEAM_GENDER_OPTIONS.map((option) => (
+                                                    <option key={option.id} value={option.id}>{option.label}</option>
+                                                ))}
                                             </select>
                                         </div>
                                     </div>
                                     <div className="vtm-form-row">
                                         <div className="vtm-form-group">
                                             <label>País / Región</label>
-                                            <input value={editForm.teamCountry} onChange={e => setEditForm({ ...editForm, teamCountry: e.target.value })} placeholder="México" />
+                                            <input
+                                                list="vtm-team-country-options"
+                                                value={editForm.teamCountry}
+                                                onChange={e => setEditForm({ ...editForm, teamCountry: e.target.value })}
+                                                placeholder="México"
+                                            />
+                                            <datalist id="vtm-team-country-options">
+                                                {TEAM_COUNTRY_OPTIONS.map((country) => (
+                                                    <option key={country} value={country} />
+                                                ))}
+                                            </datalist>
                                         </div>
                                         <div className="vtm-form-group">
                                             <label>Idioma</label>
-                                            <select value={editForm.teamLanguage} onChange={e => setEditForm({ ...editForm, teamLanguage: e.target.value })}>
-                                                {LANGUAGE_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
-                                            </select>
+                                            <input
+                                                list="vtm-team-language-options"
+                                                value={editForm.teamLanguage}
+                                                onChange={e => setEditForm({ ...editForm, teamLanguage: e.target.value })}
+                                                placeholder="Español"
+                                            />
+                                            <datalist id="vtm-team-language-options">
+                                                {TEAM_LANGUAGE_OPTIONS.map((option) => (
+                                                    <option key={option.id} value={option.id} />
+                                                ))}
+                                            </datalist>
                                         </div>
                                     </div>
                                     <div className="vtm-form-row">

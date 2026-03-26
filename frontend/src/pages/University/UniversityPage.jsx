@@ -3,20 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import { getAuthToken } from '../../utils/authSession';
+import {
+  ACADEMIC_LEVEL_OPTIONS,
+  ALLOWED_ACADEMIC_LEVELS,
+  getEmailDomain,
+  isUniversityAllowedGame,
+  PUBLIC_EMAIL_DOMAINS,
+  UNIVERSITY_ENABLED_REGION,
+  UNIVERSITY_REGION_OPTIONS
+} from '../../../../shared/universityRules.js';
 import './UniversityPage.scss';
 
 /* ═══════════════════════════════════════════════════════════
    UNIVERSITY DATA — Prioridad: RD → Caribe → LATAM → América
    ═══════════════════════════════════════════════════════════ */
 
-const REGIONS = [
-  { id: 'rd', name: 'República Dominicana', flag: '🇩🇴', short: 'RD' },
-  { id: 'caribe', name: 'El Caribe', flag: '🌴', short: 'Caribe' },
-  { id: 'latam', name: 'Latinoamérica', flag: '🌎', short: 'LATAM' },
-  { id: 'americas', name: 'América', flag: '🗽', short: 'América' },
-];
-const UNIVERSITY_ENABLED_REGION = 'rd';
-const UNIVERSITY_VISIBLE_REGIONS = REGIONS.filter((region) => region.id === UNIVERSITY_ENABLED_REGION);
+const UNIVERSITY_VISIBLE_REGIONS = UNIVERSITY_REGION_OPTIONS.filter((region) => region.id === UNIVERSITY_ENABLED_REGION);
 
 const STATUS_LABELS = {
   ongoing: 'EN CURSO',
@@ -33,15 +35,6 @@ const UNIVERSITY_TOURNAMENT_CARD_META = {
   cancelled: { color: 'danger', label: STATUS_LABELS.cancelled },
   draft: { color: 'muted', label: STATUS_LABELS.draft }
 };
-const UNIVERSITY_ALLOWED_GAMES = new Set([
-  'valorant',
-  'league of legends',
-  'mobile legends',
-  'mobile legends: bang bang',
-  'mlbb'
-]);
-const isUniversityAllowedGame = (game = '') => UNIVERSITY_ALLOWED_GAMES.has(String(game || '').trim().toLowerCase());
-
 const formatTournamentDateLabel = (value) => {
   if (!value) return 'Sin fecha';
   const parsed = new Date(value);
@@ -103,24 +96,6 @@ const UNIVERSITY_STATUS_META = {
 };
 
 const STUDENT_ID_REGEX = /^[A-Za-z0-9][A-Za-z0-9._/-]{3,31}$/;
-const PUBLIC_EMAIL_DOMAINS = new Set([
-  'gmail.com',
-  'hotmail.com',
-  'outlook.com',
-  'live.com',
-  'yahoo.com',
-  'icloud.com',
-  'proton.me',
-  'protonmail.com'
-]);
-const ALLOWED_ACADEMIC_LEVELS = new Set(['1', '2', '3', '4', 'egresado', 'maestria']);
-
-const getEmailDomain = (value) => {
-  const email = String(value || '').trim().toLowerCase();
-  const atIndex = email.lastIndexOf('@');
-  return atIndex === -1 ? '' : email.slice(atIndex + 1);
-};
-
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════ */
@@ -1195,12 +1170,9 @@ const UniversityPage = () => {
                   }}
                 >
                   <option value="" disabled>Seleccionar</option>
-                  <option value="1">1er Año (Freshman)</option>
-                  <option value="2">2do Año (Sophomore)</option>
-                  <option value="3">3er Año (Junior)</option>
-                  <option value="4">4to Año+ (Senior)</option>
-                  <option value="egresado">Egresado</option>
-                  <option value="maestria">Postgrado / Maestría</option>
+                  {ACADEMIC_LEVEL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
                 {fieldErrors.nivel && <small className="up-field__error">{fieldErrors.nivel}</small>}
               </div>

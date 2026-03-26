@@ -16,7 +16,10 @@
     "test:load:mlbb": "node --env-file=.env scripts/load/mlbb-load-smoke.js",
     "test:load:mlbb:writes": "node --env-file=.env scripts/load/mlbb-write-load-smoke.js",
     "seed:demo": "node --env-file=.env scripts/seed-demo-users.js",
-    "reset:db": "node --env-file=.env scripts/reset-database.js"
+    "reset:db": "node --env-file=.env scripts/reset-database.js",
+    "normalize:countries": "node --env-file=.env scripts/normalize-user-countries.js",
+    "normalize:teams": "node --env-file=.env scripts/normalize-team-metadata.js",
+    "normalize:communities": "node --env-file=.env scripts/normalize-community-metadata.js"
   },
   "keywords": [],
   "author": "",
