@@ -13,14 +13,50 @@ const AUTH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const AUTH_TOKEN_REMEMBER_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'auth_token';
 const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || 'csrf_token';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-const buildAuthCookieOptions = (ttlMs) => ({
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: ttlMs,
-    path: '/'
-});
+const normalizeSameSite = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'strict' || normalized === 'lax' || normalized === 'none') {
+        return normalized;
+    }
+    return '';
+};
+
+const envSecure = process.env.AUTH_COOKIE_SECURE
+    ? process.env.AUTH_COOKIE_SECURE === 'true'
+    : IS_PRODUCTION;
+const envSameSite = normalizeSameSite(process.env.AUTH_COOKIE_SAME_SITE) || (envSecure ? 'none' : 'lax');
+const AUTH_COOKIE_SECURE = envSameSite === 'none' ? true : envSecure;
+const AUTH_COOKIE_SAME_SITE = envSameSite;
+
+const buildAuthCookieOptions = (ttlMs) => {
+    const options = {
+        httpOnly: true,
+        secure: AUTH_COOKIE_SECURE,
+        sameSite: AUTH_COOKIE_SAME_SITE,
+        maxAge: ttlMs,
+        path: '/'
+    };
+    if (process.env.AUTH_COOKIE_DOMAIN) {
+        options.domain = process.env.AUTH_COOKIE_DOMAIN;
+    }
+    return options;
+};
+
+const buildCsrfCookieOptions = (ttlMs) => {
+    const options = {
+        httpOnly: false,
+        secure: AUTH_COOKIE_SECURE,
+        sameSite: AUTH_COOKIE_SAME_SITE,
+        maxAge: ttlMs,
+        path: '/'
+    };
+    if (process.env.AUTH_COOKIE_DOMAIN) {
+        options.domain = process.env.AUTH_COOKIE_DOMAIN;
+    }
+    return options;
+};
 
 const generateCsrfToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -233,13 +269,7 @@ export const verify2FALogin = async (req, res) => {
     res.clearCookie(CSRF_COOKIE_NAME, { path: '/', httpOnly: false });
 
     res.cookie(AUTH_COOKIE_NAME, sessionToken, buildAuthCookieOptions(sessionTtlMs));
-    res.cookie(CSRF_COOKIE_NAME, csrfToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: sessionTtlMs,
-        path: '/'
-    });
+    res.cookie(CSRF_COOKIE_NAME, csrfToken, buildCsrfCookieOptions(sessionTtlMs));
 
     res.json({ 
         verified: true,
