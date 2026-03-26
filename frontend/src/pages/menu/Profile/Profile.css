@@ -1868,7 +1868,7 @@
 
 .pf-detail-stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 8px;
     margin-bottom: 16px;
 }
@@ -1877,14 +1877,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 12px;
-    background: var(--bg-elevated);
+    gap: 4px;
+    padding: 14px 12px;
+    background: color-mix(in srgb, var(--primary) 5%, var(--bg-elevated));
     border-radius: 12px;
+    border: 1px solid var(--border-color);
 }
 
 .pf-detail-stats strong {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
+    font-weight: 800;
     color: var(--primary);
 }
 
@@ -1917,35 +1919,62 @@
 }
 
 /* ── Friend detail modal ── */
+.pf-friend-detail {
+    position: relative;
+}
+
 .pf-friend-detail__top {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 20px;
     text-align: center;
+    padding: 28px 20px 20px;
+    border-radius: 14px;
+    background:
+        linear-gradient(160deg, color-mix(in srgb, var(--primary) 12%, rgba(0, 0, 0, 0.5)) 0%, rgba(10, 12, 18, 0.85) 100%);
+    border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border-color));
+    position: relative;
+    overflow: hidden;
+}
+
+.pf-friend-detail__top::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--primary) 10%, transparent) 0%, transparent 70%);
+    pointer-events: none;
 }
 
 .pf-friend-detail__avatar-wrap {
     position: relative;
+    z-index: 1;
 }
 
 .pf-friend-detail__avatar-wrap img {
-    width: 80px;
-    height: 80px;
+    width: 88px;
+    height: 88px;
     border-radius: 50%;
     object-fit: cover;
+    border: 3px solid color-mix(in srgb, var(--primary) 40%, transparent);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .pf-friend-detail__avatar-wrap .pf-friend__dot {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-width: 3px;
+    bottom: 2px;
+    right: 2px;
 }
 
 .pf-friend-detail__top > strong {
-    font-size: 1.1rem;
-    color: var(--text-main);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.3px;
+    z-index: 1;
 }
 
 .pf-friend-detail__tags {
@@ -1953,28 +1982,37 @@
     flex-wrap: wrap;
     gap: 6px;
     justify-content: center;
+    z-index: 1;
 }
 
 .pf-friend-detail__tags span {
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 8px;
     font-size: 0.68rem;
     font-weight: 700;
-    background: var(--bg-elevated);
-    color: var(--text-main);
-    border: 1px solid var(--border-color);
+    background: color-mix(in srgb, var(--primary) 12%, rgba(0, 0, 0, 0.3));
+    color: var(--primary);
+    border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
 
 .pf-friend-detail__country {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.75rem;
-    color: var(--text-muted);
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--text-main) 70%, var(--text-muted));
+    z-index: 1;
+}
+
+.pf-friend-detail__country i {
+    color: var(--primary);
+    font-size: 0.9rem;
 }
 
 .pf-friend-detail__section {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .pf-friend-detail__section h4 {
@@ -1983,7 +2021,9 @@
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: var(--text-muted);
-    margin: 0 0 8px;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .pf-friend-detail__meta-list {
@@ -1995,9 +2035,10 @@
 .pf-friend-detail__meta-list > div {
     display: flex;
     justify-content: space-between;
-    padding: 8px 12px;
-    background: var(--bg-elevated);
-    border-radius: 8px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--bg-elevated) 60%, transparent);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
 }
 
 .pf-friend-detail__meta-list span:first-child {

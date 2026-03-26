@@ -210,7 +210,7 @@ const PlayerProfile = () => {
 
                     <div className="pf-identity">
                         <div className="pf-identity__name">
-                            <PlayerTag nickname={profile.nickname || profile.username} name={profile.name} tagId={profile.selectedTagId} size="lg" />
+                            <PlayerTag username={profile.username} tagId={profile.selectedTagId} size="lg" />
                             {profile.isOrganizer && <i className='bx bxs-check-shield pf-verified' />}
                         </div>
                         {profile.fullName && <p className="pf-identity__realname">{profile.fullName}</p>}

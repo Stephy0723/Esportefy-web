@@ -838,7 +838,8 @@ const Profile = () => {
                                         </div>
                                     </div>
                                     <div className="pf-detail-actions">
-                                        <button className="pf-btn pf-btn--primary" disabled><i className='bx bx-envelope' /> Mensaje</button>
+                                        <button className="pf-btn pf-btn--primary" onClick={() => { setSelectedFriend(null); navigate(`/profile/${selectedFriend.userCode || selectedFriend.id}`); }}><i className='bx bx-user' /> Ver Perfil</button>
+                                        <button className="pf-btn" onClick={() => navigate('/chats', { state: { openChatWith: selectedFriend.id } })}><i className='bx bx-envelope' /> Mensaje</button>
                                         <button className="pf-btn" onClick={() => setSelectedFriend(null)}>Cerrar</button>
                                     </div>
                                 </div>
