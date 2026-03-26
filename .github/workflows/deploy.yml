@@ -45,7 +45,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "✅ Deploy Exitoso: Esportefy-web"
-          to: tu-correo@ejemplo.com
+          to: felizarlinton@gmail.com
           from: GitHub Actions (CI/CD)
           body: |
             ¡El despliegue de Esportefy-web fue exitoso!
