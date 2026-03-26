@@ -113,7 +113,7 @@ const buildCsrfCookieOptions = (ttlMs = AUTH_TOKEN_TTL_MS) => {
     const options = {
         httpOnly: false,
         secure: AUTH_COOKIE_SECURE,
-        sameSite: AUTH_COOKIE_SAME_SITE,
+        sameSite: 'lax',
         maxAge: ttlMs,
         path: '/'
     };
