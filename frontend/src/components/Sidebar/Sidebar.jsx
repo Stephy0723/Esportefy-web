@@ -21,7 +21,6 @@ const MAIN_LINKS = [
 
 const MOBILE_EXTRA_LINKS = [
   { to: '/profile', icon: 'bx-user', label: 'Mi Perfil' },
-  { to: '/noticias', icon: 'bx-news', label: 'Noticias' },
   { to: '/notifications', icon: 'bx-bell', label: 'Notificaciones' },
 ];
 
@@ -29,6 +28,9 @@ const EXTRA_LINKS = [
   { to: '/comunidad', icon: 'bx-world', label: 'Comunidad', section: 'SOCIAL' },
   { to: '/friends', icon: 'bx-user-plus', label: 'Amigos' },
   { to: '/chats', icon: 'bx-chat', label: 'Chats' },
+  { to: '/noticias', icon: 'bx-news', label: 'Noticias' },
+  { to: '/profile', icon: 'bx-user', label: 'Mi Perfil', section: 'PERSONAL' },
+  { to: '/notifications', icon: 'bx-bell', label: 'Notificaciones' },
   { to: '/settings', icon: 'bx-cog', label: 'Ajustes', section: 'CONFIG' },
   { to: '/glitchgang', icon: 'bx-info-circle', label: 'GLITCH GANG', section: 'MARCA' },
 ];
@@ -132,7 +134,6 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
             </ul>
             <ul className="sb-list sb-mobile-only">
               {MOBILE_EXTRA_LINKS.map(renderLink)}
-              {user?.isAdmin && renderLink({ to: '/admin', icon: 'bx-shield-quarter', label: 'Admin Panel' })}
             </ul>
           </div>
 
@@ -167,16 +168,6 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
                   );
                 });
               })()}
-
-              {/* Admin link — solo si isAdmin */}
-              {user?.isAdmin && (
-                <>
-                  {!isClosed && <p className="sb-section-title">ADMIN</p>}
-                  <ul className="sb-list">
-                    {renderLink({ to: '/admin', icon: 'bx-shield-quarter', label: 'Admin Panel' })}
-                  </ul>
-                </>
-              )}
 
               {/* Redes sociales */}
               {!isClosed && (

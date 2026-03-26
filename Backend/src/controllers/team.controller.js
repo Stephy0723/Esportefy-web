@@ -18,6 +18,7 @@ import {
     isSupportedRiotGame,
     normalizeSupportedGameName
 } from '../../../shared/supportedGames.js';
+import { safeDeleteTeamConversation, safeSyncTeamConversation } from '../services/teamChatSync.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -84,9 +85,31 @@ export const createTeam = async (req, res) => {
         // Multer pone los textos en req.body y el archivo en req.file
         let { formData, roster } = req.body;
 
-        // IMPORTANTE: Parsear si vienen como string
-        const parsedFormData = typeof formData === 'string' ? JSON.parse(formData) : formData;
-        const parsedRoster = typeof roster === 'string' ? JSON.parse(roster) : roster;
+        // IMPORTANTE: Parsear si vienen como string CON VALIDACIÓN
+        let parsedFormData, parsedRoster;
+        try {
+            parsedFormData = typeof formData === 'string' ? JSON.parse(formData) : formData;
+        } catch (parseError) {
+            console.error('[createTeam] Error parsing formData:', parseError.message);
+            return res.status(400).json({ message: 'formData inválido: ' + parseError.message });
+        }
+        try {
+            parsedRoster = typeof roster === 'string' ? JSON.parse(roster) : roster;
+        } catch (parseError) {
+            console.error('[createTeam] Error parsing roster:', parseError.message);
+            return res.status(400).json({ message: 'roster inválido: ' + parseError.message });
+        }
+
+        // Validar que parsedFormData tiene los campos necesarios
+        if (!parsedFormData || typeof parsedFormData !== 'object') {
+            return res.status(400).json({ message: 'formData debe ser un objeto válido' });
+        }
+
+        // Limpiar campos ObjectId que lleguen vacíos (el frontend envía "" para community)
+        // Mongoose no puede convertir "" a ObjectId válido, así que eliminamos
+        if (!parsedFormData.community || parsedFormData.community === '') {
+            delete parsedFormData.community;
+        }
 
         const normalizedGame = normalizeSupportedGameName(parsedFormData?.game);
         if (!normalizedGame) {
@@ -278,6 +301,7 @@ export const createTeam = async (req, res) => {
         
         // Actualizar al usuario para que vea su nuevo equipo
         await User.findByIdAndUpdate(req.userId, { $push: { teams: savedTeam._id } });
+        await safeSyncTeamConversation(savedTeam);
 
         res.status(201).json({
             message: "Equipo creado",
@@ -286,7 +310,17 @@ export const createTeam = async (req, res) => {
             inviteCode: savedTeam.inviteCode
         });
     } catch (error) {
-        res.status(500).json({ message: "Error", error: error.message });
+        console.error('[createTeam] Unexpected error:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+            code: error.code
+        });
+        res.status(500).json({ 
+            message: "Error al crear equipo",
+            error: error.message,
+            code: error.code
+        });
     }
 };
 
@@ -1072,6 +1106,7 @@ export const joinTeam = async (req, res) => {
 
         await team.save();
         await User.updateOne({ _id: req.userId }, { $addToSet: { teams: team._id } });
+        await safeSyncTeamConversation(team);
         await pushNotification(team.captain, {
             type: 'team',
             category: 'team',
@@ -1205,6 +1240,7 @@ export const addMemberDirect = async (req, res) => {
         if (!captainRoleReservation.ok) return res.status(400).json({ message: captainRoleReservation.message });
 
         await team.save();
+        await safeSyncTeamConversation(team);
         return res.status(200).json({ message: "Jugador agregado", team });
     } catch (error) {
         return res.status(500).json({ message: "Error al agregar jugador", error: error.message });
@@ -1512,6 +1548,7 @@ export const removeMemberFromRoster = async (req, res) => {
             });
         }
 
+        await safeSyncTeamConversation(team);
         return res.status(200).json({ message: "Jugador removido", team });
     } catch (error) {
         return res.status(500).json({ message: "Error al remover jugador", error: error.message });
@@ -1788,6 +1825,9 @@ export const handleJoinRequest = async (req, res) => {
         ]);
 
         await team.save();
+        if (action === 'approve') {
+            await safeSyncTeamConversation(team);
+        }
         res.status(200).json({ message: "Solicitud actualizada", team });
     } catch (error) {
         console.error("Error al gestionar solicitud:", error);
@@ -1879,6 +1919,7 @@ export const leaveTeam = async (req, res) => {
 
         await team.save();
         await User.updateOne({ _id: userId }, { $pull: { teams: teamId } });
+        await safeSyncTeamConversation(team);
         res.status(200).json({ message: "Has abandonado el equipo correctamente", team });
     } catch (error) {
         res.status(500).json({ message: "Error al abandonar el equipo", error: error.message });
@@ -1928,6 +1969,7 @@ export const updateTeam = async (req, res) => {
         }
 
         await team.save();
+        await safeSyncTeamConversation(team);
         res.status(200).json({ message: "Equipo actualizado", team });
     } catch (error) {
         res.status(500).json({ message: "Error al actualizar equipo", error: error.message });
@@ -1951,6 +1993,7 @@ export const updateTeamLogo = async (req, res) => {
         const logoPath = `/uploads/teams/${req.file.filename}`;
         team.logo = logoPath;
         await team.save();
+        await safeSyncTeamConversation(team);
         res.status(200).json({ message: "Logo actualizado", team });
     } catch (error) {
         res.status(500).json({ message: "Error al actualizar logo", error: error.message });
@@ -1972,6 +2015,7 @@ export const deleteTeam = async (req, res) => {
 
         await Team.deleteOne({ _id: teamId });
         await User.updateMany({ teams: teamId }, { $pull: { teams: teamId } });
+        await safeDeleteTeamConversation(teamId);
 
         res.status(200).json({ message: "Equipo eliminado" });
     } catch (error) {

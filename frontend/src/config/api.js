@@ -17,7 +17,7 @@ const getBrowserOrigin = () => {
 };
 
 const DEFAULT_API_URL = import.meta.env.DEV ? 'http://localhost:4000' : getBrowserOrigin();
-const DEFAULT_CHAT_URL = import.meta.env.DEV ? 'http://localhost:5000' : getBrowserOrigin();
+const DEFAULT_CHAT_URL = import.meta.env.DEV ? 'http://localhost:5001' : getBrowserOrigin();
 
 export const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 export const CHAT_URL = import.meta.env.VITE_CHAT_URL || DEFAULT_CHAT_URL;

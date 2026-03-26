@@ -4,7 +4,8 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { Message, Conversation } from './models/chat.js'; // Importante el .js
+import { Message, Conversation } from './models/chat.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 dotenv.config();
 
@@ -27,21 +28,34 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 };
 
+function cleanMessage(value = '') {
+  return String(value || '').trim().slice(0, 2000);
+}
+
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(chatRoutes);
+
+app.get('/health', (_req, res) => {
+  res.json({ ok: true });
+});
 
 app.get('/messages/:conversationId', async (req, res) => {
   try {
     const { conversationId } = req.params;
-    
-    // Buscamos los mensajes y los ordenamos del más viejo al más nuevo
-    const history = await Message.find({ conversationId })
-      .sort({ timestamp: 1 }) 
-      .limit(50);
+    if (!mongoose.isValidObjectId(conversationId)) {
+      return res.status(400).json({ error: 'Conversacion invalida.' });
+    }
 
-    res.json(history);
+    const history = await Message.find({ conversationId })
+      .sort({ timestamp: 1 })
+      .limit(100)
+      .lean();
+
+    return res.json(history);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener el historial" });
+    console.error('GET /messages/:conversationId error:', error);
+    return res.status(500).json({ error: 'Error al obtener el historial.' });
   }
 });
 
@@ -54,41 +68,52 @@ const io = new Server(server, {
   }
 });
 
-// --- Lógica de Sockets ---
 io.on('connection', (socket) => {
-  console.log('Conexión establecida:', socket.id);
+  console.log('Conexion establecida:', socket.id);
 
-  // Unirse a sala de equipo o chat privado
   socket.on('join_chat', (conversationId) => {
-    socket.join(conversationId);
-    console.log(`Usuario unido a room: ${conversationId}`);
+    const roomId = String(conversationId || '').trim();
+    if (!roomId) return;
+    socket.join(roomId);
+    console.log(`Usuario unido a room: ${roomId}`);
   });
 
-  // Enviar mensaje
   socket.on('send_message', async (data) => {
-    const { conversationId, senderId, senderName, content } = data;
+    const { conversationId, senderId, senderName, content } = data || {};
 
     try {
+      const roomId = String(conversationId || '').trim();
+      const normalizedContent = cleanMessage(content);
+      if (!mongoose.isValidObjectId(roomId) || !normalizedContent) return;
+
       const newMessage = new Message({
-        conversationId,
-        senderId,
-        senderName,
-        content,
+        conversationId: roomId,
+        senderId: String(senderId || '').trim(),
+        senderName: String(senderName || '').trim() || 'Jugador',
+        content: normalizedContent,
         timestamp: new Date()
       });
 
       await newMessage.save();
+      await Conversation.findByIdAndUpdate(roomId, {
+        $set: {
+          lastMessage: newMessage.content,
+          lastSenderId: newMessage.senderId,
+          lastSenderName: newMessage.senderName,
+          updatedAt: newMessage.timestamp
+        }
+      });
 
-      // Emitir mensaje a todos en la sala
-      io.to(conversationId).emit('receive_message', {
-        id: newMessage._id,
-        sender: newMessage.senderName,
+      io.to(roomId).emit('receive_message', {
+        id: String(newMessage._id),
+        conversationId: roomId,
+        senderId: newMessage.senderId,
+        senderName: newMessage.senderName,
         text: newMessage.content,
-        time: newMessage.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        ownId: newMessage.senderId // Para comparar en el front si es "mío"
+        timestamp: newMessage.timestamp.toISOString()
       });
     } catch (error) {
-      console.error("Error al guardar mensaje:", error);
+      console.error('Error al guardar mensaje:', error);
     }
   });
 
@@ -97,10 +122,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// --- Conexión DB y Start ---
 const PORT = process.env.PORT || 5001;
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    server.listen(PORT, () => console.log(`🚀 Chat Service en puerto ${PORT}`));
+    server.listen(PORT, () => console.log(`Chat Service en puerto ${PORT}`));
   })
-  .catch(err => console.error("Error DB:", err));
+  .catch((err) => console.error('Error DB:', err));

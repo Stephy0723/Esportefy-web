@@ -70,6 +70,21 @@
     justify-content: flex-end;
     padding: 32px;
     overflow: hidden;
+    background: linear-gradient(135deg, rgba(142, 219, 21, 0.05), rgba(0, 0, 0, 0.3));
+}
+
+@media (max-width: 768px) {
+    .pf-hero {
+        min-height: 340px;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pf-hero {
+        min-height: 280px;
+        padding: 16px;
+    }
 }
 
 .pf-hero__bg {
@@ -105,6 +120,22 @@
     gap: 8px;
 }
 
+@media (max-width: 768px) {
+    .pf-hero__actions {
+        top: 12px;
+        right: 16px;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pf-hero__actions {
+        top: 10px;
+        right: 12px;
+        gap: 4px;
+    }
+}
+
 .pf-hero__content {
     position: relative;
     z-index: 1;
@@ -112,6 +143,21 @@
     align-items: flex-end;
     gap: 28px;
     flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .pf-hero__content {
+        gap: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pf-hero__content {
+        gap: 12px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
 }
 
 .pf-hero__game {
@@ -162,6 +208,12 @@
     min-width: 0;
 }
 
+@media (max-width: 480px) {
+    .pf-identity {
+        width: 100%;
+    }
+}
+
 .pf-identity__name {
     display: flex;
     align-items: center;
@@ -200,6 +252,13 @@
     margin-top: 10px;
 }
 
+@media (max-width: 480px) {
+    .pf-tags {
+        gap: 4px;
+        justify-content: center;
+    }
+}
+
 .pf-tag {
     display: inline-flex;
     align-items: center;
@@ -213,6 +272,13 @@
     background: color-mix(in srgb, var(--primary) 12%, transparent);
     color: var(--primary);
     border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+@media (max-width: 480px) {
+    .pf-tag {
+        padding: 3px 8px;
+        font-size: 0.6rem;
+    }
 }
 
 .pf-tag--org {
@@ -497,6 +563,30 @@
     margin: 0 auto;
 }
 
+@media (max-width: 1024px) {
+    .pf-grid {
+        grid-template-columns: 240px 1fr 240px;
+        gap: 14px;
+        padding: 14px 16px 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .pf-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px 12px 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pf-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 10px 8px 16px;
+    }
+}
+
 .pf-col {
     display: flex;
     flex-direction: column;
@@ -512,6 +602,20 @@
     border-radius: 16px;
     padding: 18px;
     box-shadow: 0 2px 12px var(--shadow-color);
+}
+
+@media (max-width: 768px) {
+    .pf-card {
+        padding: 14px;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pf-card {
+        padding: 12px;
+        border-radius: 10px;
+    }
 }
 
 .pf-card__header {

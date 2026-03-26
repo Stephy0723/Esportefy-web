@@ -329,9 +329,6 @@ const isValidObjectIdLike = (value = '') => /^[a-fA-F0-9]{24}$/.test(String(valu
 const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const normalizeUserCodeLookup = (value = '') => String(value)
     .toUpperCase()
-    .replace(/USER[\s_-]*ID/g, '')
-    .replace(/USR[\s_-]*/g, '')
-    .replace(/[^\d]/g, '')
     .trim();
 const toIdArray = (value) => (
     Array.isArray(value)
@@ -2321,21 +2318,59 @@ export const adminListUsers = async (req, res) => {
             filter.$or = [
                 { username: { $regex: search, $options: 'i' } },
                 { email: { $regex: search, $options: 'i' } },
-                { fullName: { $regex: search, $options: 'i' } }
+                { fullName: { $regex: search, $options: 'i' } },
+                { userCode: { $regex: search, $options: 'i' } }
             ];
         }
         if (req.query.banned === 'true') filter.isBanned = true;
+
+        const country = String(req.query.country || '').trim();
+        if (country) {
+            filter.country = { $regex: `^${country.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' };
+        }
 
         const game = String(req.query.game || '').trim();
         if (game) {
             filter.selectedGames = game;
         }
 
+        const role = String(req.query.role || '').trim();
+        if (role) {
+            filter.roles = role;
+        }
+
+        const platform = String(req.query.platform || '').trim();
+        if (platform) {
+            filter.platforms = platform;
+        }
+
+        const experience = String(req.query.experience || '').trim();
+        if (experience) {
+            filter.experience = experience;
+        }
+
+        const status = String(req.query.status || '').trim();
+        if (status) {
+            filter.status = status;
+        }
+
+        const gender = String(req.query.gender || '').trim();
+        if (gender) {
+            filter.gender = gender;
+        }
+
+        // Sort
+        const sortOptions = { createdAt: -1 };
+        const sortField = String(req.query.sort || '').trim();
+        if (sortField === 'username') { sortOptions.username = 1; delete sortOptions.createdAt; }
+        else if (sortField === 'country') { sortOptions.country = 1; delete sortOptions.createdAt; }
+        else if (sortField === 'oldest') { sortOptions.createdAt = 1; }
+
         const [total, users] = await Promise.all([
             User.countDocuments(filter),
             User.find(filter)
-                .select('username email fullName avatar roles selectedGames isOrganizer isAdmin isBanned banReason createdAt status')
-                .sort({ createdAt: -1 })
+                .select('username email fullName avatar roles selectedGames isOrganizer isAdmin isBanned banReason createdAt status userCode country phone gender birthDate platforms experience goals connections gameProfiles socialLinks twoFactorEnabled bannedAt')
+                .sort(sortOptions)
                 .skip(skip)
                 .limit(limit)
                 .lean()
@@ -2345,6 +2380,42 @@ export const adminListUsers = async (req, res) => {
     } catch (error) {
         console.error('Error en adminListUsers:', error);
         res.status(500).json({ message: 'Error al listar usuarios.' });
+    }
+};
+
+// Get single user detail (admin)
+export const adminGetUserDetail = async (req, res) => {
+    try {
+        if (!(await ensureAdminUser(req.userId))) {
+            return res.status(403).json({ message: 'No autorizado.' });
+        }
+
+        const identifier = String(req.params.userId || '').trim();
+        if (!identifier) {
+            return res.status(400).json({ message: 'ID o código de usuario requerido.' });
+        }
+
+        const excludeFields = '-password -resetPasswordToken -resetPasswordExpires -twoFactorSecret -twoFactorBackupCodes';
+        let user = null;
+
+        // Try by MongoDB _id first
+        if (/^[0-9a-fA-F]{24}$/.test(identifier)) {
+            user = await User.findById(identifier).select(excludeFields).lean();
+        }
+
+        // Fallback: try by userCode (case-insensitive)
+        if (!user) {
+            user = await User.findOne({ userCode: { $regex: `^${identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }).select(excludeFields).lean();
+        }
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error('Error en adminGetUserDetail:', error);
+        res.status(500).json({ message: 'Error al obtener usuario.' });
     }
 };
 
