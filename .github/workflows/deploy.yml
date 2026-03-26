@@ -64,7 +64,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "❌ ERROR de Deploy: Esportefy-web"
-          to: tu-correo@ejemplo.com
+          to: felizarlinton@gmail.com
           from: GitHub Actions (CI/CD)
           body: |
             Hubo un error al intentar desplegar Esportefy-web.
