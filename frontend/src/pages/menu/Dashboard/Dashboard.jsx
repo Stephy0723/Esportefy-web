@@ -73,7 +73,7 @@ const CONNECTION_PROVIDERS = [
     { id: 'discord', icon: 'bx bxl-discord-alt',  iconComponent: FaDiscord,   name: 'Discord',         color: '#5865F2', fields: ['username'],           verifiedKey: 'discord' },
     { id: 'moonton', icon: 'bx bx-game',          iconComponent: FaGamepad,   name: 'Moonton (MLBB)',  color: '#00b4d8', fields: ['gameId'],             verifiedKey: 'moonton' },
     { id: 'steam',   icon: 'bx bxl-steam',        iconComponent: FaSteam,     name: 'Steam',           color: '#1b2838', fields: ['steamId'],            verifiedKey: 'steam', comingSoon: true },
-    { id: 'epic',    icon: 'bx bx-cube',          iconComponent: SiEpicgames, name: 'Epic Games',      color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic', comingSoon: true },
+    { id: 'epic',    icon: 'bx bx-cube',          iconComponent: SiEpicgames, name: 'Epic Games',      color: '#0078f2', fields: ['epicId'],             verifiedKey: 'epic' },
     { id: 'twitch',  icon: 'bx bxl-twitch',       iconComponent: FaTwitch,    name: 'Twitch',          color: '#9146ff', fields: ['twitchId'],           verifiedKey: 'twitch' },
 ];
 
@@ -503,6 +503,11 @@ const Dashboard = () => {
                 return { tag: conn.username || 'Conectado', stats: [
                     { label: 'Estado', val: 'Verificado' },
                     { label: 'Tipo', val: 'OAuth2' },
+                ] };
+            case 'epic':
+                return { tag: conn.displayName || conn.username || conn.epicId || 'Conectado', stats: [
+                    { label: 'Estado', val: 'Verificado' },
+                    { label: 'Tipo', val: 'Epic OAuth' },
                 ] };
             default:
                 return { tag: conn.username || conn.gameId || conn.steamId || conn.epicId || conn.twitchId || 'Conectado', stats: [

@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoSanitize from 'express-mongo-sanitize';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,8 +19,7 @@ import universityRoutes from './routes/university.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import securityRoutes from './routes/security.routes.js';
 import friendsRoutes from './routes/friends.routes.js';
-import rankingRoutes from './routes/ranking.routes.js';
-import newsletterRoutes from './routes/newsletter.routes.js';
+import gameStatsRoutes from './routes/gameStats.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,43 +30,6 @@ if (fs.existsSync(backendEnvPath)) {
 } else {
   dotenv.config();
 }
-
-const PLACEHOLDER_SECRET_VALUES = new Set([
-  '',
-  'ponerunaclaveaqui',
-  'cambia-esto-en-produccion',
-  'cambia-esto-en-producción',
-  'changeme',
-  'change-me',
-  'secret',
-  'jwtsecret',
-  'tu_jwt_secret',
-  'tu-jwt-secret'
-]);
-
-const isPlaceholderSecret = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized) return true;
-  if (PLACEHOLDER_SECRET_VALUES.has(normalized)) return true;
-  return normalized.includes('cambia-esto') || normalized.includes('tu_jwt_secret');
-};
-
-const validateRuntimeSecrets = () => {
-  const nodeEnv = String(process.env.NODE_ENV || '').trim().toLowerCase();
-  const frontendUrl = String(process.env.FRONTEND_URL || '').trim();
-  const jwtSecret = String(process.env.JWT_SECRET || '').trim();
-
-  const isProtectedRuntime = nodeEnv === 'production' || frontendUrl.startsWith('https://');
-  if (!isProtectedRuntime) return;
-
-  if (isPlaceholderSecret(jwtSecret) || jwtSecret.length < 24) {
-    throw new Error(
-      'JWT_SECRET inseguro para review/produccion. Usa un secreto unico de al menos 24 caracteres antes de exponer la app.'
-    );
-  }
-};
-
-validateRuntimeSecrets();
 
 export const dbReady = connectDB();
 
@@ -133,23 +94,12 @@ try {
 }
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(mongoSanitize());
 app.use(securityMiddleware);
 app.use(logger);
 app.use(verifyCsrf);
 app.use('/uploads', express.static(uploadsDir));
-
-const buildHealthPayload = () => ({
-  ok: true,
-  service: 'glitchgang-api',
-  nodeEnv: String(process.env.NODE_ENV || 'development'),
-  frontendUrl: frontendOrigin,
-  riotReviewMode: String(process.env.RIOT_REVIEW_MODE || '').trim().toLowerCase() === 'true',
-  timestamp: new Date().toISOString()
-});
-
-app.get('/healthz', (req, res) => res.status(200).json(buildHealthPayload()));
-app.get('/api/healthz', (req, res) => res.status(200).json(buildHealthPayload()));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
@@ -161,7 +111,8 @@ app.use('/api/university', universityRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/friends', friendsRoutes);
-app.use('/api/rankings', rankingRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/game-stats', gameStatsRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {

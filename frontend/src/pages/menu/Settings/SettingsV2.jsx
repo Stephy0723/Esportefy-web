@@ -7,6 +7,7 @@ import { useTheme, THEMES } from '../../../context/ThemeContext';
 import SecurityCenterUI from './SecurityCenterUI';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import { getAuthToken } from '../../../utils/authSession';
+import { startPlatformOAuth, unlinkPlatformOAuth } from '../../../utils/platformOAuth';
 import './SettingsV2.css';
 
 // Icons
@@ -52,6 +53,7 @@ export default function SettingsV2() {
     const [connections, setConnections] = useState({ discord: {}, riot: {}, mlbb: {}, steam: {}, epic: {} });
     const [gameProfiles, setGameProfiles] = useState({});
     const [oauthNotice, setOauthNotice] = useState({ provider: '', status: '', message: '' });
+    const [epicLoading, setEpicLoading] = useState(false);
 
     // Riot State
     const [riotGameName, setRiotGameName] = useState('');
@@ -102,6 +104,8 @@ export default function SettingsV2() {
         connections?.mlbb?.verified
     );
     const mlbbLinked = isMlbbVerifiedStatus(mlbbVerificationStatus, connections?.mlbb?.verified);
+    const epicLinked = connections?.epic?.verified === true;
+    const epicLabel = connections?.epic?.displayName || connections?.epic?.username || connections?.epic?.email || 'Sin vincular';
     const riotProfileIconId = gameProfiles?.lol?.profileIconId ?? 0;
     const riotSummonerLevel = gameProfiles?.lol?.summonerLevel;
     const riotRank = gameProfiles?.lol?.rank;
@@ -132,6 +136,7 @@ export default function SettingsV2() {
     const providerLabel = (provider) => {
         const normalized = String(provider || '').trim().toLowerCase();
         if (normalized === 'steam') return 'Steam';
+        if (normalized === 'epic') return 'Epic Games';
         if (normalized === 'discord') return 'Discord';
         if (normalized === 'riot') return 'Riot Sign On';
         return 'la plataforma';
@@ -264,10 +269,10 @@ export default function SettingsV2() {
 
         const checkSystemStatus = async () => {
             const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
-                pingService(`${API_URL}/api/health`),
-                pingService(`${API_URL}/api/tournaments/health`),
-                pingService(`${API_URL}/api/health`),
-                pingService(`${CHAT_URL}/health`),
+                pingService(`${API_URL}/api/healthz`),
+                pingService(`${API_URL}/api/tournaments/healthz`),
+                pingService(`${API_URL}/api/healthz`),
+                pingService(`${CHAT_URL}/healthz`),
             ]);
 
             const services = { gameServers, tournamentApi, matchmaking, liveChat };
@@ -343,10 +348,10 @@ export default function SettingsV2() {
         };
 
         const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
-            pingService(`${API_URL}/api/health`),
-            pingService(`${API_URL}/api/tournaments/health`),
-            pingService(`${API_URL}/api/health`),
-            pingService(`${CHAT_URL}/health`),
+            pingService(`${API_URL}/api/healthz`),
+            pingService(`${API_URL}/api/tournaments/healthz`),
+            pingService(`${API_URL}/api/healthz`),
+            pingService(`${CHAT_URL}/healthz`),
         ]);
 
         const services = { gameServers, tournamentApi, matchmaking, liveChat };
@@ -403,6 +408,39 @@ export default function SettingsV2() {
             emitUserUpdate();
         } catch (error) {
             console.error('Discord unlink error:', error);
+        }
+    };
+
+    const startEpicLink = async () => {
+        try {
+            setEpicLoading(true);
+            await startPlatformOAuth('epic');
+        } catch (error) {
+            console.error('Epic link error:', error);
+            setOauthNotice({
+                provider: 'epic',
+                status: 'error',
+                message: error?.response?.data?.message || 'No se pudo iniciar la vinculación con Epic Games.'
+            });
+            setEpicLoading(false);
+        }
+    };
+
+    const unlinkEpic = async () => {
+        try {
+            setEpicLoading(true);
+            await unlinkPlatformOAuth('epic');
+            await fetchSettings();
+            emitUserUpdate();
+        } catch (error) {
+            console.error('Epic unlink error:', error);
+            setOauthNotice({
+                provider: 'epic',
+                status: 'error',
+                message: error?.response?.data?.message || 'No se pudo desvincular Epic Games.'
+            });
+        } finally {
+            setEpicLoading(false);
         }
     };
 
@@ -824,21 +862,31 @@ export default function SettingsV2() {
                                 </div>
 
                                 {/* Epic Games */}
-                                <div className="stv2-connection stv2-connection--soon">
+                                <div className="stv2-connection">
                                     <div className="stv2-connection__icon stv2-connection__icon--epic">
                                         <SiEpicgames />
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Epic Games</h4>
-                                        <span>Sin vincular</span>
+                                        <span>{epicLabel}</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        {epicLinked ? (
+                                            <span className="stv2-badge stv2-badge--success">Conectado</span>
+                                        ) : (
+                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        )}
                                     </div>
                                     <div className="stv2-connection__action">
-                                        <button className="stv2-btn stv2-btn--outline" disabled>
-                                            Próximamente
-                                        </button>
+                                        {epicLinked ? (
+                                            <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkEpic} disabled={epicLoading}>
+                                                {epicLoading ? 'Procesando...' : 'Desvincular'}
+                                            </button>
+                                        ) : (
+                                            <button className="stv2-btn stv2-btn--primary" onClick={startEpicLink} disabled={epicLoading}>
+                                                {epicLoading ? 'Redirigiendo...' : 'Vincular'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
