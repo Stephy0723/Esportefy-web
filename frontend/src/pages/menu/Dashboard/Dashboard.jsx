@@ -58,13 +58,13 @@ const hexToRgba = (hex, alpha) => {
 /* ── Sections for dot nav ── */
 const SECTIONS = [
     { id: 'hero',        label: 'Identidad' },
+    { id: 'stats',       label: 'Resumen' },
     { id: 'metrics',     label: 'Métricas' },
     { id: 'connections', label: 'Cuentas' },
     { id: 'teams',       label: 'Equipos' },
     { id: 'tourneys',    label: 'Torneos' },
+    { id: 'activity',    label: 'Actividad' },
     { id: 'communities', label: 'Comunidades' },
-    { id: 'library',     label: 'Juegos' },
-    { id: 'account',     label: 'Cuenta' },
 ];
 
 /* ── Connection providers ── */
@@ -126,7 +126,6 @@ const Dashboard = () => {
     const [myCommunities, setMyCommunities] = useState([]);
     const [currentMetricIdx, setCurrentMetricIdx] = useState(0);
     const [metricDetailOpen, setMetricDetailOpen] = useState(false);
-    const [activeGameIdx, setActiveGameIdx] = useState(0);
     const [teamPanel, setTeamPanel] = useState(null);
     const [teamPanelLoading, setTeamPanelLoading] = useState(false);
 
@@ -390,6 +389,44 @@ const Dashboard = () => {
         myTeams.reduce((sum, t) => sum + (t.roster?.starters?.length || 0) + (t.roster?.subs?.length || 0) + (t.roster?.coach ? 1 : 0), 0),
     [myTeams]);
 
+    /* ── User's tournaments (registered via teams) ── */
+    const myTournaments = useMemo(() => {
+        if (!myTeams.length || !tournaments.length) return [];
+        const teamIds = myTeams.map(t => String(t._id));
+        return tournaments.filter(t => {
+            const regs = Array.isArray(t.registrations) ? t.registrations : [];
+            return regs.some(r => teamIds.includes(String(r.team?._id || r.team)));
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, [myTeams, tournaments]);
+
+    const upcomingMyTournaments = useMemo(() =>
+        myTournaments.filter(t => ['open', 'ongoing'].includes(t.status)).slice(0, 4),
+    [myTournaments]);
+
+    /* ── Unread notifications ── */
+    const unreadNotifications = useMemo(() =>
+        notifications.filter(n => n.status === 'unread' || !n.status).slice(0, 5),
+    [notifications]);
+
+    const importantNotifications = useMemo(() =>
+        notifications.filter(n =>
+            ['tournament', 'team', 'admin', 'system'].includes(n.category) && (n.status === 'unread' || !n.status)
+        ).slice(0, 4),
+    [notifications]);
+
+    /* ── Quick stats derived ── */
+    const totalTourneysPlayed = useMemo(() =>
+        myTournaments.length,
+    [myTournaments]);
+
+    const tourneysWon = useMemo(() =>
+        myTournaments.filter(t => t.status === 'finished').length,
+    [myTournaments]);
+
+    const friendsCount = useMemo(() =>
+        (user?.friends?.length || 0) + (user?.followers?.length || 0),
+    [user?.friends?.length, user?.followers?.length]);
+
     const highestRank = useMemo(() => {
         const lolTier = user?.gameProfiles?.lol?.rank?.tier;
         const valTier = user?.gameProfiles?.valorant?.rank?.tier;
@@ -399,69 +436,6 @@ const Dashboard = () => {
         if (valTier) return { tier: valTier, game: 'Valorant' };
         return null;
     }, [user?.gameProfiles]);
-
-    /* ── ApexCharts data ── */
-    const categoryChartOpts = useMemo(() => {
-        const counts = {};
-        enrichedGames.forEach(g => { const cat = g.category || 'Otro'; counts[cat] = (counts[cat] || 0) + 1; });
-        return {
-            series: Object.values(counts),
-            options: {
-                chart: { type: 'donut', background: 'transparent' },
-                labels: Object.keys(counts),
-                colors: ['#8EDB15', '#00d2ff', '#ff4655', '#ffd700', '#a78bfa', '#f97316'],
-                stroke: { width: 0 },
-                dataLabels: { enabled: false },
-                legend: { position: 'bottom', labels: { colors: 'rgba(255,255,255,0.5)' }, fontSize: '11px', fontWeight: 700 },
-                plotOptions: { pie: { donut: { size: '68%', labels: { show: true, total: { show: true, label: 'Total', color: 'rgba(255,255,255,0.4)', fontSize: '12px', formatter: () => enrichedGames.length } } } } },
-                tooltip: { theme: 'dark' },
-                theme: { mode: 'dark' }
-            }
-        };
-    }, [enrichedGames]);
-
-    const tournamentChartOpts = useMemo(() => {
-        const sm = { open: 0, ongoing: 0, finished: 0, cancelled: 0 };
-        tournaments.forEach(t => { if (sm[t.status] !== undefined) sm[t.status]++; });
-        return {
-            series: [{ name: 'Torneos', data: [sm.open, sm.ongoing, sm.finished, sm.cancelled] }],
-            options: {
-                chart: { type: 'bar', background: 'transparent', toolbar: { show: false } },
-                colors: ['#8EDB15'],
-                plotOptions: { bar: { borderRadius: 6, columnWidth: '50%', distributed: true } },
-                xaxis: { categories: ['Abiertos', 'En Curso', 'Finalizados', 'Cancelados'], labels: { style: { colors: 'rgba(255,255,255,0.5)', fontSize: '11px' } } },
-                yaxis: { labels: { style: { colors: 'rgba(255,255,255,0.4)' } }, stepSize: 1 },
-                grid: { borderColor: 'rgba(255,255,255,0.04)', strokeDashArray: 4 },
-                dataLabels: { enabled: false },
-                tooltip: { theme: 'dark' },
-                theme: { mode: 'dark' },
-                legend: { show: false },
-                fill: { colors: ['#8EDB15', '#ff4466', '#00d2ff', '#666'] },
-                states: { hover: { filter: { type: 'lighten', value: 0.15 } } }
-            }
-        };
-    }, [tournaments]);
-
-    const radialOpts = useMemo(() => ({
-        series: [profileCompletion],
-        options: {
-            chart: { type: 'radialBar', background: 'transparent' },
-            plotOptions: {
-                radialBar: {
-                    hollow: { size: '60%' },
-                    track: { background: 'rgba(255,255,255,0.06)' },
-                    dataLabels: {
-                        name: { show: true, fontSize: '11px', color: 'rgba(255,255,255,0.4)', offsetY: 18 },
-                        value: { show: true, fontSize: '28px', fontWeight: 900, color: '#8EDB15', offsetY: -12, formatter: (v) => `${v}%` }
-                    }
-                }
-            },
-            colors: ['#8EDB15'],
-            labels: ['Perfil'],
-            stroke: { lineCap: 'round' },
-            theme: { mode: 'dark' }
-        }
-    }), [profileCompletion]);
 
     /* ── Connection status helper ── */
     const getProviderConnection = (providerId) => {
@@ -618,22 +592,6 @@ const Dashboard = () => {
         }
     }, [fetchProfile]);
 
-    /* ── Active game for library ── */
-    const activeGame = enrichedGames[activeGameIdx] || null;
-
-    const handleGameTagClick = useCallback((tag) => {
-        if (!tag) return;
-        navigate(`/games/filter/tag/${encodeURIComponent(String(tag))}`);
-    }, [navigate]);
-
-    /* ── Match game to community ── */
-    const activeGameCommunity = useMemo(() => {
-        if (!activeGame || !Array.isArray(myCommunities)) return null;
-        return myCommunities.find(c =>
-            c.mainGames?.some(g => g.toLowerCase().includes(activeGame.name?.toLowerCase()))
-        ) || null;
-    }, [activeGame, myCommunities]);
-
     /* ── Metric cards data (5 unique metrics with different chart types) ── */
     const metricsData = useMemo(() => {
         const totalTourneys = tournaments.length;
@@ -660,50 +618,167 @@ const Dashboard = () => {
         const catKeys = Object.keys(versatilityCategories);
         const catValues = Object.values(versatilityCategories);
 
+        /* ── Dynamic tips: always exactly 5 per metric ── */
+        const ensure5 = (arr) => arr.slice(0, 5);
+
+        const wrTips = [];
+        const wrPlan = [];
+        if (totalTourneys === 0) {
+            wrTips.push('Inscríbete en tu primer torneo — la experiencia es el mejor maestro');
+            wrTips.push(`Busca torneos de ${mainGame} con nivel principiante o abierto`);
+            wrTips.push('Forma o únete a un equipo antes de competir, la coordinación marca la diferencia');
+            wrTips.push('Mira streams o VODs de torneos para entender el formato y ritmo competitivo');
+            wrTips.push('Configura tu perfil competitivo: avatar, bio, juegos y cuentas vinculadas');
+            wrPlan.push(`Esta semana: Explora los torneos disponibles de ${mainGame} y elige uno acorde a tu nivel.`);
+            wrPlan.push('Siguiente paso: Reúne un equipo o únete a uno que busque miembros.');
+        } else if (winRate < 30) {
+            wrTips.push('Analiza tus derrotas recientes — ¿fueron por estrategia, mecánica o comunicación?');
+            wrTips.push(`Practica mecánicas específicas de ${mainGame} en modo personalizado`);
+            wrTips.push('Revisa guías y VODs de jugadores top en tu rol');
+            wrTips.push('No te inscribas en muchos torneos a la vez — enfócate en mejorar entre cada uno');
+            wrTips.push('Graba tus partidas y revísalas con tu equipo para identificar errores en conjunto');
+            wrPlan.push(`Semana 1-2: Dedica 1h diaria a practicar mecánicas en ${mainGame}.`);
+            wrPlan.push('Semana 3: Analiza repeticiones de tus 3 últimas derrotas.');
+            wrPlan.push('Mes 2: Inscríbete en 1 torneo aplicando lo aprendido.');
+        } else if (winRate < 60) {
+            wrTips.push('Estás en buen camino — mantén la consistencia en tu entrenamiento');
+            wrTips.push('Identifica el 1 error más frecuente en tus últimas partidas y corrígelo');
+            wrTips.push(`Domina 2-3 composiciones/agentes/campeones meta en ${mainGame}`);
+            wrTips.push('Comunica mejor con tu equipo: las calls claras ganan rondas');
+            wrTips.push('Estudia a los equipos rivales antes de cada torneo — la preparación marca la diferencia');
+            wrPlan.push(`Semana 1: Perfecciona tu main pick y aprende 1 counter-pick en ${mainGame}.`);
+            wrPlan.push('Semana 2-3: Scrimea con tu equipo al menos 3 veces.');
+            wrPlan.push('Meta: Subir tu win rate 10% en los próximos 2 torneos.');
+        } else {
+            wrTips.push('Excelente rendimiento — ahora apunta a torneos de mayor nivel');
+            wrTips.push('Comparte tu conocimiento: mentorear a otros refuerza tus propios fundamentos');
+            wrTips.push('Mantén tu roster estable — la sinergia de equipo es tu ventaja competitiva');
+            wrTips.push('Analiza las tendencias del meta y adapta tus estrategias antes que los rivales');
+            wrTips.push('Documenta tus estrategias ganadoras para replicarlas en futuros torneos');
+            wrPlan.push('Busca torneos con mayor prize pool o nivel competitivo.');
+            wrPlan.push('Considera postularte como capitán o coach para maximizar tu impacto.');
+        }
+
+        const ldTips = [];
+        if (captainTeams === 0 && myTeams.length === 0) {
+            ldTips.push('Crea tu primer equipo — ser capitán es la base del liderazgo');
+            ldTips.push(`Recluta 4 jugadores activos de ${mainGame}`);
+            ldTips.push('Define un nombre, slogan y reglas claras para tu equipo');
+            ldTips.push('Establece un horario de prácticas semanal desde el inicio');
+            ldTips.push('Busca jugadores en comunidades y torneos — los mejores compañeros se encuentran compitiendo');
+        } else if (captainTeams === 0) {
+            ldTips.push('Ya eres parte de un equipo — propón ideas de estrategia para destacar');
+            ldTips.push('Considera crear tu propio equipo en otro juego para diversificar');
+            ldTips.push('Ayuda a tu capitán con la coordinación de prácticas');
+            ldTips.push('Toma iniciativa en las sesiones de entrenamiento — lidera con el ejemplo');
+            ldTips.push('Propón revisiones post-torneo para que el equipo mejore en conjunto');
+        } else {
+            ldTips.push(`Lidera ${captainTeams} equipo${captainTeams > 1 ? 's' : ''} — organiza sesiones semanales de práctica`);
+            ldTips.push('Rota roles en entrenamientos para entender todas las posiciones');
+            ldTips.push('Inscribe a tu equipo en el próximo torneo disponible');
+            ldTips.push('Da feedback constructivo a cada miembro después de cada partida');
+            ldTips.push(leadershipScore < 60 ? 'Completa tu roster — un equipo lleno rinde mejor' : 'Mantén la moral del equipo alta — celebra las victorias y aprende de las derrotas');
+        }
+
+        const nwTips = [];
+        if (connCount < 2) {
+            nwTips.push('Vincula Discord y Riot/MLBB — son esenciales para competir');
+            nwTips.push('Ve a Ajustes y conecta al menos 2 plataformas');
+            nwTips.push(`Únete a una comunidad de ${mainGame} para encontrar compañeros`);
+            nwTips.push('Agrega amigos después de cada torneo — expande tu red de contactos');
+            nwTips.push('Comparte tu perfil de GLITCH GANG en tus redes sociales');
+        } else {
+            nwTips.push(`${connCount} cuentas vinculadas — mantén tus perfiles actualizados`);
+            nwTips.push(myCommunities.length === 0 ? `Únete a una comunidad de ${mainGame}` : `Activo en ${myCommunities.length} comunidad${myCommunities.length > 1 ? 'es' : ''} — participa en las discusiones`);
+            nwTips.push('Agrega amigos después de cada torneo — expande tu red de contactos');
+            nwTips.push('Participa en eventos y discusiones de la comunidad para ganar visibilidad');
+            nwTips.push('Conecta todas tus cuentas de juego para que otros jugadores te encuentren fácilmente');
+        }
+
+        const csTips = [];
+        if (accountAgeDays < 7) {
+            csTips.push('Acabas de llegar — completa tu perfil y explora la plataforma');
+            csTips.push('Añade tus juegos favoritos y configura tu avatar');
+            csTips.push('Explora las comunidades y únete a las de tus juegos');
+            csTips.push('Vincula al menos una cuenta de juego para empezar');
+            csTips.push('Revisa los torneos disponibles y marca los que te interesen');
+        } else if (accountAgeDays < 30) {
+            csTips.push(`${accountAgeDays} días en la plataforma — buen ritmo, sigue activo`);
+            csTips.push('Inscríbete en tu primer torneo para ganar experiencia');
+            csTips.push(enrichedGames.length < 3 ? 'Añade más juegos a tu perfil para demostrar versatilidad' : 'Buen catálogo de juegos — mantén tu perfil actualizado');
+            csTips.push(myTeams.length === 0 ? 'Únete a un equipo para aumentar tu actividad' : `Mantén actividad con tus ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''}`);
+            csTips.push('Revisa tu dashboard semanalmente para trackear tu progreso');
+        } else {
+            csTips.push(`Veterano de ${Math.floor(accountAgeDays / 30)} mes${Math.floor(accountAgeDays / 30) > 1 ? 'es' : ''} — tu constancia es tu fortaleza`);
+            csTips.push(enrichedGames.length < 3 ? 'Añade más juegos a tu perfil para demostrar versatilidad' : `${enrichedGames.length} juegos activos — perfil sólido`);
+            csTips.push(myTeams.length === 0 ? 'Únete a un equipo para aumentar tu actividad' : `Mantén actividad con tus ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''}`);
+            csTips.push('Participa en al menos 1 torneo al mes para mantener tu ritmo competitivo');
+            csTips.push('Actualiza tu bio y avatar periódicamente — un perfil fresco genera más conexiones');
+        }
+
+        const vsTips = [];
+        if (catKeys.length <= 1) {
+            vsTips.push('Solo juegas 1 género — explora otros para ser más versátil');
+            vsTips.push('Prueba un juego de estrategia si solo juegas FPS, o viceversa');
+            vsTips.push(`Tienes ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} — ${enrichedGames.length < 5 ? 'añade más para mejorar' : 'buena colección'}`);
+            vsTips.push('Las habilidades de un género mejoran tu rendimiento en otros');
+            vsTips.push('Participa en torneos de juegos que no domines — aprenderás más rápido bajo presión');
+        } else if (catKeys.length < 3) {
+            vsTips.push(`${catKeys.length} géneros — buen inicio, agrega 1 más para subir tu score`);
+            vsTips.push('Las habilidades de un género se transfieren a otros');
+            vsTips.push(`Tienes ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} — ${enrichedGames.length < 5 ? 'añade más para mejorar' : 'buena colección'}`);
+            vsTips.push('Inscríbete en un torneo de un juego que no sea tu principal');
+            vsTips.push('Mira tutoriales de géneros nuevos — las bases se aprenden rápido');
+        } else {
+            vsTips.push(`${catKeys.length} géneros dominados — perfil de jugador completo`);
+            vsTips.push('Participa en torneos de diferentes juegos para demostrar tu versatilidad');
+            vsTips.push(`Tienes ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} — buena colección`);
+            vsTips.push('Comparte tips entre géneros con tu equipo — la adaptabilidad es tu ventaja');
+            vsTips.push('Mantén actualizada tu colección y prueba los lanzamientos nuevos');
+        }
+
         return [
             {
                 id: 'winrate',
                 icon: 'bx bx-trophy',
                 label: 'WIN RATE',
-                subtitle: 'Rendimiento competitivo en torneos',
+                subtitle: totalTourneys === 0 ? 'Aún no has competido en torneos' : `${finishedTourneys} de ${totalTourneys} torneos completados`,
                 value: `${winRate}%`,
                 numericValue: winRate,
                 color: '#ffd700',
                 chartType: 'radialBar',
-                definition: 'El Win Rate mide el porcentaje de torneos que has completado exitosamente respecto al total de torneos en los que has participado.',
-                tips: [
-                    'Enfócate en torneos de tu nivel antes de escalar',
-                    'Analiza las repeticiones de tus partidas perdidas',
-                    `Practica composiciones meta actuales en ${mainGame}`,
-                    'Comunica estrategias claras con tu equipo antes de cada ronda'
-                ],
-                plan: `Semana 1-2: Revisa tus últimos 5 torneos e identifica errores recurrentes. Semana 3-4: Practica 3 estrategias específicas en ${mainGame}. Mes 2: Inscríbete en 2 torneos aplicando lo aprendido y mide tu progreso.`
+                definition: totalTourneys === 0
+                    ? 'Cuando participes en torneos, aquí verás tu porcentaje de éxito. ¡Inscríbete en uno para empezar!'
+                    : `Tu Win Rate actual es ${winRate}%. Has completado ${finishedTourneys} de ${totalTourneys} torneo${totalTourneys > 1 ? 's' : ''}.`,
+                tips: wrTips,
+                plan: wrPlan.join(' ')
             },
             {
                 id: 'leadership',
                 icon: 'bx bx-crown',
                 label: 'LIDERAZGO',
-                subtitle: 'Capacidad de liderazgo y gestión de equipos',
+                subtitle: captainTeams > 0 ? `Capitán de ${captainTeams} equipo${captainTeams > 1 ? 's' : ''}` : 'Capacidad de liderazgo',
                 value: `${leadershipScore}`,
                 numericValue: leadershipScore,
                 color: '#a78bfa',
                 chartType: 'donut',
                 chartSeries: [Math.max(1, captainTeams * 25), Math.max(1, myTeams.length * 10), Math.max(1, 100 - leadershipScore)],
                 chartLabels: ['Capitán', 'Equipos', 'Potencial'],
-                definition: 'Mide tu capacidad de liderar equipos. Se calcula en base a equipos donde eres capitán, roles de liderazgo y participación activa en la gestión de tu roster.',
-                tips: [
-                    'Crea un equipo y recluta jugadores activos',
-                    'Organiza sesiones de práctica semanales con tu equipo',
-                    'Define roles claros para cada miembro del roster',
-                    'Utiliza el chat de equipo para coordinar estrategias'
-                ],
-                plan: `Semana 1: Crea o únete a un equipo competitivo de ${mainGame}. Semana 2-3: Establece un horario de prácticas y lidera las sesiones. Mes 2: Inscribe a tu equipo en un torneo y coordina la preparación completa.`
+                definition: captainTeams > 0
+                    ? `Lideras ${captainTeams} equipo${captainTeams > 1 ? 's' : ''} como capitán y participas en ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''} en total.`
+                    : myTeams.length > 0
+                        ? `Eres miembro de ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''}. Crea tu propio equipo para subir tu liderazgo.`
+                        : 'No tienes equipos aún. Crear o unirte a un equipo es el primer paso hacia el liderazgo.',
+                tips: ldTips,
+                plan: captainTeams === 0
+                    ? `Paso 1: Crea un equipo de ${mainGame}. Paso 2: Recluta miembros activos. Paso 3: Inscríbete en un torneo como capitán.`
+                    : `Mantén prácticas semanales con tu equipo. Inscríbete en el próximo torneo de ${mainGame}. Evalúa el rendimiento de tu roster tras cada competencia.`
             },
             {
                 id: 'network',
                 icon: 'bx bx-network-chart',
                 label: 'RED SOCIAL',
-                subtitle: 'Alcance y conexiones en el ecosistema',
+                subtitle: `${connCount} cuentas · ${myCommunities.length} comunidades · ${myTeams.length} equipos`,
                 value: `${networkScore}`,
                 numericValue: networkScore,
                 color: '#00d2ff',
@@ -715,20 +790,19 @@ const Dashboard = () => {
                 ],
                 chartAxis: ['01', '02', '03', '04', '05', '06', '07'],
                 chartLabels: ['Conexiones', 'Comunidades', 'Equipos'],
-                definition: 'Indica qué tan conectado estás en el ecosistema esports. Incluye cuentas vinculadas, comunidades activas y equipos en los que participas.',
-                tips: [
-                    'Vincula todas tus cuentas de juego para mayor visibilidad',
-                    'Únete a comunidades relacionadas con tus juegos favoritos',
-                    'Participa en discusiones y eventos de la comunidad',
-                    'Conecta tu Discord para facilitar la comunicación'
-                ],
-                plan: `Semana 1: Vincula al menos 3 cuentas de juego en Ajustes. Semana 2: Únete a 2 comunidades de ${mainGame}. Semana 3-4: Participa activamente en al menos 1 evento comunitario. Meta: alcanzar 80+ de Red Social.`
+                definition: `Tu red: ${connCount} cuentas vinculadas, ${myCommunities.length} comunidades activas y ${myTeams.length} equipos. ${networkScore >= 70 ? 'Excelente presencia en el ecosistema.' : 'Hay espacio para crecer.'}`,
+                tips: nwTips,
+                plan: networkScore < 40
+                    ? `Prioridad: Vincula tus cuentas de juego en Ajustes. Luego únete a 1-2 comunidades de ${mainGame}.`
+                    : networkScore < 70
+                        ? `Buen progreso. Participa más en las comunidades y agrega compañeros de torneo como amigos.`
+                        : 'Red sólida. Mantén tu actividad en comunidades y expande contactos en cada torneo.'
             },
             {
                 id: 'consistency',
                 icon: 'bx bx-line-chart',
                 label: 'CONSISTENCIA',
-                subtitle: 'Actividad sostenida en la plataforma',
+                subtitle: `${accountAgeDays} días en la plataforma`,
                 value: `${consistencyScore}`,
                 numericValue: consistencyScore,
                 color: '#8EDB15',
@@ -740,20 +814,17 @@ const Dashboard = () => {
                 ],
                 chartAxis: ['01', '02', '03', '04', '05', '06', '07'],
                 chartLabels: ['Antigüedad', 'Juegos activos', 'Equipos'],
-                definition: 'Refleja tu actividad sostenida en la plataforma. Toma en cuenta tu antigüedad, juegos activos, equipos y participación regular en torneos.',
-                tips: [
-                    'Inicia sesión regularmente para mantener tu racha activa',
-                    'Participa en al menos 1 torneo al mes',
-                    'Mantén tu perfil actualizado con tus juegos actuales',
-                    'Revisa tu dashboard semanalmente para trackear tu progreso'
-                ],
-                plan: `Semana 1: Completa tu perfil al 100% y añade todos tus juegos. Semana 2: Inscríbete en un torneo de ${mainGame}. Semana 3-4: Únete a un equipo activo. Objetivo mensual: mantener actividad constante y subir a 80+.`
+                definition: `Llevas ${accountAgeDays} días en GLITCH GANG con ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} activo${enrichedGames.length !== 1 ? 's' : ''} y ${myTeams.length} equipo${myTeams.length !== 1 ? 's' : ''}.`,
+                tips: csTips,
+                plan: consistencyScore < 40
+                    ? `Esta semana: Completa tu perfil al 100%. Añade tus juegos y únete a un equipo de ${mainGame}.`
+                    : `Mantén tu actividad. Participa en 1 torneo al mes y actualiza tu perfil regularmente.`
             },
             {
                 id: 'versatility',
                 icon: 'bx bx-category-alt',
                 label: 'VERSATILIDAD',
-                subtitle: 'Diversidad de géneros y juegos',
+                subtitle: `${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} · ${catKeys.length} género${catKeys.length !== 1 ? 's' : ''}`,
                 value: `${versatilityScore}`,
                 numericValue: versatilityScore,
                 color: '#f97316',
@@ -764,14 +835,13 @@ const Dashboard = () => {
                 chartLabels: catKeys.length > 0
                     ? catKeys
                     : ['Tu género', 'Otros', 'Por explorar'],
-                definition: 'Mide la diversidad de géneros y juegos en tu colección. Un jugador versátil domina múltiples categorías y se adapta a diferentes estilos de juego.',
-                tips: [
-                    'Explora juegos de géneros que no hayas probado',
-                    'Añade al menos un juego de estrategia, FPS y MOBA a tu perfil',
-                    'Participa en torneos de diferentes juegos',
-                    'Aprende mecánicas transferibles entre géneros'
-                ],
-                plan: `Semana 1: Añade 2 juegos nuevos de diferentes géneros a tu perfil. Semana 2-3: Practica al menos 5 horas en un juego fuera de tu zona de comfort. Mes 2: Inscríbete en un torneo de un juego diferente a ${mainGame}.`
+                definition: `Tu colección tiene ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} en ${catKeys.length} género${catKeys.length !== 1 ? 's' : ''} diferente${catKeys.length !== 1 ? 's' : ''}. ${versatilityScore >= 60 ? 'Perfil versátil.' : 'Explora nuevos géneros.'}`,
+                tips: vsTips,
+                plan: versatilityScore < 30
+                    ? `Paso 1: Añade al menos 3 juegos de diferentes géneros. Paso 2: Prueba un juego nuevo esta semana.`
+                    : versatilityScore < 60
+                        ? `Añade 1 juego de un género que no tengas. Participa en un torneo diferente a ${mainGame}.`
+                        : `Perfil versátil. Mantén tu colección actualizada y compite en múltiples juegos.`
             }
         ];
     }, [tournaments, myTeams, user, myCommunities, accountAgeDays, enrichedGames]);
@@ -1222,7 +1292,126 @@ const Dashboard = () => {
             </section>
 
             {/* ═══════════════════════════════════════════
-                SECTION 2 — MÉTRICAS (carrusel horizontal fullscreen)
+                SECTION 2 — RESUMEN RÁPIDO
+               ═══════════════════════════════════════════ */}
+            <section className="db__section db__section--stats" data-section="stats" ref={el => sectionRefs.current.stats = el}>
+                <motion.div className="db__stats-wrap" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={stagger}>
+                    <motion.div className="db__stats-header" variants={fadeChild}>
+                        <p className="db__stats-kicker">Resumen</p>
+                        <h2 className="db__stats-title">Tu Progreso</h2>
+                    </motion.div>
+
+                    {/* Quick stat cards */}
+                    <motion.div className="db__stats-grid" variants={stagger}>
+                        <motion.div className="db__stat-card" variants={fadeChild} style={{ '--sc-c': '#8EDB15' }}>
+                            <div className="db__stat-card-icon"><i className="bx bx-user-check"></i></div>
+                            <div className="db__stat-card-body">
+                                <span className="db__stat-card-val"><AnimatedNumber target={profileCompletion} />%</span>
+                                <span className="db__stat-card-lbl">Perfil completo</span>
+                            </div>
+                            <div className="db__stat-card-bar"><div className="db__stat-card-fill" style={{ width: `${profileCompletion}%` }}></div></div>
+                        </motion.div>
+
+                        <motion.div className="db__stat-card" variants={fadeChild} style={{ '--sc-c': '#ffd700' }}>
+                            <div className="db__stat-card-icon"><i className="bx bx-trophy"></i></div>
+                            <div className="db__stat-card-body">
+                                <span className="db__stat-card-val"><AnimatedNumber target={totalTourneysPlayed} /></span>
+                                <span className="db__stat-card-lbl">Torneos jugados</span>
+                            </div>
+                            {totalTourneysPlayed > 0 && <span className="db__stat-card-sub">{tourneysWon} completado{tourneysWon !== 1 ? 's' : ''}</span>}
+                        </motion.div>
+
+                        <motion.div className="db__stat-card" variants={fadeChild} style={{ '--sc-c': '#a78bfa' }}>
+                            <div className="db__stat-card-icon"><i className="bx bx-group"></i></div>
+                            <div className="db__stat-card-body">
+                                <span className="db__stat-card-val"><AnimatedNumber target={myTeams.length} /></span>
+                                <span className="db__stat-card-lbl">Equipos</span>
+                            </div>
+                            {pendingRequests.length > 0 && <span className="db__stat-card-sub db__stat-card-sub--alert">{pendingRequests.length} solicitud{pendingRequests.length > 1 ? 'es' : ''}</span>}
+                        </motion.div>
+
+                        <motion.div className="db__stat-card" variants={fadeChild} style={{ '--sc-c': '#00d2ff' }}>
+                            <div className="db__stat-card-icon"><i className="bx bx-link-alt"></i></div>
+                            <div className="db__stat-card-body">
+                                <span className="db__stat-card-val"><AnimatedNumber target={connectedCount} />/{CONNECTION_PROVIDERS.length}</span>
+                                <span className="db__stat-card-lbl">Cuentas vinculadas</span>
+                            </div>
+                        </motion.div>
+
+                        <motion.div className="db__stat-card" variants={fadeChild} style={{ '--sc-c': '#f97316' }}>
+                            <div className="db__stat-card-icon"><i className="bx bx-buildings"></i></div>
+                            <div className="db__stat-card-body">
+                                <span className="db__stat-card-val"><AnimatedNumber target={myCommunities.length} /></span>
+                                <span className="db__stat-card-lbl">Comunidades</span>
+                            </div>
+                        </motion.div>
+
+                        <motion.div className="db__stat-card" variants={fadeChild} style={{ '--sc-c': '#ff6b6b' }}>
+                            <div className="db__stat-card-icon"><i className="bx bx-heart"></i></div>
+                            <div className="db__stat-card-body">
+                                <span className="db__stat-card-val"><AnimatedNumber target={friendsCount} /></span>
+                                <span className="db__stat-card-lbl">Conexiones sociales</span>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+
+                    {/* Upcoming tournaments mini */}
+                    {upcomingMyTournaments.length > 0 && (
+                        <motion.div className="db__stats-upcoming" variants={fadeChild}>
+                            <div className="db__stats-upcoming-head">
+                                <i className="bx bx-calendar-event"></i>
+                                <h3>Próximos torneos</h3>
+                            </div>
+                            <div className="db__stats-upcoming-list">
+                                {upcomingMyTournaments.map(t => {
+                                    const msLeft = new Date(t.date).getTime() - now.getTime();
+                                    const daysLeft = Math.max(0, Math.floor(msLeft / 86400000));
+                                    return (
+                                        <div key={t._id} className="db__stats-tourney-mini" onClick={() => navigate(`/tournaments/${t.tournamentId}`)}>
+                                            <div className="db__stats-tourney-icon"><i className="bx bx-trophy"></i></div>
+                                            <div className="db__stats-tourney-info">
+                                                <strong>{t.title}</strong>
+                                                <span>{t.game} · {new Date(t.date).toLocaleDateString('es', { day: 'numeric', month: 'short' })}</span>
+                                            </div>
+                                            <span className={`db__stats-tourney-badge db__stats-tourney-badge--${t.status}`}>
+                                                {t.status === 'ongoing' ? 'EN CURSO' : daysLeft > 0 ? `${daysLeft}d` : 'HOY'}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Notifications summary */}
+                    {importantNotifications.length > 0 && (
+                        <motion.div className="db__stats-notifs" variants={fadeChild}>
+                            <div className="db__stats-notifs-head">
+                                <i className="bx bx-bell bx-tada"></i>
+                                <h3>{unreadNotifications.length} notificación{unreadNotifications.length !== 1 ? 'es' : ''} sin leer</h3>
+                                <button className="db__btn db__btn--ghost db__btn--sm" onClick={() => navigate('/notifications')}>Ver todas</button>
+                            </div>
+                            <div className="db__stats-notifs-list">
+                                {importantNotifications.map((n, i) => (
+                                    <div key={n._id || i} className="db__stats-notif-item" onClick={() => navigate('/notifications')}>
+                                        <i className={`bx ${n.category === 'tournament' ? 'bx-trophy' : n.category === 'team' ? 'bx-group' : n.category === 'admin' ? 'bx-shield-quarter' : 'bx-bell'}`}></i>
+                                        <div className="db__stats-notif-body">
+                                            <strong>{n.title}</strong>
+                                            <span>{n.message?.substring(0, 80)}{n.message?.length > 80 ? '...' : ''}</span>
+                                        </div>
+                                        <span className="db__stats-notif-time">
+                                            {n.createdAt ? new Date(n.createdAt).toLocaleDateString('es', { day: 'numeric', month: 'short' }) : ''}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </motion.div>
+            </section>
+
+            {/* ═══════════════════════════════════════════
+                SECTION 3 — MÉTRICAS (carrusel horizontal fullscreen)
                ═══════════════════════════════════════════ */}
             <section className="db__section db__section--metrics" data-section="metrics" ref={el => sectionRefs.current.metrics = el}>
                 {/* Track horizontal */}
@@ -1444,6 +1633,14 @@ const Dashboard = () => {
                                             </div>
                                             <p className="db__mx-plan">{m.plan}</p>
                                         </div>
+
+                                        <button
+                                            className="db__mx-btn-more"
+                                            onClick={() => navigate('/metricas')}
+                                            style={{ borderColor: hexToRgba(m.color, 0.4), color: m.color }}
+                                        >
+                                            <i className="bx bx-bar-chart-alt-2"></i> Ver análisis completo
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1594,16 +1791,17 @@ const Dashboard = () => {
                     <motion.div className="db__tourneys-header" variants={fadeChild}>
                         <div>
                             <p className="db__tourneys-kicker">Competición</p>
-                            <h2 className="db__tourneys-title">Torneos Activos</h2>
+                            <h2 className="db__tourneys-title">{upcomingMyTournaments.length > 0 ? 'Mis Torneos' : 'Torneos Activos'}</h2>
+                            {upcomingMyTournaments.length > 0 && <p className="db__tourneys-sub">Inscrito en {myTournaments.length} torneo{myTournaments.length !== 1 ? 's' : ''}</p>}
                         </div>
                         <button className="db__btn db__btn--ghost" onClick={() => navigate('/tournaments')}>
                             Ver más <i className="bx bx-right-arrow-alt"></i>
                         </button>
                     </motion.div>
 
-                    {activeTournaments.length > 0 ? (
+                    {(upcomingMyTournaments.length > 0 || activeTournaments.length > 0) ? (
                         <motion.div className="db__tourneys-list" variants={stagger}>
-                            {activeTournaments.map(t => {
+                            {(upcomingMyTournaments.length > 0 ? upcomingMyTournaments : activeTournaments).map(t => {
                                 const slotPercent = t.maxSlots ? Math.round((t.currentSlots / t.maxSlots) * 100) : 0;
                                 const msLeft = new Date(t.date).getTime() - now.getTime();
                                 const daysLeft = Math.max(0, Math.floor(msLeft / 86400000));
@@ -1731,143 +1929,115 @@ const Dashboard = () => {
             </section>
 
             {/* ═══════════════════════════════════════════
-                SECTION 7 — BIBLIOTECA DE JUEGOS (Fullscreen)
+                SECTION 7 — ACTIVIDAD Y RESUMEN
                ═══════════════════════════════════════════ */}
-            <section className="db__section db__section--library" data-section="library" ref={el => sectionRefs.current.library = el}>
-                {/* Dynamic background */}
-                {activeGame && (
-                    <div className="db__lib-hero-bg" style={{ backgroundImage: `url(${activeGame.banner})` }}>
-                        <div className="db__lib-hero-fade" />
-                    </div>
-                )}
+            <section className="db__section db__section--activity" data-section="activity" ref={el => sectionRefs.current.activity = el}>
+                <motion.div className="db__activity-wrap" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={stagger}>
+                    <motion.div className="db__activity-header" variants={fadeChild}>
+                        <p className="db__activity-kicker">Centro de Actividad</p>
+                        <h2 className="db__activity-title">Lo que está pasando</h2>
+                    </motion.div>
 
-                <motion.div className="db__library-wrap" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
-                    <div className="db__lib-split">
-                        {/* Left: active game detail */}
-                        <motion.div className="db__lib-detail" variants={fadeChild}>
-                            {activeGame ? (
-                                <>
-                                    <span className="db__lib-detail-kicker">{activeGame.developer}</span>
-                                     <h2 className="db__lib-detail-title">{activeGame.name}</h2>
-                                     {activeGame.tags?.length > 0 && (
-                                         <div className="db__lib-detail-tags">
-                                             {activeGame.tags.slice(0, 5).map((tag, i) => (
-                                                <button
-                                                    key={`${activeGame.id || activeGame.name}-${tag}-${i}`}
-                                                    type="button"
-                                                    className="db__lib-tag"
-                                                    onClick={() => handleGameTagClick(tag)}
-                                                >
-                                                    {tag}
-                                                </button>
-                                            ))}
-                                         </div>
-                                     )}
-                                    <p className="db__lib-detail-desc">{activeGame.history?.substring(0, 200)}...</p>
-                                    <div className="db__lib-detail-meta">
-                                        {activeGame.category && <span><i className="bx bx-category"></i> {activeGame.category}</span>}
-                                        {activeGame.platforms && <span><i className="bx bx-desktop"></i> {activeGame.platforms?.join?.(', ') || activeGame.platforms}</span>}
-                                    </div>
-                                    <div className="db__lib-actions">
-                                        <button
-                                            className="db__btn db__btn--primary db__lib-go-btn"
-                                            onClick={() => navigate(activeGameCommunity ? `/communities/${activeGameCommunity.shortUrl}` : '/comunidad')}
-                                        >
-                                            <i className={activeGameCommunity ? 'bx bx-buildings' : 'bx bx-search'}></i>
-                                            {activeGameCommunity ? 'Ir a comunidad' : 'Buscar comunidad'}
-                                        </button>
-                                        <button
-                                            className="db__btn db__btn--outline db__lib-go-btn"
-                                            onClick={() => navigate('/edit-profile', { state: { activeTab: 'gamer' } })}
-                                        >
-                                            <i className="bx bx-plus-circle"></i> Añadir más juegos
+                    <div className="db__activity-grid">
+                        {/* Team activity */}
+                        <motion.div className="db__activity-card" variants={fadeChild}>
+                            <div className="db__activity-card-head">
+                                <i className="bx bx-group" style={{ color: '#a78bfa' }}></i>
+                                <h3>Actividad de Equipos</h3>
+                            </div>
+                            <div className="db__activity-card-body">
+                                {myTeams.length > 0 ? (
+                                    <>
+                                        {myTeams.slice(0, 3).map(team => (
+                                            <div key={team._id} className="db__act-team-row" onClick={() => openTeamPanel(team)}>
+                                                <div className="db__act-team-logo">
+                                                    {team.logo ? (
+                                                        <img src={resolveMediaUrl(team.logo)} alt={team.name} onError={(e) => applyImageFallback(e, getTeamFallback(team.name))} />
+                                                    ) : <i className="bx bx-group"></i>}
+                                                </div>
+                                                <div className="db__act-team-info">
+                                                    <strong>{team.name}</strong>
+                                                    <span>{team.game || 'Sin juego'} · {resolveTeamRole(team)}</span>
+                                                </div>
+                                                <span className="db__act-team-count">{getFilledMemberCount(team)} <i className="bx bx-user"></i></span>
+                                            </div>
+                                        ))}
+                                        {pendingRequests.length > 0 && (
+                                            <div className="db__act-alert" onClick={() => navigate('/equipos')}>
+                                                <i className="bx bx-bell bx-tada"></i>
+                                                <span>{pendingRequests.length} solicitud{pendingRequests.length > 1 ? 'es' : ''} pendiente{pendingRequests.length > 1 ? 's' : ''}</span>
+                                                <i className="bx bx-chevron-right"></i>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="db__act-empty">
+                                        <p>Sin equipos aún</p>
+                                        <button className="db__btn db__btn--sm db__btn--primary" onClick={() => navigate('/create-team')}>
+                                            <i className="bx bx-plus"></i> Crear equipo
                                         </button>
                                     </div>
-                                </>
-                            ) : (
-                                <div className="db__lib-empty-detail">
-                                    <i className="bx bx-joystick"></i>
-                                    <h3>Sin juegos seleccionados</h3>
-                                    <button
-                                        className="db__btn db__btn--primary"
-                                        onClick={() => navigate('/edit-profile', { state: { activeTab: 'gamer' } })}
-                                    >
-                                        Agregar juegos
-                                    </button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </motion.div>
 
-                        {/* Right: game grid selector */}
-                        <motion.div className="db__lib-grid-wrap" variants={stagger}>
-                            <div className="db__lib-grid-header">
-                                <span className="db__lib-grid-label">TU COLECCIÓN</span>
-                                <span className="db__lib-grid-count">{enrichedGames.length}</span>
+                        {/* Notifications */}
+                        <motion.div className="db__activity-card" variants={fadeChild}>
+                            <div className="db__activity-card-head">
+                                <i className="bx bx-bell" style={{ color: '#ffd700' }}></i>
+                                <h3>Notificaciones</h3>
+                                {unreadNotifications.length > 0 && (
+                                    <span className="db__act-badge">{unreadNotifications.length}</span>
+                                )}
                             </div>
-                            <div className="db__lib-grid">
-                                {enrichedGames.map((game, idx) => (
-                                    <motion.div
-                                        key={game.id}
-                                        className={`db__lib-tile ${idx === activeGameIdx ? 'db__lib-tile--active' : ''}`}
-                                        variants={fadeChild}
-                                        onClick={() => setActiveGameIdx(idx)}
-                                    >
-                                        <img src={game.banner} alt={game.name} />
-                                        <div className="db__lib-tile-overlay">
-                                            <strong>{game.name}</strong>
-                                        </div>
-                                    </motion.div>
+                            <div className="db__activity-card-body">
+                                {unreadNotifications.length > 0 ? (
+                                    <>
+                                        {unreadNotifications.slice(0, 4).map((n, i) => (
+                                            <div key={n._id || i} className="db__act-notif-row" onClick={() => navigate('/notifications')}>
+                                                <i className={`bx ${n.category === 'tournament' ? 'bx-trophy' : n.category === 'team' ? 'bx-group' : n.category === 'social' ? 'bx-heart' : 'bx-bell'} db__act-notif-icon`}></i>
+                                                <div className="db__act-notif-text">
+                                                    <strong>{n.title}</strong>
+                                                    <span>{n.message?.substring(0, 60)}{n.message?.length > 60 ? '...' : ''}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <button className="db__btn db__btn--ghost db__btn--sm" onClick={() => navigate('/notifications')}>
+                                            Ver todas <i className="bx bx-right-arrow-alt"></i>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="db__act-empty">
+                                        <i className="bx bx-check-circle" style={{ color: '#4ade80' }}></i>
+                                        <p>Estás al día — sin notificaciones pendientes</p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+
+                        {/* Quick navigation */}
+                        <motion.div className="db__activity-card db__activity-card--nav" variants={fadeChild}>
+                            <div className="db__activity-card-head">
+                                <i className="bx bx-compass" style={{ color: '#8EDB15' }}></i>
+                                <h3>Acceso Rápido</h3>
+                            </div>
+                            <div className="db__activity-nav-grid">
+                                {[
+                                    { icon: 'bx bxs-user-detail', label: 'Perfil',      path: '/profile',     color: '#8EDB15' },
+                                    { icon: 'bx bxs-trophy',      label: 'Torneos',     path: '/tournaments', color: '#ffd700' },
+                                    { icon: 'bx bxs-group',       label: 'Equipos',     path: '/equipos',     color: '#00d2ff' },
+                                    { icon: 'bx bxs-cog',         label: 'Ajustes',     path: '/settings',    color: '#a78bfa' },
+                                    { icon: 'bx bxs-graduation',  label: 'Universidad', path: '/university',  color: '#ff6b6b' },
+                                    { icon: 'bx bxs-news',        label: 'Noticias',    path: '/noticias',    color: '#f97316' },
+                                ].map(item => (
+                                    <button key={item.path} className="db__act-nav-btn" onClick={() => navigate(item.path)} style={{ '--qn-c': item.color }}>
+                                        <i className={item.icon}></i>
+                                        <span>{item.label}</span>
+                                    </button>
                                 ))}
                             </div>
                         </motion.div>
                     </div>
-                </motion.div>
-            </section>
-
-            {/* ═══════════════════════════════════════════
-                SECTION 8 — CUENTA
-               ═══════════════════════════════════════════ */}
-            <section className="db__section db__section--account" data-section="account" ref={el => sectionRefs.current.account = el}>
-                <motion.div className="db__account-wrap" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={stagger}>
-                    <motion.div className="db__account-header" variants={fadeChild}>
-                        <p className="db__account-kicker">Tu perfil</p>
-                        <h2 className="db__account-title">Info de Cuenta</h2>
-                    </motion.div>
-
-                    <motion.div className="db__account-grid" variants={stagger}>
-                        {[
-                            { icon: 'bx bx-envelope',     lbl: 'Email',       val: user.email },
-                            { icon: 'bx bx-user',         lbl: 'Nombre',      val: user.fullName },
-                            { icon: 'bx bx-map',          lbl: 'País',        val: user.country },
-                            { icon: 'bx bx-target-lock',  lbl: 'Objetivos',   val: user.goals?.length ? user.goals.join(', ') : '—' },
-                            { icon: 'bx bx-star',         lbl: 'Experiencia', val: user.experience?.length ? user.experience.join(', ') : '—' },
-                            { icon: 'bx bxl-discord-alt', lbl: 'Discord',     val: user.connections?.discord?.verified ? user.connections.discord.username : 'No vinculado' },
-                        ].map(item => (
-                            <motion.div key={item.lbl} className="db__acct-item" variants={fadeChild}>
-                                <i className={item.icon}></i>
-                                <div className="db__acct-item-data">
-                                    <span className="db__acct-item-lbl">{item.lbl}</span>
-                                    <span className="db__acct-item-val">{item.val}</span>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </motion.div>
-
-                    <motion.div className="db__quick-nav" variants={stagger}>
-                        {[
-                            { icon: 'bx bxs-user-detail', label: 'Perfil',      path: '/profile',     color: '#8EDB15' },
-                            { icon: 'bx bxs-group',       label: 'Equipos',     path: '/teams',       color: '#00d2ff' },
-                            { icon: 'bx bxs-trophy',      label: 'Torneos',     path: '/tournaments', color: '#ffd700' },
-                            { icon: 'bx bxs-graduation',  label: 'Universidad', path: '/university',  color: '#ff6b6b' },
-                            { icon: 'bx bxs-cog',         label: 'Ajustes',     path: '/settings',    color: '#a78bfa' },
-                            { icon: 'bx bxs-store',       label: 'Tienda',      path: '/marketplace', color: '#f97316' },
-                        ].map(item => (
-                            <motion.button key={item.path} className="db__qn-btn" variants={fadeChild} onClick={() => navigate(item.path)} style={{ '--qn-c': item.color }}>
-                                <i className={item.icon}></i>
-                                <span>{item.label}</span>
-                            </motion.button>
-                        ))}
-                    </motion.div>
                 </motion.div>
             </section>
 

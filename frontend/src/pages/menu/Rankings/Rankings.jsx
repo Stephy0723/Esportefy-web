@@ -118,6 +118,16 @@ export default function Rankings() {
     const [isContributeModalOpen, setIsContributeModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const [platformRankings, setPlatformRankings] = useState({
+        players: [],
+        teams: [],
+        tournaments: [],
+        filters: { games: ['Todos'], regions: ['Todas'] },
+        meta: null,
+        pointsConfig: null
+    });
+    const [platformLoading, setPlatformLoading] = useState(false);
+    const [platformError, setPlatformError] = useState('');
 
     // Achievement modal (Enviar Mi Logro)
     const initialAchievementData = {
@@ -391,6 +401,26 @@ export default function Rankings() {
         return { members, achievements: teamAchievements, titles, isUniversity: teamEntry?.isUniversity || false };
     }, []);
 
+    const getPlatformTeamData = useCallback((teamInput) => {
+        const teamName = typeof teamInput === 'string' ? teamInput : teamInput?.name;
+        const teamEntry = typeof teamInput === 'string'
+            ? platformRankings.teams.find((entry) => entry.name === teamName)
+            : teamInput;
+
+        const members = platformRankings.players
+            .filter((player) => player.team === teamName)
+            .sort((a, b) => (b.rating - a.rating) || (b.points - a.points) || a.player.localeCompare(b.player));
+
+        const achievements = Array.isArray(teamEntry?.achievements) ? teamEntry.achievements : [];
+
+        return {
+            members,
+            achievements,
+            titles: achievements.filter((achievement) => achievement.place === 1).length,
+            isUniversity: false
+        };
+    }, [platformRankings.players, platformRankings.teams]);
+
     // ═══════════════════════════════════════════════════════════
     // TEAMS TAB
     // ═══════════════════════════════════════════════════════════
@@ -439,6 +469,72 @@ export default function Rankings() {
         return rows.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
     }, [game, tournamentFilter, searchTerm]);
 
+    const platformGames = platformRankings.filters?.games?.length ? platformRankings.filters.games : ['Todos'];
+    const platformRegions = platformRankings.filters?.regions?.length ? platformRankings.filters.regions : ['Todas'];
+
+    const filteredPlatformPlayers = useMemo(() => {
+        let rows = [...platformRankings.players];
+
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            rows = rows.filter((player) =>
+                player.player.toLowerCase().includes(term)
+                || player.team.toLowerCase().includes(term)
+                || player.realName.toLowerCase().includes(term)
+            );
+        }
+
+        if (game !== 'Todos') rows = rows.filter((player) => player.game === game);
+        if (region !== 'Todas') rows = rows.filter((player) => player.region === region);
+
+        return rows;
+    }, [platformRankings.players, searchTerm, game, region]);
+
+    const filteredPlatformTeams = useMemo(() => {
+        let rows = [...platformRankings.teams];
+
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            rows = rows.filter((team) =>
+                team.name.toLowerCase().includes(term)
+                || team.tag.toLowerCase().includes(term)
+            );
+        }
+
+        if (game !== 'Todos') rows = rows.filter((team) => Array.isArray(team.games) && team.games.includes(game));
+        if (region !== 'Todas') rows = rows.filter((team) => team.region === region);
+
+        return rows;
+    }, [platformRankings.teams, searchTerm, game, region]);
+
+    const filteredPlatformTournaments = useMemo(() => {
+        let rows = [...platformRankings.tournaments];
+
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            rows = rows.filter((tournament) =>
+                tournament.name.toLowerCase().includes(term)
+                || tournament.organizer.toLowerCase().includes(term)
+            );
+        }
+
+        if (game !== 'Todos') rows = rows.filter((tournament) => tournament.game === game);
+        if (tournamentFilter !== 'Todos') rows = rows.filter((tournament) => tournament.status === tournamentFilter);
+
+        return rows.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+    }, [platformRankings.tournaments, searchTerm, game, tournamentFilter]);
+
+    const platformStats = useMemo(() => ({
+        totalPlayers: platformRankings.meta?.totalPlayers ?? platformRankings.players.length,
+        totalTeams: platformRankings.meta?.totalTeams ?? platformRankings.teams.length,
+        activeTournaments: platformRankings.meta?.activeTournaments ?? filteredPlatformTournaments.filter((tournament) => tournament.status === 'active').length,
+        completedTournaments: platformRankings.meta?.completedTournaments ?? filteredPlatformTournaments.filter((tournament) => tournament.status === 'completed').length,
+    }), [platformRankings.meta, platformRankings.players.length, platformRankings.teams.length, filteredPlatformTournaments]);
+
+    const platformPodiumPlayers = filteredPlatformPlayers.slice(0, 3);
+    const platformTopPlayer = filteredPlatformPlayers[0];
+    const hasPlatformData = platformRankings.players.length > 0 || platformRankings.teams.length > 0 || platformRankings.tournaments.length > 0;
+
     // Stats
     const stats = useMemo(() => ({
         totalPlayers: filteredPlayers.length,
@@ -457,6 +553,63 @@ export default function Rankings() {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0 }
     };
+
+    useEffect(() => {
+        setSelectedPlayer(null);
+        setSelectedTeam(null);
+        setPlayerPanelTab('overview');
+        setSearchTerm('');
+        setGame('Todos');
+        setRegion('Todas');
+        setTournamentFilter('Todos');
+    }, [rankingSource]);
+
+    useEffect(() => {
+        if (rankingSource !== 'gg') return undefined;
+
+        let isMounted = true;
+        const controller = new AbortController();
+
+        const loadPlatformRankings = async () => {
+            setPlatformLoading(true);
+            setPlatformError('');
+
+            try {
+                const response = await axios.get(`${API_URL}/api/rankings/platform`, {
+                    signal: controller.signal
+                });
+
+                if (!isMounted) return;
+
+                setPlatformRankings({
+                    players: Array.isArray(response.data?.players) ? response.data.players : [],
+                    teams: Array.isArray(response.data?.teams) ? response.data.teams : [],
+                    tournaments: Array.isArray(response.data?.tournaments) ? response.data.tournaments : [],
+                    filters: response.data?.filters || { games: ['Todos'], regions: ['Todas'] },
+                    meta: response.data?.meta || null,
+                    pointsConfig: response.data?.pointsConfig || null
+                });
+            } catch (error) {
+                if (!isMounted || error?.code === 'ERR_CANCELED') return;
+                setPlatformError(error.response?.data?.message || 'No se pudieron cargar los rankings de la plataforma.');
+            } finally {
+                if (isMounted) setPlatformLoading(false);
+            }
+        };
+
+        loadPlatformRankings();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, [rankingSource]);
+
+    useEffect(() => {
+        if (rankingSource !== 'gg') return;
+        if (!platformGames.includes(game)) setGame('Todos');
+        if (!platformRegions.includes(region)) setRegion('Todas');
+    }, [rankingSource, platformGames, platformRegions, game, region]);
 
     const getTrendIcon = (trend) => {
         if (trend > 0) return <FaArrowUp className="rk-trend-icon rk-trend-up" />;
@@ -483,9 +636,11 @@ export default function Rankings() {
 
     return (
         <div className="rk-page">
-            <div className="rk-demo-banner">
-                <FaInfoCircle /> Aviso: Los datos mostrados en los rankings actuales son de demostración (Demo).
-            </div>
+            {rankingSource !== 'gg' && (
+                <div className="rk-demo-banner">
+                    <FaInfoCircle /> Aviso: Los datos mostrados en los rankings actuales son de demostración (Demo).
+                </div>
+            )}
             {/* Source Switcher: General vs Plataforma */}
             <div className="rk-source-switcher">
                 {[
@@ -524,17 +679,424 @@ export default function Rankings() {
             <PageHud page="RANKINGS" />
 
             {rankingSource === 'gg' ? (
-                <div className="rk-gg-placeholder">
-                    <FaChartLine className="rk-gg-placeholder__icon" />
-                    <h2 className="rk-gg-placeholder__title">Ranking de Plataforma</h2>
-                    <p className="rk-gg-placeholder__desc">
-                        Los rankings basados en torneos jugados dentro de la plataforma están en desarrollo.
-                        Cuando haya torneos completados, aquí aparecerán las clasificaciones automáticas.
-                    </p>
-                    <span className="sc-badge sc-badge--warning rk-gg-placeholder__badge">
-                        <FaLock /> Próximamente
-                    </span>
-                </div>
+                <motion.div
+                    className="rk-container"
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                >
+                    <motion.section className="rk-hero" variants={itemVariants}>
+                        <div className="rk-hero__content">
+                            <div className="rk-hero__badge">
+                                <FaChartLine /> Ranking vivo de la plataforma
+                            </div>
+                            <h1>Ranking GG</h1>
+                            <p>Clasificación automática basada en resultados reales de torneos, avance en brackets y rating ELO generado dentro de Esportefy.</p>
+
+                            <motion.button
+                                className="rk-submit-achievement-btn"
+                                onClick={() => setIsAchievementModalOpen(true)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <FaTrophy />
+                                <span>Enviar Mi Logro</span>
+                            </motion.button>
+
+                            <div className="rk-hero__stats">
+                                <div className="rk-hero__stat">
+                                    <FaUserAlt />
+                                    <span>{platformStats.totalPlayers}</span>
+                                    <small>Jugadores</small>
+                                </div>
+                                <div className="rk-hero__stat">
+                                    <FaShieldAlt />
+                                    <span>{platformStats.totalTeams}</span>
+                                    <small>Equipos</small>
+                                </div>
+                                <div className="rk-hero__stat">
+                                    <FaTrophy />
+                                    <span>{platformStats.activeTournaments}</span>
+                                    <small>Torneos activos</small>
+                                </div>
+                                <div className="rk-hero__stat">
+                                    <FaMedal />
+                                    <span>{platformStats.completedTournaments}</span>
+                                    <small>Torneos cerrados</small>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.section>
+
+                    <motion.div className="rk-tabs" variants={itemVariants}>
+                        {TABS.map(tab => (
+                            <button
+                                key={tab.id}
+                                className={`rk-tab ${activeTab === tab.id ? 'rk-tab--active' : ''}`}
+                                onClick={() => setActiveTab(tab.id)}
+                            >
+                                <tab.icon />
+                                <span>{tab.label}</span>
+                            </button>
+                        ))}
+                    </motion.div>
+
+                    <motion.div className="rk-filters" variants={itemVariants}>
+                        <div className="rk-search">
+                            <FaSearch />
+                            <input
+                                type="text"
+                                placeholder={`Buscar ${activeTab === 'players' ? 'jugadores' : activeTab === 'teams' ? 'equipos' : 'torneos'}...`}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            {searchTerm && (
+                                <button onClick={() => setSearchTerm('')}><FaTimes /></button>
+                            )}
+                        </div>
+
+                        <select value={game} onChange={(e) => setGame(e.target.value)}>
+                            {platformGames.map((gameOption) => (
+                                <option key={gameOption} value={gameOption}>
+                                    {gameOption === 'Todos' ? 'Todos los Juegos' : gameOption}
+                                </option>
+                            ))}
+                        </select>
+
+                        {activeTab !== 'tournaments' ? (
+                            <select value={region} onChange={(e) => setRegion(e.target.value)}>
+                                {platformRegions.map((regionOption) => (
+                                    <option key={regionOption} value={regionOption}>
+                                        {regionOption === 'Todas' ? 'Todas las Regiones' : regionOption}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <select value={tournamentFilter} onChange={(e) => setTournamentFilter(e.target.value)}>
+                                <option value="Todos">Todos los Estados</option>
+                                <option value="active">En Curso</option>
+                                <option value="upcoming">Próximamente</option>
+                                <option value="completed">Finalizados</option>
+                            </select>
+                        )}
+                    </motion.div>
+
+                    {platformLoading ? (
+                        <motion.div className="rk-state-msg" variants={itemVariants}>
+                            <h2>Calculando Ranking GG...</h2>
+                            <p>Estamos procesando torneos, resultados y progresión ELO.</p>
+                        </motion.div>
+                    ) : platformError ? (
+                        <motion.div className="rk-state-msg" variants={itemVariants}>
+                            <h2>No se pudo cargar Ranking GG</h2>
+                            <p>{platformError}</p>
+                        </motion.div>
+                    ) : !hasPlatformData ? (
+                        <div className="rk-gg-placeholder">
+                            <FaChartLine className="rk-gg-placeholder__icon" />
+                            <h2 className="rk-gg-placeholder__title">Ranking GG sin suficiente historial</h2>
+                            <p className="rk-gg-placeholder__desc">
+                                Cuando los torneos de la plataforma acumulen registros y resultados cerrados,
+                                aquí aparecerán los rankings de jugadores, equipos y eventos en tiempo real.
+                            </p>
+                            <span className="sc-badge sc-badge--warning rk-gg-placeholder__badge">
+                                <FaLock /> Esperando resultados oficiales
+                            </span>
+                        </div>
+                    ) : (
+                        <AnimatePresence mode="wait">
+                            {activeTab === 'players' && (
+                                <motion.div
+                                    key="gg-players"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    className="rk-content"
+                                >
+                                    {platformPodiumPlayers.length > 0 && (
+                                        <div className="rk-podium">
+                                            {platformPodiumPlayers.map((player, idx) => (
+                                                <motion.div
+                                                    key={player.id}
+                                                    className={`rk-podium-card rk-podium-${idx + 1}`}
+                                                    whileHover={{ y: -4, scale: 1.02 }}
+                                                    onClick={() => setSelectedPlayer(player)}
+                                                >
+                                                    <div className="rk-podium-rank">
+                                                        {idx === 0 ? <FaCrown /> : `#${idx + 1}`}
+                                                    </div>
+                                                    <img src={avatarUrl(player.player)} alt={player.player} />
+                                                    <h3>{player.player}</h3>
+                                                    <span className="rk-podium-team">{player.team}</span>
+                                                    <div className="rk-podium-game">{player.game}</div>
+                                                    <div className="rk-podium-titles">
+                                                        <FaChartLine /> <span className="rk-podium-titles__count">{player.points}</span> <span className="rk-podium-titles__label">Puntos</span>
+                                                    </div>
+                                                    <small className="rk-podium-achievements">{player.rating} ELO · {player.winRate}% WR · {player.tournamentsWon} títulos</small>
+                                                    <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(player.player); }}>
+                                                        <FaPencilAlt /> Aportar datos
+                                                    </button>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="rk-main">
+                                        <div className="rk-table-wrap">
+                                            <table className="rk-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Jugador</th>
+                                                        <th>Equipo</th>
+                                                        <th>Juego</th>
+                                                        <th>Región</th>
+                                                        <th>ELO</th>
+                                                        <th>Puntos</th>
+                                                        <th>Estado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredPlatformPlayers.length ? filteredPlatformPlayers.map((player, idx) => (
+                                                        <motion.tr
+                                                            key={player.id}
+                                                            className={idx < 3 ? 'rk-top3' : idx < 10 ? 'rk-top10' : ''}
+                                                            onClick={() => setSelectedPlayer(player)}
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            transition={{ delay: idx * 0.02 }}
+                                                            whileHover={{ backgroundColor: 'rgba(var(--primary-rgb), 0.08)' }}
+                                                        >
+                                                            <td>
+                                                                <div className="rk-pos">
+                                                                    <span>#{idx + 1}</span>
+                                                                    {getTrendIcon(player.trend)}
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="rk-player-cell">
+                                                                    <img src={avatarUrl(player.player)} alt={player.player} />
+                                                                    <div>
+                                                                        <strong>
+                                                                            {player.player}
+                                                                            <img
+                                                                                src={`https://flagcdn.com/w20/${(player.country || 'DO').toLowerCase()}.png`}
+                                                                                srcSet={`https://flagcdn.com/w40/${(player.country || 'DO').toLowerCase()}.png 2x`}
+                                                                                width="21"
+                                                                                height="14"
+                                                                                alt={player.country || 'DO'}
+                                                                                style={{ marginLeft: '6px', verticalAlign: 'middle', borderRadius: '2px', objectFit: 'cover', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+                                                                            />
+                                                                        </strong>
+                                                                        <small>{player.role}</small>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td>{player.team}</td>
+                                                            <td><span className="rk-game-badge">{player.game}</span></td>
+                                                            <td><span className="rk-region-cell"><FaMapMarkerAlt /> {player.region}</span></td>
+                                                            <td><span className="rk-points"><FaChartLine /> {player.rating}</span></td>
+                                                            <td><span className="rk-points"><FaTrophy className="rk-title-icon" /> {player.points}</span></td>
+                                                            <td>
+                                                                <div className="rk-estado-cell">
+                                                                    {player.verified && <span className="rk-verified-badge"><FaCheckCircle /></span>}
+                                                                    <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(player.player); }}>
+                                                                        <FaPencilAlt /> Aportar datos
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </motion.tr>
+                                                    )) : (
+                                                        <tr>
+                                                            <td colSpan="8" className="rk-empty">No se encontraron jugadores para estos filtros</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <aside className="rk-sidebar">
+                                            {platformTopPlayer && (
+                                                <div className="rk-sidebar-card rk-sidebar-card--featured">
+                                                    <div className="rk-sidebar-card__header">
+                                                        <FaStar /> Líder actual
+                                                    </div>
+                                                    <div className="rk-sidebar-player">
+                                                        <img src={avatarUrl(platformTopPlayer.player)} alt={platformTopPlayer.player} />
+                                                        <div>
+                                                            <strong>{platformTopPlayer.player}</strong>
+                                                            <span>{platformTopPlayer.team}</span>
+                                                            <small>{platformTopPlayer.game} · {platformTopPlayer.region}</small>
+                                                        </div>
+                                                    </div>
+                                                    <div className="rk-sidebar-stats">
+                                                        <div><span>Puntos</span><b>{platformTopPlayer.points}</b></div>
+                                                        <div><span>ELO</span><b>{platformTopPlayer.rating}</b></div>
+                                                        <div><span>WR</span><b>{platformTopPlayer.winRate}%</b></div>
+                                                        <div><span>Títulos</span><b>{platformTopPlayer.tournamentsWon}</b></div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="rk-sidebar-card">
+                                                <div className="rk-sidebar-card__header">
+                                                    <FaChartLine /> Resumen competitivo
+                                                </div>
+                                                <ul className="rk-stats-list">
+                                                    <li><span>Jugadores rankeados</span><b>{filteredPlatformPlayers.length}</b></li>
+                                                    <li><span>Puntos repartidos</span><b>{filteredPlatformPlayers.reduce((total, player) => total + player.points, 0)}</b></li>
+                                                    <li><span>Partidas registradas</span><b>{filteredPlatformPlayers.reduce((total, player) => total + player.matchesPlayed, 0)}</b></li>
+                                                </ul>
+                                            </div>
+
+                                            <div className="rk-sidebar-card">
+                                                <div className="rk-sidebar-card__header">
+                                                    <FaInfoCircle /> Cómo se calcula
+                                                </div>
+                                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, padding: '0 0.5rem' }}>
+                                                    El ranking combina ELO por match, puntos por participación y bonus por llegar a top 4.
+                                                    Cada torneo aprobado suma {platformRankings.pointsConfig?.points?.participation || 12} pts base antes de los multiplicadores por formato y tamaño.
+                                                </p>
+                                            </div>
+                                        </aside>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {activeTab === 'teams' && (
+                                <motion.div
+                                    key="gg-teams"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    className="rk-content"
+                                >
+                                    <div className="rk-teams-grid">
+                                        {filteredPlatformTeams.length ? filteredPlatformTeams.map((team, idx) => {
+                                            const teamData = getPlatformTeamData(team);
+                                            return (
+                                                <motion.div
+                                                    key={team.id}
+                                                    className={`rk-team-card ${idx < 3 ? 'rk-team-card--top' : ''}`}
+                                                    whileHover={{ y: -6, scale: 1.02 }}
+                                                    onClick={() => setSelectedTeam(team)}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: idx * 0.05 }}
+                                                    style={{ '--team-color': team.color }}
+                                                >
+                                                    <div className="rk-team-card__rank">#{idx + 1}</div>
+                                                    <div className="rk-team-card__header">
+                                                        <img src={teamLogo(team.name)} alt={team.name} />
+                                                        <div>
+                                                            <h3>{team.name}</h3>
+                                                            <span className="rk-team-card__tag">[{team.tag}]</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="rk-team-card__region">
+                                                        <FaMapMarkerAlt /> {team.region}
+                                                    </div>
+                                                    <div className="rk-team-card__games">
+                                                        {team.games.map((gameName) => (
+                                                            <span key={gameName} className="rk-game-badge">{gameName}</span>
+                                                        ))}
+                                                    </div>
+                                                    <div className="rk-team-card__stats">
+                                                        <div><FaUsers /> {teamData.members.length || team.players} jugador{(teamData.members.length || team.players) !== 1 ? 'es' : ''}</div>
+                                                        <div><FaChartLine /> {team.rating} ELO</div>
+                                                        <div><FaTrophy style={{ color: '#ffd700' }} /> {team.trophies} título{team.trophies !== 1 ? 's' : ''}</div>
+                                                        <div><FaMedal /> {team.winRate}% WR</div>
+                                                    </div>
+                                                    <div className="rk-team-card__points">{team.points} pts</div>
+                                                    {teamData.members.length > 0 && (
+                                                        <div className="rk-team-card__members">
+                                                            {teamData.members.slice(0, 5).map((member) => (
+                                                                <img key={member.id} src={avatarUrl(member.player)} alt={member.player} title={member.player} />
+                                                            ))}
+                                                            {teamData.members.length > 5 && (
+                                                                <span className="rk-team-card__more">+{teamData.members.length - 5}</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <div className="rk-team-card__footer">
+                                                        {team.verified && (
+                                                            <div className="rk-verified-badge"><FaCheckCircle /> Verificado</div>
+                                                        )}
+                                                        <button
+                                                            className="rk-contribute-btn rk-contribute-btn--card"
+                                                            title="Aportar información"
+                                                            onClick={(e) => { e.stopPropagation(); handleContribute(team.name); }}
+                                                        >
+                                                            <FaPencilAlt /> Aportar datos
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        }) : (
+                                            <p className="rk-no-achievements">No se encontraron equipos para estos filtros</p>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {activeTab === 'tournaments' && (
+                                <motion.div
+                                    key="gg-tournaments"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    className="rk-content"
+                                >
+                                    <div className="rk-tournaments-list">
+                                        {filteredPlatformTournaments.length ? filteredPlatformTournaments.map((tournament, idx) => (
+                                            <motion.div
+                                                key={tournament.id}
+                                                className={`rk-tournament-card rk-tournament-card--${tournament.status} ${tournament.featured ? 'rk-tournament-card--featured' : ''}`}
+                                                whileHover={{ x: 4 }}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: idx * 0.05 }}
+                                            >
+                                                <div className="rk-tournament-card__status">
+                                                    {getStatusLabel(tournament.status)}
+                                                </div>
+                                                <div className="rk-tournament-card__main">
+                                                    <div className="rk-tournament-card__info">
+                                                        <h3>{tournament.name}</h3>
+                                                        <div className="rk-tournament-card__meta">
+                                                            <span><FaGamepad /> {tournament.game}</span>
+                                                            <span><FaMapMarkerAlt /> {tournament.location}</span>
+                                                            <span><FaCalendarCheck /> {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}</span>
+                                                        </div>
+                                                        <div className="rk-tournament-card__organizer">
+                                                            Organiza: <strong>{tournament.organizer}</strong> · Formato: {tournament.format}
+                                                        </div>
+                                                    </div>
+                                                    <div className="rk-tournament-card__right">
+                                                        <div className="rk-tournament-card__prize">
+                                                            <FaCoins /> {formatPrize(tournament.prize, tournament.currency)}
+                                                        </div>
+                                                        <div className="rk-tournament-card__teams">
+                                                            <FaUsers /> {tournament.registeredTeams}/{tournament.teams} equipos
+                                                        </div>
+                                                        {tournament.champion && (
+                                                            <div className="rk-tournament-card__champion">
+                                                                <FaCrown /> {tournament.champion}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <FaChevronRight className="rk-tournament-card__arrow" />
+                                            </motion.div>
+                                        )) : (
+                                            <p className="rk-no-achievements">No se encontraron torneos para estos filtros</p>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    )}
+                </motion.div>
             ) : (
             <motion.div
                 className="rk-container"
@@ -972,7 +1534,7 @@ export default function Rankings() {
                                 <div className="rk-modal-avatar-wrap">
                                     <img src={avatarUrl(selectedPlayer.player)} alt={selectedPlayer.player} />
                                     <div className="rk-modal-rank-badge">
-                                        #{filteredPlayers.findIndex(p => p.id === selectedPlayer.id) + 1}
+                                        #{(rankingSource === 'gg' ? filteredPlatformPlayers : filteredPlayers).findIndex((player) => player.id === selectedPlayer.id) + 1}
                                     </div>
                                 </div>
                                 <div className="rk-modal-header-info">
@@ -1309,7 +1871,7 @@ export default function Rankings() {
                                 <FaTimes />
                             </button>
                             {(() => {
-                                const td = getTeamData(selectedTeam.name);
+                                const td = rankingSource === 'gg' ? getPlatformTeamData(selectedTeam) : getTeamData(selectedTeam.name);
                                 return (<>
                             <div className="rk-modal-header">
                                 <img src={teamLogo(selectedTeam.name)} alt={selectedTeam.name} />
@@ -1872,3 +2434,5 @@ export default function Rankings() {
         </div>
     );
 }
+
+

@@ -1,15 +1,15 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoSanitize from 'express-mongo-sanitize';
+import dotenv from 'dotenv';
 import fs from 'fs';
-import { parse as parseQueryString } from 'node:querystring';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
-import { startMlbbMailQueueWorker } from './services/mlbbMailQueue.js';
 import { logger } from './middlewares/logger.js';
 import { verifyCsrf } from './middlewares/csrf.middleware.js';
+import newsletterRoutes from './routes/newsletter.routes.js';
+import rankingRoutes from './routes/ranking.routes.js';
 
 import authRoutes from './routes/auth.routes.js';
 import teamRoutes from './routes/team.routes.js';
@@ -22,12 +22,10 @@ import newsRoutes from './routes/news.routes.js';
 import securityRoutes from './routes/security.routes.js';
 import friendsRoutes from './routes/friends.routes.js';
 import gameStatsRoutes from './routes/gameStats.routes.js';
-import newsletterRoutes from './routes/newsletter.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendEnvPath = path.resolve(__dirname, '../.env');
-const backendEnvLocalPath = path.resolve(__dirname, '../.env.local');
 
 if (fs.existsSync(backendEnvPath)) {
   dotenv.config({ path: backendEnvPath });
@@ -35,54 +33,11 @@ if (fs.existsSync(backendEnvPath)) {
   dotenv.config();
 }
 
-if (fs.existsSync(backendEnvLocalPath)) {
-  dotenv.config({ path: backendEnvLocalPath, override: true });
-}
-
-const PLACEHOLDER_SECRET_VALUES = new Set([
-  '',
-  'ponerunaclaveaqui',
-  'cambia-esto-en-produccion',
-  'cambia-esto-en-producción',
-  'changeme',
-  'change-me',
-  'secret',
-  'jwtsecret',
-  'tu_jwt_secret',
-  'tu-jwt-secret'
-]);
-
-const isPlaceholderSecret = (value) => {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized) return true;
-  if (PLACEHOLDER_SECRET_VALUES.has(normalized)) return true;
-  return normalized.includes('cambia-esto') || normalized.includes('tu_jwt_secret');
-};
-
-const validateRuntimeSecrets = () => {
-  const nodeEnv = String(process.env.NODE_ENV || '').trim().toLowerCase();
-  const frontendUrl = String(process.env.FRONTEND_URL || '').trim();
-  const jwtSecret = String(process.env.JWT_SECRET || '').trim();
-
-  const isProtectedRuntime = nodeEnv === 'production' || frontendUrl.startsWith('https://');
-  if (!isProtectedRuntime) return;
-
-  if (isPlaceholderSecret(jwtSecret) || jwtSecret.length < 24) {
-    throw new Error(
-      'JWT_SECRET inseguro para review/produccion. Usa un secreto unico de al menos 24 caracteres antes de exponer la app.'
-    );
-  }
-};
-
-validateRuntimeSecrets();
-
 export const dbReady = connectDB();
 
 const app = express();
 const uploadsDir = path.resolve(__dirname, '../uploads');
 const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
-
-app.set('query parser', (queryString) => mongoSanitize.sanitize(parseQueryString(queryString)));
 
 const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000', frontendOrigin];
 const allowedOrigins = (process.env.CORS_ORIGINS || defaultAllowedOrigins.join(','))
@@ -101,6 +56,16 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token']
+};
+
+const sanitizeRequest = (req, _res, next) => {
+  ['body', 'params', 'headers', 'query'].forEach((key) => {
+    const target = req[key];
+    if (target && typeof target === 'object') {
+      mongoSanitize.sanitize(target);
+    }
+  });
+  next();
 };
 
 app.disable('x-powered-by');
@@ -140,38 +105,20 @@ try {
   console.warn('helmet no está instalado. Usando headers de seguridad manuales.');
 }
 
-const sanitizeMutableRequestData = (req, res, next) => {
-  [req.body, req.params, req.headers].forEach((target) => {
-    if (target && typeof target === 'object') {
-      mongoSanitize.sanitize(target);
-    }
-  });
-  next();
-};
-
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '1mb' }));
-app.use(sanitizeMutableRequestData);
+app.use(express.json({ limit: '10mb' }));
+app.use(sanitizeRequest);
 app.use(securityMiddleware);
 app.use(logger);
 app.use(verifyCsrf);
 app.use('/uploads', express.static(uploadsDir));
 
-const buildHealthPayload = () => ({
-  ok: true,
-  service: 'glitchgang-api',
-  nodeEnv: String(process.env.NODE_ENV || 'development'),
-  frontendUrl: frontendOrigin,
-  riotReviewMode: String(process.env.RIOT_REVIEW_MODE || '').trim().toLowerCase() === 'true',
-  timestamp: new Date().toISOString()
-});
-
-app.get('/healthz', (req, res) => res.status(200).json(buildHealthPayload()));
-app.get('/api/healthz', (req, res) => res.status(200).json(buildHealthPayload()));
-
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/team', teamRoutes);
 app.use('/api/tournaments', tournamentRoutes);
+app.use('/api/rankings', rankingRoutes);
+app.use('/api/ranking', rankingRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/community', communityRoutes);
@@ -179,8 +126,8 @@ app.use('/api/university', universityRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/friends', friendsRoutes);
-app.use('/api/game-stats', gameStatsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/game-stats', gameStatsRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {

@@ -4,7 +4,7 @@ import axios from 'axios';
 import './index.css'
 import App from './App.jsx'
 import './index.scss'
-import { getCsrfToken, CSRF_HEADER_NAME } from './utils/csrf';
+import { CSRF_HEADER_NAME } from './utils/csrf';
 import { clearAuthSession, getAuthToken, isPublicAuthEndpoint } from './utils/authSession';
 
 import { ThemeProvider } from './context/ThemeContext'
@@ -14,6 +14,36 @@ import { AuthProvider } from './context/AuthContext'
 axios.defaults.withCredentials = true;
 
 let authRedirectInProgress = false;
+
+const readCsrfTokenFromCookies = () => {
+  try {
+    const cookieSource = String(document.cookie || '');
+    if (!cookieSource) return '';
+
+    const cookies = cookieSource.split(';');
+    for (const rawCookie of cookies) {
+      const cookie = rawCookie.trim();
+      if (!cookie) continue;
+
+      const separatorIndex = cookie.indexOf('=');
+      if (separatorIndex === -1) continue;
+
+      const rawName = cookie.slice(0, separatorIndex).trim();
+      const rawValue = cookie.slice(separatorIndex + 1).trim();
+      if (rawName !== 'csrf_token') continue;
+
+      try {
+        return decodeURIComponent(rawValue);
+      } catch (_) {
+        return rawValue;
+      }
+    }
+  } catch (_) {
+    return '';
+  }
+
+  return '';
+};
 
 const shouldHandleAuthFailure = (error) => {
   const status = Number(error?.response?.status || 0);
@@ -56,7 +86,7 @@ axios.interceptors.request.use((config) => {
   }
 
   if (isMutating) {
-    const csrfToken = getCsrfToken();
+    const csrfToken = readCsrfTokenFromCookies();
     if (csrfToken) {
       config.headers = config.headers || {};
       config.headers[CSRF_HEADER_NAME] = csrfToken;
@@ -76,8 +106,9 @@ axios.interceptors.response.use(
     // CSRF error: retry once with a fresh token from the cookie
     if (status === 403 && message.includes('csrf') && config && !config._csrfRetry) {
       config._csrfRetry = true;
-      const freshToken = getCsrfToken();
+      const freshToken = readCsrfTokenFromCookies();
       if (freshToken) {
+        config.headers = config.headers || {};
         config.headers[CSRF_HEADER_NAME] = freshToken;
         return axios(config);
       }

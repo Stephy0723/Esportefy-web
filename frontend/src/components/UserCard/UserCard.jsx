@@ -230,7 +230,7 @@ const UserCard = ({ userId, children }) => {
                                 </button>
                                 <button
                                     className="uc__btn-profile"
-                                    onClick={() => { handleClose(); navigate(`/profile/${userId}`); }}
+                                    onClick={() => { handleClose(); navigate(`/profile/${data?.userCode || data?.id || userId}`); }}
                                 >
                                     <i className="bx bx-user"></i> Ver Perfil
                                 </button>

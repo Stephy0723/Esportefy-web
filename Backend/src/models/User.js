@@ -352,7 +352,14 @@ const UserSchema = new mongoose.Schema({
             glow: Boolean
         },
         createdAt: { type: Date, default: Date.now }
-    }]
+    }],
+
+    // --- Field Change Restrictions ---
+    // Country and birth date can only be set once (at registration)
+    countrySetAt: { type: Date, default: null },
+    birthDateSetAt: { type: Date, default: null },
+    // Name changes are throttled: can change every 3 weeks (21 days)
+    lastNameChangeAt: { type: Date, default: null }
 
 }, { timestamps: true });
 

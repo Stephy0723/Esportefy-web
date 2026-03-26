@@ -562,9 +562,15 @@ const CreateTeamPage = () => {
             setStep(3);
             addToast('Equipo creado exitosamente', 'success');
         } else {
+            console.error('[createTeam] Backend error response:', {
+                status: res.status,
+                statusText: res.statusText,
+                payload: result
+            });
             addToast(result.message || 'Error al guardar equipo', 'error');
         }
-    } catch {
+    } catch (error) {
+        console.error('[createTeam] Network/client error:', error);
         addToast('No se pudo conectar con el servidor', 'error');
     } finally {
         setSubmitting(false);

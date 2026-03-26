@@ -52,6 +52,7 @@ import TournamentPublicExplorer from './pages/menu/Tournaments/Public/Tournament
 import TournamentPublicView from './pages/menu/Tournaments/Public/TournamentPublicView';
 import EditProfile from './pages/menu/Profile/EditProfile';
 import Profile from './pages/menu/Profile/Profile';
+import PlayerProfile from './pages/menu/Profile/PlayerProfile';
 import OrganizerTerms from './pages/menu/Legal/OrganizerTerms';
 import PaymentPolicy from './pages/menu/Legal/PaymentPolicy';
 import TermsConditions from './pages/menu/Legal/TermsConditions';
@@ -70,6 +71,7 @@ import CasterPage from './pages/menu/Roles/CasterPage';
 import SponsorPage from './pages/menu/Roles/SponsorPage';
 import AnalystPage from './pages/menu/Roles/AnalystPage';
 import AdminPanel from './pages/menu/Admin/AdminPanel';
+import Metrics from './pages/menu/Metrics/Metrics';
 import StatsPage from './pages/Stats/StatsPage';
 import StatusPage from './pages/Status/StatusPage';
 
@@ -155,7 +157,9 @@ const AppRouterContent = () => {
             <Route path="/equipos" element={<Teams />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:userCode" element={<PlayerProfile />} />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/metricas" element={<Metrics />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/noticias/:id" element={<NewsDetail />} />
             <Route path="/organismos/:slug" element={<OrganismProfile />} />

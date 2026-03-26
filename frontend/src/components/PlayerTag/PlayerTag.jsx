@@ -2,8 +2,9 @@ import React from 'react';
 import { PLAYER_TAGS } from '../../data/playerTags';
 import './PlayerTag.css';
 
-const PlayerTag = ({ name, tagId = 'tag-obsidian', size = 'normal', fontTag }) => {
+const PlayerTag = ({ nickname, name, username, tagId = 'tag-obsidian', size = 'normal', fontTag }) => {
     const tagConfig = PLAYER_TAGS.find(t => t.id === tagId) || PLAYER_TAGS[0];
+    const resolvedName = nickname || name || username || "Player";
 
     return (
         <div className={`player-tag ${tagConfig.id} size-${size}`}>
@@ -17,7 +18,7 @@ const PlayerTag = ({ name, tagId = 'tag-obsidian', size = 'normal', fontTag }) =
                 className="tag-name"
                 style={fontTag ? { fontSize: fontTag } : undefined}
             >
-                {name || "Player"}
+                {resolvedName}
             </span>
         </div>
     );

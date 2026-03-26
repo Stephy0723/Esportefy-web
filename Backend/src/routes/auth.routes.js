@@ -9,6 +9,7 @@ import {
   logout,
   getProfile,
   getProfileOverview,
+  getPublicProfile,
   getUserCard,
   getFriends,
   getSocialOverview,
@@ -23,6 +24,7 @@ import {
   adminGetRoleApplications,
   adminReviewRoleApplication,
   adminListUsers,
+  adminGetUserDetail,
   adminBanUser,
   adminSendNotification,
   createSupportTicket,
@@ -117,10 +119,11 @@ router.post('/register', rlRegister, register);
 router.get('/check-phone', rlCheckPhone, checkPhoneAvailability);
 router.get('/check-username', rlCheckUsername, checkUsernameAvailability);
 router.post('/login', rlLogin, login);
-router.post('/logout', logout);
+router.post('/logout', verifyToken, logout);
 router.get('/profile', verifyToken, rlProfile, getProfile);
 router.get('/profile/overview', verifyToken, rlProfile, getProfileOverview);
 router.get('/user-card/:userId', verifyToken, rlProfile, getUserCard);
+router.get('/profile/public/:userIdOrCode', verifyToken, rlProfile, getPublicProfile);
 router.get('/friends', verifyToken, rlProfile, getFriends);
 router.get('/social', verifyToken, rlProfile, getSocialOverview);
 router.get('/users/search', verifyToken, rlSocialSearch, searchUsers);
@@ -136,6 +139,7 @@ router.patch('/organizer/:userId/approve', verifyToken, verifyOrganizerAction);
 router.get('/admin/role-applications', verifyToken, adminGetRoleApplications);
 router.patch('/admin/role-applications/:userId', verifyToken, adminReviewRoleApplication);
 router.get('/admin/users', verifyToken, adminListUsers);
+router.get('/admin/users/:userId', verifyToken, adminGetUserDetail);
 router.patch('/admin/users/:userId/ban', verifyToken, adminBanUser);
 router.post('/admin/send-notification', verifyToken, adminSendNotification);
 

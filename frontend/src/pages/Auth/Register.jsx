@@ -451,8 +451,8 @@ const Register = () => {
                 <div className="input-row split">
                   <div className="input-wrapper">
                     <label>País</label>
-                    <select name="country" value={formData.country} onChange={handleChange}>
-                      <option value="">Selecciona tu país</option>
+                    <select name="country" value={formData.country} onChange={handleChange} required>
+                      <option value="" disabled>Selecciona tu país</option>
                       {COUNTRY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                       <option value="Otro">Otro (Especificar)</option>
                     </select>

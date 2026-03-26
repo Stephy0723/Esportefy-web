@@ -1,0 +1,73 @@
+name: Deploy Esportefy-web to VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: SSH Deploy and Build
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSHKEY }}
+          script: |
+            # 1. Navegar a la raíz y actualizar código
+            cd /var/www/Esportefy-web
+            git pull origin main
+
+            # 2. Despliegue del Backend
+            echo "⚙️ Configurando Backend..."
+            cd Backend
+            npm install
+            pm2 restart 0
+
+            # 3. Construcción del Frontend
+            echo "🏗️ Construyendo Frontend..."
+            cd ..
+            cd frontend
+            npm install
+            npm run build
+            echo "🚀 Esportefy-web actualizado correctamente."
+
+      - name: Success Notification
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "✅ Deploy Exitoso: Esportefy-web"
+          to: steliantsoft@gmail.com
+          from: GitHub Actions (CI/CD)
+          body: |
+            ¡El despliegue de Esportefy-web fue exitoso!
+            
+            Detalles:
+            - Rama: main
+            - Commit: ${{ github.sha }}
+            - Repositorio: ${{ github.repository }}
+
+      - name: Failure Notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ ERROR de Deploy: Esportefy-web"
+          to: steliantsoft@gmail.com
+          from: GitHub Actions (CI/CD)
+          body: |
+            Hubo un error al intentar desplegar Esportefy-web.
+            
+            Por favor, revisa los logs en: https://github.com/${{ github.repository }}/actions
+
