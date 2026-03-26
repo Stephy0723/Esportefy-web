@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
 import { getRiotAccountByRiotId, getRiotApiKey } from '../utils/riotApi.js';
@@ -22,10 +23,14 @@ import { safeDeleteTeamConversation, safeSyncTeamConversation } from '../service
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const teamUploadsDir = path.resolve(__dirname, '../../uploads/teams');
+const frontendBaseUrl = String(process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/$/, '');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = './uploads/teams/';
+        const uploadDir = teamUploadsDir;
 
         // 1. PRIMERO: Verificar y crear la carpeta
         try {
@@ -35,10 +40,11 @@ const storage = multer.diskStorage({
             }
         } catch (err) {
             console.error("Error al crear la carpeta:", err);
+            return cb(err);
         }
 
         // 2. SEGUNDO: Pasar el control a Multer
-        cb(null, uploadDir); 
+        return cb(null, uploadDir); 
     },
     filename: (req, file, cb) => {
         // Nombre único: ID-Timestamp.ext
@@ -305,7 +311,7 @@ export const createTeam = async (req, res) => {
 
         res.status(201).json({
             message: "Equipo creado",
-            inviteLink: `http://localhost:3000/teams?invite=${savedTeam.inviteCode}`,
+            inviteLink: `${frontendBaseUrl}/equipos?invite=${savedTeam.inviteCode}`,
             teamId: String(savedTeam._id),
             inviteCode: savedTeam.inviteCode
         });
