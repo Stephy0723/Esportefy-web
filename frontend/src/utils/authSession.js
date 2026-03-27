@@ -107,6 +107,7 @@ export const isPublicAuthEndpoint = (url = '') => {
     value.includes('/api/auth/login')
     || value.includes('/api/auth/register')
     || value.includes('/api/auth/check-phone')
+    || value.includes('/api/auth/email/verify')
     || value.includes('/api/auth/forgot-password')
     || value.includes('/api/auth/reset-password')
   );

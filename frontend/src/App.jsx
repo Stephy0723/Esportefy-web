@@ -18,6 +18,7 @@ import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ResetPassword from './pages/Auth/ForgotPasswordFlow';
+import VerifyEmailPage from './pages/Auth/VerifyEmailPage';
 import Rankings from './pages/menu/Rankings/Rankings';
 import Noticias from './pages/menu/Noticias/Noticias';
 import NewsDetail from './pages/menu/Noticias/NewsDetail';
@@ -123,6 +124,7 @@ const AppRouterContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/review/riot" element={<RiotReviewPage />} />
           <Route path="/support" element={<SupportPage />} />

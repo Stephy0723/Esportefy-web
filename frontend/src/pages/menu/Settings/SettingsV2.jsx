@@ -52,6 +52,8 @@ export default function SettingsV2() {
     const [privacy, setPrivacy] = useState(() => normalizePrivacy());
     const [connections, setConnections] = useState({ discord: {}, riot: {}, mlbb: {}, steam: {}, epic: {} });
     const [gameProfiles, setGameProfiles] = useState({});
+    const [accountEmail, setAccountEmail] = useState('');
+    const [emailVerified, setEmailVerified] = useState(false);
     const [oauthNotice, setOauthNotice] = useState({ provider: '', status: '', message: '' });
     const [epicLoading, setEpicLoading] = useState(false);
 
@@ -188,6 +190,8 @@ export default function SettingsV2() {
             setConnections(normalizeConnections(res.data.connections));
             setPrivacy(normalizePrivacy(res.data.privacy));
             setGameProfiles(res.data.gameProfiles || {});
+            setAccountEmail(String(res.data?.email || '').trim());
+            setEmailVerified(res.data?.emailVerified === true);
             setIsAdmin(res.data?.isAdmin === true);
             setLoading(false);
             return res.data;
@@ -705,7 +709,11 @@ export default function SettingsV2() {
                 if (loading) return <div className="stv2-loading">Cargando...</div>;
                 return (
                     <motion.div key="security" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                        <SecurityCenterUI email={connections?.email || 'usuario@glitchgang.net'} />
+                        <SecurityCenterUI
+                            email={accountEmail || 'usuario@glitchgang.net'}
+                            isVerified={emailVerified}
+                            onVerificationStatusChange={fetchSettings}
+                        />
                     </motion.div>
                 );
 
