@@ -1,9 +1,7 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import app, { dbReady } from './src/app.js';
 import { startMlbbMailQueueWorker } from './src/services/mlbbMailQueue.js';
 import { startNewsletterScheduler } from './src/services/newsletterService.js';
-
-dotenv.config();
 const PORT = process.env.PORT || 4000;
 
 const startServer = async () => {
