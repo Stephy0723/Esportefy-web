@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { getCountryCallingCode, normalizeCountryName } from '../../../shared/countries.js';
+import { getCountryCallingCode, normalizeCountryName, normalizeKnownCountryName } from '../../../shared/countries.js';
 import {
     normalizeExperienceValues,
     normalizeGenderValue,
@@ -23,6 +23,11 @@ describe('country normalization', () => {
 
     it('preserves custom countries that are not in the shared catalog', () => {
         expect(normalizeCountryName('Japón')).toBe('Japón');
+    });
+
+    it('returns empty for unknown countries when a closed catalog is required', () => {
+        expect(normalizeKnownCountryName('Japón')).toBe('');
+        expect(normalizeKnownCountryName('Rep. Dominicana')).toBe('República Dominicana');
     });
 
     it('normalizes shared profile catalog values through the same canonical lists', () => {

@@ -511,7 +511,7 @@ export const register = async (req, res) => {
         const confirmPassword = String(payload.confirmPassword || '');
         const fullName = String(payload.fullName || '').trim();
         const phone = String(payload.phone || '').trim();
-        const country = normalizeCountryName(String(payload.country || '').trim());
+        const country = normalizeCountryName(String(payload.country || '').trim(), { allowCustom: false });
         const birthDate = payload.birthDate;
         const checkTerms = payload.checkTerms === true;
 
@@ -1977,7 +1977,8 @@ export const updateProfile = async (req, res) => {
         }
         if (updateData.country !== undefined) {
             updateData.country = normalizeCountryName(
-                normalizeProfileText(updateData.country, { max: 60 })
+                normalizeProfileText(updateData.country, { max: 60 }),
+                { allowCustom: false }
             );
         }
         if (updateData.gender !== undefined) {

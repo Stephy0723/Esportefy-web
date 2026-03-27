@@ -20,7 +20,7 @@ import PageHud from '../../../components/PageHud/PageHud';
 import { cacheAuthUser, getAuthToken } from '../../../utils/authSession';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import { isSupportedGameId, normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
-import { COUNTRY_OPTIONS, normalizeCountryName } from '../../../../../shared/countries.js';
+import { COUNTRY_OPTIONS, normalizeKnownCountryName } from '../../../../../shared/countries.js';
 import { EXPERIENCE_LEVELS, GENDER_OPTIONS, GOAL_OPTIONS, LANGUAGE_OPTIONS, PLATFORM_OPTIONS } from '../../../../../shared/profileCatalog.js';
 import './EditProfile.css';
 
@@ -280,13 +280,7 @@ const EditProfile = () => {
         const matchesSearch = game.name.toLowerCase().includes(gameQuery.toLowerCase().trim());
         return matchesCategory && matchesSearch;
     });
-    const countryOptions = useMemo(() => {
-        const currentCountry = normalizeCountryName(formData.country);
-        if (!currentCountry) return COUNTRY_OPTIONS;
-        return COUNTRY_OPTIONS.includes(currentCountry)
-            ? COUNTRY_OPTIONS
-            : [...COUNTRY_OPTIONS, currentCountry].sort((a, b) => a.localeCompare(b, 'es'));
-    }, [formData.country]);
+    const countryOptions = useMemo(() => COUNTRY_OPTIONS, []);
 
     // ─── Fetch profile from API (not stale localStorage) ───
     const fetchProfile = useCallback(async () => {
@@ -313,7 +307,7 @@ const EditProfile = () => {
             setFormData({
                 username: u.username || '',
                 fullName: u.fullName || '',
-                country: normalizeCountryName(u.country || ''),
+                country: normalizeKnownCountryName(u.country || ''),
                 phone: u.phone || '',
                 gender: u.gender || 'Otro',
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : '',
@@ -393,6 +387,8 @@ const EditProfile = () => {
             ? checked
             : name === 'phone'
                 ? normalizePhone(value)
+                : name === 'country'
+                    ? normalizeKnownCountryName(value)
                 : value;
 
         if (name === 'phone') {
@@ -636,7 +632,7 @@ const EditProfile = () => {
                 ...prev,
                 username: u.username || prev.username,
                 fullName: u.fullName || prev.fullName,
-                country: normalizeCountryName(u.country || prev.country),
+                country: normalizeKnownCountryName(u.country || prev.country),
                 phone: u.phone || prev.phone,
                 gender: u.gender || prev.gender,
                 birthDate: u.birthDate ? u.birthDate.split('T')[0] : prev.birthDate,
