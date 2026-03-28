@@ -12,6 +12,7 @@
     "test:e2e:auth": "node scripts/e2e/auth-session-smoke.js",
     "test:e2e:teams": "node scripts/e2e/team-flow-smoke.js",
     "test:e2e:tournament": "node --env-file=.env scripts/e2e/tournament-complete-smoke.js",
+    "test:e2e:tournament:reports": "node --env-file=.env scripts/e2e/tournament-reports-smoke.js",
     "test:e2e:social": "node scripts/e2e/social-flow-smoke.js",
     "test:e2e:university": "node scripts/e2e/university-flow-smoke.js",
     "test:load:mlbb": "node --env-file=.env scripts/load/mlbb-load-smoke.js",

@@ -1,9 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 import {
     getTournamentFormatLabel,
+    isOperationalTournamentFormat,
     normalizeTournamentFormat,
     normalizeTournamentPlatform,
-    normalizeTournamentStaffRole
+    normalizeTournamentStaffRole,
+    TOURNAMENT_OPERATIONAL_FORMAT_VALUES
 } from '../../../shared/tournamentCatalog.js';
 
 describe('tournament catalog normalization', () => {
@@ -24,5 +26,15 @@ describe('tournament catalog normalization', () => {
         expect(normalizeTournamentStaffRole('moderador')).toBe('moderator');
         expect(normalizeTournamentStaffRole('arbitro')).toBe('referee');
         expect(normalizeTournamentStaffRole('creador de contenido')).toBe('content-creator');
+    });
+
+    it('keeps only operational formats available for live tournament flows', () => {
+        expect(TOURNAMENT_OPERATIONAL_FORMAT_VALUES).toEqual([
+            'single_elimination',
+            'swiss',
+            'round_robin'
+        ]);
+        expect(isOperationalTournamentFormat('single_elimination')).toBe(true);
+        expect(isOperationalTournamentFormat('Doble Eliminacion')).toBe(false);
     });
 });

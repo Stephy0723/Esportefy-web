@@ -4,9 +4,10 @@ import Team from '../models/Team.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import {
+    isOperationalTournamentFormat,
     normalizeTournamentFormat,
     normalizeTournamentStaffRole,
-    TOURNAMENT_ALLOWED_FORMAT_VALUES
+    TOURNAMENT_OPERATIONAL_FORMAT_VALUES
 } from '../../../shared/tournamentCatalog.js';
 import {
     getTournamentGameDefaults,
@@ -16,6 +17,7 @@ import {
 } from '../../../shared/gamePolicies.js';
 import {
     buildTournamentBracket,
+    getBracketParticipants,
     resolveBracketMatch
 } from '../../../shared/tournamentBracket.js';
 import { normalizeTournamentServer } from '../../../shared/tournamentServerOptions.js';
@@ -63,8 +65,8 @@ const RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS = parsePositiveIntEnv(
     process.env.RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS,
     20
 );
-const MLBB_ALLOWED_FORMATS = new Set(TOURNAMENT_ALLOWED_FORMAT_VALUES);
-const RIOT_ALLOWED_FORMATS = new Set(TOURNAMENT_ALLOWED_FORMAT_VALUES);
+const MLBB_ALLOWED_FORMATS = new Set(TOURNAMENT_OPERATIONAL_FORMAT_VALUES);
+const RIOT_ALLOWED_FORMATS = new Set(TOURNAMENT_OPERATIONAL_FORMAT_VALUES);
 const MLBB_BANNED_TERMS = [
     'apuesta',
     'apuestas',
@@ -721,6 +723,108 @@ const isUserCaptainOfMatch = (tournament = {}, match = {}, userId = '') => {
         || isUserCaptainOfRegistration(teamBRegistration, userId);
 };
 
+const isUserCaptainOfApprovedTournamentTeam = (tournament = {}, userId = '') =>
+    getApprovedRegistrations(tournament).some((registration) => isUserCaptainOfRegistration(registration, userId));
+
+const canUserCreateTournamentReport = (tournament = {}, userId = '', matchId = '') => {
+    if (!userId) return false;
+    if (!matchId) return isUserCaptainOfApprovedTournamentTeam(tournament, userId);
+
+    const context = findBracketMatchContext(tournament?.bracket, matchId);
+    if (!context) return false;
+    return isUserCaptainOfMatch(tournament, context.match, userId);
+};
+
+const hasCheckInWindowConfigured = (tournament = {}) =>
+    Boolean(tournament?.checkInWindow?.start || tournament?.checkInWindow?.end);
+
+const getCheckInWindowState = (tournament = {}, now = new Date()) => {
+    if (!hasCheckInWindowConfigured(tournament)) return 'disabled';
+    const start = tournament?.checkInWindow?.start ? new Date(tournament.checkInWindow.start) : null;
+    const end = tournament?.checkInWindow?.end ? new Date(tournament.checkInWindow.end) : null;
+    const current = now instanceof Date ? now : new Date(now);
+
+    if (start && current < start) return 'upcoming';
+    if (end && current > end) return 'closed';
+    return 'open';
+};
+
+const getCheckedInApprovedRegistrations = (tournament = {}) =>
+    getApprovedRegistrations(tournament).filter((registration) =>
+        String(registration?.checkIn?.status || 'pending') === 'checked_in'
+    );
+
+const getOperationalRegistrationsForBracket = (tournament = {}, now = new Date()) => {
+    const approved = getApprovedRegistrations(tournament);
+    const checkedInApproved = getCheckedInApprovedRegistrations(tournament);
+    const checkInState = getCheckInWindowState(tournament, now);
+
+    if (checkInState === 'disabled') {
+        return { registrations: approved, checkInState, enforced: false };
+    }
+
+    if (checkInState === 'upcoming') {
+        return { registrations: approved, checkInState, enforced: false };
+    }
+
+    return { registrations: checkedInApproved, checkInState, enforced: true };
+};
+
+const getRegistrationRefId = (registration = {}) =>
+    String(registration?._id || registration?.teamId || registration?.teamName || '').trim();
+
+const doesBracketMatchOperationalRegistrations = (bracket = {}, registrations = []) => {
+    const allowedRefs = new Set(
+        (Array.isArray(registrations) ? registrations : [])
+            .map((registration) => getRegistrationRefId(registration))
+            .filter(Boolean)
+    );
+    const bracketParticipants = getBracketParticipants(bracket);
+
+    if (!allowedRefs.size) return false;
+    if (bracketParticipants.length !== allowedRefs.size) return false;
+
+    return bracketParticipants.every((participant) =>
+        allowedRefs.has(String(participant?.refId || '').trim())
+    );
+};
+
+const applyCheckInOutcomeToTournament = (tournament = {}, now = new Date()) => {
+    const checkInState = getCheckInWindowState(tournament, now);
+    const approved = getApprovedRegistrations(tournament);
+
+    if (checkInState === 'disabled' || checkInState === 'upcoming') {
+        return {
+            registrations: approved,
+            checkInState,
+            enforced: false,
+            changed: false
+        };
+    }
+
+    let changed = false;
+    approved.forEach((registration) => {
+        const currentStatus = String(registration?.checkIn?.status || 'pending');
+        if (currentStatus === 'checked_in' || currentStatus === 'missed') return;
+        registration.checkIn = {
+            ...(registration?.checkIn?.toObject ? registration.checkIn.toObject() : registration?.checkIn || {}),
+            status: 'missed',
+            checkedInAt: registration?.checkIn?.checkedInAt || null,
+            checkedInBy: registration?.checkIn?.checkedInBy || null
+        };
+        changed = true;
+    });
+
+    if (changed) tournament.markModified?.('registrations');
+
+    return {
+        registrations: getCheckedInApprovedRegistrations(tournament),
+        checkInState,
+        enforced: true,
+        changed
+    };
+};
+
 export const createTournament = async (req, res) => {
     try {
         const data = req.body;
@@ -899,6 +1003,12 @@ export const createTournament = async (req, res) => {
             registrationClosed: false,
             currentSlots: 0
         });
+
+        if (!isOperationalTournamentFormat(newTournament.format)) {
+            return res.status(400).json({
+                message: 'Doble eliminación aún no está disponible operativamente. Usa eliminación directa, suizo o round robin.'
+            });
+        }
 
         if (!data.date || new Date(data.date) < new Date()) {
             return res.status(400).json({ message: 'La fecha del torneo no es válida' });
@@ -1140,7 +1250,13 @@ export const updateTournament = async (req, res) => {
             update.modality = normalizeTournamentGameModality(targetGameForRules, data.modality);
         }
         if (data.format !== undefined) {
-            update.format = normalizeTournamentFormat(data.format, 'single_elimination');
+            const normalizedFormat = normalizeTournamentFormat(data.format, 'single_elimination');
+            if (!isOperationalTournamentFormat(normalizedFormat)) {
+                return res.status(400).json({
+                    message: 'Doble eliminación aún no está disponible operativamente. Usa eliminación directa, suizo o round robin.'
+                });
+            }
+            update.format = normalizedFormat;
         }
         if (normalizedUpdateMaxSlots !== null) {
             update.maxSlots = normalizedUpdateMaxSlots;
@@ -1523,12 +1639,15 @@ export const generateTournamentBracket = async (req, res) => {
         const seedingMode = String(req.body?.seedingMode || 'random').trim().toLowerCase();
         const previewOnly = req.body?.previewOnly === true;
         const customOrder = Array.isArray(req.body?.customOrder) ? req.body.customOrder : [];
-        const approvedRegistrations = (tournament.registrations || []).filter((registration) =>
-            String(registration?.status || 'approved') === 'approved'
-        );
+        const operational = getOperationalRegistrationsForBracket(tournament, new Date());
+        const approvedRegistrations = operational.registrations;
 
         if (approvedRegistrations.length < 2) {
-            return res.status(400).json({ message: 'Necesitas al menos 2 equipos aprobados para generar el bracket.' });
+            return res.status(400).json({
+                message: operational.enforced
+                    ? 'Necesitas al menos 2 equipos aprobados y con check-in confirmado para generar el bracket.'
+                    : 'Necesitas al menos 2 equipos aprobados para generar el bracket.'
+            });
         }
 
         const normalizedFormat = normalizeTournamentFormat(tournament.format, 'single_elimination');
@@ -1584,7 +1703,8 @@ export const generateTournamentBracket = async (req, res) => {
 
         return res.status(200).json({
             message: 'Bracket generado correctamente.',
-            bracket: tournament.bracket
+            bracket: tournament.bracket,
+            checkInState: operational.checkInState
         });
     } catch (error) {
         console.error('Error generando bracket:', error);
@@ -1745,6 +1865,74 @@ export const resolveBracketMatchResult = async (req, res) => {
         });
     } catch (error) {
         console.error('Error resolviendo resultado de match:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const checkInTournamentTeam = async (req, res) => {
+    try {
+        const { code } = req.params;
+        const { teamId } = req.body || {};
+
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+
+        if (String(tournament.status || '').toLowerCase() !== 'open') {
+            return res.status(400).json({ message: 'Solo puedes hacer check-in mientras el torneo está abierto.' });
+        }
+
+        const checkInState = getCheckInWindowState(tournament, new Date());
+        if (checkInState === 'disabled') {
+            return res.status(400).json({ message: 'Este torneo no tiene check-in habilitado.' });
+        }
+        if (checkInState === 'upcoming') {
+            return res.status(400).json({ message: 'El check-in aún no ha comenzado.' });
+        }
+        if (checkInState === 'closed') {
+            return res.status(400).json({ message: 'La ventana de check-in ya cerró.' });
+        }
+
+        const registrations = Array.isArray(tournament.registrations) ? tournament.registrations : [];
+        const registration = registrations.find((item) => {
+            if (String(item?.status || '') !== 'approved') return false;
+            const isCaptain = String(item?.captain?._id || item?.captain || '') === String(req.userId || '');
+            if (!isCaptain) return false;
+            if (!teamId) return true;
+            return String(item?.teamId || '') === String(teamId || '');
+        });
+
+        if (!registration) {
+            return res.status(404).json({ message: 'No se encontró un equipo aprobado tuyo para hacer check-in en este torneo.' });
+        }
+
+        if (String(registration?.checkIn?.status || '') === 'checked_in') {
+            return res.status(200).json({
+                message: 'Tu equipo ya estaba confirmado en el check-in.',
+                registrationId: registration._id,
+                checkIn: registration.checkIn,
+                tournament
+            });
+        }
+
+        registration.checkIn = {
+            status: 'checked_in',
+            checkedInAt: new Date(),
+            checkedInBy: req.userId
+        };
+
+        tournament.markModified('registrations');
+        await tournament.save({ validateBeforeSave: false });
+
+        return res.status(200).json({
+            message: 'Check-in confirmado correctamente.',
+            registrationId: registration._id,
+            checkIn: registration.checkIn,
+            tournament
+        });
+    } catch (error) {
+        console.error('Error realizando check-in de torneo:', error);
         return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
     }
 };
@@ -2012,6 +2200,11 @@ export const registerTeam = async (req, res) => {
                 teamName: team.name,
                 logoUrl: team.logo || '',
                 captain: team.captain,
+                checkIn: {
+                    status: 'pending',
+                    checkedInAt: null,
+                    checkedInBy: null
+                },
                 teamMeta: {
                     category: team.category || '',
                     teamCountry: team.teamCountry || '',
@@ -2068,6 +2261,11 @@ export const registerTeam = async (req, res) => {
                 teamName: String(teamName).trim(),
                 logoUrl: logoUrl || '',
                 captain: req.userId,
+                checkIn: {
+                    status: 'pending',
+                    checkedInAt: null,
+                    checkedInBy: null
+                },
                 roster: {
                     starters: starters.map(n => ({ nickname: n })),
                     subs: subs.map(n => ({ nickname: n }))
@@ -2545,8 +2743,37 @@ export const updateTournamentStatus = async (req, res) => {
                 tournament.registrationClosed = true;
                 break;
             case 'start':
+                if (!Array.isArray(tournament?.bracket?.rounds) || tournament.bracket.rounds.length === 0) {
+                    return res.status(400).json({
+                        message: 'Debes generar el bracket antes de iniciar el torneo.'
+                    });
+                }
+                {
+                    const operational = applyCheckInOutcomeToTournament(tournament, new Date());
+                    if (operational.checkInState === 'upcoming') {
+                        return res.status(400).json({
+                            message: 'El check-in aún no ha comenzado. Espera a la ventana configurada o elimina esa restricción.'
+                        });
+                    }
+
+                    const approved = operational.registrations;
+                    if (approved.length < 2) {
+                        return res.status(400).json({
+                            message: operational.enforced
+                                ? 'Necesitas al menos 2 equipos aprobados y con check-in confirmado para iniciar el torneo.'
+                                : 'Necesitas al menos 2 equipos aprobados para iniciar el torneo.'
+                        });
+                    }
+
+                    if (!doesBracketMatchOperationalRegistrations(tournament.bracket, approved)) {
+                        return res.status(400).json({
+                            message: operational.enforced
+                                ? 'El bracket ya no coincide con los equipos confirmados por check-in. Regénéralo antes de iniciar.'
+                                : 'El bracket ya no coincide con los equipos aprobados. Regénéralo antes de iniciar.'
+                        });
+                    }
+
                 if (isRiotTournamentGame(tournament.game)) {
-                    const approved = getApprovedRegistrations(tournament);
                     const activeParticipants = approved.length * parseTeamSizeFromModality(tournament.modality);
                     const minActive = getRiotMinActiveParticipants();
                     if (activeParticipants < minActive) {
@@ -2559,7 +2786,7 @@ export const updateTournamentStatus = async (req, res) => {
                     const normalizedFormat = normalizeTournamentFormat(tournament.format);
                     if (!RIOT_ALLOWED_FORMATS.has(normalizedFormat)) {
                         return res.status(400).json({
-                            message: 'Formato no permitido para torneos Riot. Usa eliminación directa, doble eliminación, suizo o round robin.'
+                            message: 'Formato no permitido para torneos Riot. Usa eliminación directa, suizo o round robin.'
                         });
                     }
                     for (const registration of approved) {
@@ -2574,7 +2801,6 @@ export const updateTournamentStatus = async (req, res) => {
                     }
                 }
                 if (isSupportedMlbbGame(tournament.game)) {
-                    const approved = getApprovedRegistrations(tournament);
                     if (approved.length < MLBB_MIN_APPROVED_TEAMS) {
                         return res.status(400).json({
                             message: `Para iniciar un torneo MLBB necesitas al menos ${MLBB_MIN_APPROVED_TEAMS} equipos aprobados.`,
@@ -2596,6 +2822,7 @@ export const updateTournamentStatus = async (req, res) => {
                     if (bindingIssues.length) {
                         return res.status(400).json({ message: bindingIssues[0] });
                     }
+                }
                 }
                 tournament.status = 'ongoing';
                 tournament.registrationClosed = true;
@@ -2684,7 +2911,7 @@ export const updateTournamentStatus = async (req, res) => {
 
 export const getReports = async (req, res) => {
     try {
-        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code.toUpperCase() });
         if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
         const allowed = await canManageTournament(tournament, req.userId);
         if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
@@ -2697,13 +2924,44 @@ export const getReports = async (req, res) => {
 
 export const createReport = async (req, res) => {
     try {
-        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code.toUpperCase() });
         if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
-        const allowed = await canManageTournament(tournament, req.userId);
-        if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
-
         const { type, reportedTeam, reportedPlayer, reportedStaff, matchId, severity, evidence, description } = req.body;
+        const managerAllowed = await canManageTournament(tournament, req.userId);
+        const reporterAllowed = canUserCreateTournamentReport(tournament, req.userId, matchId);
+        if (!managerAllowed && !reporterAllowed) {
+            return res.status(403).json({ message: 'Solo staff del torneo o capitanes involucrados pueden crear reportes.' });
+        }
+
         if (!type || !description) return res.status(400).json({ message: 'Tipo y descripcion son obligatorios.' });
+        if (!reportedTeam && !reportedPlayer && !reportedStaff) {
+            return res.status(400).json({ message: 'Debes indicar el equipo, jugador o staff reportado.' });
+        }
+
+        let matchContext = null;
+        if (matchId) {
+            matchContext = findBracketMatchContext(tournament.bracket, matchId);
+            if (!matchContext) {
+                return res.status(400).json({ message: 'El match indicado no existe en el bracket del torneo.' });
+            }
+        }
+
+        if (reportedTeam) {
+            const approvedTeams = new Set(getApprovedRegistrations(tournament).map((registration) => String(registration?.teamName || '').trim()).filter(Boolean));
+            if (!approvedTeams.has(String(reportedTeam || '').trim())) {
+                return res.status(400).json({ message: 'El equipo reportado no pertenece a este torneo.' });
+            }
+        }
+
+        if (matchContext && reportedTeam) {
+            const matchTeams = new Set([
+                String(matchContext.match?.teamA?.teamName || '').trim(),
+                String(matchContext.match?.teamB?.teamName || '').trim()
+            ].filter(Boolean));
+            if (!matchTeams.has(String(reportedTeam || '').trim())) {
+                return res.status(400).json({ message: 'El equipo reportado no participa en el match indicado.' });
+            }
+        }
 
         const report = {
             reportId: `RPT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -2735,7 +2993,7 @@ export const createReport = async (req, res) => {
 
 export const updateReport = async (req, res) => {
     try {
-        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code.toUpperCase() });
         if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
         const allowed = await canManageTournament(tournament, req.userId);
         if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });
@@ -2753,24 +3011,50 @@ export const updateReport = async (req, res) => {
             report.resolvedBy = req.userId;
         }
 
-        // DQ sanction: mark team matches as walkover
-        if (sanction === 'disqualification' && report.reportedTeam && tournament.bracket?.rounds) {
-            for (const round of tournament.bracket.rounds) {
-                for (const match of (round.matches || [])) {
-                    if (match.status === 'finished') continue;
-                    const nameA = match.teamA?.teamName || '';
-                    const nameB = match.teamB?.teamName || '';
-                    if (nameA === report.reportedTeam) {
-                        match.status = 'walkover';
-                        match.winnerRefId = match.teamB?.refId || '';
-                        match.confirmationStatus = 'resolved';
-                    } else if (nameB === report.reportedTeam) {
-                        match.status = 'walkover';
-                        match.winnerRefId = match.teamA?.refId || '';
-                        match.confirmationStatus = 'resolved';
-                    }
+        if (['match_loss', 'disqualification'].includes(String(sanction || '')) && report.reportedTeam && tournament.bracket?.rounds) {
+            const candidateMatches = report.matchId
+                ? [findBracketMatchContext(tournament.bracket, report.matchId)?.match].filter(Boolean)
+                : (tournament.bracket.rounds || []).flatMap((round) => round?.matches || []).filter((match) => {
+                    const nameA = String(match?.teamA?.teamName || '').trim();
+                    const nameB = String(match?.teamB?.teamName || '').trim();
+                    return nameA === String(report.reportedTeam || '').trim() || nameB === String(report.reportedTeam || '').trim();
+                });
+
+            for (const match of candidateMatches) {
+                if (!match || ['finished', 'walkover'].includes(String(match?.status || '').toLowerCase())) {
+                    continue;
+                }
+
+                const reportedIsTeamA = String(match?.teamA?.teamName || '').trim() === String(report.reportedTeam || '').trim();
+                const reportedIsTeamB = String(match?.teamB?.teamName || '').trim() === String(report.reportedTeam || '').trim();
+                if (!reportedIsTeamA && !reportedIsTeamB) continue;
+
+                const winnerRefId = reportedIsTeamA
+                    ? String(match?.teamB?.refId || '')
+                    : String(match?.teamA?.refId || '');
+
+                if (!winnerRefId) {
+                    return res.status(400).json({ message: 'No se pudo aplicar la sanción porque el rival del match aún no está definido.' });
+                }
+
+                const scoreA = reportedIsTeamA ? 0 : 1;
+                const scoreB = reportedIsTeamA ? 1 : 0;
+                const result = resolveBracketMatch({
+                    bracket: tournament.bracket,
+                    matchId: match.matchId,
+                    winnerRefId,
+                    scoreA,
+                    scoreB,
+                    resolvedBy: req.userId,
+                    resolvedAt: new Date().toISOString()
+                });
+                tournament.bracket = result.bracket;
+                if (result.completed) {
+                    tournament.status = 'finished';
+                    tournament.registrationClosed = true;
                 }
             }
+
             tournament.markModified('bracket');
         }
 
@@ -2782,7 +3066,12 @@ export const updateReport = async (req, res) => {
         }
 
         await tournament.save({ validateBeforeSave: false });
-        res.json(report);
+        res.json({
+            message: 'Reporte actualizado.',
+            report,
+            bracket: tournament.bracket,
+            tournamentStatus: tournament.status
+        });
     } catch (error) {
         console.error('Error actualizando reporte:', error);
         res.status(500).json({ message: 'Error interno del servidor.' });
@@ -2791,7 +3080,7 @@ export const updateReport = async (req, res) => {
 
 export const deleteReport = async (req, res) => {
     try {
-        const tournament = await Tournament.findOne({ tournamentId: req.params.code });
+        const tournament = await Tournament.findOne({ tournamentId: req.params.code.toUpperCase() });
         if (!tournament) return res.status(404).json({ message: 'Torneo no encontrado.' });
         const allowed = await canManageTournament(tournament, req.userId);
         if (!allowed) return res.status(403).json({ message: 'Sin permiso.' });

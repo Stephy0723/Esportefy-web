@@ -10,7 +10,7 @@ const waitForMongoose = async (timeoutMs = 30000) => {
   const startedAt = Date.now();
   while (mongoose.connection.readyState !== 1) {
     if (Date.now() - startedAt > timeoutMs) {
-      throw new Error('MongoDB no estuvo listo a tiempo para tournament-complete-smoke');
+      throw new Error('MongoDB no estuvo listo a tiempo para tournament-reports-smoke');
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
@@ -28,7 +28,7 @@ const createUser = async ({ suffix, isOrganizer = false, selectedGames = ['EA FC
   const password = await bcrypt.hash(plainPassword, 10);
 
   const user = await User.create({
-    fullName: `Tournament Smoke ${suffix}`,
+    fullName: `Tournament Reports Smoke ${suffix}`,
     phone: `8${randomDigits(9)}`,
     gender: 'Otro',
     country: 'República Dominicana',
@@ -37,8 +37,8 @@ const createUser = async ({ suffix, isOrganizer = false, selectedGames = ['EA FC
     experience: [],
     platforms: ['Console'],
     goals: [],
-    username: `tournament-smoke-${suffix}`,
-    email: `tournament.smoke.${suffix}@glitchgang.local`,
+    username: `tournament-reports-${suffix}`,
+    email: `tournament.reports.${suffix}@glitchgang.local`,
     password,
     checkTerms: true,
     isOrganizer
@@ -58,9 +58,10 @@ const buildTournamentPayload = ({ title }) => {
   const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const checkInStart = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const checkInEnd = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
   return {
     title,
-    description: 'Smoke test torneo completo',
+    description: 'Smoke test torneo reportes',
     game: 'EA FC / FIFA',
     gender: 'Mixto',
     modality: '1v1',
@@ -96,9 +97,9 @@ const buildTournamentPayload = ({ title }) => {
   };
 };
 
-const createTeam = async ({ suffix, captainId, starterUserId, starterNickname }) => {
-  return Team.create({
-    name: `Tournament Team ${suffix}`,
+const createTeam = async ({ suffix, captainId, starterUserId, starterNickname }) => (
+  Team.create({
+    name: `Tournament Report Team ${suffix}`,
     slogan: 'Smoke',
     category: 'Sports',
     game: 'EA FC / FIFA',
@@ -121,8 +122,8 @@ const createTeam = async ({ suffix, captainId, starterUserId, starterNickname })
       subs: [],
       coach: null
     }
-  });
-};
+  })
+);
 
 const playMatch = async ({
   tournamentCode,
@@ -140,33 +141,17 @@ const playMatch = async ({
   const loserToken = teamTokenByTeamId.get(String(loserParticipant?.teamId || ''));
   const winnerRefId = winnerParticipant?.refId;
 
-  assert(Boolean(winnerToken), `No se encontró token para el ganador del match ${match?.matchId}`);
-  assert(Boolean(loserToken), `No se encontró token para el rival del match ${match?.matchId}`);
-
   const submitWinnerRes = await request(app)
     .post(`/api/tournaments/${tournamentCode}/bracket/matches/${match.matchId}/submit`)
     .set('Authorization', `Bearer ${winnerToken}`)
     .send({ winnerRefId, scoreA: 1, scoreB: 0 });
-  assert(
-    submitWinnerRes.status === 200,
-    `Reporte del ganador en ${match.matchId} falló: ${submitWinnerRes.status} ${submitWinnerRes.text}`
-  );
+  assert(submitWinnerRes.status === 200, `Reporte del ganador en ${match.matchId} falló: ${submitWinnerRes.status} ${submitWinnerRes.text}`);
 
   const submitLoserAgreementRes = await request(app)
     .post(`/api/tournaments/${tournamentCode}/bracket/matches/${match.matchId}/submit`)
     .set('Authorization', `Bearer ${loserToken}`)
     .send({ winnerRefId, scoreA: 1, scoreB: 0 });
-  assert(
-    submitLoserAgreementRes.status === 200,
-    `Confirmación del rival en ${match.matchId} falló: ${submitLoserAgreementRes.status} ${submitLoserAgreementRes.text}`
-  );
-  const resolvedConfirmationStatus = (submitLoserAgreementRes.body?.bracket?.rounds || [])
-    .flatMap((round) => round?.matches || [])
-    .find((candidate) => candidate?.matchId === match.matchId)?.confirmationStatus;
-  assert(
-    resolvedConfirmationStatus === 'agreed',
-    `El match ${match.matchId} debía quedar agreed y quedó ${resolvedConfirmationStatus || 'vacío'}`
-  );
+  assert(submitLoserAgreementRes.status === 200, `Confirmación del rival en ${match.matchId} falló: ${submitLoserAgreementRes.status} ${submitLoserAgreementRes.text}`);
 
   const resolveRes = await request(app)
     .patch(`/api/tournaments/${tournamentCode}/bracket/matches/${match.matchId}/resolve`)
@@ -213,7 +198,7 @@ const run = async () => {
     const createRes = await request(app)
       .post('/api/tournaments')
       .set('Authorization', `Bearer ${organizerToken}`)
-      .send(buildTournamentPayload({ title: `Tournament Complete ${suffix}` }));
+      .send(buildTournamentPayload({ title: `Tournament Reports ${suffix}` }));
     assert(createRes.status === 201, `Crear torneo falló: ${createRes.status} ${createRes.text}`);
 
     const tournamentCode = String(createRes.body?.tournamentId || '').toUpperCase();
@@ -221,67 +206,33 @@ const run = async () => {
     createdTournamentIds.push(tournamentCode);
 
     const [teamA, teamB, teamC, teamD] = await Promise.all([
-      createTeam({
-        suffix: `a-${suffix}`,
-        captainId: captainAAccount.user._id,
-        starterUserId: captainAAccount.user._id,
-        starterNickname: `CaptainA-${randomDigits(3)}`
-      }),
-      createTeam({
-        suffix: `b-${suffix}`,
-        captainId: captainBAccount.user._id,
-        starterUserId: captainBAccount.user._id,
-        starterNickname: `CaptainB-${randomDigits(3)}`
-      }),
-      createTeam({
-        suffix: `c-${suffix}`,
-        captainId: captainCAccount.user._id,
-        starterUserId: captainCAccount.user._id,
-        starterNickname: `CaptainC-${randomDigits(3)}`
-      }),
-      createTeam({
-        suffix: `d-${suffix}`,
-        captainId: captainDAccount.user._id,
-        starterUserId: captainDAccount.user._id,
-        starterNickname: `CaptainD-${randomDigits(3)}`
-      })
+      createTeam({ suffix: `a-${suffix}`, captainId: captainAAccount.user._id, starterUserId: captainAAccount.user._id, starterNickname: `CaptainA-${randomDigits(3)}` }),
+      createTeam({ suffix: `b-${suffix}`, captainId: captainBAccount.user._id, starterUserId: captainBAccount.user._id, starterNickname: `CaptainB-${randomDigits(3)}` }),
+      createTeam({ suffix: `c-${suffix}`, captainId: captainCAccount.user._id, starterUserId: captainCAccount.user._id, starterNickname: `CaptainC-${randomDigits(3)}` }),
+      createTeam({ suffix: `d-${suffix}`, captainId: captainDAccount.user._id, starterUserId: captainDAccount.user._id, starterNickname: `CaptainD-${randomDigits(3)}` })
     ]);
     createdTeamIds.push(teamA._id, teamB._id, teamC._id, teamD._id);
 
-    const registerARes = await request(app)
-      .post(`/api/tournaments/${tournamentCode}/register`)
-      .set('Authorization', `Bearer ${captainAToken}`)
-      .send({ teamId: String(teamA._id) });
-    assert(registerARes.status === 200, `Registro Team A falló: ${registerARes.status} ${registerARes.text}`);
+    const registrations = [
+      [teamA, captainAToken, 'A'],
+      [teamB, captainBToken, 'B'],
+      [teamC, captainCToken, 'C'],
+      [teamD, captainDToken, 'D']
+    ];
 
-    const registerBRes = await request(app)
-      .post(`/api/tournaments/${tournamentCode}/register`)
-      .set('Authorization', `Bearer ${captainBToken}`)
-      .send({ teamId: String(teamB._id) });
-    assert(registerBRes.status === 200, `Registro Team B falló: ${registerBRes.status} ${registerBRes.text}`);
+    for (const [team, token, label] of registrations) {
+      const registerRes = await request(app)
+        .post(`/api/tournaments/${tournamentCode}/register`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ teamId: String(team._id) });
+      assert(registerRes.status === 200, `Registro Team ${label} falló: ${registerRes.status} ${registerRes.text}`);
+    }
 
-    const registerCRes = await request(app)
-      .post(`/api/tournaments/${tournamentCode}/register`)
-      .set('Authorization', `Bearer ${captainCToken}`)
-      .send({ teamId: String(teamC._id) });
-    assert(registerCRes.status === 200, `Registro Team C falló: ${registerCRes.status} ${registerCRes.text}`);
-
-    const registerDRes = await request(app)
-      .post(`/api/tournaments/${tournamentCode}/register`)
-      .set('Authorization', `Bearer ${captainDToken}`)
-      .send({ teamId: String(teamD._id) });
-    assert(registerDRes.status === 200, `Registro Team D falló: ${registerDRes.status} ${registerDRes.text}`);
-
-    for (const [teamId, token, label] of [
-      [String(teamA._id), captainAToken, 'A'],
-      [String(teamB._id), captainBToken, 'B'],
-      [String(teamC._id), captainCToken, 'C'],
-      [String(teamD._id), captainDToken, 'D']
-    ]) {
+    for (const [team, token, label] of registrations) {
       const checkInRes = await request(app)
         .post(`/api/tournaments/${tournamentCode}/check-in`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ teamId });
+        .send({ teamId: String(team._id) });
       assert(checkInRes.status === 200, `Check-in Team ${label} falló: ${checkInRes.status} ${checkInRes.text}`);
     }
 
@@ -300,7 +251,6 @@ const run = async () => {
       .set('Authorization', `Bearer ${organizerToken}`)
       .send({ action: 'start' });
     assert(startRes.status === 200, `Iniciar torneo falló: ${startRes.status} ${startRes.text}`);
-    assert(startRes.body?.status === 'ongoing', 'El torneo no quedó en estado ongoing');
 
     const teamTokenByTeamId = new Map([
       [String(teamA._id), captainAToken],
@@ -309,25 +259,72 @@ const run = async () => {
       [String(teamD._id), captainDToken]
     ]);
 
-    for (const roundIndex of [0, 1]) {
-      const matches = currentBracket?.rounds?.[roundIndex]?.matches || [];
-      for (const match of matches) {
-        const resolveRes = await playMatch({
-          tournamentCode,
-          match,
-          teamTokenByTeamId,
-          organizerToken
-        });
-        currentBracket = resolveRes.body?.bracket || currentBracket;
-      }
-    }
+    const semifinalOne = currentBracket.rounds[0].matches[0];
+    const semifinalOneResolved = await playMatch({
+      tournamentCode,
+      match: semifinalOne,
+      teamTokenByTeamId,
+      organizerToken
+    });
+    currentBracket = semifinalOneResolved.body?.bracket || currentBracket;
+
+    const semifinalTwo = currentBracket.rounds[0].matches[1];
+    const reportedParticipant = semifinalTwo?.teamA;
+    const beneficiaryParticipant = semifinalTwo?.teamB;
+    assert(reportedParticipant?.teamName && beneficiaryParticipant?.teamName, 'La semifinal 2 no tiene ambos equipos listos');
+
+    const reporterToken = teamTokenByTeamId.get(String(beneficiaryParticipant?.teamId || ''));
+    assert(Boolean(reporterToken), 'No se encontró token del capitán reportante');
+
+    const createReportRes = await request(app)
+      .post(`/api/tournaments/${tournamentCode}/reports`)
+      .set('Authorization', `Bearer ${reporterToken}`)
+      .send({
+        type: 'cheating',
+        reportedTeam: reportedParticipant.teamName,
+        matchId: semifinalTwo.matchId,
+        severity: 'high',
+        evidence: 'https://glitchgang.local/evidence/report-smoke',
+        description: 'Smoke: el capitán rival reporta una incidencia del match.'
+      });
+    assert(createReportRes.status === 201, `Crear reporte falló: ${createReportRes.status} ${createReportRes.text}`);
+    const reportId = createReportRes.body?.reportId;
+    assert(Boolean(reportId), 'No se generó reportId');
+
+    const resolveReportRes = await request(app)
+      .patch(`/api/tournaments/${tournamentCode}/reports/${reportId}`)
+      .set('Authorization', `Bearer ${organizerToken}`)
+      .send({
+        sanction: 'disqualification',
+        sanctionNote: 'Smoke sanction',
+        status: 'resolved'
+      });
+    assert(resolveReportRes.status === 200, `Resolver reporte falló: ${resolveReportRes.status} ${resolveReportRes.text}`);
+
+    currentBracket = resolveReportRes.body?.bracket || currentBracket;
+    const sanctionedMatch = currentBracket?.rounds?.[0]?.matches?.find((match) => match?.matchId === semifinalTwo.matchId);
+    assert(Boolean(sanctionedMatch), 'No se encontró la semifinal sancionada en el bracket resultante');
+    assert(String(sanctionedMatch?.winnerRefId || '') === String(beneficiaryParticipant?.refId || ''), 'La sanción no avanzó al rival correcto');
+    assert(String(sanctionedMatch?.confirmationStatus || '') === 'resolved', 'La semifinal sancionada no quedó resuelta');
+
+    const finalMatch = currentBracket?.rounds?.[1]?.matches?.[0];
+    assert(Boolean(finalMatch?.teamA?.refId) && Boolean(finalMatch?.teamB?.refId), 'La final no quedó lista tras resolver la sanción');
+
+    const finalResolved = await playMatch({
+      tournamentCode,
+      match: finalMatch,
+      teamTokenByTeamId,
+      organizerToken
+    });
+    currentBracket = finalResolved.body?.bracket || currentBracket;
 
     const finalTournament = await Tournament.findOne({ tournamentId: tournamentCode }).lean();
     assert(finalTournament?.status === 'finished', 'El torneo persistido no quedó finished');
-    const finalMatch = finalTournament?.bracket?.rounds?.[1]?.matches?.[0];
-    assert(Boolean(finalMatch?.winnerRefId), 'La final no dejó un ganador persistido');
+    const storedReport = (finalTournament?.reports || []).find((report) => report.reportId === reportId);
+    assert(String(storedReport?.status || '') === 'resolved', 'El reporte no quedó resuelto');
+    assert(String(storedReport?.sanction || '') === 'disqualification', 'La sanción persistida no fue descalificación');
 
-    console.log('tournament-complete-smoke: OK');
+    console.log('tournament-reports-smoke: OK');
   } finally {
     if (createdTournamentIds.length > 0) {
       await Tournament.deleteMany({ tournamentId: { $in: createdTournamentIds } });
@@ -345,6 +342,6 @@ const run = async () => {
 run()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error('tournament-complete-smoke failed:', error?.message || error);
+    console.error('tournament-reports-smoke failed:', error?.message || error);
     process.exit(1);
   });

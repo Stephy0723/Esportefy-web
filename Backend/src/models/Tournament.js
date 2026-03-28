@@ -233,6 +233,15 @@ const tournamentSchema = new mongoose.Schema({
                 riotId: String
             }]
         },
+        checkIn: {
+            status: {
+                type: String,
+                enum: ['pending', 'checked_in', 'missed'],
+                default: 'pending'
+            },
+            checkedInAt: { type: Date, default: null },
+            checkedInBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+        },
         status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
         registeredAt: { type: Date, default: Date.now }
     }],

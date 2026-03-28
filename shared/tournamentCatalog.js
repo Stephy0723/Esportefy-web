@@ -18,6 +18,14 @@ export const TOURNAMENT_ALLOWED_FORMAT_VALUES = Object.freeze(
   TOURNAMENT_FORMAT_OPTIONS.map((option) => option.value)
 );
 
+export const TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS = Object.freeze(
+  TOURNAMENT_FORMAT_OPTIONS.filter((option) => option.value !== 'double_elimination')
+);
+
+export const TOURNAMENT_OPERATIONAL_FORMAT_VALUES = Object.freeze(
+  TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS.map((option) => option.value)
+);
+
 export const TOURNAMENT_PLATFORM_OPTIONS = Object.freeze([
   { value: 'PC', label: 'PC' },
   { value: 'Mobile', label: 'Mobile' },
@@ -92,6 +100,9 @@ const normalizeFromMap = (value, map, aliases = null, fallback = '') => {
 
 export const normalizeTournamentFormat = (value, fallback = 'single_elimination') =>
   normalizeFromMap(value, TOURNAMENT_FORMAT_MAP, TOURNAMENT_FORMAT_ALIASES, fallback);
+
+export const isOperationalTournamentFormat = (value = '') =>
+  TOURNAMENT_OPERATIONAL_FORMAT_VALUES.includes(normalizeTournamentFormat(value, ''));
 
 export const normalizeTournamentPlatform = (value, fallback = 'PC') =>
   normalizeFromMap(value, TOURNAMENT_PLATFORM_MAP, TOURNAMENT_PLATFORM_ALIASES, fallback);

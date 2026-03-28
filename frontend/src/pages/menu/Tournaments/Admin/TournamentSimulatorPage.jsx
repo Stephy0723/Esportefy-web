@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTournamentFormatLabel, TOURNAMENT_FORMAT_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
+import { getTournamentFormatLabel, TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
 import './TournamentAdmin.css';
 
 /* ── Fake Data ── */
@@ -13,9 +13,7 @@ const TEAM_NAMES = [
 ];
 
 const GAMES = ['Valorant', 'League of Legends', 'Mobile Legends', 'Free Fire'];
-const SUPPORTED_SIMULATOR_FORMATS = TOURNAMENT_FORMAT_OPTIONS.filter((option) =>
-  ['single_elimination', 'swiss', 'round_robin'].includes(option.value)
-);
+const SUPPORTED_SIMULATOR_FORMATS = TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS;
 
 const randomScore = () => Math.floor(Math.random() * 4);
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));

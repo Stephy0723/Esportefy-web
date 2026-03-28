@@ -15,6 +15,7 @@ import {
   updateTournamentPublicSettings,
   updateTournamentBracket,
   generateTournamentBracket,
+  checkInTournamentTeam,
   getTournamentCompliance,
   submitBracketMatchResult,
   resolveBracketMatchResult,
@@ -52,6 +53,7 @@ router.put('/:code', verifyToken, rlManage, uploadTournamentFiles, updateTournam
 router.patch('/:code/public-settings', verifyToken, rlManage, updateTournamentPublicSettings);
 router.patch('/:code/bracket', verifyToken, rlManage, updateTournamentBracket);
 router.post('/:code/bracket/generate', verifyToken, rlManage, generateTournamentBracket);
+router.post('/:code/check-in', verifyToken, rlRegister, checkInTournamentTeam);
 router.post('/:code/bracket/matches/:matchId/submit', verifyToken, rlManage, submitBracketMatchResult);
 router.patch('/:code/bracket/matches/:matchId/resolve', verifyToken, rlManage, resolveBracketMatchResult);
 router.get('/:code/compliance', verifyToken, rlManage, getTournamentCompliance);

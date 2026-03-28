@@ -24,9 +24,11 @@ import {
   normalizeTournamentGameSeries
 } from '../../../../../../shared/gamePolicies.js';
 import {
+  isOperationalTournamentFormat,
   normalizeTournamentFormat,
   TOURNAMENT_CREATOR_STAFF_ROLE_OPTIONS,
-  TOURNAMENT_FORMAT_OPTIONS
+  TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS,
+  TOURNAMENT_OPERATIONAL_FORMAT_VALUES
 } from '../../../../../../shared/tournamentCatalog.js';
 import {
   SUPPORTED_GAME_NAMES,
@@ -234,7 +236,10 @@ const CreateTournament = () => {
       entryFee: editTournament.entry || editTournament.entryFee || prev.entryFee,
       entryFeeAmount: editTournament.entryFeeAmount || prev.entryFeeAmount,
       maxSlots: editMaxSlots || prev.maxSlots,
-      format: normalizeTournamentFormat(editTournament.format || prev.format),
+      format: (() => {
+        const normalizedFormat = normalizeTournamentFormat(editTournament.format || prev.format);
+        return isOperationalTournamentFormat(normalizedFormat) ? normalizedFormat : 'single_elimination';
+      })(),
       server: editTournament.server || '',
       platform: normalizeTournamentGamePlatform(
         editTournament.game || prev.game,
@@ -438,6 +443,7 @@ const CreateTournament = () => {
       return {
         ...prev,
         game: value,
+        format: isOperationalTournamentFormat(prev.format) ? prev.format : 'single_elimination',
         server: nextServer,
         platform: normalizeTournamentGamePlatform(value, prev.platform),
         modality: normalizeTournamentGameModality(value, prev.modality),
@@ -551,7 +557,7 @@ const CreateTournament = () => {
       entryFee: 'Gratis',
       entryFeeAmount: '',
       maxSlots: '32',
-      format: 'double_elimination',
+      format: 'single_elimination',
       server: 'LATAM',
       platform: 'Mobile',
       bannerFile: null,
@@ -817,10 +823,8 @@ const CreateTournament = () => {
         return;
       }
 
-      const ALLOWED_FORMATS = ['single_elimination', 'double_elimination', 'swiss', 'round_robin',
-        'Eliminacion Directa', 'Doble Eliminacion', 'Swiss', 'Round Robin'];
-      if (!ALLOWED_FORMATS.includes(String(tournament.format || '').trim())) {
-        alert('En torneos Riot solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
+      if (!isOperationalTournamentFormat(tournament.format)) {
+        alert('En torneos Riot solo se permiten formatos operativos: eliminación directa, suizo o round robin.');
         return;
       }
 
@@ -844,9 +848,8 @@ const CreateTournament = () => {
     }
 
     if (isMlbbTournament) {
-      const ALLOWED_FORMATS = ['single_elimination', 'double_elimination', 'swiss', 'round_robin'];
-      if (!ALLOWED_FORMATS.includes(tournament.format)) {
-        alert('En MLBB solo se permiten formatos tradicionales (eliminación directa, doble eliminación, suizo o round robin).');
+      if (!TOURNAMENT_OPERATIONAL_FORMAT_VALUES.includes(tournament.format)) {
+        alert('En MLBB solo se permiten formatos operativos: eliminación directa, suizo o round robin.');
         return;
       }
 
@@ -1044,7 +1047,7 @@ const CreateTournament = () => {
                   ))}
                 </select>
               </label>
-              <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}>{TOURNAMENT_FORMAT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
+              <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}>{TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
             </div>
             <div className="ct-grid three">
               <label className="ct-field">

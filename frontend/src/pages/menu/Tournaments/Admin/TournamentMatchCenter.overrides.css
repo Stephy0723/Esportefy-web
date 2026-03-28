@@ -14,12 +14,39 @@
   gap: 24px; 
 } 
 .mc-match-grid { 
-  gap: 14px; 
+  gap: 14px;
+  align-items: start;
 }
 .mc-card { 
-  gap: 12px; 
-  padding: 16px; 
+  gap: 12px;
+  width: min(100%, 460px);
+  justify-self: start;
+  padding: 16px;
 } 
+.mc-card__teams {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+}
+.mc-team {
+  min-width: 0;
+  padding: 10px 12px;
+}
+.mc-team__name {
+  flex: 1 1 auto;
+}
+.mc-card--empty {
+  opacity: 0.58;
+}
+.mc-card--empty .mc-card__teams {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.mc-card--empty .mc-card__vs {
+  display: none;
+}
+.mc-card--empty .mc-team {
+  justify-content: flex-start;
+}
 .mc-card__actions { 
   gap: 8px; 
   padding-top: 4px; 
@@ -63,6 +90,13 @@
   gap: 10px; 
 }
 @media (max-width: 640px) { 
+  .mc-card {
+    width: 100%;
+  }
+  .mc-card__teams {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
   .mc-editor__matchup { 
     grid-template-columns: 1fr; 
     text-align: center; 
@@ -174,6 +208,13 @@
   flex-shrink: 0;
   border: 1px solid var(--border-color);
   transition: background 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
+}
+.mc-team__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 .mc-team--winner .mc-team__avatar {
   background: var(--primary);
