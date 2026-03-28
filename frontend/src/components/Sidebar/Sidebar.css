@@ -35,7 +35,7 @@
 .sb-logo-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   min-height: 68px;
 }
 .sidebar.close .sb-logo-row {
@@ -44,8 +44,8 @@
 }
 
 .sb-logo-frame {
-  width: 72px;
-  height: 72px;
+  width: 78px;
+  height: 78px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,28 +54,33 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  margin-right: -8px;
 }
 .sidebar.close .sb-logo-frame {
-  width: 54px;
-  height: 54px;
+  width: 58px;
+  height: 58px;
   border-radius: 0;
+  margin-right: 0;
 }
 
 .sb-logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
+  width: 122px;
+  height: auto;
+  max-width: none;
+  display: block;
   flex-shrink: 0;
-  transform: scale(1.92);
+  transform: translateZ(0);
   filter: drop-shadow(0 0 10px rgba(142, 219, 21, 0.28));
-  transition: transform 0.3s ease, filter 0.3s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transition: width 0.3s ease, filter 0.3s ease;
 }
 .sidebar.close .sb-logo-img {
-  transform: scale(2.02);
+  width: 94px;
 }
 .sidebar:hover .sb-logo-img {
-  transform: scale(2.06);
+  width: 128px;
   filter: drop-shadow(0 0 18px rgba(142, 219, 21, 0.45));
 }
 
@@ -85,6 +90,7 @@
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
+  margin-left: -1px;
 }
 .sb-brand-name {
   font-size: 16px;

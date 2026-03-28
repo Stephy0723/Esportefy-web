@@ -3,6 +3,45 @@
 import mongoose from "mongoose";
 import { COUNTRY_CODE_BY_NAME, normalizeCountryName } from "../../../shared/countries.js";
 
+const normalizeCountryCodeLookup = (value = '') =>
+    String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+export const extractCountryPrefixFromUserCode = (value = '') => {
+    const match = String(value || '').trim().toUpperCase().match(/-([A-Z]{2})\d+$/);
+    return match ? match[1] : '';
+};
+
+export const resolveCountryUserCodePrefix = (country = '') => {
+    const normalizedCountry = String(normalizeCountryName(country) || country || '').trim();
+    let countryCode = COUNTRY_CODE_BY_NAME[normalizedCountry];
+
+    if (!countryCode) {
+        const lower = normalizeCountryCodeLookup(normalizedCountry);
+        if (lower) {
+            for (const [name, code] of Object.entries(COUNTRY_CODE_BY_NAME)) {
+                if (normalizeCountryCodeLookup(name) === lower) {
+                    countryCode = code;
+                    break;
+                }
+            }
+        }
+    }
+
+    return countryCode || '';
+};
+
+export const shouldRegenerateUserCodeForCountry = ({ country = '', userCode = '' } = {}) => {
+    const expectedPrefix = resolveCountryUserCodePrefix(country);
+    if (!userCode) return true;
+    if (!expectedPrefix) return false;
+
+    const currentPrefix = extractCountryPrefixFromUserCode(userCode);
+    return !currentPrefix || currentPrefix !== expectedPrefix;
+};
+
 const UserSchema = new mongoose.Schema({
     // --- Identidad Visual ---
     userCode: {
@@ -441,27 +480,16 @@ UserSchema.pre('validate', async function(next) {
     if (this.country) {
         this.country = normalizeCountryName(this.country);
     }
-    if (this.userCode) return next();
 
     const UserModel = this.constructor;
-    const normalizedCountry = String(this.country || '').trim();
-    let countryCode = COUNTRY_CODE_BY_NAME[normalizedCountry];
+    let countryCode = resolveCountryUserCodePrefix(this.country);
 
-    // Fallback: case-insensitive and accent-insensitive exact match
-    if (!countryCode) {
-        const lower = normalizedCountry.toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (lower) {
-            for (const [name, code] of Object.entries(COUNTRY_CODE_BY_NAME)) {
-                const nameLower = name.toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                if (nameLower === lower) {
-                    countryCode = code;
-                    break;
-                }
-            }
-        }
-    }
+    const shouldRegenerate = shouldRegenerateUserCodeForCountry({
+        country: this.country,
+        userCode: this.userCode
+    });
+
+    if (!shouldRegenerate) return next();
     
     // Si el país no está mapeado, se notifica a los admins
     if (!countryCode) {
@@ -501,6 +529,8 @@ UserSchema.pre('validate', async function(next) {
         }
     }
     const seqNum = String(maxSeq + 1).padStart(2, '0');
+
+    this.userCode = undefined;
 
     let isUnique = false;
     let attempts = 0;

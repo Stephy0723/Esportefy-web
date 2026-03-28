@@ -28,6 +28,46 @@ const BASE_SUPPORTED_GAMES = [
     aliases: ['mobile legends', 'mobile legends: bang bang', 'mobile legends bang bang', 'mlbb'],
     roles: ['EXP', 'Gold', 'Mid', 'Jungla', 'Roam'],
   },
+  {
+    id: 'fortnite',
+    name: 'Fortnite',
+    short: 'Fortnite',
+    categories: ['BR'],
+    aliases: ['fortnite'],
+    roles: ['IGL', 'Fragger', 'Support', 'Flex'],
+  },
+  {
+    id: 'warzone',
+    name: 'Warzone',
+    short: 'Warzone',
+    categories: ['BR'],
+    aliases: ['warzone', 'call of duty warzone', 'cod warzone'],
+    roles: ['IGL', 'Fragger', 'Support', 'Flex'],
+  },
+  {
+    id: 'rocket',
+    name: 'Rocket League',
+    short: 'RL',
+    categories: ['Sports'],
+    aliases: ['rocket league', 'rocket', 'rl'],
+    roles: ['Striker', 'Support', 'Flex'],
+  },
+  {
+    id: 'fifa',
+    name: 'EA FC / FIFA',
+    short: 'EA FC',
+    categories: ['Sports'],
+    aliases: ['ea fc', 'ea sports fc', 'fc 25', 'fifa', 'fifa 24', 'fifa 25'],
+    roles: ['Player'],
+  },
+  {
+    id: 'smash',
+    name: 'Smash Bros',
+    short: 'Smash',
+    categories: ['Fighting'],
+    aliases: ['smash', 'smash bros', 'super smash bros', 'super smash bros ultimate', 'ssbu'],
+    roles: ['Player'],
+  },
 ];
 
 const aliasEntries = BASE_SUPPORTED_GAMES.flatMap((game) =>
@@ -46,7 +86,7 @@ export const SUPPORTED_GAMES = BASE_SUPPORTED_GAMES.map((game) => ({
 export const SUPPORTED_GAME_IDS = SUPPORTED_GAMES.map((game) => game.id);
 export const SUPPORTED_GAME_NAMES = SUPPORTED_GAMES.map((game) => game.name);
 export const SUPPORTED_GAME_SHORTS = SUPPORTED_GAMES.map((game) => game.short);
-export const SUPPORTED_GAME_CATEGORIES = ['FPS', 'MOBA'];
+export const SUPPORTED_GAME_CATEGORIES = [...new Set(SUPPORTED_GAMES.flatMap((game) => game.categories))];
 export const SUPPORTED_RIOT_GAME_NAMES = ['Valorant', 'League of Legends'];
 export const SUPPORTED_RIOT_PRODUCT_IDS = ['valorant', 'lol'];
 export const SUPPORTED_MLBB_GAME_NAMES = ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'];

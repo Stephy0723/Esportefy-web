@@ -173,6 +173,9 @@ export const normalizeCountryName = (value = '', options = {}) => {
   return allowCustom ? raw : '';
 };
 
+export const normalizeKnownCountryName = (value = '') =>
+  normalizeCountryName(value, { allowCustom: false });
+
 export const getCountryCallingCode = (value = '') => {
   const canonical = normalizeCountryName(value);
   return COUNTRY_CALLING_CODES[canonical] || '';

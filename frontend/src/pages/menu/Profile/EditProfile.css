@@ -1644,20 +1644,28 @@
     text-align: center;
     line-height: 1.2;
 }
-.ep__game-check {
+.ep__game-rank {
     position: absolute;
     top: 6px;
     right: 6px;
-    width: 22px;
+    min-width: 34px;
     height: 22px;
-    background: var(--primary);
-    border-radius: 50%;
+    padding: 0 8px;
+    background: rgba(var(--primary-rgb),.12);
+    border: 1px solid rgba(var(--primary-rgb),.45);
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #000;
-    font-size: 0.9rem;
-    font-weight: bold;
+    color: var(--text-main);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: .02em;
+}
+.ep__game-rank--main {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #071100;
 }
 
 /* Categories row */

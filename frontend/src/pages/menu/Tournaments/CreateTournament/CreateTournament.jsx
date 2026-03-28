@@ -15,11 +15,18 @@ import {
   normalizeTournamentMapPool
 } from '../../../../../../shared/tournamentMapOptions.js';
 import {
+  getTournamentGameDefaults,
+  getTournamentGameModalityOptions,
+  getTournamentGamePlatformOptions,
+  getTournamentGameSeriesOptions,
+  normalizeTournamentGameModality,
+  normalizeTournamentGamePlatform,
+  normalizeTournamentGameSeries
+} from '../../../../../../shared/gamePolicies.js';
+import {
   normalizeTournamentFormat,
-  normalizeTournamentPlatform,
   TOURNAMENT_CREATOR_STAFF_ROLE_OPTIONS,
-  TOURNAMENT_FORMAT_OPTIONS,
-  TOURNAMENT_PLATFORM_OPTIONS
+  TOURNAMENT_FORMAT_OPTIONS
 } from '../../../../../../shared/tournamentCatalog.js';
 import {
   SUPPORTED_GAME_NAMES,
@@ -212,7 +219,10 @@ const CreateTournament = () => {
       description: editTournament.desc || editTournament.description || '',
       game: editTournament.game || '',
       gender: editTournament.gender || 'Mixto',
-      modality: editTournament.modality || '',
+      modality: normalizeTournamentGameModality(
+        editTournament.game || prev.game,
+        editTournament.modality || prev.modality
+      ),
       date: toDate(editTournament.dateRaw || editTournament.date),
       time: editTournament.time || '',
       timezone: editTournament.timezone || prev.timezone,
@@ -226,7 +236,10 @@ const CreateTournament = () => {
       maxSlots: editMaxSlots || prev.maxSlots,
       format: normalizeTournamentFormat(editTournament.format || prev.format),
       server: editTournament.server || '',
-      platform: normalizeTournamentPlatform(editTournament.platform || prev.platform),
+      platform: normalizeTournamentGamePlatform(
+        editTournament.game || prev.game,
+        editTournament.platform || prev.platform
+      ),
       organizerName: editTournament.organizer || prev.organizerName,
       registrationWindow: {
         start: toDate(editTournament.registrationWindow?.start),
@@ -247,7 +260,10 @@ const CreateTournament = () => {
       contact: editTournament.contact || prev.contact,
       broadcast: editTournament.broadcast || prev.broadcast,
       matchConfig: {
-        seriesType: editTournament.matchConfig?.seriesType || prev.matchConfig.seriesType,
+        seriesType: normalizeTournamentGameSeries(
+          editTournament.game || prev.game,
+          editTournament.matchConfig?.seriesType || prev.matchConfig.seriesType
+        ),
         mapPool: normalizeTournamentMapPool(
           editTournament.game || prev.game,
           editTournament.matchConfig?.mapPool
@@ -300,6 +316,18 @@ const CreateTournament = () => {
   const serverOptions = useMemo(
     () => getTournamentServerOptions(tournament.game, tournament.server),
     [tournament.game, tournament.server]
+  );
+  const platformOptions = useMemo(
+    () => getTournamentGamePlatformOptions(tournament.game, tournament.platform),
+    [tournament.game, tournament.platform]
+  );
+  const modalityOptions = useMemo(
+    () => getTournamentGameModalityOptions(tournament.game, tournament.modality),
+    [tournament.game, tournament.modality]
+  );
+  const seriesOptions = useMemo(
+    () => getTournamentGameSeriesOptions(tournament.game, tournament.matchConfig.seriesType),
+    [tournament.game, tournament.matchConfig.seriesType]
   );
   const mapOptions = useMemo(
     () => getTournamentMapOptions(tournament.game, tournament.matchConfig.mapPool),
@@ -403,15 +431,19 @@ const CreateTournament = () => {
   const setGameField = (value) => {
     setPendingMap('');
     setTournament((prev) => {
+      const defaults = getTournamentGameDefaults(value);
       const nextServer = isValidTournamentServer(value, prev.server)
         ? normalizeTournamentServer(value, prev.server)
-        : '';
+        : defaults.server;
       return {
         ...prev,
         game: value,
         server: nextServer,
+        platform: normalizeTournamentGamePlatform(value, prev.platform),
+        modality: normalizeTournamentGameModality(value, prev.modality),
         matchConfig: {
           ...prev.matchConfig,
+          seriesType: normalizeTournamentGameSeries(value, prev.matchConfig.seriesType),
           mapPool: []
         }
       };
@@ -529,7 +561,7 @@ const CreateTournament = () => {
       checkInWindow: { start: datePlus(20), end: datePlus(21) },
       eligibility: {
         minAge: 16,
-        allowedCountries: 'Republica Dominicana, Puerto Rico, Mexico, Colombia',
+        allowedCountries: 'República Dominicana, Puerto Rico, Mexico, Colombia',
         notes: 'Se requiere cuenta activa en el servidor LATAM y disponibilidad para horarios nocturnos.'
       },
       contact: {
@@ -547,7 +579,7 @@ const CreateTournament = () => {
         patchVersion: 'MLBB v1.8.90'
       },
       legalCompliance: {
-        jurisdiction: 'Republica Dominicana',
+        jurisdiction: 'República Dominicana',
         governingLaw: 'Normativa local de comercio electronico, consumidor y datos personales aplicable al evento',
         claimsContact: 'legal@glitchgang.net',
         rulesAccepted: true,
@@ -934,7 +966,17 @@ const CreateTournament = () => {
               </label>
             </div>
             <div className="ct-grid four">
-              <label className="ct-field"><span>Plataforma</span><select value={tournament.platform} onChange={(e) => setField('platform', e.target.value)}>{TOURNAMENT_PLATFORM_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
+              <label className="ct-field">
+                <span>Plataforma</span>
+                <select
+                  value={tournament.game ? tournament.platform : ''}
+                  onChange={(e) => setField('platform', e.target.value)}
+                  disabled={!tournament.game}
+                >
+                  <option value="">{tournament.game ? 'Seleccionar plataforma' : 'Selecciona el juego primero'}</option>
+                  {platformOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              </label>
               <label className="ct-field"><span>Zona horaria</span><select value={tournament.timezone} onChange={(e) => setField('timezone', e.target.value)}><option value="UTC">UTC</option><option value="America/Santo_Domingo">America/Santo_Domingo</option><option value="America/New_York">America/New_York</option><option value="America/Mexico_City">America/Mexico_City</option><option value="America/Bogota">America/Bogota</option><option value="Europe/Madrid">Europe/Madrid</option><option value="Europe/London">Europe/London</option><option value="Asia/Tokyo">Asia/Tokyo</option></select></label>
               <label className="ct-field"><span>Fecha inicio</span><input type="date" min={todayInput} required value={tournament.date} onChange={(e) => setField('date', e.target.value)} /></label>
               <label className="ct-field"><span>Hora inicio</span><input type="time" required value={tournament.time} onChange={(e) => setField('time', e.target.value)} /></label>
@@ -989,11 +1031,35 @@ const CreateTournament = () => {
                 <small>Presets rapidos desde 4 equipos y opcion manual si necesitas otro numero.</small>
               </label>
               <label className="ct-field"><span>Genero</span><select value={tournament.gender} onChange={(e) => setField('gender', e.target.value)}>{TEAM_GENDER_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
-              <label className="ct-field"><span>Equipo</span><select value={tournament.modality} onChange={(e) => setField('modality', e.target.value)}><option value="">Seleccionar</option><option>1v1</option><option>2v2</option><option>3v3</option><option>5v5</option></select></label>
+              <label className="ct-field">
+                <span>Equipo</span>
+                <select
+                  value={tournament.modality}
+                  onChange={(e) => setField('modality', e.target.value)}
+                  disabled={!tournament.game}
+                >
+                  <option value="">{tournament.game ? 'Seleccionar' : 'Selecciona el juego primero'}</option>
+                  {modalityOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
               <label className="ct-field"><span>Llaves</span><select value={tournament.format} onChange={(e) => setField('format', e.target.value)}>{TOURNAMENT_FORMAT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
             </div>
             <div className="ct-grid three">
-              <label className="ct-field"><span>Serie</span><select value={tournament.matchConfig.seriesType} onChange={(e) => setNested('matchConfig', 'seriesType', e.target.value)}><option>BO1</option><option>BO3</option><option>BO5</option><option>FT2</option></select></label>
+              <label className="ct-field">
+                <span>Serie</span>
+                <select
+                  value={tournament.game ? tournament.matchConfig.seriesType : ''}
+                  onChange={(e) => setNested('matchConfig', 'seriesType', e.target.value)}
+                  disabled={!tournament.game}
+                >
+                  <option value="">{tournament.game ? 'Seleccionar serie' : 'Selecciona el juego primero'}</option>
+                  {seriesOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
               <label className="ct-field"><span>Patch</span><input placeholder="Ej: 15.4" value={tournament.matchConfig.patchVersion} onChange={(e) => setNested('matchConfig', 'patchVersion', e.target.value)} /></label>
               <label className="ct-field">
                 <span>Map pool</span>
@@ -1058,7 +1124,7 @@ const CreateTournament = () => {
             </div>
             <div className="ct-grid four">
               <label className="ct-field"><span>Edad minima</span><input type="number" min="13" value={tournament.eligibility.minAge} onChange={(e) => setNested('eligibility', 'minAge', e.target.value)} /></label>
-              <label className="ct-field"><span>Paises permitidos</span><input placeholder="Global, Republica Dominicana, Mexico, Espana" value={tournament.eligibility.allowedCountries} onChange={(e) => setNested('eligibility', 'allowedCountries', e.target.value)} /></label>
+              <label className="ct-field"><span>Paises permitidos</span><input placeholder="Global, República Dominicana, Mexico, Espana" value={tournament.eligibility.allowedCountries} onChange={(e) => setNested('eligibility', 'allowedCountries', e.target.value)} /></label>
               <label className="ct-field">
                 <span>Tipo de registro</span>
                 <select value={tournament.entryFee} onChange={(e) => setField('entryFee', e.target.value)}>
@@ -1264,7 +1330,7 @@ const CreateTournament = () => {
               <label className="ct-field">
                 <span>Jurisdiccion principal</span>
                 <input
-                  placeholder="Ej: Republica Dominicana"
+                  placeholder="Ej: República Dominicana"
                   value={tournament.legalCompliance.jurisdiction}
                   onChange={(e) => setNested('legalCompliance', 'jurisdiction', e.target.value)}
                   required={unlockLegal}

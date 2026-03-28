@@ -19,7 +19,7 @@ const PrivacyPolicy = () => {
               <p className="legal-mini">Tratamiento de datos personales</p>
               <h1 className="legal-hero-title">Politica de <span className="legal-accent">Privacidad</span></h1>
               <p className="legal-hero-lead">
-                Explica que datos usamos, por que los tratamos y como puedes ejercer tus derechos en Republica Dominicana.
+                Explica que datos usamos, por que los tratamos y como puedes ejercer tus derechos en República Dominicana.
               </p>
               <p className="legal-mini">Ultima actualizacion: 23 de febrero de 2026</p>
               <p className="legal-mini">Version legal RD: v1.0 | Fecha efectiva: 23 de febrero de 2026</p>

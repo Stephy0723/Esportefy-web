@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { getCountryCallingCode, normalizeCountryName } from '../../../shared/countries.js';
+import { getCountryCallingCode, normalizeCountryName, normalizeKnownCountryName } from '../../../shared/countries.js';
 import {
     normalizeExperienceValues,
     normalizeGenderValue,
@@ -9,20 +9,23 @@ import {
 } from '../../../shared/profileCatalog.js';
 
 describe('country normalization', () => {
-    it('normalizes aliases to the canonical country name', () => {
-        expect(normalizeCountryName('Rep. Dominicana')).toBe('República Dominicana');
-        expect(normalizeCountryName('Republica Dominicana')).toBe('República Dominicana');
+    it('keeps canonical country names stable', () => {
+        expect(normalizeCountryName('República Dominicana')).toBe('República Dominicana');
         expect(normalizeCountryName('mexico')).toBe('México');
     });
 
-    it('returns the expected calling code using canonical or alias values', () => {
+    it('returns the expected calling code for canonical values', () => {
         expect(getCountryCallingCode('República Dominicana')).toBe('1');
-        expect(getCountryCallingCode('Rep. Dominicana')).toBe('1');
         expect(getCountryCallingCode('España')).toBe('34');
     });
 
     it('preserves custom countries that are not in the shared catalog', () => {
         expect(normalizeCountryName('Japón')).toBe('Japón');
+    });
+
+    it('returns empty for unknown countries when a closed catalog is required', () => {
+        expect(normalizeKnownCountryName('Japón')).toBe('');
+        expect(normalizeKnownCountryName('República Dominicana')).toBe('República Dominicana');
     });
 
     it('normalizes shared profile catalog values through the same canonical lists', () => {

@@ -84,7 +84,7 @@ export const NEWS = [
     image:
       'https://images.unsplash.com/photo-1569409611450-fd401daea0f8?q=80&w=1400&auto=format&fit=crop',
         details: [
-      'MenaRD gano su primera Capcom Cup en diciembre de 2017, llevandose US$250,000 y poniendo a Republica Dominicana en el mapa mundial del FGC.',
+      'MenaRD gano su primera Capcom Cup en diciembre de 2017, llevandose US$250,000 y poniendo a República Dominicana en el mapa mundial del FGC.',
       'En febrero de 2023, el circuito oficial de Capcom confirmo su victoria en Capcom Cup IX, convirtiendolo en el unico bicampeon en la historia del evento.',
       'Tambien gano el Blink Respawn 2019 localmente y fue campeon de Central America East 2022 en el Capcom Pro Tour.'
     ],
@@ -131,7 +131,7 @@ export const NEWS = [
     details: [
       'En Blink Respawn 2024 (8-9 abril, Santo Domingo), Bot Academy con Kilua y LawletRD se llevo el primer lugar y $800 USD. Family One quedo segundo ($375 USD) y Twisted tercero ($125 USD).',
       'En Blink Respawn 2025 (Sambil, Santo Domingo), Bot Academy con LawletRD y Goldsataque repitio como campeon con un premio de $1,000 USD.',
-      'El Blink Respawn se ha consolidado como uno de los eventos presenciales mas importantes de gaming competitivo en Republica Dominicana.'
+      'El Blink Respawn se ha consolidado como uno de los eventos presenciales mas importantes de gaming competitivo en República Dominicana.'
     ],
     gallery: [
       'https://images.unsplash.com/photo-1558008258-ec20a83db196?q=80&w=1400&auto=format&fit=crop'
@@ -141,7 +141,7 @@ export const NEWS = [
     id: 7,
     title: 'BryanD gana oro para RD en los Global Esports Games 2023 en Riad',
     excerpt:
-      'Bryan De Los Santos se llevo la medalla de oro en Street Fighter 6 representando a Republica Dominicana en Arabia Saudita.',
+      'Bryan De Los Santos se llevo la medalla de oro en Street Fighter 6 representando a República Dominicana en Arabia Saudita.',
     category: 'Eventos',
     game: 'Multigame',
     author: 'Redacción',
@@ -163,7 +163,7 @@ export const NEWS = [
     id: 8,
     title: 'Seleccion Dominicana campeona en FIBA Esports Open III de NBA 2K',
     excerpt:
-      'Republica Dominicana gano la conferencia Norte y Centroamerica en el FIBA Esports Open III (NBA 2K21), derrotando a Estados Unidos.',
+      'República Dominicana gano la conferencia Norte y Centroamerica en el FIBA Esports Open III (NBA 2K21), derrotando a Estados Unidos.',
     category: 'Torneos',
     game: 'Multigame',
     author: 'Redacción',
@@ -173,7 +173,7 @@ export const NEWS = [
     image:
       'https://images.unsplash.com/photo-1581852549708-72910bd52cff?q=80&w=1400&auto=format&fit=crop',
     details: [
-      'En la Gran Final del 9 de mayo de 2021, Republica Dominicana se corono campeona de la conferencia Norte y Centroamerica del FIBA Esports Open III (Next Gen, NBA 2K21).',
+      'En la Gran Final del 9 de mayo de 2021, República Dominicana se corono campeona de la conferencia Norte y Centroamerica del FIBA Esports Open III (Next Gen, NBA 2K21).',
       'El logro fue confirmado por fuentes institucionales de FIBA y una nota oficial de USA Basketball reconociendo su derrota ante Dominicana.',
       'Este titulo representa un hito historico para los esports por selecciones nacionales en el pais.'
     ],
@@ -207,7 +207,7 @@ export const NEWS = [
     id: 10,
     title: 'El ecosistema esports de RD crece: Copa Popular, Claro Gaming y Blink lideran el camino',
     excerpt:
-      'Torneos nacionales con premios millonarios y miles de participantes consolidan a Republica Dominicana como centro emergente del gaming competitivo en el Caribe.',
+      'Torneos nacionales con premios millonarios y miles de participantes consolidan a República Dominicana como centro emergente del gaming competitivo en el Caribe.',
     category: 'Institucional',
     game: 'Multigame',
     author: 'Redacción',
@@ -217,7 +217,7 @@ export const NEWS = [
     image:
       'https://images.unsplash.com/photo-1767455471543-055dbc6c6700?q=80&w=1400&auto=format&fit=crop',
     details: [
-      'Torneos como la Copa Popular, Claro Gaming y Blink Respawn han servido como plataformas clave para el crecimiento de los esports en Republica Dominicana.',
+      'Torneos como la Copa Popular, Claro Gaming y Blink Respawn han servido como plataformas clave para el crecimiento de los esports en República Dominicana.',
       'Con premios que superan los cinco millones de pesos en algunos eventos y la participacion de miles de jugadores, estas competencias han permitido que equipos dominicanos se desarrollen y compitan a nivel regional e internacional.',
       'Equipos como ITLA eSports, Bot Academy, UASD Gaming, Team Dominators, Caribbean Warriors, Alpha Gaming RD y Shadow Legion RD son parte activa de la escena competitiva.',
       'El pais se consolida como uno de los centros emergentes del gaming competitivo en el Caribe.'
@@ -241,9 +241,9 @@ export const NEWS = [
     image:
       'https://images.unsplash.com/photo-1558008258-ec20a83db196?q=80&w=1600&auto=format&fit=crop',
     details: [
-      'ISKRA fue el equipo que represento a Republica Dominicana en Mobile Legends: Bang Bang en la ruta al IESF World Esports Championship 2025.',
+      'ISKRA fue el equipo que represento a República Dominicana en Mobile Legends: Bang Bang en la ruta al IESF World Esports Championship 2025.',
       'El roster publico incluye a INSTNCT, Desz01, Ricky, Diamond, Shadow y Junn01.',
-      'IESF listo a Republica Dominicana entre las 19 naciones participantes en esta disciplina, un hito para el MLBB dominicano.'
+      'IESF listo a República Dominicana entre las 19 naciones participantes en esta disciplina, un hito para el MLBB dominicano.'
     ],
     gallery: [
       'https://images.unsplash.com/photo-1637855195094-992d3d578f42?q=80&w=1400&auto=format&fit=crop'
@@ -275,7 +275,7 @@ export const NEWS = [
     id: 13,
     title: 'Santo Domingo Tigers: el equipo que MenaRD creo para fortalecer el FGC dominicano',
     excerpt:
-      'Fundado por MenaRD, Santo Domingo Tigers se ha convertido en pilar del ecosistema de fighting games en Republica Dominicana con BryanD entre sus filas.',
+      'Fundado por MenaRD, Santo Domingo Tigers se ha convertido en pilar del ecosistema de fighting games en República Dominicana con BryanD entre sus filas.',
     category: 'Equipos',
     game: 'Multigame',
     author: 'Redacción',
@@ -285,7 +285,7 @@ export const NEWS = [
     image:
       'https://images.unsplash.com/photo-1768201493197-55a6f6ac414c?q=80&w=1400&auto=format&fit=crop',
     details: [
-      'Santo Domingo Tigers fue fundado por MenaRD para fortalecer la escena local de fighting games en Republica Dominicana.',
+      'Santo Domingo Tigers fue fundado por MenaRD para fortalecer la escena local de fighting games en República Dominicana.',
       'BryanD, campeon de oro en los Global Esports Games 2023, agradecio especificamente al equipo Santo Domingo Tigers tras su victoria en Riad.',
       'El equipo funciona como semillero de talento dominicano en Street Fighter y otros fighting games, con presencia en eventos nacionales e internacionales.'
     ],
@@ -308,7 +308,7 @@ export const NEWS = [
       'https://images.unsplash.com/photo-1558008258-be2e19614dda?q=80&w=1400&auto=format&fit=crop',
     details: [
       'Gerard Sarante fue anunciado como ganador federativo 2025 en eFootball, consolidando su posicion como el jugador mas constante en esta disciplina.',
-      'Ha representado a Republica Dominicana en la seleccion FDDE desde 2022, participando en multiples ciclos competitivos.',
+      'Ha representado a República Dominicana en la seleccion FDDE desde 2022, participando en multiples ciclos competitivos.',
       'La FDDE abrio convocatorias 2025-2026 para mas disciplinas, incluyendo Global Esports Games Mumbai 2025.'
     ],
     gallery: [
@@ -331,7 +331,7 @@ export const NEWS = [
     details: [
       'Space Rabbit e-Sports tiene visibilidad en League of Legends y Valorant. Leaguepedia lo vincula a miembros del equipo nacional dominicano de LoL.',
       'Mezexis Esports aparece integrado en la conformacion de la seleccion nacional 2023 y tiene presencia reconocible en PUBG Mobile.',
-      'Ambas organizaciones representan el puente entre la escena competitiva local y la representacion internacional de Republica Dominicana.'
+      'Ambas organizaciones representan el puente entre la escena competitiva local y la representacion internacional de República Dominicana.'
     ],
     gallery: [
       'https://images.unsplash.com/photo-1558008258-ec20a83db196?q=80&w=1400&auto=format&fit=crop'

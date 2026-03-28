@@ -13,7 +13,7 @@ import bgBlack from '../../assets/images/login-white.png'; // Imagen Clara (Aseg
 
 import { GAME_IMAGES } from '../../data/gameImages';
 import { getGameIdFromRoutePath } from '../menu/Community/gameHub.service';
-import { COUNTRY_OPTIONS, getCountryCallingCode, normalizeCountryName } from '../../../../shared/countries.js';
+import { COUNTRY_OPTIONS, getCountryCallingCode, normalizeKnownCountryName } from '../../../../shared/countries.js';
 import { EXPERIENCE_LEVELS, GENDER_OPTIONS, GOAL_OPTIONS, PLATFORM_OPTIONS } from '../../../../shared/profileCatalog.js';
 
 const normalizeForCompare = (value = '') =>
@@ -38,6 +38,31 @@ const REGISTER_GAMES = [
     id: 'mlbb',
     name: 'Mobile Legends',
     image: GAME_IMAGES['Mobile Legends']
+  },
+  {
+    id: 'fortnite',
+    name: 'Fortnite',
+    image: GAME_IMAGES.Fortnite
+  },
+  {
+    id: 'warzone',
+    name: 'Warzone',
+    image: GAME_IMAGES.Warzone || GAME_IMAGES.warzone || GAME_IMAGES.Default
+  },
+  {
+    id: 'rocket',
+    name: 'Rocket League',
+    image: GAME_IMAGES['Rocket League']
+  },
+  {
+    id: 'fifa',
+    name: 'EA FC / FIFA',
+    image: GAME_IMAGES['EA FC / FIFA']
+  },
+  {
+    id: 'smash',
+    name: 'Smash Bros',
+    image: GAME_IMAGES['Smash Bros'] || GAME_IMAGES.Default
   }
 ];
 
@@ -68,6 +93,11 @@ const hasNumericSequence = (value = '') => {
     '9876', '8765', '7654', '6543', '5432', '4321', '3210'
   ];
   return patterns.some((p) => lower.includes(p));
+};
+
+const getSelectionRank = (list = [], value) => {
+  const index = Array.isArray(list) ? list.indexOf(value) : -1;
+  return index >= 0 ? index + 1 : null;
 };
 
 const getPasswordError = ({ password, username, fullName, email }) => {
@@ -115,7 +145,7 @@ const getSubmitError = (formData, passwordError) => {
   if (!String(formData.fullName || '').trim()) return 'El nombre completo es obligatorio.';
   if (!String(formData.phone || '').trim()) return 'El teléfono es obligatorio.';
   if (!isValidNonNegativeNumberString(formData.phone)) return 'El teléfono debe contener solo números y no puede ser negativo.';
-  if (!String(formData.country || '').trim() || (formData.country === 'Otro' && !String(formData.customCountry || '').trim())) return 'El país es obligatorio.';
+  if (!String(formData.country || '').trim()) return 'El país es obligatorio.';
   if (!String(formData.birthDate || '').trim()) return 'La fecha de nacimiento es obligatoria.';
   if (!Array.isArray(formData.selectedGames) || formData.selectedGames.length === 0) return 'Debes seleccionar al menos un juego.';
   if (!String(formData.experience || '').trim()) return 'Selecciona tu nivel de experiencia.';
@@ -135,7 +165,7 @@ const getStep1Error = (formData) => {
   if (!String(formData.fullName || '').trim()) return 'El nombre completo es obligatorio.';
   if (!String(formData.phone || '').trim()) return 'El teléfono es obligatorio.';
   if (!isValidNonNegativeNumberString(formData.phone)) return 'El teléfono debe tener solo números (sin +, espacios ni guiones).';
-  if (!String(formData.country || '').trim() || (formData.country === 'Otro' && !String(formData.customCountry || '').trim())) return 'Selecciona tu país.';
+  if (!String(formData.country || '').trim()) return 'Selecciona tu país.';
   if (!String(formData.birthDate || '').trim()) return 'La fecha de nacimiento es obligatoria.';
   return '';
 };
@@ -172,7 +202,7 @@ const Register = () => {
   });
 
   const [formData, setFormData] = useState({
-    fullName: '', phone: '', gender: 'Otro', country: '', customCountry: '', birthDate: '',
+    fullName: '', phone: '', gender: 'Otro', country: '', birthDate: '',
     selectedGames: [], platforms: [],
     experience: '', goals: [],
     username: '', email: '', password: '', confirmPassword: '',
@@ -207,7 +237,7 @@ const Register = () => {
     try {
       const payload = {
         ...formData,
-        country: normalizeCountryName(formData.country === 'Otro' ? formData.customCountry : formData.country)
+        country: normalizeKnownCountryName(formData.country)
       };
       const response = await axios.post(`${API_URL}/api/auth/register`, {
         ...payload,
@@ -225,7 +255,11 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
-    const nextValue = name === 'phone' && type !== 'checkbox' ? normalizePhone(value) : value;
+    const nextValue = name === 'phone' && type !== 'checkbox'
+      ? normalizePhone(value)
+      : name === 'country'
+        ? normalizeKnownCountryName(value)
+        : value;
     if (name === 'phone') {
       setPhoneAvailability({ loading: false, checked: false, available: true, warning: false, message: '' });
     }
@@ -363,7 +397,7 @@ const Register = () => {
     String(formData.fullName || '').trim() &&
     String(formData.phone || '').trim() &&
     isValidNonNegativeNumberString(formData.phone) &&
-    (String(formData.country || '').trim() && (formData.country !== 'Otro' || String(formData.customCountry || '').trim())) &&
+    String(formData.country || '').trim() &&
     String(formData.birthDate || '').trim()
   );
   const step1ErrorHint = getStep1Error(formData);
@@ -440,11 +474,7 @@ const Register = () => {
                     <i className='bx bxl-whatsapp'></i>
                   </div>
                 </div>
-                {formData.country === 'Otro' ? (
-                  <span className="helper-text"><i className='bx bx-info-circle'></i> Por favor incluye tu prefijo regional (ej: +34 para España).</span>
-                ) : (
-                  <span className="helper-text"><i className='bx bx-info-circle'></i> Escribe solo los números, sin espacios ni símbolos.</span>
-                )}
+                <span className="helper-text"><i className='bx bx-info-circle'></i> Escribe solo los números, sin espacios ni símbolos.</span>
                 
                 {phoneAvailability.loading && (
                   <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
@@ -461,7 +491,6 @@ const Register = () => {
                     <select name="country" value={formData.country} onChange={handleChange} required>
                       <option value="" disabled>Selecciona tu país</option>
                       {COUNTRY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                      <option value="Otro">Otro (Especificar)</option>
                     </select>
                     <i className='bx bx-globe'></i>
                   </div>
@@ -475,15 +504,6 @@ const Register = () => {
                     <i className='bx bx-user'></i>
                   </div>
                 </div>
-                {formData.country === 'Otro' && (
-                  <div className="input-row split step-fade-in">
-                    <div className="input-wrapper">
-                      <label>Especifica tu país</label>
-                      <input type="text" name="customCountry" placeholder="Ej: Japón" value={formData.customCountry} onChange={handleChange} />
-                      <i className='bx bx-map-pin'></i>
-                    </div>
-                  </div>
-                )}
                 <div className="input-row split">
                   <div className="input-wrapper">
                     <label>Fecha Nacimiento</label>
@@ -509,18 +529,25 @@ const Register = () => {
             {step === 2 && (
               <div className="step-fade-in">
                 <h3 className="step-title">Elige tu Campo de Batalla</h3>
+                <p className="games-selection-note">Selecciona tus juegos en orden de prioridad. Tu `#1` será tu main.</p>
                 <div className="games-grid">
-                  {REGISTER_GAMES.map(game => (
+                  {REGISTER_GAMES.map(game => {
+                    const selectionRank = getSelectionRank(formData.selectedGames, game.name);
+                    return (
                     <div
                       key={game.id}
-                      className={`game-card-pro ${formData.selectedGames.includes(game.name) ? 'selected' : ''}`}
+                      className={`game-card-pro ${selectionRank ? 'selected' : ''}`}
                       onClick={() => toggleSelection('selectedGames', game.name)}
                     >
-                      {formData.selectedGames.includes(game.name) && <span className="selection-check" aria-hidden="true" />}
+                      {selectionRank && (
+                        <span className={`selection-rank ${selectionRank === 1 ? 'selection-rank--main' : ''}`}>
+                          {selectionRank === 1 ? '#1 Main' : `#${selectionRank}`}
+                        </span>
+                      )}
                       <div className="game-img-wrapper"><img src={game.image || GAME_IMAGES.Default} alt={game.name} /></div>
                       <span className="game-card-pro__name">{game.name}</span>
                     </div>
-                  ))}
+                  )})}
                 </div>
                 <div className="form-actions">
                   <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Atrás</button>

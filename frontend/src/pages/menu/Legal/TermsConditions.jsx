@@ -40,7 +40,7 @@ const TermsConditions = () => {
               Si no estas de acuerdo con el contenido vigente, debes dejar de utilizar el servicio.
             </p>
             <p>
-              Este documento se interpreta conforme a la <span className="legal-key">Constitucion de la Republica Dominicana</span>,
+              Este documento se interpreta conforme a la <span className="legal-key">Constitucion de la República Dominicana</span>,
               en especial el derecho a la tutela judicial efectiva y seguridad juridica.
             </p>
 
@@ -94,7 +94,7 @@ const TermsConditions = () => {
             </p>
             <p>
               Para controversias, las partes se someten a jurisdiccion de tribunales competentes
-              de la <span className="legal-key">Republica Dominicana</span>, salvo norma imperativa distinta.
+              de la <span className="legal-key">República Dominicana</span>, salvo norma imperativa distinta.
             </p>
             </article>
 

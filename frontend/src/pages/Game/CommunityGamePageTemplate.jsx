@@ -21,6 +21,7 @@ import './CommunityGamePageTemplate.css';
 const DATA_ALIASES = {
   ow2: 'overwatch', rl: 'rocket', ff: 'freefire', wr: 'wildrift', wildrift: 'wildrift',
   r6s: 'r6', r6: 'r6', pubg: 'pubgm', pubgm: 'pubgm', hs: 'hearthstone',
+  fifa: 'fifa', eafc25: 'fifa', smash: 'smash', ssbu: 'smash',
   nba2k: 'nba2k', lor: 'lor', cr: 'clashroyale', aov: 'hok',
 };
 
@@ -28,6 +29,7 @@ const COMPANY_BY_ID = {
   lol: 'Riot Games', valorant: 'Riot Games', dota2: 'Valve', mlbb: 'Moonton',
   wildrift: 'Riot Games', fortnite: 'Epic Games', cs2: 'Valve', apex: 'Respawn Entertainment',
   warzone: 'Activision', pubgm: 'Tencent', rl: 'Psyonix', tekken8: 'Bandai Namco',
+  fifa: 'EA Sports', smash: 'Nintendo',
   sf6: 'Capcom', gta: 'Rockstar Games', genshin: 'HoYoverse', amongus: 'Innersloth',
   fallguys: 'Mediatonic', marvel: 'NetEase Games', xdefiant: 'Ubisoft',
   thefinals: 'Embark Studios', deadlock: 'Valve', eafc25: 'EA Sports',

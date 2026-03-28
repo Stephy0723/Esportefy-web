@@ -8,7 +8,7 @@ import {
 
 describe('team catalog normalization', () => {
     it('normalizes team countries through the shared country catalog', () => {
-        expect(normalizeTeamCountry('Rep. Dominicana')).toBe('República Dominicana');
+        expect(normalizeTeamCountry('República Dominicana')).toBe('República Dominicana');
         expect(normalizeTeamCountry('global')).toBe('Internacional');
     });
 

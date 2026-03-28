@@ -123,9 +123,16 @@ export const GAME_IMAGES = {
     
     "Street Fighter 6": sf6,
     "sf6": sf6,
-    
+
     "Tekken 8": tekken,
     "tekken": tekken,
+
+    "Smash Bros": sf6,
+    "smash bros": sf6,
+    "Super Smash Bros": sf6,
+    "Super Smash Bros. Ultimate": sf6,
+    "smash": sf6,
+    "ssbu": sf6,
     
     // ═══ DEPORTES ═══
     "FIFA 24": fifa,

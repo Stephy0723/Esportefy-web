@@ -18,6 +18,7 @@
     "seed:demo": "node --env-file=.env scripts/seed-demo-users.js",
     "reset:db": "node --env-file=.env scripts/reset-database.js",
     "normalize:countries": "node --env-file=.env scripts/normalize-user-countries.js",
+    "normalize:user-codes": "node --env-file=.env scripts/normalize-user-codes.js",
     "normalize:teams": "node --env-file=.env scripts/normalize-team-metadata.js",
     "normalize:communities": "node --env-file=.env scripts/normalize-community-metadata.js"
   },

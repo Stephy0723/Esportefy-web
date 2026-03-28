@@ -5,10 +5,15 @@ import { recordAdminAudit } from '../services/auditLogger.js';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import {
     normalizeTournamentFormat,
-    normalizeTournamentPlatform,
     normalizeTournamentStaffRole,
     TOURNAMENT_ALLOWED_FORMAT_VALUES
 } from '../../../shared/tournamentCatalog.js';
+import {
+    getTournamentGameDefaults,
+    normalizeTournamentGameModality,
+    normalizeTournamentGamePlatform,
+    normalizeTournamentGameSeries
+} from '../../../shared/gamePolicies.js';
 import { normalizeTournamentServer } from '../../../shared/tournamentServerOptions.js';
 import { normalizeTournamentMapPool } from '../../../shared/tournamentMapOptions.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
@@ -702,6 +707,7 @@ export const createTournament = async (req, res) => {
         const parsedMatchConfig = parseField(data.matchConfig) || {};
         const parsedLegalCompliance = parseField(data.legalCompliance) || {};
         const normalizedEntryFeeAmount = String(data.entryFeeAmount || '').trim();
+        const tournamentDefaults = getTournamentGameDefaults(data.game);
 
         const normalizeDateValue = (value) => {
             if (!value) return null;
@@ -784,8 +790,9 @@ export const createTournament = async (req, res) => {
         const newTournament = new Tournament({
             ...safeData,
             gender: normalizeTeamGender(data.gender, 'Mixto'),
-            platform: normalizeTournamentPlatform(data.platform, 'PC'),
+            platform: normalizeTournamentGamePlatform(data.game, data.platform),
             format: normalizeTournamentFormat(data.format, 'single_elimination'),
+            modality: normalizeTournamentGameModality(data.game, data.modality),
             tournamentId,
             prizesByRank: parsedPrizesByRank,
             sponsors: sponsorsWithLogos,
@@ -815,8 +822,8 @@ export const createTournament = async (req, res) => {
                 streamLanguage: parsedBroadcast.streamLanguage || 'es'
             },
             matchConfig: {
-                seriesType: parsedMatchConfig.seriesType || 'BO3',
-                mapPool: normalizeStringArray(parsedMatchConfig.mapPool),
+                seriesType: normalizeTournamentGameSeries(data.game, parsedMatchConfig.seriesType),
+                mapPool: normalizeTournamentMapPool(data.game, parsedMatchConfig.mapPool),
                 patchVersion: parsedMatchConfig.patchVersion || ''
             },
             legalCompliance: {
@@ -846,6 +853,10 @@ export const createTournament = async (req, res) => {
         }
         if (normalizedMaxSlots < MIN_TOURNAMENT_SLOTS) {
             return res.status(400).json({ message: `El torneo debe tener al menos ${MIN_TOURNAMENT_SLOTS} cupos` });
+        }
+
+        if (!String(newTournament.modality || '').trim()) {
+            newTournament.modality = tournamentDefaults.modality;
         }
 
         if (normalizeEntryFee(data.entryFee) === 'pago') {
@@ -1066,8 +1077,12 @@ export const updateTournament = async (req, res) => {
         if (data.gender !== undefined) {
             update.gender = normalizeTeamGender(data.gender, 'Mixto');
         }
+        const targetGameForRules = normalizedUpdateGame || tournament.game;
         if (data.platform !== undefined) {
-            update.platform = normalizeTournamentPlatform(data.platform, 'PC');
+            update.platform = normalizeTournamentGamePlatform(targetGameForRules, data.platform);
+        }
+        if (data.modality !== undefined) {
+            update.modality = normalizeTournamentGameModality(targetGameForRules, data.modality);
         }
         if (data.format !== undefined) {
             update.format = normalizeTournamentFormat(data.format, 'single_elimination');
@@ -1121,8 +1136,8 @@ export const updateTournament = async (req, res) => {
         }
         if (parsedMatchConfig) {
             update.matchConfig = {
-                seriesType: parsedMatchConfig.seriesType || 'BO3',
-                mapPool: normalizeTournamentMapPool(normalizedUpdateGame || tournament.game, parsedMatchConfig.mapPool),
+                seriesType: normalizeTournamentGameSeries(targetGameForRules, parsedMatchConfig.seriesType),
+                mapPool: normalizeTournamentMapPool(targetGameForRules, parsedMatchConfig.mapPool),
                 patchVersion: parsedMatchConfig.patchVersion || ''
             };
         }

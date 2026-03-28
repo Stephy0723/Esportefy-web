@@ -18,6 +18,11 @@ const SUPPORTED_GAMES = [
     { id: 'mlbb', name: 'Mobile Legends', short: 'MLBB' },
     { id: 'valorant', name: 'Valorant', short: 'Valorant' },
     { id: 'lol', name: 'League of Legends', short: 'LoL' },
+    { id: 'fortnite', name: 'Fortnite', short: 'Fortnite' },
+    { id: 'warzone', name: 'Warzone', short: 'WZ' },
+    { id: 'rocket', name: 'Rocket League', short: 'RL' },
+    { id: 'fifa', name: 'EA FC / FIFA', short: 'EA FC' },
+    { id: 'smash', name: 'Smash Bros', short: 'Smash' },
 ];
 
 const FAQ_CATEGORIES = [

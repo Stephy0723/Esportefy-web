@@ -510,7 +510,11 @@ const Profile = () => {
                                     <img src={resolveGameImage(gameId)} alt="" />
                                     <div className="pf-game__info">
                                         <span>{resolveGameName(gameId)}</span>
-                                        {i === 0 && <span className="pf-game__badge"><i className='bx bxs-star' /> MAIN</span>}
+                                        <div className="pf-game__meta">
+                                            <span className={`pf-game__rank ${i === 0 ? 'pf-game__rank--main' : ''}`}>
+                                                {i === 0 ? '#1 Main' : `#${i + 1}`}
+                                            </span>
+                                        </div>
                                     </div>
                                     <i className='bx bx-link-external pf-game__link' />
                                 </div>
@@ -861,6 +865,9 @@ const Profile = () => {
                                         <div key={i} className="pf-modal-game" onClick={() => { setShowGamesModal(false); setSelectedGame(COMMUNITY_GAMES.find(g => g.id.toLowerCase() === gameId.toLowerCase()) || { id: gameId, name: resolveGameName(gameId), img: resolveGameImage(gameId) }); }}>
                                             <img src={resolveGameImage(gameId)} alt="" />
                                             <span>{resolveGameName(gameId)}</span>
+                                            <span className={`pf-modal-game__rank ${i === 0 ? 'pf-modal-game__rank--main' : ''}`}>
+                                                {i === 0 ? '#1 Main' : `#${i + 1}`}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>

@@ -1,4 +1,4 @@
-import { normalizeSupportedGameName } from './supportedGames.js';
+import { GAME_POLICIES, getGamePolicy } from './gamePolicies.js';
 
 const normalizeMapToken = (value = '') =>
   String(value || '')
@@ -20,32 +20,15 @@ const dedupeOptions = (options = []) => {
   });
 };
 
-export const TOURNAMENT_MAP_OPTIONS_BY_GAME = {
-  Valorant: [
-    'Ascent',
-    'Bind',
-    'Haven',
-    'Split',
-    'Icebox',
-    'Lotus',
-    'Sunset',
-    'Breeze',
-    'Fracture',
-    'Pearl',
-    'Abyss'
-  ],
-  'League of Legends': [
-    "Summoner's Rift",
-    'Howling Abyss'
-  ],
-  'Mobile Legends': [
-    'Land of Dawn'
-  ]
-};
+export const TOURNAMENT_MAP_OPTIONS_BY_GAME = Object.fromEntries(
+  GAME_POLICIES
+    .filter((policy) => policy.tournamentMaps.length > 0)
+    .map((policy) => [policy.name, [...policy.tournamentMaps]])
+);
 
 export const getTournamentMapOptions = (game = '', includeValues = []) => {
-  const canonicalGame = normalizeSupportedGameName(game) || String(game || '').trim();
-  const baseOptions = (TOURNAMENT_MAP_OPTIONS_BY_GAME[canonicalGame] || []).map(toOption);
+  const policy = getGamePolicy(game);
+  const baseOptions = (policy?.tournamentMaps || []).map(toOption);
   const legacyOptions = (Array.isArray(includeValues) ? includeValues : [includeValues])
     .map(toOption);
 
