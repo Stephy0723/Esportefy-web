@@ -13,6 +13,7 @@ import { resolveMediaUrl, getTeamFallback, applyImageFallback } from '../../../u
 import { getAuthToken } from '../../../utils/authSession';
 import { useAuth } from '../../../context/AuthContext';
 import { fetchMyCommunities } from '../Community/community.service';
+import { getMetricGuidance, getOverallMetricsWelcome } from './metricsGuidance';
 import './Metrics.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -99,6 +100,8 @@ const Metrics = () => {
     const connCount = useMemo(() =>
         CONNECTION_PROVIDERS_IDS.filter(id => !!user?.connections?.[id === 'moonton' ? 'mlbb' : id]?.verified).length,
     [user?.connections]);
+
+    const primaryGameName = enrichedGames[0]?.name || 'tu juego principal';
 
     /* ── User's tournaments ── */
     const myTournaments = useMemo(() => {
@@ -208,7 +211,7 @@ const Metrics = () => {
         });
     }, [myTeams, tournaments, user?._id]);
 
-    /* ── 5 Metrics with full 5 tips each ── */
+    /* ── 5 Metrics with dynamic guidance ── */
     const metricsData = useMemo(() => {
         if (!user) return [];
         const totalTourneys = myTournaments.length;
@@ -226,9 +229,23 @@ const Metrics = () => {
         const catKeys = Object.keys(versatilityCategories);
         const catValues = Object.values(versatilityCategories);
 
-        const mainGame = enrichedGames[0]?.name || 'tu juego principal';
+        const mainGame = primaryGameName;
 
-        return [
+        const metricContext = {
+            mainGame,
+            totalTourneys,
+            tournamentCount: totalTourneys,
+            finishedCount,
+            captainTeams,
+            teamCount: myTeams.length,
+            connCount,
+            communityCount: myCommunities.length,
+            accountAgeDays,
+            gamesCount: enrichedGames.length,
+            categoryCount: catKeys.length
+        };
+
+        const baseMetrics = [
             {
                 id: 'winrate', icon: 'bx bx-trophy', label: 'WIN RATE', color: '#ffd700',
                 value: `${winRate}%`, numericValue: winRate,
@@ -403,7 +420,16 @@ const Metrics = () => {
                         : 'Mantén colección actualizada. Compite en múltiples juegos.'
             }
         ];
-    }, [user, myTournaments, finishedTournaments, myTeams, connCount, myCommunities, accountAgeDays, enrichedGames]);
+
+        return baseMetrics.map((metric) => {
+            const guidance = getMetricGuidance(metric, metricContext);
+            return {
+                ...metric,
+                guidance,
+                plan: guidance.plan
+            };
+        });
+    }, [user, myTournaments, finishedTournaments, myTeams, connCount, myCommunities, accountAgeDays, enrichedGames, primaryGameName]);
 
     /* ── Overall score ── */
     const overallScore = useMemo(() => {
@@ -420,6 +446,20 @@ const Metrics = () => {
         if (!metricsData.length) return null;
         return metricsData.reduce((max, m) => m.numericValue > max.numericValue ? m : max, metricsData[0]);
     }, [metricsData]);
+
+    const overallGuidance = useMemo(() => (
+        getOverallMetricsWelcome({
+            overallScore,
+            strongestMetric,
+            weakestMetric,
+            mainGame: primaryGameName,
+            connCount,
+            teamCount: myTeams.length,
+            communityCount: myCommunities.length,
+            tournamentCount: myTournaments.length,
+            gamesCount: enrichedGames.length
+        })
+    ), [overallScore, strongestMetric, weakestMetric, primaryGameName, connCount, myTeams.length, myCommunities.length, myTournaments.length, enrichedGames.length]);
 
     const currentFrame = FRAMES.find(f => f.id === user?.selectedFrameId) || FRAMES[0];
 
@@ -536,6 +576,34 @@ const Metrics = () => {
                 <button className="mt__back-btn" onClick={() => navigate('/dashboard')}>
                     <i className="bx bx-arrow-back"></i> Dashboard
                 </button>
+            </section>
+
+            <section className="mt__section mt__section--coach">
+                <motion.div className="mt__coach" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeChild}>
+                    <span className="mt__coach-kicker">{overallGuidance.kicker}</span>
+                    <h2 className="mt__coach-title">{overallGuidance.title}</h2>
+                    <p className="mt__coach-message">{overallGuidance.message}</p>
+
+                    <div className="mt__coach-grid">
+                        <div className="mt__coach-panel">
+                            <h3><i className="bx bx-target-lock"></i> Prioridad actual</h3>
+                            <p>{overallGuidance.priority}</p>
+                        </div>
+                        <div className="mt__coach-panel">
+                            <h3><i className="bx bx-trending-up"></i> Impulso actual</h3>
+                            <p>{overallGuidance.momentum}</p>
+                        </div>
+                    </div>
+
+                    <div className="mt__coach-chips">
+                        {overallGuidance.actionItems.map((item) => (
+                            <span key={item} className="mt__coach-chip">
+                                <i className="bx bx-check-circle"></i>
+                                {item}
+                            </span>
+                        ))}
+                    </div>
+                </motion.div>
             </section>
 
             {/* ═══ LAST TOURNAMENT ═══ */}
@@ -673,7 +741,10 @@ const Metrics = () => {
                                     <div className="mt__metric-card-icon"><i className={m.icon}></i></div>
                                     <div className="mt__metric-card-main">
                                         <div className="mt__metric-card-label">{m.label}</div>
-                                        <div className="mt__metric-card-subtitle">{m.subtitle}</div>
+                                        <div className="mt__metric-card-subrow">
+                                            <div className="mt__metric-card-subtitle">{m.subtitle}</div>
+                                            <span className="mt__metric-stage">{m.guidance.stageLabel}</span>
+                                        </div>
                                     </div>
                                     <div className="mt__metric-card-score">{m.value}</div>
                                     <i className={`bx bx-chevron-${isExpanded ? 'up' : 'down'} mt__metric-card-chevron`}></i>
@@ -694,15 +765,16 @@ const Metrics = () => {
                                                     <p>{m.definition}</p>
                                                 </div>
                                                 <div className="mt__metric-block">
-                                                    <h4><i className="bx bx-bulb" style={{ color: m.color }}></i> 5 Consejos</h4>
-                                                    <ul className="mt__metric-tips">
-                                                        {m.tips.map((tip, i) => (
-                                                            <li key={i}><i className="bx bx-check" style={{ color: m.color }}></i> {tip}</li>
-                                                        ))}
-                                                    </ul>
+                                                    <h4><i className="bx bx-message-square-detail" style={{ color: m.color }}></i> Mensaje actual</h4>
+                                                    <p>{m.guidance.message}</p>
+                                                    <p className="mt__metric-progress">{m.guidance.progressNote}</p>
                                                 </div>
                                                 <div className="mt__metric-block">
-                                                    <h4><i className="bx bx-target-lock" style={{ color: m.color }}></i> Plan de Mejora</h4>
+                                                    <h4><i className="bx bx-bulb" style={{ color: m.color }}></i> Consejo del momento</h4>
+                                                    <p className="mt__metric-note">{m.guidance.advice}</p>
+                                                </div>
+                                                <div className="mt__metric-block">
+                                                    <h4><i className="bx bx-target-lock" style={{ color: m.color }}></i> Siguiente objetivo</h4>
                                                     <p className="mt__metric-plan">{m.plan}</p>
                                                 </div>
                                             </div>

@@ -126,39 +126,6 @@ router.get('/conversations/:conversationId', async (req, res) => {
   }
 });
 
-router.post('/conversations', async (req, res) => {
-  try {
-    const validation = validateConversationPayload(req.body || {});
-    if (!validation.ok) {
-      return res.status(400).json({ error: validation.error });
-    }
-
-    const payload = validation.normalized;
-
-    if (payload.type === 'individual') {
-      const existing = await Conversation.findOne({
-        type: 'individual',
-        participants: { $all: payload.participants, $size: 2 }
-      });
-
-      if (existing) {
-        existing.participantDetails = mergeParticipantDetails(existing.participantDetails, payload.participantDetails);
-        if (!existing.title && payload.title) existing.title = payload.title;
-        if (!existing.image && payload.image) existing.image = payload.image;
-        await existing.save();
-        return res.json(buildConversationPayload(existing));
-      }
-    }
-
-    const newConversation = new Conversation(payload);
-    await newConversation.save();
-    return res.status(201).json(buildConversationPayload(newConversation));
-  } catch (error) {
-    console.error('POST /conversations error:', error);
-    return res.status(500).json({ error: 'No se pudo crear la conversacion.' });
-  }
-});
-
 router.post('/conversations/ensure-team', async (req, res) => {
   try {
     const validation = validateConversationPayload({
@@ -199,6 +166,40 @@ router.post('/conversations/ensure-team', async (req, res) => {
   } catch (error) {
     console.error('POST /conversations/ensure-team error:', error);
     return res.status(500).json({ error: 'No se pudo sincronizar el chat del equipo.' });
+  }
+});
+
+router.post('/conversations', async (req, res) => {
+  try {
+    const validation = validateConversationPayload(req.body || {});
+    if (!validation.ok) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const payload = validation.normalized;
+
+    if (payload.type === 'individual') {
+      const existing = await Conversation.findOne({
+        type: 'individual',
+        participants: { $all: payload.participants },
+        $expr: { $eq: [{ $size: '$participants' }, 2] }
+      });
+
+      if (existing) {
+        existing.participantDetails = mergeParticipantDetails(existing.participantDetails, payload.participantDetails);
+        if (!existing.title && payload.title) existing.title = payload.title;
+        if (!existing.image && payload.image) existing.image = payload.image;
+        await existing.save();
+        return res.json(buildConversationPayload(existing));
+      }
+    }
+
+    const newConversation = new Conversation(payload);
+    await newConversation.save();
+    return res.status(201).json(buildConversationPayload(newConversation));
+  } catch (error) {
+    console.error('POST /conversations error:', error);
+    return res.status(500).json({ error: 'No se pudo crear la conversacion.' });
   }
 });
 

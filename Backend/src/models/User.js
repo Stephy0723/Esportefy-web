@@ -160,6 +160,11 @@ const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true }, // unique para que no se repitan gamertags
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    emailVerified: { type: Boolean, default: false },
+    emailVerifiedAt: { type: Date, default: null },
+    emailVerificationToken: { type: String },
+    emailVerificationExpires: { type: Date },
+    emailVerificationLastSentAt: { type: Date, default: null },
     checkTerms: { type: Boolean, required: true },
 
     // -- Seguridad y Recuperación ---
@@ -184,6 +189,11 @@ const UserSchema = new mongoose.Schema({
     selectedFrameId: {
             type: String,
             default: null
+            },
+
+    unlockedFrames: {
+            type: [String],
+            default: []
             },
 
     selectedBgId: {
@@ -398,7 +408,12 @@ const UserSchema = new mongoose.Schema({
     countrySetAt: { type: Date, default: null },
     birthDateSetAt: { type: Date, default: null },
     // Name changes are throttled: can change every 3 weeks (21 days)
-    lastNameChangeAt: { type: Date, default: null }
+    lastNameChangeAt: { type: Date, default: null },
+
+    // ── Referral System ──
+    referralCode: { type: String, unique: true, sparse: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    referralCount: { type: Number, default: 0 }
 
 }, { timestamps: true });
 

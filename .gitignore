@@ -13,3 +13,9 @@ node_modules
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+chat-service/uploads/*
+chat-service/uploads/images
+chat-service/uploads/pdf
+chat-service/uploads/video
+
