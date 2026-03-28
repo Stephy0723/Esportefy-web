@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { API_URL, CHAT_URL } from '../../config/api';
+import { SERVICE_STATUS_ENDPOINTS } from '../../config/serviceStatus';
 import './StatusPage.css';
 
 const SERVICES = [
-    { key: 'gameServers', label: 'Servidores de Juego', icon: 'bx-server', endpoint: `${API_URL}/api/health` },
-    { key: 'tournamentApi', label: 'API de Torneos', icon: 'bx-trophy', endpoint: `${API_URL}/api/tournaments/health` },
-    { key: 'matchmaking', label: 'Matchmaking', icon: 'bx-target-lock', endpoint: `${API_URL}/api/health` },
-    { key: 'liveChat', label: 'Chat en Vivo', icon: 'bx-chat', endpoint: `${CHAT_URL}/health` },
+    { key: 'gameServers', label: 'Servidores de Juego', icon: 'bx-server', endpoint: SERVICE_STATUS_ENDPOINTS.gameServers },
+    { key: 'tournamentApi', label: 'API de Torneos', icon: 'bx-trophy', endpoint: SERVICE_STATUS_ENDPOINTS.tournamentApi },
+    { key: 'matchmaking', label: 'Matchmaking', icon: 'bx-target-lock', endpoint: SERVICE_STATUS_ENDPOINTS.matchmaking },
+    { key: 'liveChat', label: 'Chat en Vivo', icon: 'bx-chat', endpoint: SERVICE_STATUS_ENDPOINTS.liveChat },
 ];
 
 const STATUS_MAP = {

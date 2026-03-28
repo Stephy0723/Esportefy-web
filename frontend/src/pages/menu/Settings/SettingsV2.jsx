@@ -2,7 +2,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { API_URL, CHAT_URL } from '../../../config/api';
+import { API_URL } from '../../../config/api';
+import { SERVICE_STATUS_ENDPOINTS } from '../../../config/serviceStatus';
 import { useTheme, THEMES } from '../../../context/ThemeContext';
 import SecurityCenterUI from './SecurityCenterUI';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
@@ -73,6 +74,36 @@ export default function SettingsV2() {
     const [riotStatus, setRiotStatus] = useState(null);
     const [valorantRsoLoading, setValorantRsoLoading] = useState(false);
     const [valorantRsoMsg, setValorantRsoMsg] = useState('');
+
+    const pingService = async (url) => {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
+            clearTimeout(timeoutId);
+            return res.ok ? 'operational' : 'degraded';
+        } catch {
+            return 'outage';
+        }
+    };
+
+    const checkSystemStatus = async () => {
+        const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
+            pingService(SERVICE_STATUS_ENDPOINTS.gameServers),
+            pingService(SERVICE_STATUS_ENDPOINTS.tournamentApi),
+            pingService(SERVICE_STATUS_ENDPOINTS.matchmaking),
+            pingService(SERVICE_STATUS_ENDPOINTS.liveChat),
+        ]);
+
+        const services = { gameServers, tournamentApi, matchmaking, liveChat };
+        const hasIssue = Object.values(services).some(s => s !== 'operational');
+
+        setSystemStatus({
+            overall: hasIssue ? 'degraded' : 'operational',
+            services,
+            lastChecked: new Date()
+        });
+    };
 
     // MLBB State
     const [mlbbPlayerId, setMlbbPlayerId] = useState('');
@@ -265,36 +296,6 @@ export default function SettingsV2() {
 
     // Real system status check via endpoint pings
     useEffect(() => {
-        const pingService = async (url) => {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
-                clearTimeout(timeoutId);
-                return res.ok ? 'operational' : 'degraded';
-            } catch {
-                return 'outage';
-            }
-        };
-
-        const checkSystemStatus = async () => {
-            const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
-                pingService(`${API_URL}/api/healthz`),
-                pingService(`${API_URL}/api/tournaments/healthz`),
-                pingService(`${API_URL}/api/healthz`),
-                pingService(`${CHAT_URL}/healthz`),
-            ]);
-
-            const services = { gameServers, tournamentApi, matchmaking, liveChat };
-            const hasIssue = Object.values(services).some(s => s !== 'operational');
-
-            setSystemStatus({
-                overall: hasIssue ? 'degraded' : 'operational',
-                services,
-                lastChecked: new Date()
-            });
-        };
-
         // Initial check with a small delay to show "checking"
         const timeout = setTimeout(checkSystemStatus, 800);
 
@@ -344,34 +345,7 @@ export default function SettingsV2() {
             matchmaking: 'checking',
             liveChat: 'checking'
         }}));
-
-        const pingService = async (url) => {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
-                clearTimeout(timeoutId);
-                return res.ok ? 'operational' : 'degraded';
-            } catch {
-                return 'outage';
-            }
-        };
-
-        const [gameServers, tournamentApi, matchmaking, liveChat] = await Promise.all([
-            pingService(`${API_URL}/api/healthz`),
-            pingService(`${API_URL}/api/tournaments/healthz`),
-            pingService(`${API_URL}/api/healthz`),
-            pingService(`${CHAT_URL}/healthz`),
-        ]);
-
-        const services = { gameServers, tournamentApi, matchmaking, liveChat };
-        const hasIssue = Object.values(services).some(s => s !== 'operational');
-
-        setSystemStatus({
-            overall: hasIssue ? 'degraded' : 'operational',
-            services,
-            lastChecked: new Date()
-        });
+        await checkSystemStatus();
         showSupportToast('Estado actualizado');
     };
 

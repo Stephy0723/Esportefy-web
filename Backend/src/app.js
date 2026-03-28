@@ -113,6 +113,14 @@ app.use(logger);
 app.use(verifyCsrf);
 app.use('/uploads', express.static(uploadsDir));
 
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'glitchgang-api',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/team', teamRoutes);

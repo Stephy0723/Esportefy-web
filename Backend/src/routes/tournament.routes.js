@@ -37,6 +37,14 @@ const rlRegister = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPre
 const rlManage = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'tournament-manage' });
 const rlCreate = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'tournament-create' });
 
+router.get('/health', (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'glitchgang-tournaments',
+    timestamp: new Date().toISOString()
+  });
+});
+
 router.get('/', getTournaments);
 router.get('/public/search', searchPublicTournaments);
 router.get('/public/:code', getPublicTournamentByCode);
