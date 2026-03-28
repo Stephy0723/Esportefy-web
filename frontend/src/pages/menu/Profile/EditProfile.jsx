@@ -107,6 +107,7 @@ const gameCatalog = [
     { id: 'mk11', name: 'Mortal Kombat', img: imgMk11, category: 'fighting' },
     { id: 'sf6', name: 'Street Fighter 6', img: imgSf6, category: 'fighting' },
     { id: 'tekken', name: 'Tekken 8', img: imgTekken, category: 'fighting' },
+    { id: 'smash', name: 'Smash Bros', img: imgSf6, category: 'fighting' },
     
     // Deportes
     { id: 'fifa', name: 'EA FC / FIFA', img: imgFifa, category: 'sports' },
@@ -152,6 +153,11 @@ const normalizeSelectedGameIds = (values = []) => {
     });
 
     return normalized;
+};
+
+const getSelectionRank = (values = [], value) => {
+    const index = Array.isArray(values) ? values.indexOf(value) : -1;
+    return index >= 0 ? index + 1 : null;
 };
 
 const rolesList = [
@@ -1373,7 +1379,7 @@ const EditProfile = () => {
                                     </div>
                                     <div className="ep__games-actions">
                                         <span className="ep__games-count">
-                                            <i className='bx bx-check-circle'></i> {formData.selectedGames.length} seleccionados
+                                            <i className='bx bx-check-circle'></i> {formData.selectedGames.length} seleccionados · #1 = main
                                         </span>
                                         <button
                                             type="button"
@@ -1393,22 +1399,27 @@ const EditProfile = () => {
                                     </div>
                                 </div>
                                 <p className="ep__games-note">
-                                    Por ahora solo puedes usar juegos con soporte activo en perfil: League of Legends, Valorant y Mobile Legends.
+                                    Juegos con soporte activo en perfil: League of Legends, Valorant, Mobile Legends, Fortnite, Warzone, Rocket League, EA FC / FIFA y Smash Bros. El orden de selección define tu prioridad y tu `#1` será tu main.
                                 </p>
                                 <div className="ep__games-grid">
-                                    {filteredGames.map(game => (
-                                        <div
-                                            key={game.id}
-                                            className={`ep__game-card ${formData.selectedGames.includes(game.id) ? 'selected' : ''}`}
-                                            onClick={() => toggleSelection('selectedGames', game.id)}
-                                        >
-                                            <div className="ep__game-img"><img src={game.img} alt={game.name} /></div>
-                                            <span>{game.name}</span>
-                                            {formData.selectedGames.includes(game.id) && (
-                                                <div className="ep__game-check"><i className='bx bx-check'></i></div>
-                                            )}
-                                        </div>
-                                    ))}
+                                    {filteredGames.map(game => {
+                                        const selectionRank = getSelectionRank(formData.selectedGames, game.id);
+                                        return (
+                                            <div
+                                                key={game.id}
+                                                className={`ep__game-card ${selectionRank ? 'selected' : ''}`}
+                                                onClick={() => toggleSelection('selectedGames', game.id)}
+                                            >
+                                                <div className="ep__game-img"><img src={game.img} alt={game.name} /></div>
+                                                <span>{game.name}</span>
+                                                {selectionRank && (
+                                                    <div className={`ep__game-rank ${selectionRank === 1 ? 'ep__game-rank--main' : ''}`}>
+                                                        {selectionRank === 1 ? '#1 Main' : `#${selectionRank}`}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                                 {filteredGames.length === 0 && (
                                     <div className="ep__games-empty">

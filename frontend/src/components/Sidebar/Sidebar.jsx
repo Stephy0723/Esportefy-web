@@ -111,6 +111,10 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
                 src={isDarkMode ? logoWhite : logoBlack}
                 alt="GLITCH GANG"
                 className="sb-logo-img"
+                width="1536"
+                height="1024"
+                decoding="async"
+                fetchPriority="high"
               />
             </div>
             {!isClosed && (

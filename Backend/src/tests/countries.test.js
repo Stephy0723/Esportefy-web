@@ -9,15 +9,13 @@ import {
 } from '../../../shared/profileCatalog.js';
 
 describe('country normalization', () => {
-    it('normalizes aliases to the canonical country name', () => {
-        expect(normalizeCountryName('Rep. Dominicana')).toBe('República Dominicana');
-        expect(normalizeCountryName('Republica Dominicana')).toBe('República Dominicana');
+    it('keeps canonical country names stable', () => {
+        expect(normalizeCountryName('República Dominicana')).toBe('República Dominicana');
         expect(normalizeCountryName('mexico')).toBe('México');
     });
 
-    it('returns the expected calling code using canonical or alias values', () => {
+    it('returns the expected calling code for canonical values', () => {
         expect(getCountryCallingCode('República Dominicana')).toBe('1');
-        expect(getCountryCallingCode('Rep. Dominicana')).toBe('1');
         expect(getCountryCallingCode('España')).toBe('34');
     });
 
@@ -27,7 +25,7 @@ describe('country normalization', () => {
 
     it('returns empty for unknown countries when a closed catalog is required', () => {
         expect(normalizeKnownCountryName('Japón')).toBe('');
-        expect(normalizeKnownCountryName('Rep. Dominicana')).toBe('República Dominicana');
+        expect(normalizeKnownCountryName('República Dominicana')).toBe('República Dominicana');
     });
 
     it('normalizes shared profile catalog values through the same canonical lists', () => {

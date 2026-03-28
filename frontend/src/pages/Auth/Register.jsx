@@ -38,6 +38,31 @@ const REGISTER_GAMES = [
     id: 'mlbb',
     name: 'Mobile Legends',
     image: GAME_IMAGES['Mobile Legends']
+  },
+  {
+    id: 'fortnite',
+    name: 'Fortnite',
+    image: GAME_IMAGES.Fortnite
+  },
+  {
+    id: 'warzone',
+    name: 'Warzone',
+    image: GAME_IMAGES.Warzone || GAME_IMAGES.warzone || GAME_IMAGES.Default
+  },
+  {
+    id: 'rocket',
+    name: 'Rocket League',
+    image: GAME_IMAGES['Rocket League']
+  },
+  {
+    id: 'fifa',
+    name: 'EA FC / FIFA',
+    image: GAME_IMAGES['EA FC / FIFA']
+  },
+  {
+    id: 'smash',
+    name: 'Smash Bros',
+    image: GAME_IMAGES['Smash Bros'] || GAME_IMAGES.Default
   }
 ];
 
@@ -68,6 +93,11 @@ const hasNumericSequence = (value = '') => {
     '9876', '8765', '7654', '6543', '5432', '4321', '3210'
   ];
   return patterns.some((p) => lower.includes(p));
+};
+
+const getSelectionRank = (list = [], value) => {
+  const index = Array.isArray(list) ? list.indexOf(value) : -1;
+  return index >= 0 ? index + 1 : null;
 };
 
 const getPasswordError = ({ password, username, fullName, email }) => {
@@ -492,18 +522,25 @@ const Register = () => {
             {step === 2 && (
               <div className="step-fade-in">
                 <h3 className="step-title">Elige tu Campo de Batalla</h3>
+                <p className="games-selection-note">Selecciona tus juegos en orden de prioridad. Tu `#1` será tu main.</p>
                 <div className="games-grid">
-                  {REGISTER_GAMES.map(game => (
+                  {REGISTER_GAMES.map(game => {
+                    const selectionRank = getSelectionRank(formData.selectedGames, game.name);
+                    return (
                     <div
                       key={game.id}
-                      className={`game-card-pro ${formData.selectedGames.includes(game.name) ? 'selected' : ''}`}
+                      className={`game-card-pro ${selectionRank ? 'selected' : ''}`}
                       onClick={() => toggleSelection('selectedGames', game.name)}
                     >
-                      {formData.selectedGames.includes(game.name) && <span className="selection-check" aria-hidden="true" />}
+                      {selectionRank && (
+                        <span className={`selection-rank ${selectionRank === 1 ? 'selection-rank--main' : ''}`}>
+                          {selectionRank === 1 ? '#1 Main' : `#${selectionRank}`}
+                        </span>
+                      )}
                       <div className="game-img-wrapper"><img src={game.image || GAME_IMAGES.Default} alt={game.name} /></div>
                       <span className="game-card-pro__name">{game.name}</span>
                     </div>
-                  ))}
+                  )})}
                 </div>
                 <div className="form-actions">
                   <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Atrás</button>

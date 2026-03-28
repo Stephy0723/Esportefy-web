@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import logoWhite from '../../assets/Logo/logo-black_Background Removed.png';
-import logoBlack from '../../assets/Logo/logo-black_Background Removed.png';
+import logoWhite from '../../assets/Logo/logo-white.png';
+import logoBlack from '../../assets/Logo/logo-black.png';
 
 const LINKS = {
   plataforma: [
@@ -48,14 +48,23 @@ const Footer = () => {
 
           {/* Brand column */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-4 mb-5">
-              <img src={logo} alt="GLITCH GANG by Steliant" className="h-14 md:h-16 w-auto shrink-0" />
-              <div className="flex flex-col">
-                <span className="text-[var(--text-main)] text-2xl md:text-3xl font-bold tracking-[0.18em]">
-                  GLITCH GANG
+            <div className="mb-5 flex items-center gap-1 md:gap-2">
+              <div className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden md:h-[76px] md:w-[76px]">
+                <img
+                  src={logo}
+                  alt="GLITCH GANG"
+                  className="block w-[116px] max-w-none shrink-0 translate-y-[4px] md:w-[128px] md:translate-y-[5px]"
+                  width="1536"
+                  height="1024"
+                  decoding="async"
+                />
+              </div>
+              <div className="flex min-w-0 flex-col justify-center gap-[3px] pb-[1px]">
+                <span className="text-[var(--text-main)] text-[1.7rem] md:text-[1.95rem] font-extrabold tracking-[0.1em] leading-none">
+                  GLITCH <span className="text-[var(--primary)]">GANG</span>
                 </span>
-                <span className="text-[var(--text-muted)] text-xs uppercase tracking-[0.28em]">
-                  by Steliant
+                <span className="text-[var(--text-muted)] text-[11px] uppercase tracking-[0.28em] leading-none">
+                  By Steliant
                 </span>
               </div>
             </div>
