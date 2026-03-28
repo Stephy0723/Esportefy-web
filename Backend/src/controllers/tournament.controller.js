@@ -14,6 +14,10 @@ import {
     normalizeTournamentGamePlatform,
     normalizeTournamentGameSeries
 } from '../../../shared/gamePolicies.js';
+import {
+    buildTournamentBracket,
+    resolveBracketMatch
+} from '../../../shared/tournamentBracket.js';
 import { normalizeTournamentServer } from '../../../shared/tournamentServerOptions.js';
 import { normalizeTournamentMapPool } from '../../../shared/tournamentMapOptions.js';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../utils/mlbbStatus.js';
@@ -664,6 +668,57 @@ const generateUniqueTournamentId = async () => {
         }
     }
     return generatedId;
+};
+
+const findBracketMatchContext = (bracket = {}, matchId = '') => {
+    const rounds = Array.isArray(bracket?.rounds) ? bracket.rounds : [];
+    for (let roundIndex = 0; roundIndex < rounds.length; roundIndex += 1) {
+        const matches = Array.isArray(rounds[roundIndex]?.matches) ? rounds[roundIndex].matches : [];
+        for (let matchIndex = 0; matchIndex < matches.length; matchIndex += 1) {
+            if (String(matches[matchIndex]?.matchId || '') === String(matchId || '')) {
+                return {
+                    roundIndex,
+                    matchIndex,
+                    round: rounds[roundIndex],
+                    match: matches[matchIndex]
+                };
+            }
+        }
+    }
+    return null;
+};
+
+const getRegistrationByParticipant = (tournament = {}, participant = {}) =>
+    (Array.isArray(tournament?.registrations) ? tournament.registrations : []).find((registration) => (
+        String(registration?._id || '') === String(participant?.registrationId || '')
+        || String(registration?.teamId || '') === String(participant?.teamId || '')
+        || String(registration?.teamName || '').trim() === String(participant?.teamName || '').trim()
+    )) || null;
+
+const getParticipantSide = (match = {}, winnerRefId = '') => {
+    const refId = String(winnerRefId || '').trim();
+    const teamARefId = String(match?.teamA?.refId || '').trim();
+    const teamBRefId = String(match?.teamB?.refId || '').trim();
+    if (refId && refId === teamARefId) return 'A';
+    if (refId && refId === teamBRefId) return 'B';
+    return '';
+};
+
+const isUserCaptainOfRegistration = (registration = {}, userId = '') =>
+    String(registration?.captain?._id || registration?.captain || '') === String(userId || '');
+
+const getReporterSideForUser = (tournament = {}, match = {}, userId = '') => {
+    if (!userId) return '';
+    if (isUserCaptainOfRegistration(getRegistrationByParticipant(tournament, match?.teamA), userId)) return 'A';
+    if (isUserCaptainOfRegistration(getRegistrationByParticipant(tournament, match?.teamB), userId)) return 'B';
+    return '';
+};
+
+const isUserCaptainOfMatch = (tournament = {}, match = {}, userId = '') => {
+    const teamARegistration = getRegistrationByParticipant(tournament, match?.teamA);
+    const teamBRegistration = getRegistrationByParticipant(tournament, match?.teamB);
+    return isUserCaptainOfRegistration(teamARegistration, userId)
+        || isUserCaptainOfRegistration(teamBRegistration, userId);
 };
 
 export const createTournament = async (req, res) => {
@@ -1448,6 +1503,248 @@ export const updateTournamentBracket = async (req, res) => {
         return res.status(200).json({ message: 'Bracket actualizado', bracket: tournament.bracket });
     } catch (error) {
         console.error('Error actualizando bracket:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const generateTournamentBracket = async (req, res) => {
+    try {
+        const { code } = req.params;
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) {
+            return res.status(403).json({ message: 'No tienes permisos para generar el bracket de este torneo' });
+        }
+
+        const seedingMode = String(req.body?.seedingMode || 'random').trim().toLowerCase();
+        const previewOnly = req.body?.previewOnly === true;
+        const customOrder = Array.isArray(req.body?.customOrder) ? req.body.customOrder : [];
+        const approvedRegistrations = (tournament.registrations || []).filter((registration) =>
+            String(registration?.status || 'approved') === 'approved'
+        );
+
+        if (approvedRegistrations.length < 2) {
+            return res.status(400).json({ message: 'Necesitas al menos 2 equipos aprobados para generar el bracket.' });
+        }
+
+        const normalizedFormat = normalizeTournamentFormat(tournament.format, 'single_elimination');
+        if (normalizedFormat === 'double_elimination') {
+            return res.status(400).json({
+                message: 'La generación operativa para doble eliminación aún no está disponible. Usa eliminación directa, suizo o round robin.'
+            });
+        }
+
+        if (
+            isRiotTournamentGame(tournament.game)
+            && tournament.registrationClosed !== true
+            && seedingMode === 'custom'
+        ) {
+            return res.status(400).json({
+                message: 'No se permite seeding custom mientras las inscripciones estén abiertas en torneos Riot.'
+            });
+        }
+
+        if (seedingMode === 'custom' && customOrder.length > 0 && customOrder.length !== approvedRegistrations.length) {
+            return res.status(400).json({
+                message: 'El orden personalizado debe incluir a todos los equipos aprobados exactamente una vez.'
+            });
+        }
+
+        const bracket = buildTournamentBracket({
+            format: normalizedFormat,
+            registrations: approvedRegistrations,
+            seedingMode,
+            customOrder
+        });
+
+        if (previewOnly) {
+            return res.status(200).json({ bracket, previewOnly: true });
+        }
+
+        tournament.bracket = bracket;
+        await tournament.save({ validateBeforeSave: false });
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: 'tournament.bracket.generate',
+            entityType: 'tournament',
+            entityId: String(tournament._id),
+            meta: {
+                tournamentId: tournament.tournamentId,
+                game: tournament.game,
+                format: normalizedFormat,
+                seedingMode
+            },
+            req
+        });
+
+        return res.status(200).json({
+            message: 'Bracket generado correctamente.',
+            bracket: tournament.bracket
+        });
+    } catch (error) {
+        console.error('Error generando bracket:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const submitBracketMatchResult = async (req, res) => {
+    try {
+        const { code, matchId } = req.params;
+        const { winnerRefId } = req.body || {};
+
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+
+        if (String(tournament.status || '').toLowerCase() !== 'ongoing') {
+            return res.status(400).json({ message: 'Solo puedes reportar resultados cuando el torneo está en curso.' });
+        }
+
+        const matchContext = findBracketMatchContext(tournament.bracket, matchId);
+        if (!matchContext) {
+            return res.status(404).json({ message: 'Match no encontrado en el bracket.' });
+        }
+
+        const match = matchContext.match;
+        if (['finished', 'walkover'].includes(String(match?.status || '').toLowerCase())) {
+            return res.status(400).json({ message: 'Este match ya está cerrado.' });
+        }
+
+        const winnerSide = getParticipantSide(match, winnerRefId);
+        if (!winnerSide) {
+            return res.status(400).json({ message: 'El ganador reportado no coincide con ninguno de los equipos del match.' });
+        }
+
+        const allowedManager = await canManageTournament(tournament, req.userId);
+        const reporterSide = getReporterSideForUser(tournament, match, req.userId);
+        if (!allowedManager) {
+            if (!reporterSide) {
+                return res.status(403).json({ message: 'Solo el capitán del equipo o un administrador puede reportar este resultado.' });
+            }
+        }
+
+        const submissions = Array.isArray(match.resultSubmissions) ? [...match.resultSubmissions] : [];
+        const submissionSource = reporterSide || `manager:${String(req.userId || '')}`;
+        const existingIndex = submissions.findIndex((item) => String(item?.side || '') === submissionSource);
+        const submission = {
+            side: submissionSource,
+            winnerRefId: String(winnerRefId || ''),
+            scoreA: req.body?.scoreA ?? null,
+            scoreB: req.body?.scoreB ?? null,
+            submittedBy: req.userId,
+            submittedAt: new Date()
+        };
+
+        if (existingIndex >= 0) submissions[existingIndex] = submission;
+        else submissions.push(submission);
+
+        match.resultSubmissions = submissions;
+
+        const uniqueWinners = [...new Set(submissions.map((item) => String(item?.winnerRefId || '')).filter(Boolean))];
+        if (uniqueWinners.length > 1) {
+            match.confirmationStatus = 'disputed';
+        } else if (uniqueWinners.length === 1 && submissions.length >= 2) {
+            match.confirmationStatus = 'agreed';
+        } else {
+            match.confirmationStatus = 'unconfirmed';
+        }
+
+        if (String(match.status || '').toLowerCase() === 'pending') {
+            match.status = 'ready';
+        }
+
+        tournament.markModified('bracket');
+        await tournament.save({ validateBeforeSave: false });
+
+        return res.status(200).json({
+            message: submissions.length >= 2 && uniqueWinners.length === 1
+                ? 'Resultado reportado por ambos lados. Listo para resolver.'
+                : 'Resultado reportado correctamente.',
+            bracket: tournament.bracket,
+            tournamentStatus: tournament.status
+        });
+    } catch (error) {
+        console.error('Error reportando resultado de match:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+};
+
+export const resolveBracketMatchResult = async (req, res) => {
+    try {
+        const { code, matchId } = req.params;
+        const { winnerRefId } = req.body || {};
+
+        const tournament = await Tournament.findOne({ tournamentId: code.toUpperCase() });
+        if (!tournament) {
+            return res.status(404).json({ message: 'Torneo no encontrado' });
+        }
+
+        const allowed = await canManageTournament(tournament, req.userId);
+        if (!allowed) {
+            return res.status(403).json({ message: 'No tienes permisos para resolver resultados en este torneo.' });
+        }
+
+        if (String(tournament.status || '').toLowerCase() !== 'ongoing') {
+            return res.status(400).json({ message: 'Solo puedes resolver matches cuando el torneo está en curso.' });
+        }
+
+        const matchContext = findBracketMatchContext(tournament.bracket, matchId);
+        if (!matchContext) {
+            return res.status(404).json({ message: 'Match no encontrado en el bracket.' });
+        }
+
+        const side = getParticipantSide(matchContext.match, winnerRefId);
+        if (!side) {
+            return res.status(400).json({ message: 'El ganador indicado no pertenece a este match.' });
+        }
+
+        const parsedScoreA = Number.isFinite(Number(req.body?.scoreA)) ? Number(req.body.scoreA) : null;
+        const parsedScoreB = Number.isFinite(Number(req.body?.scoreB)) ? Number(req.body.scoreB) : null;
+        const result = resolveBracketMatch({
+            bracket: tournament.bracket,
+            matchId,
+            winnerRefId,
+            scoreA: parsedScoreA,
+            scoreB: parsedScoreB,
+            resolvedBy: req.userId,
+            resolvedAt: new Date().toISOString()
+        });
+
+        tournament.bracket = result.bracket;
+        if (result.completed) {
+            tournament.status = 'finished';
+            tournament.registrationClosed = true;
+        }
+
+        tournament.markModified('bracket');
+        await tournament.save({ validateBeforeSave: false });
+
+        await recordAdminAudit({
+            actorUserId: req.userId,
+            action: 'tournament.match.resolve',
+            entityType: 'tournament_match',
+            entityId: String(matchId),
+            meta: {
+                tournamentId: tournament.tournamentId,
+                winnerRefId: String(winnerRefId || ''),
+                tournamentStatus: tournament.status
+            },
+            req
+        });
+
+        return res.status(200).json({
+            message: result.completed ? 'Match resuelto y torneo finalizado.' : 'Match resuelto correctamente.',
+            bracket: tournament.bracket,
+            tournamentStatus: tournament.status
+        });
+    } catch (error) {
+        console.error('Error resolviendo resultado de match:', error);
         return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
     }
 };

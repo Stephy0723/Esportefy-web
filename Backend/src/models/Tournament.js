@@ -290,6 +290,7 @@ const tournamentSchema = new mongoose.Schema({
                     enum: ['unconfirmed', 'agreed', 'disputed', 'resolved'],
                     default: 'unconfirmed'
                 },
+                proofUrl: { type: String, default: '' },
                 resultSubmissions: [{
                     side: {
                         type: String,
