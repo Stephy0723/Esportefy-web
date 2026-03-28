@@ -147,6 +147,11 @@ const UserSchema = new mongoose.Schema({
             default: null
             },
 
+    unlockedFrames: {
+            type: [String],
+            default: []
+            },
+
     selectedBgId: {
             type: String,
             default: null
@@ -359,7 +364,12 @@ const UserSchema = new mongoose.Schema({
     countrySetAt: { type: Date, default: null },
     birthDateSetAt: { type: Date, default: null },
     // Name changes are throttled: can change every 3 weeks (21 days)
-    lastNameChangeAt: { type: Date, default: null }
+    lastNameChangeAt: { type: Date, default: null },
+
+    // ── Referral System ──
+    referralCode: { type: String, unique: true, sparse: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    referralCount: { type: Number, default: 0 }
 
 }, { timestamps: true });
 

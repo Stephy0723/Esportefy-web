@@ -32,7 +32,8 @@ import {
   adminRespondSupportTicket,
   upload,
   organizerDocumentUpload,
-  roleDocumentUpload
+  roleDocumentUpload,
+  applyReferralCode
 } from '../controllers/auth.controller.js';
 
 import { verifyToken } from '../middlewares/auth.middleware.js';
@@ -129,6 +130,7 @@ router.get('/social', verifyToken, rlProfile, getSocialOverview);
 router.get('/users/search', verifyToken, rlSocialSearch, searchUsers);
 router.post('/follow/:userId', verifyToken, rlFollowStrict, toggleFollow);
 router.put('/update-profile', verifyToken, upload.single('avatarFile'), updateProfile);
+router.post('/apply-referral', verifyToken, applyReferralCode);
 router.post('/forgot-password', rlForgot, forgotPassword);
 router.post('/reset-password/:token', rlReset, resetPassword);
 router.post('/apply-organizer', verifyToken, organizerDocumentUpload.single('document'), applyOrganizer);

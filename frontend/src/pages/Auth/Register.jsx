@@ -150,6 +150,7 @@ const Register = () => {
   const redirectTarget = location.state?.from || null;
   const redirectPath = typeof redirectTarget?.pathname === 'string' ? redirectTarget.pathname : '';
   const pendingGameJoinId = getGameIdFromRoutePath(redirectPath);
+  const urlRef = new URLSearchParams(location.search).get('ref') || '';
 
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
@@ -175,7 +176,13 @@ const Register = () => {
     selectedGames: [], platforms: [],
     experience: '', goals: [],
     username: '', email: '', password: '', confirmPassword: '',
-    checkTerms: false
+    checkTerms: false,
+    referralCode: ''
+  });
+
+  // Pre-fill referral code from URL
+  useState(() => {
+    if (urlRef) setFormData(prev => ({ ...prev, referralCode: urlRef.toUpperCase() }));
   });
 
   // --- FUNCIÓN PARA ENVIAR AL BACKEND ---
@@ -626,6 +633,21 @@ const Register = () => {
                     <span className="error-text"><i className='bx bx-error-circle'></i> No coinciden</span>
                   )}
                 </div>
+                <div className="input-row">
+                  <div className="input-wrapper">
+                    <label>Código de referido <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(opcional)</span></label>
+                    <input
+                      type="text"
+                      name="referralCode"
+                      placeholder="GG-XXXXXX"
+                      value={formData.referralCode || ''}
+                      onChange={handleChange}
+                      style={{ textTransform: 'uppercase', letterSpacing: '1px' }}
+                    />
+                    <i className='bx bx-gift'></i>
+                  </div>
+                </div>
+
                 <label className={`terms-row mt-2 ${submitErrorHint === 'Debes aceptar los términos para continuar.' ? 'input-error' : ''}`}>
                   <input className="terms-checkbox" type="checkbox" name="checkTerms" checked={formData.checkTerms} onChange={handleChange} />
                   <span className="terms-text">

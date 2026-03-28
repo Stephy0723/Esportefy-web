@@ -100,6 +100,14 @@ const slideRight = {
     exit: { opacity: 0, x: 320, transition: { duration: 0.25 } }
 };
 
+const getMetricStageLabel = (score) => {
+    if (score < 20) return 'Inicio';
+    if (score < 45) return 'Base';
+    if (score < 70) return 'Progreso';
+    if (score < 85) return 'Competitivo';
+    return 'Alto';
+};
+
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user: authUser } = useAuth();
@@ -592,7 +600,7 @@ const Dashboard = () => {
         }
     }, [fetchProfile]);
 
-    /* ── Metric cards data (5 unique metrics with different chart types) ── */
+    /* ── Metric cards data (compact dashboard version) ── */
     const metricsData = useMemo(() => {
         const totalTourneys = tournaments.length;
         const finishedTourneys = tournaments.filter(t => t.status === 'finished').length;
@@ -601,184 +609,76 @@ const Dashboard = () => {
         const captainTeams = myTeams.filter(t => String(t.captain?._id || t.captain) === String(user?._id)).length;
         const leadershipScore = Math.min(100, captainTeams * 25 + (myTeams.length * 10));
 
-        const connCount = CONNECTION_PROVIDERS.filter(p => !!user?.connections?.[p.id]?.verified).length;
+        const connCount = CONNECTION_PROVIDERS.filter((p) => !!user?.connections?.[p.id === 'moonton' ? 'mlbb' : p.id]?.verified).length;
         const networkScore = Math.min(100, connCount * 15 + myCommunities.length * 10 + myTeams.length * 10);
 
         const consistencyScore = Math.min(100, Math.round((accountAgeDays / 365) * 40) + (enrichedGames.length * 8) + (myTeams.length * 10));
 
         const versatilityCategories = {};
-        enrichedGames.forEach(g => {
+        enrichedGames.forEach((g) => {
             if (g.category) versatilityCategories[g.category] = (versatilityCategories[g.category] || 0) + 1;
         });
         const versatilityScore = Math.min(100, Object.keys(versatilityCategories).length * 20 + enrichedGames.length * 5);
 
         const mainGame = enrichedGames[0]?.name || 'tu juego principal';
-
-        /* Category breakdown for versatility */
         const catKeys = Object.keys(versatilityCategories);
         const catValues = Object.values(versatilityCategories);
-
-        /* ── Dynamic tips: always exactly 5 per metric ── */
-        const ensure5 = (arr) => arr.slice(0, 5);
-
-        const wrTips = [];
-        const wrPlan = [];
-        if (totalTourneys === 0) {
-            wrTips.push('Inscríbete en tu primer torneo — la experiencia es el mejor maestro');
-            wrTips.push(`Busca torneos de ${mainGame} con nivel principiante o abierto`);
-            wrTips.push('Forma o únete a un equipo antes de competir, la coordinación marca la diferencia');
-            wrTips.push('Mira streams o VODs de torneos para entender el formato y ritmo competitivo');
-            wrTips.push('Configura tu perfil competitivo: avatar, bio, juegos y cuentas vinculadas');
-            wrPlan.push(`Esta semana: Explora los torneos disponibles de ${mainGame} y elige uno acorde a tu nivel.`);
-            wrPlan.push('Siguiente paso: Reúne un equipo o únete a uno que busque miembros.');
-        } else if (winRate < 30) {
-            wrTips.push('Analiza tus derrotas recientes — ¿fueron por estrategia, mecánica o comunicación?');
-            wrTips.push(`Practica mecánicas específicas de ${mainGame} en modo personalizado`);
-            wrTips.push('Revisa guías y VODs de jugadores top en tu rol');
-            wrTips.push('No te inscribas en muchos torneos a la vez — enfócate en mejorar entre cada uno');
-            wrTips.push('Graba tus partidas y revísalas con tu equipo para identificar errores en conjunto');
-            wrPlan.push(`Semana 1-2: Dedica 1h diaria a practicar mecánicas en ${mainGame}.`);
-            wrPlan.push('Semana 3: Analiza repeticiones de tus 3 últimas derrotas.');
-            wrPlan.push('Mes 2: Inscríbete en 1 torneo aplicando lo aprendido.');
-        } else if (winRate < 60) {
-            wrTips.push('Estás en buen camino — mantén la consistencia en tu entrenamiento');
-            wrTips.push('Identifica el 1 error más frecuente en tus últimas partidas y corrígelo');
-            wrTips.push(`Domina 2-3 composiciones/agentes/campeones meta en ${mainGame}`);
-            wrTips.push('Comunica mejor con tu equipo: las calls claras ganan rondas');
-            wrTips.push('Estudia a los equipos rivales antes de cada torneo — la preparación marca la diferencia');
-            wrPlan.push(`Semana 1: Perfecciona tu main pick y aprende 1 counter-pick en ${mainGame}.`);
-            wrPlan.push('Semana 2-3: Scrimea con tu equipo al menos 3 veces.');
-            wrPlan.push('Meta: Subir tu win rate 10% en los próximos 2 torneos.');
-        } else {
-            wrTips.push('Excelente rendimiento — ahora apunta a torneos de mayor nivel');
-            wrTips.push('Comparte tu conocimiento: mentorear a otros refuerza tus propios fundamentos');
-            wrTips.push('Mantén tu roster estable — la sinergia de equipo es tu ventaja competitiva');
-            wrTips.push('Analiza las tendencias del meta y adapta tus estrategias antes que los rivales');
-            wrTips.push('Documenta tus estrategias ganadoras para replicarlas en futuros torneos');
-            wrPlan.push('Busca torneos con mayor prize pool o nivel competitivo.');
-            wrPlan.push('Considera postularte como capitán o coach para maximizar tu impacto.');
-        }
-
-        const ldTips = [];
-        if (captainTeams === 0 && myTeams.length === 0) {
-            ldTips.push('Crea tu primer equipo — ser capitán es la base del liderazgo');
-            ldTips.push(`Recluta 4 jugadores activos de ${mainGame}`);
-            ldTips.push('Define un nombre, slogan y reglas claras para tu equipo');
-            ldTips.push('Establece un horario de prácticas semanal desde el inicio');
-            ldTips.push('Busca jugadores en comunidades y torneos — los mejores compañeros se encuentran compitiendo');
-        } else if (captainTeams === 0) {
-            ldTips.push('Ya eres parte de un equipo — propón ideas de estrategia para destacar');
-            ldTips.push('Considera crear tu propio equipo en otro juego para diversificar');
-            ldTips.push('Ayuda a tu capitán con la coordinación de prácticas');
-            ldTips.push('Toma iniciativa en las sesiones de entrenamiento — lidera con el ejemplo');
-            ldTips.push('Propón revisiones post-torneo para que el equipo mejore en conjunto');
-        } else {
-            ldTips.push(`Lidera ${captainTeams} equipo${captainTeams > 1 ? 's' : ''} — organiza sesiones semanales de práctica`);
-            ldTips.push('Rota roles en entrenamientos para entender todas las posiciones');
-            ldTips.push('Inscribe a tu equipo en el próximo torneo disponible');
-            ldTips.push('Da feedback constructivo a cada miembro después de cada partida');
-            ldTips.push(leadershipScore < 60 ? 'Completa tu roster — un equipo lleno rinde mejor' : 'Mantén la moral del equipo alta — celebra las victorias y aprende de las derrotas');
-        }
-
-        const nwTips = [];
-        if (connCount < 2) {
-            nwTips.push('Vincula Discord y Riot/MLBB — son esenciales para competir');
-            nwTips.push('Ve a Ajustes y conecta al menos 2 plataformas');
-            nwTips.push(`Únete a una comunidad de ${mainGame} para encontrar compañeros`);
-            nwTips.push('Agrega amigos después de cada torneo — expande tu red de contactos');
-            nwTips.push('Comparte tu perfil de GLITCH GANG en tus redes sociales');
-        } else {
-            nwTips.push(`${connCount} cuentas vinculadas — mantén tus perfiles actualizados`);
-            nwTips.push(myCommunities.length === 0 ? `Únete a una comunidad de ${mainGame}` : `Activo en ${myCommunities.length} comunidad${myCommunities.length > 1 ? 'es' : ''} — participa en las discusiones`);
-            nwTips.push('Agrega amigos después de cada torneo — expande tu red de contactos');
-            nwTips.push('Participa en eventos y discusiones de la comunidad para ganar visibilidad');
-            nwTips.push('Conecta todas tus cuentas de juego para que otros jugadores te encuentren fácilmente');
-        }
-
-        const csTips = [];
-        if (accountAgeDays < 7) {
-            csTips.push('Acabas de llegar — completa tu perfil y explora la plataforma');
-            csTips.push('Añade tus juegos favoritos y configura tu avatar');
-            csTips.push('Explora las comunidades y únete a las de tus juegos');
-            csTips.push('Vincula al menos una cuenta de juego para empezar');
-            csTips.push('Revisa los torneos disponibles y marca los que te interesen');
-        } else if (accountAgeDays < 30) {
-            csTips.push(`${accountAgeDays} días en la plataforma — buen ritmo, sigue activo`);
-            csTips.push('Inscríbete en tu primer torneo para ganar experiencia');
-            csTips.push(enrichedGames.length < 3 ? 'Añade más juegos a tu perfil para demostrar versatilidad' : 'Buen catálogo de juegos — mantén tu perfil actualizado');
-            csTips.push(myTeams.length === 0 ? 'Únete a un equipo para aumentar tu actividad' : `Mantén actividad con tus ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''}`);
-            csTips.push('Revisa tu dashboard semanalmente para trackear tu progreso');
-        } else {
-            csTips.push(`Veterano de ${Math.floor(accountAgeDays / 30)} mes${Math.floor(accountAgeDays / 30) > 1 ? 'es' : ''} — tu constancia es tu fortaleza`);
-            csTips.push(enrichedGames.length < 3 ? 'Añade más juegos a tu perfil para demostrar versatilidad' : `${enrichedGames.length} juegos activos — perfil sólido`);
-            csTips.push(myTeams.length === 0 ? 'Únete a un equipo para aumentar tu actividad' : `Mantén actividad con tus ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''}`);
-            csTips.push('Participa en al menos 1 torneo al mes para mantener tu ritmo competitivo');
-            csTips.push('Actualiza tu bio y avatar periódicamente — un perfil fresco genera más conexiones');
-        }
-
-        const vsTips = [];
-        if (catKeys.length <= 1) {
-            vsTips.push('Solo juegas 1 género — explora otros para ser más versátil');
-            vsTips.push('Prueba un juego de estrategia si solo juegas FPS, o viceversa');
-            vsTips.push(`Tienes ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} — ${enrichedGames.length < 5 ? 'añade más para mejorar' : 'buena colección'}`);
-            vsTips.push('Las habilidades de un género mejoran tu rendimiento en otros');
-            vsTips.push('Participa en torneos de juegos que no domines — aprenderás más rápido bajo presión');
-        } else if (catKeys.length < 3) {
-            vsTips.push(`${catKeys.length} géneros — buen inicio, agrega 1 más para subir tu score`);
-            vsTips.push('Las habilidades de un género se transfieren a otros');
-            vsTips.push(`Tienes ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} — ${enrichedGames.length < 5 ? 'añade más para mejorar' : 'buena colección'}`);
-            vsTips.push('Inscríbete en un torneo de un juego que no sea tu principal');
-            vsTips.push('Mira tutoriales de géneros nuevos — las bases se aprenden rápido');
-        } else {
-            vsTips.push(`${catKeys.length} géneros dominados — perfil de jugador completo`);
-            vsTips.push('Participa en torneos de diferentes juegos para demostrar tu versatilidad');
-            vsTips.push(`Tienes ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} — buena colección`);
-            vsTips.push('Comparte tips entre géneros con tu equipo — la adaptabilidad es tu ventaja');
-            vsTips.push('Mantén actualizada tu colección y prueba los lanzamientos nuevos');
-        }
 
         return [
             {
                 id: 'winrate',
                 icon: 'bx bx-trophy',
                 label: 'WIN RATE',
-                subtitle: totalTourneys === 0 ? 'Aún no has competido en torneos' : `${finishedTourneys} de ${totalTourneys} torneos completados`,
+                subtitle: totalTourneys === 0 ? 'Sin torneos' : `${finishedTourneys}/${totalTourneys} completados`,
+                stageLabel: getMetricStageLabel(winRate),
                 value: `${winRate}%`,
                 numericValue: winRate,
                 color: '#ffd700',
                 chartType: 'radialBar',
-                definition: totalTourneys === 0
-                    ? 'Cuando participes en torneos, aquí verás tu porcentaje de éxito. ¡Inscríbete en uno para empezar!'
-                    : `Tu Win Rate actual es ${winRate}%. Has completado ${finishedTourneys} de ${totalTourneys} torneo${totalTourneys > 1 ? 's' : ''}.`,
-                tips: wrTips,
-                plan: wrPlan.join(' ')
+                definition: totalTourneys === 0 ? 'Activa esta métrica jugando tu primer torneo.' : `${winRate}% de rendimiento en torneos cerrados.`,
+                insight: totalTourneys === 0
+                    ? `Empieza por un torneo abierto de ${mainGame}.`
+                    : winRate < 30
+                        ? 'Te conviene revisar derrotas y ajustar ejecución.'
+                        : winRate < 60
+                            ? 'Ya hay base competitiva; toca estabilizar decisiones.'
+                            : 'Tu rendimiento ya compite en una zona fuerte.',
+                plan: totalTourneys === 0
+                    ? 'Busca un torneo, completa el bracket y usa ese resultado como punto de partida.'
+                    : winRate < 30
+                        ? 'Enfócate en un error repetido y corrígelo antes del próximo torneo.'
+                        : winRate < 60
+                            ? `Prepara mejor tus picks y la comunicación en ${mainGame}.`
+                            : 'Da el salto a torneos más fuertes sin perder consistencia.'
             },
             {
                 id: 'leadership',
                 icon: 'bx bx-crown',
                 label: 'LIDERAZGO',
-                subtitle: captainTeams > 0 ? `Capitán de ${captainTeams} equipo${captainTeams > 1 ? 's' : ''}` : 'Capacidad de liderazgo',
+                subtitle: captainTeams > 0 ? `${captainTeams} equipo${captainTeams > 1 ? 's' : ''} como capitán` : `${myTeams.length} equipo${myTeams.length !== 1 ? 's' : ''}`,
+                stageLabel: getMetricStageLabel(leadershipScore),
                 value: `${leadershipScore}`,
                 numericValue: leadershipScore,
                 color: '#a78bfa',
                 chartType: 'donut',
                 chartSeries: [Math.max(1, captainTeams * 25), Math.max(1, myTeams.length * 10), Math.max(1, 100 - leadershipScore)],
                 chartLabels: ['Capitán', 'Equipos', 'Potencial'],
-                definition: captainTeams > 0
-                    ? `Lideras ${captainTeams} equipo${captainTeams > 1 ? 's' : ''} como capitán y participas en ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''} en total.`
-                    : myTeams.length > 0
-                        ? `Eres miembro de ${myTeams.length} equipo${myTeams.length > 1 ? 's' : ''}. Crea tu propio equipo para subir tu liderazgo.`
-                        : 'No tienes equipos aún. Crear o unirte a un equipo es el primer paso hacia el liderazgo.',
-                tips: ldTips,
+                definition: captainTeams > 0 ? 'Tu liderazgo ya impacta en la estructura del equipo.' : 'Esta barra sube cuando organizas, convocas y sostienes roster.',
+                insight: captainTeams === 0 && myTeams.length === 0
+                    ? 'Aún no hay una estructura de equipo alrededor de ti.'
+                    : captainTeams === 0
+                        ? 'Ya estás dentro de equipo, pero todavía no lideras el ritmo.'
+                        : 'Tu liderazgo existe; ahora debe sentirse más estable.',
                 plan: captainTeams === 0
-                    ? `Paso 1: Crea un equipo de ${mainGame}. Paso 2: Recluta miembros activos. Paso 3: Inscríbete en un torneo como capitán.`
-                    : `Mantén prácticas semanales con tu equipo. Inscríbete en el próximo torneo de ${mainGame}. Evalúa el rendimiento de tu roster tras cada competencia.`
+                    ? `Crea o busca un equipo de ${mainGame} y toma una responsabilidad visible.`
+                    : 'Ordena prácticas, feedback y torneos para que el roster dependa menos de la improvisación.'
             },
             {
                 id: 'network',
                 icon: 'bx bx-network-chart',
                 label: 'RED SOCIAL',
-                subtitle: `${connCount} cuentas · ${myCommunities.length} comunidades · ${myTeams.length} equipos`,
+                subtitle: `${connCount} cuentas · ${myCommunities.length} comunidades`,
+                stageLabel: getMetricStageLabel(networkScore),
                 value: `${networkScore}`,
                 numericValue: networkScore,
                 color: '#00d2ff',
@@ -790,19 +690,24 @@ const Dashboard = () => {
                 ],
                 chartAxis: ['01', '02', '03', '04', '05', '06', '07'],
                 chartLabels: ['Conexiones', 'Comunidades', 'Equipos'],
-                definition: `Tu red: ${connCount} cuentas vinculadas, ${myCommunities.length} comunidades activas y ${myTeams.length} equipos. ${networkScore >= 70 ? 'Excelente presencia en el ecosistema.' : 'Hay espacio para crecer.'}`,
-                tips: nwTips,
-                plan: networkScore < 40
-                    ? `Prioridad: Vincula tus cuentas de juego en Ajustes. Luego únete a 1-2 comunidades de ${mainGame}.`
-                    : networkScore < 70
-                        ? `Buen progreso. Participa más en las comunidades y agrega compañeros de torneo como amigos.`
-                        : 'Red sólida. Mantén tu actividad en comunidades y expande contactos en cada torneo.'
+                definition: 'Mide qué tan visible y conectado estás dentro del ecosistema.',
+                insight: connCount < 2
+                    ? 'Tu red aún es pequeña para competir con fluidez.'
+                    : myCommunities.length === 0
+                        ? 'Tienes cuentas conectadas, pero poca presencia comunitaria.'
+                        : 'Tu presencia ya empieza a abrir oportunidades.',
+                plan: connCount < 2
+                    ? 'Conecta Discord y tu cuenta principal de juego.'
+                    : myCommunities.length === 0
+                        ? `Únete a una comunidad de ${mainGame} y empieza a interactuar.`
+                        : 'Suma contactos útiles después de cada torneo y mantén tus perfiles activos.'
             },
             {
                 id: 'consistency',
                 icon: 'bx bx-line-chart',
                 label: 'CONSISTENCIA',
                 subtitle: `${accountAgeDays} días en la plataforma`,
+                stageLabel: getMetricStageLabel(consistencyScore),
                 value: `${consistencyScore}`,
                 numericValue: consistencyScore,
                 color: '#8EDB15',
@@ -814,34 +719,39 @@ const Dashboard = () => {
                 ],
                 chartAxis: ['01', '02', '03', '04', '05', '06', '07'],
                 chartLabels: ['Antigüedad', 'Juegos activos', 'Equipos'],
-                definition: `Llevas ${accountAgeDays} días en GLITCH GANG con ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} activo${enrichedGames.length !== 1 ? 's' : ''} y ${myTeams.length} equipo${myTeams.length !== 1 ? 's' : ''}.`,
-                tips: csTips,
+                definition: 'Refleja qué tan constante es tu actividad competitiva.',
+                insight: accountAgeDays < 7
+                    ? 'Estás arrancando y aún falta convertir curiosidad en rutina.'
+                    : consistencyScore < 40
+                        ? 'Hay actividad, pero todavía no se siente como hábito.'
+                        : 'Tu ritmo ya existe; ahora hay que sostenerlo.',
                 plan: consistencyScore < 40
-                    ? `Esta semana: Completa tu perfil al 100%. Añade tus juegos y únete a un equipo de ${mainGame}.`
-                    : `Mantén tu actividad. Participa en 1 torneo al mes y actualiza tu perfil regularmente.`
+                    ? `Completa perfil, juegos y equipo para darle ritmo a tu cuenta.`
+                    : 'Mantén actividad semanal y evita desaparecer entre torneos.'
             },
             {
                 id: 'versatility',
                 icon: 'bx bx-category-alt',
                 label: 'VERSATILIDAD',
                 subtitle: `${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} · ${catKeys.length} género${catKeys.length !== 1 ? 's' : ''}`,
+                stageLabel: getMetricStageLabel(versatilityScore),
                 value: `${versatilityScore}`,
                 numericValue: versatilityScore,
                 color: '#f97316',
                 chartType: 'donutMulti',
-                chartSeries: catValues.length > 0
-                    ? catValues
-                    : [enrichedGames.length || 1, 1, 1],
-                chartLabels: catKeys.length > 0
-                    ? catKeys
-                    : ['Tu género', 'Otros', 'Por explorar'],
-                definition: `Tu colección tiene ${enrichedGames.length} juego${enrichedGames.length !== 1 ? 's' : ''} en ${catKeys.length} género${catKeys.length !== 1 ? 's' : ''} diferente${catKeys.length !== 1 ? 's' : ''}. ${versatilityScore >= 60 ? 'Perfil versátil.' : 'Explora nuevos géneros.'}`,
-                tips: vsTips,
+                chartSeries: catValues.length > 0 ? catValues : [enrichedGames.length || 1, 1, 1],
+                chartLabels: catKeys.length > 0 ? catKeys : ['Tu género', 'Otros', 'Por explorar'],
+                definition: 'Mide la amplitud de tu repertorio competitivo.',
+                insight: catKeys.length <= 1
+                    ? 'Tu perfil depende de un solo entorno de juego.'
+                    : catKeys.length < 3
+                        ? 'Ya hay variedad, pero aún puedes ampliar tu repertorio.'
+                        : 'Tu perfil ya transmite adaptabilidad real.',
                 plan: versatilityScore < 30
-                    ? `Paso 1: Añade al menos 3 juegos de diferentes géneros. Paso 2: Prueba un juego nuevo esta semana.`
+                    ? 'Añade juegos de otro género para abrir más opciones.'
                     : versatilityScore < 60
-                        ? `Añade 1 juego de un género que no tengas. Participa en un torneo diferente a ${mainGame}.`
-                        : `Perfil versátil. Mantén tu colección actualizada y compite en múltiples juegos.`
+                        ? `Prueba un torneo fuera de ${mainGame} para empujar esta barra.`
+                        : 'Mantén tu colección actualizada sin descuidar tu juego principal.'
             }
         ];
     }, [tournaments, myTeams, user, myCommunities, accountAgeDays, enrichedGames]);
@@ -1407,6 +1317,34 @@ const Dashboard = () => {
                             </div>
                         </motion.div>
                     )}
+                    {/* Referral invite banner */}
+                    <motion.div className="db__referral-banner" variants={fadeChild}>
+                        <div className="db__referral-banner-glow" />
+                        <div className="db__referral-banner-content">
+                            <div className="db__referral-banner-left">
+                                <i className="bx bx-gift"></i>
+                                <div>
+                                    <h3>Invita amigos a GlitchGang</h3>
+                                    <p>Comparte tu código y desbloquea frames exclusivos</p>
+                                </div>
+                            </div>
+                            <div className="db__referral-banner-right">
+                                <div className="db__referral-code-box">
+                                    <span className="db__referral-code-val">{user?.referralCode || '---'}</span>
+                                    <button className="db__referral-copy-btn" onClick={() => {
+                                        const code = user?.referralCode;
+                                        if (!code) return;
+                                        const link = `${window.location.origin}/register?ref=${code}`;
+                                        navigator.clipboard.writeText(link);
+                                    }} title="Copiar link de invitación">
+                                        <i className="bx bx-copy"></i>
+                                    </button>
+                                </div>
+                                <span className="db__referral-count">{user?.referralCount || 0} referido{(user?.referralCount || 0) !== 1 ? 's' : ''}</span>
+                            </div>
+                        </div>
+                    </motion.div>
+
                 </motion.div>
             </section>
 
@@ -1430,7 +1368,12 @@ const Dashboard = () => {
                                         <div>
                                             <p className="db__mx-page-kicker" style={{ color: m.color }}>Métricas de rendimiento</p>
                                             <h2 className="db__mx-title">{m.label}</h2>
-                                            <p className="db__mx-subtitle">{m.subtitle}</p>
+                                            <div className="db__mx-subtitle-row">
+                                                <p className="db__mx-subtitle">{m.subtitle}</p>
+                                                <span className="db__mx-stage" style={{ color: m.color, borderColor: hexToRgba(m.color, 0.28), background: hexToRgba(m.color, 0.08) }}>
+                                                    {m.stageLabel}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                     <span className="db__mx-page-counter">{idx + 1} / {metricsData.length}</span>
@@ -1609,7 +1552,7 @@ const Dashboard = () => {
                                         <div className="db__mx-block">
                                             <div className="db__mx-block-head">
                                                 <i className="bx bx-book-open" style={{ color: m.color }}></i>
-                                                <h4>Definición</h4>
+                                                <h4>Resumen</h4>
                                             </div>
                                             <p>{m.definition}</p>
                                         </div>
@@ -1617,19 +1560,15 @@ const Dashboard = () => {
                                         <div className="db__mx-block">
                                             <div className="db__mx-block-head">
                                                 <i className="bx bx-bulb" style={{ color: m.color }}></i>
-                                                <h4>Consejos</h4>
+                                                <h4>Consejo Actual</h4>
                                             </div>
-                                            <ul className="db__mx-tips">
-                                                {m.tips.map((tip, i) => (
-                                                    <li key={i}><i className="bx bx-check" style={{ color: m.color }}></i>{tip}</li>
-                                                ))}
-                                            </ul>
+                                            <p className="db__mx-note">{m.insight}</p>
                                         </div>
 
                                         <div className="db__mx-block">
                                             <div className="db__mx-block-head">
                                                 <i className="bx bx-target-lock" style={{ color: m.color }}></i>
-                                                <h4>Plan de Mejora</h4>
+                                                <h4>Próximo Paso</h4>
                                             </div>
                                             <p className="db__mx-plan">{m.plan}</p>
                                         </div>

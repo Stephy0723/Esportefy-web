@@ -8,8 +8,13 @@ const ParticipantSchema = new mongoose.Schema({
   role: { type: String, default: '' }
 }, { _id: false });
 
+const PollOptionSchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  votes: [{ type: String }] // userIds
+}, { _id: true });
+
 const ConversationSchema = new mongoose.Schema({
-  participants: [{ type: String, required: true }], // IDs de los usuarios
+  participants: [{ type: String, required: true }],
   type: { type: String, enum: ['individual', 'team'], default: 'individual' },
   teamId: { type: String, default: null },
   title: { type: String, default: '' },
@@ -27,7 +32,20 @@ const MessageSchema = new mongoose.Schema({
   conversationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Conversation', required: true },
   senderId: { type: String, required: true },
   senderName: { type: String, required: true },
-  content: { type: String, required: true },
+  content: { type: String, default: '' },
+  // message type: text, image, file, voice, poll
+  msgType: { type: String, enum: ['text', 'image', 'file', 'voice', 'poll'], default: 'text' },
+  // for image/file/voice
+  fileUrl: { type: String, default: '' },
+  fileName: { type: String, default: '' },
+  fileSize: { type: Number, default: 0 },
+  fileMime: { type: String, default: '' },
+  // for voice
+  voiceDuration: { type: Number, default: 0 },
+  // for poll (team chats only)
+  pollQuestion: { type: String, default: '' },
+  pollOptions: { type: [PollOptionSchema], default: [] },
+  pollClosed: { type: Boolean, default: false },
   timestamp: { type: Date, default: Date.now }
 });
 

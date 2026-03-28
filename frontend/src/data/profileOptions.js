@@ -1,206 +1,572 @@
 // src/data/profileOptions.js
+import { getBackgroundUnlockByIndex, getUnlockLabel } from '../utils/backgroundUnlocks';
+
+// ── Rarity config ──
+export const RARITY_CONFIG = {
+  common:    { label: 'Común',      color: '#9ca3af', glow: 'rgba(156,163,175,.35)' },
+  rare:      { label: 'Raro',       color: '#3b82f6', glow: 'rgba(59,130,246,.40)' },
+  epic:      { label: 'Épico',      color: '#a855f7', glow: 'rgba(168,85,247,.45)' },
+  legendary: { label: 'Legendario', color: '#f59e0b', glow: 'rgba(245,158,11,.50)' },
+  mythic:    { label: 'Mítico',     color: '#ef4444', glow: 'rgba(239,68,68,.55)' },
+};
+
+/**
+ * unlock types:
+ *  - 'default'              → available to everyone
+ *  - 'referrals:N'          → N referrals
+ *  - 'tournament_win:N'     → N tournament wins
+ *  - 'tournament_play:N'    → N tournaments played
+ *  - 'matches:N'            → N matches played
+ *  - 'wins:N'               → N wins
+ *  - 'teams:N'              → member of N teams
+ *  - 'communities:N'        → joined N communities
+ *  - 'friends:N'            → N friends
+ *  - 'level:N'              → reach level N
+ *  - 'streak:N'             → N win streak
+ *  - 'role:X'               → have role X
+ *  - 'founder'              → early adopter / founder
+ *  - 'event:X'              → special event
+ *  - 'admin_only'           → only via admin grant
+ */
 
 export const FRAMES = [
-  // 0. DEFAULT
-  { 
-    id: 'none', 
-    name: 'Sin Marco', 
-    type: 'none', 
+  // ═══════════════════════════════════════
+  //  COMMON (15 frames) — easy to unlock
+  // ═══════════════════════════════════════
+  {
+    id: 'none',
+    name: 'Sin Marco',
+    type: 'none',
     color: '#cccccc',
-    desc: 'Estilo clásico y limpio.'
+    rarity: 'common',
+    unlock: 'default',
+    unlockLabel: 'Disponible para todos',
+    desc: 'Estilo clásico y limpio.',
   },
-
-  // 1. NEON STORM (Para Banner 1/2) - Energía Eléctrica
-  { 
-    id: 'neon-storm', 
-    name: 'Neon Storm', 
-    type: 'css', 
+  {
+    id: 'neon-storm',
+    name: 'Neon Storm',
+    type: 'css',
     color: '#00f2ff',
-    desc: 'Energía eléctrica vibrante.'
+    rarity: 'common',
+    unlock: 'default',
+    unlockLabel: 'Disponible para todos',
+    desc: 'Energía eléctrica vibrante.',
   },
-
-  // 2. CELESTIAL (Para Banner 4/13) - Nubes Suaves
-  { 
-    id: 'celestial-dream', 
-    name: 'Celestial', 
-    type: 'css', 
+  {
+    id: 'celestial-dream',
+    name: 'Celestial',
+    type: 'css',
     color: '#ffc3a0',
-    desc: 'Suavidad etérea y nubes.'
+    rarity: 'common',
+    unlock: 'default',
+    unlockLabel: 'Disponible para todos',
+    desc: 'Suavidad etérea y nubes.',
   },
-
-  // 3. MIDNIGHT GOLD (Para Banner 7/10) - Lujo Oscuro
-  { 
-    id: 'midnight-gold', 
-    name: 'Midnight Gold', 
-    type: 'css', 
-    color: '#ffd700',
-    desc: 'Elegancia dorada nocturna.'
-  },
-
-  // 4. NATURE BLOOM (Para Banner 8/16) - Orgánico
-  { 
-    id: 'nature-bloom', 
-    name: 'Nature Bloom', 
-    type: 'css', 
+  {
+    id: 'nature-bloom',
+    name: 'Nature Bloom',
+    type: 'css',
     color: '#50c878',
-    desc: 'Hojas y naturaleza viva.'
+    rarity: 'common',
+    unlock: 'default',
+    unlockLabel: 'Disponible para todos',
+    desc: 'Hojas y naturaleza viva.',
+  },
+  {
+    id: 'cloud-nine',
+    name: 'Cielo',
+    type: 'css',
+    color: '#89cff0',
+    rarity: 'common',
+    unlock: 'default',
+    unlockLabel: 'Disponible para todos',
+    desc: 'Esponjoso como una nube.',
+  },
+  {
+    id: 'snow-angel',
+    name: 'Snow Angel',
+    type: 'css',
+    color: '#a5f2f3',
+    rarity: 'common',
+    unlock: 'matches:1',
+    unlockLabel: 'Juega 1 partida',
+    desc: 'Copos de nieve cayendo suavemente.',
+  },
+  {
+    id: 'petal-cascade',
+    name: 'Rose Rain',
+    type: 'css',
+    color: '#ffb7c5',
+    rarity: 'common',
+    unlock: 'matches:3',
+    unlockLabel: 'Juega 3 partidas',
+    desc: 'Pétalos de rosa bailando al caer.',
+  },
+  {
+    id: 'porcelain-doll',
+    name: 'Porcelana',
+    type: 'css',
+    color: '#fff0f5',
+    rarity: 'common',
+    unlock: 'friends:3',
+    unlockLabel: 'Agrega 3 amigos',
+    desc: 'Delicado patrón floral blanco.',
+  },
+  {
+    id: 'soft-mint',
+    name: 'Menta Suave',
+    type: 'css',
+    color: '#98ffc4',
+    rarity: 'common',
+    unlock: 'friends:5',
+    unlockLabel: 'Agrega 5 amigos',
+    desc: 'Frescura mentolada y suave.',
+  },
+  {
+    id: 'sunset-glow',
+    name: 'Atardecer',
+    type: 'css',
+    color: '#ff7e5f',
+    rarity: 'common',
+    unlock: 'communities:1',
+    unlockLabel: 'Únete a 1 comunidad',
+    desc: 'Colores cálidos de atardecer.',
+  },
+  {
+    id: 'copper-wire',
+    name: 'Cobre',
+    type: 'css',
+    color: '#b87333',
+    rarity: 'common',
+    unlock: 'teams:1',
+    unlockLabel: 'Únete a 1 equipo',
+    desc: 'Brillo cobrizo industrial.',
+  },
+  {
+    id: 'ocean-breeze',
+    name: 'Brisa Marina',
+    type: 'css',
+    color: '#0077b6',
+    rarity: 'common',
+    unlock: 'wins:1',
+    unlockLabel: 'Gana 1 partida',
+    desc: 'Olas suaves del océano.',
+  },
+  {
+    id: 'lavender-haze',
+    name: 'Lavanda',
+    type: 'css',
+    color: '#b4a7d6',
+    rarity: 'common',
+    unlock: 'wins:3',
+    unlockLabel: 'Gana 3 partidas',
+    desc: 'Neblina púrpura relajante.',
+  },
+  {
+    id: 'ember-spark',
+    name: 'Chispa',
+    type: 'css',
+    color: '#ff6b35',
+    rarity: 'common',
+    unlock: 'referrals:1',
+    unlockLabel: 'Invita 1 amigo',
+    desc: 'Pequeñas chispas ardientes.',
+  },
+  {
+    id: 'steel-basic',
+    name: 'Acero',
+    type: 'css',
+    color: '#71797e',
+    rarity: 'common',
+    unlock: 'tournament_play:1',
+    unlockLabel: 'Participa en 1 torneo',
+    desc: 'Acabado de acero pulido.',
   },
 
-  // 5. PRISM TECH (Para Banner 11/12) - Geometría
-  { 
-    id: 'prism-tech', 
-    name: 'Prism Tech', 
-    type: 'css', 
+  // ═══════════════════════════════════════
+  //  RARE (12 frames) — moderate effort
+  // ═══════════════════════════════════════
+  {
+    id: 'midnight-gold',
+    name: 'Midnight Gold',
+    type: 'css',
+    color: '#ffd700',
+    rarity: 'rare',
+    unlock: 'wins:10',
+    unlockLabel: 'Gana 10 partidas',
+    desc: 'Elegancia dorada nocturna.',
+  },
+  {
+    id: 'prism-tech',
+    name: 'Prism Tech',
+    type: 'css',
     color: '#ff0055',
-    desc: 'Formas geométricas afiladas.'
+    rarity: 'rare',
+    unlock: 'matches:15',
+    unlockLabel: 'Juega 15 partidas',
+    desc: 'Formas geométricas afiladas.',
   },
-  // 6. GALACTIC ORBIT (Espacial/Planetas)
-  { 
-    id: 'galactic-orbit', 
-    name: 'Galactic', 
-    type: 'css', 
-    color: '#9400d3', 
-    desc: 'Anillos orbitales giratorios.' 
+  {
+    id: 'frozen-shard',
+    name: 'Frozen',
+    type: 'css',
+    color: '#a5f2f3',
+    rarity: 'rare',
+    unlock: 'wins:15',
+    unlockLabel: 'Gana 15 partidas',
+    desc: 'Fragmentos de hielo afilados.',
   },
-
-  // 7. GLITCH HAZARD (Cyberpunk/Error)
-  { 
-    id: 'glitch-hazard', 
-    name: 'Glitch', 
-    type: 'css', 
-    color: '#39ff14', 
-    desc: 'Distorsión digital y ruido.' 
+  {
+    id: 'retro-arcade',
+    name: '8-Bit',
+    type: 'css',
+    color: '#ff00ff',
+    rarity: 'rare',
+    unlock: 'matches:25',
+    unlockLabel: 'Juega 25 partidas',
+    desc: 'Estilo pixelado nostálgico.',
   },
-
-  // 8. FROZEN SHARD (Hielo/Cristal)
-  { 
-    id: 'frozen-shard', 
-    name: 'Frozen', 
-    type: 'css', 
-    color: '#a5f2f3', 
-    desc: 'Fragmentos de hielo afilados.' 
+  {
+    id: 'fairy-dust-glam',
+    name: 'Fairy',
+    type: 'css',
+    color: '#e6e6fa',
+    rarity: 'rare',
+    unlock: 'friends:15',
+    unlockLabel: 'Agrega 15 amigos',
+    desc: 'Polvo de hadas lavanda.',
   },
-
-  // 9. INFERNO RAGE (Fuego Realista)
-  { 
-    id: 'inferno-rage', 
-    name: 'Inferno', 
-    type: 'css', 
-    color: '#ff4500', 
-    desc: 'Llamas vivas y humo.' 
+  {
+    id: 'iron-guardian',
+    name: 'Guardian',
+    type: 'css',
+    color: '#b0c4de',
+    rarity: 'rare',
+    unlock: 'tournament_play:3',
+    unlockLabel: 'Participa en 3 torneos',
+    desc: 'Armadura de acero forjado.',
   },
-
-  // 10. RETRO ARCADE (Pixel Art/8-Bit)
-  { 
-    id: 'retro-arcade', 
-    name: '8-Bit', 
-    type: 'css', 
-    color: '#ff00ff', 
-    desc: 'Estilo pixelado nostálgico.' 
+  {
+    id: 'toxic-neon',
+    name: 'Tóxico',
+    type: 'css',
+    color: '#39ff14',
+    rarity: 'rare',
+    unlock: 'referrals:5',
+    unlockLabel: 'Invita 5 amigos',
+    desc: 'Verde neón radioactivo.',
   },
-  // 11. SNOW ANGEL (Efecto Nieve)
-  { 
-    id: 'snow-angel', 
-    name: 'Snow Angel', 
-    type: 'css', 
-    color: '#a5f2f3', 
-    desc: 'Copos de nieve cayendo suavemente.' 
+  {
+    id: 'cherry-blossom',
+    name: 'Sakura',
+    type: 'css',
+    color: '#ffb7c5',
+    rarity: 'rare',
+    unlock: 'communities:3',
+    unlockLabel: 'Únete a 3 comunidades',
+    desc: 'Flores de cerezo japonesas.',
   },
-
-  // 12. PETAL CASCADE (Lluvia de Pétalos)
-  { 
-    id: 'petal-cascade', 
-    name: 'Rose Rain', 
-    type: 'css', 
-    color: '#ffb7c5', 
-    desc: 'Pétalos de rosa bailando al caer.' 
+  {
+    id: 'thunderbolt',
+    name: 'Rayo',
+    type: 'css',
+    color: '#ffd700',
+    rarity: 'rare',
+    unlock: 'streak:3',
+    unlockLabel: 'Racha de 3 victorias',
+    desc: 'Relámpagos electrificantes.',
   },
-
-  // 13. CLOUD NINE (Nubes/Cielo)
-  { 
-    id: 'cloud-nine', 
-    name: 'Cielo', 
-    type: 'css', 
-    color: '#89cff0', 
-    desc: 'Esponjoso como una nube.' 
+  {
+    id: 'shadow-veil',
+    name: 'Sombra',
+    type: 'css',
+    color: '#2d2d2d',
+    rarity: 'rare',
+    unlock: 'teams:2',
+    unlockLabel: 'Únete a 2 equipos',
+    desc: 'Velo de sombras misteriosas.',
   },
-
-  // 14. FAIRY DUST (Hadas/Brillos)
-  { 
-    id: 'fairy-dust-glam', 
-    name: 'Fairy', 
-    type: 'css', 
-    color: '#e6e6fa', 
-    desc: 'Polvo de hadas lavanda.' 
+  {
+    id: 'crystal-blue',
+    name: 'Cristal',
+    type: 'css',
+    color: '#4fc3f7',
+    rarity: 'rare',
+    unlock: 'wins:25',
+    unlockLabel: 'Gana 25 partidas',
+    desc: 'Cristales azules brillantes.',
   },
-
-  // 15. PORCELAIN DOLL (Elegante/Floral)
-  { 
-    id: 'porcelain-doll', 
-    name: 'Porcelana', 
-    type: 'css', 
-    color: '#fff0f5', 
-    desc: 'Delicado patrón floral blanco.' 
-  },
-  // 16. IRON GUARDIAN (Acero/Caballero)
-  { 
-    id: 'iron-guardian', 
-    name: 'Guardian', 
-    type: 'css', 
-    color: '#b0c4de', 
-    desc: 'Armadura de acero forjado.' 
-  },
-
-  // 17. DRAGON SCALE (Escamas/Fuego)
-  { 
-    id: 'dragon-scale', 
-    name: 'Dragon', 
-    type: 'css', 
-    color: '#dc143c', 
-    desc: 'Escamas de dragón legendario.' 
+  {
+    id: 'plasma-ring',
+    name: 'Plasma',
+    type: 'css',
+    color: '#e040fb',
+    rarity: 'rare',
+    unlock: 'tournament_win:1',
+    unlockLabel: 'Gana 1 torneo',
+    desc: 'Anillo de plasma pulsante.',
   },
 
-  // 18. ROYAL CROWN (Realeza/Oro)
-  { 
-    id: 'royal-crown', 
-    name: 'King', 
-    type: 'css', 
-    color: '#ffd700', 
-    desc: 'Oro real y terciopelo azul.' 
+  // ═══════════════════════════════════════
+  //  EPIC (10 frames) — significant effort
+  // ═══════════════════════════════════════
+  {
+    id: 'galactic-orbit',
+    name: 'Galactic',
+    type: 'css',
+    color: '#9400d3',
+    rarity: 'epic',
+    unlock: 'wins:50',
+    unlockLabel: 'Gana 50 partidas',
+    desc: 'Anillos orbitales giratorios.',
+  },
+  {
+    id: 'glitch-hazard',
+    name: 'Glitch',
+    type: 'css',
+    color: '#39ff14',
+    rarity: 'epic',
+    unlock: 'tournament_win:3',
+    unlockLabel: 'Gana 3 torneos',
+    desc: 'Distorsión digital y ruido.',
+  },
+  {
+    id: 'inferno-rage',
+    name: 'Inferno',
+    type: 'css',
+    color: '#ff4500',
+    rarity: 'epic',
+    unlock: 'tournament_win:5',
+    unlockLabel: 'Gana 5 torneos',
+    desc: 'Llamas vivas y humo.',
+  },
+  {
+    id: 'dragon-scale',
+    name: 'Dragon',
+    type: 'css',
+    color: '#dc143c',
+    rarity: 'epic',
+    unlock: 'wins:75',
+    unlockLabel: 'Gana 75 partidas',
+    desc: 'Escamas de dragón legendario.',
+  },
+  {
+    id: 'berserker-rage',
+    name: 'Berserker',
+    type: 'css',
+    color: '#8b0000',
+    rarity: 'epic',
+    unlock: 'streak:5',
+    unlockLabel: 'Racha de 5 victorias',
+    desc: 'Furia de batalla incontenible.',
+  },
+  {
+    id: 'ancient-rune',
+    name: 'Runic',
+    type: 'css',
+    color: '#00ffff',
+    rarity: 'epic',
+    unlock: 'referrals:20',
+    unlockLabel: 'Invita 20 amigos',
+    desc: 'Piedra antigua con runas brillantes.',
+  },
+  {
+    id: 'void-eclipse',
+    name: 'Eclipse',
+    type: 'css',
+    color: '#1a1a2e',
+    rarity: 'epic',
+    unlock: 'tournament_play:10',
+    unlockLabel: 'Participa en 10 torneos',
+    desc: 'Oscuridad total del eclipse.',
+  },
+  {
+    id: 'phoenix-aura',
+    name: 'Fénix',
+    type: 'css',
+    color: '#ff6f00',
+    rarity: 'epic',
+    unlock: 'matches:100',
+    unlockLabel: 'Juega 100 partidas',
+    desc: 'Aura de fénix renaciente.',
+  },
+  {
+    id: 'nebula-drift',
+    name: 'Nebulosa',
+    type: 'css',
+    color: '#7b2ff7',
+    rarity: 'epic',
+    unlock: 'friends:50',
+    unlockLabel: 'Agrega 50 amigos',
+    desc: 'Gases cósmicos en movimiento.',
+  },
+  {
+    id: 'samurai-honor',
+    name: 'Samurai',
+    type: 'css',
+    color: '#c0392b',
+    rarity: 'epic',
+    unlock: 'role:organizer',
+    unlockLabel: 'Rol de Organizador',
+    desc: 'Honor del guerrero samurai.',
   },
 
-  // 19. BERSERKER RAGE (Sangre/Guerra)
-  { 
-    id: 'berserker-rage', 
-    name: 'Berserker', 
-    type: 'css', 
-    color: '#8b0000', 
-    desc: 'Furia de batalla incontenible.' 
+  // ═══════════════════════════════════════
+  //  LEGENDARY (8 frames) — elite achievements
+  // ═══════════════════════════════════════
+  {
+    id: 'royal-crown',
+    name: 'King',
+    type: 'css',
+    color: '#ffd700',
+    rarity: 'legendary',
+    unlock: 'tournament_win:10',
+    unlockLabel: 'Gana 10 torneos',
+    desc: 'Oro real y terciopelo azul.',
+  },
+  {
+    id: 'celestial-throne',
+    name: 'Trono Celestial',
+    type: 'css',
+    color: '#ffeaa7',
+    rarity: 'legendary',
+    unlock: 'wins:150',
+    unlockLabel: 'Gana 150 partidas',
+    desc: 'Trono dorado entre las estrellas.',
+  },
+  {
+    id: 'supernova-burst',
+    name: 'Supernova',
+    type: 'css',
+    color: '#ff006e',
+    rarity: 'legendary',
+    unlock: 'streak:10',
+    unlockLabel: 'Racha de 10 victorias',
+    desc: 'Explosión estelar devastadora.',
+  },
+  {
+    id: 'dark-sovereign',
+    name: 'Soberano Oscuro',
+    type: 'css',
+    color: '#4a0072',
+    rarity: 'legendary',
+    unlock: 'referrals:50',
+    unlockLabel: 'Invita 50 amigos',
+    desc: 'Poder absoluto de la oscuridad.',
+  },
+  {
+    id: 'titan-forge',
+    name: 'Titán',
+    type: 'css',
+    color: '#ff8c00',
+    rarity: 'legendary',
+    unlock: 'tournament_win:15',
+    unlockLabel: 'Gana 15 torneos',
+    desc: 'Forjado en la fragua de los titanes.',
+  },
+  {
+    id: 'diamond-crown',
+    name: 'Diamante',
+    type: 'css',
+    color: '#b9f2ff',
+    rarity: 'legendary',
+    unlock: 'matches:200',
+    unlockLabel: 'Juega 200 partidas',
+    desc: 'Corona de diamante puro.',
+  },
+  {
+    id: 'war-legend',
+    name: 'Leyenda de Guerra',
+    type: 'css',
+    color: '#c0392b',
+    rarity: 'legendary',
+    unlock: 'tournament_play:25',
+    unlockLabel: 'Participa en 25 torneos',
+    desc: 'Veterano de mil batallas.',
+  },
+  {
+    id: 'eternal-flame',
+    name: 'Llama Eterna',
+    type: 'css',
+    color: '#ff4500',
+    rarity: 'legendary',
+    unlock: 'wins:200',
+    unlockLabel: 'Gana 200 partidas',
+    desc: 'Fuego que nunca se apaga.',
   },
 
-  // 20. ANCIENT RUNE (Piedra/Magia)
-  { 
-    id: 'ancient-rune', 
-    name: 'Runic', 
-    type: 'css', 
-    color: '#00ffff', 
-    desc: 'Piedra antigua con runas brillantes.' 
-  }
-
+  // ═══════════════════════════════════════
+  //  MYTHIC (5 frames) — ultra rare / unique
+  // ═══════════════════════════════════════
+  {
+    id: 'glitchgang-og',
+    name: 'GG Founder',
+    type: 'css',
+    color: '#ff00ff',
+    rarity: 'mythic',
+    unlock: 'founder',
+    unlockLabel: 'Miembro fundador de GlitchGang',
+    desc: 'Exclusivo para los fundadores originales.',
+  },
+  {
+    id: 'champion-supreme',
+    name: 'Campeón Supremo',
+    type: 'css',
+    color: '#ffd700',
+    rarity: 'mythic',
+    unlock: 'tournament_win:25',
+    unlockLabel: 'Gana 25 torneos',
+    desc: 'El campeón de campeones.',
+  },
+  {
+    id: 'cosmic-emperor',
+    name: 'Emperador Cósmico',
+    type: 'css',
+    color: '#e040fb',
+    rarity: 'mythic',
+    unlock: 'referrals:100',
+    unlockLabel: 'Invita 100 amigos',
+    desc: 'Gobernante del cosmos digital.',
+  },
+  {
+    id: 'omega-glitch',
+    name: 'Omega Glitch',
+    type: 'css',
+    color: '#39ff14',
+    rarity: 'mythic',
+    unlock: 'admin_only',
+    unlockLabel: 'Otorgado por administrador',
+    desc: 'El error definitivo del sistema.',
+  },
+  {
+    id: 'oblivion-void',
+    name: 'Oblivion',
+    type: 'css',
+    color: '#0d0d0d',
+    rarity: 'mythic',
+    unlock: 'admin_only',
+    unlockLabel: 'Otorgado por administrador',
+    desc: 'El vacío absoluto. Sin retorno.',
+  },
 ];
-
 
 
 // ... (El código de BACKGROUNDS déjalo como estaba arreglado) ...
 const bannersGlob = import.meta.glob('../assets/bannerGamer/*.jpg', { eager: true, import: 'default' });
 
 export const BACKGROUNDS = Object.entries(bannersGlob)
-  .map(([path, src]) => {
+  .map(([path, src], index) => {
     const fileName = path.split('/').pop().replace('.jpg', '');
+    const backgroundOrder = Math.max((parseInt(fileName || 0, 10) || 1) - 1, index);
+    const unlock = getBackgroundUnlockByIndex(backgroundOrder);
     return {
       id: `bg-${fileName}`,
       name: `Fondo ${fileName}`,
-      src: src
+      src,
+      image: src,
+      unlock,
+      unlockLabel: getUnlockLabel(unlock)
     };
   })
   .sort((a, b) => {

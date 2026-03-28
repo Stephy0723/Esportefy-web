@@ -198,6 +198,98 @@
 .mt__btn--ghost:hover {
     color: var(--text-main);
 }
+.mt__section--coach {
+    padding-top: 28px;
+}
+.mt__coach {
+    background:
+        radial-gradient(circle at top right, rgba(142,219,21,0.12), transparent 38%),
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+    border: 1px solid rgba(142,219,21,0.14);
+    border-radius: 20px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+}
+.mt__coach-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(142,219,21,0.1);
+    border: 1px solid rgba(142,219,21,0.18);
+    color: #b8f85f;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.mt__coach-title {
+    font-size: clamp(1.4rem, 2vw, 2rem);
+    font-weight: 900;
+    color: var(--text-main);
+    line-height: 1.1;
+}
+.mt__coach-message {
+    max-width: 880px;
+    color: var(--text-muted);
+    font-size: .95rem;
+    line-height: 1.8;
+}
+.mt__coach-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+.mt__coach-panel {
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.mt__coach-panel h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .82rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 10px;
+}
+.mt__coach-panel h3 i {
+    color: #8EDB15;
+    font-size: 1rem;
+}
+.mt__coach-panel p {
+    color: var(--text-muted);
+    font-size: .84rem;
+    line-height: 1.7;
+}
+.mt__coach-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.mt__coach-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-main);
+    font-size: .76rem;
+    font-weight: 700;
+}
+.mt__coach-chip i {
+    color: #8EDB15;
+    font-size: .95rem;
+}
 
 /* ═══ LAST TOURNAMENT ═══ */
 .mt__tournament {
@@ -501,10 +593,31 @@
     color: var(--text-main);
     letter-spacing: 0.3px;
 }
+.mt__metric-card-subrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
 .mt__metric-card-subtitle {
     font-size: .72rem;
     color: var(--text-muted);
     font-weight: 600;
+}
+.mt__metric-stage {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--mt-c, #8EDB15) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mt-c, #8EDB15) 24%, transparent);
+    color: var(--mt-c, #8EDB15);
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
 }
 .mt__metric-card-score {
     font-size: 1.4rem;
@@ -567,6 +680,18 @@
     font-size: .82rem;
     color: var(--text-muted);
     line-height: 1.6;
+}
+.mt__metric-note {
+    color: var(--text-main) !important;
+}
+.mt__metric-progress {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: .76rem !important;
+    line-height: 1.6 !important;
 }
 .mt__metric-tips {
     list-style: none;
@@ -661,6 +786,9 @@
         grid-template-columns: 1fr;
         gap: 20px;
     }
+    .mt__coach-grid {
+        grid-template-columns: 1fr;
+    }
     .mt__header-score {
         justify-content: center;
     }
@@ -690,6 +818,16 @@
     }
     .mt__section {
         padding: 28px 16px;
+    }
+    .mt__coach {
+        padding: 22px 18px;
+    }
+    .mt__coach-chips {
+        flex-direction: column;
+    }
+    .mt__coach-chip {
+        width: 100%;
+        justify-content: flex-start;
     }
     .mt__header-profile {
         flex-direction: column;

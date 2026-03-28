@@ -3,21 +3,22 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import {
-    FaUser, FaGamepad, FaLock, FaSave, FaArrowLeft,
-    FaCamera, FaPaintBrush, FaCheck, FaExclamationTriangle,
+    FaUser, FaGamepad, FaLock, FaLockOpen, FaSave, FaArrowLeft,
+    FaCamera, FaPaintBrush, FaCheck, FaExclamationTriangle, FaTimes,
     FaLink, FaTwitch, FaYoutube, FaTwitter, FaInstagram, FaTiktok,
     FaBirthdayCake, FaGlobeAmericas, FaUsers, FaHandshake, FaTrophy,
-    FaDiscord, FaSteam, FaPlaystation, FaXbox
+    FaDiscord, FaSteam, FaPlaystation, FaXbox, FaGem, FaCrown, FaStar
 } from 'react-icons/fa';
 import { SiRiotgames, SiEpicgames } from 'react-icons/si';
 import PlayerTag from '../../../components/PlayerTag/PlayerTag';
 import { PLAYER_TAGS } from '../../../data/playerTags';
-import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
+import { FRAMES, BACKGROUNDS, RARITY_CONFIG } from '../../../data/profileOptions';
 import { EMPTY_PROFILE_PROGRESSION, normalizeProfileProgression } from '../../../data/profileProgression';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
-import { STATUS_LIST, DEFAULT_AVATARS } from '../../../data/defaultAvatars';
+import { STATUS_LIST, DEFAULT_AVATARS, AVATAR_CATEGORIES, AVATAR_TIERS } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { cacheAuthUser, getAuthToken } from '../../../utils/authSession';
+import { EXAMPLE_BACKGROUND_UNLOCK_USER, getUnlockStatus, isUnlocked } from '../../../utils/backgroundUnlocks';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import { isSupportedGameId, normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
 import { COUNTRY_OPTIONS, normalizeCountryName } from '../../../../../shared/countries.js';
@@ -201,6 +202,7 @@ const EditProfile = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [currentUserId, setCurrentUserId] = useState('');
     const [profileProgression, setProfileProgression] = useState(EMPTY_PROFILE_PROGRESSION);
+    const [profileOverviewStats, setProfileOverviewStats] = useState({ tournamentsWon: 0 });
     const [userConnections, setUserConnections] = useState({ discord: {}, riot: {}, mlbb: {} }); // Real connections from Settings
     const [phoneAvailability, setPhoneAvailability] = useState({
         loading: false,
@@ -221,9 +223,13 @@ const EditProfile = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setProfileProgression(normalizeProfileProgression(res.data?.progression));
+            setProfileOverviewStats({
+                tournamentsWon: Number(res.data?.stats?.tournamentsWon || 0)
+            });
         } catch (err) {
             console.warn('No se pudo cargar el progreso del perfil:', err?.response?.status || err?.message || err);
             setProfileProgression(EMPTY_PROFILE_PROGRESSION);
+            setProfileOverviewStats({ tournamentsWon: 0 });
         }
     }, []);
 
@@ -255,6 +261,16 @@ const EditProfile = () => {
         roleApplications: {}
     });
 
+    const [referralInfo, setReferralInfo] = useState({ code: '', count: 0 });
+    const [refCopied, setRefCopied] = useState(false);
+    const [userUnlockedFrames, setUserUnlockedFrames] = useState([]);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [tagModal, setTagModal] = useState(null); // tag object or null
+    const [frameModal, setFrameModal] = useState(null); // frame object or null
+    const [showAllFrames, setShowAllFrames] = useState(false);
+    const [avatarCatFilter, setAvatarCatFilter] = useState('all');
+    const [showLockedAvatars, setShowLockedAvatars] = useState(false);
+    const [avatarModal, setAvatarModal] = useState(null);
     const getToken = () => getAuthToken();
     const normalizePhone = (value = '') => String(value).replace(/[^\d]/g, '');
     const isValidPhone = (value = '') => /^\d+$/.test(String(value)) && Number(value) >= 0;
@@ -273,7 +289,210 @@ const EditProfile = () => {
     // Helpers for live preview
     const currentFrame = FRAMES.find(f => f.id === formData.selectedFrameId) || FRAMES[0];
     const currentBg = BACKGROUNDS.find(b => b.id === formData.selectedBgId) || BACKGROUNDS[0];
-    
+
+    const profilePoints = Number(profileProgression?.totalPoints || 0);
+    const unlockedAchievements = Number(profileProgression?.unlockedAchievements || 0);
+    const selectedGamesCount = Array.isArray(formData.selectedGames) ? formData.selectedGames.length : 0;
+    const connectedAccountsCount = Math.max(
+        Object.values(userConnections || {}).filter(conn => Boolean(conn?.verified)).length,
+        Object.values(formData.gamingConnections || {}).filter(Boolean).length
+    );
+    const linkedSocialsCount = Object.values(formData.socialLinks || {}).filter(Boolean).length;
+    const referralCount = Number(referralInfo?.count || 0);
+    const hasOrganizerAccess = Boolean(formData.isOrganizer) || (Array.isArray(formData.roles) && formData.roles.includes('organizer'));
+    const backgroundUnlockUser = useMemo(() => ({
+        ...EXAMPLE_BACKGROUND_UNLOCK_USER,
+        referrals: referralCount,
+        tournamentsWon: Number(profileOverviewStats?.tournamentsWon || 0),
+        unlockedItems: Array.isArray(profileProgression?.achievements)
+            ? profileProgression.achievements
+                .filter((achievement) => achievement?.unlocked)
+                .map((achievement) => `achievement:${achievement.id}`)
+            : []
+    }), [profileOverviewStats?.tournamentsWon, profileProgression?.achievements, referralCount]);
+
+    const isBackgroundUnlocked = useCallback((backgroundItem) => (
+        isAdmin || isUnlocked(backgroundItem, backgroundUnlockUser)
+    ), [backgroundUnlockUser, isAdmin]);
+
+    // Default frames always unlocked for everyone
+    const DEFAULT_UNLOCKED = ['none', 'neon-storm', 'celestial-dream', 'nature-bloom', 'cloud-nine'];
+    const isFrameUnlocked = useCallback((frame) => {
+        if (isAdmin) return true;
+        if (frame.unlock === 'default') return true;
+        if (DEFAULT_UNLOCKED.includes(frame.id)) return true;
+        return userUnlockedFrames.includes(frame.id);
+    }, [isAdmin, userUnlockedFrames]);
+
+    const isTagUnlocked = useCallback((tag) => {
+        if (!tag) return false;
+        if (isAdmin) return true;
+
+        const unlockRule = String(tag.unlock || 'default');
+        if (unlockRule === 'default') return true;
+        if (unlockRule === 'elite_combo') {
+            return profilePoints >= 4200 && unlockedAchievements >= 18 && referralCount >= 10;
+        }
+
+        const [type, rawValue] = unlockRule.split(':');
+        const value = Number(rawValue || 0);
+
+        switch (type) {
+            case 'points':
+                return profilePoints >= value;
+            case 'achievements':
+                return unlockedAchievements >= value;
+            case 'games':
+                return selectedGamesCount >= value;
+            case 'social':
+                return linkedSocialsCount >= value;
+            case 'connections':
+                return connectedAccountsCount >= value;
+            case 'referrals':
+                return referralCount >= value;
+            case 'role':
+                return rawValue === 'organizer' ? hasOrganizerAccess : false;
+            default:
+                return false;
+        }
+    }, [
+        connectedAccountsCount,
+        hasOrganizerAccess,
+        isAdmin,
+        linkedSocialsCount,
+        profilePoints,
+        referralCount,
+        selectedGamesCount,
+        unlockedAchievements
+    ]);
+
+    const getTagUnlockMeta = useCallback((tag) => {
+        if (!tag) {
+            return {
+                description: '',
+                progress: ''
+            };
+        }
+
+        const unlockRule = String(tag.unlock || 'default');
+        if (unlockRule === 'default') {
+            return {
+                description: 'Disponible desde el inicio para personalizar tu nickname.',
+                progress: 'Lista para usar'
+            };
+        }
+
+        if (unlockRule === 'elite_combo') {
+            return {
+                description: 'La placa mas exclusiva del sistema. Requiere progreso competitivo, logros y referidos reales.',
+                progress: `${profilePoints}/4200 pts · ${unlockedAchievements}/18 logros · ${referralCount}/10 referidos`
+            };
+        }
+
+        const [type, rawValue] = unlockRule.split(':');
+        const value = Number(rawValue || 0);
+
+        switch (type) {
+            case 'points':
+                return {
+                    description: `Consigue ${value} puntos de perfil dentro de GlitchGang.`,
+                    progress: `${profilePoints}/${value} pts`
+                };
+            case 'achievements':
+                return {
+                    description: `Desbloquea ${value} logros de perfil.`,
+                    progress: `${unlockedAchievements}/${value} logros`
+                };
+            case 'games':
+                return {
+                    description: `Selecciona ${value} juegos en tu perfil para ampliar tu identidad competitiva.`,
+                    progress: `${selectedGamesCount}/${value} juegos`
+                };
+            case 'social':
+                return {
+                    description: `Agrega ${value} redes sociales para fortalecer tu presencia.`,
+                    progress: `${linkedSocialsCount}/${value} redes`
+                };
+            case 'connections':
+                return {
+                    description: `Conecta ${value} cuentas gaming verificadas o configuradas.`,
+                    progress: `${connectedAccountsCount}/${value} cuentas`
+                };
+            case 'referrals':
+                return {
+                    description: `Invita ${value} jugadores con tu codigo de referido.`,
+                    progress: `${referralCount}/${value} referidos`
+                };
+            case 'role':
+                return {
+                    description: rawValue === 'organizer'
+                        ? 'Disponible al obtener el rol de Organizador.'
+                        : 'Requiere un rol especial.',
+                    progress: hasOrganizerAccess ? 'Rol activo' : 'Rol no disponible'
+                };
+            default:
+                return {
+                    description: 'Completa el requisito indicado para desbloquear esta placa.',
+                    progress: tag.unlockLabel || 'En progreso'
+                };
+        }
+    }, [
+        connectedAccountsCount,
+        hasOrganizerAccess,
+        linkedSocialsCount,
+        profilePoints,
+        referralCount,
+        selectedGamesCount,
+        unlockedAchievements
+    ]);
+
+    const filteredFrames = FRAMES;
+    const backgroundItems = useMemo(() => BACKGROUNDS.map((backgroundItem) => {
+        const unlockStatus = getUnlockStatus(backgroundItem, backgroundUnlockUser);
+        const unlocked = isBackgroundUnlocked(backgroundItem);
+
+        return {
+            ...backgroundItem,
+            unlocked,
+            isSelected: formData.selectedBgId === backgroundItem.id,
+            unlockStatus: {
+                ...unlockStatus,
+                unlocked
+            }
+        };
+    }), [backgroundUnlockUser, formData.selectedBgId, getUnlockStatus, isBackgroundUnlocked]);
+
+    // Avatar helpers
+    const isAvatarUnlocked = useCallback((av) => {
+        if (isAdmin) return true;
+        if (!av.tier || av.tier === 'basic') return true;
+        // For now: pro+ avatars are locked unless admin
+        // Future: check userUnlockedAvatars array
+        return false;
+    }, [isAdmin]);
+
+    const filteredAvatars = useMemo(() => {
+        let list = DEFAULT_AVATARS;
+        if (avatarCatFilter !== 'all') list = list.filter(a => a.category === avatarCatFilter);
+        if (!showLockedAvatars) list = list.filter(a => isAvatarUnlocked(a));
+        return list;
+    }, [avatarCatFilter, showLockedAvatars, isAvatarUnlocked]);
+
+    const lockedAvatarCount = useMemo(() => {
+        let list = DEFAULT_AVATARS;
+        if (avatarCatFilter !== 'all') list = list.filter(a => a.category === avatarCatFilter);
+        return list.filter(a => !isAvatarUnlocked(a)).length;
+    }, [avatarCatFilter, isAvatarUnlocked]);
+
+    const rarityIcon = (rarity) => {
+        switch (rarity) {
+            case 'mythic': return <FaCrown />;
+            case 'legendary': return <FaGem />;
+            case 'epic': return <FaStar />;
+            default: return null;
+        }
+    };
+
     // Filtrado de juegos por categoría y búsqueda
     const filteredGames = allGames.filter(game => {
         const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
@@ -352,10 +571,17 @@ const EditProfile = () => {
                 roleApplications: u.roleApplications || {}
             });
             setPreview(resolveMediaUrl(u.avatar) || '');
+            setReferralInfo({ code: u.referralCode || '', count: u.referralCount || 0 });
+            setUserUnlockedFrames(Array.isArray(u.unlockedFrames) ? u.unlockedFrames : []);
+            setIsAdmin(Boolean(u.isAdmin));
             if (overviewResult.status === 'fulfilled') {
                 setProfileProgression(normalizeProfileProgression(overviewResult.value.data?.progression));
+                setProfileOverviewStats({
+                    tournamentsWon: Number(overviewResult.value.data?.stats?.tournamentsWon || 0)
+                });
             } else {
                 setProfileProgression(EMPTY_PROFILE_PROGRESSION);
+                setProfileOverviewStats({ tournamentsWon: 0 });
             }
             // Check field restrictions
             setFieldRestrictions({
@@ -368,6 +594,7 @@ const EditProfile = () => {
             console.error('Error fetching profile:', err);
             if (err.response?.status === 401) navigate('/login');
             setProfileProgression(EMPTY_PROFILE_PROGRESSION);
+            setProfileOverviewStats({ tournamentsWon: 0 });
             setLoading(false);
         }
     }, [navigate]);
@@ -838,23 +1065,133 @@ const EditProfile = () => {
                                             </div>
                                         </div>
 
-                                        {/* Default avatars */}
-                                        <label className="ep__label">Avatares Predeterminados</label>
-                                        <p className="ep__label-desc">Elige uno de nuestros avatares gaming si no quieres subir foto</p>
-                                        <div className="ep__default-avatars">
-                                            {DEFAULT_AVATARS.map(av => (
+                                        {/* Avatar collection */}
+                                        <label className="ep__label">Identidad GlitchGang</label>
+                                        <p className="ep__label-desc">Elige tu avatar de la coleccion esports</p>
+
+                                        {/* Category tabs */}
+                                        <div className="ep__avatar-cat-tabs">
+                                            {AVATAR_CATEGORIES.map(cat => (
                                                 <button
-                                                    key={av.id}
+                                                    key={cat.id}
                                                     type="button"
-                                                    className={`ep__default-av ${formData.avatar === av.src ? 'active' : ''}`}
-                                                    onClick={() => selectDefaultAvatar(av.src)}
-                                                    title={av.name}
+                                                    className={`ep__avatar-cat-tab ${avatarCatFilter === cat.id ? 'active' : ''}`}
+                                                    onClick={() => setAvatarCatFilter(cat.id)}
                                                 >
-                                                    <img src={av.src} alt={av.name} />
-                                                    <span>{av.name}</span>
+                                                    <i className={cat.icon} /> {cat.name}
                                                 </button>
                                             ))}
                                         </div>
+
+                                        {/* Avatar grid */}
+                                        <div className="ep__default-avatars">
+                                            {filteredAvatars.map(av => {
+                                                const unlocked = isAvatarUnlocked(av);
+                                                const isSelected = formData.avatar === av.src;
+                                                const tierCfg = AVATAR_TIERS[av.tier] || AVATAR_TIERS.basic;
+                                                return (
+                                                    <button
+                                                        key={av.id}
+                                                        type="button"
+                                                        className={`ep__default-av ep__default-av--${av.tier} ${isSelected ? 'active' : ''} ${!unlocked ? 'ep__default-av--locked' : ''}`}
+                                                        style={{ '--av-tier-color': tierCfg.color }}
+                                                        onClick={() => {
+                                                            if (unlocked) {
+                                                                selectDefaultAvatar(av.src);
+                                                            } else {
+                                                                setAvatarModal(av);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {!unlocked && (
+                                                            <div className="ep__av-lock">
+                                                                <FaLock />
+                                                            </div>
+                                                        )}
+                                                        <img src={av.src} alt={av.name} className={!unlocked ? 'ep__av-img-locked' : ''} />
+                                                        <span className="ep__av-name">{av.name}</span>
+                                                        {av.tier !== 'basic' && (
+                                                            <span className="ep__av-tier" style={{ color: tierCfg.color }}>
+                                                                {tierCfg.label}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Show locked toggle */}
+                                        {lockedAvatarCount > 0 && (
+                                            <button
+                                                type="button"
+                                                className="ep__frames-toggle"
+                                                onClick={() => setShowLockedAvatars(prev => !prev)}
+                                            >
+                                                {showLockedAvatars
+                                                    ? 'Ocultar bloqueados'
+                                                    : `Ver mas avatares (${lockedAvatarCount} bloqueados)`
+                                                }
+                                            </button>
+                                        )}
+
+                                        {/* Avatar detail modal */}
+                                        {avatarModal && (() => {
+                                            const av = avatarModal;
+                                            const avUnlocked = isAvatarUnlocked(av);
+                                            const tierCfg = AVATAR_TIERS[av.tier] || AVATAR_TIERS.basic;
+                                            return (
+                                                <div className="ep__frame-modal-backdrop" onClick={() => setAvatarModal(null)}>
+                                                    <div className="ep__frame-modal" onClick={e => e.stopPropagation()} style={{ '--modal-rarity-color': tierCfg.color, '--modal-rarity-glow': `${tierCfg.color}55` }}>
+                                                        <button type="button" className="ep__frame-modal-close" onClick={() => setAvatarModal(null)}>
+                                                            <FaTimes />
+                                                        </button>
+                                                        <div className="ep__av-modal-preview">
+                                                            <img src={av.src} alt={av.name} />
+                                                        </div>
+                                                        <h3 className="ep__frame-modal-name">{av.name}</h3>
+                                                        <span className="ep__frame-modal-rarity" style={{ color: tierCfg.color }}>
+                                                            {tierCfg.label}
+                                                        </span>
+                                                        <p className="ep__frame-modal-desc">{av.desc}</p>
+                                                        <div className="ep__frame-modal-unlock-box" style={{ '--unlock-color': avUnlocked ? '#4ade80' : tierCfg.color }}>
+                                                            {avUnlocked ? (
+                                                                <>
+                                                                    <FaLockOpen className="ep__frame-modal-unlock-icon" />
+                                                                    <div className="ep__frame-modal-unlock-info">
+                                                                        <strong>Desbloqueado</strong>
+                                                                        <span>{tierCfg.unlockLabel}</span>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <FaLock className="ep__frame-modal-unlock-icon" />
+                                                                    <div className="ep__frame-modal-unlock-info">
+                                                                        <strong>Como desbloquear</strong>
+                                                                        <span>{tierCfg.unlockLabel}</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        {avUnlocked ? (
+                                                            <button
+                                                                type="button"
+                                                                className="ep__frame-modal-equip"
+                                                                onClick={() => {
+                                                                    selectDefaultAvatar(av.src);
+                                                                    setAvatarModal(null);
+                                                                }}
+                                                            >
+                                                                Usar Avatar
+                                                            </button>
+                                                        ) : (
+                                                            <div className="ep__frame-modal-locked-hint">
+                                                                <FaLock /> No disponible aun
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
 
@@ -984,6 +1321,43 @@ const EditProfile = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* ── Código de referido ── */}
+                                {referralInfo.code && (
+                                    <div className="ep__section">
+                                        <div className="ep__section-header">
+                                            <FaLink className="ep__section-icon" />
+                                            <div className="ep__section-title">
+                                                <h4>Código de Referido</h4>
+                                                <p>Comparte tu código e invita amigos a GlitchGang</p>
+                                            </div>
+                                        </div>
+                                        <div className="ep__section-content">
+                                            <div className="ep__referral-card">
+                                                <div className="ep__referral-code-row">
+                                                    <span className="ep__referral-code">{referralInfo.code}</span>
+                                                    <button
+                                                        type="button"
+                                                        className="ep__referral-copy"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(`${window.location.origin}/register?ref=${referralInfo.code}`);
+                                                            setRefCopied(true);
+                                                            setTimeout(() => setRefCopied(false), 2000);
+                                                        }}
+                                                    >
+                                                        {refCopied ? <><FaCheck /> Copiado</> : <><FaLink /> Copiar link</>}
+                                                    </button>
+                                                </div>
+                                                <p className="ep__referral-link">
+                                                    {window.location.origin}/register?ref={referralInfo.code}
+                                                </p>
+                                                <div className="ep__referral-count">
+                                                    <FaUsers /> <strong>{referralInfo.count}</strong> amigos invitados
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* ── Roles de usuario ── */}
                                 <div className="ep__section">
@@ -1246,51 +1620,278 @@ const EditProfile = () => {
 
                                 {/* Player tags */}
                                 <label className="ep__label">Placa de Jugador</label>
+                                <p className="ep__label-desc">Haz clic en una placa para verla grande y saber como se desbloquea.</p>
                                 <div className="ep__tags-grid">
-                                    {PLAYER_TAGS.map(tag => (
-                                        <div
-                                            key={tag.id}
-                                            className={`ep__tag-option ${formData.selectedTagId === tag.id ? 'active' : ''}`}
-                                            onClick={() => updateField('selectedTagId', tag.id)}
-                                        >
-                                            <PlayerTag name="Preview" tagId={tag.id} size="small" />
-                                        </div>
-                                    ))}
+                                    {PLAYER_TAGS.map(tag => {
+                                        const isSelected = formData.selectedTagId === tag.id;
+                                        const canUseTag = isTagUnlocked(tag) || isSelected;
+                                        const rCfg = RARITY_CONFIG[tag.rarity] || RARITY_CONFIG.common;
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={tag.id}
+                                                className={`ep__tag-option ep__tag-option--${tag.rarity || 'common'} ${isSelected ? 'active' : ''} ${!canUseTag ? 'locked' : ''}`}
+                                                style={{ '--tag-rarity-color': rCfg.color }}
+                                                onClick={() => setTagModal(tag)}
+                                                title={tag.name}
+                                            >
+                                                {!canUseTag && (
+                                                    <div className="ep__tag-lock-pill">
+                                                        <FaLock className="ep__tag-lock-icon" />
+                                                    </div>
+                                                )}
+                                                <div className={`ep__tag-preview ${!canUseTag ? 'ep__tag-preview--locked' : ''}`}>
+                                                    <PlayerTag name="Preview" tagId={tag.id} size="small" />
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
+
+                                {tagModal && (() => {
+                                    const tg = tagModal;
+                                    const tgUnlocked = isTagUnlocked(tg) || formData.selectedTagId === tg.id;
+                                    const rCfg = RARITY_CONFIG[tg.rarity] || RARITY_CONFIG.common;
+                                    const unlockMeta = getTagUnlockMeta(tg);
+                                    const isEquipped = formData.selectedTagId === tg.id;
+                                    return (
+                                        <div className="ep__frame-modal-backdrop" onClick={() => setTagModal(null)}>
+                                            <div className="ep__frame-modal ep__tag-modal" onClick={e => e.stopPropagation()} style={{ '--modal-rarity-color': rCfg.color, '--modal-rarity-glow': rCfg.glow }}>
+                                                <button type="button" className="ep__frame-modal-close" onClick={() => setTagModal(null)}>
+                                                    <FaTimes />
+                                                </button>
+
+                                                <div className={`ep__tag-modal-preview ${!tgUnlocked ? 'is-locked' : ''}`}>
+                                                    <PlayerTag name={formData.username || 'Preview'} tagId={tg.id} size="large" />
+                                                </div>
+
+                                                <h3 className="ep__frame-modal-name">{tg.name}</h3>
+                                                <span className="ep__frame-modal-rarity" style={{ color: rCfg.color }}>
+                                                    {rarityIcon(tg.rarity)} {rCfg.label}
+                                                </span>
+                                                <p className="ep__frame-modal-desc">{unlockMeta.description}</p>
+
+                                                <div className="ep__frame-modal-unlock-box" style={{ '--unlock-color': tgUnlocked ? '#4ade80' : rCfg.color }}>
+                                                    {tgUnlocked ? (
+                                                        <>
+                                                            <FaLockOpen className="ep__frame-modal-unlock-icon" />
+                                                            <div className="ep__frame-modal-unlock-info">
+                                                                <strong>{isEquipped ? 'Placa equipada' : 'Desbloqueada'}</strong>
+                                                                <span>{unlockMeta.progress}</span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaLock className="ep__frame-modal-unlock-icon" />
+                                                            <div className="ep__frame-modal-unlock-info">
+                                                                <strong>Como desbloquear</strong>
+                                                                <span>{tg.unlockLabel}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {!tgUnlocked && (
+                                                    <div className="ep__tag-modal-progress">
+                                                        <strong>Tu progreso actual</strong>
+                                                        <span>{unlockMeta.progress}</span>
+                                                    </div>
+                                                )}
+
+                                                {tgUnlocked ? (
+                                                    <button
+                                                        type="button"
+                                                        className="ep__frame-modal-equip"
+                                                        disabled={isEquipped}
+                                                        onClick={() => {
+                                                            updateField('selectedTagId', tg.id);
+                                                            setTagModal(null);
+                                                        }}
+                                                    >
+                                                        {isEquipped ? 'Placa equipada' : 'Equipar placa'}
+                                                    </button>
+                                                ) : (
+                                                    <div className="ep__frame-modal-locked-hint">
+                                                        <FaLock /> Disponible cuando completes el requisito
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Frame selector */}
                                 <label className="ep__label">Marco de Avatar</label>
+
+                                {/* Show unlocked / basic frames first */}
                                 <div className="ep__frames-grid">
-                                    {FRAMES.map(frame => (
-                                        <div
-                                            key={frame.id}
-                                            className={`ep__frame-card ${formData.selectedFrameId === frame.id ? 'active' : ''}`}
-                                            onClick={() => updateField('selectedFrameId', frame.id)}
-                                        >
-                                            <div className="ep__frame-preview">
-                                                {frame.type === 'image' ? (
-                                                    <img src={frame.src} alt={frame.name} />
+                                    {(showAllFrames ? filteredFrames : filteredFrames.filter(f => isFrameUnlocked(f))).map(frame => {
+                                        const unlocked = isFrameUnlocked(frame);
+                                        const isSelected = formData.selectedFrameId === frame.id;
+                                        const rCfg = RARITY_CONFIG[frame.rarity] || RARITY_CONFIG.common;
+                                        return (
+                                            <div
+                                                key={frame.id}
+                                                className={`ep__frame-card ep__frame-card--${frame.rarity} ${isSelected ? 'active' : ''} ${!unlocked ? 'locked' : ''}`}
+                                                style={{ '--frame-rarity-color': rCfg.color, '--frame-rarity-glow': rCfg.glow }}
+                                                onClick={() => setFrameModal(frame)}
+                                            >
+                                                {/* Lock overlay for locked frames */}
+                                                {!unlocked && (
+                                                    <div className="ep__frame-lock-overlay">
+                                                        <FaLock className="ep__frame-lock-icon" />
+                                                    </div>
+                                                )}
+                                                {/* Real AvatarCircle preview */}
+                                                <div className={`ep__frame-avatar-wrap ${!unlocked ? 'ep__frame-avatar-wrap--locked' : ''}`}>
+                                                    <AvatarCircle
+                                                        src={preview || formData.avatar}
+                                                        alt={formData.username}
+                                                        size="52px"
+                                                        status="offline"
+                                                        frameConfig={frame.type !== 'none' ? frame : null}
+                                                    />
+                                                </div>
+                                                <span className="ep__frame-name">{frame.name}</span>
+                                                <span className="ep__frame-rarity-badge" style={{ color: rCfg.color }}>
+                                                    {rarityIcon(frame.rarity)} {rCfg.label}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Ver más / Ver menos toggle */}
+                                {filteredFrames.some(f => !isFrameUnlocked(f)) && (
+                                    <button
+                                        type="button"
+                                        className="ep__frames-toggle"
+                                        onClick={() => setShowAllFrames(prev => !prev)}
+                                    >
+                                        {showAllFrames
+                                            ? 'Ver menos'
+                                            : `Ver más marcos (${filteredFrames.filter(f => !isFrameUnlocked(f)).length} bloqueados)`
+                                        }
+                                    </button>
+                                )}
+
+                                {/* Frame detail modal */}
+                                {frameModal && (() => {
+                                    const fm = frameModal;
+                                    const fmUnlocked = isFrameUnlocked(fm);
+                                    const rCfg = RARITY_CONFIG[fm.rarity] || RARITY_CONFIG.common;
+                                    return (
+                                        <div className="ep__frame-modal-backdrop" onClick={() => setFrameModal(null)}>
+                                            <div className="ep__frame-modal" onClick={e => e.stopPropagation()} style={{ '--modal-rarity-color': rCfg.color, '--modal-rarity-glow': rCfg.glow }}>
+                                                <button type="button" className="ep__frame-modal-close" onClick={() => setFrameModal(null)}>
+                                                    <FaTimes />
+                                                </button>
+
+                                                {/* Large avatar preview with frame */}
+                                                <div className="ep__frame-modal-avatar">
+                                                    <AvatarCircle
+                                                        src={preview || formData.avatar}
+                                                        alt={formData.username}
+                                                        size="100px"
+                                                        status="offline"
+                                                        frameConfig={fm.type !== 'none' ? fm : null}
+                                                    />
+                                                </div>
+
+                                                <h3 className="ep__frame-modal-name">{fm.name}</h3>
+                                                <span className="ep__frame-modal-rarity" style={{ color: rCfg.color }}>
+                                                    {rarityIcon(fm.rarity)} {rCfg.label}
+                                                </span>
+                                                <p className="ep__frame-modal-desc">{fm.desc}</p>
+
+                                                {/* Unlock requirement — always visible */}
+                                                <div className="ep__frame-modal-unlock-box" style={{ '--unlock-color': fmUnlocked ? '#4ade80' : rCfg.color }}>
+                                                    {fmUnlocked ? (
+                                                        <>
+                                                            <FaLockOpen className="ep__frame-modal-unlock-icon" />
+                                                            <div className="ep__frame-modal-unlock-info">
+                                                                <strong>Desbloqueado</strong>
+                                                                <span>{fm.unlockLabel}</span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaLock className="ep__frame-modal-unlock-icon" />
+                                                            <div className="ep__frame-modal-unlock-info">
+                                                                <strong>Cómo desbloquear</strong>
+                                                                <span>{fm.unlockLabel}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {fmUnlocked ? (
+                                                    <button
+                                                        type="button"
+                                                        className="ep__frame-modal-equip"
+                                                        onClick={() => {
+                                                            updateField('selectedFrameId', fm.id);
+                                                            setFrameModal(null);
+                                                        }}
+                                                    >
+                                                        Equipar Marco
+                                                    </button>
                                                 ) : (
-                                                    <div className="ep__frame-dot" style={{ borderColor: frame.color || '#555' }} />
+                                                    <div className="ep__frame-modal-locked-hint">
+                                                        <FaLock /> No disponible aún
+                                                    </div>
                                                 )}
                                             </div>
-                                            <span>{frame.name}</span>
                                         </div>
-                                    ))}
-                                </div>
+                                    );
+                                })()}
 
                                 {/* Background selector */}
                                 <label className="ep__label">Fondo de Perfil</label>
+                                <p className="ep__label-desc">Algunos fondos se desbloquean con referidos, torneos y logros.</p>
                                 <div className="ep__bg-grid">
-                                    {BACKGROUNDS.map(bg => (
-                                        <div
+                                    {backgroundItems.map((bg) => (
+                                        <button
+                                            type="button"
                                             key={bg.id}
-                                            className={`ep__bg-card ${formData.selectedBgId === bg.id ? 'active' : ''}`}
-                                            onClick={() => updateField('selectedBgId', bg.id)}
+                                            className={`ep__bg-card ${bg.isSelected ? 'active' : ''} ${bg.unlocked ? 'is-unlocked' : 'is-locked'}`}
+                                            onClick={() => {
+                                                if (!bg.unlocked) return;
+                                                updateField('selectedBgId', bg.id);
+                                            }}
+                                            aria-pressed={bg.isSelected}
+                                            aria-disabled={!bg.unlocked}
+                                            title={bg.unlocked ? bg.name : `${bg.unlockStatus.label} · ${bg.unlockStatus.progressText}`}
                                         >
-                                            <img src={bg.src} alt={bg.name} loading="lazy" />
-                                            {formData.selectedBgId === bg.id && <div className="ep__bg-check"><FaCheck /></div>}
-                                        </div>
+                                            <img src={bg.image || bg.src} alt={bg.name} loading="lazy" />
+                                            <div className="ep__bg-scrim" />
+                                            <div className="ep__bg-label">{bg.name}</div>
+
+                                            {bg.isSelected && bg.unlocked && (
+                                                <div className="ep__bg-check">
+                                                    <FaCheck />
+                                                </div>
+                                            )}
+
+                                            {!bg.unlocked && (
+                                                <>
+                                                    <div className="ep__bg-lock-overlay">
+                                                        <div className="ep__bg-lock-badge">
+                                                            <FaLock />
+                                                        </div>
+                                                        <div className="ep__bg-lock-copy">
+                                                            <strong>{bg.unlockStatus.label}</strong>
+                                                            <span>{bg.unlockStatus.progressText}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="ep__bg-tooltip" role="tooltip">
+                                                        <strong>{bg.unlockStatus.label}</strong>
+                                                        <span>{bg.unlockStatus.progressText}</span>
+                                                        <small>{bg.unlockStatus.helperText}</small>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </button>
                                     ))}
                                 </div>
                             </div>

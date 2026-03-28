@@ -25,6 +25,7 @@ const TABS = [
     { id: 'connections', label: 'Conexiones', icon: FaGamepad, description: 'Vincula tus cuentas de juego' },
     { id: 'privacy', label: 'Privacidad', icon: FaUserSecret, description: 'Controla quién puede contactarte' },
     { id: 'appearance', label: 'Apariencia', icon: FaPaintBrush, description: 'Tema e interfaz visual' },
+    { id: 'referrals', label: 'Referidos', icon: FaLink, description: 'Tu código y estadísticas de referidos' },
     { id: 'billing', label: 'Suscripción', icon: FaCreditCard, description: 'Planes y métodos de pago' },
     { id: 'support', label: 'Soporte', icon: FaHeadset, description: 'Ayuda y reportes' },
 ];
@@ -54,6 +55,10 @@ export default function SettingsV2() {
     const [gameProfiles, setGameProfiles] = useState({});
     const [oauthNotice, setOauthNotice] = useState({ provider: '', status: '', message: '' });
     const [epicLoading, setEpicLoading] = useState(false);
+    const [referralData, setReferralData] = useState({ code: '', count: 0, referredBy: null, userCode: '' });
+    const [referralInput, setReferralInput] = useState('');
+    const [referralMsg, setReferralMsg] = useState({ type: '', text: '' });
+    const [refCopied, setRefCopied] = useState(false);
 
     // Riot State
     const [riotGameName, setRiotGameName] = useState('');
@@ -189,6 +194,7 @@ export default function SettingsV2() {
             setPrivacy(normalizePrivacy(res.data.privacy));
             setGameProfiles(res.data.gameProfiles || {});
             setIsAdmin(res.data?.isAdmin === true);
+            setReferralData({ code: res.data.referralCode || '', count: res.data.referralCount || 0, referredBy: res.data.referredBy || null, userCode: res.data.userCode || '' });
             setLoading(false);
             return res.data;
         } catch (error) {
@@ -1474,6 +1480,124 @@ export default function SettingsV2() {
                                     <button className="stv2-btn stv2-btn--primary">Suscribirse</button>
                                 </div>
                             </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 'referrals':
+                const refLink = referralData.code ? `${window.location.origin}/register?ref=${referralData.code}` : '';
+                const profileLink = referralData.userCode ? `${window.location.origin}/profile/${referralData.userCode}` : '';
+                return (
+                    <motion.div key="referrals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <div className="stv2-section">
+                            <h2 className="stv2-section__title"><FaLink /> Referidos</h2>
+
+                            {/* Mi código + copiar */}
+                            <div className="stv2-ref-card">
+                                <div className="stv2-ref-card__header">
+                                    <span className="stv2-ref-card__label">Mi codigo</span>
+                                    <span className="stv2-ref-card__count">{referralData.count} invitado{referralData.count !== 1 ? 's' : ''}</span>
+                                </div>
+                                <div className="stv2-ref-card__code-row">
+                                    <span className="stv2-ref-card__code">{referralData.code || 'Generando...'}</span>
+                                    <button className="stv2-ref-card__copy" onClick={() => {
+                                        if (!refLink) return;
+                                        navigator.clipboard.writeText(refLink);
+                                        setRefCopied(true);
+                                        setTimeout(() => setRefCopied(false), 2000);
+                                    }}>
+                                        <i className={`bx ${refCopied ? 'bx-check' : 'bx-copy'}`} /> {refCopied ? 'Copiado' : 'Copiar link'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Mi perfil link */}
+                            {profileLink && (
+                                <div className="stv2-ref-profile-link">
+                                    <span className="stv2-ref-profile-link__label">Link de tu perfil</span>
+                                    <div className="stv2-ref-profile-link__row">
+                                        <span className="stv2-ref-profile-link__url">{profileLink}</span>
+                                        <button className="stv2-ref-card__copy" onClick={() => {
+                                            navigator.clipboard.writeText(profileLink);
+                                        }}>
+                                            <i className="bx bx-copy" /> Copiar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Desbloqueos por referidos */}
+                            <div className="stv2-ref-unlocks">
+                                <h3 className="stv2-ref-unlocks__title"><i className="bx bx-lock-open-alt" /> Desbloqueos por referidos</h3>
+                                <div className="stv2-ref-unlocks__grid">
+                                    {[
+                                        { count: 1, reward: 'Marco "Chispa"', rarity: 'Comun' },
+                                        { count: 5, reward: 'Marco "Toxico" + Avatar "Toxic Neon"', rarity: 'Raro' },
+                                        { count: 20, reward: 'Marco "Runico"', rarity: 'Epico' },
+                                        { count: 50, reward: 'Marco "Soberano Oscuro"', rarity: 'Legendario' },
+                                        { count: 100, reward: 'Marco "Emperador Cosmico"', rarity: 'Mitico' },
+                                    ].map(item => {
+                                        const unlocked = referralData.count >= item.count;
+                                        return (
+                                            <div key={item.count} className={`stv2-ref-unlock-item ${unlocked ? 'stv2-ref-unlock-item--done' : ''}`}>
+                                                <div className="stv2-ref-unlock-item__icon">
+                                                    <i className={`bx ${unlocked ? 'bx-check-circle' : 'bx-lock-alt'}`} />
+                                                </div>
+                                                <div className="stv2-ref-unlock-item__info">
+                                                    <strong>{item.count} referidos</strong>
+                                                    <span>{item.reward}</span>
+                                                    <span className="stv2-ref-unlock-item__rarity">{item.rarity}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Ingresar código de otro usuario */}
+                            {!referralData.referredBy && (
+                                <div className="stv2-ref-apply">
+                                    <h3 className="stv2-ref-apply__title"><i className="bx bx-gift" /> Tienes un codigo de invitacion?</h3>
+                                    <div className="stv2-ref-apply__row">
+                                        <input
+                                            type="text"
+                                            className="stv2-ref-apply__input"
+                                            placeholder="GG-XXXXXX"
+                                            value={referralInput}
+                                            onChange={e => setReferralInput(e.target.value.toUpperCase())}
+                                            maxLength={9}
+                                        />
+                                        <button
+                                            className="stv2-ref-apply__btn"
+                                            disabled={!referralInput.trim()}
+                                            onClick={async () => {
+                                                try {
+                                                    setReferralMsg({ type: '', text: '' });
+                                                    const res = await axios.post(`${API_URL}/api/auth/apply-referral`, { code: referralInput.trim() }, { headers: authHeaders });
+                                                    setReferralMsg({ type: 'success', text: res.data.message });
+                                                    setReferralInput('');
+                                                    await fetchSettings();
+                                                } catch (err) {
+                                                    setReferralMsg({ type: 'error', text: err.response?.data?.message || 'Error al aplicar el codigo.' });
+                                                }
+                                            }}
+                                        >
+                                            Aplicar
+                                        </button>
+                                    </div>
+                                    {referralMsg.text && (
+                                        <p className={`stv2-ref-apply__msg stv2-ref-apply__msg--${referralMsg.type}`}>
+                                            {referralMsg.text}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {referralData.referredBy && (
+                                <div className="stv2-ref-referred">
+                                    <i className="bx bx-check-circle" /> Ya tienes un codigo de referido aplicado
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 );

@@ -653,6 +653,24 @@
     margin: 2px 0 0;
     font-weight: 500;
 }
+.db__mx-subtitle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.db__mx-stage {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-size: .62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 .db__mx-page-counter {
     font-size: .72rem;
     font-weight: 700;
@@ -716,7 +734,7 @@
 .db__mx-info-side {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 16px;
     justify-content: center;
     height: 100%;
     overflow-y: auto;
@@ -743,10 +761,13 @@
     margin: 0;
 }
 .db__mx-block p {
-    font-size: .85rem;
+    font-size: .82rem;
     color: var(--text-muted);
-    line-height: 1.7;
+    line-height: 1.55;
     margin: 0;
+}
+.db__mx-note {
+    color: var(--text-main) !important;
 }
 
 .db__mx-tips {
@@ -772,12 +793,12 @@
 }
 
 .db__mx-plan {
-    padding: 16px 18px;
+    padding: 14px 16px;
     background: color-mix(in srgb, var(--mx-c, var(--primary)) 5%, transparent);
     border: 1px solid color-mix(in srgb, var(--mx-c, var(--primary)) 12%, transparent);
     border-radius: 12px;
-    font-size: .84rem !important;
-    line-height: 1.7 !important;
+    font-size: .8rem !important;
+    line-height: 1.55 !important;
 }
 .db__mx-btn-more {
     display: inline-flex;
@@ -2160,4 +2181,124 @@
     .db__act-nav-btn span {
         font-size: .6rem;
     }
+}
+
+/* ═══════════════════════════════════════
+   REFERRAL BANNER
+   ═══════════════════════════════════════ */
+.db__referral-banner {
+    position: relative;
+    margin-top: 18px;
+    padding: 22px 24px;
+    border-radius: 16px;
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, var(--bg-card)) 0%, var(--bg-card) 100%);
+    border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border-color));
+    overflow: hidden;
+}
+
+.db__referral-banner-glow {
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--primary) 15%, transparent) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.db__referral-banner-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.db__referral-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.db__referral-banner-left > i {
+    font-size: 2rem;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.db__referral-banner-left h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.db__referral-banner-left p {
+    margin: 2px 0 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.db__referral-banner-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.db__referral-code-box {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg-page);
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border-color));
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.db__referral-code-val {
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: var(--primary);
+}
+
+.db__referral-copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border: none;
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border-color));
+}
+
+.db__referral-copy-btn:hover {
+    background: color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.db__referral-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@media (max-width: 600px) {
+    .db__referral-banner { padding: 16px; }
+    .db__referral-banner-content { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .db__referral-banner-right { width: 100%; }
+    .db__referral-code-box { flex: 1; }
+    .db__referral-code-val { flex: 1; font-size: 0.78rem; }
 }

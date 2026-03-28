@@ -560,7 +560,14 @@ export const register = async (req, res) => {
             return res.status(400).json({ message: 'Las contraseñas no coinciden' });
         }
 
-        // 2. Hashear contraseña
+        // 2. Referral code processing
+        const inputReferralCode = String(payload.referralCode || '').trim().toUpperCase();
+        let referredByUser = null;
+        if (inputReferralCode) {
+            referredByUser = await User.findOne({ referralCode: inputReferralCode }).select('_id').lean();
+        }
+
+        // 3. Hashear contraseña
         const selectedGames = filterSupportedGameNames(normalizeStringArray(payload.selectedGames));
         const communityGameSubscriptions = normalizeCommunityGameIds([
             ...selectedGames,
@@ -568,14 +575,25 @@ export const register = async (req, res) => {
         ]);
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 3. Crear usuario con whitelist explícita para evitar mass-assignment
+        // 4. Generate unique referral code for new user
+        const generateRefCode = () => {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'GG-';
+            for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        };
+        let newReferralCode = generateRefCode();
+        while (await User.exists({ referralCode: newReferralCode })) {
+            newReferralCode = generateRefCode();
+        }
+
+        // 5. Crear usuario con whitelist explícita para evitar mass-assignment
         const user = await User.create({
             fullName,
             phone,
             gender: normalizeGenderValue(payload.gender),
             country,
             birthDate,
-            // Mark when country and birthDate are established (can't be changed later)
             countrySetAt: new Date(),
             birthDateSetAt: new Date(),
             selectedGames,
@@ -586,8 +604,18 @@ export const register = async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            checkTerms: true
+            checkTerms: true,
+            referralCode: newReferralCode,
+            referredBy: referredByUser?._id || null
         });
+
+        // Update referrer's count
+        if (referredByUser?._id) {
+            await User.updateOne(
+                { _id: referredByUser._id },
+                { $inc: { referralCount: 1 } }
+            );
+        }
 
         // Welcome notification
         user.notifications.push({
@@ -766,9 +794,16 @@ export const getProfile = async (req, res) => {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
 
-        if (!user.userCode) {
-            await user.save();
+        let needsSave = false;
+        if (!user.userCode) needsSave = true;
+        if (!user.referralCode) {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'GG-';
+            for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            user.referralCode = code;
+            needsSave = true;
         }
+        if (needsSave) await user.save();
         const payload = user.toObject();
         payload.selectedGames = filterSupportedGameNames(payload.selectedGames);
         payload.teams = Array.isArray(payload.teams)
@@ -1018,6 +1053,31 @@ export const getPublicProfile = async (req, res) => {
     } catch (error) {
         console.error('Error en getPublicProfile:', error);
         return res.status(500).json({ message: 'Error al cargar el perfil público.' });
+    }
+};
+
+// ── Apply referral code (post-registration) ──
+export const applyReferralCode = async (req, res) => {
+    try {
+        const code = String(req.body?.code || '').trim().toUpperCase();
+        if (!code) return res.status(400).json({ message: 'Código requerido.' });
+
+        const user = await User.findById(req.userId).select('referredBy referralCode');
+        if (!user) return res.status(404).json({ message: 'Usuario no encontrado.' });
+        if (user.referredBy) return res.status(400).json({ message: 'Ya tienes un código de referido aplicado.' });
+        if (user.referralCode === code) return res.status(400).json({ message: 'No puedes usar tu propio código.' });
+
+        const referrer = await User.findOne({ referralCode: code }).select('_id');
+        if (!referrer) return res.status(404).json({ message: 'Código no válido.' });
+
+        user.referredBy = referrer._id;
+        await user.save();
+        await User.updateOne({ _id: referrer._id }, { $inc: { referralCount: 1 } });
+
+        res.json({ message: 'Código aplicado correctamente.' });
+    } catch (error) {
+        console.error('Error applying referral:', error);
+        res.status(500).json({ message: 'Error al aplicar el código.' });
     }
 };
 
@@ -2027,6 +2087,19 @@ export const updateProfile = async (req, res) => {
             }
         });
 
+
+        // 2.6 Validate frame selection — must be unlocked (admins bypass)
+        if (updateData.selectedFrameId) {
+            const currentUser = await User.findById(req.userId).select('isAdmin unlockedFrames');
+            if (!currentUser?.isAdmin) {
+                const unlocked = currentUser?.unlockedFrames || [];
+                // 'none' and default common frames are always available
+                const defaultFrames = ['none', 'neon-storm', 'celestial-dream', 'nature-bloom', 'cloud-nine'];
+                if (!defaultFrames.includes(updateData.selectedFrameId) && !unlocked.includes(updateData.selectedFrameId)) {
+                    return res.status(403).json({ message: 'No has desbloqueado este marco.' });
+                }
+            }
+        }
 
         // 3. No permitir arrays vacíos inválidos
         if (updateData.selectedGames && updateData.selectedGames.length === 0) delete updateData.selectedGames;
