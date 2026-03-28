@@ -58,6 +58,8 @@ const EVENT_LABELS = {
   logout: 'Cierre de sesión',
   password_change: 'Contraseña actualizada',
   email_change: 'Email actualizado',
+  email_verified: 'Correo verificado',
+  email_verification_sent: 'Correo de verificacion enviado',
   '2fa_enabled': '2FA activado',
   '2fa_disabled': '2FA desactivado',
   backup_code_used: 'Código de respaldo usado',
@@ -66,10 +68,15 @@ const EVENT_LABELS = {
   account_deleted: 'Cuenta eliminada',
 };
 
-const SecurityCenterUI = ({ email = 'usuario@glitchgang.net', isVerified = false }) => {
+const SecurityCenterUI = ({
+  email = 'usuario@glitchgang.net',
+  isVerified = false,
+  onVerificationStatusChange = () => {}
+}) => {
   const { addToast } = useNotification();
   const [showEmail, setShowEmail] = useState(false);
   const maskedEmail = useMemo(() => maskEmail(email), [email]);
+  const [sendingVerification, setSendingVerification] = useState(false);
 
   // Password
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -242,6 +249,24 @@ const SecurityCenterUI = ({ email = 'usuario@glitchgang.net', isVerified = false
     }
   }, [addToast, deletePassword]);
 
+  const handleSendVerificationEmail = useCallback(async () => {
+    if (isVerified) {
+      addToast('Tu correo ya esta verificado.', 'success');
+      return;
+    }
+
+    setSendingVerification(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/email/verify/send`, {}, authHeaders());
+      addToast(res.data?.message || 'Te enviamos un correo de verificacion.', 'success');
+      onVerificationStatusChange();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'No se pudo enviar el correo de verificacion.', 'error');
+    } finally {
+      setSendingVerification(false);
+    }
+  }, [addToast, isVerified, onVerificationStatusChange]);
+
   return (
     <section className="sc">
       {/* Header */}
@@ -280,6 +305,17 @@ const SecurityCenterUI = ({ email = 'usuario@glitchgang.net', isVerified = false
                 {isVerified ? <><FaCheckCircle /> Verificado</> : <><FaTimesCircle /> Sin verificar</>}
               </span>
             </div>
+            {!isVerified && (
+              <div style={{ marginTop: 12 }}>
+                <button
+                  className="sc-btn sc-btn--primary sc-btn--sm"
+                  onClick={handleSendVerificationEmail}
+                  disabled={sendingVerification}
+                >
+                  {sendingVerification ? 'Enviando...' : 'Verificar correo'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Password */}

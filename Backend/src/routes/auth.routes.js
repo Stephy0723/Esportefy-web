@@ -15,6 +15,8 @@ import {
   getSocialOverview,
   searchUsers,
   toggleFollow,
+  sendVerificationEmail,
+  verifyEmail,
   forgotPassword,
   resetPassword,
   updateProfile,
@@ -84,6 +86,7 @@ const rlCheckPhone = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyP
 const rlCheckUsername = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'check-username' });
 const rlForgot = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'forgot' });
 const rlReset = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'reset' });
+const rlVerifyEmail = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPrefix: 'verify-email' });
 const rlRiot = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 6, keyPrefix: 'riot' });
 const rlMlbbValidate = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: 'mlbb-validate' });
 const rlMlbbLink = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 20, keyPrefix: 'mlbb-link' });
@@ -129,6 +132,8 @@ router.get('/friends', verifyToken, rlProfile, getFriends);
 router.get('/social', verifyToken, rlProfile, getSocialOverview);
 router.get('/users/search', verifyToken, rlSocialSearch, searchUsers);
 router.post('/follow/:userId', verifyToken, rlFollowStrict, toggleFollow);
+router.post('/email/verify/send', verifyToken, rlVerifyEmail, sendVerificationEmail);
+router.post('/email/verify', rlVerifyEmail, verifyEmail);
 router.put('/update-profile', verifyToken, upload.single('avatarFile'), updateProfile);
 router.post('/apply-referral', verifyToken, applyReferralCode);
 router.post('/forgot-password', rlForgot, forgotPassword);

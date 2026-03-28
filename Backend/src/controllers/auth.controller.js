@@ -132,6 +132,137 @@ const buildCsrfCookieOptions = (ttlMs = AUTH_TOKEN_TTL_MS) => {
 };
 
 const generateCsrfToken = () => crypto.randomBytes(32).toString('hex');
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+const EMAIL_VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
+const FRONTEND_URL = String(process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '');
+
+const createMailTransporter = () => {
+    const user = String(process.env.EMAIL_USER || '').trim();
+    const pass = String(process.env.EMAIL_PASS || '').trim();
+
+    if (!user || !pass) return null;
+
+    return nodemailer.createTransport({
+        service: 'Gmail',
+        auth: { user, pass }
+    });
+};
+
+const escapeHtml = (value = '') => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const buildEmailVerificationLink = (token) => {
+    const url = new URL('/verify-email', FRONTEND_URL);
+    url.searchParams.set('token', token);
+    return url.toString();
+};
+
+const issueEmailVerificationToken = (user) => {
+    const plainToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+
+    user.emailVerificationToken = tokenHash;
+    user.emailVerificationExpires = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
+    user.emailVerificationLastSentAt = new Date();
+
+    return plainToken;
+};
+
+const sendVerificationMailToUserLegacy = async (user, plainToken) => {
+    const transporter = createMailTransporter();
+    if (!transporter) {
+        throw new Error('SMTP_NOT_CONFIGURED');
+    }
+
+    const verificationLink = buildEmailVerificationLink(plainToken);
+    const fullName = escapeHtml(user?.fullName || user?.username || 'Jugador');
+
+    await transporter.sendMail({
+        to: user.email,
+        from: 'GlitchGang Team <no-reply@glitchgang.net>',
+        subject: 'Verifica tu correo en GLITCH GANG',
+        html: `
+        <div style="font-family: Helvetica, Arial, sans-serif; background:#f7f8fa; padding:40px 16px;">
+            <div style="max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:16px; overflow:hidden;">
+                <div style="padding:32px 32px 12px 32px; text-align:center;">
+                    <h1 style="margin:0; font-size:24px; color:#111827;">Verifica tu correo</h1>
+                    <p style="margin:12px 0 0 0; color:#6b7280; font-size:15px;">Confirma que esta cuenta te pertenece para reforzar la seguridad.</p>
+                </div>
+                <div style="padding:12px 32px 32px 32px;">
+                    <p style="color:#111827; font-size:15px; line-height:1.6;">Hola <strong>${fullName}</strong>,</p>
+                    <p style="color:#374151; font-size:15px; line-height:1.6;">Haz clic en el siguiente botón para verificar tu correo en GLITCH GANG. Este enlace expira en 24 horas.</p>
+                    <div style="text-align:center; margin:28px 0;">
+                        <a href="${verificationLink}" style="display:inline-block; background:#111827; color:#ffffff; text-decoration:none; padding:14px 22px; border-radius:10px; font-weight:700;">Verificar correo</a>
+                    </div>
+                    <p style="color:#6b7280; font-size:13px; line-height:1.6;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                    <p style="word-break:break-all; color:#2563eb; font-size:13px;">${verificationLink}</p>
+                </div>
+            </div>
+        </div>
+        `
+    });
+};
+
+const sendVerificationMailToUser = async (user, plainToken) => {
+    const transporter = createMailTransporter();
+    if (!transporter) {
+        throw new Error('SMTP_NOT_CONFIGURED');
+    }
+
+    const verificationLink = buildEmailVerificationLink(plainToken);
+    const fullName = escapeHtml(user?.fullName || user?.username || 'Jugador');
+
+    await transporter.sendMail({
+        to: user.email,
+        from: 'GlitchGang Team <no-reply@glitchgang.net>',
+        subject: 'Verifica tu correo en GLITCH GANG',
+        html: `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 50px 0;">
+            <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #eeeeee; overflow: hidden;">
+                
+                <div style="padding: 30px; text-align: center;">
+                    <h1 style="color: #000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">
+                        GLITCHGANG<span style="color: #00ff00;">.</span>
+                    </h1>
+                    <p style="color: #666; font-size: 14px; margin-top: 10px;">VERIFICACION DE CORREO</p>
+                </div>
+
+                <div style="padding: 0 40px 40px 40px; text-align: center;">
+                    <p style="color: #333; font-size: 16px; line-height: 1.5;">
+                        Hola, <strong>${fullName}</strong>. Confirma tu correo para reforzar la seguridad de tu cuenta. Este enlace expirara en 24 horas.
+                    </p>
+
+                    <div style="margin: 30px 0;">
+                        <a href="${verificationLink}" style="display: inline-block; background-color: #000; color: #fff; text-decoration: none; border-radius: 8px; padding: 14px 24px; font-size: 15px; font-weight: bold;">
+                            VERIFICAR CORREO
+                        </a>
+                    </div>
+
+                    <div style="margin: 30px 0; background-color: #f4f4f4; border-radius: 8px; padding: 20px; border: 1px dashed #cccccc;">
+                        <span style="font-family: monospace; font-size: 14px; font-weight: bold; color: #000; word-break: break-all;">
+                            ${verificationLink}
+                        </span>
+                    </div>
+
+                    <p style="color: #999; font-size: 12px;">
+                        Si no solicitaste esta verificacion, puedes ignorar este correo de forma segura.
+                    </p>
+                </div>
+
+                <div style="background-color: #000; padding: 15px; text-align: center;">
+                    <p style="color: #fff; font-size: 11px; margin: 0; opacity: 0.7;">
+                        Â© ${new Date().getFullYear()} GlitchGang Platform. Todos los derechos reservados.
+                    </p>
+                </div>
+            </div>
+        </div>
+        `
+    });
+};
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -609,12 +740,15 @@ export const register = async (req, res) => {
             referredBy: referredByUser?._id || null
         });
 
-        // Update referrer's count
-        if (referredByUser?._id) {
-            await User.updateOne(
-                { _id: referredByUser._id },
-                { $inc: { referralCount: 1 } }
-            );
+        try {
+            const verificationToken = issueEmailVerificationToken(user);
+            await sendVerificationMailToUser(user, verificationToken);
+        } catch (mailError) {
+            if (mailError?.message !== 'SMTP_NOT_CONFIGURED') {
+                console.error('No se pudo enviar correo de verificacion al registrar:', mailError);
+            } else {
+                console.warn('SMTP no configurado, se omite correo de verificacion en registro');
+            }
         }
 
         // Welcome notification
@@ -737,7 +871,9 @@ export const login = async (req, res) => {
             user: {
                 id: user._id,
                 userName: user.username,
-                username: user.username
+                username: user.username,
+                email: user.email,
+                emailVerified: Boolean(user.emailVerified)
             }
         });
 
@@ -767,7 +903,7 @@ export const logout = async (req, res) => {
 export const getProfile = async (req, res) => {
     try {
         const user = await User.findById(req.userId)
-            .select('-password -resetPasswordToken -resetPasswordExpires -__v -connections.riot.pendingLink')
+            .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -__v -connections.riot.pendingLink')
             .populate(
                 'teams',
                 [
@@ -1775,6 +1911,99 @@ export const getProfileOverview = async (req, res) => {
 };
 
 // 1. Solicitar recuperación (Envío de correo)
+export const sendVerificationEmail = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('email fullName username emailVerified emailVerificationLastSentAt emailVerificationToken emailVerificationExpires notifications');
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        if (user.emailVerified) {
+            return res.status(200).json({ message: 'Tu correo ya esta verificado.', alreadyVerified: true });
+        }
+
+        const lastSentAt = user.emailVerificationLastSentAt ? new Date(user.emailVerificationLastSentAt).getTime() : 0;
+        const waitMs = EMAIL_VERIFICATION_RESEND_COOLDOWN_MS - (Date.now() - lastSentAt);
+        if (waitMs > 0) {
+            return res.status(429).json({
+                message: `Espera ${Math.ceil(waitMs / 1000)} segundos antes de reenviar el correo.`,
+                retryAfterSeconds: Math.ceil(waitMs / 1000)
+            });
+        }
+
+        const verificationToken = issueEmailVerificationToken(user);
+        await sendVerificationMailToUser(user, verificationToken);
+
+        user.notifications.unshift({
+            type: 'info',
+            category: 'security',
+            title: 'Correo de verificacion enviado',
+            source: 'Seguridad',
+            message: 'Te enviamos un enlace para verificar tu correo electronico.',
+            status: 'unread',
+            visuals: { icon: 'bx-envelope', color: '#3b82f6', glow: false },
+            createdAt: new Date()
+        });
+
+        await user.save();
+        await recordActivity({ userId: user._id, event: 'email_verification_sent', req });
+
+        return res.status(200).json({ message: 'Te enviamos un correo con el enlace para verificar tu cuenta.' });
+    } catch (error) {
+        if (error?.message === 'SMTP_NOT_CONFIGURED') {
+            return res.status(500).json({ message: 'El envio de correos no esta disponible ahora mismo.' });
+        }
+        console.error('Error enviando correo de verificacion:', error);
+        return res.status(500).json({ message: 'No se pudo enviar el correo de verificacion.' });
+    }
+};
+
+export const verifyEmail = async (req, res) => {
+    try {
+        const plainToken = String(req.body?.token || req.query?.token || '').trim();
+        if (!plainToken) {
+            return res.status(400).json({ message: 'Token de verificacion invalido.' });
+        }
+
+        const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+        const user = await User.findOne({
+            emailVerificationToken: tokenHash,
+            emailVerificationExpires: { $gt: new Date() }
+        }).select('email emailVerified emailVerifiedAt emailVerificationToken emailVerificationExpires notifications');
+
+        if (!user) {
+            return res.status(400).json({ message: 'El enlace de verificacion no es valido o ya expiro.' });
+        }
+
+        if (!user.emailVerified) {
+            user.emailVerified = true;
+            user.emailVerifiedAt = new Date();
+            user.emailVerificationToken = undefined;
+            user.emailVerificationExpires = undefined;
+            user.notifications.unshift({
+                type: 'success',
+                category: 'security',
+                title: 'Correo verificado',
+                source: 'Seguridad',
+                message: 'Tu correo electronico ya fue verificado correctamente.',
+                status: 'unread',
+                visuals: { icon: 'bx-badge-check', color: '#22c55e', glow: true },
+                createdAt: new Date()
+            });
+            await user.save();
+            await recordActivity({ userId: user._id, event: 'email_verified', req });
+        }
+
+        return res.status(200).json({
+            message: 'Correo verificado correctamente.',
+            emailVerified: true
+        });
+    } catch (error) {
+        console.error('Error verificando correo:', error);
+        return res.status(500).json({ message: 'No se pudo verificar el correo.' });
+    }
+};
+
 export const forgotPassword = async (req, res) => {
     try {
         const normalizedEmail = String(req.body?.email || '').trim().toLowerCase();
@@ -2109,7 +2338,7 @@ export const updateProfile = async (req, res) => {
             req.userId,
             { $set: updateData },
             { new: true, runValidators: true }
-        ).select('-password -resetPasswordToken -resetPasswordExpires -__v -connections.riot.pendingLink');
+        ).select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -__v -connections.riot.pendingLink');
 
         res.status(200).json(updatedUser);
 
@@ -2666,7 +2895,7 @@ export const adminGetUserDetail = async (req, res) => {
             return res.status(400).json({ message: 'ID o código de usuario requerido.' });
         }
 
-        const excludeFields = '-password -resetPasswordToken -resetPasswordExpires -twoFactorSecret -twoFactorBackupCodes';
+        const excludeFields = '-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -twoFactorSecret -twoFactorBackupCodes';
         let user = null;
 
         // Try by MongoDB _id first

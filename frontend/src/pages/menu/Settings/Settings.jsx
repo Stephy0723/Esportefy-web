@@ -74,6 +74,8 @@ export default function Settings() {
         steam: {}
     });
     const [gameProfiles, setGameProfiles] = useState({});
+    const [accountEmail, setAccountEmail] = useState('');
+    const [emailVerified, setEmailVerified] = useState(false);
 
     // ===== RIOT STATE =====
     const [riotGameName, setRiotGameName] = useState('');
@@ -185,6 +187,8 @@ export default function Settings() {
             setConnections(res.data.connections);
             setPrivacy(res.data.privacy);
             setGameProfiles(res.data.gameProfiles || {});
+            setAccountEmail(String(res.data?.email || '').trim());
+            setEmailVerified(res.data?.emailVerified === true);
             setIsAdmin(res.data?.isAdmin === true);
             syncCachedUser(res.data);
             setLoading(false);
@@ -587,7 +591,11 @@ export default function Settings() {
 
                 return (
                     <div className="settings-panel fade-in">
-                        <SecurityCenterUI email={connections?.email || 'usuario@glitchgang.net'} />
+                        <SecurityCenterUI
+                            email={accountEmail || 'usuario@glitchgang.net'}
+                            isVerified={emailVerified}
+                            onVerificationStatusChange={fetchSettings}
+                        />
                     </div>
                 );
 

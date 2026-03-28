@@ -121,6 +121,11 @@ const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true }, // unique para que no se repitan gamertags
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    emailVerified: { type: Boolean, default: false },
+    emailVerifiedAt: { type: Date, default: null },
+    emailVerificationToken: { type: String },
+    emailVerificationExpires: { type: Date },
+    emailVerificationLastSentAt: { type: Date, default: null },
     checkTerms: { type: Boolean, required: true },
 
     // -- Seguridad y Recuperación ---
