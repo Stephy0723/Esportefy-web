@@ -22,6 +22,7 @@ import {
     TEAM_LANGUAGE_OPTIONS,
     TEAM_LEVEL_OPTIONS
 } from '../../../../../../shared/teamCatalog.js';
+import { getGamePlaybook } from '../../../../../../shared/gamePolicies.js';
 import './CreateTeamPage.css';
 
 const CUSTOM_OPTION = '__custom__';
@@ -176,7 +177,7 @@ const CreateTeamPage = () => {
         if (cat === 'FPS (Shooters)') return 'theme-fps';
         if (cat === 'MOBA') return 'theme-moba';
         if (cat === 'Fighting') return 'theme-fighting';
-        if (cat === 'Battle Royale') return 'theme-fps';
+        if (cat === 'Battle Royale') return 'theme-br';
         if (cat === 'Sports & Racing') return 'theme-default';
         if (cat === 'Estrategia / Táctico') return 'theme-moba';
         return 'theme-default';
@@ -197,6 +198,7 @@ const CreateTeamPage = () => {
         return base;
     }, [formData.game, formData.leaderRegion]);
     const selectedGameRoles = useMemo(() => getSupportedGameRoles(formData.game), [formData.game]);
+    const selectedGamePlaybook = useMemo(() => getGamePlaybook(formData.game), [formData.game]);
 
     const mapRiotRegion = (raw) => {
         const value = String(raw || '').toLowerCase().trim();
@@ -743,6 +745,9 @@ const CreateTeamPage = () => {
         const roles = getSupportedGameRoles(formData.game);
         return roles ? roles[index] : `Player ${index + 1}`;
     };
+    const startersLabel = Number(formData.maxMembers || 0) === 1 ? 'Titular principal' : 'Titulares';
+    const substitutesLabel = Number(formData.maxSubstitutes || 0) === 1 ? 'Suplente' : 'Suplentes';
+    const staffLabel = selectedGamePlaybook?.team?.staffLabel || 'Staff / Coach';
 
     const isRosterSlotLocked = (type) => (isMlbbGameSelected || isUniversityTeamSelected) && type !== 'coach';
     const captainStarterIndex = useMemo(() => {
@@ -969,6 +974,31 @@ const CreateTeamPage = () => {
                                     )}
                                 </div>
                             </div>
+                            {selectedGamePlaybook && (
+                                <div className="game-playbook-card">
+                                    <div className="game-playbook-header">
+                                        <div>
+                                            <strong>Preset competitivo de {selectedGamePlaybook.name}</strong>
+                                            <p>{selectedGamePlaybook.team.summary}</p>
+                                        </div>
+                                        <div className="game-playbook-tags">
+                                            <span className="game-playbook-tag">{selectedGamePlaybook.rosterLine}</span>
+                                            <span className="game-playbook-tag">{selectedGamePlaybook.defaultPlatform}</span>
+                                            <span className="game-playbook-tag">{selectedGamePlaybook.defaultModality}</span>
+                                        </div>
+                                    </div>
+                                    <div className="game-playbook-roles">
+                                        {selectedGamePlaybook.roles.map((role) => (
+                                            <span key={role} className="game-playbook-role">{role}</span>
+                                        ))}
+                                    </div>
+                                    <ul className="game-playbook-list">
+                                        {selectedGamePlaybook.team.tips.map((tip) => (
+                                            <li key={tip}>{tip}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
 
                         {/* 4. DATOS DEL CAPITÁN */}
@@ -1159,10 +1189,24 @@ const CreateTeamPage = () => {
                                 )}
                             </div>
                         )}
+                        {selectedGamePlaybook && (
+                            <div className="game-playbook-card game-playbook-card--compact">
+                                <div className="game-playbook-header">
+                                    <div>
+                                        <strong>Resumen de roster</strong>
+                                        <p>{selectedGamePlaybook.team.summary}</p>
+                                    </div>
+                                    <div className="game-playbook-tags">
+                                        <span className="game-playbook-tag">{selectedGamePlaybook.rosterLine}</span>
+                                        <span className="game-playbook-tag">{selectedGamePlaybook.defaultSeries}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Titulares */}
                         <div className="roles-section">
-                            <label className="section-label">Titulares</label>
+                            <label className="section-label">{startersLabel}</label>
                             <div className="circles-grid">
                                 {roster.starters.map((slot, idx) => {
                                     const isLocked = isRosterSlotLocked('starters') || isCaptainRoleReserved('starters', idx);
@@ -1205,7 +1249,7 @@ const CreateTeamPage = () => {
                         {/* Suplentes */}
                         {formData.maxSubstitutes > 0 && (
                             <div className="roles-section">
-                                <label className="section-label">Suplentes</label>
+                                <label className="section-label">{substitutesLabel}</label>
                                 <div className="circles-grid">
                                     {roster.subs.map((slot, idx) => (
                                         <div
@@ -1237,7 +1281,7 @@ const CreateTeamPage = () => {
 
                         {/* Coach */}
                         <div className="roles-section">
-                            <label className="section-label">Staff / Coach</label>
+                            <label className="section-label">{staffLabel}</label>
                             <div className="role-item" onClick={() => handleSlotClick('coach', 0)}>
                                 <div className={`role-circle ${roster.coach ? 'filled' : 'empty'}`}>
                                     {roster.coach ? (
@@ -1250,7 +1294,7 @@ const CreateTeamPage = () => {
                                         <FaUserAstronaut />
                                     )}
                                 </div>
-                                <span className="role-label-text">{roster.coach ? roster.coach.nickname : "Coach"}</span>
+                                <span className="role-label-text">{roster.coach ? roster.coach.nickname : staffLabel}</span>
                             </div>
                         </div>
 

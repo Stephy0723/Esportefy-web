@@ -126,7 +126,7 @@ const PlayerProfile = () => {
         { key: 'discord', icon: 'bx bxl-discord-alt', label: 'Discord', color: '#5865F2', connected: profile.connections?.discord?.linked },
         { key: 'mlbb', icon: 'bx bx-joystick', label: 'MLBB', color: '#00b4d8', connected: profile.connections?.mlbb?.linked },
         { key: 'steam', icon: 'bx bxl-steam', label: 'Steam', color: '#1b2838', connected: profile.connections?.steam?.linked },
-        { key: 'epic', icon: 'bx bx-bolt', label: 'Epic', color: '#0078f2', connected: profile.connections?.epic?.linked },
+        { key: 'epic', icon: 'bx bx-bolt', label: 'Epic', color: '#0078f2', connected: Boolean(profile.connections?.epic?.linked || profile.gamingConnections?.epic), value: profile.connections?.epic?.displayName || profile.connections?.epic?.username || (profile.gamingConnections?.epic ? `${profile.gamingConnections.epic} · Manual` : null) },
     ];
 
     const mainGame = normalizedGames[0];

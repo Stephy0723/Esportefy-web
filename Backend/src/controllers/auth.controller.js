@@ -437,6 +437,7 @@ const formatRoleApplicationLabel = (key) => {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_REGEX = /^[A-Za-z0-9._-]{3,20}$/;
 const SOCIAL_LINK_KEYS = ['twitch', 'youtube', 'twitter', 'instagram', 'tiktok'];
+const GAMING_CONNECTION_KEYS = ['discord', 'riotId', 'steam', 'epic', 'playstation', 'xbox', 'nintendo'];
 const PROFILE_ONLINE_STATUSES = new Set(['online', 'gaming', 'tournament', 'streaming', 'searching']);
 const PROFILE_STATUS_PRIORITY = {
     online: 0,
@@ -1017,7 +1018,7 @@ export const getPublicProfile = async (req, res) => {
         const query = isObjectId ? { _id: param } : { userCode: param };
 
         const target = await User.findOne(query)
-            .select('username fullName avatar bio status country selectedGames experience preferredRoles languages socialLinks lookingForTeam selectedFrameId selectedBgId selectedTagId userCode university connections.riot connections.discord.verified connections.steam.verified connections.epic.verified connections.mlbb.verified isOrganizer roles createdAt followers following privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
+            .select('username fullName avatar bio status country selectedGames experience preferredRoles languages socialLinks gamingConnections lookingForTeam selectedFrameId selectedBgId selectedTagId userCode university connections.riot connections.discord.verified connections.steam.verified connections.epic connections.mlbb.verified isOrganizer roles createdAt followers following privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
             .lean();
 
         if (!target) {
@@ -1162,6 +1163,7 @@ export const getPublicProfile = async (req, res) => {
             preferredRoles: Array.isArray(target.preferredRoles) ? target.preferredRoles : [],
             languages: Array.isArray(target.languages) ? target.languages : [],
             socialLinks: target.socialLinks || {},
+            gamingConnections: target.gamingConnections || {},
             lookingForTeam: Boolean(target.lookingForTeam),
             isOrganizer: Boolean(target.isOrganizer),
             roles: target.roles || {},
@@ -1480,7 +1482,7 @@ export const searchUsers = async (req, res) => {
 export const getProfileOverview = async (req, res) => {
     try {
         const userDoc = await User.findById(req.userId)
-            .select('username fullName avatar bio status country phone birthDate selectedGames preferredRoles languages socialLinks lookingForTeam selectedFrameId selectedBgId selectedTagId university connections notifications createdAt followers following userCode privacy.showPublicUserCode');
+            .select('username fullName avatar bio status country phone birthDate selectedGames preferredRoles languages socialLinks gamingConnections lookingForTeam selectedFrameId selectedBgId selectedTagId university connections notifications createdAt followers following userCode privacy.showPublicUserCode');
         if (!userDoc) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
@@ -2139,7 +2141,7 @@ export const resetPassword = async (req, res) => {
 // 3. Actualizar perfil
 export const updateProfile = async (req, res) => {
     try {
-        const currentUser = await User.findById(req.userId).select('avatar socialLinks privacy countrySetAt birthDateSetAt lastNameChangeAt fullName country birthDate');
+        const currentUser = await User.findById(req.userId).select('avatar socialLinks gamingConnections privacy countrySetAt birthDateSetAt lastNameChangeAt fullName country birthDate');
         if (!currentUser) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
@@ -2250,6 +2252,33 @@ export const updateProfile = async (req, res) => {
             updateData.socialLinks = {
                 ...(currentUser.socialLinks?.toObject ? currentUser.socialLinks.toObject() : (currentUser.socialLinks || {})),
                 ...parsedSocialLinks
+            };
+        }
+
+        const parsedGamingConnections = {};
+        let gamingConnectionsFromBody = {};
+        if (req.body.gamingConnections !== undefined) {
+            if (typeof req.body.gamingConnections === 'string') {
+                try {
+                    gamingConnectionsFromBody = JSON.parse(req.body.gamingConnections);
+                } catch (_) {
+                    gamingConnectionsFromBody = {};
+                }
+            } else if (typeof req.body.gamingConnections === 'object' && req.body.gamingConnections !== null) {
+                gamingConnectionsFromBody = req.body.gamingConnections;
+            }
+        }
+        GAMING_CONNECTION_KEYS.forEach((key) => {
+            const explicit = req.body[`gamingConnections.${key}`] ?? req.body[`gamingConnections[${key}]`];
+            const incoming = explicit !== undefined ? explicit : gamingConnectionsFromBody[key];
+            if (incoming !== undefined) {
+                parsedGamingConnections[key] = normalizeProfileText(incoming, { max: 80 });
+            }
+        });
+        if (Object.keys(parsedGamingConnections).length > 0) {
+            updateData.gamingConnections = {
+                ...(currentUser.gamingConnections?.toObject ? currentUser.gamingConnections.toObject() : (currentUser.gamingConnections || {})),
+                ...parsedGamingConnections
             };
         }
 

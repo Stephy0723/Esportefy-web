@@ -12,7 +12,17 @@ const TEAM_NAMES = [
   'Crimson Tide', 'Omega Force', 'Blaze Unit', 'Frost Byte',
 ];
 
-const GAMES = ['Valorant', 'League of Legends', 'Mobile Legends', 'Free Fire'];
+const GAMES = [
+  'Valorant',
+  'League of Legends',
+  'Mobile Legends',
+  'Brawlhalla',
+  'Street Fighter 6',
+  'Tekken 8',
+  'Free Fire',
+  'PUBG Mobile',
+  'COD Mobile',
+];
 const SUPPORTED_SIMULATOR_FORMATS = TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS;
 
 const randomScore = () => Math.floor(Math.random() * 4);

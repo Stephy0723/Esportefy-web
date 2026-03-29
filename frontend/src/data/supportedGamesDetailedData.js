@@ -5,7 +5,13 @@ import WarzoneCover from '../assets/gameImages/CallofDutyWarzone.png';
 import FortniteCover from '../assets/gameImages/fortnite.png';
 import FifaCover from '../assets/gameImages/Fifa.png';
 import RocketCover from '../assets/gameImages/RocketLeague.png';
-import SmashCover from '../assets/gameImages/sf6.png';
+import FreeFireCover from '../assets/gameImages/freefire.png';
+import PubgCover from '../assets/gameImages/PubgMobile.jpg';
+import CodmCover from '../assets/gameImages/codm.png';
+import Sf6Cover from '../assets/gameImages/sf6.png';
+import TekkenCover from '../assets/gameImages/Tekken8.png';
+import BrawlhallaCover from '../assets/gameImages/brawlhalla.png';
+import SmashCover from '../assets/banner/BannerSmash.jpg';
 
 const supportedGamesDetailedData = {
   lol: {
@@ -216,6 +222,162 @@ const supportedGamesDetailedData = {
       { title: 'FGC University Clash', prize: 'Circuito interno', date: 'Abril 2026' },
     ],
   },
+  brawlhalla: {
+    id: 'brawlhalla',
+    name: 'Brawlhalla',
+    banner: BrawlhallaCover,
+    developer: 'Blue Mammoth Games / Ubisoft',
+    history:
+      'Brawlhalla encaja en GLITCH GANG como platform fighter de entrada rapida: identidad manual, brackets limpios y validacion interna de resultados para cups recurrentes.',
+    tags: ['Fighting', 'Platform Fighter', 'Crossplay', '1v1'],
+    category: 'Fighting',
+    color: '#00BCD4',
+    organizers: [
+      { name: 'Blue Mammoth Games', motto: 'Circuito oficial y majors globales' },
+      { name: 'TOs comunitarios', motto: 'Brackets online y eventos semanales' },
+      { name: 'GLITCH GANG', motto: 'Cups recurrentes y record interno validado' },
+    ],
+    sponsors: [{ name: 'Red Bull' }, { name: 'Ubisoft' }, { name: 'Hit Box' }],
+    userCommunities: [
+      { name: 'Brawlhalla LATAM', members: '18k' },
+      { name: 'Brawlhalla Caribe', members: '6k' },
+      { name: 'GLITCH GANG Brawlhalla', members: '2k' },
+    ],
+    tournaments: [
+      { title: 'Brawlhalla Open 1v1', prize: '$300', date: 'Proximamente' },
+      { title: 'Platform Fighter Cup', prize: '$500', date: 'Abril 2026' },
+    ],
+  },
+  sf6: {
+    id: 'sf6',
+    name: 'Street Fighter 6',
+    banner: Sf6Cover,
+    developer: 'Capcom',
+    history:
+      'Street Fighter 6 se integra como fighter principal del sistema propio de GLITCH GANG: FT2/FT3, brackets solidos y validacion admin para disputas y evidencias.',
+    tags: ['Fighting', '1v1', 'Crossplay', 'Competitivo'],
+    category: 'Fighting',
+    color: '#FF5E00',
+    organizers: [
+      { name: 'Capcom', motto: 'Capcom Pro Tour y majors oficiales' },
+      { name: 'FGC regional', motto: 'Locals, dojos y opens semanales' },
+      { name: 'GLITCH GANG', motto: 'Circuito local con historial competitivo propio' },
+    ],
+    sponsors: [{ name: 'Capcom' }, { name: 'Red Bull' }, { name: 'Razer' }],
+    userCommunities: [
+      { name: 'Street Fighter Caribe', members: '9k' },
+      { name: 'FGC Dominicana', members: '5k' },
+      { name: 'GLITCH GANG SF6', members: '2k' },
+    ],
+    tournaments: [
+      { title: 'Street Fighter 6 Dojo Open', prize: '$500', date: 'Proximamente' },
+      { title: 'FGC Caribbean Showdown', prize: '$800', date: 'Abril 2026' },
+    ],
+  },
+  tekken: {
+    id: 'tekken',
+    name: 'Tekken 8',
+    banner: TekkenCover,
+    developer: 'Bandai Namco',
+    history:
+      'Tekken 8 entra a GLITCH GANG con soporte directo para 1v1, stage pool competitivo y validacion interna de resultados para escena local y regional.',
+    tags: ['Fighting', '3D Fighter', '1v1', 'Crossplay'],
+    category: 'Fighting',
+    color: '#FFD700',
+    organizers: [
+      { name: 'Bandai Namco', motto: 'Tekken World Tour y majors oficiales' },
+      { name: 'FGC regional', motto: 'Dojo events y opens comunitarios' },
+      { name: 'GLITCH GANG', motto: 'Brackets y ranking interno para la escena local' },
+    ],
+    sponsors: [{ name: 'Bandai Namco' }, { name: 'Qanba' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Tekken LATAM', members: '11k' },
+      { name: 'Tekken RD', members: '3k' },
+      { name: 'GLITCH GANG Tekken', members: '1k' },
+    ],
+    tournaments: [
+      { title: 'Tekken 8 Arena', prize: '$500', date: 'Proximamente' },
+      { title: 'King of Iron Cup', prize: '$700', date: 'Abril 2026' },
+    ],
+  },
+  freefire: {
+    id: 'freefire',
+    name: 'Free Fire',
+    banner: FreeFireCover,
+    developer: 'Garena',
+    history:
+      'Free Fire se maneja en GLITCH GANG como battle royale mobile de squads: roster interno, check-in, pruebas de match y control administrativo del torneo.',
+    tags: ['Battle Royale', 'Mobile', 'Squads', 'Competitivo'],
+    category: 'BR',
+    color: '#FFAA00',
+    organizers: [
+      { name: 'Garena', motto: 'Escena oficial y circuitos regionales' },
+      { name: 'Organizadores terceros', motto: 'Scrims y opens comunitarios' },
+      { name: 'GLITCH GANG', motto: 'Historial interno y cups de squads' },
+    ],
+    sponsors: [{ name: 'Garena' }, { name: 'Samsung' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Free Fire LATAM', members: '70k' },
+      { name: 'Free Fire RD', members: '12k' },
+      { name: 'GLITCH GANG FF', members: '4k' },
+    ],
+    tournaments: [
+      { title: 'Free Fire Squad Clash', prize: '$700', date: 'Proximamente' },
+      { title: 'Mobile Battle Royale Cup', prize: '$900', date: 'Abril 2026' },
+    ],
+  },
+  pubg: {
+    id: 'pubg',
+    name: 'PUBG Mobile',
+    banner: PubgCover,
+    developer: 'Krafton / Tencent',
+    history:
+      'PUBG Mobile entra a GLITCH GANG con soporte de squads, lobbies privados, evidencias y operaciones administrativas sin depender de integraciones externas complejas.',
+    tags: ['Battle Royale', 'Mobile', 'Squads', 'Competitivo'],
+    category: 'BR',
+    color: '#F2A93B',
+    organizers: [
+      { name: 'Tencent', motto: 'Escena oficial y torneos regionales' },
+      { name: 'Organizadores terceros', motto: 'Scrims y opens mobile' },
+      { name: 'GLITCH GANG', motto: 'Cups internas para squads competitivos' },
+    ],
+    sponsors: [{ name: 'Tencent' }, { name: 'OnePlus' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'PUBG Mobile LATAM', members: '34k' },
+      { name: 'PUBG Mobile Caribe', members: '8k' },
+      { name: 'GLITCH GANG PUBGM', members: '3k' },
+    ],
+    tournaments: [
+      { title: 'PUBG Mobile Squad Series', prize: '$700', date: 'Proximamente' },
+      { title: 'Mobile Survival Cup', prize: '$900', date: 'Abril 2026' },
+    ],
+  },
+  codm: {
+    id: 'codm',
+    name: 'COD Mobile',
+    banner: CodmCover,
+    developer: 'Activision / TiMi',
+    history:
+      'COD Mobile se integra como shooter mobile 5v5 con reglas propias de roster, modes competitivos y match reporting interno dentro de GLITCH GANG.',
+    tags: ['FPS', 'Mobile', '5v5', 'Competitivo'],
+    category: 'FPS',
+    color: '#FF7A00',
+    organizers: [
+      { name: 'Activision', motto: 'Escena competitiva oficial de COD Mobile' },
+      { name: 'Organizadores terceros', motto: 'Scrims y cups comunitarias mobile' },
+      { name: 'GLITCH GANG', motto: 'Rosters, torneos y reportes internos 5v5' },
+    ],
+    sponsors: [{ name: 'Sony Xperia' }, { name: 'Razer' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'COD Mobile LATAM', members: '41k' },
+      { name: 'CODM Caribe', members: '9k' },
+      { name: 'GLITCH GANG CODM', members: '3k' },
+    ],
+    tournaments: [
+      { title: 'COD Mobile 5v5 Open', prize: '$800', date: 'Proximamente' },
+      { title: 'Mobile FPS Series', prize: '$1,000', date: 'Abril 2026' },
+    ],
+  },
 };
 
 supportedGamesDetailedData['League of Legends'] = supportedGamesDetailedData.lol;
@@ -233,5 +395,17 @@ supportedGamesDetailedData['FIFA'] = supportedGamesDetailedData.fifa;
 supportedGamesDetailedData['Smash Bros'] = supportedGamesDetailedData.smash;
 supportedGamesDetailedData['Super Smash Bros'] = supportedGamesDetailedData.smash;
 supportedGamesDetailedData['Super Smash Bros. Ultimate'] = supportedGamesDetailedData.smash;
+supportedGamesDetailedData['Brawlhalla'] = supportedGamesDetailedData.brawlhalla;
+supportedGamesDetailedData['Street Fighter 6'] = supportedGamesDetailedData.sf6;
+supportedGamesDetailedData['Street Fighter'] = supportedGamesDetailedData.sf6;
+supportedGamesDetailedData.SF6 = supportedGamesDetailedData.sf6;
+supportedGamesDetailedData['Tekken 8'] = supportedGamesDetailedData.tekken;
+supportedGamesDetailedData.Tekken = supportedGamesDetailedData.tekken;
+supportedGamesDetailedData['Free Fire'] = supportedGamesDetailedData.freefire;
+supportedGamesDetailedData['PUBG Mobile'] = supportedGamesDetailedData.pubg;
+supportedGamesDetailedData.PUBG = supportedGamesDetailedData.pubg;
+supportedGamesDetailedData['COD Mobile'] = supportedGamesDetailedData.codm;
+supportedGamesDetailedData['CoD Mobile'] = supportedGamesDetailedData.codm;
+supportedGamesDetailedData['Call of Duty Mobile'] = supportedGamesDetailedData.codm;
 
 export { supportedGamesDetailedData };

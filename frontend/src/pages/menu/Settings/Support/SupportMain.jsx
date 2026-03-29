@@ -23,6 +23,12 @@ const SUPPORTED_GAMES = [
     { id: 'rocket', name: 'Rocket League', short: 'RL' },
     { id: 'fifa', name: 'EA FC / FIFA', short: 'EA FC' },
     { id: 'smash', name: 'Smash Bros', short: 'Smash' },
+    { id: 'brawlhalla', name: 'Brawlhalla', short: 'Brawl' },
+    { id: 'sf6', name: 'Street Fighter 6', short: 'SF6' },
+    { id: 'tekken', name: 'Tekken 8', short: 'Tekken' },
+    { id: 'freefire', name: 'Free Fire', short: 'FF' },
+    { id: 'pubg', name: 'PUBG Mobile', short: 'PUBG' },
+    { id: 'codm', name: 'COD Mobile', short: 'CODM' },
 ];
 
 const FAQ_CATEGORIES = [

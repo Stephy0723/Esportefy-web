@@ -142,6 +142,15 @@ const UserSchema = new mongoose.Schema({
         instagram: { type: String, default: '' },
         tiktok: { type: String, default: '' }
     },
+    gamingConnections: {
+        discord: { type: String, default: '' },
+        riotId: { type: String, default: '' },
+        steam: { type: String, default: '' },
+        epic: { type: String, default: '' },
+        playstation: { type: String, default: '' },
+        xbox: { type: String, default: '' },
+        nintendo: { type: String, default: '' }
+    },
     mlbbClaimHistory: [{
         _id: false,
         playerId: { type: String, default: '' },

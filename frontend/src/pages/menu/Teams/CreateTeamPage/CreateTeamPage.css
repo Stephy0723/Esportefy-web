@@ -218,6 +218,89 @@
     border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
+.game-playbook-card {
+    margin-top: 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--theme-color) 36%, var(--border-color));
+    background: color-mix(in srgb, var(--theme-color) 10%, var(--bg-input));
+    display: grid;
+    gap: 0.8rem;
+}
+
+.game-playbook-card--compact {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.game-playbook-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.game-playbook-header strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.96rem;
+    letter-spacing: 0.4px;
+}
+
+.game-playbook-header p {
+    margin: 0.3rem 0 0;
+    color: var(--text-muted);
+    line-height: 1.45;
+    font-size: 0.9rem;
+}
+
+.game-playbook-tags,
+.game-playbook-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.game-playbook-tags {
+    justify-content: flex-end;
+}
+
+.game-playbook-tag,
+.game-playbook-role {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.game-playbook-tag {
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--theme-color);
+    border: 1px solid color-mix(in srgb, var(--theme-color) 32%, transparent);
+}
+
+.game-playbook-role {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.game-playbook-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.38rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
 /* Branding horizontal layout */
 .branding-section {
     display: flex;
@@ -542,6 +625,16 @@
 }
 .mlbb-share-steps span {
     display: block;
+}
+
+@media (max-width: 720px) {
+    .game-playbook-header {
+        flex-direction: column;
+    }
+
+    .game-playbook-tags {
+        justify-content: flex-start;
+    }
 }
 /* =========================================
    6. PANTALLA FINAL — SHARE / RECRUIT

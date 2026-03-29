@@ -253,7 +253,7 @@ const Profile = () => {
         { key: 'discord', icon: 'bx bxl-discord-alt', label: 'Discord', color: '#5865F2', connected: user.connections?.discord?.verified, value: user.connections?.discord?.username },
         { key: 'mlbb', icon: 'bx bx-joystick', label: 'MLBB', color: '#00b4d8', connected: user.connections?.mlbb?.verified, value: user.connections?.mlbb?.playerId ? `${user.connections.mlbb.playerId} (${user.connections.mlbb.zoneId || 'zone'})` : null },
         { key: 'steam', icon: 'bx bxl-steam', label: 'Steam', color: '#1b2838', connected: user.connections?.steam?.verified, value: user.connections?.steam?.username },
-        { key: 'epic', icon: 'bx bx-bolt', label: 'Epic', color: '#0078f2', connected: user.connections?.epic?.verified, value: user.connections?.epic?.displayName || user.connections?.epic?.username || null },
+        { key: 'epic', icon: 'bx bx-bolt', label: 'Epic', color: '#0078f2', connected: Boolean(user.connections?.epic?.verified || user.gamingConnections?.epic), value: user.connections?.epic?.displayName || user.connections?.epic?.username || (user.gamingConnections?.epic ? `${user.gamingConnections.epic} · Manual` : null) },
     ];
 
     const mainGame = normalizedGames[0];

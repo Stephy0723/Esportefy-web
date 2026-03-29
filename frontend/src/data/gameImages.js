@@ -25,10 +25,13 @@ import warzone from '../assets/gameImages/CallofDutyWarzone.png';
 import mk11 from '../assets/gameImages/mk11.png';
 import sf6 from '../assets/gameImages/sf6.png';
 import tekken from '../assets/gameImages/Tekken8.png';
+import brawlhalla from '../assets/gameImages/brawlhalla.png';
 
 import fifa from '../assets/gameImages/Fifa.png';
 import rocket from '../assets/gameImages/RocketLeague.png';
 import mariokart from '../assets/gameImages/mariokart.png';
+import generic from '../assets/gameImages/download.png';
+import smash from '../assets/banner/BannerSmash.jpg';
 
 import tft from '../assets/gameImages/teamfight.png';
 import clash from '../assets/gameImages/clashroyale.png';
@@ -80,8 +83,10 @@ export const GAME_IMAGES = {
     "valorant": valorant,
     
     "CoD Mobile": codm,
+    "COD Mobile": codm,
     "codm": codm,
     "Call of Duty": codm,
+    "Call of Duty Mobile": codm,
     "COD": codm,
     
     "Overwatch 2": overwatch,
@@ -122,17 +127,21 @@ export const GAME_IMAGES = {
     "mk11": mk11,
     
     "Street Fighter 6": sf6,
+    "Street Fighter": sf6,
     "sf6": sf6,
 
     "Tekken 8": tekken,
     "tekken": tekken,
 
-    "Smash Bros": sf6,
-    "smash bros": sf6,
-    "Super Smash Bros": sf6,
-    "Super Smash Bros. Ultimate": sf6,
-    "smash": sf6,
-    "ssbu": sf6,
+    "Smash Bros": smash,
+    "smash bros": smash,
+    "Super Smash Bros": smash,
+    "Super Smash Bros. Ultimate": smash,
+    "smash": smash,
+    "ssbu": smash,
+
+    "Brawlhalla": brawlhalla,
+    "brawlhalla": brawlhalla,
     
     // ═══ DEPORTES ═══
     "FIFA 24": fifa,
@@ -190,5 +199,5 @@ export const GAME_IMAGES = {
     "fallguys": fallguys,
     
     // Fallback
-    "Default": valorant
+    "Default": generic
 };

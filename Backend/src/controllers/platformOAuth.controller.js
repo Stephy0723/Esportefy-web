@@ -13,13 +13,54 @@ const EPIC_TOKEN_URL = process.env.EPIC_OAUTH_TOKEN_URL || 'https://api.epicgame
 const EPIC_USERINFO_URL = process.env.EPIC_OAUTH_USERINFO_URL || 'https://api.epicgames.dev/epic/oauth/v2/userInfo';
 const EPIC_SCOPES = String(process.env.EPIC_OAUTH_SCOPES || 'openid basic_profile').trim();
 
-const buildFrontendSettingsUrl = (provider, status, message = '') => {
+const mapEpicErrorMessage = (error) => {
+  const providerMessage = String(
+    error?.response?.data?.message
+    || error?.response?.data?.error_description
+    || error?.response?.data?.errorMessage
+    || ''
+  ).trim();
+
+  if (providerMessage) return providerMessage;
+
+  const raw = String(error?.message || '').trim();
+  if (raw === 'Request failed with status code 400') {
+    return 'Epic Games rechazó el intercambio OAuth. Revisa el client ID, secret y redirect URI configurados en Epic.';
+  }
+  return raw || 'No se pudo completar la conexión con Epic Games.';
+};
+
+const getEpicContinuationUrl = (error) => {
+  const correctiveAction = String(error?.response?.data?.correctiveAction || '').trim().toUpperCase();
+  const continuationUrl = String(error?.response?.data?.continuationUrl || '').trim();
+  if (correctiveAction === 'SCOPE_CONSENT' && continuationUrl) {
+    return continuationUrl;
+  }
+  return '';
+};
+
+const logEpicOAuth = (stage, details = {}) => {
+  const safeDetails = {
+    ...details,
+    accessToken: details?.accessToken ? '[redacted]' : undefined,
+    idToken: details?.idToken ? '[redacted]' : undefined,
+    clientSecret: details?.clientSecret ? '[redacted]' : undefined
+  };
+  console.warn('[Epic OAuth]', stage, safeDetails);
+};
+
+const buildFrontendSettingsUrl = (provider, status, message = '', extraParams = {}) => {
   const url = new URL('/settings', FRONTEND_URL);
   url.searchParams.set('oauthProvider', String(provider || '').trim().toLowerCase());
   url.searchParams.set('oauthStatus', String(status || '').trim().toLowerCase());
   if (message) {
     url.searchParams.set('oauthMessage', String(message).slice(0, 160));
   }
+  Object.entries(extraParams || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  });
   return url.toString();
 };
 
@@ -353,6 +394,12 @@ export const epicAuthCallback = async (req, res) => {
   const providerErrorDescription = String(req.query?.error_description || '').trim();
 
   if (providerError) {
+    logEpicOAuth('callback-provider-error', {
+      error: providerError,
+      errorDescription: providerErrorDescription,
+      hasCode: Boolean(code),
+      hasState: Boolean(state)
+    });
     return res.redirect(
       buildFrontendSettingsUrl(
         'epic',
@@ -363,12 +410,20 @@ export const epicAuthCallback = async (req, res) => {
   }
 
   if (!code || !state) {
+    logEpicOAuth('callback-invalid-query', {
+      hasCode: Boolean(code),
+      hasState: Boolean(state)
+    });
     return res.redirect(buildFrontendSettingsUrl('epic', 'error', 'Callback inválido de Epic Games.'));
   }
 
   try {
     const storedState = await consumeOAuthState('epic', state);
     if (!storedState?.userId || !storedState?.codeVerifier) {
+      logEpicOAuth('callback-invalid-state', {
+        hasStoredUserId: Boolean(storedState?.userId),
+        hasCodeVerifier: Boolean(storedState?.codeVerifier)
+      });
       return res.redirect(buildFrontendSettingsUrl('epic', 'error', 'Estado OAuth inválido o expirado.'));
     }
 
@@ -403,7 +458,12 @@ export const epicAuthCallback = async (req, res) => {
         timeout: 15_000
       });
       userInfo = userInfoResponse?.data || {};
-    } catch (_) {
+    } catch (error) {
+      logEpicOAuth('userinfo-warning', {
+        status: error?.response?.status || null,
+        data: error?.response?.data || null,
+        message: error?.message || ''
+      });
       userInfo = {};
     }
 
@@ -423,11 +483,31 @@ export const epicAuthCallback = async (req, res) => {
     });
 
     await persistEpicConnection(storedState.userId, identity);
+    logEpicOAuth('callback-success', {
+      userId: String(storedState.userId),
+      epicId: identity.id,
+      username: identity.username
+    });
     return res.redirect(buildFrontendSettingsUrl('epic', 'connected'));
   } catch (error) {
-    const message = error?.response?.data?.message
-      || error?.message
-      || 'No se pudo completar la conexión con Epic Games.';
+    logEpicOAuth('callback-exchange-error', {
+      status: error?.response?.status || null,
+      data: error?.response?.data || null,
+      message: error?.message || '',
+      code: error?.code || ''
+    });
+    const continuationUrl = getEpicContinuationUrl(error);
+    if (continuationUrl) {
+      return res.redirect(
+        buildFrontendSettingsUrl(
+          'epic',
+          'consent_required',
+          'Epic requiere aceptar permisos antes de continuar.',
+          { oauthContinuation: continuationUrl }
+        )
+      );
+    }
+    const message = mapEpicErrorMessage(error);
     return res.redirect(buildFrontendSettingsUrl('epic', 'error', message));
   }
 };

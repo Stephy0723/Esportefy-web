@@ -63,6 +63,36 @@ const REGISTER_GAMES = [
     id: 'smash',
     name: 'Smash Bros',
     image: GAME_IMAGES['Smash Bros'] || GAME_IMAGES.Default
+  },
+  {
+    id: 'brawlhalla',
+    name: 'Brawlhalla',
+    image: GAME_IMAGES.Brawlhalla || GAME_IMAGES.Default
+  },
+  {
+    id: 'sf6',
+    name: 'Street Fighter 6',
+    image: GAME_IMAGES['Street Fighter 6'] || GAME_IMAGES.Default
+  },
+  {
+    id: 'tekken',
+    name: 'Tekken 8',
+    image: GAME_IMAGES['Tekken 8'] || GAME_IMAGES.Default
+  },
+  {
+    id: 'freefire',
+    name: 'Free Fire',
+    image: GAME_IMAGES['Free Fire'] || GAME_IMAGES.Default
+  },
+  {
+    id: 'pubg',
+    name: 'PUBG Mobile',
+    image: GAME_IMAGES['PUBG Mobile'] || GAME_IMAGES.Default
+  },
+  {
+    id: 'codm',
+    name: 'COD Mobile',
+    image: GAME_IMAGES['COD Mobile'] || GAME_IMAGES['CoD Mobile'] || GAME_IMAGES.Default
   }
 ];
 

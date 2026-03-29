@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
@@ -53,11 +53,14 @@ export default function SettingsV2() {
     });
     const [privacy, setPrivacy] = useState(() => normalizePrivacy());
     const [connections, setConnections] = useState({ discord: {}, riot: {}, mlbb: {}, steam: {}, epic: {} });
+    const [manualGamingConnections, setManualGamingConnections] = useState({ epic: '' });
     const [gameProfiles, setGameProfiles] = useState({});
     const [accountEmail, setAccountEmail] = useState('');
     const [emailVerified, setEmailVerified] = useState(false);
     const [oauthNotice, setOauthNotice] = useState({ provider: '', status: '', message: '' });
+    const [oauthContinuationUrl, setOauthContinuationUrl] = useState('');
     const [epicLoading, setEpicLoading] = useState(false);
+    const epicConsentPollRef = useRef(null);
     const [referralData, setReferralData] = useState({ code: '', count: 0, referredBy: null, userCode: '' });
     const [referralInput, setReferralInput] = useState('');
     const [referralMsg, setReferralMsg] = useState({ type: '', text: '' });
@@ -143,7 +146,8 @@ export default function SettingsV2() {
     );
     const mlbbLinked = isMlbbVerifiedStatus(mlbbVerificationStatus, connections?.mlbb?.verified);
     const epicLinked = connections?.epic?.verified === true;
-    const epicLabel = connections?.epic?.displayName || connections?.epic?.username || connections?.epic?.email || 'Sin vincular';
+    const epicManualHandle = String(manualGamingConnections?.epic || '').trim();
+    const epicLabel = connections?.epic?.displayName || connections?.epic?.username || connections?.epic?.email || (epicManualHandle ? `${epicManualHandle} · Manual` : 'Sin vincular');
     const riotProfileIconId = gameProfiles?.lol?.profileIconId ?? 0;
     const riotSummonerLevel = gameProfiles?.lol?.summonerLevel;
     const riotRank = gameProfiles?.lol?.rank;
@@ -224,6 +228,9 @@ export default function SettingsV2() {
                 headers: authHeaders
             });
             setConnections(normalizeConnections(res.data.connections));
+            setManualGamingConnections({
+                epic: String(res.data?.gamingConnections?.epic || '').trim()
+            });
             setPrivacy(normalizePrivacy(res.data.privacy));
             setGameProfiles(res.data.gameProfiles || {});
             setAccountEmail(String(res.data?.email || '').trim());
@@ -270,10 +277,12 @@ export default function SettingsV2() {
         const provider = String(params.get('oauthProvider') || '').trim().toLowerCase();
         const status = String(params.get('oauthStatus') || '').trim().toLowerCase();
         const message = String(params.get('oauthMessage') || '').trim();
+        const continuation = String(params.get('oauthContinuation') || '').trim();
 
         if (!provider || !status) return;
 
         setActiveTab('connections');
+        setOauthContinuationUrl(continuation);
         setOauthNotice({
             provider,
             status,
@@ -397,15 +406,29 @@ export default function SettingsV2() {
 
     const startEpicLink = async () => {
         try {
-            setEpicLoading(true);
-            await startPlatformOAuth('epic');
+            navigate('/edit-profile', { state: { activeTab: 'social' } });
         } catch (error) {
             console.error('Epic link error:', error);
             setOauthNotice({
                 provider: 'epic',
                 status: 'error',
+                message: error?.response?.data?.message || 'No se pudo abrir la edición manual de Epic Games.'
+            });
+        }
+    };
+
+    const startEpicOAuthBeta = async () => {
+        try {
+            setEpicLoading(true);
+            await startPlatformOAuth('epic');
+        } catch (error) {
+            console.error('Epic OAuth beta error:', error);
+            setOauthNotice({
+                provider: 'epic',
+                status: 'error',
                 message: error?.response?.data?.message || 'No se pudo iniciar la vinculación con Epic Games.'
             });
+        } finally {
             setEpicLoading(false);
         }
     };
@@ -602,9 +625,58 @@ export default function SettingsV2() {
     };
 
     const dismissOauthNotice = () => {
+        if (epicConsentPollRef.current) {
+            clearInterval(epicConsentPollRef.current);
+            epicConsentPollRef.current = null;
+        }
         setOauthNotice({ provider: '', status: '', message: '' });
+        setOauthContinuationUrl('');
         navigate('/settings', { replace: true });
     };
+
+    const continueEpicConsent = () => {
+        if (!oauthContinuationUrl) return;
+        const popup = window.open('', 'epic-consent');
+        if (!popup) {
+            setOauthNotice({
+                provider: 'epic',
+                status: 'success',
+                message: 'No se pudo abrir el popup de Epic. Continuaremos en esta misma pestaña.'
+            });
+            window.location.assign(oauthContinuationUrl);
+            return;
+        }
+
+        popup.location.href = oauthContinuationUrl;
+        popup.focus();
+
+        if (epicConsentPollRef.current) {
+            clearInterval(epicConsentPollRef.current);
+        }
+
+        epicConsentPollRef.current = setInterval(() => {
+            if (!popup.closed) return;
+
+            clearInterval(epicConsentPollRef.current);
+            epicConsentPollRef.current = null;
+            setOauthContinuationUrl('');
+            setOauthNotice({
+                provider: 'epic',
+                status: 'success',
+                message: 'Consentimiento completado. Reintentando vinculación con Epic Games...'
+            });
+            setTimeout(() => {
+                startEpicOAuthBeta();
+            }, 250);
+        }, 500);
+    };
+
+    useEffect(() => () => {
+        if (epicConsentPollRef.current) {
+            clearInterval(epicConsentPollRef.current);
+            epicConsentPollRef.current = null;
+        }
+    }, []);
 
     const fetchMlbbPendingReviews = async () => {
         try {
@@ -710,6 +782,11 @@ export default function SettingsV2() {
                                         <FaInfoCircle />
                                         <span>{oauthNotice.message}</span>
                                     </div>
+                                    {oauthNotice.provider === 'epic' && oauthContinuationUrl && (
+                                        <button type="button" className="stv2-btn stv2-btn--outline" onClick={continueEpicConsent}>
+                                            Continuar en Epic
+                                        </button>
+                                    )}
                                     <button type="button" className="stv2-oauth-notice__close" onClick={dismissOauthNotice} aria-label="Cerrar aviso">
                                         <FaTimes />
                                     </button>
@@ -861,8 +938,10 @@ export default function SettingsV2() {
                                     <div className="stv2-connection__status">
                                         {epicLinked ? (
                                             <span className="stv2-badge stv2-badge--success">Conectado</span>
+                                        ) : epicManualHandle ? (
+                                            <span className="stv2-badge stv2-badge--warning">Manual</span>
                                         ) : (
-                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                            <span className="stv2-badge stv2-badge--muted">OAuth beta</span>
                                         )}
                                     </div>
                                     <div className="stv2-connection__action">
@@ -871,9 +950,14 @@ export default function SettingsV2() {
                                                 {epicLoading ? 'Procesando...' : 'Desvincular'}
                                             </button>
                                         ) : (
-                                            <button className="stv2-btn stv2-btn--primary" onClick={startEpicLink} disabled={epicLoading}>
-                                                {epicLoading ? 'Redirigiendo...' : 'Vincular'}
-                                            </button>
+                                            <>
+                                                <button className="stv2-btn stv2-btn--outline" onClick={startEpicOAuthBeta} disabled={epicLoading}>
+                                                    {epicLoading ? 'Redirigiendo...' : 'Probar OAuth'}
+                                                </button>
+                                                <button className="stv2-btn stv2-btn--primary" onClick={startEpicLink} disabled={epicLoading}>
+                                                    {epicManualHandle ? 'Editar handle' : 'Agregar handle'}
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>

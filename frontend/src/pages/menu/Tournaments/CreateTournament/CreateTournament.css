@@ -273,6 +273,83 @@
   color: var(--text-muted);
 }
 
+.ct-inline-help--playbook {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border-color));
+  background: color-mix(in srgb, var(--primary) 8%, var(--bg-elevated));
+}
+
+.ct-game-brief {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--primary) 9%, var(--bg-elevated));
+}
+
+.ct-game-brief-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ct-game-brief-head strong {
+  display: block;
+  font-size: 0.96rem;
+  color: var(--text-main);
+}
+
+.ct-game-brief-head p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.ct-game-brief-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.ct-game-brief-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border-color));
+  background: color-mix(in srgb, var(--primary) 14%, var(--bg-elevated));
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.ct-game-brief-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.ct-game-brief-meta small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.ct-game-brief-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
 .ct-inline-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -506,6 +583,14 @@
 @media (max-width: 780px) {
   .ct-page {
     padding: 112px 12px 220px;
+  }
+
+  .ct-game-brief-head {
+    flex-direction: column;
+  }
+
+  .ct-game-brief-tags {
+    justify-content: flex-start;
   }
 
   .ct-grid.two,

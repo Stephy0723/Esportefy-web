@@ -15,6 +15,7 @@ import {
   normalizeTournamentMapPool
 } from '../../../../../../shared/tournamentMapOptions.js';
 import {
+  getGamePlaybook,
   getTournamentGameDefaults,
   getTournamentGameModalityOptions,
   getTournamentGamePlatformOptions,
@@ -333,6 +334,10 @@ const CreateTournament = () => {
   const seriesOptions = useMemo(
     () => getTournamentGameSeriesOptions(tournament.game, tournament.matchConfig.seriesType),
     [tournament.game, tournament.matchConfig.seriesType]
+  );
+  const selectedGamePlaybook = useMemo(
+    () => getGamePlaybook(tournament.game),
+    [tournament.game]
   );
   const mapOptions = useMemo(
     () => getTournamentMapOptions(tournament.game, tournament.matchConfig.mapPool),
@@ -984,6 +989,35 @@ const CreateTournament = () => {
               <label className="ct-field"><span>Fecha inicio</span><input type="date" min={todayInput} required value={tournament.date} onChange={(e) => setField('date', e.target.value)} /></label>
               <label className="ct-field"><span>Hora inicio</span><input type="time" required value={tournament.time} onChange={(e) => setField('time', e.target.value)} /></label>
             </div>
+            {selectedGamePlaybook && (
+              <div className="ct-game-brief">
+                <div className="ct-game-brief-head">
+                  <div>
+                    <strong>Preset competitivo de {selectedGamePlaybook.name}</strong>
+                    <p>{selectedGamePlaybook.tournament.summary}</p>
+                  </div>
+                  <div className="ct-game-brief-tags">
+                    <span>{selectedGamePlaybook.rosterLine}</span>
+                    <span>{selectedGamePlaybook.defaultPlatform}</span>
+                    <span>{selectedGamePlaybook.defaultModality}</span>
+                    <span>{selectedGamePlaybook.defaultSeries}</span>
+                  </div>
+                </div>
+                <div className="ct-game-brief-meta">
+                  {selectedGamePlaybook.servers.length > 0 && (
+                    <small>Servidores clave: {selectedGamePlaybook.servers.slice(0, 3).map((server) => server.label).join(' · ')}</small>
+                  )}
+                  {selectedGamePlaybook.maps.length > 0 && (
+                    <small>Map pool base: {selectedGamePlaybook.maps.slice(0, 4).join(' · ')}</small>
+                  )}
+                </div>
+                <ul className="ct-game-brief-list">
+                  {selectedGamePlaybook.tournament.tips.map((tip) => (
+                    <li key={tip}>{tip}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <label className="ct-field">
               <span>Descripcion</span>
               <textarea rows="3" maxLength={1500} value={tournament.description} onChange={(e) => setField('description', e.target.value)} />
@@ -1006,6 +1040,11 @@ const CreateTournament = () => {
           <p className="ct-lead">Define estructura competitiva, ventanas de registro y requisitos de participacion.</p>
           {!unlockFormat && <p className="ct-locked-note">Completa el Paso 01 para desbloquear este bloque.</p>}
           <fieldset className="ct-fieldset" disabled={!unlockFormat}>
+            {selectedGamePlaybook && (
+              <div className="ct-inline-help ct-inline-help--playbook">
+                {selectedGamePlaybook.name}: {selectedGamePlaybook.rosterLine}, {selectedGamePlaybook.defaultModality} y {selectedGamePlaybook.defaultSeries} como preset base.
+              </div>
+            )}
             <div className="ct-grid four">
               <label className="ct-field">
                 <span>Cantidad</span>

@@ -47,6 +47,7 @@ import imgRocket from '../../../assets/gameImages/RocketLeague.png';
 import imgTft from '../../../assets/gameImages/teamfight.png';
 import imgSf6 from '../../../assets/gameImages/sf6.png';
 import imgTekken from '../../../assets/gameImages/Tekken8.png';
+import imgBrawlhalla from '../../../assets/gameImages/brawlhalla.png';
 import imgSiege from '../../../assets/gameImages/Rainbow Six Siege.png';
 import imgSmite from '../../../assets/gameImages/smite2.png';
 import imgFifa from '../../../assets/gameImages/Fifa.png';
@@ -63,6 +64,7 @@ import imgHalo from '../../../assets/gameImages/Halo.png';
 import imgWarzone from '../../../assets/gameImages/CallofDutyWarzone.png';
 import imgGtaV from '../../../assets/gameImages/grandtheftautogtav.png';
 import imgAov from '../../../assets/gameImages/ArenaOfValor.webp';
+import imgSmash from '../../../assets/banner/BannerSmash.jpg';
 
 // Categorías de juegos
 const gameCategoriesBase = [
@@ -108,7 +110,8 @@ const gameCatalog = [
     { id: 'mk11', name: 'Mortal Kombat', img: imgMk11, category: 'fighting' },
     { id: 'sf6', name: 'Street Fighter 6', img: imgSf6, category: 'fighting' },
     { id: 'tekken', name: 'Tekken 8', img: imgTekken, category: 'fighting' },
-    { id: 'smash', name: 'Smash Bros', img: imgSf6, category: 'fighting' },
+    { id: 'smash', name: 'Smash Bros', img: imgSmash, category: 'fighting' },
+    { id: 'brawlhalla', name: 'Brawlhalla', img: imgBrawlhalla, category: 'fighting' },
     
     // Deportes
     { id: 'fifa', name: 'EA FC / FIFA', img: imgFifa, category: 'sports' },
@@ -527,7 +530,9 @@ const EditProfile = () => {
             setUserConnections({
                 discord: u.connections?.discord || {},
                 riot: u.connections?.riot || {},
-                mlbb: u.connections?.mlbb || {}
+                mlbb: u.connections?.mlbb || {},
+                steam: u.connections?.steam || {},
+                epic: u.connections?.epic || {}
             });
             setFormData({
                 username: u.username || '',
@@ -1443,7 +1448,7 @@ const EditProfile = () => {
                                     <FaGamepad className="ep__section-icon" />
                                     <div>
                                         <label className="ep__label">Conexiones de Gaming</label>
-                                        <p className="ep__label-desc">Haz clic en un icono para vincular tu cuenta.</p>
+                                        <p className="ep__label-desc">Riot, Discord y MLBB siguen con conexión oficial. Epic se puede guardar manual mientras resolvemos el OAuth.</p>
                                     </div>
                                 </div>
                                 <div className="ep__gaming-icons-grid">
@@ -1456,6 +1461,10 @@ const EditProfile = () => {
                                             ? Boolean(connData.verified)
                                             : conn.settingsKey === 'mlbb'
                                             ? Boolean(connData.verified || connData.verificationStatus === 'verified')
+                                            : conn.settingsKey === 'steam'
+                                            ? Boolean(connData.verified || formData.gamingConnections?.steam)
+                                            : conn.settingsKey === 'epic'
+                                            ? Boolean(connData.verified || formData.gamingConnections?.epic)
                                             : false;
                                         
                                         const displayName = conn.settingsKey === 'discord' 
@@ -1464,6 +1473,10 @@ const EditProfile = () => {
                                             ? connData.gameName ? `${connData.gameName}#${connData.tagLine}` : ''
                                             : conn.settingsKey === 'mlbb'
                                             ? connData.playerId ? `ID: ${connData.playerId}` : ''
+                                            : conn.settingsKey === 'steam'
+                                            ? (connData.username || formData.gamingConnections?.steam || '')
+                                            : conn.settingsKey === 'epic'
+                                            ? (connData.displayName || connData.username || (formData.gamingConnections?.epic ? `${formData.gamingConnections.epic} · Manual` : ''))
                                             : '';
 
                                         return (
@@ -1491,6 +1504,36 @@ const EditProfile = () => {
                                             </button>
                                         );
                                     })}
+                                </div>
+
+                                <div className="ep__section-header" style={{ marginTop: '24px' }}>
+                                    <SiEpicgames className="ep__section-icon" />
+                                    <div>
+                                        <label className="ep__label">Epic Games Manual</label>
+                                        <p className="ep__label-desc">Pon tu handle de Epic/Fortnite mientras terminamos la vinculación oficial.</p>
+                                    </div>
+                                </div>
+                                <div className="ep__social-grid">
+                                    <div className="ep__social-item">
+                                        <div className="ep__social-icon" style={{ color: '#ffffff' }}>
+                                            <SiEpicgames />
+                                        </div>
+                                        <div className="ep__social-input-wrap">
+                                            <span className="ep__social-prefix">@</span>
+                                            <input
+                                                type="text"
+                                                value={formData.gamingConnections.epic}
+                                                onChange={e => handleGamingChange('epic', e.target.value)}
+                                                placeholder="Tu handle de Epic Games"
+                                                className="ep__social-input"
+                                            />
+                                        </div>
+                                        {formData.gamingConnections.epic && (
+                                            <div className="ep__social-check">
+                                                <FaCheck />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Social links */}
@@ -2001,7 +2044,7 @@ const EditProfile = () => {
                                     </div>
                                 </div>
                                 <p className="ep__games-note">
-                                    Juegos con soporte activo en perfil: League of Legends, Valorant, Mobile Legends, Fortnite, Warzone, Rocket League, EA FC / FIFA y Smash Bros. El orden de selección define tu prioridad y tu `#1` será tu main.
+                                    Juegos con soporte activo en perfil: League of Legends, Valorant, Mobile Legends, Fortnite, Warzone, Rocket League, EA FC / FIFA, Smash Bros, Brawlhalla, Street Fighter 6, Tekken 8, Free Fire, PUBG Mobile y COD Mobile. El orden de selección define tu prioridad y tu `#1` será tu main.
                                 </p>
                                 <div className="ep__games-grid">
                                     {filteredGames.map(game => {

@@ -14,6 +14,8 @@ describe('community catalog normalization', () => {
         expect(normalizeCommunityGameId('League of Legends')).toBe('lol');
         expect(normalizeCommunityGameName('counter strike 2')).toBe('CS2');
         expect(getCommunityGameNameVariants('wildrift')).toContain('Wild Rift');
+        expect(normalizeCommunityGameId('Brawlhalla')).toBe('brawlhalla');
+        expect(normalizeCommunityGameName('call of duty mobile')).toBe('COD Mobile');
     });
 
     it('normalizes community social links and roles', () => {

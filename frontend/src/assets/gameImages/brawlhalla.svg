@@ -1,0 +1,77 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brawl-flame" x1="256" y1="60" x2="256" y2="336" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#69FFF2"/>
+      <stop offset="1" stop-color="#27D4D1"/>
+    </linearGradient>
+    <linearGradient id="brawl-wordmark" x1="104" y1="372" x2="408" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE55F"/>
+      <stop offset="1" stop-color="#F4B400"/>
+    </linearGradient>
+    <filter id="brawl-shadow" x="62" y="48" width="388" height="314" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#brawl-shadow)">
+    <path
+      d="M255.972 74C221.677 74 190.269 91.046 172.812 118.32C142.936 118.619 116 142.621 116 173.078C116 188.474 122.883 202.183 134.02 211.423C126.22 221.4 121.571 233.963 121.571 247.61C121.571 279.953 147.316 306.401 180.43 308.31C194.189 333.101 221.319 350 252.372 350C290.414 350 322.573 324.651 332.902 290.001C363.311 287.292 387 261.896 387 231.106C387 214.129 379.79 198.834 368.275 188.074C377.43 177.954 383 164.57 383 149.874C383 118.506 357.727 93.031 326.464 92.694C309.206 80.92 283.647 74 255.972 74Z"
+      fill="url(#brawl-flame)"
+    />
+    <path
+      d="M248.603 118L297.799 124.337L321.148 156.079L314.529 208.068L289.928 264.702L256.181 304L222.434 264.702L197.833 208.068L191.214 156.079L214.563 124.337L248.603 118Z"
+      fill="#FFFFFF"
+      stroke="#0C0C0E"
+      stroke-width="12"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M256.188 131L287.847 136.102L303.17 157.886L297.566 201.442L278.516 244.868L256.188 270.546L233.86 244.868L214.81 201.442L209.206 157.886L224.529 136.102L256.188 131Z"
+      fill="#0C0C0E"
+    />
+    <path
+      d="M255.992 162L283.015 176.038L269.523 192.786V228.272L255.992 236.809L242.462 228.272V192.786L228.97 176.038L255.992 162Z"
+      fill="#FFFFFF"
+    />
+    <path
+      d="M200.961 117C189.217 103.695 168.811 96.9879 149.537 101.746C159.676 113.044 164.208 130.08 161.348 146.379C175.727 143.056 190.559 132.234 200.961 117Z"
+      fill="#1DD3D7"
+      fill-opacity="0.95"
+    />
+    <path
+      d="M310.883 111C324.051 125.183 344.425 132.642 363.963 129.312C352.281 117.113 346.483 100.47 348.113 83.9999C334.035 88.3976 320.008 99.5131 310.883 111Z"
+      fill="#20E3D9"
+      fill-opacity="0.92"
+    />
+  </g>
+
+  <g transform="translate(256 395) skewX(-16)">
+    <text
+      x="0"
+      y="0"
+      text-anchor="middle"
+      font-family="Impact, Haettenschweiler, 'Arial Black', sans-serif"
+      font-size="74"
+      font-weight="900"
+      letter-spacing="1.5"
+      fill="url(#brawl-wordmark)"
+      stroke="#7A3B00"
+      stroke-width="12"
+      paint-order="stroke fill"
+    >
+      BRAWLHALLA
+    </text>
+    <text
+      x="0"
+      y="0"
+      text-anchor="middle"
+      font-family="Impact, Haettenschweiler, 'Arial Black', sans-serif"
+      font-size="74"
+      font-weight="900"
+      letter-spacing="1.5"
+      fill="url(#brawl-wordmark)"
+    >
+      BRAWLHALLA
+    </text>
+  </g>
+</svg>
