@@ -195,9 +195,55 @@ const getTournamentStatusKey = (status) => {
 const isRegistrationOpenForTournament = (torneo) => (
   getTournamentStatusKey(torneo?.status) === 'open' && !Boolean(torneo?.registrationClosed)
 );
+const hasCheckInWindowConfigured = (tournament = {}) => (
+  Boolean(tournament?.checkInWindow?.start || tournament?.checkInWindow?.end)
+);
+const getCheckInWindowState = (tournament = {}) => {
+  if (!hasCheckInWindowConfigured(tournament)) return 'disabled';
+  const now = new Date();
+  const start = tournament?.checkInWindow?.start ? new Date(tournament.checkInWindow.start) : null;
+  const end = tournament?.checkInWindow?.end ? new Date(tournament.checkInWindow.end) : null;
+
+  if (start && now < start) return 'upcoming';
+  if (end && now > end) return 'closed';
+  return 'open';
+};
 const getTournamentStatusLabel = (status) => (
   STATUS_CONFIG[getTournamentStatusKey(status)]?.label || String(status || 'Sin estado')
 );
+const getRegistrationCaptainId = (registration = {}) => String(registration?.captain?._id || registration?.captain || '');
+const getCaptainRegistrationForUser = (tournament = {}, userId = '') => (
+  (Array.isArray(tournament?.registrations) ? tournament.registrations : []).find((registration) => (
+    getRegistrationCaptainId(registration) === String(userId || '')
+  )) || null
+);
+const getRosterRegistrationForTeams = (tournament = {}, teamIds = []) => {
+  const normalizedIds = new Set((Array.isArray(teamIds) ? teamIds : []).map((teamId) => String(teamId || '')));
+  if (!normalizedIds.size) return null;
+  return (Array.isArray(tournament?.registrations) ? tournament.registrations : []).find((registration) => (
+    normalizedIds.has(String(registration?.teamId || ''))
+  )) || null;
+};
+const normalizeRegistrationCheckInStatus = (status = '') => {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (['checked_in', 'missed'].includes(normalized)) return normalized;
+  return 'pending';
+};
+const getCheckInBadgeTone = (status = '', checkInState = 'disabled') => {
+  const normalized = normalizeRegistrationCheckInStatus(status);
+  if (normalized === 'checked_in') return 'ready';
+  if (normalized === 'missed' || checkInState === 'closed') return 'missing';
+  return 'warn';
+};
+const getCheckInBadgeLabel = (status = '', checkInState = 'disabled') => {
+  const normalized = normalizeRegistrationCheckInStatus(status);
+  if (normalized === 'checked_in') return 'Check-in confirmado';
+  if (normalized === 'missed') return 'Check-in ausente';
+  if (checkInState === 'upcoming') return 'Check-in pendiente';
+  if (checkInState === 'open') return 'Check-in abierto';
+  if (checkInState === 'closed') return 'Check-in no confirmado';
+  return 'Sin check-in';
+};
 
 const toAssetUrl = (path) => {
   return resolveMediaUrl(path);
@@ -253,9 +299,15 @@ const formatTournamentFromApi = (t) => ({
   staff: t.staff,
   sponsors: t.sponsors,
   registrations: t.registrations || [],
+  bracket: t.bracket || null,
   status: t.status,
   registrationClosed: t.registrationClosed,
   riotRequirements: t.riotRequirements,
+  eligibility: t.eligibility || {},
+  contact: t.contact || {},
+  broadcast: t.broadcast || {},
+  registrationWindow: t.registrationWindow || {},
+  checkInWindow: t.checkInWindow || {},
   bannerImage: toAssetUrl(t.bannerImage),
   rulesPdf: toAssetUrl(t.rulesPdf),
   __local: t.__local === true
@@ -298,6 +350,31 @@ const CONFIRMATION_STATUS_LABELS = {
   disputed: 'En disputa',
   resolved: 'Resuelto por staff'
 };
+
+const TOURNAMENT_REPORT_TYPES = [
+  { value: 'cheating', label: 'Trampa / Hack' },
+  { value: 'unsportsmanlike', label: 'Conducta antideportiva' },
+  { value: 'impersonation', label: 'Suplantación' },
+  { value: 'match_fixing', label: 'Amanamiento' },
+  { value: 'exploit', label: 'Exploit / Bug' },
+  { value: 'other', label: 'Otro' }
+];
+
+const TOURNAMENT_REPORT_SEVERITIES = [
+  { value: 'low', label: 'Baja' },
+  { value: 'medium', label: 'Media' },
+  { value: 'high', label: 'Alta' },
+  { value: 'critical', label: 'Crítica' }
+];
+
+const createEmptyTournamentReportForm = () => ({
+  type: 'cheating',
+  reportedTeam: '',
+  reportedPlayer: '',
+  severity: 'medium',
+  evidence: '',
+  description: ''
+});
 
 const getBracketStatusLabel = (status) => BRACKET_STATUS_LABELS[String(status || '').toLowerCase()] || 'Pendiente';
 const getConfirmationStatusLabel = (status) => CONFIRMATION_STATUS_LABELS[String(status || '').toLowerCase()] || 'Esperando confirmación';
@@ -412,9 +489,13 @@ const Tournaments = () => {
   const [showBracketPreview, setShowBracketPreview] = useState(false);
   const [showBracketManagement, setShowBracketManagement] = useState(false);
   const [bracketLoading, setBracketLoading] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [statusActionLoading, setStatusActionLoading] = useState('');
   const [matchActionLoadingId, setMatchActionLoadingId] = useState('');
   const [previewBracket, setPreviewBracket] = useState(null);
+  const [reportModalContext, setReportModalContext] = useState(null);
+  const [reportForm, setReportForm] = useState(createEmptyTournamentReportForm());
   const [customSeedingOpen, setCustomSeedingOpen] = useState(false);
   const [customSeedOrder, setCustomSeedOrder] = useState([]);
   const [dragSeedRefId, setDragSeedRefId] = useState('');
@@ -505,13 +586,11 @@ const Tournaments = () => {
 
   const hasRegisteredTeam = (tournament) => {
     if (!tournament) return false;
-    const regs = Array.isArray(tournament.registrations) ? tournament.registrations : [];
-    const uid = user?._id || user?.id;
-    return regs.some((r) => {
-      if (uid && String(r.captain) === String(uid)) return true;
-      if (r.teamId && effectiveTeamIds.includes(String(r.teamId))) return true;
-      return false;
-    });
+    const uid = user?._id || user?.id || '';
+    return Boolean(
+      getCaptainRegistrationForUser(tournament, uid)
+      || getRosterRegistrationForTeams(tournament, effectiveTeamIds)
+    );
   };
 
   // Helper para obtener imagen segura y datos del juego
@@ -915,6 +994,103 @@ useEffect(() => {
     }
   };
 
+  const handleTournamentCheckIn = async (torneo) => {
+    if (!torneo?.tournamentId) return;
+    const captainRegistration = getCaptainRegistrationForUser(torneo, currentUserId);
+    if (!captainRegistration) {
+      notify('warning', 'Check-in no disponible', 'Solo el capitán del equipo inscrito puede confirmar el check-in.');
+      return;
+    }
+
+    try {
+      setCheckInLoading(true);
+      const token = getAuthToken();
+      if (!token) {
+        notify('danger', 'Sesión expirada', 'Inicia sesión nuevamente para confirmar el check-in.');
+        return;
+      }
+
+      await axios.post(
+        `${API_URL}/api/tournaments/${torneo.tournamentId}/check-in`,
+        { teamId: captainRegistration.teamId || '' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const fresh = await fetchTournamentDetails(torneo.tournamentId);
+      setSelectedTournament((prev) => (prev ? { ...prev, ...fresh } : prev));
+      setTournaments((prev) => prev.map((item) => (
+        item.tournamentId === torneo.tournamentId
+          ? { ...item, ...fresh }
+          : item
+      )));
+      notify('success', 'Check-in confirmado', 'Tu equipo quedó confirmado para el torneo.');
+    } catch (err) {
+      notify('danger', 'Error', err.response?.data?.message || 'No se pudo confirmar el check-in.');
+    } finally {
+      setCheckInLoading(false);
+    }
+  };
+
+  const openMatchReportModal = (match) => {
+    if (!match?.matchId) return;
+    const teamAName = String(match?.teamA?.teamName || '').trim();
+    const teamBName = String(match?.teamB?.teamName || '').trim();
+    const userSide = getUserSideForMatch(match, selectedTournament?.registrations || [], currentUserId);
+    const defaultReportedTeam = userSide === 'A' ? teamBName : userSide === 'B' ? teamAName : '';
+
+    setReportModalContext({
+      matchId: match.matchId,
+      teams: [teamAName, teamBName].filter(Boolean),
+      teamAName,
+      teamBName
+    });
+    setReportForm({
+      ...createEmptyTournamentReportForm(),
+      reportedTeam: defaultReportedTeam
+    });
+  };
+
+  const closeMatchReportModal = () => {
+    setReportModalContext(null);
+    setReportForm(createEmptyTournamentReportForm());
+    setReportSubmitting(false);
+  };
+
+  const submitMatchIncidentReport = async () => {
+    if (!selectedTournament?.tournamentId || !reportModalContext?.matchId) return;
+    if (!reportForm.reportedTeam && !reportForm.reportedPlayer) {
+      notify('warning', 'Falta información', 'Indica al menos el equipo o jugador reportado.');
+      return;
+    }
+    if (!String(reportForm.description || '').trim()) {
+      notify('warning', 'Falta descripción', 'Describe la incidencia antes de enviarla.');
+      return;
+    }
+
+    try {
+      setReportSubmitting(true);
+      const token = getAuthToken();
+      await axios.post(
+        `${API_URL}/api/tournaments/${selectedTournament.tournamentId}/reports`,
+        {
+          type: reportForm.type,
+          reportedTeam: reportForm.reportedTeam,
+          reportedPlayer: reportForm.reportedPlayer,
+          matchId: reportModalContext.matchId,
+          severity: reportForm.severity,
+          evidence: reportForm.evidence,
+          description: reportForm.description
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      notify('success', 'Incidencia enviada', 'El reporte quedó registrado para revisión del staff.');
+      closeMatchReportModal();
+    } catch (err) {
+      notify('danger', 'Error', err.response?.data?.message || 'No se pudo registrar la incidencia.');
+      setReportSubmitting(false);
+    }
+  };
+
   const toggleCustomSeeding = () => {
     setCustomSeedOrder((prev) => buildCustomSeedOrder({
       seedEntries,
@@ -1169,6 +1345,19 @@ useEffect(() => {
   const selectedTournamentStatus = getTournamentStatusKey(selectedTournament?.status);
   const isSelectedTournamentOpen = selectedTournamentStatus === 'open';
   const isSelectedTournamentOngoing = selectedTournamentStatus === 'ongoing';
+  const selectedTournamentCheckInEnabled = hasCheckInWindowConfigured(selectedTournament);
+  const selectedTournamentCheckInState = getCheckInWindowState(selectedTournament);
+  const selectedCaptainRegistration = getCaptainRegistrationForUser(selectedTournament, currentUserId);
+  const selectedRosterRegistration = getRosterRegistrationForTeams(selectedTournament, effectiveTeamIds);
+  const selectedUserRegistration = selectedCaptainRegistration || selectedRosterRegistration;
+  const selectedUserCheckInStatus = normalizeRegistrationCheckInStatus(selectedUserRegistration?.checkIn?.status);
+  const canSelectedUserCheckIn = Boolean(
+    selectedCaptainRegistration
+    && isApprovedRegistration(selectedCaptainRegistration)
+    && isSelectedTournamentOpen
+    && selectedTournamentCheckInState === 'open'
+    && selectedUserCheckInStatus !== 'checked_in'
+  );
   const canStartSelectedTournament = hasGeneratedBracket && isSelectedTournamentOpen;
   const canRegisterSelectedTournament = isRegistrationOpenForTournament(selectedTournament);
   const selectedRegistrationHint = isSelectedTournamentOpen
@@ -1546,6 +1735,11 @@ useEffect(() => {
       isSelectedTournamentManager &&
       !isLoadingMatch
     );
+    const canCreateIncidentReport = (
+      selectedTournamentStatus === 'ongoing' &&
+      !isLoadingMatch &&
+      (Boolean(userSide) || isSelectedTournamentManager)
+    );
 
     return (
       <div
@@ -1606,6 +1800,16 @@ useEffect(() => {
                 </button>
               </>
             )}
+          </div>
+        )}
+        {canCreateIncidentReport && (
+          <div className="bracket-match-actions">
+            <button
+              className="match-action-btn"
+              onClick={() => openMatchReportModal(match)}
+            >
+              Reportar incidencia
+            </button>
           </div>
         )}
       </div>
@@ -1844,6 +2048,27 @@ useEffect(() => {
                             )}
                         </div>
 
+                        {selectedTournamentCheckInEnabled && (
+                            <div className="info-section" style={{ marginTop: 18 }}>
+                                <h4><i className='bx bx-check-shield'></i> Check-in</h4>
+                                <div className="riot-requirements">
+                                    <div><strong>Estado:</strong> {getCheckInBadgeLabel(selectedUserRegistration?.checkIn?.status, selectedTournamentCheckInState)}</div>
+                                    {selectedTournament.checkInWindow?.start && (
+                                        <div><strong>Abre:</strong> {new Date(selectedTournament.checkInWindow.start).toLocaleString()}</div>
+                                    )}
+                                    {selectedTournament.checkInWindow?.end && (
+                                        <div><strong>Cierra:</strong> {new Date(selectedTournament.checkInWindow.end).toLocaleString()}</div>
+                                    )}
+                                    {selectedCaptainRegistration && selectedTournamentCheckInState === 'open' && selectedUserCheckInStatus !== 'checked_in' && (
+                                        <div className="riot-note">Como capitán, debes confirmar el check-in antes de generar el bracket o iniciar el torneo.</div>
+                                    )}
+                                    {!selectedCaptainRegistration && selectedRosterRegistration && (
+                                        <div className="riot-note">Solo el capitán del equipo puede confirmar el check-in.</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {Array.isArray(selectedTournament.registrations) && selectedTournament.registrations.length > 0 && (
                             <div className="info-section" style={{ marginTop: 18 }}>
                                 <h4><i className='bx bx-group'></i> Equipos inscritos</h4>
@@ -1873,6 +2098,11 @@ useEffect(() => {
                                                         <strong>{r.teamName || 'Equipo'}</strong>
                                                     </div>
                                                 </div>
+                                                {selectedTournamentCheckInEnabled && (
+                                                    <div className={`registration-sync-pill compact ${getCheckInBadgeTone(r?.checkIn?.status, selectedTournamentCheckInState)}`}>
+                                                        {getCheckInBadgeLabel(r?.checkIn?.status, selectedTournamentCheckInState)}
+                                                    </div>
+                                                )}
                                                 <i className='bx bx-chevron-right'></i>
                                             </button>
                                             {canManageTournament(selectedTournament) && (
@@ -2287,6 +2517,33 @@ useEffect(() => {
                             )}
                             {!hasRegisteredTeam(selectedTournament) && !canRegisterSelectedTournament && (
                                 <span className="join-hint">{selectedRegistrationHint}</span>
+                            )}
+                            {hasRegisteredTeam(selectedTournament) && selectedTournamentCheckInEnabled && (
+                                canSelectedUserCheckIn ? (
+                                    <button
+                                        className="btn-primary-action"
+                                        onClick={() => handleTournamentCheckIn(selectedTournament)}
+                                        style={{
+                                            background: GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15',
+                                            boxShadow: `0 0 15px ${GAME_CONFIG[selectedTournament.game]?.color || '#8EDB15'}40`
+                                        }}
+                                        disabled={checkInLoading}
+                                    >
+                                        {checkInLoading ? 'Confirmando...' : 'Confirmar check-in'} <i className='bx bx-check-circle'></i>
+                                    </button>
+                                ) : (
+                                    <span className="join-hint">
+                                        {selectedUserCheckInStatus === 'checked_in'
+                                            ? 'Tu equipo ya confirmó el check-in.'
+                                            : selectedTournamentCheckInState === 'upcoming'
+                                                ? 'El check-in aún no ha comenzado.'
+                                                : selectedTournamentCheckInState === 'closed'
+                                                    ? 'La ventana de check-in ya cerró.'
+                                                    : selectedRosterRegistration && !selectedCaptainRegistration
+                                                        ? 'Solo el capitán del equipo puede confirmar el check-in.'
+                                                        : 'Tu equipo aún no puede confirmar el check-in.'}
+                                    </span>
+                                )
                             )}
                             {canManageTournament(selectedTournament) && (
                                 <button className="btn-danger-action" onClick={() => deleteTournament(selectedTournament)}>
@@ -2955,6 +3212,102 @@ useEffect(() => {
             </div>
             
             {isRightPanelOpen && <div className="sidebar-overlay-mobile"></div>}
+
+            {reportModalContext && (
+                <div className="modal-overlay-backdrop" onClick={closeMatchReportModal} style={{ zIndex: 10002 }}>
+                    <div className="tournament-details-modal" onClick={(event) => event.stopPropagation()}>
+                        <div className="modal-content-body">
+                            <div className="info-section">
+                                <h4><i className='bx bx-flag'></i> Reportar incidencia</h4>
+                                <p>
+                                    Match: <strong>{reportModalContext.matchId}</strong>
+                                    {' · '}
+                                    {reportModalContext.teamAName || 'Equipo A'} vs {reportModalContext.teamBName || 'Equipo B'}
+                                </p>
+                            </div>
+
+                            <div className="info-section">
+                                <div className="stats-grid" style={{ marginTop: 0 }}>
+                                    <label className="stat-box" style={{ alignItems: 'stretch' }}>
+                                        <span className="label">Tipo</span>
+                                        <select
+                                            value={reportForm.type}
+                                            onChange={(event) => setReportForm((prev) => ({ ...prev, type: event.target.value }))}
+                                        >
+                                            {TOURNAMENT_REPORT_TYPES.map((option) => (
+                                                <option key={option.value} value={option.value}>{option.label}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    <label className="stat-box" style={{ alignItems: 'stretch' }}>
+                                        <span className="label">Severidad</span>
+                                        <select
+                                            value={reportForm.severity}
+                                            onChange={(event) => setReportForm((prev) => ({ ...prev, severity: event.target.value }))}
+                                        >
+                                            {TOURNAMENT_REPORT_SEVERITIES.map((option) => (
+                                                <option key={option.value} value={option.value}>{option.label}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                </div>
+
+                                <label style={{ display: 'block', marginTop: 12 }}>
+                                    <span style={{ display: 'block', marginBottom: 6 }}>Equipo reportado</span>
+                                    <select
+                                        value={reportForm.reportedTeam}
+                                        onChange={(event) => setReportForm((prev) => ({ ...prev, reportedTeam: event.target.value }))}
+                                        style={{ width: '100%' }}
+                                    >
+                                        <option value="">Seleccionar equipo</option>
+                                        {reportModalContext.teams.map((teamName) => (
+                                            <option key={teamName} value={teamName}>{teamName}</option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                <label style={{ display: 'block', marginTop: 12 }}>
+                                    <span style={{ display: 'block', marginBottom: 6 }}>Jugador reportado</span>
+                                    <input
+                                        value={reportForm.reportedPlayer}
+                                        onChange={(event) => setReportForm((prev) => ({ ...prev, reportedPlayer: event.target.value }))}
+                                        placeholder="Nickname del jugador"
+                                        style={{ width: '100%' }}
+                                    />
+                                </label>
+
+                                <label style={{ display: 'block', marginTop: 12 }}>
+                                    <span style={{ display: 'block', marginBottom: 6 }}>Evidencia</span>
+                                    <input
+                                        value={reportForm.evidence}
+                                        onChange={(event) => setReportForm((prev) => ({ ...prev, evidence: event.target.value }))}
+                                        placeholder="URL o referencias de evidencia"
+                                        style={{ width: '100%' }}
+                                    />
+                                </label>
+
+                                <label style={{ display: 'block', marginTop: 12 }}>
+                                    <span style={{ display: 'block', marginBottom: 6 }}>Descripción</span>
+                                    <textarea
+                                        value={reportForm.description}
+                                        onChange={(event) => setReportForm((prev) => ({ ...prev, description: event.target.value }))}
+                                        placeholder="Describe exactamente lo ocurrido en este match..."
+                                        rows={4}
+                                        style={{ width: '100%', resize: 'vertical' }}
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="modal-actions-footer">
+                                <button className="btn-secondary" onClick={closeMatchReportModal}>Cancelar</button>
+                                <button className="btn-primary-action" onClick={submitMatchIncidentReport} disabled={reportSubmitting}>
+                                    {reportSubmitting ? 'Enviando...' : 'Enviar reporte'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {confirmModal && (
                 <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>

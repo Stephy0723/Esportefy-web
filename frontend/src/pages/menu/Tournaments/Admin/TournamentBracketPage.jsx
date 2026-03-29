@@ -1,6 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getTournamentFormatLabel, TOURNAMENT_FORMAT_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
+import {
+  getTournamentFormatLabel,
+  isOperationalTournamentFormat,
+  TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS,
+} from '../../../../../../shared/tournamentCatalog.js';
 import {
   TournamentAdminShell,
   createEmptyBracket,
@@ -174,6 +178,12 @@ const TournamentBracketPage = () => {
   const [selectedFormat, setSelectedFormat] = useState('single_elimination');
   const [swissRounds, setSwissRounds] = useState(0);
   const [seedMode, setSeedMode] = useState('order');
+
+  useEffect(() => {
+    if (bracket?.format && isOperationalTournamentFormat(bracket.format)) {
+      setSelectedFormat(bracket.format);
+    }
+  }, [bracket?.format]);
 
   const rounds = bracket?.rounds || [];
   const selectedRound = rounds[selectedMatch.roundIndex] || rounds[0];
@@ -439,7 +449,7 @@ const TournamentBracketPage = () => {
             <label className="ta-form-grid__full">
               <span>Formato del torneo</span>
               <select value={selectedFormat} onChange={(e) => setSelectedFormat(e.target.value)}>
-                {FORMAT_OPTIONS.map((f) => (
+                {TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS.map((f) => (
                   <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
               </select>

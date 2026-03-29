@@ -80,9 +80,10 @@ const TournamentReportsPage = () => {
 
   const allMatchIds = useMemo(() => {
     const ids = [];
-    (bracket?.rounds || []).forEach((round, ri) => {
-      (round.matches || []).forEach((_, mi) => {
-        ids.push(`R${ri + 1}-M${mi + 1}`);
+    (bracket?.rounds || []).forEach((round) => {
+      (round.matches || []).forEach((match) => {
+        const matchId = String(match?.matchId || '').trim();
+        if (matchId) ids.push(matchId);
       });
     });
     return ids;
@@ -162,13 +163,16 @@ const TournamentReportsPage = () => {
         updates,
         authConfig
       );
-      setReports((prev) => prev.map((r) => r.reportId === reportId ? { ...r, ...res.data } : r));
+      const nextReport = res.data?.report || null;
+      if (nextReport) {
+        setReports((prev) => prev.map((r) => r.reportId === reportId ? { ...r, ...nextReport } : r));
+      }
+      if (res.data?.bracket) {
+        setBracket(res.data.bracket);
+      }
       setSelectedReport(null);
       setSanctionNote('');
-      // Refresh bracket if DQ was applied
-      if (updates.sanction === 'disqualification') {
-        window.location.reload();
-      }
+      addToast(res.data?.message || 'Reporte actualizado.', 'success');
     } catch (err) {
       addToast(err.response?.data?.message || 'No se pudo actualizar el reporte.', 'error');
     }

@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { useNotification } from '../../../../context/NotificationContext';
+import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../../utils/media';
 import {
   TournamentAdminShell,
   useTournamentAdminData,
@@ -48,7 +49,10 @@ const TournamentMatchCenter = () => {
   const { addToast } = useNotification();
   const { loading, tournament, bracket, setBracket } = useTournamentAdminData(code);
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
+  const authHeaders = useMemo(
+    () => (token ? { Authorization: `Bearer ${token}` } : undefined),
+    [token]
+  );
 
   const [filter, setFilter] = useState('all');
   const [activeKey, setActiveKey] = useState(null);
@@ -64,6 +68,7 @@ const TournamentMatchCenter = () => {
   const [proofPreview, setProofPreview] = useState('');
   const [proofUploading, setProofUploading] = useState(false);
   const [proofUrl, setProofUrl] = useState('');
+  const [liveTeamLogoMap, setLiveTeamLogoMap] = useState(() => new Map());
   const fileInputRef = useRef(null);
 
   /* ── flatten bracket into rounds with enriched matches ── */
@@ -95,6 +100,74 @@ const TournamentMatchCenter = () => {
 
   const allMatches = useMemo(() => roundsData.flatMap((r) => r.matches), [roundsData]);
 
+  const registrationLogoMap = useMemo(() => {
+    const map = new Map();
+    const registrations = Array.isArray(tournament?.registrations) ? tournament.registrations : [];
+
+    const addLogo = (key, logoUrl) => {
+      const normalizedKey = String(key || '').trim().toLowerCase();
+      const normalizedLogo = String(logoUrl || '').trim();
+      if (!normalizedKey || !normalizedLogo || map.has(normalizedKey)) return;
+      map.set(normalizedKey, normalizedLogo);
+    };
+
+    registrations.forEach((registration) => {
+      addLogo(registration?._id, registration?.logoUrl);
+      addLogo(registration?.teamId, registration?.logoUrl);
+      addLogo(registration?.teamName, registration?.logoUrl);
+    });
+
+    return map;
+  }, [tournament?.registrations]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLiveTeamLogos = async () => {
+      const registrations = Array.isArray(tournament?.registrations) ? tournament.registrations : [];
+      const teamIds = registrations.map((registration) => String(registration?.teamId || '').trim()).filter(Boolean);
+
+      if (!teamIds.length) {
+        setLiveTeamLogoMap(new Map());
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_URL}/api/teams`, { headers: authHeaders });
+        if (cancelled) return;
+
+        const nextMap = new Map();
+        (Array.isArray(response.data) ? response.data : []).forEach((team) => {
+          const normalizedLogo = String(team?.logo || '').trim();
+          if (!normalizedLogo) return;
+
+          const keys = [
+            team?._id,
+            team?.teamCode,
+            team?.name,
+          ].map((value) => String(value || '').trim().toLowerCase()).filter(Boolean);
+
+          keys.forEach((key) => {
+            if (!nextMap.has(key)) {
+              nextMap.set(key, normalizedLogo);
+            }
+          });
+        });
+
+        setLiveTeamLogoMap(nextMap);
+      } catch (_) {
+        if (!cancelled) {
+          setLiveTeamLogoMap(new Map());
+        }
+      }
+    };
+
+    loadLiveTeamLogos();
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeaders, tournament?.registrations]);
+
   const filteredRounds = useMemo(() => {
     if (filter === 'all') return roundsData;
 
@@ -123,6 +196,36 @@ const TournamentMatchCenter = () => {
     () => (activeKey ? allMatches.find((m) => m.key === activeKey) : null),
     [activeKey, allMatches]
   );
+
+  const resolveTeamLogo = (team, fallbackName = '') => {
+    if (!team || typeof team === 'string') return '';
+
+    const directLogo = resolveMediaUrl(team.logoUrl);
+    if (directLogo) return directLogo;
+
+    const candidateKeys = [
+      team.refId,
+      team.teamId,
+      team.teamName,
+      fallbackName,
+    ]
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    for (const key of candidateKeys) {
+      const registrationLogo = registrationLogoMap.get(key);
+      if (registrationLogo) {
+        return resolveMediaUrl(registrationLogo);
+      }
+
+      const liveTeamLogo = liveTeamLogoMap.get(key);
+      if (liveTeamLogo) {
+        return resolveMediaUrl(liveTeamLogo);
+      }
+    }
+
+    return '';
+  };
 
   /* ── actions ── */
 
@@ -387,6 +490,8 @@ const TournamentMatchCenter = () => {
                         const hasProof = Boolean(match.proofUrl);
                         const winA = match.winnerRefId && match.winnerRefId === teamRef(match.teamA);
                         const winB = match.winnerRefId && match.winnerRefId === teamRef(match.teamB);
+                        const logoA = resolveTeamLogo(match.teamA, match.nameA);
+                        const logoB = resolveTeamLogo(match.teamB, match.nameB);
 
                         return (
                           <article
@@ -405,13 +510,33 @@ const TournamentMatchCenter = () => {
 
                             <div className="mc-card__teams">
                               <div className={`mc-team ${winA ? 'mc-team--winner' : ''}`}>
-                                <div className="mc-team__avatar">{(match.nameA || '?').charAt(0)}</div>
+                                <div className="mc-team__avatar">
+                                  {logoA ? (
+                                    <img
+                                      src={logoA}
+                                      alt={match.nameA || 'Equipo A'}
+                                      onError={(event) => applyImageFallback(event, getTeamFallback(match.nameA || 'Team A'))}
+                                    />
+                                  ) : (
+                                    (match.nameA || '?').charAt(0)
+                                  )}
+                                </div>
                                 <span className="mc-team__name">{match.nameA || 'Por definir'}</span>
                                 <span className="mc-team__score">{match.scoreA ?? '-'}</span>
                               </div>
                               <div className="mc-card__vs"><span>VS</span></div>
                               <div className={`mc-team ${winB ? 'mc-team--winner' : ''}`}>
-                                <div className="mc-team__avatar">{(match.nameB || '?').charAt(0)}</div>
+                                <div className="mc-team__avatar">
+                                  {logoB ? (
+                                    <img
+                                      src={logoB}
+                                      alt={match.nameB || 'Equipo B'}
+                                      onError={(event) => applyImageFallback(event, getTeamFallback(match.nameB || 'Team B'))}
+                                    />
+                                  ) : (
+                                    (match.nameB || '?').charAt(0)
+                                  )}
+                                </div>
                                 <span className="mc-team__name">{match.nameB || 'Por definir'}</span>
                                 <span className="mc-team__score">{match.scoreB ?? '-'}</span>
                               </div>

@@ -855,6 +855,7 @@ const EditProfile = () => {
             });
             // Sync localStorage for other components
             cacheAuthUser(res.data);
+            window.dispatchEvent(new Event('user-update'));
             setSaveMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
             setHasChanges(false);
             setFile(null);

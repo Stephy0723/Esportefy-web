@@ -124,7 +124,7 @@ const TeamRegistration = () => {
     const loadTeams = async () => {
       try {
         setLoadingTeams(true);
-        const user = authUser || (storedUser ? JSON.parse(storedUser) : null);
+        const user = authUser || getStoredUser();
         const response = await axios.get(`${API_URL}/api/teams`);
         const allTeams = response.data || [];
         const visibleTeams = user?.isAdmin
@@ -147,7 +147,7 @@ const TeamRegistration = () => {
       }
     };
     loadTeams();
-  }, [authUser, storedUser, requiresUniversityTeam]);
+  }, [authUser, requiresUniversityTeam]);
 
   useEffect(() => {
     if (!selectedTeamId) return;
