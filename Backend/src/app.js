@@ -22,6 +22,7 @@ import newsRoutes from './routes/news.routes.js';
 import securityRoutes from './routes/security.routes.js';
 import friendsRoutes from './routes/friends.routes.js';
 import gameStatsRoutes from './routes/gameStats.routes.js';
+import trackerNetworkRoutes from './routers/trackerNetwork.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -136,6 +137,7 @@ app.use('/api/security', securityRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/game-stats', gameStatsRoutes);
+app.use('/api/stats', trackerNetworkRoutes);
 
 app.use((err, req, res, next) => {
   if (err?.message === 'Not allowed by CORS') {
