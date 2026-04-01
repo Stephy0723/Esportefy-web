@@ -144,8 +144,8 @@ const supportedGamesDetailedData = {
       { title: 'Fortnite University Open', prize: 'Circuito interno', date: 'Abril 2026' },
     ],
   },
-  rocket: {
-    id: 'rocket',
+  rl: {
+    id: 'rl',
     name: 'Rocket League',
     banner: RocketCover,
     developer: 'Psyonix / Epic Games',
@@ -229,7 +229,7 @@ const supportedGamesDetailedData = {
     developer: 'Blue Mammoth Games / Ubisoft',
     history:
       'Brawlhalla encaja en GLITCH GANG como platform fighter de entrada rapida: identidad manual, brackets limpios y validacion interna de resultados para cups recurrentes.',
-    tags: ['Fighting', 'Platform Fighter', 'Crossplay', '1v1'],
+    tags: ['Fighting', 'Platform Fighter', 'Crossplay', '1v1', '2v2', '3v3'],
     category: 'Fighting',
     color: '#00BCD4',
     organizers: [
@@ -385,11 +385,11 @@ supportedGamesDetailedData['LoL'] = supportedGamesDetailedData.lol;
 supportedGamesDetailedData['Valorant'] = supportedGamesDetailedData.valorant;
 supportedGamesDetailedData['Mobile Legends'] = supportedGamesDetailedData.mlbb;
 supportedGamesDetailedData['Mobile Legends: Bang Bang'] = supportedGamesDetailedData.mlbb;
-supportedGamesDetailedData.MLBB = supportedGamesDetailedData.mlbb;
+supportedGamesDetailedData['MLBB'] = supportedGamesDetailedData.mlbb;
 supportedGamesDetailedData['Warzone'] = supportedGamesDetailedData.warzone;
 supportedGamesDetailedData['Call of Duty Warzone'] = supportedGamesDetailedData.warzone;
 supportedGamesDetailedData['Fortnite'] = supportedGamesDetailedData.fortnite;
-supportedGamesDetailedData['Rocket League'] = supportedGamesDetailedData.rocket;
+supportedGamesDetailedData['Rocket League'] = supportedGamesDetailedData.rl;
 supportedGamesDetailedData['EA FC / FIFA'] = supportedGamesDetailedData.fifa;
 supportedGamesDetailedData['FIFA'] = supportedGamesDetailedData.fifa;
 supportedGamesDetailedData['Smash Bros'] = supportedGamesDetailedData.smash;
@@ -398,12 +398,12 @@ supportedGamesDetailedData['Super Smash Bros. Ultimate'] = supportedGamesDetaile
 supportedGamesDetailedData['Brawlhalla'] = supportedGamesDetailedData.brawlhalla;
 supportedGamesDetailedData['Street Fighter 6'] = supportedGamesDetailedData.sf6;
 supportedGamesDetailedData['Street Fighter'] = supportedGamesDetailedData.sf6;
-supportedGamesDetailedData.SF6 = supportedGamesDetailedData.sf6;
+supportedGamesDetailedData['SF6'] = supportedGamesDetailedData.sf6;
 supportedGamesDetailedData['Tekken 8'] = supportedGamesDetailedData.tekken;
-supportedGamesDetailedData.Tekken = supportedGamesDetailedData.tekken;
+supportedGamesDetailedData['Tekken'] = supportedGamesDetailedData.tekken;
 supportedGamesDetailedData['Free Fire'] = supportedGamesDetailedData.freefire;
 supportedGamesDetailedData['PUBG Mobile'] = supportedGamesDetailedData.pubg;
-supportedGamesDetailedData.PUBG = supportedGamesDetailedData.pubg;
+supportedGamesDetailedData['PUBG'] = supportedGamesDetailedData.pubg;
 supportedGamesDetailedData['COD Mobile'] = supportedGamesDetailedData.codm;
 supportedGamesDetailedData['CoD Mobile'] = supportedGamesDetailedData.codm;
 supportedGamesDetailedData['Call of Duty Mobile'] = supportedGamesDetailedData.codm;

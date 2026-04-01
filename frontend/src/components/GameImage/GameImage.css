@@ -1,0 +1,99 @@
+.game-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: opacity 0.3s ease;
+  border-radius: 8px;
+}
+
+.game-image--sm {
+  min-height: 60px;
+  max-height: 80px;
+}
+
+.game-image--md {
+  min-height: 100px;
+  max-height: 140px;
+}
+
+.game-image--lg {
+  min-height: 200px;
+  max-height: none;
+}
+
+.game-image--loading {
+  opacity: 0.5;
+  animation: shimmer 1.5s infinite;
+}
+
+.game-image--loaded {
+  opacity: 1;
+}
+
+.game-image-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(124, 255, 107, 0.08), rgba(124, 255, 107, 0.02));
+  border: 1px dashed rgba(124, 255, 107, 0.3);
+  border-radius: 12px;
+  color: rgba(245, 247, 251, 0.6);
+  font-size: 1rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.game-image-fallback i {
+  font-size: 2rem;
+  color: rgba(124, 255, 107, 0.4);
+}
+
+.game-image-fallback--sm {
+  min-height: 60px;
+  max-height: 80px;
+}
+
+.game-image-fallback--md {
+  min-height: 100px;
+  max-height: 140px;
+}
+
+.game-image-fallback--lg {
+  min-height: 200px;
+  height: 250px;
+}
+
+.game-image-fallback__name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    background: rgba(124, 255, 107, 0.1);
+  }
+  50% {
+    background: rgba(124, 255, 107, 0.05);
+  }
+}
+
+@media (max-width: 768px) {
+  .game-image-fallback {
+    padding: 0.75rem;
+  }
+
+  .game-image-fallback i {
+    font-size: 1.5rem;
+  }
+}

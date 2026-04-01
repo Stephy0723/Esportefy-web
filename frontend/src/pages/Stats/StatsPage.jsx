@@ -3,6 +3,7 @@ import axios from 'axios';
 import './StatsPage.css';
 import StatsDisplay from './StatsDisplay';
 import './StatsDisplay.css';
+import TrackerNetworkStats from '../../components/Stats/TrackerNetworkStats';
 import { API_URL } from '../../config/api';
 import { getAuthToken } from '../../utils/authSession';
 import { useAuth } from '../../context/AuthContext';
@@ -75,6 +76,11 @@ function StatsPage() {
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Tracker Network States
+  const [trackerGame, setTrackerGame] = useState('lol');
+  const [trackerIdentifier, setTrackerIdentifier] = useState('');
+  const [showTrackerStats, setShowTrackerStats] = useState(false);
 
   const fetchUsers = useCallback(async (search = '') => {
     setSearchLoading(true);
@@ -243,7 +249,62 @@ function StatsPage() {
         </div>
       ) : null}
 
-      {stats ? <StatsDisplay stats={stats} /> : null}
+      {stats ? (
+        <>
+          <StatsDisplay stats={stats} />
+          
+          <section className="stats-tracker-network-section">
+            <div className="stats-tracker-network-header">
+              <h2>Estadísticas en Vivo - Tracker Network</h2>
+              <p>Datos en tiempo real del jugador en plataformas externas</p>
+            </div>
+
+            <div className="stats-tracker-network-controls">
+              <div className="form-group">
+                <label htmlFor="tracker-game-select">Juego</label>
+                <select
+                  id="tracker-game-select"
+                  value={trackerGame}
+                  onChange={(e) => setTrackerGame(e.target.value)}
+                >
+                  <option value="lol">League of Legends</option>
+                  <option value="valorant">Valorant</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="tracker-identifier-input">
+                  {trackerGame === 'lol' ? 'Summoner Name' : 'Game Name'}
+                </label>
+                <input
+                  id="tracker-identifier-input"
+                  type="text"
+                  value={trackerIdentifier}
+                  onChange={(e) => setTrackerIdentifier(e.target.value)}
+                  placeholder={trackerGame === 'lol' ? 'Ej: Faker' : 'Ej: PlayerName#NA1'}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowTrackerStats(!showTrackerStats)}
+                disabled={!trackerIdentifier}
+              >
+                {showTrackerStats ? 'Ocultar' : 'Cargar'} Estadísticas
+              </button>
+            </div>
+
+            {showTrackerStats && trackerIdentifier ? (
+              <div className="stats-tracker-network-display">
+                <TrackerNetworkStats
+                  game={trackerGame}
+                  identifier={trackerIdentifier}
+                />
+              </div>
+            ) : null}
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }

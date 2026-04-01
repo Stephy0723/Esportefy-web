@@ -26,14 +26,14 @@ export const COMMUNITY_GAME_DEFINITIONS = Object.freeze([
   { id: 'rl', name: 'Rocket League', category: 'Sports', color: '#0088ff', url: 'https://www.rocketleague.com', aliases: ['rocket'] },
   { id: 'fifa', name: 'EA FC / FIFA', category: 'Sports', color: '#22c55e', url: 'https://www.ea.com/games/ea-sports-fc/fc-25', aliases: ['ea fc', 'ea sports fc', 'fifa', 'fc 25'], imageUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/2669320/header.jpg' },
   { id: 'apex', name: 'Apex Legends', category: 'BR', color: '#cd3333', url: 'https://www.ea.com/games/apex-legends' },
-  { id: 'pubgm', name: 'PUBG Mobile', category: 'BR', color: '#f2a93b', url: 'https://www.pubgmobile.com', aliases: ['pubg'] },
+  { id: 'pubg', name: 'PUBG Mobile', category: 'BR', color: '#f2a93b', url: 'https://www.pubgmobile.com', aliases: ['pubg mobile', 'pubg', 'pubgm'] },
   { id: 'r6', name: 'Rainbow Six Siege', category: 'FPS', color: '#ff8c00', url: 'https://www.ubisoft.com/en-us/game/rainbow-six/siege', aliases: ['rainbow six', 'r6s'] },
   { id: 'sf6', name: 'Street Fighter 6', category: 'Fighting', color: '#ff5e00', url: 'https://www.streetfighter.com/6' },
   { id: 'smash', name: 'Smash Bros', category: 'Fighting', color: '#facc15', url: 'https://www.smashbros.com', aliases: ['super smash bros', 'super smash bros ultimate', 'ssbu', 'smash'] },
   { id: 'brawlhalla', name: 'Brawlhalla', category: 'Fighting', color: '#00bcd4', url: 'https://www.brawlhalla.com' },
-  { id: 'tekken8', name: 'Tekken 8', category: 'Fighting', color: '#ffd700', url: 'https://www.bandainamcoent.com/games/tekken-8' },
+  { id: 'tekken', name: 'Tekken 8', category: 'Fighting', color: '#ffd700', url: 'https://www.bandainamcoent.com/games/tekken-8', aliases: ['tekken 8', 'tekken8'] },
   { id: 'mlbb', name: 'Mobile Legends', category: 'MOBA', color: '#00d2ff', url: 'https://www.mobilelegends.com', aliases: ['mobile legends bang bang', 'mobile legends: bang bang', 'mlbb'] },
-  { id: 'ff', name: 'Free Fire', category: 'BR', color: '#ffaa00', url: 'https://ff.garena.com', aliases: ['freefire'] },
+  { id: 'freefire', name: 'Free Fire', category: 'BR', color: '#ffaa00', url: 'https://ff.garena.com', aliases: ['free fire', 'freefire', 'ff'] },
   { id: 'codm', name: 'COD Mobile', category: 'FPS', color: '#ff7a00', url: 'https://www.callofduty.com/mobile', aliases: ['cod mobile', 'call of duty mobile', 'call of duty: mobile'] },
   { id: 'cr', name: 'Clash Royale', category: 'Strategy', color: '#3b82f6', url: 'https://supercell.com/en/games/clashroyale', aliases: ['clashroyale'] },
   { id: 'aov', name: 'Arena of Valor', category: 'MOBA', color: '#10b981', url: 'https://www.arenaofvalor.com' },
@@ -264,7 +264,7 @@ export const normalizeCommunityGameNames = (values = []) => {
   const normalized = [];
 
   list.forEach((value) => {
-    const canonical = normalizeCommunityGameName(value);
+    const canonical = normalizeCommunityGameId(value);
     if (!canonical || seen.has(canonical)) return;
     seen.add(canonical);
     normalized.push(canonical);

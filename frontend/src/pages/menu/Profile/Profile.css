@@ -1845,7 +1845,6 @@
     color: var(--text-muted);
     opacity: 0.3;
 }
-
 /* ── Detail modals ── */
 .pf-detail-header {
     display: flex;
@@ -2658,4 +2657,21 @@
     .pp-stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+}
+/* ═══════════════════════════════════════════════════
+   GAME IMAGE WRAPPER (para soporte de fallback)
+   ═══════════════════════════════════════════════════ */
+
+.pf-detail-header__game-img-wrapper {
+    width: 100%;
+    height: 250px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.pf-detail-header__game-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
 }

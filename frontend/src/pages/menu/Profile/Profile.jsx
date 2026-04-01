@@ -4,7 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { GAME_IMAGES } from '../../../data/gameImages';
-import { COMMUNITY_GAMES } from '../../../data/communityData';
+import {
+    buildCommunityGamePreview,
+    getCommunityGameEntry,
+    normalizeCommunityHubGameId,
+} from '../../../data/communityData';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import { EMPTY_PROFILE_PROGRESSION, normalizeProfileProgression } from '../../../data/profileProgression';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
@@ -257,18 +261,22 @@ const Profile = () => {
     ];
 
     const mainGame = normalizedGames[0];
-    const mainGameData = mainGame ? COMMUNITY_GAMES.find(g => g.id.toLowerCase() === mainGame.toLowerCase() || g.name.toLowerCase().includes(mainGame.toLowerCase())) : null;
+    const mainGameData = mainGame ? getCommunityGameEntry(mainGame) : null;
     const mainGameImg = mainGameData?.img || (mainGame ? (Object.entries(GAME_IMAGES).find(([key]) => key.toLowerCase().includes(mainGame.toLowerCase()))?.[1] || GAME_IMAGES.Default) : null);
-    const mainGameName = mainGameData?.name || mainGame;
-
+    const mainGameName = mainGameData?.name || mainGame || 'Juego principal';
     const resolveGameImage = (gameId) => {
-        const gd = COMMUNITY_GAMES.find(g => g.id.toLowerCase() === gameId.toLowerCase() || g.name.toLowerCase().includes(gameId.toLowerCase()));
+        const gd = getCommunityGameEntry(gameId);
         return gd?.img || Object.entries(GAME_IMAGES).find(([key]) => key.toLowerCase().includes(gameId.toLowerCase()))?.[1] || GAME_IMAGES.Default;
     };
     const resolveGameName = (gameId) => {
-        const gd = COMMUNITY_GAMES.find(g => g.id.toLowerCase() === gameId.toLowerCase() || g.name.toLowerCase().includes(gameId.toLowerCase()));
+        const gd = getCommunityGameEntry(gameId);
         return gd?.name || gameId;
     };
+    const buildSelectedGame = (gameId) =>
+        buildCommunityGamePreview(gameId, {
+            name: resolveGameName(gameId),
+            img: resolveGameImage(gameId),
+        });
 
     const overviewStats = profileOverview.stats || EMPTY_PROFILE_OVERVIEW.stats;
     const profileProgression = normalizeProfileProgression(profileOverview.progression);
@@ -482,7 +490,7 @@ const Profile = () => {
 
                     {mainGame && (
                         <div className="pf-hero__game">
-                            <div className="pf-game-card" onClick={() => setSelectedGame(mainGameData || { id: mainGame, name: mainGameName, img: mainGameImg })}>
+                            <div className="pf-game-card" onClick={() => setSelectedGame(buildSelectedGame(mainGame))}>
                                 <img src={mainGameImg} alt={mainGameName} />
                                 <div className="pf-game-card__info">
                                     <span className="pf-game-card__badge">MAIN</span>
@@ -506,7 +514,7 @@ const Profile = () => {
                         </div>
                         <div className="pf-games">
                             {normalizedGames.length > 0 ? normalizedGames.slice(0, 4).map((gameId, i) => (
-                                <div key={i} className={`pf-game ${i === 0 ? 'pf-game--main' : ''}`} onClick={() => setSelectedGame(COMMUNITY_GAMES.find(g => g.id.toLowerCase() === gameId.toLowerCase()) || { id: gameId, name: resolveGameName(gameId), img: resolveGameImage(gameId) })}>
+                                <div key={i} className={`pf-game ${i === 0 ? 'pf-game--main' : ''}`} onClick={() => setSelectedGame(buildSelectedGame(gameId))}>
                                     <img src={resolveGameImage(gameId)} alt="" />
                                     <div className="pf-game__info">
                                         <span>{resolveGameName(gameId)}</span>
@@ -862,7 +870,7 @@ const Profile = () => {
                             <div className="pf-modal__body">
                                 <div className="pf-games-grid">
                                     {normalizedGames.map((gameId, i) => (
-                                        <div key={i} className="pf-modal-game" onClick={() => { setShowGamesModal(false); setSelectedGame(COMMUNITY_GAMES.find(g => g.id.toLowerCase() === gameId.toLowerCase()) || { id: gameId, name: resolveGameName(gameId), img: resolveGameImage(gameId) }); }}>
+                                        <div key={i} className="pf-modal-game" onClick={() => { setShowGamesModal(false); setSelectedGame(buildSelectedGame(gameId)); }}>
                                             <img src={resolveGameImage(gameId)} alt="" />
                                             <span>{resolveGameName(gameId)}</span>
                                             <span className={`pf-modal-game__rank ${i === 0 ? 'pf-modal-game__rank--main' : ''}`}>
@@ -893,7 +901,7 @@ const Profile = () => {
                                     </div>
                                 </div>
                                 <div className="pf-detail-actions">
-                                    <button className="pf-btn pf-btn--primary" onClick={() => navigate(`/games/${selectedGame.id}`)}><i className='bx bx-group' /> Comunidad</button>
+                                    <button className="pf-btn pf-btn--primary" onClick={() => navigate(`/games/${normalizeCommunityHubGameId(selectedGame.id) || selectedGame.id}`)}><i className='bx bx-group' /> Comunidad</button>
                                     {selectedGame.url && <a className="pf-btn" href={selectedGame.url} target="_blank" rel="noopener noreferrer"><i className='bx bx-download' /> Descargar</a>}
                                     <button className="pf-btn" onClick={() => setSelectedGame(null)}>Cerrar</button>
                                 </div>

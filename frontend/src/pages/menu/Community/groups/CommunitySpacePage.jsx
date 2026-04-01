@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaUsers, FaMapMarkerAlt, FaGlobeAmericas, FaGamepad } from 'react-icons/fa';
 import '../Community.css';
 import './CommunitySpacePage.css';
-import ValorantImg from '../../../../assets/comunidad/valorant.jpg';
+import ValorantImg from '../../../../assets/games/valorant.jpg';
 import { useAuth } from '../../../../context/AuthContext';
 import { useNotification } from '../../../../context/NotificationContext';
 import {

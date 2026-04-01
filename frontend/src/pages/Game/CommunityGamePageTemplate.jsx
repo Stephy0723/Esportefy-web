@@ -12,7 +12,13 @@ import {
   FaCalendarAlt,
   FaBuilding,
 } from 'react-icons/fa';
-import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY } from '../../data/communityData';
+import {
+  COMMUNITY_GAME_TAXONOMY,
+  getCommunityGameEntry,
+  getFallbackCommunitiesByGame,
+  normalizeCommunityHubGameId,
+} from '../../data/communityData';
+import { supportedGamesDetailedData as gamesDetailedData } from '../../data/supportedGamesDetailedData';
 import { useTheme } from '../../context/ThemeContext';
 import { isSupportedGameId as isCoreGameId } from '../../../../shared/supportedGames.js';
 import { fetchGameHubDetails, formatGameHubCount, joinGameHub } from '../menu/Community/gameHub.service';
@@ -20,7 +26,7 @@ import './CommunityGamePageTemplate.css';
 
 const DATA_ALIASES = {
   ow2: 'overwatch', rl: 'rocket', ff: 'freefire', wr: 'wildrift', wildrift: 'wildrift',
-  r6s: 'r6', r6: 'r6', pubg: 'pubgm', pubgm: 'pubgm', hs: 'hearthstone',
+  r6s: 'r6', r6: 'r6', hs: 'hearthstone',
   fifa: 'fifa', eafc25: 'fifa', smash: 'smash', ssbu: 'smash',
   nba2k: 'nba2k', lor: 'lor', cr: 'clashroyale', aov: 'hok',
 };
@@ -28,14 +34,14 @@ const DATA_ALIASES = {
 const COMPANY_BY_ID = {
   lol: 'Riot Games', valorant: 'Riot Games', dota2: 'Valve', mlbb: 'Moonton',
   wildrift: 'Riot Games', fortnite: 'Epic Games', cs2: 'Valve', apex: 'Respawn Entertainment',
-  warzone: 'Activision', pubgm: 'Tencent', rl: 'Psyonix', tekken8: 'Bandai Namco',
-  fifa: 'EA Sports', smash: 'Nintendo',
+  warzone: 'Activision', pubg: 'Tencent / Krafton', pubgm: 'Tencent / Krafton', rl: 'Psyonix', tekken: 'Bandai Namco', tekken8: 'Bandai Namco',
+  fifa: 'EA Sports', smash: 'Nintendo', brawlhalla: 'Blue Mammoth Games / Ubisoft',
   sf6: 'Capcom', gta: 'Rockstar Games', genshin: 'HoYoverse', amongus: 'Innersloth',
   fallguys: 'Mediatonic', marvel: 'NetEase Games', xdefiant: 'Ubisoft',
   thefinals: 'Embark Studios', deadlock: 'Valve', eafc25: 'EA Sports',
   palworld: 'Pocketpair', ow2: 'Blizzard Entertainment', r6: 'Ubisoft',
   hs: 'Blizzard Entertainment', lor: 'Riot Games', tft: 'Riot Games', hok: 'Tencent',
-  ff: 'Garena', cr: 'Supercell', aov: 'Tencent', starcraft: 'Blizzard Entertainment',
+  ff: 'Garena', freefire: 'Garena', codm: 'Activision / TiMi Studio Group', cr: 'Supercell', aov: 'Tencent', starcraft: 'Blizzard Entertainment',
   nba2k: '2K Sports', mariokart: 'Nintendo', halo: '343 Industries', wuwa: 'Kuro Games',
   codbo6: 'Activision', mk1: 'NetherRealm', eldenring: 'FromSoftware',
   cyberpunk: 'CD Projekt Red', rdr2: 'Rockstar Games', mhwilds: 'Capcom',
@@ -70,22 +76,25 @@ const CommunityGamePageTemplate = () => {
   const { theme } = useTheme();
 
   const id = normalizeText(rawId);
-  const detailId = DATA_ALIASES[id] || id;
-  const isSupported = isCoreGameId(id) || isCoreGameId(detailId) || COMMUNITY_GAMES.some((g) => g.id === id || g.id === detailId);
+  const canonicalCommunityId = normalizeCommunityHubGameId(rawId);
+  const detailId = DATA_ALIASES[canonicalCommunityId] || DATA_ALIASES[id] || canonicalCommunityId || id;
+  const hubId = canonicalCommunityId || detailId || id;
+  const isSupported = isCoreGameId(id) || isCoreGameId(detailId) || Boolean(getCommunityGameEntry(rawId));
 
-  const game = COMMUNITY_GAMES.find((g) => normalizeText(g.id) === id || normalizeText(g.id) === detailId) || null;
-  const taxonomy = COMMUNITY_GAME_TAXONOMY?.[id] || COMMUNITY_GAME_TAXONOMY?.[detailId] || {};
+  const game = getCommunityGameEntry(rawId) || getCommunityGameEntry(hubId) || null;
+  const detail = gamesDetailedData[id] || gamesDetailedData[hubId] || gamesDetailedData[canonicalCommunityId] || gamesDetailedData[detailId] || null;
+  const taxonomy = COMMUNITY_GAME_TAXONOMY?.[hubId] || COMMUNITY_GAME_TAXONOMY?.[canonicalCommunityId] || COMMUNITY_GAME_TAXONOMY?.[id] || COMMUNITY_GAME_TAXONOMY?.[detailId] || {};
 
-  const name = game?.name || toTitle(id);
-  const banner = game?.img || '';
+  const name = game?.name || toTitle(canonicalCommunityId || id);
+  const banner = game?.img || detail?.banner || '';
   const accent = game?.color || '#8EDB15';
-  const developer = COMPANY_BY_ID[id] || COMPANY_BY_ID[detailId] || 'Studio';
+  const developer = COMPANY_BY_ID[hubId] || COMPANY_BY_ID[canonicalCommunityId] || COMPANY_BY_ID[id] || COMPANY_BY_ID[detailId] || 'Studio';
   const category = game?.cat || toTitle(fallbackArray(taxonomy?.genre, ['competitivo'])[0]);
   const platform = toTitle(fallbackArray(taxonomy?.platform, ['pc'])[0]);
 
   const [loading, setLoading] = useState(true);
   const [joiningHub, setJoiningHub] = useState(false);
-  const [data, setData] = useState({ stats: { gameId: id, usersCount: 0, activeCount: 0, joined: false }, teams: [], tournaments: [], communities: [], organizers: [] });
+  const [data, setData] = useState({ stats: { gameId: hubId, usersCount: 0, activeCount: 0, joined: false }, teams: [], tournaments: [], communities: [], organizers: [] });
 
   useEffect(() => { if (!isSupported) navigate('/comunidad', { replace: true }); }, [isSupported, navigate]);
 
@@ -93,17 +102,22 @@ const CommunityGamePageTemplate = () => {
     let c = false;
     if (isSupported) {
       setLoading(true);
-      fetchGameHubDetails(id || detailId).then((r) => { if (!c) setData(r); }).catch(() => {}).finally(() => { if (!c) setLoading(false); });
+      fetchGameHubDetails(hubId).then((r) => { if (!c) setData(r); }).catch(() => {}).finally(() => { if (!c) setLoading(false); });
     }
     return () => { c = true; };
-  }, [id, detailId, isSupported]);
+  }, [hubId, isSupported]);
 
   const handleJoin = useCallback(async () => {
-    if (!id || joiningHub) return;
-    try { setJoiningHub(true); const r = await joinGameHub(id); setData((p) => ({ ...p, stats: r.stats })); } finally { setJoiningHub(false); }
-  }, [id, joiningHub]);
+    if (!hubId || joiningHub) return;
+    try { setJoiningHub(true); const r = await joinGameHub(hubId); setData((p) => ({ ...p, stats: r.stats })); } finally { setJoiningHub(false); }
+  }, [hubId, joiningHub]);
 
   const { stats, teams, tournaments, communities, organizers } = data;
+  const fallbackCommunities = getFallbackCommunitiesByGame(hubId);
+  const visibleCommunities = [
+    ...communities,
+    ...fallbackCommunities.filter((community) => !communities.some((item) => String(item.shortUrl || item.id) === String(community.shortUrl || community.id))),
+  ];
 
   return (
     <div className={`gh theme-${theme || 'dark'}`} style={{ '--accent': accent }}>
@@ -258,15 +272,15 @@ const CommunityGamePageTemplate = () => {
                 <div className="gh-section__icon"><FaGlobe /></div>
                 <div>
                   <h2>Comunidades</h2>
-                  <p className="gh-muted">{communities.length > 0 ? `${communities.length} comunidades` : 'Sin comunidades aun'}</p>
+                  <p className="gh-muted">{visibleCommunities.length > 0 ? `${visibleCommunities.length} comunidades` : 'Sin comunidades aun'}</p>
                 </div>
                 <button type="button" className="gh-btn gh-btn--glass gh-btn--sm" onClick={() => navigate('/comunidad')}>Explorar <FaChevronRight /></button>
               </div>
 
-              {communities.length > 0 ? (
+              {visibleCommunities.length > 0 ? (
                 <div className="gh-row">
-                  {communities.slice(0, 4).map((c) => (
-                    <div key={c.id} className="gh-item gh-item--wide" onClick={() => navigate(`/community/${c.shortUrl || c.id}`)}>
+                  {visibleCommunities.slice(0, 4).map((c) => (
+                    <div key={c.id} className="gh-item gh-item--wide" onClick={() => navigate(`/communities/${c.shortUrl || c.id}`)}>
                       <div>
                         <h3>{c.name}</h3>
                         {c.description && <p className="gh-muted gh-small">{c.description}</p>}

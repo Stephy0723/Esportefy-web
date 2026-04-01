@@ -1,6 +1,6 @@
-import LoLImg from '../assets/comunidad/LoL.jpg';
-import MLBBImg from '../assets/comunidad/MLBB.jpg';
-import ValorantImg from '../assets/comunidad/valorant.jpg';
+import LoLImg from '../assets/games/lol.jpg';
+import MLBBImg from '../assets/games/mlbb.jpg';
+import ValorantImg from '../assets/games/valorant.jpg';
 
 export const gamesList = [
   {

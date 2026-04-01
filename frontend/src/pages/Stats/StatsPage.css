@@ -351,6 +351,113 @@
   color: rgba(245, 247, 251, 0.76);
 }
 
+/* Tracker Network Stats Section */
+.stats-tracker-network-section {
+  margin-top: 2.5rem;
+  padding: 2rem;
+  border-radius: 20px;
+  background: rgba(124, 255, 107, 0.06);
+  border: 1px solid rgba(124, 255, 107, 0.2);
+}
+
+.stats-tracker-network-header {
+  margin-bottom: 1.5rem;
+}
+
+.stats-tracker-network-header h2 {
+  margin: 0 0 0.5rem;
+  color: #7cff6b;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.stats-tracker-network-header p {
+  margin: 0;
+  color: rgba(245, 247, 251, 0.68);
+  font-size: 0.95rem;
+}
+
+.stats-tracker-network-controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(124, 255, 107, 0.1);
+}
+
+.stats-tracker-network-controls .form-group {
+  margin: 0;
+}
+
+.stats-tracker-network-controls label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: rgba(245, 247, 251, 0.8);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stats-tracker-network-controls input,
+.stats-tracker-network-controls select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(124, 255, 107, 0.2);
+  color: #ffffff;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.stats-tracker-network-controls input:focus,
+.stats-tracker-network-controls select:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #7cff6b;
+  box-shadow: 0 0 12px rgba(124, 255, 107, 0.15);
+}
+
+.stats-tracker-network-controls button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7cff6b 0%, #5de64a 100%);
+  border: none;
+  color: #0f1116;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.stats-tracker-network-controls button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(124, 255, 107, 0.3);
+}
+
+.stats-tracker-network-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stats-tracker-network-display {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 820px) {
   .stats-page-container {
     margin: 1rem;
@@ -369,5 +476,19 @@
   .stats-user-picker__header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .stats-tracker-network-controls {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .stats-tracker-network-controls button {
+    width: 100%;
+  }
+
+  .stats-tracker-network-section {
+    margin-top: 1.5rem;
+    padding: 1.35rem;
   }
 }

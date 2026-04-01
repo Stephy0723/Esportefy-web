@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaHeart, FaRegHeart, FaUserPlus, FaUserCheck, FaGamepad, FaGlobe, FaLayerGroup, FaUsers, FaBolt, FaShareAlt, FaCopy, FaCheck, FaTwitter, FaWhatsapp } from 'react-icons/fa';
 import { gamesList } from '../../../../data/gamesData';
-import { COMMUNITY_GAMES } from '../../../../data/communityData';
+import { getCommunityGameEntry, normalizeCommunityHubGameId } from '../../../../data/communityData';
 import { supportedGamesDetailedData as gamesDetailedData } from '../../../../data/supportedGamesDetailedData';
 import { useTheme, THEMES } from '../../../../context/ThemeContext';
 import { fetchGameHubStats, joinGameHub, formatGameHubCount } from '../gameHub.service';
@@ -26,31 +26,12 @@ const GamesPage = () => {
     const normalizeId = (value) => String(value || '').toLowerCase().trim();
     const incomingId = normalizeId(gameId);
 
-    const aliasToCatalogId = {
-        ow2: 'overwatch',
-        rl: 'rocket',
-        ff: 'freefire',
-        wr: 'wildrift',
-        wildrift: 'wildrift',
-        r6s: 'r6',
-        r6: 'r6',
-        pubg: 'pubgm',
-        pubgm: 'pubgm',
-        hs: 'hearthstone',
-        fifa: 'fifa',
-        eafc25: 'fifa',
-        smash: 'smash',
-        ssbu: 'smash',
-        nba2k: 'nba2k',
-        lor: 'lor',
-        cr: 'clashroyale',
-        aov: 'hok',
-    };
-
-    const catalogId = aliasToCatalogId[incomingId] || incomingId;
-    const communityGame = COMMUNITY_GAMES?.find(g => normalizeId(g.id) === incomingId);
+    const canonicalCommunityId = normalizeCommunityHubGameId(incomingId);
+    const catalogId = canonicalCommunityId || incomingId;
+    const communityGame = getCommunityGameEntry(incomingId);
     const catalogGame = gamesList?.find(g => normalizeId(g.id) === catalogId);
     const game = communityGame || catalogGame || null;
+    const hubId = canonicalCommunityId || incomingId;
 
     const gameColor = game?.color || '#8EDB15';
     const isFollowing = gameStats.joined;
@@ -69,13 +50,13 @@ const GamesPage = () => {
     }, []);
 
     useEffect(() => {
-        if (!incomingId) return;
+        if (!hubId) return;
 
         let cancelled = false;
 
         const loadGameStats = async () => {
             try {
-                const stats = await fetchGameHubStats(incomingId);
+                const stats = await fetchGameHubStats(hubId);
                 if (!cancelled) {
                     setGameStats(stats);
                 }
@@ -91,7 +72,7 @@ const GamesPage = () => {
         return () => {
             cancelled = true;
         };
-    }, [incomingId]);
+    }, [hubId]);
 
     // Close share menu on outside click
     useEffect(() => {
@@ -130,11 +111,11 @@ const GamesPage = () => {
 
     // Handle follow toggle
     const handleJoinHub = useCallback(async () => {
-        if (!incomingId || joiningHub) return null;
+        if (!hubId || joiningHub) return null;
 
         try {
             setJoiningHub(true);
-            const response = await joinGameHub(incomingId);
+            const response = await joinGameHub(hubId);
             setGameStats(response.stats);
             showToast(
                 response.alreadyJoined ? 'Ya formas parte de este hub.' : 'Ahora formas parte de esta comunidad.',
@@ -147,7 +128,7 @@ const GamesPage = () => {
         } finally {
             setJoiningHub(false);
         }
-    }, [incomingId, joiningHub, showToast]);
+    }, [hubId, joiningHub, showToast]);
 
     const handleFollow = useCallback(async () => {
         await handleJoinHub();
@@ -206,7 +187,7 @@ const GamesPage = () => {
         );
     }
 
-    const detail = gamesDetailedData[incomingId] || gamesDetailedData[catalogId] || null;
+    const detail = gamesDetailedData[incomingId] || gamesDetailedData[catalogId] || gamesDetailedData[canonicalCommunityId] || null;
     const companyById = {
         ow2: 'Blizzard Entertainment',
         rl: 'Psyonix',
@@ -224,6 +205,7 @@ const GamesPage = () => {
         game.developer ||
         game.company ||
         companyById[incomingId] ||
+        companyById[canonicalCommunityId] ||
         companyById[catalogId] ||
         'Desarrollador no especificado';
 
@@ -251,35 +233,8 @@ const GamesPage = () => {
 
     const handleEnterGame = useCallback(async () => {
         await handleJoinHub();
-
-        const routeIdMap = {
-            overwatch: 'overwatch',
-            ow2: 'overwatch',
-            rocket: 'rocket',
-            rl: 'rocket',
-            fifa: 'fifa',
-            eafc25: 'fifa',
-            smash: 'smash',
-            ssbu: 'smash',
-            freefire: 'freefire',
-            ff: 'freefire',
-            wildrift: 'wildrift',
-            wr: 'wildrift',
-            r6: 'r6',
-            r6s: 'r6',
-            pubg: 'pubgm',
-            pubgm: 'pubgm',
-            hs: 'hearthstone',
-            hearthstone: 'hearthstone',
-            cr: 'clashroyale',
-            clashroyale: 'clashroyale',
-            lor: 'lor',
-            nba2k: 'nba2k',
-            aov: 'hok',
-        };
-        const routeId = routeIdMap[incomingId] || routeIdMap[catalogId] || catalogId;
-        navigate(`/game/${routeId}`);
-    }, [catalogId, handleJoinHub, incomingId, navigate]);
+        navigate(`/game/${canonicalCommunityId || catalogId || incomingId}`);
+    }, [canonicalCommunityId, catalogId, handleJoinHub, incomingId, navigate]);
 
     return (
         <div className={`gp-backdrop theme-${theme}`} style={{ '--gc': gameColor }}>
@@ -314,7 +269,7 @@ const GamesPage = () => {
 
                 {/* Image header */}
                 <div className="gp-card__image">
-                    <img src={game.img || game.image || 'https://via.placeholder.com/400'} alt={game.name} />
+                    <img src={game.img || detail?.banner || game.image || 'https://via.placeholder.com/400'} alt={game.name} />
                     <div className="gp-card__image-overlay" />
                     <div className="gp-card__image-scanlines" />
 

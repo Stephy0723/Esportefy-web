@@ -4,6 +4,8 @@ import CRImg from '../assets/comunidad/CR.jpg';
 import AOVImg from '../assets/comunidad/AOV.jpg';
 import HoKImg from '../assets/comunidad/HoK_V.jpg';
 import FFImg from '../assets/comunidad/FF.jpg';
+import BrawlhallaImg from '../assets/comunidad/Brawlhalla.jpg';
+import CODMImg from '../assets/comunidad/CODM.jpg';
 import Dota2Img from '../assets/comunidad/Dota2.jpeg';
 import HSImg from '../assets/comunidad/HS.webp';
 import LoLImg from '../assets/comunidad/LoL.jpg';
@@ -16,6 +18,7 @@ import R6SImg from '../assets/comunidad/R6S.jpg';
 import RLImg from '../assets/comunidad/RL.jpg';
 import SC2Img from '../assets/comunidad/SC2.jpg';
 import SF6Img from '../assets/comunidad/sf6.png';
+import SmashImg from '../assets/comunidad/Smash.jpg';
 import Tekken8Img from '../assets/comunidad/Tekken8.jpg';
 import TFTImg from '../assets/comunidad/TFT.webp';
 import ValorantImg from '../assets/comunidad/valorant.jpg';
@@ -31,8 +34,13 @@ import MarioKartImg from '../assets/comunidad/MarioKart.jpg';
 import WuwaImg from '../assets/comunidad/Wuwa.jpg';
 import {
   COMMUNITY_FILTER_OPTIONS,
-  COMMUNITY_GAME_DEFINITIONS
+  COMMUNITY_GAME_DEFINITIONS,
+  normalizeCommunityGameId as normalizeSharedCommunityGameId,
+  normalizeCommunityGameName as normalizeSharedCommunityGameName
 } from '../../../shared/communityCatalog.js';
+
+const normalizeCommunityLookup = (value = '') =>
+  String(value || '').trim().toLowerCase();
 
 const LOCAL_COMMUNITY_GAME_IMAGES = {
   valorant: ValorantImg,
@@ -45,13 +53,20 @@ const LOCAL_COMMUNITY_GAME_IMAGES = {
   hs: HSImg,
   lor: LoRImg,
   rl: RLImg,
+  rocket: RLImg,
   apex: ApexImg,
+  pubg: PUBGMImg,
   pubgm: PUBGMImg,
   r6: R6SImg,
   sf6: SF6Img,
+  smash: SmashImg,
+  tekken: Tekken8Img,
   tekken8: Tekken8Img,
+  brawlhalla: BrawlhallaImg,
   mlbb: MLBBImg,
+  freefire: FFImg,
   ff: FFImg,
+  codm: CODMImg,
   cr: CRImg,
   aov: AOVImg,
   hok: HoKImg,
@@ -85,13 +100,16 @@ export const COMMUNITY_GAME_TAXONOMY = {
   mlbb:       { genre: ['moba'],                  mode: ['5v5', 'ranked'],             platform: ['mobile'],           competitive: ['competitivo', 'esports'], style: ['fantasia'],                       mechanics: ['teamplay', 'lane', 'rotation'] },
   wildrift:   { genre: ['moba'],                  mode: ['5v5', 'ranked'],             platform: ['mobile'],           competitive: ['competitivo', 'esports'], style: ['fantasia', 'hero based'],         mechanics: ['lane', 'teamfight'] },
   fortnite:   { genre: ['battle royale'],         mode: ['solo', 'squad'],             platform: ['cross platform'],   competitive: ['competitivo'],            style: ['casual', 'construccion'],         mechanics: ['building', 'shooting', 'survival'] },
+  brawlhalla:{ genre: ['fighting'],              mode: ['1v1', '2v2'],                platform: ['cross platform'],   competitive: ['competitivo', 'esports'], style: ['platform fighter', 'arcade'],     mechanics: ['neutral', 'combo', 'ring out'] },
   cs2:        { genre: ['fps'],                   mode: ['round based', 'bomb defusal'],platform: ['pc'],              competitive: ['competitivo', 'esports'], style: ['tactical shooter', 'realistic'],  mechanics: ['aim', 'strategy', 'economy'] },
   apex:       { genre: ['battle royale'],         mode: ['squad', 'ranked'],           platform: ['cross platform'],   competitive: ['competitivo'],            style: ['hero shooter', 'movement'],       mechanics: ['movement', 'abilities', 'revive'] },
   warzone:    { genre: ['battle royale'],         mode: ['squad', 'solo'],             platform: ['cross platform'],   competitive: ['competitivo'],            style: ['realistic', 'military'],          mechanics: ['shooting', 'survival', 'looting'] },
+  pubg:       { genre: ['battle royale'],         mode: ['squad', 'solo'],             platform: ['mobile'],           competitive: ['competitivo'],            style: ['realistic', 'survival'],          mechanics: ['shooting', 'looting', 'circle'] },
   pubgm:      { genre: ['battle royale'],         mode: ['squad', 'solo'],             platform: ['mobile'],           competitive: ['competitivo'],            style: ['realistic', 'survival'],          mechanics: ['shooting', 'looting', 'circle'] },
   rl:         { genre: ['sports'],                mode: ['3v3', '1v1'],                platform: ['cross platform'],   competitive: ['competitivo', 'esports'], style: ['soccer', 'arcade'],               mechanics: ['cars', 'physics', 'aerial'] },
   fifa:       { genre: ['sports'],                mode: ['1v1'],                       platform: ['console', 'pc'],    competitive: ['competitivo', 'esports'], style: ['football', 'simulation'],         mechanics: ['passing', 'dribbling', 'tactics'] },
   smash:      { genre: ['fighting'],              mode: ['1v1', '2v2'],                platform: ['nintendo'],         competitive: ['competitivo', 'esports'], style: ['platform fighter', 'arcade'],     mechanics: ['neutral', 'combo', 'edgeguard'] },
+  tekken:     { genre: ['fighting'],              mode: ['1v1', 'ranked'],             platform: ['pc', 'console'],    competitive: ['competitivo', 'esports'], style: ['arcade', '3d fighter'],           mechanics: ['combo', 'mixup', 'pressure'] },
   tekken8:    { genre: ['fighting'],              mode: ['1v1', 'ranked'],             platform: ['pc', 'console'],    competitive: ['competitivo', 'esports'], style: ['arcade', '3d fighter'],           mechanics: ['combo', 'mixup', 'pressure'] },
   sf6:        { genre: ['fighting'],              mode: ['1v1', 'ranked'],             platform: ['pc', 'console'],    competitive: ['competitivo', 'esports'], style: ['arcade', '2d fighter'],           mechanics: ['combo', 'framedata', 'neutral'] },
   gta:        { genre: ['open world'],            mode: ['multiplayer', 'roleplay'],   platform: ['pc', 'console'],    competitive: [],                         style: ['roleplay', 'sandbox'],            mechanics: ['accion', 'libre', 'rp'] },
@@ -122,7 +140,9 @@ export const COMMUNITY_GAME_TAXONOMY = {
   mariokart:  { genre: ['racing'],                mode: ['multiplayer', 'online'],     platform: ['nintendo'],         competitive: ['competitivo'],            style: ['party', 'kart'],                  mechanics: ['items', 'drifting', 'shortcuts'] },
   halo:       { genre: ['fps'],                   mode: ['competitive', 'squad'],      platform: ['pc', 'console'],    competitive: ['competitivo', 'esports'], style: ['sci-fi', 'arena shooter'],        mechanics: ['aim', 'teamplay', 'control'] },
   wuwa:       { genre: ['rpg', 'action rpg'],     mode: ['coop', 'solo'],              platform: ['pc', 'mobile'],     competitive: [],                         style: ['anime', 'fantasia'],              mechanics: ['gacha', 'open world', 'exploration'] },
+  freefire:   { genre: ['battle royale'],         mode: ['squad', 'solo'],             platform: ['mobile'],           competitive: ['competitivo', 'esports'], style: ['survival', 'mobile'],             mechanics: ['shooting', 'looting', 'circle'] },
   ff:         { genre: ['battle royale'],         mode: ['squad', 'solo'],             platform: ['mobile'],           competitive: ['competitivo', 'esports'], style: ['survival', 'mobile'],             mechanics: ['shooting', 'looting', 'circle'] },
+  codm:       { genre: ['fps'],                   mode: ['5v5', 'search and destroy'], platform: ['mobile'],           competitive: ['competitivo', 'esports'], style: ['military', 'arcade'],             mechanics: ['aim', 'rotations', 'objective'] },
   codbo6:     { genre: ['fps'],                   mode: ['6v6', 'competitive'],         platform: ['pc', 'console'],    competitive: ['competitivo', 'esports'], style: ['military', 'arcade'],             mechanics: ['aim', 'loadouts', 'killstreaks'] },
   mk1:        { genre: ['fighting'],              mode: ['1v1', 'ranked'],             platform: ['pc', 'console'],    competitive: ['competitivo', 'esports'], style: ['arcade', '2d fighter'],           mechanics: ['combo', 'fatality', 'kameo'] },
   eldenring:  { genre: ['rpg', 'action rpg'],     mode: ['coop', 'solo'],              platform: ['pc', 'console'],    competitive: [],                         style: ['dark fantasy', 'open world'],     mechanics: ['exploration', 'boss fights', 'builds'] },
@@ -345,6 +365,22 @@ export const COMMUNITY_LIST = [
     createdAt: '2026-02-10'
   },
   {
+    id: 'brawlhalla-hub',
+    name: 'Brawlhalla Caribe Hub',
+    slug: 'brawlhalla-caribe-hub',
+    description: 'Comunidad activa de Brawlhalla con brackets semanales, 1v1, 2v2 y sparrings para mejorar neutral y confirms.',
+    members: 1648,
+    online: 63,
+    posts: 142,
+    game: 'Brawlhalla',
+    color: '#00bcd4',
+    img: BrawlhallaImg,
+    tags: ['1v1', '2v2', 'Scrims'],
+    featured: false,
+    category: 'new',
+    createdAt: '2026-02-18'
+  },
+  {
     id: 'warzone-squads',
     name: 'Warzone Squad Finder',
     slug: 'warzone-squads',
@@ -375,8 +411,95 @@ export const COMMUNITY_LIST = [
     featured: false,
     category: 'new',
     createdAt: '2026-02-20'
+  },
+  {
+    id: 'pubgm-ranked',
+    name: 'PUBG Mobile Ranked LATAM',
+    slug: 'pubgm-ranked-latam',
+    description: 'Rotaciones, scrims privadas y squads competitivos para PUBG Mobile en LATAM.',
+    members: 2983,
+    online: 111,
+    posts: 267,
+    game: 'PUBG Mobile',
+    color: '#f2a93b',
+    img: PUBGMImg,
+    tags: ['Scrims', 'Ranked', 'Squads'],
+    featured: false,
+    category: 'new',
+    createdAt: '2026-02-24'
+  },
+  {
+    id: 'codm-competitive',
+    name: 'COD Mobile Competitive',
+    slug: 'codm-competitive',
+    description: 'S&D, Hardpoint y rosters competitivos de COD Mobile con enfoque en torneos y scrims.',
+    members: 3412,
+    online: 127,
+    posts: 311,
+    game: 'COD Mobile',
+    color: '#ff7a00',
+    img: CODMImg,
+    tags: ['S&D', 'Hardpoint', 'Scrims'],
+    featured: false,
+    category: 'new',
+    createdAt: '2026-02-26'
   }
 ];
+
+export const normalizeCommunityHubGameId = (value = '') =>
+  normalizeSharedCommunityGameId(value) || normalizeCommunityLookup(value);
+
+export const getCommunityGameEntry = (value = '') => {
+  const canonicalId = normalizeCommunityHubGameId(value);
+  if (!canonicalId) return null;
+
+  return (
+    COMMUNITY_GAMES.find((game) => game.id === canonicalId) ||
+    COMMUNITY_GAMES.find(
+      (game) =>
+        normalizeCommunityLookup(game.id) === canonicalId ||
+        normalizeCommunityLookup(game.name) === canonicalId
+    ) ||
+    null
+  );
+};
+
+export const buildCommunityGamePreview = (value = '', fallback = {}) => {
+  const canonicalId = normalizeCommunityHubGameId(value);
+  const game = getCommunityGameEntry(value);
+
+  if (game) return game;
+
+  return {
+    id: canonicalId || String(value || '').trim(),
+    name: normalizeSharedCommunityGameName(value) || fallback.name || String(value || '').trim(),
+    img: fallback.img || '',
+    color: fallback.color || '',
+    cat: fallback.cat || '',
+    players: fallback.players || '0',
+    url: fallback.url || '',
+  };
+};
+
+export const getFallbackCommunitiesByGame = (value = '') => {
+  const canonicalId = normalizeCommunityHubGameId(value);
+  if (!canonicalId) return [];
+
+  return COMMUNITY_LIST
+    .filter((community) => normalizeCommunityHubGameId(community.game) === canonicalId)
+    .map((community) => ({
+      id: community.id,
+      name: community.name,
+      shortUrl: community.slug || community.id,
+      description: community.description || '',
+      membersCount: Number(community.members || 0),
+      avatarUrl: community.img || '',
+      bannerUrl: community.img || '',
+      mainGames: [canonicalId],
+      region: 'LATAM',
+      isFallback: true,
+    }));
+};
 
 export const COMMUNITY_TRENDING_TOPICS = [
   { title: 'Nuevo agente Valorant', game: 'Valorant', color: '#ff4655', comments: 234 },
