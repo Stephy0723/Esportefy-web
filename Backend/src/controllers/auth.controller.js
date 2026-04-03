@@ -16,6 +16,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { filterSupportedGameNames, isSupportedGameName, SUPPORTED_GAME_NAMES } from '../../../shared/supportedGames.js';
+import { normalizeCompetitiveProfilesPayload } from '../../../shared/gameCompetitiveProfiles.js';
 import { normalizeCountryName } from '../../../shared/countries.js';
 import {
     normalizeExperienceValues,
@@ -943,6 +944,10 @@ export const getProfile = async (req, res) => {
         if (needsSave) await user.save();
         const payload = user.toObject();
         payload.selectedGames = filterSupportedGameNames(payload.selectedGames);
+        payload.competitiveProfiles = normalizeCompetitiveProfilesPayload(
+            payload.competitiveProfiles,
+            payload.selectedGames
+        );
         payload.teams = Array.isArray(payload.teams)
             ? payload.teams.filter((team) => isSupportedGameName(team?.game))
             : [];
@@ -1018,7 +1023,7 @@ export const getPublicProfile = async (req, res) => {
         const query = isObjectId ? { _id: param } : { userCode: param };
 
         const target = await User.findOne(query)
-            .select('username fullName avatar bio status country selectedGames experience preferredRoles languages socialLinks gamingConnections lookingForTeam selectedFrameId selectedBgId selectedTagId userCode university connections.riot connections.discord.verified connections.steam.verified connections.epic connections.mlbb.verified isOrganizer roles createdAt followers following privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
+            .select('username fullName avatar bio status country selectedGames experience preferredRoles languages socialLinks gamingConnections competitiveProfiles lookingForTeam selectedFrameId selectedBgId selectedTagId userCode university connections.riot connections.discord.verified connections.steam.verified connections.epic connections.mlbb.verified isOrganizer roles createdAt followers following privacy.showOnlineStatus privacy.showPublicUserCode privacy.showPublicRiotHandle')
             .lean();
 
         if (!target) {
@@ -1164,6 +1169,10 @@ export const getPublicProfile = async (req, res) => {
             languages: Array.isArray(target.languages) ? target.languages : [],
             socialLinks: target.socialLinks || {},
             gamingConnections: target.gamingConnections || {},
+            competitiveProfiles: normalizeCompetitiveProfilesPayload(
+                target.competitiveProfiles,
+                target.selectedGames
+            ),
             lookingForTeam: Boolean(target.lookingForTeam),
             isOrganizer: Boolean(target.isOrganizer),
             roles: target.roles || {},
@@ -2141,7 +2150,7 @@ export const resetPassword = async (req, res) => {
 // 3. Actualizar perfil
 export const updateProfile = async (req, res) => {
     try {
-        const currentUser = await User.findById(req.userId).select('avatar socialLinks gamingConnections privacy countrySetAt birthDateSetAt lastNameChangeAt fullName country birthDate');
+        const currentUser = await User.findById(req.userId).select('avatar socialLinks gamingConnections competitiveProfiles selectedGames privacy countrySetAt birthDateSetAt lastNameChangeAt fullName country birthDate');
         if (!currentUser) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
@@ -2282,6 +2291,35 @@ export const updateProfile = async (req, res) => {
             };
         }
 
+        let competitiveProfilesFromBody;
+        if (req.body.competitiveProfiles !== undefined) {
+            if (typeof req.body.competitiveProfiles === 'string') {
+                try {
+                    competitiveProfilesFromBody = JSON.parse(req.body.competitiveProfiles);
+                } catch (_) {
+                    competitiveProfilesFromBody = {};
+                }
+            } else if (typeof req.body.competitiveProfiles === 'object' && req.body.competitiveProfiles !== null) {
+                competitiveProfilesFromBody = req.body.competitiveProfiles;
+            }
+        }
+
+        const nextSelectedGames = updateData.selectedGames !== undefined
+            ? updateData.selectedGames
+            : (Array.isArray(currentUser.selectedGames) ? currentUser.selectedGames : []);
+
+        if (competitiveProfilesFromBody !== undefined) {
+            updateData.competitiveProfiles = normalizeCompetitiveProfilesPayload(
+                competitiveProfilesFromBody,
+                nextSelectedGames
+            );
+        } else if (updateData.selectedGames !== undefined) {
+            updateData.competitiveProfiles = normalizeCompetitiveProfilesPayload(
+                currentUser.competitiveProfiles,
+                nextSelectedGames
+            );
+        }
+
         // 2.2 Normalización de strings
         if (updateData.fullName !== undefined) {
             updateData.fullName = normalizeProfileText(updateData.fullName, { max: 80 });
@@ -2360,10 +2398,7 @@ export const updateProfile = async (req, res) => {
             }
         }
 
-        // 3. No permitir arrays vacíos inválidos
-        if (updateData.selectedGames && updateData.selectedGames.length === 0) delete updateData.selectedGames;
-
-        // 4. Actualizar usuario
+        // 3. Actualizar usuario
         const updatedUser = await User.findByIdAndUpdate(
             req.userId,
             { $set: updateData },

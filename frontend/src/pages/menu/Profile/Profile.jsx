@@ -9,6 +9,8 @@ import {
     getCommunityGameEntry,
     normalizeCommunityHubGameId,
 } from '../../../data/communityData';
+import { getCompetitiveProfileEntries } from '../../../../../shared/gameCompetitiveProfiles.js';
+import { normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
 import { FRAMES, BACKGROUNDS } from '../../../data/profileOptions';
 import { EMPTY_PROFILE_PROGRESSION, normalizeProfileProgression } from '../../../data/profileProgression';
 import AvatarCircle from '../../../components/AvatarCircle/AvatarCircle';
@@ -276,6 +278,10 @@ const Profile = () => {
         buildCommunityGamePreview(gameId, {
             name: resolveGameName(gameId),
             img: resolveGameImage(gameId),
+            profileEntries: getCompetitiveProfileEntries(
+                gameId,
+                user?.competitiveProfiles?.[normalizeSupportedGameId(gameId)] || {}
+            ),
         });
 
     const overviewStats = profileOverview.stats || EMPTY_PROFILE_OVERVIEW.stats;
@@ -905,6 +911,18 @@ const Profile = () => {
                                     {selectedGame.url && <a className="pf-btn" href={selectedGame.url} target="_blank" rel="noopener noreferrer"><i className='bx bx-download' /> Descargar</a>}
                                     <button className="pf-btn" onClick={() => setSelectedGame(null)}>Cerrar</button>
                                 </div>
+                                {Array.isArray(selectedGame.profileEntries) && selectedGame.profileEntries.length > 0 && (
+                                    <div className="pf-detail-profile">
+                                        <strong>Perfil competitivo</strong>
+                                        <div className="pf-detail-profile__chips">
+                                            {selectedGame.profileEntries.map((entry) => (
+                                                <span key={`${selectedGame.id}-${entry.key}`} className="pf-detail-profile__chip">
+                                                    <b>{entry.label}:</b> {entry.value}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </motion.div>

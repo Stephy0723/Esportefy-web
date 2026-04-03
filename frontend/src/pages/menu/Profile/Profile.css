@@ -1945,6 +1945,42 @@
     margin-top: 16px;
 }
 
+.pf-detail-profile {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pf-detail-profile > strong {
+    color: rgba(255,255,255,.9);
+    font-size: .92rem;
+    letter-spacing: .03em;
+}
+
+.pf-detail-profile__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pf-detail-profile__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.04);
+    color: rgba(255,255,255,.86);
+    font-size: .82rem;
+}
+
+.pf-detail-profile__chip b {
+    color: #d7ff72;
+    font-weight: 700;
+}
+
 /* ── Friend detail modal ── */
 .pf-friend-detail {
     position: relative;

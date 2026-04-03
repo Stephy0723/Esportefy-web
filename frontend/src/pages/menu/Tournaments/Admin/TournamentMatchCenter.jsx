@@ -5,6 +5,10 @@ import { API_URL } from '../../../../config/api';
 import { useNotification } from '../../../../context/NotificationContext';
 import { applyImageFallback, getTeamFallback, resolveMediaUrl } from '../../../../utils/media';
 import {
+  getGameMatchResultConfig,
+  normalizeGameMatchResultPayload,
+} from '../../../../../../shared/gameMatchResults.js';
+import {
   TournamentAdminShell,
   useTournamentAdminData,
 } from './TournamentAdminShared';
@@ -41,6 +45,76 @@ const isMatchReady = (match) => {
   return a && b && a !== 'BYE' && b !== 'BYE';
 };
 
+const toInputValue = (value) => (value === null || value === undefined ? '' : String(value));
+
+const buildGameResultFormState = (gameResult = {}) => ({
+  summary: String(gameResult?.summary || ''),
+  notes: String(gameResult?.notes || ''),
+  map: String(gameResult?.map || ''),
+  roundLabel: String(gameResult?.roundLabel || ''),
+  mode: String(gameResult?.mode || ''),
+  stage: String(gameResult?.stage || ''),
+  sideACharacter: String(gameResult?.sideACharacter || ''),
+  sideBCharacter: String(gameResult?.sideBCharacter || ''),
+  sideAPlacement: toInputValue(gameResult?.sideA?.placement),
+  sideAKills: toInputValue(gameResult?.sideA?.kills),
+  sideAPoints: toInputValue(gameResult?.sideA?.points),
+  sideBPlacement: toInputValue(gameResult?.sideB?.placement),
+  sideBKills: toInputValue(gameResult?.sideB?.kills),
+  sideBPoints: toInputValue(gameResult?.sideB?.points),
+});
+
+const buildGameResultPayload = (formState = {}, config = {}) => {
+  const payload = {};
+
+  if (config.supportsSummary) payload.summary = formState.summary;
+  if (config.supportsNotes) payload.notes = formState.notes;
+  if (config.supportsMap) payload.map = formState.map;
+  if (config.supportsRoundLabel) payload.roundLabel = formState.roundLabel;
+  if (config.supportsMode) payload.mode = formState.mode;
+  if (config.supportsStage) payload.stage = formState.stage;
+  if (config.supportsCharacters) {
+    payload.sideACharacter = formState.sideACharacter;
+    payload.sideBCharacter = formState.sideBCharacter;
+  }
+
+  if (config.supportsBattleRoyaleStats) {
+    payload.sideA = {
+      placement: formState.sideAPlacement,
+      kills: formState.sideAKills,
+      points: formState.sideAPoints,
+    };
+    payload.sideB = {
+      placement: formState.sideBPlacement,
+      kills: formState.sideBKills,
+      points: formState.sideBPoints,
+    };
+  }
+
+  return payload;
+};
+
+const winningScoreCandidate = (value, shouldWin = false) => {
+  const parsed = Number(value);
+  if (Number.isFinite(parsed)) return parsed;
+  return shouldWin ? 1 : 0;
+};
+
+const pickResolutionCandidate = (match, winnerRefId = '') => {
+  const targetWinner = String(winnerRefId || '').trim();
+  const submissions = Array.isArray(match?.resultSubmissions) ? [...match.resultSubmissions] : [];
+  const matchingSubmission = submissions.reverse().find((item) => String(item?.winnerRefId || '') === targetWinner);
+
+  const fallbackScoreA = winningScoreCandidate(match?.scoreA, targetWinner === teamRef(match?.teamA));
+  const fallbackScoreB = winningScoreCandidate(match?.scoreB, targetWinner === teamRef(match?.teamB));
+
+  return {
+    scoreA: matchingSubmission?.scoreA ?? fallbackScoreA,
+    scoreB: matchingSubmission?.scoreB ?? fallbackScoreB,
+    gameResult: matchingSubmission?.gameResult ?? match?.gameResult ?? null,
+  };
+};
+
 /* ── component ── */
 
 const TournamentMatchCenter = () => {
@@ -62,6 +136,7 @@ const TournamentMatchCenter = () => {
   const [editScoreB, setEditScoreB] = useState('');
   const [editStatus, setEditStatus] = useState('pending');
   const [saving, setSaving] = useState(false);
+  const [gameResultForm, setGameResultForm] = useState(() => buildGameResultFormState());
 
   // Proof
   const [proofFile, setProofFile] = useState(null);
@@ -70,6 +145,10 @@ const TournamentMatchCenter = () => {
   const [proofUrl, setProofUrl] = useState('');
   const [liveTeamLogoMap, setLiveTeamLogoMap] = useState(() => new Map());
   const fileInputRef = useRef(null);
+  const matchResultConfig = useMemo(
+    () => getGameMatchResultConfig(tournament?.game, tournament?.matchConfig?.seriesType),
+    [tournament?.game, tournament?.matchConfig?.seriesType]
+  );
 
   /* ── flatten bracket into rounds with enriched matches ── */
   const roundsData = useMemo(() => {
@@ -234,6 +313,7 @@ const TournamentMatchCenter = () => {
     setEditScoreA(match.scoreA ?? '');
     setEditScoreB(match.scoreB ?? '');
     setEditStatus(match.status || 'pending');
+    setGameResultForm(buildGameResultFormState(match.gameResult));
     setProofFile(null);
     setProofPreview('');
     setProofUrl(match.proofUrl || '');
@@ -241,6 +321,7 @@ const TournamentMatchCenter = () => {
 
   const closeEditor = () => {
     setActiveKey(null);
+    setGameResultForm(buildGameResultFormState());
     setProofFile(null);
     setProofPreview('');
   };
@@ -250,6 +331,10 @@ const TournamentMatchCenter = () => {
     if (!file) return;
     setProofFile(file);
     setProofPreview(URL.createObjectURL(file));
+  };
+
+  const updateGameResultField = (field, value) => {
+    setGameResultForm((current) => ({ ...current, [field]: value }));
   };
 
   const uploadProof = async () => {
@@ -295,9 +380,29 @@ const TournamentMatchCenter = () => {
   const saveMatchResult = async (forceFinish = false) => {
     if (!selectedMatch || saving) return;
     const finalStatus = forceFinish ? 'finished' : editStatus;
+    const shouldResolve = finalStatus === 'finished';
+    let finalProofUrl = proofUrl || selectedMatch.proofUrl || '';
 
-    if (finalStatus === 'finished') {
-      let finalProofUrl = proofUrl;
+    const rawScoreA = editScoreA === '' ? null : Number(editScoreA);
+    const rawScoreB = editScoreB === '' ? null : Number(editScoreB);
+    const rawGameResult = buildGameResultPayload(gameResultForm, matchResultConfig);
+
+    let normalizedResult;
+    try {
+      normalizedResult = normalizeGameMatchResultPayload({
+        game: tournament?.game,
+        seriesType: tournament?.matchConfig?.seriesType,
+        scoreA: rawScoreA,
+        scoreB: rawScoreB,
+        gameResult: rawGameResult,
+        status: finalStatus,
+      });
+    } catch (error) {
+      addToast(error.message || 'No se pudo validar el resultado del match.', 'warning');
+      return;
+    }
+
+    if (shouldResolve) {
       if (proofFile && !proofUrl) finalProofUrl = await uploadProof();
       if (!finalProofUrl && !selectedMatch.proofUrl) {
         addToast('Sube una captura de resultado antes de finalizar.', 'warning');
@@ -307,25 +412,34 @@ const TournamentMatchCenter = () => {
 
     setSaving(true);
     try {
-      const updated = updateMatchInBracket(selectedMatch.ri, selectedMatch.mi, (m) => {
-        const scoreA = editScoreA === '' ? null : Number(editScoreA);
-        const scoreB = editScoreB === '' ? null : Number(editScoreB);
-        let winnerRefId = m.winnerRefId || '';
-        if (finalStatus === 'finished' && scoreA !== null && scoreB !== null) {
-          if (scoreA > scoreB) winnerRefId = teamRef(m.teamA);
-          else if (scoreB > scoreA) winnerRefId = teamRef(m.teamB);
-        }
-        return {
+      if (shouldResolve) {
+        let winnerRefId = selectedMatch.winnerRefId || '';
+        if (normalizedResult.scoreA > normalizedResult.scoreB) winnerRefId = teamRef(selectedMatch.teamA);
+        if (normalizedResult.scoreB > normalizedResult.scoreA) winnerRefId = teamRef(selectedMatch.teamB);
+
+        const response = await axios.patch(
+          `${API_URL}/api/tournaments/${code}/bracket/matches/${selectedMatch.matchId}/resolve`,
+          {
+            winnerRefId,
+            scoreA: normalizedResult.scoreA,
+            scoreB: normalizedResult.scoreB,
+            proofUrl: finalProofUrl,
+            gameResult: normalizedResult.gameResult,
+          },
+          { headers: authHeaders }
+        );
+        setBracket(response.data.bracket);
+      } else {
+        const updated = updateMatchInBracket(selectedMatch.ri, selectedMatch.mi, (m) => ({
           ...m,
-          scoreA,
-          scoreB,
+          scoreA: normalizedResult.scoreA,
+          scoreB: normalizedResult.scoreB,
           status: finalStatus,
-          winnerRefId,
           proofUrl: proofUrl || m.proofUrl || '',
-          confirmationStatus: finalStatus === 'finished' ? 'resolved' : m.confirmationStatus,
-        };
-      });
-      await patchBracket(updated);
+          gameResult: normalizedResult.gameResult,
+        }));
+        await patchBracket(updated);
+      }
       closeEditor();
     } catch (err) {
       addToast(err.response?.data?.message || 'No se pudo guardar el resultado.', 'error');
@@ -349,15 +463,24 @@ const TournamentMatchCenter = () => {
   const resolveDispute = async (match, winningSide) => {
     setSaving(true);
     try {
-      const updated = updateMatchInBracket(match.ri, match.mi, (m) => ({
-        ...m,
-        status: 'finished',
-        confirmationStatus: 'resolved',
-        winnerRefId: winningSide === 'A' ? teamRef(m.teamA) : teamRef(m.teamB),
-      }));
-      await patchBracket(updated);
-    } catch {
-      addToast('No se pudo resolver la disputa.', 'error');
+      const winnerRefId = winningSide === 'A' ? teamRef(match.teamA) : teamRef(match.teamB);
+      const candidate = pickResolutionCandidate(match, winnerRefId);
+
+      const response = await axios.patch(
+        `${API_URL}/api/tournaments/${code}/bracket/matches/${match.matchId}/resolve`,
+        {
+          winnerRefId,
+          scoreA: candidate.scoreA,
+          scoreB: candidate.scoreB,
+          proofUrl: match.proofUrl || '',
+          gameResult: candidate.gameResult,
+        },
+        { headers: authHeaders }
+      );
+
+      setBracket(response.data.bracket);
+    } catch (error) {
+      addToast(error.response?.data?.message || 'No se pudo resolver la disputa.', 'error');
     } finally {
       setSaving(false);
     }
@@ -635,7 +758,190 @@ const TournamentMatchCenter = () => {
                     />
                   </label>
                 </div>
-                <p className="ta-hint">Ingresa el puntaje de cada equipo. Puede ser rondas ganadas, kills, puntos, etc.</p>
+                <p className="ta-hint">{matchResultConfig.scoreHint}</p>
+
+                {(matchResultConfig.supportsBattleRoyaleStats
+                  || matchResultConfig.supportsStage
+                  || matchResultConfig.supportsCharacters
+                  || matchResultConfig.supportsMap
+                  || matchResultConfig.supportsMode
+                  || matchResultConfig.supportsRoundLabel
+                  || matchResultConfig.supportsSummary
+                  || matchResultConfig.supportsNotes) && (
+                  <div className="mc-editor__result-meta">
+                    <div className="mc-editor__proof-head">
+                      <span className="mc-editor__label">Detalles del resultado</span>
+                      <small>{matchResultConfig.kind === 'battle_royale' ? 'Campos especiales para BR y mobile.' : 'Contexto competitivo opcional para este match.'}</small>
+                    </div>
+
+                    {matchResultConfig.supportsBattleRoyaleStats && (
+                      <div className="mc-editor__result-grid mc-editor__result-grid--triple">
+                        <label>
+                          <span>{selectedMatch.nameA} placement</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={gameResultForm.sideAPlacement}
+                            onChange={(e) => updateGameResultField('sideAPlacement', e.target.value)}
+                            placeholder="1"
+                          />
+                        </label>
+                        <label>
+                          <span>{selectedMatch.nameA} kills</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={gameResultForm.sideAKills}
+                            onChange={(e) => updateGameResultField('sideAKills', e.target.value)}
+                            placeholder="0"
+                          />
+                        </label>
+                        <label>
+                          <span>{selectedMatch.nameA} puntos</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={gameResultForm.sideAPoints}
+                            onChange={(e) => updateGameResultField('sideAPoints', e.target.value)}
+                            placeholder="0"
+                          />
+                        </label>
+                        <label>
+                          <span>{selectedMatch.nameB} placement</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={gameResultForm.sideBPlacement}
+                            onChange={(e) => updateGameResultField('sideBPlacement', e.target.value)}
+                            placeholder="1"
+                          />
+                        </label>
+                        <label>
+                          <span>{selectedMatch.nameB} kills</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={gameResultForm.sideBKills}
+                            onChange={(e) => updateGameResultField('sideBKills', e.target.value)}
+                            placeholder="0"
+                          />
+                        </label>
+                        <label>
+                          <span>{selectedMatch.nameB} puntos</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={gameResultForm.sideBPoints}
+                            onChange={(e) => updateGameResultField('sideBPoints', e.target.value)}
+                            placeholder="0"
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    {(matchResultConfig.supportsStage
+                      || matchResultConfig.supportsCharacters
+                      || matchResultConfig.supportsMap
+                      || matchResultConfig.supportsMode
+                      || matchResultConfig.supportsRoundLabel) && (
+                      <div className="mc-editor__result-grid">
+                        {matchResultConfig.supportsStage && (
+                          <label>
+                            <span>Stage / escenario</span>
+                            <input
+                              type="text"
+                              value={gameResultForm.stage}
+                              onChange={(e) => updateGameResultField('stage', e.target.value)}
+                              placeholder="Ej: Battlefield"
+                            />
+                          </label>
+                        )}
+                        {matchResultConfig.supportsCharacters && (
+                          <>
+                            <label>
+                              <span>{selectedMatch.nameA} personaje</span>
+                              <input
+                                type="text"
+                                value={gameResultForm.sideACharacter}
+                                onChange={(e) => updateGameResultField('sideACharacter', e.target.value)}
+                                placeholder="Main / pick"
+                              />
+                            </label>
+                            <label>
+                              <span>{selectedMatch.nameB} personaje</span>
+                              <input
+                                type="text"
+                                value={gameResultForm.sideBCharacter}
+                                onChange={(e) => updateGameResultField('sideBCharacter', e.target.value)}
+                                placeholder="Main / pick"
+                              />
+                            </label>
+                          </>
+                        )}
+                        {matchResultConfig.supportsMap && (
+                          <label>
+                            <span>Mapa / playlist</span>
+                            <input
+                              type="text"
+                              value={gameResultForm.map}
+                              onChange={(e) => updateGameResultField('map', e.target.value)}
+                              placeholder="Ej: Erangel / Haven"
+                            />
+                          </label>
+                        )}
+                        {matchResultConfig.supportsMode && (
+                          <label>
+                            <span>Modo</span>
+                            <input
+                              type="text"
+                              value={gameResultForm.mode}
+                              onChange={(e) => updateGameResultField('mode', e.target.value)}
+                              placeholder="Ej: Hardpoint"
+                            />
+                          </label>
+                        )}
+                        {matchResultConfig.supportsRoundLabel && (
+                          <label>
+                            <span>Lobby / ronda</span>
+                            <input
+                              type="text"
+                              value={gameResultForm.roundLabel}
+                              onChange={(e) => updateGameResultField('roundLabel', e.target.value)}
+                              placeholder="Ej: Lobby 2"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
+
+                    {(matchResultConfig.supportsSummary || matchResultConfig.supportsNotes) && (
+                      <div className="mc-editor__result-grid">
+                        {matchResultConfig.supportsSummary && (
+                          <label className="mc-editor__result-span">
+                            <span>Resumen competitivo</span>
+                            <input
+                              type="text"
+                              value={gameResultForm.summary}
+                              onChange={(e) => updateGameResultField('summary', e.target.value)}
+                              placeholder="Resumen corto del set o lobby"
+                            />
+                          </label>
+                        )}
+                        {matchResultConfig.supportsNotes && (
+                          <label className="mc-editor__result-span">
+                            <span>Notas del staff</span>
+                            <textarea
+                              rows="3"
+                              value={gameResultForm.notes}
+                              onChange={(e) => updateGameResultField('notes', e.target.value)}
+                              placeholder="Detalles de disputa, side pick, scoring o contexto extra"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <label className="mc-editor__status">
                   <span>Estado</span>

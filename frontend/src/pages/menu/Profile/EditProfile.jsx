@@ -21,6 +21,11 @@ import { cacheAuthUser, getAuthToken } from '../../../utils/authSession';
 import { EXAMPLE_BACKGROUND_UNLOCK_USER, getUnlockStatus, isUnlocked } from '../../../utils/backgroundUnlocks';
 import { applyImageFallback, getAvatarFallback, resolveMediaUrl } from '../../../utils/media';
 import { isSupportedGameId, normalizeSupportedGameId } from '../../../../../shared/supportedGames.js';
+import {
+    getCompetitiveProfileGameIds,
+    getCompetitiveProfileSpec,
+    normalizeCompetitiveProfilesPayload,
+} from '../../../../../shared/gameCompetitiveProfiles.js';
 import { COUNTRY_OPTIONS, normalizeKnownCountryName } from '../../../../../shared/countries.js';
 import { EXPERIENCE_LEVELS, GENDER_OPTIONS, GOAL_OPTIONS, LANGUAGE_OPTIONS, PLATFORM_OPTIONS } from '../../../../../shared/profileCatalog.js';
 import './EditProfile.css';
@@ -260,6 +265,7 @@ const EditProfile = () => {
         lookingForTeam: false,
         socialLinks: { twitch: '', youtube: '', twitter: '', instagram: '', tiktok: '' },
         gamingConnections: { discord: '', riotId: '', steam: '', epic: '', playstation: '', xbox: '', nintendo: '' },
+        competitiveProfiles: {},
         isProfileHidden: false,
         selectedFrameId: 'none',
         selectedBgId: 'bg-1',
@@ -307,6 +313,24 @@ const EditProfile = () => {
         Object.values(formData.gamingConnections || {}).filter(Boolean).length
     );
     const linkedSocialsCount = Object.values(formData.socialLinks || {}).filter(Boolean).length;
+    const supportedCompetitiveProfileIds = useMemo(
+        () => getCompetitiveProfileGameIds(formData.selectedGames),
+        [formData.selectedGames]
+    );
+    const competitiveProfileSections = useMemo(
+        () => supportedCompetitiveProfileIds
+            .map((gameId) => ({
+                gameId,
+                spec: getCompetitiveProfileSpec(gameId),
+                values: formData.competitiveProfiles?.[gameId] || {}
+            }))
+            .filter((entry) => entry.spec),
+        [supportedCompetitiveProfileIds, formData.competitiveProfiles]
+    );
+    const completedCompetitiveProfilesCount = useMemo(
+        () => Object.keys(normalizeCompetitiveProfilesPayload(formData.competitiveProfiles, formData.selectedGames)).length,
+        [formData.competitiveProfiles, formData.selectedGames]
+    );
     const referralCount = Number(referralInfo?.count || 0);
     const hasOrganizerAccess = Boolean(formData.isOrganizer) || (Array.isArray(formData.roles) && formData.roles.includes('organizer'));
     const backgroundUnlockUser = useMemo(() => ({
@@ -566,6 +590,7 @@ const EditProfile = () => {
                     xbox: u.gamingConnections?.xbox || '',
                     nintendo: u.gamingConnections?.nintendo || ''
                 },
+                competitiveProfiles: normalizeCompetitiveProfilesPayload(u.competitiveProfiles, u.selectedGames),
                 isProfileHidden: u.isProfileHidden || false,
                 selectedFrameId: u.selectedFrameId || 'none',
                 selectedBgId: u.selectedBgId || 'bg-1',
@@ -615,7 +640,13 @@ const EditProfile = () => {
 
     // ─── Form handlers ───
     const updateField = (name, value) => {
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const next = { ...prev, [name]: value };
+            if (name === 'selectedGames') {
+                next.competitiveProfiles = normalizeCompetitiveProfilesPayload(prev.competitiveProfiles, value);
+            }
+            return next;
+        });
         setHasChanges(true);
     };
 
@@ -646,7 +677,13 @@ const EditProfile = () => {
         setFormData(prev => {
             const list = prev[field] || [];
             const newList = list.includes(id) ? list.filter(x => x !== id) : [...list, id];
-            return { ...prev, [field]: newList };
+            return {
+                ...prev,
+                [field]: newList,
+                ...(field === 'selectedGames'
+                    ? { competitiveProfiles: normalizeCompetitiveProfilesPayload(prev.competitiveProfiles, newList) }
+                    : {})
+            };
         });
         setHasChanges(true);
     };
@@ -690,6 +727,37 @@ const EditProfile = () => {
             ...prev,
             gamingConnections: { ...prev.gamingConnections, [platform]: value.trim() }
         }));
+        setHasChanges(true);
+    };
+
+    const handleCompetitiveProfileChange = (gameId, fieldKey, value) => {
+        const spec = getCompetitiveProfileSpec(gameId);
+        if (!spec) return;
+        const field = spec.fields.find((entry) => entry.key === fieldKey);
+        const nextValue = field?.type === 'select' ? value : value.slice(0, field?.max || 60);
+
+        setFormData(prev => ({
+            ...prev,
+            competitiveProfiles: {
+                ...(prev.competitiveProfiles || {}),
+                [gameId]: {
+                    ...((prev.competitiveProfiles || {})[gameId] || {}),
+                    [fieldKey]: nextValue
+                }
+            }
+        }));
+        setHasChanges(true);
+    };
+
+    const clearCompetitiveProfile = (gameId) => {
+        setFormData(prev => {
+            const nextProfiles = { ...(prev.competitiveProfiles || {}) };
+            delete nextProfiles[gameId];
+            return {
+                ...prev,
+                competitiveProfiles: nextProfiles
+            };
+        });
         setHasChanges(true);
     };
 
@@ -841,14 +909,16 @@ const EditProfile = () => {
         const arrayFields = ['selectedGames', 'platforms', 'goals', 'experience', 'languages', 'preferredRoles'];
         arrayFields.forEach(key => {
             const val = formData[key];
-            if (Array.isArray(val) && val.length > 0) {
-                data.append(key, val.join(','));
-            }
+            data.append(key, Array.isArray(val) ? val.join(',') : '');
         });
         data.append('lookingForTeam', String(Boolean(formData.lookingForTeam)));
         data.append('isProfileHidden', String(Boolean(formData.isProfileHidden)));
         data.append('socialLinks', JSON.stringify(formData.socialLinks || {}));
         data.append('gamingConnections', JSON.stringify(formData.gamingConnections || {}));
+        data.append(
+            'competitiveProfiles',
+            JSON.stringify(normalizeCompetitiveProfilesPayload(formData.competitiveProfiles, formData.selectedGames))
+        );
 
         if (file) data.append('avatarFile', file);
 
@@ -901,6 +971,7 @@ const EditProfile = () => {
                     xbox: u.gamingConnections?.xbox || '',
                     nintendo: u.gamingConnections?.nintendo || ''
                 },
+                competitiveProfiles: normalizeCompetitiveProfilesPayload(u.competitiveProfiles, u.selectedGames),
                 selectedFrameId: u.selectedFrameId || prev.selectedFrameId,
                 selectedBgId: u.selectedBgId || prev.selectedBgId,
                 selectedTagId: u.selectedTagId || prev.selectedTagId,
@@ -2073,6 +2144,69 @@ const EditProfile = () => {
                                         <button type="button" onClick={() => { setGameQuery(''); setSelectedCategory('all'); }}>
                                             Ver todos
                                         </button>
+                                    </div>
+                                )}
+
+                                {competitiveProfileSections.length > 0 && (
+                                    <div className="ep__game-profiles-block">
+                                        <div className="ep__section-header" style={{ marginTop: '26px' }}>
+                                            <FaGamepad className="ep__section-icon" />
+                                            <div>
+                                                <label className="ep__label">Perfiles competitivos por juego</label>
+                                                <p className="ep__label-desc">
+                                                    Completa los campos especiales de cada disciplina para que perfil, comunidad y equipos tengan datos reales.
+                                                </p>
+                                            </div>
+                                            <span className="ep__game-profiles-count">
+                                                {completedCompetitiveProfilesCount}/{competitiveProfileSections.length} listos
+                                            </span>
+                                        </div>
+
+                                        <div className="ep__game-profiles-grid">
+                                            {competitiveProfileSections.map(({ gameId, spec, values }) => (
+                                                <div key={gameId} className="ep__game-profile-card">
+                                                    <div className="ep__game-profile-card__header">
+                                                        <div>
+                                                            <strong>{spec.title}</strong>
+                                                            <span>{spec.badge}</span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            className="ep__mini-btn ep__mini-btn--danger"
+                                                            onClick={() => clearCompetitiveProfile(gameId)}
+                                                        >
+                                                            Limpiar
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="ep__game-profile-card__fields">
+                                                        {spec.fields.map((field) => (
+                                                            <label key={field.key} className="ep__game-profile-field">
+                                                                <span>{field.label}</span>
+                                                                {field.type === 'select' ? (
+                                                                    <select
+                                                                        value={values?.[field.key] || ''}
+                                                                        onChange={(e) => handleCompetitiveProfileChange(gameId, field.key, e.target.value)}
+                                                                    >
+                                                                        <option value="">Selecciona</option>
+                                                                        {(field.options || []).map((option) => (
+                                                                            <option key={option} value={option}>{option}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                ) : (
+                                                                    <input
+                                                                        type="text"
+                                                                        value={values?.[field.key] || ''}
+                                                                        onChange={(e) => handleCompetitiveProfileChange(gameId, field.key, e.target.value)}
+                                                                        placeholder={field.placeholder || ''}
+                                                                    />
+                                                                )}
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
 

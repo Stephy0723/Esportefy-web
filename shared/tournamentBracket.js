@@ -225,6 +225,8 @@ const buildSingleEliminationBracket = (participants = [], format = 'single_elimi
         scoreB: null,
         status: 'pending',
         confirmationStatus: 'unconfirmed',
+        proofUrl: '',
+        gameResult: null,
         resultSubmissions: [],
         resolvedBy: null,
         resolvedAt: null,
@@ -283,6 +285,8 @@ const buildRoundRobinBracket = (participants = [], format = 'round_robin', seedi
         scoreB: null,
         status: 'ready',
         confirmationStatus: 'unconfirmed',
+        proofUrl: '',
+        gameResult: null,
         resultSubmissions: [],
         resolvedBy: null,
         resolvedAt: null,
@@ -406,6 +410,8 @@ const createSwissRoundMatches = (participants = [], previousRounds = [], roundIn
       scoreB: null,
       status: 'ready',
       confirmationStatus: 'unconfirmed',
+      proofUrl: '',
+      gameResult: null,
       resultSubmissions: [],
       resolvedBy: null,
       resolvedAt: null,
@@ -505,6 +511,8 @@ export const resolveBracketMatch = ({
   winnerRefId,
   scoreA = null,
   scoreB = null,
+  proofUrl = '',
+  gameResult = null,
   resolvedBy = null,
   resolvedAt = new Date().toISOString(),
 }) => {
@@ -531,6 +539,8 @@ export const resolveBracketMatch = ({
   match.winnerTeamId = winner?.teamId || null;
   match.scoreA = Number(normalizedScoreA);
   match.scoreB = Number(normalizedScoreB);
+  match.proofUrl = String(proofUrl || match.proofUrl || '').trim();
+  match.gameResult = gameResult ? clone(gameResult) : (match.gameResult ?? null);
   match.status = 'finished';
   match.confirmationStatus = 'resolved';
   match.resolvedBy = resolvedBy || null;

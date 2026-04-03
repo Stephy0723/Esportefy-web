@@ -16,6 +16,10 @@ import {
     normalizeTournamentGameSeries
 } from '../../../shared/gamePolicies.js';
 import {
+    GameMatchResultValidationError,
+    normalizeGameMatchResultPayload
+} from '../../../shared/gameMatchResults.js';
+import {
     buildTournamentBracket,
     getBracketParticipants,
     resolveBracketMatch
@@ -157,6 +161,7 @@ const getProjectedActiveParticipants = ({ maxSlots = 0, modality = '' }) => {
     const teamSize = parseTeamSizeFromModality(modality);
     return slots * teamSize;
 };
+const getTournamentSeriesType = (tournament = {}) => String(tournament?.matchConfig?.seriesType || '').trim();
 const getEntryFeePerSlotAmount = ({ entryFee = '', entryFeeAmount = '' }) => {
     const normalizedEntryFee = normalizeEntryFee(entryFee);
     if (!normalizedEntryFee || isFreeEntryFeeValue(normalizedEntryFee)) return 0;
@@ -1741,6 +1746,23 @@ export const submitBracketMatchResult = async (req, res) => {
             return res.status(400).json({ message: 'El ganador reportado no coincide con ninguno de los equipos del match.' });
         }
 
+        let normalizedResult;
+        try {
+            normalizedResult = normalizeGameMatchResultPayload({
+                game: tournament.game,
+                seriesType: getTournamentSeriesType(tournament),
+                scoreA: req.body?.scoreA,
+                scoreB: req.body?.scoreB,
+                gameResult: req.body?.gameResult,
+                status: 'submitted'
+            });
+        } catch (error) {
+            if (error instanceof GameMatchResultValidationError) {
+                return res.status(400).json({ message: error.message });
+            }
+            throw error;
+        }
+
         const allowedManager = await canManageTournament(tournament, req.userId);
         const reporterSide = getReporterSideForUser(tournament, match, req.userId);
         if (!allowedManager) {
@@ -1755,8 +1777,9 @@ export const submitBracketMatchResult = async (req, res) => {
         const submission = {
             side: submissionSource,
             winnerRefId: String(winnerRefId || ''),
-            scoreA: req.body?.scoreA ?? null,
-            scoreB: req.body?.scoreB ?? null,
+            scoreA: normalizedResult.scoreA,
+            scoreB: normalizedResult.scoreB,
+            gameResult: normalizedResult.gameResult,
             submittedBy: req.userId,
             submittedAt: new Date()
         };
@@ -1824,14 +1847,32 @@ export const resolveBracketMatchResult = async (req, res) => {
             return res.status(400).json({ message: 'El ganador indicado no pertenece a este match.' });
         }
 
-        const parsedScoreA = Number.isFinite(Number(req.body?.scoreA)) ? Number(req.body.scoreA) : null;
-        const parsedScoreB = Number.isFinite(Number(req.body?.scoreB)) ? Number(req.body.scoreB) : null;
+        let normalizedResult;
+        try {
+            normalizedResult = normalizeGameMatchResultPayload({
+                game: tournament.game,
+                seriesType: getTournamentSeriesType(tournament),
+                scoreA: req.body?.scoreA,
+                scoreB: req.body?.scoreB,
+                gameResult: req.body?.gameResult,
+                status: 'finished'
+            });
+        } catch (error) {
+            if (error instanceof GameMatchResultValidationError) {
+                return res.status(400).json({ message: error.message });
+            }
+            throw error;
+        }
+
+        const proofUrl = String(req.body?.proofUrl || '').trim();
         const result = resolveBracketMatch({
             bracket: tournament.bracket,
             matchId,
             winnerRefId,
-            scoreA: parsedScoreA,
-            scoreB: parsedScoreB,
+            scoreA: normalizedResult.scoreA,
+            scoreB: normalizedResult.scoreB,
+            proofUrl,
+            gameResult: normalizedResult.gameResult,
             resolvedBy: req.userId,
             resolvedAt: new Date().toISOString()
         });

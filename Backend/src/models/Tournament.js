@@ -300,6 +300,7 @@ const tournamentSchema = new mongoose.Schema({
                     default: 'unconfirmed'
                 },
                 proofUrl: { type: String, default: '' },
+                gameResult: { type: mongoose.Schema.Types.Mixed, default: null },
                 resultSubmissions: [{
                     side: {
                         type: String,
@@ -309,6 +310,7 @@ const tournamentSchema = new mongoose.Schema({
                     winnerRefId: String,
                     scoreA: { type: Number, default: null },
                     scoreB: { type: Number, default: null },
+                    gameResult: { type: mongoose.Schema.Types.Mixed, default: null },
                     submittedBy: {
                         type: mongoose.Schema.Types.ObjectId,
                         ref: 'User',

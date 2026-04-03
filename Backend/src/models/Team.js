@@ -13,7 +13,11 @@ const playerSchema = new mongoose.Schema({
     region: String,
     email: String,
     role: String,
-    photo: String // Base64 o URL de Cloudinary
+    photo: String, // Base64 o URL de Cloudinary
+    competitiveProfile: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    }
 });
 
 const teamSchema = new mongoose.Schema({

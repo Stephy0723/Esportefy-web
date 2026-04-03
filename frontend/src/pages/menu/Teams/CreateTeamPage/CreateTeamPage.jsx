@@ -15,13 +15,22 @@ import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import { getAuthToken as readAuthToken, getStoredUser } from '../../../../utils/authSession';
-import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../../shared/supportedGames.js';
+import {
+    getSupportedGameRoles,
+    isSupportedMlbbGame,
+    isSupportedRiotGame,
+    normalizeSupportedGameId
+} from '../../../../../../shared/supportedGames.js';
 import {
     TEAM_COUNTRY_OPTIONS,
     TEAM_GENDER_OPTIONS,
     TEAM_LANGUAGE_OPTIONS,
     TEAM_LEVEL_OPTIONS
 } from '../../../../../../shared/teamCatalog.js';
+import {
+    getCompetitiveProfileSpec,
+    normalizeCompetitiveProfilesPayload
+} from '../../../../../../shared/gameCompetitiveProfiles.js';
 import { getGamePlaybook } from '../../../../../../shared/gamePolicies.js';
 import './CreateTeamPage.css';
 
@@ -166,7 +175,8 @@ const CreateTeamPage = () => {
         region: '', 
         email: '', 
         role: '',
-        photo: null // Nuevo campo para la foto del jugador/coach
+        photo: null, // Nuevo campo para la foto del jugador/coach
+        competitiveProfile: {}
     });
 
     // --- FUNCIONES ---
@@ -199,6 +209,24 @@ const CreateTeamPage = () => {
     }, [formData.game, formData.leaderRegion]);
     const selectedGameRoles = useMemo(() => getSupportedGameRoles(formData.game), [formData.game]);
     const selectedGamePlaybook = useMemo(() => getGamePlaybook(formData.game), [formData.game]);
+    const selectedGameProfileSpec = useMemo(() => getCompetitiveProfileSpec(formData.game), [formData.game]);
+    const currentUserCompetitiveProfile = useMemo(() => {
+        const normalized = normalizeCompetitiveProfilesPayload(currentUser?.competitiveProfiles, [formData.game]);
+        const gameId = normalizeSupportedGameId(formData.game);
+        return gameId ? (normalized?.[gameId] || {}) : {};
+    }, [currentUser, formData.game]);
+    const captainCompetitiveIdentity = useMemo(() => ({
+        ign:
+            currentUserCompetitiveProfile.epicHandle ||
+            currentUserCompetitiveProfile.activisionId ||
+            currentUserCompetitiveProfile.eaId ||
+            currentUserCompetitiveProfile.tag ||
+            currentUserCompetitiveProfile.cfnId ||
+            currentUserCompetitiveProfile.ign ||
+            '',
+        playerId: currentUserCompetitiveProfile.playerId || '',
+        region: currentUserCompetitiveProfile.region || ''
+    }), [currentUserCompetitiveProfile]);
 
     const mapRiotRegion = (raw) => {
         const value = String(raw || '').toLowerCase().trim();
@@ -273,6 +301,30 @@ const CreateTeamPage = () => {
             };
         });
     }, [formData.game, mlbbVerified, mlbbPlayerId, mlbbZoneId]);
+
+    useEffect(() => {
+        if (!formData.game || isRiotGame || isMlbbGameSelected) return;
+        if (!captainCompetitiveIdentity.ign && !captainCompetitiveIdentity.playerId && !captainCompetitiveIdentity.region) return;
+
+        setFormData((prev) => {
+            const next = {
+                ...prev,
+                leaderIgn: prev.leaderIgn || captainCompetitiveIdentity.ign,
+                leaderGameId: prev.leaderGameId || captainCompetitiveIdentity.playerId,
+                leaderRegion: prev.leaderRegion || captainCompetitiveIdentity.region
+            };
+
+            if (
+                next.leaderIgn === prev.leaderIgn &&
+                next.leaderGameId === prev.leaderGameId &&
+                next.leaderRegion === prev.leaderRegion
+            ) {
+                return prev;
+            }
+
+            return next;
+        });
+    }, [formData.game, isRiotGame, isMlbbGameSelected, captainCompetitiveIdentity]);
 
     const lockMlbbIdentity = useMemo(
         () => isSupportedMlbbGame(formData.game) && mlbbVerified,
@@ -414,7 +466,10 @@ const CreateTeamPage = () => {
             ...prev, game: gameName, 
             maxMembers: rules.maxPlayers, 
             maxSubstitutes: rules.maxSubs,
-            leaderRole: defaultRole
+            leaderRole: defaultRole,
+            leaderIgn: '',
+            leaderGameId: '',
+            leaderRegion: ''
         }));
 
         setRoster({
@@ -434,7 +489,8 @@ const CreateTeamPage = () => {
             gameId: String(formData.leaderGameId || '').trim(),
             region: String(formData.leaderRegion || '').trim(),
             email: '',
-            role: String(formData.leaderRole || '').trim()
+            role: String(formData.leaderRole || '').trim(),
+            competitiveProfile: { ...currentUserCompetitiveProfile }
         };
         const isEmptySlot = (slot) => !slot || (!slot.user && !slot.nickname && !slot.gameId && !slot.email && !slot.role);
         const roleIdx = selectedGameRoles.findIndex((role) => normalizeText(role) === normalizeText(formData.leaderRole));
@@ -480,12 +536,14 @@ const CreateTeamPage = () => {
         formData.leaderRegion,
         formData.leaderRole,
         selectedGameRoles,
-        currentUser
+        currentUser,
+        currentUserCompetitiveProfile
     ]);
 
     const handleSlotClick = (type, index) => {
         setCurrentSlot({ type, index });
         const existingData = type === 'coach' ? roster.coach : roster[type][index];
+        const existingUserId = existingData?.user || roster?.starters?.[index]?.user;
         
         let suggestedRole = '';
         if (type === 'starters' && !existingData) {
@@ -493,27 +551,55 @@ const CreateTeamPage = () => {
             if (roles && roles[index]) suggestedRole = roles[index];
         }
 
-        setSlotData(existingData || { 
+        setSlotData(existingData ? {
+            ...existingData,
+            competitiveProfile: existingData.competitiveProfile || {}
+        } : { 
             nickname: '', 
             gameId: '', 
             region: formData.leaderRegion, 
             email: '', 
             role: suggestedRole,
-            photo: null 
+            photo: null,
+            competitiveProfile: type === 'starters' && String(currentUserId || '') === String(existingUserId || '')
+                ? { ...currentUserCompetitiveProfile }
+                : {}
         });
         setModalOpen(true);
     };
 
     const saveSlot = () => {
         if (!slotData.nickname) return addToast("Nickname requerido.", "error");
+        const sanitizedCompetitiveProfile = normalizeCompetitiveProfilesPayload(
+            { [formData.game]: slotData.competitiveProfile || {} },
+            [formData.game]
+        );
+        const nextSlotData = {
+            ...slotData,
+            competitiveProfile: sanitizedCompetitiveProfile[normalizeSupportedGameId(formData.game)] || {}
+        };
         if (currentSlot.type === 'coach') {
-            setRoster({ ...roster, coach: slotData });
+            setRoster({ ...roster, coach: nextSlotData });
         } else {
             const newList = [...roster[currentSlot.type]];
-            newList[currentSlot.index] = slotData;
+            newList[currentSlot.index] = nextSlotData;
             setRoster({ ...roster, [currentSlot.type]: newList });
         }
         setModalOpen(false);
+    };
+
+    const handleCompetitiveSlotFieldChange = (fieldKey, value) => {
+        if (!selectedGameProfileSpec) return;
+        const field = selectedGameProfileSpec.fields.find((entry) => entry.key === fieldKey);
+        const nextValue = field?.type === 'select' ? value : value.slice(0, field?.max || 60);
+
+        setSlotData((prev) => ({
+            ...prev,
+            competitiveProfile: {
+                ...(prev.competitiveProfile || {}),
+                [fieldKey]: nextValue
+            }
+        }));
     };
 
     const finalizeCreation = async () => {
@@ -1547,6 +1633,39 @@ const CreateTeamPage = () => {
                             value={slotData.email} 
                             onChange={(e) => setSlotData({...slotData, email: e.target.value})} 
                         />
+
+                        {selectedGameProfileSpec && currentSlot?.type !== 'coach' && (
+                            <>
+                                <label className="section-label" style={{ marginTop: '1rem' }}>
+                                    Perfil especial: {selectedGameProfileSpec.title}
+                                </label>
+                                <div className="split-row">
+                                    {selectedGameProfileSpec.fields.map((field) => (
+                                        <div key={field.key}>
+                                            <label className="section-label">{field.label}</label>
+                                            {field.type === 'select' ? (
+                                                <select
+                                                    value={slotData.competitiveProfile?.[field.key] || ''}
+                                                    onChange={(e) => handleCompetitiveSlotFieldChange(field.key, e.target.value)}
+                                                >
+                                                    <option value="">Selecciona</option>
+                                                    {(field.options || []).map((option) => (
+                                                        <option key={option} value={option}>{option}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    placeholder={field.placeholder || ''}
+                                                    value={slotData.competitiveProfile?.[field.key] || ''}
+                                                    onChange={(e) => handleCompetitiveSlotFieldChange(field.key, e.target.value)}
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
 
                         <div className="modal-buttons">
                             <button className="btn-ghost" onClick={() => setModalOpen(false)}>Cancelar</button>

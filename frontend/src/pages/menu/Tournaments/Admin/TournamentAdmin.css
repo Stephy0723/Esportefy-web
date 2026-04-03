@@ -1497,6 +1497,67 @@
   border-color: var(--primary, #8EDB15);
 }
 
+.mc-editor__result-meta {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #2a2a40);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.mc-editor__result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mc-editor__result-grid--triple {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.mc-editor__result-grid label,
+.mc-editor__result-span {
+  display: grid;
+  gap: 5px;
+}
+
+.mc-editor__result-grid span,
+.mc-editor__result-span span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+}
+
+.mc-editor__result-grid input,
+.mc-editor__result-grid textarea,
+.mc-editor__result-span input,
+.mc-editor__result-span textarea {
+  border: 1px solid var(--border-color, #2a2a40);
+  background: var(--bg-input, #1a1a2e);
+  color: var(--text-main, #e9e9e9);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+
+.mc-editor__result-grid input:focus,
+.mc-editor__result-grid textarea:focus,
+.mc-editor__result-span input:focus,
+.mc-editor__result-span textarea:focus {
+  outline: none;
+  border-color: var(--primary, #8EDB15);
+}
+
+.mc-editor__result-span {
+  grid-column: 1 / -1;
+}
+
 .mc-editor__status {
   display: grid;
   gap: 5px;
@@ -1610,6 +1671,8 @@
   .mc-card__teams { grid-template-columns: 1fr; gap: 4px; }
   .mc-card__vs { text-align: center; }
   .mc-editor__actions { grid-template-columns: 1fr; }
+  .mc-editor__result-grid,
+  .mc-editor__result-grid--triple { grid-template-columns: 1fr; }
 }
 
 .ta-match-row {

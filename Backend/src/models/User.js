@@ -353,6 +353,10 @@ const UserSchema = new mongoose.Schema({
             verified: { type: Boolean, default: false }
         }
     },
+    competitiveProfiles: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     
     privacy: {
         allowTeamInvites: { type: Boolean, default: true },
