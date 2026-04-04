@@ -2113,7 +2113,21 @@ export const resetPassword = async (req, res) => {
         const { password, confirmPassword } = req.body;
         const plainToken = String(token || '').trim();
 
+        // LOGGING: Debug exactamente qué se recibe
+        console.log('[resetPassword] Received:', {
+            token: plainToken ? '✓ present' : '✗ MISSING',
+            password: password ? '✓ present' : '✗ MISSING',
+            confirmPassword: confirmPassword ? '✓ present' : '✗ MISSING',
+            passwordLength: password ? password.length : 0,
+            body: req.body
+        });
+
         if (!plainToken || !password || !confirmPassword) {
+            console.error('[resetPassword] Validation failed:', {
+                missingToken: !plainToken,
+                missingPassword: !password,
+                missingConfirmPassword: !confirmPassword
+            });
             return res.status(400).json({ message: "Solicitud inválida." });
         }
 
@@ -2138,7 +2152,10 @@ export const resetPassword = async (req, res) => {
 
         // Hashear la nueva contraseña y actualizar atómicamente (evita pre-validate hook)
         const hashedPassword = await bcrypt.hash(password, 10);
-        await User.updateOne(
+        
+        // Fix: Remove $position: 0 - it was causing silent failures in some MongoDB versions
+        // Simply append notifications to the end of the array instead
+        const updateResult = await User.updateOne(
             { _id: user._id },
             {
                 $set: {
@@ -2160,17 +2177,24 @@ export const resetPassword = async (req, res) => {
                             status: 'unread',
                             visuals: { icon: 'bx-lock-open-alt', color: '#f59e0b', glow: true },
                             createdAt: new Date()
-                        }],
-                        $position: 0
+                        }]
                     }
                 }
             }
         );
 
+        if (!updateResult.acknowledged) {
+            throw new Error('MongoDB update not acknowledged');
+        }
+
         res.status(200).json({ message: "Contraseña actualizada correctamente." });
 
     } catch (error) {
-        console.error('[resetPassword] Error:', error.message || error);
+        console.error('[resetPassword] Error:', {
+            message: error.message,
+            code: error.code,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
         return res.status(500).json({ message: "Error al actualizar la contraseña" });
     }
 };

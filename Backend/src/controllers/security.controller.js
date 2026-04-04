@@ -67,7 +67,17 @@ const SALT_ROUNDS = 10;
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmPassword } = req.body;
+    
+    // LOGGING: Debug exactamente qué se recibe
+    console.log('[changePassword] Received:', {
+      currentPassword: currentPassword ? '✓ present' : '✗ MISSING',
+      newPassword: newPassword ? '✓ present' : '✗ MISSING',
+      confirmPassword: confirmPassword ? '✓ present' : '✗ MISSING',
+      userId: req.userId
+    });
+    
     if (!currentPassword || !newPassword || !confirmPassword) {
+      console.error('[changePassword] Validation failed - missing fields');
       return res.status(400).json({ message: 'Se requieren la contraseña actual, la nueva y su confirmación.' });
     }
     if (newPassword !== confirmPassword) {
@@ -88,15 +98,23 @@ export const changePassword = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    await User.updateOne(
+    const updateResult = await User.updateOne(
       { _id: req.userId },
       { $set: { password: hashedPassword, passwordChangedAt: new Date() } }
     );
 
+    if (!updateResult.acknowledged) {
+      throw new Error('MongoDB update not acknowledged');
+    }
+
     await recordActivity({ userId: req.userId, event: 'password_change', req });
     res.json({ message: 'Contraseña actualizada correctamente.' });
   } catch (err) {
-    console.error('[changePassword] Error:', err.message || err);
+    console.error('[changePassword] Error:', {
+      message: err.message,
+      code: err.code,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
     res.status(500).json({ message: 'Error al cambiar contraseña.' });
   }
 };
