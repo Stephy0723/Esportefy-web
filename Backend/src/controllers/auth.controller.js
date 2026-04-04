@@ -222,45 +222,45 @@ const sendVerificationMailToUser = async (user, plainToken) => {
         from: 'GlitchGang Team <no-reply@glitchgang.net>',
         subject: 'Verifica tu correo en GLITCH GANG',
         html: `
-        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 50px 0;">
-            <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #eeeeee; overflow: hidden;">
-                
-                <div style="padding: 30px; text-align: center;">
-                    <h1 style="color: #000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">
-                        GLITCHGANG<span style="color: #00ff00;">.</span>
-                    </h1>
-                    <p style="color: #666; font-size: 14px; margin-top: 10px;">VERIFICACION DE CORREO</p>
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 50px 0;">
+        <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #eeeeee; overflow: hidden;">
+            
+            <div style="padding: 30px; text-align: center;">
+                <h1 style="color: #000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">
+                    GLITCHGANG<span style="color: #00ff00;">.</span>
+                </h1>
+                <p style="color: #666; font-size: 14px; margin-top: 10px;">VERIFICACIÓN DE CORREO</p>
+            </div>
+
+            <div style="padding: 0 40px 40px 40px; text-align: center;">
+                <p style="color: #333; font-size: 16px; line-height: 1.5;">
+                    Hola, <strong>${fullName}</strong>. Confirma tu correo para reforzar la seguridad de tu cuenta. Este enlace expirará en 24 horas.
+                </p>
+
+                <div style="margin: 30px 0;">
+                    <a href="${verificationLink}" style="display: inline-block; background-color: #000; color: #fff; text-decoration: none; border-radius: 8px; padding: 14px 24px; font-size: 15px; font-weight: bold;">
+                        VERIFICAR CORREO
+                    </a>
                 </div>
 
-                <div style="padding: 0 40px 40px 40px; text-align: center;">
-                    <p style="color: #333; font-size: 16px; line-height: 1.5;">
-                        Hola, <strong>${fullName}</strong>. Confirma tu correo para reforzar la seguridad de tu cuenta. Este enlace expirara en 24 horas.
-                    </p>
-
-                    <div style="margin: 30px 0;">
-                        <a href="${verificationLink}" style="display: inline-block; background-color: #000; color: #fff; text-decoration: none; border-radius: 8px; padding: 14px 24px; font-size: 15px; font-weight: bold;">
-                            VERIFICAR CORREO
-                        </a>
-                    </div>
-
-                    <div style="margin: 30px 0; background-color: #f4f4f4; border-radius: 8px; padding: 20px; border: 1px dashed #cccccc;">
-                        <span style="font-family: monospace; font-size: 14px; font-weight: bold; color: #000; word-break: break-all;">
-                            ${verificationLink}
-                        </span>
-                    </div>
-
-                    <p style="color: #999; font-size: 12px;">
-                        Si no solicitaste esta verificacion, puedes ignorar este correo de forma segura.
-                    </p>
+                <div style="margin: 30px 0; background-color: #f4f4f4; border-radius: 8px; padding: 20px; border: 1px dashed #cccccc;">
+                    <span style="font-family: monospace; font-size: 14px; font-weight: bold; color: #000; word-break: break-all;">
+                        ${verificationLink}
+                    </span>
                 </div>
 
-                <div style="background-color: #000; padding: 15px; text-align: center;">
-                    <p style="color: #fff; font-size: 11px; margin: 0; opacity: 0.7;">
-                        Â© ${new Date().getFullYear()} GlitchGang Platform. Todos los derechos reservados.
-                    </p>
-                </div>
+                <p style="color: #999; font-size: 12px;">
+                    Si no solicitaste esta verificación, puedes ignorar este correo de forma segura.
+                </p>
+            </div>
+
+            <div style="background-color: #000; padding: 15px; text-align: center;">
+                <p style="color: #fff; font-size: 11px; margin: 0; opacity: 0.7;">
+                    © ${new Date().getFullYear()} GlitchGang Platform. Todos los derechos reservados.
+                </p>
             </div>
         </div>
+    </div>
         `
     });
 };
