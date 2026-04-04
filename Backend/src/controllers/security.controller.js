@@ -66,9 +66,12 @@ const SALT_ROUNDS = 10;
 // ── Change Password ──
 export const changePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'Se requieren la contraseña actual y la nueva.' });
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'Se requieren la contraseña actual, la nueva y su confirmación.' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'Las contraseñas no coinciden.' });
     }
     if (newPassword.length < 8) {
       return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 8 caracteres.' });

@@ -2110,11 +2110,15 @@ await transporter.sendMail(mailOptions);
 export const resetPassword = async (req, res) => {
     try {
         const { token } = req.params;
-        const { password } = req.body;
+        const { password, confirmPassword } = req.body;
         const plainToken = String(token || '').trim();
 
-        if (!plainToken || !password) {
+        if (!plainToken || !password || !confirmPassword) {
             return res.status(400).json({ message: "Solicitud inválida." });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: "Las contraseñas no coinciden." });
         }
 
         if (String(password).length < 8) {

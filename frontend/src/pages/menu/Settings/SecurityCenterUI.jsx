@@ -137,7 +137,8 @@ const SecurityCenterUI = ({
     try {
       await axios.post(`${API_URL}/api/security/change-password`, {
         currentPassword: passwordData.current,
-        newPassword: passwordData.new
+        newPassword: passwordData.new,
+        confirmPassword: passwordData.confirm
       }, authHeaders());
       addToast('Contraseña actualizada correctamente.', 'success');
       setShowPasswordForm(false);
