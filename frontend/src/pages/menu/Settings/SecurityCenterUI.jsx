@@ -82,6 +82,7 @@ const SecurityCenterUI = ({
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
   const [loadingPassword, setLoadingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState({ current: false, new: false, confirm: false });
 
   // 2FA
   const [twoFA, setTwoFA] = useState({ enabled: false, enabledAt: null, backupCodesRemaining: 0 });
@@ -327,21 +328,42 @@ const SecurityCenterUI = ({
             </div>
             {showPasswordForm ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                <input type="password" placeholder="Contraseña actual" value={passwordData.current}
-                  onChange={e => setPasswordData(p => ({ ...p, current: e.target.value }))}
-                  className="sc-input" />
-                <input type="password" placeholder="Nueva contraseña" value={passwordData.new}
-                  onChange={e => setPasswordData(p => ({ ...p, new: e.target.value }))}
-                  className="sc-input" />
-                <input type="password" placeholder="Confirmar nueva contraseña" value={passwordData.confirm}
-                  onChange={e => setPasswordData(p => ({ ...p, confirm: e.target.value }))}
-                  className="sc-input" />
+                <div style={{ position: 'relative' }}>
+                  <input type={showPassword.current ? "text" : "password"} placeholder="Contraseña actual" value={passwordData.current}
+                    onChange={e => setPasswordData(p => ({ ...p, current: e.target.value }))}
+                    className="sc-input" />
+                  <button type="button"
+                    onClick={() => setShowPassword(p => ({ ...p, current: !p.current }))}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#666', fontSize: '16px' }}>
+                    {showPassword.current ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input type={showPassword.new ? "text" : "password"} placeholder="Nueva contraseña" value={passwordData.new}
+                    onChange={e => setPasswordData(p => ({ ...p, new: e.target.value }))}
+                    className="sc-input" />
+                  <button type="button"
+                    onClick={() => setShowPassword(p => ({ ...p, new: !p.new }))}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#666', fontSize: '16px' }}>
+                    {showPassword.new ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input type={showPassword.confirm ? "text" : "password"} placeholder="Confirmar nueva contraseña" value={passwordData.confirm}
+                    onChange={e => setPasswordData(p => ({ ...p, confirm: e.target.value }))}
+                    className="sc-input" />
+                  <button type="button"
+                    onClick={() => setShowPassword(p => ({ ...p, confirm: !p.confirm }))}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#666', fontSize: '16px' }}>
+                    {showPassword.confirm ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="sc-btn sc-btn--primary sc-btn--sm" onClick={handleChangePassword} disabled={loadingPassword}>
                     {loadingPassword ? 'Guardando...' : 'Guardar'}
                   </button>
                   <button className="sc-btn sc-btn--ghost sc-btn--sm"
-                    onClick={() => { setShowPasswordForm(false); setPasswordData({ current: '', new: '', confirm: '' }); }}>
+                    onClick={() => { setShowPasswordForm(false); setPasswordData({ current: '', new: '', confirm: '' }); setShowPassword({ current: false, new: false, confirm: false }); }}>
                     Cancelar
                   </button>
                 </div>
