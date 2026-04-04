@@ -87,13 +87,16 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ message: 'La nueva contraseña debe ser diferente a la actual.' });
     }
 
-    user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    user.passwordChangedAt = new Date();
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await User.updateOne(
+      { _id: req.userId },
+      { $set: { password: hashedPassword, passwordChangedAt: new Date() } }
+    );
 
     await recordActivity({ userId: req.userId, event: 'password_change', req });
     res.json({ message: 'Contraseña actualizada correctamente.' });
   } catch (err) {
+    console.error('[changePassword] Error:', err.message || err);
     res.status(500).json({ message: 'Error al cambiar contraseña.' });
   }
 };

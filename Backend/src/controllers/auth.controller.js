@@ -2136,27 +2136,41 @@ export const resetPassword = async (req, res) => {
             return res.status(400).json({ message: "El token es inválido o ha expirado." });
         }
 
-        // Hashear la nueva contraseña
-        user.password = await bcrypt.hash(password, 10);
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpires = undefined;
+        // Hashear la nueva contraseña y actualizar atómicamente (evita pre-validate hook)
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await User.updateOne(
+            { _id: user._id },
+            {
+                $set: {
+                    password: hashedPassword,
+                    passwordChangedAt: new Date()
+                },
+                $unset: {
+                    resetPasswordToken: '',
+                    resetPasswordExpires: ''
+                },
+                $push: {
+                    notifications: {
+                        $each: [{
+                            type: 'info',
+                            category: 'system',
+                            title: 'Contrasena restablecida',
+                            source: 'Seguridad',
+                            message: 'Tu contrasena fue actualizada exitosamente. Si no realizaste este cambio, contacta soporte inmediatamente.',
+                            status: 'unread',
+                            visuals: { icon: 'bx-lock-open-alt', color: '#f59e0b', glow: true },
+                            createdAt: new Date()
+                        }],
+                        $position: 0
+                    }
+                }
+            }
+        );
 
-        // Notification: password reset
-        user.notifications.unshift({
-            type: 'info',
-            category: 'system',
-            title: 'Contrasena restablecida',
-            source: 'Seguridad',
-            message: 'Tu contrasena fue actualizada exitosamente. Si no realizaste este cambio, contacta soporte inmediatamente.',
-            status: 'unread',
-            visuals: { icon: 'bx-lock-open-alt', color: '#f59e0b', glow: true },
-            createdAt: new Date()
-        });
-
-        await user.save();
         res.status(200).json({ message: "Contraseña actualizada correctamente." });
 
     } catch (error) {
+        console.error('[resetPassword] Error:', error.message || error);
         return res.status(500).json({ message: "Error al actualizar la contraseña" });
     }
 };
