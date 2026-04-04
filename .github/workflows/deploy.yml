@@ -71,3 +71,15 @@ jobs:
             
             Por favor, revisa los logs en: https://github.com/${{ github.repository }}/actions
 
+      - name: SSH Deploy and Build
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSHKEY }}
+          script_stop: true
+          script: |
+            # Entramos a la carpeta y ejecutamos el script local
+            cd /var/www/Esportefy-web
+            bash -l ./deploy.sh
+
