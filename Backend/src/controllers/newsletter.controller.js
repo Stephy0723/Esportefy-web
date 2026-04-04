@@ -134,6 +134,11 @@ export const unsubscribe = async (req, res) => {
     const { token } = req.query;
     if (!token) return res.status(400).json({ message: 'Token requerido' });
 
+    // Validate token format (must be 64 hex chars from crypto.randomBytes(32))
+    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/i.test(token)) {
+      return res.status(400).json({ message: 'Token inválido' });
+    }
+
     const subscriber = await NewsletterSubscriber.findOne({ unsubscribeToken: token });
     if (!subscriber) {
       return res.status(404).json({ message: 'Suscripcion no encontrada' });

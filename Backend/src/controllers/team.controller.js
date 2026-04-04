@@ -1,5 +1,6 @@
 // Backend/src/controllers/team.controller.js
 
+import mongoose from 'mongoose';
 import Team from "../models/Team.js";
 import User from "../models/User.js";
 import axios from 'axios';
@@ -1918,7 +1919,7 @@ export const leaveTeam = async (req, res) => {
             });
         }
 
-        const removeUserFromList = (list) => list.map((p) => (String(p?.user) === String(userId) ? null : p));
+        const removeUserFromList = (list) => list.filter((p) => p && String(p?.user) !== String(userId));
         if (Array.isArray(team.roster?.starters)) team.roster.starters = removeUserFromList(team.roster.starters);
         if (Array.isArray(team.roster?.subs)) team.roster.subs = removeUserFromList(team.roster.subs);
         if (team.roster?.coach && String(team.roster.coach.user) === String(userId)) team.roster.coach = null;
@@ -2019,8 +2020,15 @@ export const deleteTeam = async (req, res) => {
             return res.status(403).json({ message: "No tienes permisos para eliminar este equipo" });
         }
 
-        await Team.deleteOne({ _id: teamId });
-        await User.updateMany({ teams: teamId }, { $pull: { teams: teamId } });
+        const session = await mongoose.startSession();
+        try {
+            await session.withTransaction(async () => {
+                await Team.deleteOne({ _id: teamId }, { session });
+                await User.updateMany({ teams: teamId }, { $pull: { teams: teamId } }, { session });
+            });
+        } finally {
+            session.endSession();
+        }
         await safeDeleteTeamConversation(teamId);
 
         res.status(200).json({ message: "Equipo eliminado" });

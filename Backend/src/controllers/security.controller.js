@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Session from '../models/Session.js';
 import ActivityLog from '../models/ActivityLog.js';
@@ -390,11 +391,17 @@ export const deleteAccount = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Contraseña incorrecta.' });
 
-    // Revoke all sessions
-    await Session.updateMany({ userId: req.userId }, { revokedAt: new Date() });
-
-    // Delete user
-    await User.findByIdAndDelete(req.userId);
+    // Revoke and delete all sessions atomically with user deletion
+    const dbSession = await mongoose.startSession();
+    try {
+      await dbSession.withTransaction(async () => {
+        await Session.updateMany({ userId: req.userId }, { revokedAt: new Date() }, { session: dbSession });
+        await Session.deleteMany({ userId: req.userId }, { session: dbSession });
+        await User.findByIdAndDelete(req.userId, { session: dbSession });
+      });
+    } finally {
+      dbSession.endSession();
+    }
 
     await recordActivity({ userId: req.userId, event: 'account_deleted', req });
     res.json({ message: 'Cuenta eliminada permanentemente.' });

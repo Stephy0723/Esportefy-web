@@ -276,12 +276,16 @@ export const sendDailyNewsletter = async () => {
     let emailsSent = 0;
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       const transporter = createMailer();
-      for (const sub of subscribers) {
-        try {
-          const didSend = await sendToSubscriber(transporter, sub, articles, frontendUrl);
-          if (didSend) emailsSent++;
-        } catch (err) {
-          console.error(`[Newsletter] Error enviando a ${sub.email}:`, err.message);
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
+        const batch = subscribers.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map(sub => sendToSubscriber(transporter, sub, articles, frontendUrl))
+        );
+        emailsSent += results.filter(r => r.status === 'fulfilled' && r.value).length;
+        const failed = results.filter(r => r.status === 'rejected');
+        for (const f of failed) {
+          console.error(`[Newsletter] Error enviando:`, f.reason?.message || f.reason);
         }
       }
     }
