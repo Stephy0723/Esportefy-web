@@ -419,8 +419,24 @@ export default function Settings() {
     };
 
     const validateMlbbDraft = async () => {
-        if (!mlbbPlayerId.trim() || !mlbbZoneId.trim()) {
-            setMlbbMsg('Debes completar User ID y Zone ID.');
+        const playerId = mlbbPlayerId.trim();
+        const zoneId = mlbbZoneId.trim();
+        const ign = mlbbIgn.trim();
+
+        if (!playerId) {
+            setMlbbMsg('User ID es obligatorio.');
+            return;
+        }
+        if (!zoneId) {
+            setMlbbMsg('Zone ID es obligatorio.');
+            return;
+        }
+        if (!/^\d+$/.test(playerId)) {
+            setMlbbMsg('User ID debe contener solo dígitos (ej: 853455730).');
+            return;
+        }
+        if (!/^\d+$/.test(zoneId)) {
+            setMlbbMsg('Zone ID debe contener solo dígitos (ej: 12345).');
             return;
         }
 
@@ -429,11 +445,7 @@ export default function Settings() {
             setMlbbMsg('');
             const res = await axios.post(
                 `${API_URL}/api/auth/mlbb/validate`,
-                {
-                    playerId: mlbbPlayerId.trim(),
-                    zoneId: mlbbZoneId.trim(),
-                    ign: mlbbIgn.trim()
-                },
+                { playerId, zoneId, ign },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setMlbbMsg(res.data?.message || 'MLBB ID válido.');

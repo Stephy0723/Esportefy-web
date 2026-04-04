@@ -94,19 +94,29 @@ export const syncTeamConversation = async (team = {}) => {
 };
 
 export const safeSyncTeamConversation = async (team = {}) => {
+  const isDevelopment = process.env.NODE_ENV !== 'production';
   try {
-    // En desarrollo, solo log sin bloquear si chat-service no está disponible
-    const isDevelopment = process.env.NODE_ENV !== 'production';
     const result = await syncTeamConversation(team);
     return result;
   } catch (error) {
-    // En desarrollo, solo warn. En producción, también.
-    const isConnectionError = error?.code === 'ECONNREFUSED' || error?.message?.includes('ECONNREFUSED');
-    if (isConnectionError && process.env.NODE_ENV !== 'production') {
-      console.info('[teamChatSync] Chat service not available (development mode) - team creation proceeds');
-    } else {
-      console.warn('[teamChatSync] sync failed:', error?.response?.data || error?.message || error);
+    const isConnectionError =
+      error?.code === 'ECONNREFUSED' ||
+      error?.code === 'EHOSTUNREACH' ||
+      error?.code === 'ETIMEDOUT' ||
+      error?.message?.includes('ECONNREFUSED') ||
+      error?.message?.includes('EHOSTUNREACH');
+
+    if (isConnectionError) {
+      if (isDevelopment) {
+        console.info('[teamChatSync] Chat service not available (development) — team creation proceeds');
+        return { status: 'warning', message: 'Chat service unavailable, sync skipped' };
+      }
+      // En producción: loguear como error crítico pero no bloquear la operación del equipo
+      console.error('[teamChatSync] CRITICAL: Chat service unreachable in production — team created without chat sync');
+      return { status: 'error', message: 'Chat service unreachable' };
     }
+
+    console.warn('[teamChatSync] sync failed:', error?.response?.data || error?.message || error);
     return null;
   }
 };

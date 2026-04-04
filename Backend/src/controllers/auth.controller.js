@@ -742,9 +742,11 @@ export const register = async (req, res) => {
             referredBy: referredByUser?._id || null
         });
 
+        let emailVerificationSent = false;
         try {
             const verificationToken = issueEmailVerificationToken(user);
             await sendVerificationMailToUser(user, verificationToken);
+            emailVerificationSent = true;
         } catch (mailError) {
             if (mailError?.message !== 'SMTP_NOT_CONFIGURED') {
                 console.error('No se pudo enviar correo de verificacion al registrar:', mailError);
@@ -770,7 +772,15 @@ export const register = async (req, res) => {
         const userResponse = user.toObject();
         delete userResponse.password;
 
-        res.status(201).json(userResponse);
+        res.status(201).json({
+            ...userResponse,
+            emailVerification: {
+                sent: emailVerificationSent,
+                message: emailVerificationSent
+                    ? 'Revisa tu correo para verificar tu cuenta.'
+                    : 'Tu cuenta fue creada, pero no pudimos enviar el email de verificación. Puedes reenviar desde Configuración.'
+            }
+        });
 
     } catch (error) {
         console.error("Error en Registro:", error);
