@@ -76,13 +76,19 @@ export const changePassword = async (req, res) => {
       userId: req.userId
     });
     
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    // Backward compatibility: If confirmPassword not sent, use newPassword as confirmation
+    const finalConfirmPassword = confirmPassword || newPassword;
+    
+    if (!currentPassword || !newPassword) {
       console.error('[changePassword] Validation failed - missing fields');
-      return res.status(400).json({ message: 'Se requieren la contraseña actual, la nueva y su confirmación.' });
+      return res.status(400).json({ message: 'Se requieren la contraseña actual y la nueva.' });
     }
-    if (newPassword !== confirmPassword) {
+    
+    // If confirmPassword was provided, validate it matches
+    if (confirmPassword && newPassword !== confirmPassword) {
       return res.status(400).json({ message: 'Las contraseñas no coinciden.' });
     }
+    
     if (newPassword.length < 8) {
       return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 8 caracteres.' });
     }

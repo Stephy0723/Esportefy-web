@@ -2122,16 +2122,19 @@ export const resetPassword = async (req, res) => {
             body: req.body
         });
 
-        if (!plainToken || !password || !confirmPassword) {
+        // Backward compatibility: If confirmPassword not sent, use password as confirmation
+        const finalConfirmPassword = confirmPassword || password;
+        
+        if (!plainToken || !password) {
             console.error('[resetPassword] Validation failed:', {
                 missingToken: !plainToken,
-                missingPassword: !password,
-                missingConfirmPassword: !confirmPassword
+                missingPassword: !password
             });
             return res.status(400).json({ message: "Solicitud inválida." });
         }
 
-        if (password !== confirmPassword) {
+        // If confirmPassword was provided, validate it matches
+        if (confirmPassword && password !== confirmPassword) {
             return res.status(400).json({ message: "Las contraseñas no coinciden." });
         }
 
