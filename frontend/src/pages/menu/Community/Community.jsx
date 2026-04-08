@@ -7,13 +7,12 @@ import FeedPanel from './FeedPanel/FeedPanel';
 import CreateCommunityModal from './CreateCommunityModal/CreateCommunityModal';
 import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
 import { getStoredUser } from '../../../utils/authSession';
-import { fetchGameHubStatsIndex, formatGameHubCount } from './gameHub.service';
+import { fetchCommunityGameCatalog, formatGameHubCount } from './gameHub.service';
 import { fetchAllCommunities } from './community.service';
 import { getCommunitySocialEntries } from './communitySocials';
-import {
-    COMMUNITY_GAMES as GAMES,
-    COMMUNITY_FILTERS as FILTERS,
-} from '../../../data/communityData';
+import { decorateCommunityGames } from './communityGameAssets';
+
+void motion;
 
 /*  ANIMATION VARIANTS  */
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
@@ -39,16 +38,47 @@ const useCountUp = (target, duration = 2200, active = true) => {
     return value;
 };
 
+const buildParticles = (count, createParticle) =>
+    Array.from({ length: count }, (_, index) => ({
+        id: index,
+        ...createParticle(index)
+    }));
+
+const HERO_PARTICLES = buildParticles(30, () => ({
+    x: `${Math.random() * 100}%`,
+    y: `${Math.random() * 100}%`,
+    d: `${2 + Math.random() * 6}s`,
+    s: `${2 + Math.random() * 5}px`,
+    delay: `${Math.random() * 5}s`
+}));
+
+const GAME_SECTION_PARTICLES = buildParticles(12, () => ({
+    px: `${Math.random() * 100}%`,
+    py: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 5}s`,
+    dur: `${3 + Math.random() * 4}s`,
+    size: `${2 + Math.random() * 4}px`
+}));
+
+const CTA_BANNER_PARTICLES = buildParticles(8, () => ({
+    x: `${Math.random() * 100}%`,
+    d: `${3 + Math.random() * 4}s`
+}));
+
+const GLOBAL_PARTICLES = buildParticles(20, () => ({
+    x: `${Math.random() * 100}%`,
+    duration: `${12 + Math.random() * 15}s`,
+    delay: `${Math.random() * 10}s`
+}));
+
 /*  COMPONENTS  */
 
-const HeroBanner = ({ onExplore }) => {
+const HeroBanner = ({ onExplore, games = [] }) => {
     const [heroIdx, setHeroIdx] = useState(0);
-    const [isLoaded, setIsLoaded] = useState(false);
-    const heroes = GAMES.slice(0, 3);
+    const heroes = games.slice(0, 3);
     const hero = heroes[heroIdx] || heroes[0] || { name: 'Comunidad', img: '', color: '#8EDB15' };
 
     useEffect(() => {
-        setIsLoaded(true);
         if (!heroes.length) return undefined;
         const t = setInterval(() => setHeroIdx(i => (i + 1) % heroes.length), 6000);
         return () => clearInterval(t);
@@ -73,7 +103,7 @@ const HeroBanner = ({ onExplore }) => {
             <motion.div
                 className="cm-hero__content"
                 initial={{ opacity: 0, y: 35 }}
-                animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 35 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 24, delay: 0.15 }}
             >
                 <span className="cm-hero__badge">
@@ -116,13 +146,13 @@ const HeroBanner = ({ onExplore }) => {
                 </div>
             </motion.div>
             <div className="cm-hero__particles">
-                {Array.from({ length: 30 }).map((_, i) => (
-                    <span key={i} className="cm-hero__particle" style={{ 
-                        '--x': Math.random()*100+'%', 
-                        '--y': Math.random()*100+'%', 
-                        '--d': (2+Math.random()*6)+'s', 
-                        '--s': (2+Math.random()*5)+'px',
-                        '--delay': (Math.random() * 5) + 's'
+                {HERO_PARTICLES.map((particle) => (
+                    <span key={particle.id} className="cm-hero__particle" style={{
+                        '--x': particle.x,
+                        '--y': particle.y,
+                        '--d': particle.d,
+                        '--s': particle.s,
+                        '--delay': particle.delay
                     }} />
                 ))}
             </div>
@@ -133,7 +163,7 @@ const HeroBanner = ({ onExplore }) => {
     );
 };
 
-const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommunity }) => {
+const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommunity, games = [] }) => {
     const [showGameDrop, setShowGameDrop] = useState(false);
     const dropRef = useRef(null);
 
@@ -167,7 +197,7 @@ const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommuni
                                 onClick={() => { setGameFilter('all'); setShowGameDrop(false); }}>
                                 <i className='bx bx-grid-alt'></i> Todos los juegos
                             </button>
-                            {GAMES.map(g => (
+                            {games.map(g => (
                                 <button key={g.id} className={'cm-search__dropdown-item ' + (gameFilter === g.name ? 'active' : '')}
                                     onClick={() => { setGameFilter(g.name); setShowGameDrop(false); }}>
                                     <img src={g.img} alt="" className="cm-search__dropdown-img" />
@@ -243,7 +273,7 @@ const GameCard = ({ game, index, stats }) => {
                 <div className="cm-game__scanlines" />
                 <div className="cm-game__top-badge">
                     <span className="cm-game__badge-dot" />
-                    {game.cat}
+                    {game.category}
                 </div>
                 <div className="cm-game__info">
                     <h3 className="cm-game__name">{game.name}</h3>
@@ -275,16 +305,16 @@ const GameCard = ({ game, index, stats }) => {
     );
 };
 
-const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGame, gameStats }) => {
+const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGame, gameStats, games = [], filters = [] }) => {
     const carouselRef = useRef(null);
     const [isPaused, setIsPaused] = useState(false);
     const [progress, setProgress] = useState(0);
 
     const filtered = useMemo(() => {
-        let result = activeFilter === 'all' ? GAMES : GAMES.filter(g => g.cat === activeFilter);
+        let result = activeFilter === 'all' ? games : games.filter(g => g.category === activeFilter);
         if (searchQuery) result = result.filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase()));
         return result;
-    }, [activeFilter, searchQuery]);
+    }, [activeFilter, games, searchQuery]);
 
     useEffect(() => {
         if (isPaused || !carouselRef.current || filtered.length === 0) return;
@@ -324,13 +354,13 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
         >
             {/* Gaming ambient particles */}
             <div className="cm-games__particles">
-                {Array.from({ length: 12 }).map((_, i) => (
-                    <span key={i} className="cm-games__particle" style={{
-                        '--px': Math.random() * 100 + '%',
-                        '--py': Math.random() * 100 + '%',
-                        '--delay': (Math.random() * 5) + 's',
-                        '--dur': (3 + Math.random() * 4) + 's',
-                        '--size': (2 + Math.random() * 4) + 'px'
+                {GAME_SECTION_PARTICLES.map((particle) => (
+                    <span key={particle.id} className="cm-games__particle" style={{
+                        '--px': particle.px,
+                        '--py': particle.py,
+                        '--delay': particle.delay,
+                        '--dur': particle.dur,
+                        '--size': particle.size
                     }} />
                 ))}
             </div>
@@ -344,7 +374,7 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
                     </div>
                 </div>
                 <div className="cm-filters">
-                    {FILTERS.map(f => (
+                    {filters.map(f => (
                         <button key={f.value} className={'cm-filter ' + (activeFilter === f.value ? 'active' : '')}
                             onClick={() => setActiveFilter(f.value)}>
                             <i className={f.icon}></i> {f.label}
@@ -464,13 +494,13 @@ const SuggestGameModal = ({ open, onClose }) => {
     );
 };
 
-const CommunityCard = ({ community, index }) => {
+const CommunityCard = ({ community, games = [] }) => {
     const navigate = useNavigate();
     const formatNum = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
     const communityHref = `/communities/${community.shortUrl || community.id}`;
     const mainGame = Array.isArray(community.mainGames) && community.mainGames.length > 0
         ? community.mainGames[0] : '';
-    const gameData = GAMES.find(g => g.id === mainGame || g.name === mainGame);
+    const gameData = games.find(g => g.id === mainGame || g.name === mainGame);
     const communityColor = gameData?.color || 'var(--primary)';
     const bannerImg = community.bannerUrl || community.avatarUrl || gameData?.img || '';
     const socialEntries = getCommunitySocialEntries(community.socialLinks).slice(0, 4);
@@ -548,7 +578,7 @@ const CommunityCard = ({ community, index }) => {
     );
 };
 
-const CommunitiesSection = ({ searchQuery, gameFilter }) => {
+const CommunitiesSection = ({ searchQuery, gameFilter, games = [] }) => {
     const [communities, setCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -595,7 +625,7 @@ const CommunitiesSection = ({ searchQuery, gameFilter }) => {
                         <i className='bx bx-loader-alt bx-spin'></i>
                         <p>Cargando comunidades...</p>
                     </div>
-                ) : communities.map((c, i) => <CommunityCard key={c.id} community={c} index={i} />)}
+                ) : communities.map((c, i) => <CommunityCard key={c.id} community={c} index={i} games={games} />)}
             </motion.div>
             {!loading && communities.length === 0 && (
                 <div className="cm-empty">
@@ -608,7 +638,7 @@ const CommunitiesSection = ({ searchQuery, gameFilter }) => {
     );
 };
 
-const QuickStats = ({ totalUsersCount = 0, communitiesTotal = 0 }) => {
+const QuickStats = ({ totalUsersCount = 0, communitiesTotal = 0, gamesTotal = 0, tournamentsTotal = 0 }) => {
     const [inView, setInView] = useState(false);
     const [hoveredStat, setHoveredStat] = useState(null);
     const ref = useRef(null);
@@ -619,10 +649,10 @@ const QuickStats = ({ totalUsersCount = 0, communitiesTotal = 0 }) => {
         return () => obs.disconnect();
     }, []);
 
-    const gamesCount = useCountUp(GAMES.length, 1800, inView);
+    const gamesCount = useCountUp(gamesTotal, 1800, inView);
     const communitiesCount = useCountUp(communitiesTotal, 1800, inView);
     const playersCount = useCountUp(totalUsersCount, 2200, inView);
-    const tourneysCount = useCountUp(48, 1600, inView);
+    const tourneysCount = useCountUp(tournamentsTotal, 1600, inView);
 
     const stats = [
         { icon: 'bx bxs-joystick', label: 'Juegos', value: gamesCount, display: String(gamesCount), color: 'var(--primary)', desc: 'Juegos disponibles' },
@@ -670,11 +700,13 @@ const QuickStats = ({ totalUsersCount = 0, communitiesTotal = 0 }) => {
     );
 };
 
-const TrendingSidebar = ({ games = [] }) => {
+const TrendingSidebar = ({ games = [], gameCatalog = [] }) => {
+    const navigate = useNavigate();
+
     // Show top 5 games by subscriber count as trending
     const topGames = games
         .map(g => {
-            const gameData = GAMES.find(gd => gd.id === g.gameId);
+            const gameData = gameCatalog.find((gd) => gd.id === g.gameId);
             return gameData ? { ...gameData, usersCount: g.usersCount } : null;
         })
         .filter(Boolean)
@@ -715,13 +747,22 @@ const TrendingSidebar = ({ games = [] }) => {
                     viewport={{ once: true }}
                     transition={{ delay: 0.15 + i * 0.06, duration: 0.35 }}
                     whileHover={{ x: 6, transition: { duration: 0.2 } }}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/games/${t.id}`)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            navigate(`/games/${t.id}`);
+                        }
+                    }}
                 >
                     <span className="cm-trending__rank">#{i + 1}</span>
                     <div className="cm-trending__info">
                         <span className="cm-trending__title">{t.name}</span>
                         <span className="cm-trending__game">
                             <i className='bx bxs-game'></i>
-                            {t.cat} &middot; {t.usersCount} jugadores
+                            {t.category} &middot; {t.usersCount} jugadores
                         </span>
                     </div>
                     <div className="cm-trending__arrow">
@@ -864,8 +905,12 @@ const CtaBanner = () => {
     return (
         <div className="cm-cta-banner">
             <div className="cm-cta-banner__particles">
-                {Array.from({ length: 8 }).map((_, i) => (
-                    <span key={i} className="cm-cta-banner__particle" style={{ '--x': Math.random()*100+'%', '--d': (3+Math.random()*4)+'s' }} />
+                {CTA_BANNER_PARTICLES.map((particle) => (
+                    <span
+                        key={particle.id}
+                        className="cm-cta-banner__particle"
+                        style={{ '--x': particle.x, '--d': particle.d }}
+                    />
                 ))}
             </div>
             <div className="cm-cta-banner__content">
@@ -895,9 +940,15 @@ const Community = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showRoleGate, setShowRoleGate] = useState(false);
     const [showSuggestModal, setShowSuggestModal] = useState(false);
-    const [activeView, setActiveView] = useState('feed');
-    const [gameStats, setGameStats] = useState({});
-    const [communitiesTotal, setCommunitiesTotal] = useState(0);
+    const [activeView, setActiveView] = useState('communities');
+    const [games, setGames] = useState([]);
+    const [filters, setFilters] = useState([]);
+    const [summary, setSummary] = useState({
+        gamesTotal: 0,
+        communitiesTotal: 0,
+        tournamentsTotal: 0,
+        totalUsersCount: 0,
+    });
     const shouldScrollToGamesRef = useRef(false);
 
     const viewTabs = [
@@ -906,50 +957,54 @@ const Community = () => {
         { id: 'communities', label: 'Comunidades', icon: 'bx bxs-group' },
     ];
 
-    // Generate random particles for global effect
-    const globalParticles = useMemo(() => 
-        Array.from({ length: 20 }).map((_, i) => ({
-            x: `${Math.random() * 100}%`,
-            duration: `${12 + Math.random() * 15}s`,
-            delay: `${Math.random() * 10}s`,
-        })), []);
-
     useEffect(() => {
         let cancelled = false;
 
-        const loadGameStats = async () => {
+        const loadCatalog = async () => {
             try {
-                const nextStats = await fetchGameHubStatsIndex();
+                const nextCatalog = await fetchCommunityGameCatalog();
                 if (!cancelled) {
-                    setGameStats(nextStats);
+                    setGames(decorateCommunityGames(nextCatalog.games));
+                    setFilters(Array.isArray(nextCatalog.filters) ? nextCatalog.filters : []);
+                    setSummary(nextCatalog.summary || {
+                        gamesTotal: 0,
+                        communitiesTotal: 0,
+                        tournamentsTotal: 0,
+                        totalUsersCount: 0,
+                    });
                 }
-            } catch (_) {
+            } catch {
                 if (!cancelled) {
-                    setGameStats({});
+                    setGames([]);
+                    setFilters([]);
+                    setSummary({
+                        gamesTotal: 0,
+                        communitiesTotal: 0,
+                        tournamentsTotal: 0,
+                        totalUsersCount: 0,
+                    });
                 }
             }
         };
 
-        const loadCommunitiesTotal = async () => {
-            try {
-                const list = await fetchAllCommunities();
-                if (!cancelled) setCommunitiesTotal(list.length);
-            } catch (_) {
-                if (!cancelled) setCommunitiesTotal(0);
-            }
-        };
-
-        loadGameStats();
-        loadCommunitiesTotal();
+        loadCatalog();
 
         return () => {
             cancelled = true;
         };
     }, []);
 
+    const gameStats = useMemo(
+        () => games.reduce((acc, game) => {
+            acc[game.id] = game.stats || { gameId: game.id, usersCount: 0, activeCount: 0, joined: false };
+            return acc;
+        }, {}),
+        [games]
+    );
+
     const totalGameUsers = useMemo(
-        () => Object.values(gameStats || {}).reduce((sum, entry) => sum + Number(entry?.usersCount || 0), 0),
-        [gameStats]
+        () => Number(summary.totalUsersCount || 0),
+        [summary.totalUsersCount]
     );
 
     const handleExploreGames = useCallback(() => {
@@ -977,9 +1032,9 @@ const Community = () => {
             <div className="cm-bg-mesh" />
             <div className="cm-page__cyber-grid" />
             <div className="cm-page__particles">
-                {globalParticles.map((p, i) => (
+                {GLOBAL_PARTICLES.map((p) => (
                     <span 
-                        key={i} 
+                        key={p.id}
                         className="cm-page__particle"
                         style={{ '--x': p.x, '--duration': p.duration, '--delay': p.delay }}
                     />
@@ -989,12 +1044,18 @@ const Community = () => {
             <div className="cm-page__orb-extra" />
             
             <PageHud page="Comunidad" />
-            <HeroBanner onExplore={handleExploreGames} />
+            <HeroBanner onExplore={handleExploreGames} games={games} />
             <div className="cm-container">
-                <QuickStats totalUsersCount={totalGameUsers} communitiesTotal={communitiesTotal} />
+                <QuickStats
+                    totalUsersCount={totalGameUsers}
+                    communitiesTotal={summary.communitiesTotal}
+                    gamesTotal={summary.gamesTotal}
+                    tournamentsTotal={summary.tournamentsTotal}
+                />
                 <SearchBar
                     value={searchQuery} onChange={setSearchQuery}
                     gameFilter={gameFilter} setGameFilter={setGameFilter}
+                    games={games}
                     onCreateCommunity={() => {
                         try {
                             const u = getStoredUser();
@@ -1034,7 +1095,10 @@ const Community = () => {
                                     <FeedPanel communityName="Comunidad Global" />
                                 </div>
                                 <div className="cm-sidebar">
-                                    <TrendingSidebar games={Object.entries(gameStats).map(([gameId, s]) => ({ gameId, usersCount: s?.usersCount || 0 }))} />
+                                    <TrendingSidebar
+                                        games={Object.entries(gameStats).map(([gameId, s]) => ({ gameId, usersCount: s?.usersCount || 0 }))}
+                                        gameCatalog={games}
+                                    />
                                     <ActiveMembers />
                                     <CommunityRules />
                                 </div>
@@ -1059,10 +1123,15 @@ const Community = () => {
                                         setActiveFilter={setActiveFilter}
                                         onSuggestGame={() => setShowSuggestModal(true)}
                                         gameStats={gameStats}
+                                        games={games}
+                                        filters={filters}
                                     />
                                 </div>
                                 <div className="cm-sidebar">
-                                    <TrendingSidebar games={Object.entries(gameStats).map(([gameId, s]) => ({ gameId, usersCount: s?.usersCount || 0 }))} />
+                                    <TrendingSidebar
+                                        games={Object.entries(gameStats).map(([gameId, s]) => ({ gameId, usersCount: s?.usersCount || 0 }))}
+                                        gameCatalog={games}
+                                    />
                                 </div>
                             </div>
                         </motion.div>
@@ -1094,11 +1163,11 @@ const Community = () => {
                                         </div>
                                         <div className="cm-community-showcase__stats">
                                             <div className="cm-community-showcase__stat">
-                                                <strong>{communitiesTotal}</strong>
+                                                <strong>{summary.communitiesTotal}</strong>
                                                 <span>Comunidades activas</span>
                                             </div>
                                             <div className="cm-community-showcase__stat">
-                                                <strong>{GAMES.length}</strong>
+                                                <strong>{summary.gamesTotal}</strong>
                                                 <span>Juegos activos</span>
                                             </div>
                                             <div className="cm-community-showcase__stat">
@@ -1108,13 +1177,16 @@ const Community = () => {
                                         </div>
                                     </motion.section>
                                     <div className="cm-community-surface">
-                                        <CommunitiesSection searchQuery={searchQuery} gameFilter={gameFilter} />
+                                        <CommunitiesSection searchQuery={searchQuery} gameFilter={gameFilter} games={games} />
                                         <SectionDivider />
                                         <CtaBanner />
                                     </div>
                                 </div>
                                 <div className="cm-sidebar">
-                                    <TrendingSidebar games={Object.entries(gameStats).map(([gameId, s]) => ({ gameId, usersCount: s?.usersCount || 0 }))} />
+                                    <TrendingSidebar
+                                        games={Object.entries(gameStats).map(([gameId, s]) => ({ gameId, usersCount: s?.usersCount || 0 }))}
+                                        gameCatalog={games}
+                                    />
                                     <ActiveMembers />
                                 </div>
                             </div>

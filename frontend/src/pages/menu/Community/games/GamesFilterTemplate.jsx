@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { COMMUNITY_GAMES, COMMUNITY_GAME_TAXONOMY } from '../../../../data/communityData';
-import { supportedGamesDetailedData as gamesDetailedData } from '../../../../data/supportedGamesDetailedData';
-import { fetchGameHubStatsIndex, formatGameHubCount } from '../gameHub.service';
+import { decorateCommunityGames } from '../communityGameAssets';
+import { fetchCommunityGameCatalog, formatGameHubCount } from '../gameHub.service';
 import HeroTagSection from './HeroTagSection';
 import './GamesFilterTemplate.css';
 
@@ -34,7 +33,7 @@ const TAG_DESCRIPTIONS = {
   racing: 'High-speed competition on tracks, circuits and creative courses.',
   'social deduction': 'Multiplayer deception games where trust and deduction are key.',
   party: 'Fun, accessible multiplayer games designed for group entertainment.',
-  strategy: 'Mind over muscle — deck building, resource management and tactical decisions.',
+  strategy: 'Mind over muscle deck building, resource management and tactical decisions.',
   'card game': 'Digital card games with deck building, strategy and collectible elements.',
   survival: 'Gather, craft, build and survive in hostile environments.',
   'riot games': 'Developer behind League of Legends and Valorant, focused on competitive ecosystems.',
@@ -72,59 +71,6 @@ const COMPANY_FACTS = {
   nintendo: ['Party Games', 'Family Gaming', 'Innovation'],
 };
 
-const COMPANY_BY_ID = {
-  lol: 'Riot Games',
-  valorant: 'Riot Games',
-  dota2: 'Valve',
-  mlbb: 'Moonton',
-  wildrift: 'Riot Games',
-  fortnite: 'Epic Games',
-  cs2: 'Valve',
-  apex: 'Respawn Entertainment',
-  warzone: 'Activision',
-  pubgm: 'Tencent',
-  rl: 'Psyonix',
-  tekken8: 'Bandai Namco',
-  sf6: 'Capcom',
-  gta: 'Rockstar Games',
-  genshin: 'HoYoverse',
-  amongus: 'Innersloth',
-  fallguys: 'Mediatonic',
-  marvel: 'NetEase Games',
-  xdefiant: 'Ubisoft',
-  aov: 'Tencent',
-  thefinals: 'Embark Studios',
-  tarkov: 'Battlestate Games',
-  deadlock: 'Valve',
-  eafc25: 'EA Sports',
-  dbsz: 'Bandai Namco',
-  multiversus: 'WB Games',
-  palworld: 'Pocketpair',
-  helldivers2: 'Arrowhead Game Studios',
-  bg3: 'Larian Studios',
-  ff: 'Garena',
-  ow2: 'Blizzard Entertainment',
-  r6: 'Ubisoft',
-  hs: 'Blizzard Entertainment',
-  lor: 'Riot Games',
-  tft: 'Riot Games',
-  hok: 'Tencent',
-  cr: 'Supercell',
-  starcraft: 'Blizzard Entertainment',
-  nba2k: '2K Sports',
-  mariokart: 'Nintendo',
-  halo: '343 Industries',
-  wuwa: 'Kuro Games',
-  codbo6: 'Activision',
-  mk1: 'WB Games',
-  eldenring: 'FromSoftware',
-  cyberpunk: 'CD Projekt Red',
-  rdr2: 'Rockstar Games',
-  mhwilds: 'Capcom',
-  hogwarts: 'WB Games',
-  nms: 'Hello Games',
-};
-
 const TAXONOMY_TYPES = ['genre', 'mode', 'platform', 'competitive', 'style', 'mechanics'];
 
 const normalizeText = (value) =>
@@ -159,31 +105,39 @@ const toTitle = (value) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
+const getTagList = (taxonomy = {}, key) =>
+  Array.isArray(taxonomy?.[key]) ? taxonomy[key].filter(Boolean) : [];
+
 const GamesFilterTemplate = () => {
   const { type, value } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [tiltMap, setTiltMap] = useState({});
   const [hoverAccent, setHoverAccent] = useState('');
-  const [gameStats, setGameStats] = useState({});
+  const [catalogGames, setCatalogGames] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadGameStats = async () => {
+    const loadCatalog = async () => {
       try {
-        const nextStats = await fetchGameHubStatsIndex();
+        const { games } = await fetchCommunityGameCatalog();
         if (!cancelled) {
-          setGameStats(nextStats);
+          setCatalogGames(decorateCommunityGames(games));
         }
-      } catch (_) {
+      } catch {
         if (!cancelled) {
-          setGameStats({});
+          setCatalogGames([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
         }
       }
     };
 
-    loadGameStats();
+    loadCatalog();
 
     return () => {
       cancelled = true;
@@ -201,45 +155,38 @@ const GamesFilterTemplate = () => {
   const normalizedValue = canonicalTag(decodedValue);
 
   const games = useMemo(() => {
-    return COMMUNITY_GAMES.map((game) => {
-      const detail = gamesDetailedData[game.id] || gamesDetailedData[normalizeText(game.id)] || null;
-      const company = detail?.developer || game.developer || game.company || COMPANY_BY_ID[game.id] || 'Unknown Studio';
-      const taxonomy = COMMUNITY_GAME_TAXONOMY[game.id] || {};
+    return catalogGames.map((game) => {
+      const company = game.company || 'Studio independiente';
+      const taxonomy = game.taxonomy && typeof game.taxonomy === 'object' ? game.taxonomy : {};
 
       const tagsByType = {
-        genre: [...(taxonomy.genre || []), game.cat].filter(Boolean),
-        mode: [...(taxonomy.mode || [])].filter(Boolean),
-        platform: [...(taxonomy.platform || [])].filter(Boolean),
-        competitive: [...(taxonomy.competitive || [])].filter(Boolean),
-        style: [...(taxonomy.style || [])].filter(Boolean),
-        mechanics: [...(taxonomy.mechanics || [])].filter(Boolean),
+        genre: getTagList(taxonomy, 'genre').concat(game.category || '').filter(Boolean),
+        mode: getTagList(taxonomy, 'mode'),
+        platform: getTagList(taxonomy, 'platform'),
+        competitive: getTagList(taxonomy, 'competitive'),
+        style: getTagList(taxonomy, 'style'),
+        mechanics: getTagList(taxonomy, 'mechanics'),
       };
-
-      const mixedTags = [
-        ...(detail?.tags || []),
-        ...Object.values(tagsByType).flat(),
-      ].filter(Boolean);
 
       const allCanonical = Array.from(
         new Set(
-          mixedTags
+          Object.values(tagsByType)
+            .flat()
             .map((item) => canonicalTag(item))
             .filter(Boolean)
-            .concat(canonicalTag(game.cat))
         )
       );
 
       return {
         ...game,
-        detail,
         company,
         companyCanonical: normalizeText(company),
         tagsByType,
         tagsCanonical: allCanonical,
-        cover: game.img || game.image || detail?.banner || '',
+        cover: game.cover || game.image || game.imageUrl || '',
       };
     });
-  }, []);
+  }, [catalogGames]);
 
   const filteredGames = useMemo(() => {
     if (!normalizedValue) return games;
@@ -367,7 +314,13 @@ const GamesFilterTemplate = () => {
           transitionKey={location.key || heroContext.key}
         />
 
-        {filteredGames.length === 0 ? (
+        {isLoading ? (
+          <section className="gft-empty-panel">
+            <div className="gft-empty-ill" />
+            <h2>Cargando catalogo</h2>
+            <p>Estamos consultando el backend para mostrar los hubs y etiquetas reales.</p>
+          </section>
+        ) : filteredGames.length === 0 ? (
           <section className="gft-empty-panel">
             <div className="gft-empty-ill" />
             <h2>No games found for this filter</h2>
@@ -383,12 +336,11 @@ const GamesFilterTemplate = () => {
               const tilt = tiltMap[cardId] || { rx: '0deg', ry: '0deg', mx: '50%', my: '50%' };
               const tags = (() => {
                 const raw = [
-                  ...(game.detail?.tags || []),
                   ...(game.tagsByType.genre || []),
                   ...(game.tagsByType.style || []),
                   ...(game.tagsByType.mechanics || []),
                   ...(game.tagsByType.mode || []),
-                ].filter(Boolean).map((t) => String(t).trim());
+                ].filter(Boolean).map((tag) => String(tag).trim());
                 const seen = new Set();
                 const result = [];
                 for (const tag of raw) {
@@ -449,13 +401,13 @@ const GamesFilterTemplate = () => {
                     <div className="gft-card-body">
                       <h3>{game.name}</h3>
                       <p>
-                        {game.detail?.history
-                          ? `${game.detail.history.slice(0, 138)}...`
+                        {game.history
+                          ? `${game.history.slice(0, 138)}...`
                           : 'Explore this game community, discover events, teams and active players.'}
                       </p>
                       <div className="gft-card-meta">
-                        <span>{formatGameHubCount(gameStats?.[game.id]?.usersCount ?? 0)} players</span>
-                        <span>{toTitle(game.cat || 'Game')}</span>
+                        <span>{formatGameHubCount(game.stats?.usersCount ?? 0)} players</span>
+                        <span>{game.category || 'Game'}</span>
                       </div>
                     </div>
 

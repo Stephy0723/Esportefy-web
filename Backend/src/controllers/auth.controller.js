@@ -2291,6 +2291,46 @@ export const updateProfile = async (req, res) => {
             };
         }
 
+        const currentPrivacy = currentUser.privacy?.toObject
+            ? currentUser.privacy.toObject()
+            : (currentUser.privacy || {});
+        let privacyFromBody = {};
+        if (req.body.privacy !== undefined) {
+            if (typeof req.body.privacy === 'string') {
+                try {
+                    privacyFromBody = JSON.parse(req.body.privacy);
+                } catch {
+                    privacyFromBody = {};
+                }
+            } else if (typeof req.body.privacy === 'object' && req.body.privacy !== null) {
+                privacyFromBody = req.body.privacy;
+            }
+        }
+
+        const parsedPrivacy = {};
+        const privacyFallbacks = {
+            allowTeamInvites: currentPrivacy.allowTeamInvites !== false,
+            showOnlineStatus: currentPrivacy.showOnlineStatus !== false,
+            allowTournamentInvites: currentPrivacy.allowTournamentInvites !== false,
+            showPublicUserCode: currentPrivacy.showPublicUserCode !== false,
+            showPublicRiotHandle: currentPrivacy.showPublicRiotHandle === true
+        };
+
+        Object.entries(privacyFallbacks).forEach(([key, fallback]) => {
+            const explicit = req.body[key] ?? req.body[`privacy.${key}`] ?? req.body[`privacy[${key}]`];
+            const incoming = explicit !== undefined ? explicit : privacyFromBody[key];
+            if (incoming !== undefined) {
+                parsedPrivacy[key] = normalizeBoolean(incoming, fallback);
+            }
+        });
+
+        if (Object.keys(parsedPrivacy).length > 0) {
+            updateData.privacy = {
+                ...currentPrivacy,
+                ...parsedPrivacy
+            };
+        }
+
         let competitiveProfilesFromBody;
         if (req.body.competitiveProfiles !== undefined) {
             if (typeof req.body.competitiveProfiles === 'string') {

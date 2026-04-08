@@ -22,6 +22,21 @@ const normalizeStats = (stats = {}) => ({
   joined: Boolean(stats?.joined)
 });
 
+const normalizeGameCatalogEntry = (game = {}) => ({
+  id: String(game?.id || '').trim().toLowerCase(),
+  name: String(game?.name || '').trim(),
+  category: String(game?.category || '').trim(),
+  color: String(game?.color || '').trim(),
+  url: String(game?.url || '').trim(),
+  provider: String(game?.provider || '').trim(),
+  aliases: Array.isArray(game?.aliases) ? game.aliases : [],
+  imageUrl: String(game?.imageUrl || '').trim(),
+  company: String(game?.company || '').trim(),
+  history: String(game?.history || '').trim(),
+  taxonomy: game?.taxonomy && typeof game.taxonomy === 'object' ? game.taxonomy : {},
+  stats: normalizeStats(game?.stats || {})
+});
+
 export const formatGameHubCount = (value = 0) => {
   const amount = Number(value || 0);
   if (!Number.isFinite(amount) || amount <= 0) return '0';
@@ -45,6 +60,26 @@ export const fetchGameHubStatsIndex = async () => {
     acc[normalized.gameId] = normalized;
     return acc;
   }, {});
+};
+
+export const fetchCommunityGameCatalog = async () => {
+  const response = await axios.get(`${API_BASE_URL}/api/community/games/catalog`, buildAuthConfig());
+  const games = Array.isArray(response.data?.games) ? response.data.games.map(normalizeGameCatalogEntry) : [];
+  const filters = Array.isArray(response.data?.filters) ? response.data.filters : [];
+  const summary = response.data?.summary && typeof response.data.summary === 'object'
+    ? {
+        gamesTotal: Number(response.data.summary?.gamesTotal || games.length || 0),
+        communitiesTotal: Number(response.data.summary?.communitiesTotal || 0),
+        tournamentsTotal: Number(response.data.summary?.tournamentsTotal || 0),
+        totalUsersCount: Number(response.data.summary?.totalUsersCount || 0)
+      }
+    : {
+        gamesTotal: games.length,
+        communitiesTotal: 0,
+        tournamentsTotal: 0,
+        totalUsersCount: 0
+      };
+  return { games, filters, summary };
 };
 
 export const fetchGameHubStats = async (gameId) => {
@@ -74,6 +109,7 @@ export const fetchGameHubDetails = async (gameId) => {
   );
   const d = response.data || {};
   return {
+    game: d.game ? normalizeGameCatalogEntry(d.game) : null,
     stats: normalizeStats(d.stats || {}),
     teams: Array.isArray(d.teams) ? d.teams : [],
     tournaments: Array.isArray(d.tournaments) ? d.tournaments : [],
