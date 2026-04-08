@@ -6,6 +6,11 @@ import CommunityPost from '../models/CommunityPost.js';
 import Community from '../models/Community.js';
 import User from '../models/User.js';
 import { normalizeCommunityGameId, normalizeCommunityGameIds, getGameNameVariants } from '../utils/communityGames.js';
+import {
+  getCommunityGameCatalog as buildCommunityGameCatalog,
+  getCommunityGameCatalogEntry,
+  getCommunityGameFilterOptions
+} from '../utils/communityGameCatalog.js';
 import Team from '../models/Team.js';
 import Tournament from '../models/Tournament.js';
 import {
@@ -1146,6 +1151,49 @@ export const getGameHubStatsIndex = async (req, res) => {
   }
 };
 
+export const getCommunityGameCatalog = async (req, res) => {
+  try {
+    const [viewer, aggregatedStats, communitiesTotal, tournamentsTotal] = await Promise.all([
+      User.findById(req.userId).select('communityGameSubscriptions').lean(),
+      aggregateCommunityGameSubscriptions(),
+      Community.countDocuments({ isActive: true }),
+      Tournament.countDocuments({ status: { $ne: 'draft' } })
+    ]);
+
+    const joinedGameIds = getNormalizedUserGameSubscriptions(viewer);
+
+    const games = buildCommunityGameCatalog().map((game) => {
+      const base = aggregatedStats[game.id] || buildGameHubStatsPayload({ gameId: game.id });
+      return {
+        ...game,
+        stats: buildGameHubStatsPayload({
+          ...base,
+          gameId: game.id,
+          joined: joinedGameIds.includes(game.id)
+        })
+      };
+    });
+
+    const totalUsersCount = Object.values(aggregatedStats).reduce(
+      (sum, entry) => sum + Number(entry?.usersCount || 0),
+      0
+    );
+
+    return res.status(200).json({
+      games,
+      filters: getCommunityGameFilterOptions(),
+      summary: {
+        gamesTotal: games.length,
+        communitiesTotal: Number(communitiesTotal || 0),
+        tournamentsTotal: Number(tournamentsTotal || 0),
+        totalUsersCount
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error al obtener catalogo de juegos', error: error.message });
+  }
+};
+
 export const getGameHubStats = async (req, res) => {
   try {
     const gameId = normalizeCommunityGameId(req.params?.gameId);
@@ -1255,6 +1303,7 @@ export const getGameHubDetails = async (req, res) => {
       gameId,
       joined: joinedIds.includes(gameId),
     });
+    const game = getCommunityGameCatalogEntry(gameId);
 
     // Map teams
     const mappedTeams = teams.map((t) => ({
@@ -1302,8 +1351,8 @@ export const getGameHubDetails = async (req, res) => {
       shortUrl: c.shortUrl || '',
       description: c.description || '',
       membersCount: c.membersCount || 0,
-      avatarUrl: c.avatarUrl || '',
-      bannerUrl: c.bannerUrl || '',
+      avatarUrl: c.media?.avatarUrl || '',
+      bannerUrl: c.media?.bannerUrl || '',
       mainGames: Array.isArray(c.mainGames) ? c.mainGames : [],
       region: c.region || '',
     }));
@@ -1321,6 +1370,7 @@ export const getGameHubDetails = async (req, res) => {
     const mappedOrganizers = Array.from(organizerMap.values());
 
     return res.status(200).json({
+      game,
       stats,
       teams: mappedTeams,
       tournaments: mappedTournaments,

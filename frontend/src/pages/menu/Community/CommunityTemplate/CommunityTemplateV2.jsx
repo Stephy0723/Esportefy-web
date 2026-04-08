@@ -116,7 +116,6 @@ const CommunityTemplateV2 = () => {
   const [replyTo, setReplyTo] = useState(null); // { id, user, text }
 
   // @mention autocomplete
-  const [mentionQuery, setMentionQuery] = useState('');
   const [mentionResults, setMentionResults] = useState([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const mentionTimeout = useRef(null);
@@ -152,7 +151,10 @@ const CommunityTemplateV2 = () => {
           const allTournaments = Array.isArray(tournamentsRes.data) ? tournamentsRes.data : [];
           setTeams(allTeams.filter((t) => matchesGames(t.game, games)).slice(0, 12));
           setTournaments(allTournaments.filter((t) => matchesGames(t.game, games)).slice(0, 12));
-        } catch (_) {}
+        } catch {
+          setTeams([]);
+          setTournaments([]);
+        }
         finally { setHubLoading(false); }
       }
     } catch (err) {
@@ -202,7 +204,7 @@ const CommunityTemplateV2 = () => {
     try {
       const posts = await fetchCommunityPosts({ shortUrl: community.shortUrl });
       setChatPosts(posts.slice(0, 50));
-    } catch (_) {
+    } catch {
       setChatPosts([]);
     } finally {
       setChatLoading(false);
@@ -271,7 +273,6 @@ const CommunityTemplateV2 = () => {
 
     if (mentionMatch) {
       const query = mentionMatch[1];
-      setMentionQuery(query);
       if (query.length >= 2) {
         clearTimeout(mentionTimeout.current);
         mentionTimeout.current = setTimeout(async () => {
@@ -279,14 +280,17 @@ const CommunityTemplateV2 = () => {
             const users = await searchCommunityUsers(query);
             setMentionResults(users);
             setShowMentionDropdown(users.length > 0);
-          } catch (_) {
+          } catch {
+            setMentionResults([]);
             setShowMentionDropdown(false);
           }
         }, 300);
       } else {
+        setMentionResults([]);
         setShowMentionDropdown(false);
       }
     } else {
+      setMentionResults([]);
       setShowMentionDropdown(false);
     }
   };
@@ -326,7 +330,7 @@ const CommunityTemplateV2 = () => {
     try {
       const replies = await fetchPostReplies(postId);
       setRepliesMap((prev) => ({ ...prev, [postId]: { loaded: true, loading: false, replies } }));
-    } catch (_) {
+    } catch {
       setRepliesMap((prev) => ({ ...prev, [postId]: { loaded: true, loading: false, replies: [] } }));
     }
   };
@@ -405,7 +409,9 @@ const CommunityTemplateV2 = () => {
       } else {
         setChatPosts((prev) => prev.map(update));
       }
-    } catch (_) {}
+    } catch {
+      addToast('No se pudo actualizar la reaccion', 'error');
+    }
   };
 
   const handleChatKeyDown = (e) => {
@@ -653,7 +659,7 @@ const CommunityTemplateV2 = () => {
                 )}
                 {community.role && community.role !== 'guest' && (
                   <span className="ct__meta-chip ct__meta-chip--role">
-                    <FaShieldAlt /> {ROLE_LABELS[community.role] || community.role}
+                    <FaShieldAlt /> {getCommunityMemberRoleLabel(community.role) || community.role}
                   </span>
                 )}
               </div>

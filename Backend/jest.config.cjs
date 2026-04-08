@@ -5,5 +5,7 @@ module.exports = {
   transform: {
     '^.+\\.js$': ['babel-jest', { configFile: path.join(__dirname, '.babelrc') }]
   },
-  transformIgnorePatterns: ['/node_modules/']
+  transformIgnorePatterns: [
+    '/node_modules/(?!(otplib|@otplib|@scure/base|@noble)/)'
+  ]
 };

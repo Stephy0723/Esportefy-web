@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -12,6 +12,8 @@ import Navbar from './components/Navbar/Navbar';
 import Sidebar from './components/Sidebar/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import AdminRoute from './components/ProtectedRoute/AdminRoute';
+import { useAuth } from './context/AuthContext';
+import { hasClientSession } from './utils/authSession';
 
 import DocsPage from './pages/Docs/DocsPage';
 import Home from './pages/Home/Home';
@@ -107,6 +109,21 @@ const PublicLayout = () => {
   );
 };
 
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+  const hasSession = hasClientSession();
+
+  if (loading && hasSession) {
+    return null;
+  }
+
+  if (user || hasSession) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Home />;
+};
+
 const AppRouterContent = () => {
   const location = useLocation();
   const hideFloatingOverlays =
@@ -118,7 +135,7 @@ const AppRouterContent = () => {
       {!hideFloatingOverlays && <SponsorshipHub />}
       {!hideFloatingOverlays && <SponsorMotion />}
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<RootRoute />} />
 
         <Route element={<PublicLayout />}>
           <Route path="/login" element={<Login />} />

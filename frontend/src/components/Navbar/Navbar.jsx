@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../../config/api';
-import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { STATUS_LIST } from '../../data/defaultAvatars';
 import { applyImageFallback, getBotAvatarFallback, resolveMediaUrl } from '../../utils/media';
@@ -52,7 +51,6 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDarkMode } = useTheme();
   const { user: activeUser, logout } = useAuth();
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -102,7 +100,9 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
   /* ── Bootstrap ── */
   useEffect(() => {
-    checkNotifications();
+    const bootstrapId = window.setTimeout(() => {
+      void checkNotifications();
+    }, 0);
 
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -110,6 +110,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     const notifTimer = setInterval(checkNotifications, 60000);
 
     return () => {
+      window.clearTimeout(bootstrapId);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('user-update', checkNotifications);
       clearInterval(notifTimer);
@@ -129,9 +130,13 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
   /* ── Close on route change ── */
   useEffect(() => {
-    setProfileOpen(false);
-    setSearchFocused(false);
-    setActionsOpen(false);
+    const frameId = window.requestAnimationFrame(() => {
+      setProfileOpen(false);
+      setSearchFocused(false);
+      setActionsOpen(false);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [location.pathname]);
 
   /* ── Keyboard shortcut Ctrl+K ── */

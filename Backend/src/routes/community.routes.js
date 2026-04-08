@@ -26,6 +26,7 @@ import {
   removeCommunityMember,
   updateCommunityMemberRole,
   transferCommunityOwnership,
+  getCommunityGameCatalog,
   getGameHubStatsIndex,
   getGameHubStats,
   getGameHubDetails,
@@ -49,6 +50,7 @@ router.get('/posts/:postId/replies', verifyToken, rlRead, getReplies);
 router.get('/users/search', verifyToken, rlRead, searchUsers);
 router.post('/users/:userId/block', verifyToken, rlWrite, blockUser);
 router.delete('/users/:userId/block', verifyToken, rlWrite, unblockUser);
+router.get('/games/catalog', verifyToken, rlRead, getCommunityGameCatalog);
 router.get('/games/stats', verifyToken, rlRead, getGameHubStatsIndex);
 router.get('/games/:gameId/details', verifyToken, rlRead, getGameHubDetails);
 router.get('/games/:gameId/stats', verifyToken, rlRead, getGameHubStats);
