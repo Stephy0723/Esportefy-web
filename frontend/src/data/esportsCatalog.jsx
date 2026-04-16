@@ -8,6 +8,7 @@ const CATEGORY_ORDER = [
   'Battle Royale',
   'Sports & Racing',
   'Fighting',
+  'Estrategia / Táctico',
 ];
 
 const CATEGORY_ICONS = {
@@ -16,6 +17,7 @@ const CATEGORY_ICONS = {
   'Battle Royale': <FaCrosshairs />,
   'Sports & Racing': <FaGamepad />,
   Fighting: <FaGamepad />,
+  'Estrategia / Táctico': <FaChessKing />,
 };
 
 const buildEsportsCatalog = () => {

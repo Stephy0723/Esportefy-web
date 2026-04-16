@@ -23,6 +23,22 @@ describe('game competitive profiles', () => {
                 expect.objectContaining({ key: 'roleFocus' })
             ])
         });
+
+        expect(getCompetitiveProfileSpec('CS2')).toMatchObject({
+            title: 'CS2',
+            fields: expect.arrayContaining([
+                expect.objectContaining({ key: 'steamHandle' }),
+                expect.objectContaining({ key: 'roleFocus' })
+            ])
+        });
+
+        expect(getCompetitiveProfileSpec('Apex Legends')).toMatchObject({
+            title: 'Apex Legends',
+            fields: expect.arrayContaining([
+                expect.objectContaining({ key: 'eaId' }),
+                expect.objectContaining({ key: 'mainLegend' })
+            ])
+        });
     });
 
     it('filters and sanitizes payloads by selected games', () => {
@@ -42,11 +58,17 @@ describe('game competitive profiles', () => {
                     roleFocus: 'flex',
                     clanTag: '  GG '
                 },
+                cs2: {
+                    steamHandle: '  BuggelCS  ',
+                    platform: 'pc',
+                    roleFocus: 'awper',
+                    favoriteMap: '  Mirage '
+                },
                 valorant: {
                     gameName: 'Should be ignored'
                 }
             },
-            ['Brawlhalla', 'COD Mobile']
+            ['Brawlhalla', 'COD Mobile', 'CS2']
         );
 
         expect(payload).toEqual({
@@ -62,6 +84,12 @@ describe('game competitive profiles', () => {
                 device: 'Tablet',
                 roleFocus: 'Flex',
                 clanTag: 'GG'
+            },
+            cs2: {
+                steamHandle: 'BuggelCS',
+                platform: 'PC',
+                roleFocus: 'AWPer',
+                favoriteMap: 'Mirage'
             }
         });
     });

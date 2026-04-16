@@ -1,6 +1,6 @@
 import { getSupportedGame } from './supportedGames.js';
 
-const BATTLE_ROYALE_GAME_IDS = new Set(['fortnite', 'warzone', 'freefire', 'pubg']);
+const BATTLE_ROYALE_GAME_IDS = new Set(['fortnite', 'warzone', 'freefire', 'pubg', 'apex']);
 const FIGHTING_GAME_IDS = new Set(['smash', 'brawlhalla', 'sf6', 'tekken']);
 const ROTATION_GAME_IDS = new Set(['codm']);
 

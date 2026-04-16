@@ -58,6 +58,14 @@ const parsePositiveIntValue = (value, fallback = 0) => {
     if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
     return parsed;
 };
+const normalizeBooleanValue = (value, fallback = false) => {
+    if (typeof value === 'boolean') return value;
+    const raw = String(value ?? '').trim().toLowerCase();
+    if (!raw) return fallback;
+    if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+    if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+    return fallback;
+};
 
 const MLBB_BETA_MODE = parseBooleanEnv(process.env.MLBB_BETA_MODE, true);
 const MIN_TOURNAMENT_SLOTS = 4;
@@ -145,6 +153,41 @@ const isValidMlbbZone = (value = '') => /^\d{3,6}$/.test(normalizeMlbbIdentity(v
 const getRiotMinActiveParticipants = () => Math.max(2, RIOT_TOURNAMENT_MIN_ACTIVE_PARTICIPANTS);
 const isRiotTournamentGame = (game = '') => isSupportedRiotGame(game);
 const isValorantGame = (game = '') => normalizeSupportedGameName(game) === 'Valorant';
+const normalizeRiotRequirementsConfig = (value = {}, game = '', current = {}) => {
+    if (!isRiotTournamentGame(game)) {
+        return {
+            required: false,
+            manualMode: false,
+            soloQueueOnly: true
+        };
+    }
+
+    const incoming = value && typeof value === 'object' ? value : {};
+    const baseline = current && typeof current === 'object' ? current : {};
+    const manualMode = normalizeBooleanValue(
+        incoming.manualMode !== undefined ? incoming.manualMode : baseline.manualMode,
+        false
+    );
+    const soloQueueOnly = normalizeBooleanValue(
+        incoming.soloQueueOnly !== undefined ? incoming.soloQueueOnly : baseline.soloQueueOnly,
+        true
+    );
+    const normalizeTier = (tier) => {
+        const normalized = String(tier || '').trim().toUpperCase();
+        return normalized || undefined;
+    };
+
+    return {
+        required: !manualMode,
+        manualMode,
+        minTier: manualMode ? undefined : normalizeTier(incoming.minTier ?? baseline.minTier),
+        maxTier: manualMode ? undefined : normalizeTier(incoming.maxTier ?? baseline.maxTier),
+        soloQueueOnly
+    };
+};
+const isRiotManualMode = (tournament = {}) => tournament?.riotRequirements?.manualMode === true;
+const requiresVerifiedRiotForTournament = (tournament = {}) =>
+    isRiotTournamentGame(tournament?.game) && !isRiotManualMode(tournament);
 const isFreeEntryFeeValue = (entryFee = '') => ['gratis', 'free', '0', '0.0', '0.00'].includes(normalizeEntryFee(entryFee));
 const parseTeamSizeFromModality = (modality = '') => {
     const raw = String(modality || '').trim().toLowerCase();
@@ -870,6 +913,7 @@ export const createTournament = async (req, res) => {
         const parsedBroadcast = parseField(data.broadcast) || {};
         const parsedMatchConfig = parseField(data.matchConfig) || {};
         const parsedLegalCompliance = parseField(data.legalCompliance) || {};
+        const parsedRiotRequirements = parseField(data.riotRequirements) || {};
         const normalizedEntryFeeAmount = String(data.entryFeeAmount || '').trim();
         const tournamentDefaults = getTournamentGameDefaults(data.game);
 
@@ -947,7 +991,7 @@ export const createTournament = async (req, res) => {
         // Remove raw FormData string keys that get properly parsed below
         const { sponsors: _s, staff: _st, prizesByRank: _p, registrationWindow: _rw,
             checkInWindow: _cw, eligibility: _el, contact: _co, broadcast: _br,
-            matchConfig: _mc, legalCompliance: _lc, bannerFile: _bf, rulesPdf: _rp,
+            matchConfig: _mc, legalCompliance: _lc, riotRequirements: _rr, bannerFile: _bf, rulesPdf: _rp,
             sponsorLogos: _sl, sponsorsData: _sd, ...safeData } = data;
 
         // ── Validation (before creating the document) ──
@@ -998,6 +1042,7 @@ export const createTournament = async (req, res) => {
                 privacyAccepted: parsedLegalCompliance.privacyAccepted === true,
                 organizerDeclaration: parsedLegalCompliance.organizerDeclaration === true
             },
+            riotRequirements: normalizeRiotRequirementsConfig(parsedRiotRequirements, data.game),
             entryFeeAmount: normalizeEntryFee(data.entryFee) === 'pago' ? normalizedEntryFeeAmount : '',
             server: normalizedServer || '',
             bannerImage: bannerPath,
@@ -1090,7 +1135,7 @@ export const createTournament = async (req, res) => {
                 });
             }
         }
-        if (isRiotTournamentGame(data.game)) {
+        if (requiresVerifiedRiotForTournament(newTournament)) {
             const riotIssues = getRiotComplianceIssues({
                 game: data.game,
                 title: data.title,
@@ -1188,6 +1233,7 @@ export const updateTournament = async (req, res) => {
         const parsedBroadcast = parseField(data.broadcast);
         const parsedMatchConfig = parseField(data.matchConfig);
         const parsedLegalCompliance = parseField(data.legalCompliance);
+        const parsedRiotRequirements = parseField(data.riotRequirements);
         const normalizedEntryFeeAmount = data.entryFeeAmount !== undefined ? String(data.entryFeeAmount || '').trim() : undefined;
 
         const normalizeDateValue = (value) => {
@@ -1353,6 +1399,12 @@ export const updateTournament = async (req, res) => {
             return res.status(400).json({ message: 'Debes definir jurisdicción y normativa aplicable del torneo' });
         }
         const targetGame = String(update.game || tournament.game || '').trim();
+        const targetRiotRequirements = normalizeRiotRequirementsConfig(
+            parsedRiotRequirements !== undefined ? parsedRiotRequirements : tournament.riotRequirements,
+            targetGame,
+            tournament.riotRequirements
+        );
+        update.riotRequirements = targetRiotRequirements;
         const targetServerRaw = update.server !== undefined ? update.server : tournament.server;
         const normalizedTargetServer = normalizeTournamentServer(targetGame, targetServerRaw);
         if (String(targetServerRaw || '').trim() && !normalizedTargetServer) {
@@ -1398,7 +1450,7 @@ export const updateTournament = async (req, res) => {
                 });
             }
         }
-        if (isRiotTournamentGame(targetGame)) {
+        if (requiresVerifiedRiotForTournament({ ...tournament.toObject(), game: targetGame, riotRequirements: targetRiotRequirements })) {
             const riotIssues = getRiotComplianceIssues({
                 game: targetGame,
                 title: targetTitle,
@@ -1610,7 +1662,7 @@ export const updateTournamentBracket = async (req, res) => {
         }
 
         if (
-            isRiotTournamentGame(tournament.game)
+            requiresVerifiedRiotForTournament(tournament)
             && tournament.registrationClosed !== true
             && resolveSeedingMode(bracket) === 'custom'
         ) {
@@ -1663,7 +1715,7 @@ export const generateTournamentBracket = async (req, res) => {
         }
 
         if (
-            isRiotTournamentGame(tournament.game)
+            requiresVerifiedRiotForTournament(tournament)
             && tournament.registrationClosed !== true
             && seedingMode === 'custom'
         ) {
@@ -2040,7 +2092,7 @@ export const registerTeam = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
         const requesterIsAdmin = requester.isAdmin === true;
-        const requiresRiot = tournament.riotRequirements?.required === true || isSupportedRiotGame(tournament.game);
+        const requiresRiot = requiresVerifiedRiotForTournament(tournament);
         const requiresMlbb = isSupportedMlbbGame(tournament.game);
         // Requisitos Riot (si aplica)
         if (requiresRiot) {
@@ -2144,7 +2196,7 @@ export const registerTeam = async (req, res) => {
             }
 
             const users = starters.concat(team.roster?.subs || []).filter(p => p?.user).map(p => p.user);
-            const riotUsers = users.length
+            const riotUsers = requiresRiot && users.length
                 ? await User.find({ _id: { $in: users } }).select('connections.riot')
                 : [];
             const riotEligibilityMap = new Map(
@@ -2391,7 +2443,7 @@ export const updateRegistrationStatus = async (req, res) => {
             return res.status(404).json({ message: 'Registro no encontrado' });
         }
 
-        const isRiotTournament = isRiotTournamentGame(tournament.game);
+        const isRiotTournament = requiresVerifiedRiotForTournament(tournament);
         const isMlbbTournament = isSupportedMlbbGame(tournament.game);
         const universityOnly = isUniversityOnlyTournament(tournament);
         if (status === 'approved' && universityOnly) {
@@ -2577,10 +2629,18 @@ export const getTournamentCompliance = async (req, res) => {
 
         const game = String(tournament.game || '').trim();
         const isRiotTournament = isRiotTournamentGame(game);
+        const riotManualMode = isRiotManualMode(tournament);
         const isMlbbTournament = isSupportedMlbbGame(game);
         const checks = [];
 
-        if (isRiotTournament) {
+        if (isRiotTournament && riotManualMode) {
+            checks.push({
+                id: 'riotManualMode',
+                label: 'Modo manual Riot',
+                ok: true,
+                detail: 'Este torneo opera temporalmente sin verificación de Riot API ni Riot Sign On.'
+            });
+        } else if (isRiotTournament) {
             const riotPolicyIssues = getRiotComplianceIssues({
                 game,
                 title: tournament.title,
@@ -2737,6 +2797,7 @@ export const getTournamentCompliance = async (req, res) => {
             tournamentId: tournament.tournamentId,
             game,
             isRiotTournament,
+            riotManualMode,
             isMlbbTournament,
             mode: {
                 riotReviewMode: RIOT_REVIEW_MODE,
@@ -2814,56 +2875,56 @@ export const updateTournamentStatus = async (req, res) => {
                         });
                     }
 
-                if (isRiotTournamentGame(tournament.game)) {
-                    const activeParticipants = approved.length * parseTeamSizeFromModality(tournament.modality);
-                    const minActive = getRiotMinActiveParticipants();
-                    if (activeParticipants < minActive) {
-                        return res.status(400).json({
-                            message: `Para iniciar un torneo Riot necesitas al menos ${minActive} participantes activos.`,
-                            minActiveParticipants: minActive,
-                            activeParticipants
-                        });
-                    }
-                    const normalizedFormat = normalizeTournamentFormat(tournament.format);
-                    if (!RIOT_ALLOWED_FORMATS.has(normalizedFormat)) {
-                        return res.status(400).json({
-                            message: 'Formato no permitido para torneos Riot. Usa eliminación directa, suizo o round robin.'
-                        });
-                    }
-                    for (const registration of approved) {
-                        const rosterCheck = validateRiotRegistrationRoster(registration);
-                        if (!rosterCheck.ok) {
-                            return res.status(400).json({ message: rosterCheck.message });
+                    if (requiresVerifiedRiotForTournament(tournament)) {
+                        const activeParticipants = approved.length * parseTeamSizeFromModality(tournament.modality);
+                        const minActive = getRiotMinActiveParticipants();
+                        if (activeParticipants < minActive) {
+                            return res.status(400).json({
+                                message: `Para iniciar un torneo Riot necesitas al menos ${minActive} participantes activos.`,
+                                minActiveParticipants: minActive,
+                                activeParticipants
+                            });
+                        }
+                        const normalizedFormat = normalizeTournamentFormat(tournament.format);
+                        if (!RIOT_ALLOWED_FORMATS.has(normalizedFormat)) {
+                            return res.status(400).json({
+                                message: 'Formato no permitido para torneos Riot. Usa eliminación directa, suizo o round robin.'
+                            });
+                        }
+                        for (const registration of approved) {
+                            const rosterCheck = validateRiotRegistrationRoster(registration);
+                            if (!rosterCheck.ok) {
+                                return res.status(400).json({ message: rosterCheck.message });
+                            }
+                        }
+                        const duplicateCheck = findDuplicateRiotIdentity(approved);
+                        if (duplicateCheck.found) {
+                            return res.status(400).json({ message: duplicateCheck.message });
                         }
                     }
-                    const duplicateCheck = findDuplicateRiotIdentity(approved);
-                    if (duplicateCheck.found) {
-                        return res.status(400).json({ message: duplicateCheck.message });
-                    }
-                }
-                if (isSupportedMlbbGame(tournament.game)) {
-                    if (approved.length < MLBB_MIN_APPROVED_TEAMS) {
-                        return res.status(400).json({
-                            message: `Para iniciar un torneo MLBB necesitas al menos ${MLBB_MIN_APPROVED_TEAMS} equipos aprobados.`,
-                            minApprovedTeams: MLBB_MIN_APPROVED_TEAMS
-                        });
-                    }
-                    for (const registration of approved) {
-                        const rosterCheck = validateMlbbRegistrationRoster(registration);
-                        if (!rosterCheck.ok) {
-                            return res.status(400).json({ message: rosterCheck.message });
+                    if (isSupportedMlbbGame(tournament.game)) {
+                        if (approved.length < MLBB_MIN_APPROVED_TEAMS) {
+                            return res.status(400).json({
+                                message: `Para iniciar un torneo MLBB necesitas al menos ${MLBB_MIN_APPROVED_TEAMS} equipos aprobados.`,
+                                minApprovedTeams: MLBB_MIN_APPROVED_TEAMS
+                            });
+                        }
+                        for (const registration of approved) {
+                            const rosterCheck = validateMlbbRegistrationRoster(registration);
+                            if (!rosterCheck.ok) {
+                                return res.status(400).json({ message: rosterCheck.message });
+                            }
+                        }
+                        const duplicateCheck = findDuplicateMlbbIdentity(approved);
+                        if (duplicateCheck.found) {
+                            return res.status(400).json({ message: duplicateCheck.message });
+                        }
+                        const identityMap = await buildMlbbUserIdentityMap(approved);
+                        const bindingIssues = getMlbbIdentityBindingIssues(approved, identityMap);
+                        if (bindingIssues.length) {
+                            return res.status(400).json({ message: bindingIssues[0] });
                         }
                     }
-                    const duplicateCheck = findDuplicateMlbbIdentity(approved);
-                    if (duplicateCheck.found) {
-                        return res.status(400).json({ message: duplicateCheck.message });
-                    }
-                    const identityMap = await buildMlbbUserIdentityMap(approved);
-                    const bindingIssues = getMlbbIdentityBindingIssues(approved, identityMap);
-                    if (bindingIssues.length) {
-                        return res.status(400).json({ message: bindingIssues[0] });
-                    }
-                }
                 }
                 tournament.status = 'ongoing';
                 tournament.registrationClosed = true;

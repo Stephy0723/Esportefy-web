@@ -172,30 +172,26 @@ const tournamentSchema = new mongoose.Schema({
     },
 
     riotRequirements: {
-    required: { type: Boolean, default: false },
-
-    minTier: {
-        type: String,
-        enum: [
-            'IRON', 'BRONZE', 'SILVER', 'GOLD',
-            'PLATINUM', 'DIAMOND', 'MASTER',
-            'GRANDMASTER', 'CHALLENGER'
-        ]
+        required: { type: Boolean, default: false },
+        manualMode: { type: Boolean, default: false },
+        minTier: {
+            type: String,
+            enum: [
+                'IRON', 'BRONZE', 'SILVER', 'GOLD',
+                'PLATINUM', 'DIAMOND', 'MASTER',
+                'GRANDMASTER', 'CHALLENGER'
+            ]
+        },
+        maxTier: {
+            type: String,
+            enum: [
+                'IRON', 'BRONZE', 'SILVER', 'GOLD',
+                'PLATINUM', 'DIAMOND', 'MASTER',
+                'GRANDMASTER', 'CHALLENGER'
+            ]
+        },
+        soloQueueOnly: { type: Boolean, default: true }
     },
-
-    maxTier: {
-        type: String,
-        enum: [
-            'IRON', 'BRONZE', 'SILVER', 'GOLD',
-            'PLATINUM', 'DIAMOND', 'MASTER',
-            'GRANDMASTER', 'CHALLENGER'
-        ]
-    },
-
-    soloQueueOnly: { type: Boolean, default: true }
-}
-
-,
     registrations: [{
         teamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team' },
         teamName: { type: String, required: true },

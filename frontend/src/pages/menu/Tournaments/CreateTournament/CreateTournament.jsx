@@ -57,6 +57,13 @@ import {
 import './CreateTournament.css';
 
 const GAMES = [...SUPPORTED_GAME_NAMES];
+const DEFAULT_RIOT_REQUIREMENTS = {
+  required: false,
+  manualMode: false,
+  minTier: '',
+  maxTier: '',
+  soloQueueOnly: true
+};
 
 const baseState = (name) => ({
   title: '',
@@ -95,6 +102,7 @@ const baseState = (name) => ({
     privacyAccepted: false,
     organizerDeclaration: false
   },
+  riotRequirements: { ...DEFAULT_RIOT_REQUIREMENTS },
   sponsors: [{ name: '', link: '', tier: 'Partner', logoFile: null }],
   staffMembers: []
 });
@@ -105,6 +113,20 @@ const MONEY_INPUT_REGEX = /^\d*(?:[.,]\d{0,2})?$/;
 
 const RIOT_TITLES = new Set(SUPPORTED_RIOT_GAME_NAMES);
 const MLBB_TITLES = new Set(SUPPORTED_MLBB_GAME_NAMES);
+const normalizeRiotRequirementsState = (value = {}, game = '') => {
+  if (!RIOT_TITLES.has(String(game || '').trim())) {
+    return { ...DEFAULT_RIOT_REQUIREMENTS };
+  }
+
+  const manualMode = value?.manualMode === true;
+  return {
+    required: !manualMode,
+    manualMode,
+    minTier: manualMode ? '' : String(value?.minTier || '').trim(),
+    maxTier: manualMode ? '' : String(value?.maxTier || '').trim(),
+    soloQueueOnly: value?.soloQueueOnly !== false
+  };
+};
 
 const MLBB_BETA_MODE = String(import.meta.env.VITE_MLBB_BETA_MODE ?? 'true').trim().toLowerCase() !== 'false';
 const RIOT_REVIEW_MODE = String(import.meta.env.VITE_RIOT_REVIEW_MODE ?? 'false').trim().toLowerCase() === 'true';
@@ -284,6 +306,10 @@ const CreateTournament = () => {
         privacyAccepted: editTournament.legalCompliance?.privacyAccepted ?? true,
         organizerDeclaration: editTournament.legalCompliance?.organizerDeclaration ?? true
       },
+      riotRequirements: normalizeRiotRequirementsState(
+        editTournament.riotRequirements,
+        editTournament.game || prev.game
+      ),
       sponsors: Array.isArray(editTournament.sponsors) && editTournament.sponsors.length
         ? editTournament.sponsors.map((s) => ({ name: s.name || '', link: s.link || '', tier: s.tier || 'Partner', logoFile: null }))
         : prev.sponsors,
@@ -319,6 +345,7 @@ const CreateTournament = () => {
     () => RIOT_TITLES.has(String(tournament.game || '').trim()),
     [tournament.game]
   );
+  const riotManualMode = isRiotTournament && tournament.riotRequirements?.manualMode === true;
   const serverOptions = useMemo(
     () => getTournamentServerOptions(tournament.game, tournament.server),
     [tournament.game, tournament.server]
@@ -351,7 +378,7 @@ const CreateTournament = () => {
     const teamSize = parseTeamSizeFromModality(tournament.modality);
     return maxSlots * teamSize;
   }, [tournament.maxSlots, tournament.modality]);
-  const riotReviewLocked = RIOT_REVIEW_MODE && isRiotTournament;
+  const riotReviewLocked = RIOT_REVIEW_MODE && isRiotTournament && !riotManualMode;
   const isPaidEntry = useMemo(
     () => normalizeText(tournament.entryFee).trim() === 'pago',
     [tournament.entryFee]
@@ -452,6 +479,7 @@ const CreateTournament = () => {
         server: nextServer,
         platform: normalizeTournamentGamePlatform(value, prev.platform),
         modality: normalizeTournamentGameModality(value, prev.modality),
+        riotRequirements: normalizeRiotRequirementsState(prev.riotRequirements, value),
         matchConfig: {
           ...prev.matchConfig,
           seriesType: normalizeTournamentGameSeries(value, prev.matchConfig.seriesType),
@@ -475,31 +503,6 @@ const CreateTournament = () => {
   const setCustomMaxSlots = (value) => {
     if (!INTEGER_INPUT_REGEX.test(value)) return;
     setField('maxSlots', value);
-  };
-  const addMapToPool = (value) => {
-    const mapName = String(value || '').trim();
-    if (!mapName) return;
-
-    setTournament((prev) => ({
-      ...prev,
-      matchConfig: {
-        ...prev.matchConfig,
-        mapPool: normalizeTournamentMapPool(prev.game, [...(prev.matchConfig.mapPool || []), mapName])
-      }
-    }));
-    setPendingMap('');
-  };
-  const removeMapFromPool = (value) => {
-    const target = String(value || '').trim().toLowerCase();
-    if (!target) return;
-
-    setTournament((prev) => ({
-      ...prev,
-      matchConfig: {
-        ...prev.matchConfig,
-        mapPool: (prev.matchConfig.mapPool || []).filter((mapName) => String(mapName || '').trim().toLowerCase() !== target)
-      }
-    }));
   };
   const setSponsor = (index, key, value) =>
     setTournament((p) => {
@@ -649,6 +652,7 @@ const CreateTournament = () => {
       broadcast: source.broadcast,
       matchConfig: source.matchConfig,
       legalCompliance: source.legalCompliance,
+      riotRequirements: normalizeRiotRequirementsState(source.riotRequirements, source.game),
       sponsors: (source.sponsors || []).filter((s) => s?.name || s?.link).map((s) => ({
         name: s.name || '',
         link: s.link || '',
@@ -721,6 +725,7 @@ const CreateTournament = () => {
     data.append('broadcast', JSON.stringify(source.broadcast));
     data.append('matchConfig', JSON.stringify(source.matchConfig));
     data.append('legalCompliance', JSON.stringify(source.legalCompliance));
+    data.append('riotRequirements', JSON.stringify(normalizeRiotRequirementsState(source.riotRequirements, source.game)));
 
     const sponsors = [];
     let logoIndex = 0;
@@ -751,25 +756,21 @@ const CreateTournament = () => {
       return;
     }
 
-    try {
-      const data = buildFormData(source);
-      const url = isEditMode
-        ? `${API_URL}/api/tournaments/${editTournament.tournamentId}`
-        : `${API_URL}/api/tournaments`;
-      const method = isEditMode ? 'put' : 'post';
+    const data = buildFormData(source);
+    const url = isEditMode
+      ? `${API_URL}/api/tournaments/${editTournament.tournamentId}`
+      : `${API_URL}/api/tournaments`;
+    const method = isEditMode ? 'put' : 'post';
 
-      await axios({
-        url,
-        method,
-        data,
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-    } catch (error) {
-      throw error;
-    }
+    await axios({
+      url,
+      method,
+      data,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   };
 
   const createMlbbDemoNow = async () => {
@@ -819,12 +820,12 @@ const CreateTournament = () => {
       return;
     }
 
-    if (isRiotTournament) {
+    if (isRiotTournament && !riotManualMode) {
       const banned = findRiotBannedTerm(
         [tournament.title, tournament.description, tournament.prizeDetails].join(' ')
       );
       if (banned) {
-        notify('danger', 'Cumplimiento Riot', `Texto no permitido: "${banned}".`);
+        alert(`Texto no permitido para cumplimiento Riot: "${banned}".`);
         return;
       }
 
@@ -1194,13 +1195,37 @@ const CreateTournament = () => {
               </label>
             </div>
             {isRiotTournament && (
+              <label className="ct-checkline">
+                <input
+                  type="checkbox"
+                  checked={riotManualMode}
+                  onChange={(e) => setTournament((prev) => ({
+                    ...prev,
+                    riotRequirements: {
+                      ...normalizeRiotRequirementsState(prev.riotRequirements, prev.game),
+                      manualMode: e.target.checked,
+                      required: !e.target.checked,
+                      minTier: e.target.checked ? '' : prev.riotRequirements?.minTier || '',
+                      maxTier: e.target.checked ? '' : prev.riotRequirements?.maxTier || ''
+                    }
+                  }))}
+                />
+                <span>Modo manual temporal Riot para evento sin production key</span>
+              </label>
+            )}
+            {isRiotTournament && riotManualMode && (
+              <p className="ct-inline-help">
+                Modo manual activo: este torneo no exigirá cuenta Riot vinculada ni autorización VALORANT para registrar equipos.
+              </p>
+            )}
+            {isRiotTournament && !riotManualMode && (
               <p className="ct-inline-help">
                 {riotReviewLocked
                   ? `Modo review Riot activo: solo se permite inscripción gratis y un mínimo de ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos.`
                   : `Recomendación Riot: usa formato tradicional y configura al menos ${RIOT_MIN_ACTIVE_PARTICIPANTS} participantes activos.`}
               </p>
             )}
-            {isRiotTournament && isPaidEntry && (
+            {isRiotTournament && !riotManualMode && isPaidEntry && (
               <p className="ct-inline-help">
                 En torneos Riot con inscripción paga, el prize pool debe cubrir al menos el 70% de lo recaudado.
                 {riotMinimumPrizePool > 0 && ` Minimo actual: ${formatMoneyAmount(riotMinimumPrizePool)} ${tournament.currency}.`}

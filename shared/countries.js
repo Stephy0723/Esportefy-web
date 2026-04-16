@@ -108,7 +108,7 @@ const rawCountryCodes = {
   'Paraguay': 'PY',
   'Perú': 'PE',
   'Puerto Rico': 'PR',
-  'República Dominicana': 'DR',
+  'República Dominicana': 'RD',
   'San Cristóbal y Nieves': 'KN',
   'San Vicente y las Granadinas': 'VC',
   'Santa Lucía': 'LC',

@@ -315,6 +315,7 @@ const formatTournamentFromApi = (t) => ({
 
 const isRiotGame = (game) => isSupportedRiotGame(game);
 const isMlbbGame = (game) => isSupportedMlbbGame(game);
+const isRiotManualMode = (torneo) => torneo?.riotRequirements?.manualMode === true;
 
 const getMlbbEntryStatus = (player) => {
   if (!player) return null;
@@ -871,7 +872,7 @@ useEffect(() => {
   }, [isRightPanelOpen]);
 
   const goToRegistration = (torneo) => navigate('/team-registration', { state: { tournament: torneo } });
-  const needsRiot = (torneo) => isRiotGame(torneo.game);
+  const needsRiot = (torneo) => isRiotGame(torneo.game) && !isRiotManualMode(torneo);
   const needsValorantRso = (torneo) => isValorantTournamentGame(torneo?.game) && needsRiot(torneo);
   const hasRiotLinked = Boolean(user?.connections?.riot?.verified);
   const hasValorantRso = user?.connections?.riot?.products?.valorant?.consentGranted === true;
@@ -2419,7 +2420,18 @@ useEffect(() => {
                             </div>
                         )} */} 
 
-                        {isRiotGame(selectedTournament.game) && selectedTournament.riotRequirements?.required && (
+                        {isRiotGame(selectedTournament.game) && isRiotManualMode(selectedTournament) && (
+                            <div className="info-section" style={{ marginTop: 18 }}>
+                                <h4><i className='bx bx-shield-quarter'></i> Modo manual Riot</h4>
+                                <div className="riot-requirements">
+                                    <div><strong>Validación externa:</strong> desactivada temporalmente</div>
+                                    <div><strong>Registro:</strong> no exige cuenta Riot vinculada ni Riot Sign On</div>
+                                    <div className="riot-note">Usa este modo solo para eventos temporales mientras llega la production key.</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {isRiotGame(selectedTournament.game) && !isRiotManualMode(selectedTournament) && (
                             <div className="info-section" style={{ marginTop: 18 }}>
                                 <h4><i className='bx bx-shield-quarter'></i> Requisitos Riot</h4>
                                 <div className="riot-requirements">

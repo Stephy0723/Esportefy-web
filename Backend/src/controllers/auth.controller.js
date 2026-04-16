@@ -1,6 +1,6 @@
 // Backend/src/controllers/auth.controller.js
 
-import User from '../models/User.js';
+import User, { shouldRegenerateUserCodeForCountry } from '../models/User.js';
 import Team from "../models/Team.js";
 import Tournament from "../models/Tournament.js";
 import CommunityPost from "../models/CommunityPost.js";
@@ -943,7 +943,9 @@ export const getProfile = async (req, res) => {
         }
 
         let needsSave = false;
-        if (!user.userCode) needsSave = true;
+        if (!user.userCode || shouldRegenerateUserCodeForCountry({ country: user.country, userCode: user.userCode })) {
+            needsSave = true;
+        }
         if (!user.referralCode) {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let code = 'GG-';
@@ -1505,7 +1507,7 @@ export const getProfileOverview = async (req, res) => {
         if (!userDoc) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
-        if (!userDoc.userCode) {
+        if (!userDoc.userCode || shouldRegenerateUserCodeForCountry({ country: userDoc.country, userCode: userDoc.userCode })) {
             await userDoc.save();
         }
         const user = userDoc.toObject();

@@ -1,16 +1,25 @@
 import BannerLol from '../assets/banner/BannerLol.jpg';
 import BannerValo from '../assets/banner/BannerValo.jpg';
 import BannerMlbb from '../assets/banner/BannerMlbb.jpg';
+import CS2Cover from '../assets/comunidad/CS2.jpg';
 import WarzoneCover from '../assets/gameImages/CallofDutyWarzone.png';
 import FortniteCover from '../assets/gameImages/fortnite.png';
+import Overwatch2Cover from '../assets/gameImages/Overwatch2.png';
+import Dota2Cover from '../assets/gameImages/Dota2.png';
 import FifaCover from '../assets/gameImages/Fifa.png';
+import Nba2kCover from '../assets/comunidad/NBA2K24.jpg';
 import RocketCover from '../assets/gameImages/RocketLeague.png';
 import FreeFireCover from '../assets/gameImages/freefire.png';
 import PubgCover from '../assets/gameImages/PubgMobile.jpg';
 import CodmCover from '../assets/gameImages/codm.png';
+import ApexCover from '../assets/gameImages/Apex_Legends_logo.png';
+import R6Cover from '../assets/gameImages/Rainbow Six Siege.png';
 import Sf6Cover from '../assets/gameImages/sf6.png';
 import TekkenCover from '../assets/gameImages/Tekken8.png';
 import BrawlhallaCover from '../assets/gameImages/brawlhalla.png';
+import ClashRoyaleCover from '../assets/gameImages/clashroyale.png';
+import HearthstoneCover from '../assets/gameImages/Hearthstone-Emblem.png';
+import HaloCover from '../assets/gameImages/Halo.png';
 import SmashCover from '../assets/banner/BannerSmash.jpg';
 
 const supportedGamesDetailedData = {
@@ -66,6 +75,58 @@ const supportedGamesDetailedData = {
       { title: 'Valorant Open Tour', prize: '$1,200', date: 'Abril 2026' },
     ],
   },
+  cs2: {
+    id: 'cs2',
+    name: 'CS2',
+    banner: CS2Cover,
+    developer: 'Valve',
+    history:
+      'CS2 entra a GLITCH GANG como shooter tactico 5v5 con enfoque en scrims, torneos internos, roles definidos y seguimiento competitivo para equipos organizados.',
+    tags: ['FPS', 'PC', 'Tactico', 'Competitivo', '5v5'],
+    category: 'FPS',
+    color: '#DE9B35',
+    organizers: [
+      { name: 'Valve', motto: 'Escena global de majors y circuitos abiertos' },
+      { name: 'TOs terceros', motto: 'Ligas regionales, hubs y opens online' },
+      { name: 'GLITCH GANG', motto: 'Torneos, scrims y rosters competitivos internos' },
+    ],
+    sponsors: [{ name: 'Intel' }, { name: 'ESL' }, { name: 'Logitech G' }],
+    userCommunities: [
+      { name: 'CS2 LATAM', members: '58k' },
+      { name: 'CS2 Caribe', members: '7k' },
+      { name: 'GLITCH GANG CS2 Hub', members: '4k' },
+    ],
+    tournaments: [
+      { title: 'CS2 Open Series', prize: '$1,500', date: 'Proximamente' },
+      { title: 'CS2 University Clash', prize: 'Circuito interno', date: 'Abril 2026' },
+    ],
+  },
+  ow2: {
+    id: 'ow2',
+    name: 'Overwatch 2',
+    banner: Overwatch2Cover,
+    developer: 'Blizzard Entertainment',
+    history:
+      'Overwatch 2 se integra como hero shooter 5v5 con soporte para rosters, roles por linea y seguimiento competitivo para equipos y comunidades activas.',
+    tags: ['FPS', 'Hero Shooter', '5v5', 'Competitivo', 'Crossplay'],
+    category: 'FPS',
+    color: '#F99E1A',
+    organizers: [
+      { name: 'Blizzard', motto: 'Escena oficial y eventos competitivos' },
+      { name: 'TOs terceros', motto: 'Copas comunitarias y leagues regionales' },
+      { name: 'GLITCH GANG', motto: 'Rosters, copas internas y hubs de comunidad' },
+    ],
+    sponsors: [{ name: 'Blizzard' }, { name: 'Razer' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Overwatch LATAM', members: '31k' },
+      { name: 'OW2 Caribe', members: '6k' },
+      { name: 'GLITCH GANG OW2', members: '3k' },
+    ],
+    tournaments: [
+      { title: 'OW2 Team Clash', prize: '$1,000', date: 'Proximamente' },
+      { title: 'Hero Shooter Cup', prize: '$800', date: 'Abril 2026' },
+    ],
+  },
   mlbb: {
     id: 'mlbb',
     name: 'Mobile Legends',
@@ -92,6 +153,32 @@ const supportedGamesDetailedData = {
       { title: 'Invitacional Regional MLBB', prize: '$2,500', date: 'Abril 2026' },
     ],
   },
+  dota2: {
+    id: 'dota2',
+    name: 'Dota 2',
+    banner: Dota2Cover,
+    developer: 'Valve',
+    history:
+      'Dota 2 entra a GLITCH GANG como MOBA de alta profundidad para equipos competitivos, scrims, torneos universitarios y seguimiento de rosters.',
+    tags: ['MOBA', 'PC', '5v5', 'Competitivo', 'E-Sports'],
+    category: 'MOBA',
+    color: '#E33935',
+    organizers: [
+      { name: 'Valve', motto: 'Circuito internacional y majors' },
+      { name: 'TOs terceros', motto: 'Ligas regionales y qualifiers abiertos' },
+      { name: 'GLITCH GANG', motto: 'Comunidad local, scrims y torneos internos' },
+    ],
+    sponsors: [{ name: 'Intel' }, { name: 'Secretlab' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Dota 2 LATAM', members: '44k' },
+      { name: 'Dota Caribe', members: '5k' },
+      { name: 'GLITCH GANG Dota', members: '2k' },
+    ],
+    tournaments: [
+      { title: 'Dota 2 Open 5v5', prize: '$1,500', date: 'Proximamente' },
+      { title: 'Dota University Draft', prize: '$1,000', date: 'Abril 2026' },
+    ],
+  },
   warzone: {
     id: 'warzone',
     name: 'Warzone',
@@ -116,6 +203,32 @@ const supportedGamesDetailedData = {
     tournaments: [
       { title: 'Warzone Squad Clash', prize: '$1,200', date: 'Proximamente' },
       { title: 'Warzone Resurgence Open', prize: '$800', date: 'Abril 2026' },
+    ],
+  },
+  apex: {
+    id: 'apex',
+    name: 'Apex Legends',
+    banner: ApexCover,
+    developer: 'Respawn Entertainment',
+    history:
+      'Apex Legends se integra a GLITCH GANG como battle royale por escuadras con seguimiento de squads, torneos, resultados y hubs competitivos.',
+    tags: ['Battle Royale', 'FPS', 'Squads', 'Competitivo', 'Cross-Platform'],
+    category: 'BR',
+    color: '#CD3333',
+    organizers: [
+      { name: 'EA / Respawn', motto: 'Escena oficial y eventos ALGS' },
+      { name: 'TOs terceros', motto: 'Scrims y opens por región' },
+      { name: 'GLITCH GANG', motto: 'Squads, hubs y copas comunitarias' },
+    ],
+    sponsors: [{ name: 'Monster Energy' }, { name: 'Logitech G' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Apex LATAM', members: '29k' },
+      { name: 'Apex Caribe', members: '6k' },
+      { name: 'GLITCH GANG Apex', members: '3k' },
+    ],
+    tournaments: [
+      { title: 'Apex Squad Clash', prize: '$1,200', date: 'Proximamente' },
+      { title: 'Apex University Cup', prize: '$900', date: 'Abril 2026' },
     ],
   },
   fortnite: {
@@ -194,6 +307,32 @@ const supportedGamesDetailedData = {
     tournaments: [
       { title: 'EA FC 1v1 Series', prize: '$500', date: 'Proximamente' },
       { title: 'Copa Universitaria FC', prize: 'Circuito interno', date: 'Abril 2026' },
+    ],
+  },
+  nba2k: {
+    id: 'nba2k',
+    name: 'NBA 2K24',
+    banner: Nba2kCover,
+    developer: '2K Sports',
+    history:
+      'NBA 2K24 se integra como disciplina deportiva para retos 1v1, ligas internas y torneos organizados desde la plataforma.',
+    tags: ['Sports', 'Basketball', '1v1', 'Competitivo', 'Console'],
+    category: 'Sports',
+    color: '#F59E0B',
+    organizers: [
+      { name: '2K Sports', motto: 'Competición y eventos de comunidad' },
+      { name: 'TOs terceros', motto: 'Leagues y opens regionales' },
+      { name: 'GLITCH GANG', motto: 'Retos, ladders y torneos internos' },
+    ],
+    sponsors: [{ name: '2K Sports' }, { name: 'PlayStation' }, { name: 'AOC' }],
+    userCommunities: [
+      { name: 'NBA 2K LATAM', members: '12k' },
+      { name: '2K Caribe', members: '3k' },
+      { name: 'GLITCH GANG 2K', members: '2k' },
+    ],
+    tournaments: [
+      { title: 'NBA 2K Open 1v1', prize: '$500', date: 'Proximamente' },
+      { title: 'College Hoops 2K Cup', prize: '$700', date: 'Abril 2026' },
     ],
   },
   smash: {
@@ -352,6 +491,84 @@ const supportedGamesDetailedData = {
       { title: 'Mobile Survival Cup', prize: '$900', date: 'Abril 2026' },
     ],
   },
+  r6: {
+    id: 'r6',
+    name: 'Rainbow Six Siege',
+    banner: R6Cover,
+    developer: 'Ubisoft',
+    history:
+      'Rainbow Six Siege se integra como shooter tactico por operadores con soporte para rosters, torneos internos y seguimiento competitivo 5v5.',
+    tags: ['FPS', 'Tactico', '5v5', 'Competitivo', 'PC'],
+    category: 'FPS',
+    color: '#FF8C00',
+    organizers: [
+      { name: 'Ubisoft', motto: 'Escena oficial y circuitos por region' },
+      { name: 'TOs terceros', motto: 'Leagues y opens de comunidad' },
+      { name: 'GLITCH GANG', motto: 'Rosters organizados y copas internas' },
+    ],
+    sponsors: [{ name: 'Ubisoft' }, { name: 'Alienware' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'R6 LATAM', members: '18k' },
+      { name: 'R6 Caribe', members: '4k' },
+      { name: 'GLITCH GANG R6', members: '2k' },
+    ],
+    tournaments: [
+      { title: 'R6 Siege Team Open', prize: '$1,000', date: 'Proximamente' },
+      { title: 'Siege Campus Cup', prize: '$900', date: 'Abril 2026' },
+    ],
+  },
+  cr: {
+    id: 'cr',
+    name: 'Clash Royale',
+    banner: ClashRoyaleCover,
+    developer: 'Supercell',
+    history:
+      'Clash Royale entra a GLITCH GANG como disciplina mobile 1v1 para ladders, opens comunitarios y seguimiento de logros competitivos.',
+    tags: ['Strategy', 'Card Game', 'Mobile', '1v1', 'Competitivo'],
+    category: 'Strategy',
+    color: '#3B82F6',
+    organizers: [
+      { name: 'Supercell', motto: 'Escena oficial y eventos abiertos' },
+      { name: 'TOs terceros', motto: 'Cups comunitarias y clasificatorias' },
+      { name: 'GLITCH GANG', motto: 'Retos, ladders y torneos internos' },
+    ],
+    sponsors: [{ name: 'Supercell' }, { name: 'Samsung' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Clash Royale LATAM', members: '39k' },
+      { name: 'CR Caribe', members: '5k' },
+      { name: 'GLITCH GANG CR', members: '2k' },
+    ],
+    tournaments: [
+      { title: 'Clash Royale 1v1 Open', prize: '$400', date: 'Proximamente' },
+      { title: 'Mobile Cards Cup', prize: '$600', date: 'Abril 2026' },
+    ],
+  },
+  hs: {
+    id: 'hs',
+    name: 'Hearthstone',
+    banner: HearthstoneCover,
+    developer: 'Blizzard Entertainment',
+    history:
+      'Hearthstone se integra como juego de cartas estratégico para opens 1v1, torneos internos y comunidad de deckbuilding competitivo.',
+    tags: ['Strategy', 'Card Game', '1v1', 'Competitivo', 'PC/Mobile'],
+    category: 'Strategy',
+    color: '#22C55E',
+    organizers: [
+      { name: 'Blizzard', motto: 'Escena competitiva y masters tours' },
+      { name: 'TOs terceros', motto: 'Opens y cups por comunidad' },
+      { name: 'GLITCH GANG', motto: 'Deckbuilding, opens y torneos internos' },
+    ],
+    sponsors: [{ name: 'Blizzard' }, { name: 'Razer' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Hearthstone LATAM', members: '16k' },
+      { name: 'HS Caribe', members: '3k' },
+      { name: 'GLITCH GANG HS', members: '1k' },
+    ],
+    tournaments: [
+      { title: 'Hearthstone Open Cup', prize: '$400', date: 'Proximamente' },
+      { title: 'Cards Masters Series', prize: '$650', date: 'Abril 2026' },
+    ],
+  },
   codm: {
     id: 'codm',
     name: 'COD Mobile',
@@ -378,6 +595,32 @@ const supportedGamesDetailedData = {
       { title: 'Mobile FPS Series', prize: '$1,000', date: 'Abril 2026' },
     ],
   },
+  halo: {
+    id: 'halo',
+    name: 'Halo Infinite',
+    banner: HaloCover,
+    developer: '343 Industries / Xbox Game Studios',
+    history:
+      'Halo Infinite se integra como arena shooter 4v4 con soporte para equipos, scrims, torneos y seguimiento competitivo institucional.',
+    tags: ['FPS', 'Arena Shooter', '4v4', 'Competitivo', 'Crossplay'],
+    category: 'FPS',
+    color: '#0EA5E9',
+    organizers: [
+      { name: 'Halo Championship Series', motto: 'Circuito oficial y eventos globales' },
+      { name: 'TOs terceros', motto: 'Opens y ligas comunitarias' },
+      { name: 'GLITCH GANG', motto: 'Equipos, scrims y torneos internos' },
+    ],
+    sponsors: [{ name: 'Xbox' }, { name: 'HyperX' }, { name: 'Red Bull' }],
+    userCommunities: [
+      { name: 'Halo LATAM', members: '14k' },
+      { name: 'Halo Caribe', members: '3k' },
+      { name: 'GLITCH GANG Halo', members: '2k' },
+    ],
+    tournaments: [
+      { title: 'Halo 4v4 Arena', prize: '$900', date: 'Proximamente' },
+      { title: 'Spartan University Cup', prize: '$800', date: 'Abril 2026' },
+    ],
+  },
 };
 
 supportedGamesDetailedData['League of Legends'] = supportedGamesDetailedData.lol;
@@ -389,9 +632,17 @@ supportedGamesDetailedData['MLBB'] = supportedGamesDetailedData.mlbb;
 supportedGamesDetailedData['Warzone'] = supportedGamesDetailedData.warzone;
 supportedGamesDetailedData['Call of Duty Warzone'] = supportedGamesDetailedData.warzone;
 supportedGamesDetailedData['Fortnite'] = supportedGamesDetailedData.fortnite;
+supportedGamesDetailedData['CS2'] = supportedGamesDetailedData.cs2;
+supportedGamesDetailedData['Counter-Strike 2'] = supportedGamesDetailedData.cs2;
+supportedGamesDetailedData['Overwatch 2'] = supportedGamesDetailedData.ow2;
+supportedGamesDetailedData['Overwatch'] = supportedGamesDetailedData.ow2;
+supportedGamesDetailedData['Dota 2'] = supportedGamesDetailedData.dota2;
 supportedGamesDetailedData['Rocket League'] = supportedGamesDetailedData.rl;
+supportedGamesDetailedData.rocket = supportedGamesDetailedData.rl;
 supportedGamesDetailedData['EA FC / FIFA'] = supportedGamesDetailedData.fifa;
 supportedGamesDetailedData['FIFA'] = supportedGamesDetailedData.fifa;
+supportedGamesDetailedData['NBA 2K24'] = supportedGamesDetailedData.nba2k;
+supportedGamesDetailedData['NBA 2K'] = supportedGamesDetailedData.nba2k;
 supportedGamesDetailedData['Smash Bros'] = supportedGamesDetailedData.smash;
 supportedGamesDetailedData['Super Smash Bros'] = supportedGamesDetailedData.smash;
 supportedGamesDetailedData['Super Smash Bros. Ultimate'] = supportedGamesDetailedData.smash;
@@ -404,8 +655,20 @@ supportedGamesDetailedData['Tekken'] = supportedGamesDetailedData.tekken;
 supportedGamesDetailedData['Free Fire'] = supportedGamesDetailedData.freefire;
 supportedGamesDetailedData['PUBG Mobile'] = supportedGamesDetailedData.pubg;
 supportedGamesDetailedData['PUBG'] = supportedGamesDetailedData.pubg;
+supportedGamesDetailedData['Apex Legends'] = supportedGamesDetailedData.apex;
+supportedGamesDetailedData['Apex'] = supportedGamesDetailedData.apex;
 supportedGamesDetailedData['COD Mobile'] = supportedGamesDetailedData.codm;
 supportedGamesDetailedData['CoD Mobile'] = supportedGamesDetailedData.codm;
 supportedGamesDetailedData['Call of Duty Mobile'] = supportedGamesDetailedData.codm;
+supportedGamesDetailedData['Rainbow Six Siege'] = supportedGamesDetailedData.r6;
+supportedGamesDetailedData['Rainbow Six'] = supportedGamesDetailedData.r6;
+supportedGamesDetailedData.siege = supportedGamesDetailedData.r6;
+supportedGamesDetailedData['Clash Royale'] = supportedGamesDetailedData.cr;
+supportedGamesDetailedData.clashroyale = supportedGamesDetailedData.cr;
+supportedGamesDetailedData['Hearthstone'] = supportedGamesDetailedData.hs;
+supportedGamesDetailedData.hearthstone = supportedGamesDetailedData.hs;
+supportedGamesDetailedData['Halo Infinite'] = supportedGamesDetailedData.halo;
+supportedGamesDetailedData['Halo'] = supportedGamesDetailedData.halo;
+supportedGamesDetailedData.overwatch = supportedGamesDetailedData.ow2;
 
 export { supportedGamesDetailedData };

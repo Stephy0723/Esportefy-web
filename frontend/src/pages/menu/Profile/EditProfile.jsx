@@ -66,6 +66,8 @@ import imgFallGuys from '../../../assets/gameImages/FallGuys.png';
 import imgMinecraft from '../../../assets/gameImages/Minecraft.png';
 import imgPalworld from '../../../assets/gameImages/Palworld.png';
 import imgHalo from '../../../assets/gameImages/Halo.png';
+import imgCs2 from '../../../assets/comunidad/CS2.jpg';
+import imgNba2k from '../../../assets/comunidad/NBA2K24.jpg';
 import imgWarzone from '../../../assets/gameImages/CallofDutyWarzone.png';
 import imgGtaV from '../../../assets/gameImages/grandtheftautogtav.png';
 import imgAov from '../../../assets/gameImages/ArenaOfValor.webp';
@@ -97,10 +99,11 @@ const gameCatalog = [
     { id: 'aov', name: 'Arena of Valor', img: imgAov, category: 'moba' },
     
     // Shooter
+    { id: 'cs2', name: 'CS2', img: imgCs2, category: 'shooter' },
     { id: 'valorant', name: 'Valorant', img: imgValorant, category: 'shooter' },
     { id: 'codm', name: 'CoD Mobile', img: imgCodm, category: 'shooter' },
-    { id: 'overwatch', name: 'Overwatch 2', img: imgOverwatch, category: 'shooter' },
-    { id: 'siege', name: 'Rainbow Six Siege', img: imgSiege, category: 'shooter' },
+    { id: 'ow2', name: 'Overwatch 2', img: imgOverwatch, category: 'shooter' },
+    { id: 'r6', name: 'Rainbow Six Siege', img: imgSiege, category: 'shooter' },
     { id: 'halo', name: 'Halo Infinite', img: imgHalo, category: 'shooter' },
     { id: 'marvel', name: 'Marvel Rivals', img: imgMarvel, category: 'shooter' },
     
@@ -120,13 +123,14 @@ const gameCatalog = [
     
     // Deportes
     { id: 'fifa', name: 'EA FC / FIFA', img: imgFifa, category: 'sports' },
+    { id: 'nba2k', name: 'NBA 2K24', img: imgNba2k, category: 'sports' },
     { id: 'rocket', name: 'Rocket League', img: imgRocket, category: 'sports' },
     { id: 'mariokart', name: 'Mario Kart', img: imgMarioKart, category: 'sports' },
     
     // Estrategia / Cartas
     { id: 'tft', name: 'Teamfight Tactics', img: imgTft, category: 'strategy' },
-    { id: 'clashroyale', name: 'Clash Royale', img: imgClashRoyale, category: 'strategy' },
-    { id: 'hearthstone', name: 'Hearthstone', img: imgHearthstone, category: 'strategy' },
+    { id: 'cr', name: 'Clash Royale', img: imgClashRoyale, category: 'strategy' },
+    { id: 'hs', name: 'Hearthstone', img: imgHearthstone, category: 'strategy' },
     { id: 'runeterra', name: 'Legends of Runeterra', img: imgRuneterra, category: 'strategy' },
     { id: 'starcraft', name: 'StarCraft II', img: imgStarcraft, category: 'strategy' },
     

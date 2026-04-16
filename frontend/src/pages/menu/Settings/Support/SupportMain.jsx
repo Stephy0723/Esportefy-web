@@ -18,10 +18,15 @@ const SUPPORTED_GAMES = [
     { id: 'mlbb', name: 'Mobile Legends', short: 'MLBB' },
     { id: 'valorant', name: 'Valorant', short: 'Valorant' },
     { id: 'lol', name: 'League of Legends', short: 'LoL' },
+    { id: 'cs2', name: 'CS2', short: 'CS2' },
+    { id: 'ow2', name: 'Overwatch 2', short: 'OW2' },
+    { id: 'dota2', name: 'Dota 2', short: 'Dota 2' },
     { id: 'fortnite', name: 'Fortnite', short: 'Fortnite' },
     { id: 'warzone', name: 'Warzone', short: 'WZ' },
+    { id: 'apex', name: 'Apex Legends', short: 'Apex' },
     { id: 'rocket', name: 'Rocket League', short: 'RL' },
     { id: 'fifa', name: 'EA FC / FIFA', short: 'EA FC' },
+    { id: 'nba2k', name: 'NBA 2K24', short: 'NBA 2K' },
     { id: 'smash', name: 'Smash Bros', short: 'Smash' },
     { id: 'brawlhalla', name: 'Brawlhalla', short: 'Brawl' },
     { id: 'sf6', name: 'Street Fighter 6', short: 'SF6' },
@@ -29,6 +34,10 @@ const SUPPORTED_GAMES = [
     { id: 'freefire', name: 'Free Fire', short: 'FF' },
     { id: 'pubg', name: 'PUBG Mobile', short: 'PUBG' },
     { id: 'codm', name: 'COD Mobile', short: 'CODM' },
+    { id: 'r6', name: 'Rainbow Six Siege', short: 'R6' },
+    { id: 'cr', name: 'Clash Royale', short: 'CR' },
+    { id: 'hs', name: 'Hearthstone', short: 'HS' },
+    { id: 'halo', name: 'Halo Infinite', short: 'Halo' },
 ];
 
 const FAQ_CATEGORIES = [

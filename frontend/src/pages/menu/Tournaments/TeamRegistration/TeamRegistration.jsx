@@ -63,7 +63,8 @@ const TeamRegistration = () => {
     .filter((p) => p && (p.nickname || p.user)).length;
   const teamComplete = expectedStarters > 0 && filledStarters >= expectedStarters;
   const gameMatches = !tournamentGameNormalized || normalizeGame(selectedTeam?.game) === tournamentGameNormalized;
-  const requiresRiot = Boolean(tournament.riotRequirements?.required) || isSupportedRiotGame(tournament.game);
+  const riotManualMode = tournament.riotRequirements?.manualMode === true;
+  const requiresRiot = !riotManualMode && (Boolean(tournament.riotRequirements?.required) || isSupportedRiotGame(tournament.game));
   const requiresValorantRso = requiresRiot && isValorantGame(tournament.game);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
   const hasValorantRso = currentUser?.connections?.riot?.products?.valorant?.consentGranted === true;
@@ -140,7 +141,7 @@ const TeamRegistration = () => {
           ? visibleTeams.filter((team) => team?.university?.isUniversityTeam === true)
           : visibleTeams;
         setUserTeams(scopedTeams);
-      } catch (err) {
+      } catch {
         /* silent — UI shows empty state */
       } finally {
         setLoadingTeams(false);
@@ -261,6 +262,11 @@ const TeamRegistration = () => {
               <p>Prepara a tu escuadra para la gloria.</p>
               {tournament.game ? (
                 <div className="tournament-game-badge">Juego: {tournament.game}</div>
+              ) : null}
+              {riotManualMode ? (
+                <div className="registration-alert">
+                  Este torneo usa modo manual temporal para {tournament.game}. No se requiere Riot API ni Riot Sign On para completar el registro.
+                </div>
               ) : null}
             </div>
 

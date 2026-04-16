@@ -42,6 +42,50 @@ const MANUAL_COMPETITIVE_PROFILE_SPECS = {
       { key: 'roleFocus', label: 'Rol principal', type: 'select', options: ['IGL', 'Fragger', 'Support', 'Flex'] },
     ],
   },
+  cs2: {
+    title: 'CS2',
+    badge: 'FPS',
+    fields: [
+      { key: 'steamHandle', label: 'Steam / IGN', placeholder: 'Tu tag competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PC'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'BR', 'Global'] },
+      { key: 'roleFocus', label: 'Rol principal', type: 'select', options: ['IGL', 'Entry', 'AWPer', 'Support', 'Lurker'] },
+      { key: 'favoriteMap', label: 'Mapa favorito', placeholder: 'Mirage, Inferno, etc.', max: 32 },
+    ],
+  },
+  ow2: {
+    title: 'Overwatch 2',
+    badge: 'FPS',
+    fields: [
+      { key: 'battleTag', label: 'BattleTag', placeholder: 'Tu BattleTag competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PC', 'Console', 'Crossplay'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'ASIA', 'Global'] },
+      { key: 'roleFocus', label: 'Rol principal', type: 'select', options: ['Tank', 'DPS', 'Support', 'Flex', 'IGL'] },
+      { key: 'mainHero', label: 'Main hero', placeholder: 'Tu heroe principal', max: 32 },
+    ],
+  },
+  dota2: {
+    title: 'Dota 2',
+    badge: 'MOBA',
+    fields: [
+      { key: 'steamHandle', label: 'Steam / IGN', placeholder: 'Tu tag competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PC'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['SA', 'NA', 'WEU', 'EEU', 'SEA'] },
+      { key: 'roleFocus', label: 'Rol principal', type: 'select', options: ['Carry', 'Mid', 'Offlane', 'Soft Support', 'Hard Support'] },
+      { key: 'mainHero', label: 'Main hero', placeholder: 'Tu heroe principal', max: 32 },
+    ],
+  },
+  apex: {
+    title: 'Apex Legends',
+    badge: 'Battle Royale',
+    fields: [
+      { key: 'eaId', label: 'EA ID / IGN', placeholder: 'Tu ID competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PC', 'Console', 'Crossplay'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'ASIA', 'Global'] },
+      { key: 'roleFocus', label: 'Rol principal', type: 'select', options: ['IGL', 'Fragger', 'Anchor'] },
+      { key: 'mainLegend', label: 'Main legend', placeholder: 'Tu leyenda principal', max: 32 },
+    ],
+  },
   rocket: {
     title: 'Rocket League',
     badge: 'Sports',
@@ -61,6 +105,16 @@ const MANUAL_COMPETITIVE_PROFILE_SPECS = {
       { key: 'platform', label: 'Plataforma', type: 'select', options: ['PlayStation', 'Xbox', 'PC', 'Console'] },
       { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'MENA', 'Global'] },
       { key: 'favoriteClub', label: 'Club / seleccion', placeholder: 'Tu club o seleccion principal', max: 40 },
+    ],
+  },
+  nba2k: {
+    title: 'NBA 2K24',
+    badge: 'Sports',
+    fields: [
+      { key: 'gamerTag', label: 'Gamertag / 2K ID', placeholder: 'Tu ID competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PlayStation', 'Xbox', 'PC', 'Console'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'Global'] },
+      { key: 'buildRole', label: 'Arquetipo', placeholder: 'PG, SG, Shot Creator, etc.', max: 40 },
     ],
   },
   smash: {
@@ -131,6 +185,48 @@ const MANUAL_COMPETITIVE_PROFILE_SPECS = {
       { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'MENA', 'SEA'] },
       { key: 'device', label: 'Dispositivo', type: 'select', options: ['Mobile', 'Tablet', 'Emulator'] },
       { key: 'clanTag', label: 'Clan tag', placeholder: 'Sigla del clan', max: 20 },
+    ],
+  },
+  r6: {
+    title: 'Rainbow Six Siege',
+    badge: 'FPS',
+    fields: [
+      { key: 'ubisoftId', label: 'Ubisoft ID', placeholder: 'Tu ID competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PC', 'Console'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'APAC'] },
+      { key: 'roleFocus', label: 'Rol principal', type: 'select', options: ['Entry', 'Support', 'Anchor', 'Flex', 'IGL'] },
+      { key: 'mainOperator', label: 'Main operator', placeholder: 'Tu operador principal', max: 32 },
+    ],
+  },
+  halo: {
+    title: 'Halo Infinite',
+    badge: 'FPS',
+    fields: [
+      { key: 'gamerTag', label: 'Gamertag', placeholder: 'Tu tag competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PC', 'Console', 'Crossplay'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'Global'] },
+      { key: 'roleFocus', label: 'Rol principal', type: 'select', options: ['Slayer', 'Objective', 'Support', 'Flex'] },
+      { key: 'favoriteWeapon', label: 'Arma favorita', placeholder: 'BR, Bandit, etc.', max: 32 },
+    ],
+  },
+  cr: {
+    title: 'Clash Royale',
+    badge: 'Strategy',
+    fields: [
+      { key: 'playerTag', label: 'Player Tag', placeholder: '#XXXXXXX', max: 24 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['Mobile'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'Global'] },
+      { key: 'favoriteDeck', label: 'Deck favorito', placeholder: 'Tu mazo principal', max: 40 },
+    ],
+  },
+  hs: {
+    title: 'Hearthstone',
+    badge: 'Strategy',
+    fields: [
+      { key: 'battleTag', label: 'BattleTag', placeholder: 'Tu BattleTag competitivo', max: 40 },
+      { key: 'platform', label: 'Plataforma', type: 'select', options: ['PC', 'Mobile', 'Crossplay'] },
+      { key: 'region', label: 'Region', type: 'select', options: ['LATAM', 'NA', 'EU', 'APAC'] },
+      { key: 'favoriteClass', label: 'Clase principal', placeholder: 'Mage, Rogue, etc.', max: 32 },
     ],
   },
   codm: {

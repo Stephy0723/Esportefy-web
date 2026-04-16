@@ -41,4 +41,11 @@ describe('game match result helpers', () => {
     expect(config.supportsMode).toBe(true);
     expect(config.supportsMap).toBe(true);
   });
+
+  it('treats apex legends as battle royale for structured results', () => {
+    const config = getGameMatchResultConfig('Apex Legends', 'BO3');
+
+    expect(config.kind).toBe('battle_royale');
+    expect(config.supportsBattleRoyaleStats).toBe(true);
+  });
 });
