@@ -1,8 +1,8 @@
 module.exports = {
   apps: [
     {
-      name: 'glitchgang-api',
-      cwd: '/var/www/glitchgang/Backend',
+      name: 'esportefy-api',
+      cwd: '/var/www/Esportefy-web/Backend',
       script: 'server.js',
       interpreter: 'node',
       exec_mode: 'cluster',
