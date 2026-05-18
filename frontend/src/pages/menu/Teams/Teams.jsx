@@ -1064,6 +1064,14 @@ const Team = () => {
                     currentUser={currentUser}
                     initialTab={viewModalInitialTab}
                     onTeamUpdated={(updated) => {
+                        if (!updated?._id) {
+                            const deletedTeamId = String(selectedTeam?._id || '');
+                            setSelectedTeam(null);
+                            setIsViewModalOpen(false);
+                            setIsPreviewOpen(false);
+                            setTeams((prev) => prev.filter((team) => String(team._id) !== deletedTeamId));
+                            return;
+                        }
                         setSelectedTeam(updated);
                         setTeams(prev => prev.map(t => String(t._id) === String(updated._id) ? updated : t));
                     }}

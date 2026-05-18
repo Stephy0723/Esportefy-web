@@ -77,8 +77,16 @@ import {
   mlbbOpsStatus,
   processMlbbOpsQueue
 } from '../controllers/mlbb.controller.js';
+import {
+  RIOT_INTEGRATION_ENABLED,
+  RIOT_PENDING_APPROVAL_MESSAGE
+} from '../../../shared/riotFeatureFlags.js';
 
 const router = Router();
+const requireRiotIntegrationEnabled = (_req, res, next) => {
+  if (RIOT_INTEGRATION_ENABLED) return next();
+  return res.status(503).json({ message: RIOT_PENDING_APPROVAL_MESSAGE });
+};
 
 const rlLogin = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: 'login' });
 const rlRegister = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: 'register' });
@@ -158,17 +166,17 @@ router.patch('/admin/support-tickets/:ticketId', verifyToken, adminRespondSuppor
 /* =========================
    RIOT
 ========================= */
-router.post('/riot/link/init', verifyToken, rlRiot, initRiotLink);
-router.post('/riot/link/confirm', verifyToken, rlRiot, confirmRiotLink);
-router.post('/riot/valorant/start', verifyToken, rlRiot, startValorantRso);
-router.delete('/riot', verifyToken, unlinkRiotAccount);
-router.get('/riot/status', verifyToken, rlRiot, riotStatus);
-router.get('/riot/valorant/status', verifyToken, rlRiot, valorantRsoStatus);
-router.get('/riot/valorant/callback', valorantRsoCallback);
+router.post('/riot/link/init', verifyToken, requireRiotIntegrationEnabled, rlRiot, initRiotLink);
+router.post('/riot/link/confirm', verifyToken, requireRiotIntegrationEnabled, rlRiot, confirmRiotLink);
+router.post('/riot/valorant/start', verifyToken, requireRiotIntegrationEnabled, rlRiot, startValorantRso);
+router.delete('/riot', verifyToken, requireRiotIntegrationEnabled, unlinkRiotAccount);
+router.get('/riot/status', verifyToken, requireRiotIntegrationEnabled, rlRiot, riotStatus);
+router.get('/riot/valorant/status', verifyToken, requireRiotIntegrationEnabled, rlRiot, valorantRsoStatus);
+router.get('/riot/valorant/callback', requireRiotIntegrationEnabled, valorantRsoCallback);
 
 // (Opcional) sync manual
-router.post('/riot/sync', verifyToken, rlRiot, syncRiotNow);
-router.post('/riot/validate', verifyToken, rlRiot, validateRiotId);
+router.post('/riot/sync', verifyToken, requireRiotIntegrationEnabled, rlRiot, syncRiotNow);
+router.post('/riot/validate', verifyToken, requireRiotIntegrationEnabled, rlRiot, validateRiotId);
 
 /* =========================
    MOBILE LEGENDS

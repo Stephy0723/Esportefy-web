@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { esportsCatalog } from '../../../../data/esportsCatalog.jsx'; 
@@ -13,6 +13,7 @@ import { withCsrfHeaders } from '../../../../utils/csrf';
 import { useNotification } from '../../../../context/NotificationContext';
 import { useAuth } from '../../../../context/AuthContext';
 import { API_URL } from '../../../../config/api';
+import { resolveMediaUrl } from '../../../../utils/media';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import { getAuthToken as readAuthToken, getStoredUser } from '../../../../utils/authSession';
 import {
@@ -32,6 +33,10 @@ import {
     normalizeCompetitiveProfilesPayload
 } from '../../../../../../shared/gameCompetitiveProfiles.js';
 import { getGamePlaybook } from '../../../../../../shared/gamePolicies.js';
+import {
+    RIOT_INTEGRATION_ENABLED,
+    RIOT_PENDING_APPROVAL_MESSAGE
+} from '../../../../../../shared/riotFeatureFlags.js';
 import './CreateTeamPage.css';
 
 const CUSTOM_OPTION = '__custom__';
@@ -255,6 +260,14 @@ const CreateTeamPage = () => {
         };
         return map[value] || '';
     };
+    const isRiotGame = useMemo(
+        () => isSupportedRiotGame(formData.game),
+        [formData.game]
+    );
+    const isMlbbGameSelected = useMemo(
+        () => isSupportedMlbbGame(formData.game),
+        [formData.game]
+    );
 
     useEffect(() => {
         if (!isSupportedRiotGame(formData.game)) return;
@@ -344,24 +357,20 @@ const CreateTeamPage = () => {
         },
         [currentUser]
     );
-    const isRiotGame = useMemo(
-        () => isSupportedRiotGame(formData.game),
-        [formData.game]
-    );
-    const isMlbbGameSelected = useMemo(
-        () => isSupportedMlbbGame(formData.game),
-        [formData.game]
-    );
     const isUniversityTeamSelected = useMemo(
         () => normalizeText(formData.teamLevel) === 'universitario',
         [formData.teamLevel]
     );
+    const riotPendingApproval = useMemo(
+        () => isRiotGame && !RIOT_INTEGRATION_ENABLED,
+        [isRiotGame]
+    );
     const lockRiotIdentity = useMemo(
-        () => isRiotGame && riotLinked && Boolean(riotTagLine),
+        () => RIOT_INTEGRATION_ENABLED && isRiotGame && riotLinked && Boolean(riotTagLine),
         [isRiotGame, riotLinked, riotTagLine]
     );
     const requiresLinkedAccount = useMemo(
-        () => isRiotGame || isMlbbGameSelected,
+        () => (RIOT_INTEGRATION_ENABLED && isRiotGame) || isMlbbGameSelected,
         [isRiotGame, isMlbbGameSelected]
     );
     const hasRequiredLink = useMemo(() => {
@@ -380,6 +389,48 @@ const CreateTeamPage = () => {
         if (!isUniversityTeamSelected) return '';
         return 'Los equipos universitarios solo pueden crearse con una universidad verificada en tu perfil.';
     }, [isUniversityTeamSelected]);
+    const isManualRosterRestricted = isMlbbGameSelected || isUniversityTeamSelected;
+    const captainIdentityLabel = isMlbbGameSelected
+        ? 'User ID (MLBB)'
+        : isRiotGame
+            ? 'Tag de Riot'
+            : 'Usuario / Tag competitivo';
+    const captainIdentityPlaceholder = isMlbbGameSelected
+        ? 'Ej: 853455730'
+        : isRiotGame
+            ? '#LAS'
+            : 'Opcional si aplica al juego';
+    const slotIdentityLabel = isMlbbGameSelected ? 'User ID (MLBB)' : 'Usuario / Tag competitivo';
+    const slotIdentityPlaceholder = isMlbbGameSelected ? 'Ej: 853455730' : 'Opcional si aplica al juego';
+    const getCaptainStepValidationError = () => {
+        if (!formData.game || !formData.name || !formData.leaderIgn) {
+            return 'Completa el juego, nombre del equipo y el nick del capitán.';
+        }
+        if (!hasRequiredLink) {
+            return requiredLinkMessage || 'Debes vincular la cuenta del juego en Conexiones';
+        }
+        if (isUniversityTeamSelected && !currentUserUniversityVerified) {
+            return universityRequirementMessage;
+        }
+        if (selectedGameRoles.length > 0 && !formData.leaderRole) {
+            return 'Selecciona el rol principal del capitán.';
+        }
+        if (selectedGameRoles.length > 0) {
+            const validRole = selectedGameRoles.some(
+                (role) => normalizeText(role) === normalizeText(formData.leaderRole)
+            );
+            if (!validRole) {
+                return 'El rol del capitán debe existir en el roster del juego.';
+            }
+        }
+        if (isRiotGame && !String(formData.leaderGameId || '').trim()) {
+            return 'Completa el tag del capitán para Riot antes de continuar.';
+        }
+        if (isMlbbGameSelected && (!String(formData.leaderGameId || '').trim() || !String(formData.leaderRegion || '').trim())) {
+            return 'MLBB requiere User ID y Zone ID verificados antes de continuar.';
+        }
+        return '';
+    };
     const mlbbManualRosterSlots = useMemo(() => {
         if (!isMlbbGameSelected) return [];
         const captainUserId = String(currentUser?._id || currentUser?.id || '');
@@ -423,6 +474,22 @@ const CreateTeamPage = () => {
             setUseCustomRegion(false);
         }
     }, [lockMlbbIdentity]);
+
+    useEffect(() => {
+        if (!isManualRosterRestricted) return;
+        setRoster((prev) => {
+            const starters = Array.isArray(prev?.starters) ? prev.starters : [];
+            const subs = Array.isArray(prev?.subs) ? prev.subs : [];
+            const hasManualPlayers = starters.some((slot) => Boolean(slot?.nickname || slot?.gameId || slot?.region || slot?.email || slot?.role))
+                || subs.some((slot) => Boolean(slot?.nickname || slot?.gameId || slot?.region || slot?.email || slot?.role));
+            if (!hasManualPlayers) return prev;
+            return {
+                starters: Array(Number(formData.maxMembers) || starters.length).fill(null),
+                subs: Array(Number(formData.maxSubstitutes) || subs.length).fill(null),
+                coach: prev?.coach || null
+            };
+        });
+    }, [isManualRosterRestricted, formData.maxMembers, formData.maxSubstitutes]);
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -570,6 +637,10 @@ const CreateTeamPage = () => {
 
     const saveSlot = () => {
         if (!slotData.nickname) return addToast("Nickname requerido.", "error");
+        if (isManualRosterRestricted && currentSlot?.type !== 'coach') {
+            addToast('Este roster se completa por invitación después de crear el equipo.', 'error');
+            return;
+        }
         const sanitizedCompetitiveProfile = normalizeCompetitiveProfilesPayload(
             { [formData.game]: slotData.competitiveProfile || {} },
             [formData.game]
@@ -677,7 +748,7 @@ const CreateTeamPage = () => {
         try {
             const url = new URL(inviteLink);
             return String(url.searchParams.get('invite') || '').toUpperCase();
-        } catch (e) {
+        } catch {
             const match = inviteLink.match(/invite=([A-Za-z0-9]+)/);
             return match ? String(match[1]).toUpperCase() : '';
         }
@@ -692,7 +763,7 @@ const CreateTeamPage = () => {
     };
 
     const isRosterSlotFilled = (slot) => Boolean(
-        slot && (slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role)
+        slot && (slot.user || slot.nickname)
     );
 
     const getNextInviteSlot = () => {
@@ -733,11 +804,13 @@ const CreateTeamPage = () => {
                 setCreatedTeamId(id);
                 return id;
             }
-        } catch (_) {}
+        } catch {
+            return '';
+        }
         return '';
     };
 
-    const loadFriendsForInvites = async () => {
+    const loadFriendsForInvites = useCallback(async () => {
         const token = readAuthToken();
         if (!token) return;
         setFriendsLoading(true);
@@ -746,18 +819,18 @@ const CreateTeamPage = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setFriendsList(Array.isArray(response?.data?.friends) ? response.data.friends : []);
-        } catch (error) {
+        } catch {
             setFriendsList([]);
             addToast('No se pudieron cargar tus amigos para invitación.', 'error');
         } finally {
             setFriendsLoading(false);
         }
-    };
+    }, [addToast]);
 
     useEffect(() => {
         if (step !== 3) return;
         loadFriendsForInvites();
-    }, [step]);
+    }, [step, loadFriendsForInvites]);
 
     const visibleFriends = useMemo(() => {
         const q = String(searchQuery || '').trim().toLowerCase();
@@ -835,7 +908,7 @@ const CreateTeamPage = () => {
     const substitutesLabel = Number(formData.maxSubstitutes || 0) === 1 ? 'Suplente' : 'Suplentes';
     const staffLabel = selectedGamePlaybook?.team?.staffLabel || 'Staff / Coach';
 
-    const isRosterSlotLocked = (type) => (isMlbbGameSelected || isUniversityTeamSelected) && type !== 'coach';
+    const isRosterSlotLocked = (type) => isManualRosterRestricted && type !== 'coach';
     const captainStarterIndex = useMemo(() => {
         const starters = Array.isArray(roster?.starters) ? roster.starters : [];
         if (!starters.length) return -1;
@@ -1058,6 +1131,11 @@ const CreateTeamPage = () => {
                                             {requiredLinkMessage}
                                         </small>
                                     )}
+                                    {riotPendingApproval && (
+                                        <small style={{ color: 'var(--theme-color)', display: 'block', marginTop: '8px' }}>
+                                            {RIOT_PENDING_APPROVAL_MESSAGE} Ingresa el Riot ID manualmente por ahora.
+                                        </small>
+                                    )}
                                 </div>
                             </div>
                             {selectedGamePlaybook && (
@@ -1113,10 +1191,10 @@ const CreateTeamPage = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="section-label">ID / Tag Único</label>
+                                    <label className="section-label">{captainIdentityLabel}</label>
                                     <input 
                                         type="text" 
-                                        placeholder="#TAG / UID" 
+                                        placeholder={captainIdentityPlaceholder}
                                         value={formData.leaderGameId} 
                                         onChange={e => setFormData({...formData, leaderGameId: e.target.value})}
                                         disabled={lockMlbbIdentity || lockRiotIdentity}
@@ -1206,34 +1284,23 @@ const CreateTeamPage = () => {
                                     Para Riot usamos tu Riot ID vinculado en Conexiones.
                                 </small>
                             )}
+                            {riotPendingApproval && (
+                                <small style={{ color: 'var(--theme-color)', display: 'block', marginTop: '8px' }}>
+                                    Riot está en espera de aprobación. Puedes escribir el Riot ID del capitán manualmente.
+                                </small>
+                            )}
                         </div>
 
                         <div className="form-footer-sticky">
                             <button className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
                             <button 
                                 className="btn-primary-glow" 
-                                disabled={!formData.game || !formData.name || !formData.leaderIgn || !hasRequiredLink || (isUniversityTeamSelected && !currentUserUniversityVerified)}
+                                disabled={Boolean(getCaptainStepValidationError())}
                                 onClick={() => {
-                                    if (!hasRequiredLink) {
-                                        addToast(requiredLinkMessage || 'Debes vincular la cuenta del juego en Conexiones', 'error');
+                                    const validationError = getCaptainStepValidationError();
+                                    if (validationError) {
+                                        addToast(validationError, 'error');
                                         return;
-                                    }
-                                    if (isUniversityTeamSelected && !currentUserUniversityVerified) {
-                                        addToast(universityRequirementMessage, 'error');
-                                        return;
-                                    }
-                                    if (selectedGameRoles.length > 0) {
-                                        if (!formData.leaderRole) {
-                                            addToast('Selecciona el rol principal del capitán.', 'error');
-                                            return;
-                                        }
-                                        const validRole = selectedGameRoles.some(
-                                            (role) => normalizeText(role) === normalizeText(formData.leaderRole)
-                                        );
-                                        if (!validRole) {
-                                            addToast('El rol del capitán debe existir en el roster del juego.', 'error');
-                                            return;
-                                        }
                                     }
                                     setStep(2);
                                 }}
@@ -1593,12 +1660,10 @@ const CreateTeamPage = () => {
 
                         <div className="split-row">
                             <div>
-                                <label className="section-label">
-                                    {isMlbbGameSelected ? 'User ID (MLBB)' : 'Game ID / Tag'}
-                                </label>
+                                <label className="section-label">{slotIdentityLabel}</label>
                                 <input 
                                     type="text" 
-                                    placeholder={isMlbbGameSelected ? 'Ej: 853455730' : '#TAG / UID'}
+                                    placeholder={slotIdentityPlaceholder}
                                     value={slotData.gameId} 
                                     onChange={(e) =>
                                         setSlotData({

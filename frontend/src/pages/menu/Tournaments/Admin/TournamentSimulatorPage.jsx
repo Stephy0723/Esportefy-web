@@ -12,17 +12,6 @@ const TEAM_NAMES = [
   'Crimson Tide', 'Omega Force', 'Blaze Unit', 'Frost Byte',
 ];
 
-const GAMES = [
-  'Valorant',
-  'League of Legends',
-  'Mobile Legends',
-  'Brawlhalla',
-  'Street Fighter 6',
-  'Tekken 8',
-  'Free Fire',
-  'PUBG Mobile',
-  'COD Mobile',
-];
 const SUPPORTED_SIMULATOR_FORMATS = TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS;
 
 const randomScore = () => Math.floor(Math.random() * 4);
@@ -171,8 +160,6 @@ const TournamentSimulatorPage = () => {
   const [teams, setTeams] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [currentRound, setCurrentRound] = useState(0);
-  const [currentMatch, setCurrentMatch] = useState(-1);
-  const [simRunning, setSimRunning] = useState(false);
   const [champion, setChampion] = useState('');
   const [log, setLog] = useState([]);
 
@@ -186,7 +173,6 @@ const TournamentSimulatorPage = () => {
 
   /* ── Start Simulation ── */
   const startSimulation = async () => {
-    setSimRunning(true);
     setLog([]);
     setChampion('');
 
@@ -233,7 +219,6 @@ const TournamentSimulatorPage = () => {
       addLog(`--- ${updated[ri].name} ---`);
 
       for (let mi = 0; mi < updated[ri].matches.length; mi++) {
-        setCurrentMatch(mi);
         const match = updated[ri].matches[mi];
 
         if (match.teamA === 'BYE' || match.teamB === 'BYE') {
@@ -291,7 +276,6 @@ const TournamentSimulatorPage = () => {
     setChampion(finalMatch.winner);
     setPhase('finished');
     addLog(`CAMPEON: ${finalMatch.winner}`);
-    setSimRunning(false);
   };
 
   /* ── Swiss Play ── */
@@ -310,7 +294,6 @@ const TournamentSimulatorPage = () => {
       addLog(`--- ${updated[ri].name} ---`);
 
       for (let mi = 0; mi < updated[ri].matches.length; mi++) {
-        setCurrentMatch(mi);
         const match = updated[ri].matches[mi];
 
         if (match.teamB === 'BYE') {
@@ -350,7 +333,6 @@ const TournamentSimulatorPage = () => {
     setChampion(final[0]?.team || '');
     setPhase('finished');
     addLog(`CAMPEON: ${final[0]?.team}`);
-    setSimRunning(false);
   };
 
   /* ── Round Robin Play ── */
@@ -362,7 +344,6 @@ const TournamentSimulatorPage = () => {
       addLog(`--- ${updated[ri].name} ---`);
 
       for (let mi = 0; mi < updated[ri].matches.length; mi++) {
-        setCurrentMatch(mi);
         const match = updated[ri].matches[mi];
 
         match.status = 'live';
@@ -392,7 +373,6 @@ const TournamentSimulatorPage = () => {
     setChampion(final[0]?.team || '');
     setPhase('finished');
     addLog(`CAMPEON: ${final[0]?.team}`);
-    setSimRunning(false);
   };
 
   /* ── Reset ── */
@@ -401,8 +381,6 @@ const TournamentSimulatorPage = () => {
     setTeams([]);
     setRounds([]);
     setCurrentRound(0);
-    setCurrentMatch(-1);
-    setSimRunning(false);
     setChampion('');
     setLog([]);
   };
@@ -488,7 +466,7 @@ const TournamentSimulatorPage = () => {
                 </div>
               </div>
               <div className="sim-teams">
-                {teams.map((t, i) => (
+                {teams.map((t) => (
                   <span key={t} className={`sim-team-tag ${champion === t ? 'is-champion' : ''}`}>
                     {champion === t && <i className="bx bx-trophy" />}
                     {t}

@@ -20,6 +20,7 @@ import {
     isSupportedRiotGame,
     normalizeSupportedGameName
 } from '../../../shared/supportedGames.js';
+import { RIOT_INTEGRATION_ENABLED } from '../../../shared/riotFeatureFlags.js';
 import { safeDeleteTeamConversation, safeSyncTeamConversation } from '../services/teamChatSync.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -28,6 +29,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const teamUploadsDir = path.resolve(__dirname, '../../uploads/teams');
 const frontendBaseUrl = String(process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/$/, '');
+const isMongoTransactionUnsupported = (error) => {
+    const message = String(error?.message || '').toLowerCase();
+    return (
+        error?.code === 20
+        || message.includes('transaction numbers are only allowed on a replica set member or mongos')
+        || message.includes('replica set')
+        || message.includes('standalone')
+    );
+};
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -797,6 +807,18 @@ const buildRiotLinkRequirementMessage = (game = '', action = 'continuar') => {
 };
 
 const requireRiotLinked = async (userId, game = '', action = 'continuar') => {
+    if (!RIOT_INTEGRATION_ENABLED) {
+        return {
+            ok: true,
+            message: '',
+            connection: {
+                verified: false,
+                gameName: '',
+                tagLine: '',
+                consentGranted: false
+            }
+        };
+    }
     const conn = await getRiotConnectionState(userId);
     if (!conn.verified) {
         return { ok: false, message: buildRiotLinkRequirementMessage(game, action), connection: conn };
@@ -808,6 +830,9 @@ const requireRiotLinked = async (userId, game = '', action = 'continuar') => {
 };
 
 const ensureRiotPlayerMatchesLinkedUser = async (userId, gameName, tagLine, game = '') => {
+    if (!RIOT_INTEGRATION_ENABLED) {
+        return { ok: true, message: '', connection: null };
+    }
     const linked = await requireRiotLinked(userId, game);
     if (!linked.ok) return linked;
 
@@ -999,6 +1024,9 @@ const validateRiotAccount = async (gameName, tagLine) => {
     if (!gn || !tl) {
         return { ok: false, message: 'Riot ID inválido' };
     }
+    if (!RIOT_INTEGRATION_ENABLED) {
+        return { ok: true };
+    }
     try {
         if (!getRiotApiKey()) {
             return { ok: false, message: 'Riot API no configurada en el servidor.' };
@@ -1181,7 +1209,7 @@ export const addMemberDirect = async (req, res) => {
         }
 
         if (isSupportedRiotGame(team.game) && slotType !== 'coach') {
-            if (!playerPayload?.user) {
+            if (RIOT_INTEGRATION_ENABLED && !playerPayload?.user) {
                 return res.status(400).json({
                     message: 'En equipos Riot no puedes agregar jugadores manuales sin usuario vinculado.'
                 });
@@ -2020,15 +2048,30 @@ export const deleteTeam = async (req, res) => {
             return res.status(403).json({ message: "No tienes permisos para eliminar este equipo" });
         }
 
+        let deleted = false;
         const session = await mongoose.startSession();
         try {
             await session.withTransaction(async () => {
                 await Team.deleteOne({ _id: teamId }, { session });
                 await User.updateMany({ teams: teamId }, { $pull: { teams: teamId } }, { session });
             });
+            deleted = true;
+        } catch (error) {
+            if (!isMongoTransactionUnsupported(error)) {
+                throw error;
+            }
+            console.warn('[deleteTeam] Mongo sin soporte transaccional, aplicando fallback sin transaction');
+            await Team.deleteOne({ _id: teamId });
+            await User.updateMany({ teams: teamId }, { $pull: { teams: teamId } });
+            deleted = true;
         } finally {
-            session.endSession();
+            await session.endSession();
         }
+
+        if (!deleted) {
+            throw new Error('No se pudo eliminar el equipo.');
+        }
+
         await safeDeleteTeamConversation(teamId);
 
         res.status(200).json({ message: "Equipo eliminado" });

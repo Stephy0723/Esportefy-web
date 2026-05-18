@@ -11,6 +11,10 @@ import { useAuth } from '../../../../context/AuthContext';
 import { useNotification } from '../../../../context/NotificationContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import { isSupportedMlbbGame, isSupportedRiotGame, normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
+import {
+  RIOT_INTEGRATION_ENABLED,
+  RIOT_PENDING_APPROVAL_MESSAGE
+} from '../../../../../../shared/riotFeatureFlags.js';
 import './TeamRegistration.css';
 
 const normalizeGame = (value) => {
@@ -18,6 +22,16 @@ const normalizeGame = (value) => {
 };
 
 const isValorantGame = (value) => normalizeGame(value) === 'valorant';
+const parseTeamSizeFromModality = (modality = '') => {
+  const raw = String(modality || '').trim().toLowerCase();
+  const match = raw.match(/^(\d+)\s*v\s*(\d+)$/i);
+  if (!match) return 1;
+  const left = Number.parseInt(match[1], 10);
+  const right = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(left) || left <= 0) return 1;
+  if (!Number.isFinite(right) || right <= 0) return left;
+  return Math.max(left, right);
+};
 
 const TeamRegistration = () => {
   const navigate = useNavigate();
@@ -34,6 +48,7 @@ const TeamRegistration = () => {
     image: resolveMediaUrl(incomingTournament?.bannerImage || incomingTournament?.image) || DEFAULT_IMAGE,
     tournamentId: incomingTournament?.tournamentId || '',
     game: incomingTournament?.game || '',
+    modality: incomingTournament?.modality || '',
     riotRequirements: incomingTournament?.riotRequirements || {},
     eligibility: incomingTournament?.eligibility || {},
   };
@@ -45,6 +60,7 @@ const TeamRegistration = () => {
 
   const currentUser = authUser || getStoredUser();
   const tournamentGameNormalized = normalizeGame(tournament.game);
+  const isIndividualTournament = parseTeamSizeFromModality(tournament.modality) === 1;
 
   const filteredTeams = useMemo(() => {
     if (!tournamentGameNormalized) return userTeams;
@@ -63,7 +79,7 @@ const TeamRegistration = () => {
     .filter((p) => p && (p.nickname || p.user)).length;
   const teamComplete = expectedStarters > 0 && filledStarters >= expectedStarters;
   const gameMatches = !tournamentGameNormalized || normalizeGame(selectedTeam?.game) === tournamentGameNormalized;
-  const riotManualMode = tournament.riotRequirements?.manualMode === true;
+  const riotManualMode = !RIOT_INTEGRATION_ENABLED || tournament.riotRequirements?.manualMode === true;
   const requiresRiot = !riotManualMode && (Boolean(tournament.riotRequirements?.required) || isSupportedRiotGame(tournament.game));
   const requiresValorantRso = requiresRiot && isValorantGame(tournament.game);
   const hasRiotLinked = Boolean(currentUser?.connections?.riot?.verified);
@@ -112,7 +128,7 @@ const TeamRegistration = () => {
   const mlbbPlayersMissingId = requiresMlbb
     ? mlbbRosterPlayers.some((p) => p && (!p.gameId || !p.region))
     : false;
-  const canSubmit =
+  const canSubmitTeam =
     Boolean(selectedTeamId)
     && teamComplete
     && gameMatches
@@ -120,6 +136,12 @@ const TeamRegistration = () => {
       || (requesterCanRegisterSelectedTeam && universityTeamValid && !universityPlayersMissingLinkedUser && !universityMismatch))
     && (!requiresRiot || (hasRiotLinked && (!requiresValorantRso || hasValorantRso) && !startersMissingRiotId))
     && (!requiresMlbb || (hasMlbbLinked && !mlbbPlayersMissingId && !mlbbPlayersMissingLinkedUser));
+  const canSubmitIndividual =
+    isIndividualTournament
+    && !requiresUniversityTeam
+    && !requiresRiot
+    && !requiresMlbb;
+  const canSubmit = isIndividualTournament ? canSubmitIndividual : canSubmitTeam;
 
   useEffect(() => {
     const loadTeams = async () => {
@@ -162,15 +184,21 @@ const TeamRegistration = () => {
       notify('danger', 'Error', 'No se pudo identificar el torneo.');
       return;
     }
-    if (!selectedTeamId) {
+    if (!isIndividualTournament && !selectedTeamId) {
       notify('warning', 'Equipo requerido', 'Selecciona un equipo para inscribirte.');
       return;
     }
-    if (!gameMatches) {
+    if (isIndividualTournament) {
+      if (requiresRiot || requiresMlbb || requiresUniversityTeam) {
+        notify('danger', 'Registro no disponible', 'Este torneo individual requiere un flujo de equipo validado por integraciones o elegibilidad.');
+        return;
+      }
+    }
+    if (!isIndividualTournament && !gameMatches) {
       notify('danger', 'Juego incompatible', 'El juego del equipo no coincide con el torneo.');
       return;
     }
-    if (!teamComplete) {
+    if (!isIndividualTournament && !teamComplete) {
       notify('warning', 'Roster incompleto', 'El equipo no está completo para inscribirse.');
       return;
     }
@@ -224,10 +252,18 @@ const TeamRegistration = () => {
       }
       await axios.post(
         `${API_URL}/api/tournaments/${tournament.tournamentId}/register`,
-        { teamId: selectedTeamId },
+        isIndividualTournament
+          ? {}
+          : { teamId: selectedTeamId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      notify('success', 'Equipo registrado', 'Tu equipo fue inscrito correctamente. GL HF.');
+      notify(
+        'success',
+        isIndividualTournament ? 'Jugador registrado' : 'Equipo registrado',
+        isIndividualTournament
+          ? 'Tu inscripción individual fue completada correctamente. GL HF.'
+          : 'Tu equipo fue inscrito correctamente. GL HF.'
+      );
       navigate('/tournaments');
     } catch (err) {
       const msg = err.response?.data?.message || 'No se pudo registrar el equipo';
@@ -263,34 +299,50 @@ const TeamRegistration = () => {
               {tournament.game ? (
                 <div className="tournament-game-badge">Juego: {tournament.game}</div>
               ) : null}
+              {isIndividualTournament ? (
+                <div className="registration-alert">
+                  Este torneo permite inscripcion individual. No necesitas crear un equipo para participar.
+                </div>
+              ) : null}
               {riotManualMode ? (
                 <div className="registration-alert">
-                  Este torneo usa modo manual temporal para {tournament.game}. No se requiere Riot API ni Riot Sign On para completar el registro.
+                  {!RIOT_INTEGRATION_ENABLED
+                    ? `${RIOT_PENDING_APPROVAL_MESSAGE} Este torneo usará validación manual para ${tournament.game}.`
+                    : `Este torneo usa modo manual temporal para ${tournament.game}. No se requiere Riot API ni Riot Sign On para completar el registro.`}
                 </div>
               ) : null}
             </div>
 
             <form onSubmit={handleRegister}>
-              <div className="neon-input-group">
-                <select
-                  className="select-modern"
-                  value={selectedTeamId}
-                  onChange={(e) => setSelectedTeamId(e.target.value)}
-                  disabled={loadingTeams}
-                  required
-                >
-                  <option value="">{loadingTeams ? 'Cargando equipos...' : 'Selecciona tu equipo'}</option>
-                  {filteredTeams.map((team) => (
-                    <option key={team._id} value={team._id}>
-                      {team.name}{formatTeamPublicId(team) ? ` · ${formatTeamPublicId(team)}` : ''}
-                    </option>
-                  ))}
-                </select>
-                <label>Equipo</label>
-                <span className="bar" />
-              </div>
+              {!isIndividualTournament && (
+                <div className="neon-input-group">
+                  <select
+                    className="select-modern"
+                    value={selectedTeamId}
+                    onChange={(e) => setSelectedTeamId(e.target.value)}
+                    disabled={loadingTeams}
+                    required
+                  >
+                    <option value="">{loadingTeams ? 'Cargando equipos...' : 'Selecciona tu equipo'}</option>
+                    {filteredTeams.map((team) => (
+                      <option key={team._id} value={team._id}>
+                        {team.name}{formatTeamPublicId(team) ? ` · ${formatTeamPublicId(team)}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <label>Equipo</label>
+                  <span className="bar" />
+                </div>
+              )}
 
-              {!loadingTeams && userTeams.length === 0 ? (
+              {isIndividualTournament && (
+                <div className="registration-alert">
+                  Te registraras como <strong>{currentUser?.username || currentUser?.fullName || 'jugador'}</strong>.
+                  El sistema solo permitira una inscripcion por jugador en este torneo.
+                </div>
+              )}
+
+              {!isIndividualTournament && !loadingTeams && userTeams.length === 0 ? (
                 <div className="neon-input-group">
                   <button type="button" className="btn-confirm" onClick={() => navigate('/create-team')}>
                     Crear equipo
@@ -298,13 +350,13 @@ const TeamRegistration = () => {
                 </div>
               ) : null}
 
-              {!loadingTeams && userTeams.length > 0 && filteredTeams.length === 0 ? (
+              {!isIndividualTournament && !loadingTeams && userTeams.length > 0 && filteredTeams.length === 0 ? (
                 <div className="registration-alert">
                   No tienes equipos para <strong>{tournament.game}</strong>. Crea uno para inscribirte.
                 </div>
               ) : null}
 
-              {selectedTeam ? (
+              {!isIndividualTournament && selectedTeam ? (
                 <div className="validation-box">
                   {!gameMatches ? (
                     <p className="validation-error">El juego del equipo no coincide con el torneo.</p>
@@ -350,7 +402,7 @@ const TeamRegistration = () => {
                   Cancelar
                 </button>
                 <button type="submit" className="btn-confirm" disabled={submitting || !canSubmit}>
-                  {submitting ? 'Registrando...' : 'Confirmar Registro'}
+                  {submitting ? 'Registrando...' : isIndividualTournament ? 'Inscribirme' : 'Confirmar Registro'}
                 </button>
               </div>
             </form>

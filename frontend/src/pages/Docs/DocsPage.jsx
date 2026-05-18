@@ -21,6 +21,7 @@ import './DocsPage.css';
 
 const DOC_CATEGORIES = [
     { id: 'all', label: 'Todo', icon: FaBook },
+    { id: 'review', label: 'Review', icon: FaShieldAlt },
     { id: 'inicio', label: 'Inicio', icon: FaRocket },
     { id: 'cuenta', label: 'Cuenta', icon: FaShieldAlt },
     { id: 'perfil', label: 'Perfil', icon: FaMedal },
@@ -42,6 +43,54 @@ const POINT_LEVELS = [
 ];
 
 const GUIDES = [
+    {
+        id: 'riot-review-flow',
+        category: 'review',
+        icon: FaShieldAlt,
+        title: 'Review build para Riot',
+        summary: 'Ruta pensada para reviewers externos: enlaces publicos, credenciales demo, flujo visual esperado y que partes deben abrir correctamente.',
+        level: 'Review',
+        time: '3 min',
+        ctaTo: '/review/riot',
+        ctaLabel: 'Abrir review publica',
+        bullets: [
+            'Empieza por la ruta publica de review para validar que la build abre sin pantallas vacias.',
+            'Usa un torneo publico real para revisar vitrina, bracket y estado del evento.',
+            'Si necesitas revisar el flujo protegido, entra con una cuenta demo entregada por el equipo.',
+        ],
+        steps: [
+            'Abre /review/riot y verifica que los accesos publicos carguen correctamente.',
+            'Entra al explorador publico de torneos y abre un evento real con bracket o equipos visibles.',
+            'Revisa terminos, privacidad, politica de pagos y terminos de organizador desde rutas publicas.',
+            'Inicia sesion con la cuenta demo para validar Settings, equipos, registro, check-in y gestion del torneo.',
+        ],
+        highlights: [
+            { label: 'Ruta principal', value: '/review/riot', note: 'Pensada para reenviar directamente en la propuesta.' },
+            { label: 'Modo visual', value: 'Publico + demo', note: 'No requiere revisar source code.' },
+            { label: 'Cobertura', value: 'Usuario, equipo, torneo y admin', note: 'El reviewer puede ver ambos lados del flujo.' },
+            { label: 'Dependencia critica', value: 'Deep links SPA', note: 'Produccion debe resolver cualquier reload directo.' },
+        ],
+        detailGroups: [
+            {
+                title: 'Rutas que deben responder',
+                items: [
+                    { label: 'Review', value: '/review/riot' },
+                    { label: 'Explorador publico', value: '/torneos/publicos' },
+                    { label: 'Torneo publico', value: '/torneos/publicos/:code' },
+                    { label: 'Documentos', value: '/legal/terms, /legal/privacy, /legal/payment-policy, /legal/organizer-terms' },
+                ],
+            },
+            {
+                title: 'Flujo esperado para review',
+                items: [
+                    { label: 'Publico', value: 'vitrina, docs, torneo y bracket' },
+                    { label: 'Cuenta demo', value: 'login, settings, equipos y torneos' },
+                    { label: 'Organizador', value: 'crear torneo, revisar compliance y gestionar bracket' },
+                    { label: 'Operacion', value: 'registro, check-in, resultados y cierre' },
+                ],
+            },
+        ],
+    },
     {
         id: 'primeros-pasos',
         category: 'inicio',
@@ -325,6 +374,7 @@ const DOC_STATS = [
 ];
 
 const QUICK_LINKS = [
+    { label: 'Riot review', to: '/review/riot', icon: FaShieldAlt },
     { label: 'Ver progreso', to: '/edit-profile', icon: FaMedal },
     { label: 'Noticias y editor', to: '/noticias', icon: FaNewspaper },
     { label: 'Centro de ayuda', to: '/support', icon: FaHeadset },
@@ -336,7 +386,7 @@ const QUICK_LINKS = [
 const DocsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
-    const [selectedGuideId, setSelectedGuideId] = useState('sistema-puntos');
+    const [selectedGuideId, setSelectedGuideId] = useState('riot-review-flow');
 
     const filteredGuides = useMemo(() => {
         return GUIDES.filter((guide) => {

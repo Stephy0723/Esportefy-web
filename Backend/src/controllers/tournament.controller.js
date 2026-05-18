@@ -36,6 +36,10 @@ import {
     normalizeSupportedGameName
 } from '../../../shared/supportedGames.js';
 import { normalizeTeamGender } from '../../../shared/teamCatalog.js';
+import {
+    RIOT_INTEGRATION_ENABLED,
+    RIOT_PENDING_APPROVAL_MESSAGE
+} from '../../../shared/riotFeatureFlags.js';
 
 import fs from 'fs';
 
@@ -162,6 +166,16 @@ const normalizeRiotRequirementsConfig = (value = {}, game = '', current = {}) =>
         };
     }
 
+    if (!RIOT_INTEGRATION_ENABLED) {
+        return {
+            required: false,
+            manualMode: true,
+            minTier: undefined,
+            maxTier: undefined,
+            soloQueueOnly: true
+        };
+    }
+
     const incoming = value && typeof value === 'object' ? value : {};
     const baseline = current && typeof current === 'object' ? current : {};
     const manualMode = normalizeBooleanValue(
@@ -185,9 +199,10 @@ const normalizeRiotRequirementsConfig = (value = {}, game = '', current = {}) =>
         soloQueueOnly
     };
 };
-const isRiotManualMode = (tournament = {}) => tournament?.riotRequirements?.manualMode === true;
+const isRiotManualMode = (tournament = {}) =>
+    !RIOT_INTEGRATION_ENABLED || tournament?.riotRequirements?.manualMode === true;
 const requiresVerifiedRiotForTournament = (tournament = {}) =>
-    isRiotTournamentGame(tournament?.game) && !isRiotManualMode(tournament);
+    RIOT_INTEGRATION_ENABLED && isRiotTournamentGame(tournament?.game) && !isRiotManualMode(tournament);
 const isFreeEntryFeeValue = (entryFee = '') => ['gratis', 'free', '0', '0.0', '0.00'].includes(normalizeEntryFee(entryFee));
 const parseTeamSizeFromModality = (modality = '') => {
     const raw = String(modality || '').trim().toLowerCase();
@@ -199,6 +214,7 @@ const parseTeamSizeFromModality = (modality = '') => {
     if (!Number.isFinite(right) || right <= 0) return left;
     return Math.max(left, right);
 };
+const isIndividualTournament = (tournament = {}) => parseTeamSizeFromModality(tournament?.modality) === 1;
 const getProjectedActiveParticipants = ({ maxSlots = 0, modality = '' }) => {
     const slots = parsePositiveIntValue(maxSlots, 0);
     const teamSize = parseTeamSizeFromModality(modality);
@@ -2087,13 +2103,14 @@ export const registerTeam = async (req, res) => {
             return res.status(400).json({ message: 'No hay cupos disponibles' });
         }
 
-        const requester = await User.findById(req.userId).select('isAdmin connections.riot connections.mlbb gameProfiles.lol');
+        const requester = await User.findById(req.userId).select('isAdmin username fullName email country connections.riot connections.mlbb gameProfiles.lol');
         if (!requester) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
         const requesterIsAdmin = requester.isAdmin === true;
         const requiresRiot = requiresVerifiedRiotForTournament(tournament);
         const requiresMlbb = isSupportedMlbbGame(tournament.game);
+        const allowsIndividualRegistration = isIndividualTournament(tournament);
         // Requisitos Riot (si aplica)
         if (requiresRiot) {
             const requesterRiot = getRiotUserEligibility(requester, tournament.game);
@@ -2151,6 +2168,11 @@ export const registerTeam = async (req, res) => {
         if (!teamId && isUniversityOnlyTournament(tournament)) {
             return res.status(400).json({
                 message: 'Para torneos universitarios debes inscribir un equipo universitario existente.'
+            });
+        }
+        if (!teamId && !allowsIndividualRegistration) {
+            return res.status(400).json({
+                message: 'Debes inscribir un equipo para este torneo.'
             });
         }
 
@@ -2345,13 +2367,23 @@ export const registerTeam = async (req, res) => {
                 visuals: { icon: 'bx-trophy', color: '#facc15', glow: true }
             });
         } else {
-            if (!teamName || !String(teamName).trim()) {
-                return res.status(400).json({ message: 'Nombre de equipo requerido' });
-            }
-            const starters = Array.isArray(roster?.starters) ? roster.starters.filter(Boolean) : [];
+            const fallbackName = String(
+                requester?.username
+                || requester?.fullName
+                || requester?.email
+                || 'Jugador'
+            ).trim();
+            const registrationName = String(teamName || fallbackName).trim();
+            const starterNickname = String(
+                requester?.username
+                || requester?.fullName
+                || requester?.email?.split('@')?.[0]
+                || 'Jugador'
+            ).trim();
+            const starters = Array.isArray(roster?.starters) ? roster.starters.filter(Boolean) : [starterNickname];
             const subs = Array.isArray(roster?.subs) ? roster.subs.filter(Boolean) : [];
             registrationPayload = {
-                teamName: String(teamName).trim(),
+                teamName: registrationName,
                 logoUrl: logoUrl || '',
                 captain: req.userId,
                 checkIn: {
@@ -2360,8 +2392,25 @@ export const registerTeam = async (req, res) => {
                     checkedInBy: null
                 },
                 roster: {
-                    starters: starters.map(n => ({ nickname: n })),
+                    starters: starters.map((entry) => (
+                        typeof entry === 'string'
+                            ? { user: req.userId, nickname: entry }
+                            : {
+                                user: entry?.user || req.userId,
+                                nickname: entry?.nickname || starterNickname,
+                                gameId: entry?.gameId || '',
+                                region: entry?.region || '',
+                                role: entry?.role || '',
+                                riotId: entry?.riotId || ''
+                            }
+                    )),
                     subs: subs.map(n => ({ nickname: n }))
+                },
+                teamMeta: {
+                    category: 'Solo',
+                    teamCountry: String(requester?.country || '').trim(),
+                    teamLevel: 'Individual',
+                    coach: ''
                 },
                 status: 'approved'
             };
@@ -2409,7 +2458,10 @@ export const registerTeam = async (req, res) => {
         tournament.currentSlots = Math.min((tournament.currentSlots || 0) + 1, tournament.maxSlots);
         await tournament.save({ validateBeforeSave: false });
 
-        return res.status(200).json({ message: 'Equipo registrado', tournamentId: tournament.tournamentId });
+        return res.status(200).json({
+            message: teamId ? 'Equipo registrado' : 'Jugador registrado',
+            tournamentId: tournament.tournamentId
+        });
 
     } catch (error) {
         console.error("Error al registrar equipo:", error);
@@ -2638,7 +2690,9 @@ export const getTournamentCompliance = async (req, res) => {
                 id: 'riotManualMode',
                 label: 'Modo manual Riot',
                 ok: true,
-                detail: 'Este torneo opera temporalmente sin verificación de Riot API ni Riot Sign On.'
+                detail: RIOT_INTEGRATION_ENABLED
+                    ? 'Este torneo opera temporalmente sin verificación de Riot API ni Riot Sign On.'
+                    : RIOT_PENDING_APPROVAL_MESSAGE
             });
         } else if (isRiotTournament) {
             const riotPolicyIssues = getRiotComplianceIssues({

@@ -9,6 +9,10 @@ import SecurityCenterUI from './SecurityCenterUI';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import { getAuthToken } from '../../../utils/authSession';
 import { startPlatformOAuth, unlinkPlatformOAuth } from '../../../utils/platformOAuth';
+import {
+    RIOT_INTEGRATION_ENABLED,
+    RIOT_PENDING_APPROVAL_MESSAGE
+} from '../../../../../shared/riotFeatureFlags.js';
 import './SettingsV2.css';
 
 // Icons
@@ -247,6 +251,18 @@ export default function SettingsV2() {
     };
 
     const fetchRiotStatus = async () => {
+        if (!RIOT_INTEGRATION_ENABLED) {
+            setRiotStatus({
+                linked: false,
+                riotId: '',
+                valorantRso: {
+                    enabled: false,
+                    consentGranted: false,
+                    message: RIOT_PENDING_APPROVAL_MESSAGE
+                }
+            });
+            return;
+        }
         try {
             const res = await axios.get(`${API_URL}/api/auth/riot/status`, {
                 headers: authHeaders
@@ -291,7 +307,9 @@ export default function SettingsV2() {
 
         if (status === 'connected' && token) {
             fetchSettings();
-            fetchRiotStatus();
+            if (RIOT_INTEGRATION_ENABLED) {
+                fetchRiotStatus();
+            }
             emitUserUpdate();
         }
     }, [location.search, token]);
@@ -453,6 +471,10 @@ export default function SettingsV2() {
 
     // Riot
     const initRiotLink = async () => {
+        if (!RIOT_INTEGRATION_ENABLED) {
+            setRiotMsg(RIOT_PENDING_APPROVAL_MESSAGE);
+            return;
+        }
         if (!riotGameName.trim() || !riotTagLine.trim()) {
             setRiotMsg('Completa GameName y TagLine');
             return;
@@ -474,6 +496,10 @@ export default function SettingsV2() {
     };
 
     const confirmRiotLink = async () => {
+        if (!RIOT_INTEGRATION_ENABLED) {
+            setRiotMsg(RIOT_PENDING_APPROVAL_MESSAGE);
+            return;
+        }
         if (!riotOtp.trim()) {
             setRiotMsg('Ingresa el código');
             return;
@@ -502,6 +528,10 @@ export default function SettingsV2() {
     };
 
     const syncRiot = async () => {
+        if (!RIOT_INTEGRATION_ENABLED) {
+            setRiotMsg(RIOT_PENDING_APPROVAL_MESSAGE);
+            return;
+        }
         try {
             setRiotSyncing(true);
             setRiotMsg('');
@@ -521,6 +551,10 @@ export default function SettingsV2() {
     };
 
     const unlinkRiot = async () => {
+        if (!RIOT_INTEGRATION_ENABLED) {
+            setRiotMsg(RIOT_PENDING_APPROVAL_MESSAGE);
+            return;
+        }
         try {
             const res = await axios.delete(`${API_URL}/api/auth/riot`, {
                 headers: authHeaders
@@ -535,6 +569,10 @@ export default function SettingsV2() {
     };
 
     const startValorantRso = async () => {
+        if (!RIOT_INTEGRATION_ENABLED) {
+            setValorantRsoMsg(RIOT_PENDING_APPROVAL_MESSAGE);
+            return;
+        }
         try {
             setValorantRsoLoading(true);
             setValorantRsoMsg('');
@@ -839,13 +877,15 @@ export default function SettingsV2() {
                                 </div>
 
                                 {/* Riot account */}
-                                <div className={`stv2-connection ${connections?.riot?.verified ? 'stv2-connection--active' : ''}`}>
+                                <div className={`stv2-connection ${(RIOT_INTEGRATION_ENABLED && connections?.riot?.verified) ? 'stv2-connection--active' : ''}`}>
                                     <div className="stv2-connection__icon stv2-connection__icon--riot">
                                         <FaShieldAlt />
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Cuenta Riot</h4>
-                                        {connections?.riot?.verified ? (
+                                        {!RIOT_INTEGRATION_ENABLED ? (
+                                            <span>Pendiente de aprobación de Riot</span>
+                                        ) : connections?.riot?.verified ? (
                                             <span>
                                                 {connections.riot.gameName}#{connections.riot.tagLine}
                                                 {valorantConsentGranted ? ' · VALORANT autorizado' : ''}
@@ -855,7 +895,9 @@ export default function SettingsV2() {
                                         )}
                                     </div>
                                     <div className="stv2-connection__status">
-                                        {connections?.riot?.verified ? (
+                                        {!RIOT_INTEGRATION_ENABLED ? (
+                                            <span className="stv2-badge stv2-badge--warning">Pending</span>
+                                        ) : connections?.riot?.verified ? (
                                             <span className="stv2-badge stv2-badge--success">
                                                 {valorantConsentGranted ? 'LoL + VAL' : 'Verificado'}
                                             </span>
@@ -864,7 +906,11 @@ export default function SettingsV2() {
                                         )}
                                     </div>
                                     <div className="stv2-connection__action">
-                                        {connections?.riot?.verified ? (
+                                        {!RIOT_INTEGRATION_ENABLED ? (
+                                            <button className="stv2-btn stv2-btn--ghost" onClick={() => setActiveTab('riot-link')}>
+                                                Ver estado
+                                            </button>
+                                        ) : connections?.riot?.verified ? (
                                             <>
                                                 <button className="stv2-btn stv2-btn--ghost" onClick={() => setActiveTab('riot-link')}>
                                                     Gestionar
@@ -1116,6 +1162,30 @@ export default function SettingsV2() {
                                 <i className="bx bx-arrow-left"></i> Volver a Conexiones
                             </button>
                             <h2 className="stv2-section__title">Centro Riot</h2>
+                            {!RIOT_INTEGRATION_ENABLED ? (
+                                <>
+                                    <p className="stv2-section__desc">
+                                        {RIOT_PENDING_APPROVAL_MESSAGE} El flujo queda preservado en código, pero fuera de operación hasta que Riot responda.
+                                    </p>
+                                    <div className="stv2-notice stv2-notice--warning">
+                                        <i className="bx bx-time-five"></i>
+                                        <p>
+                                            Mientras tanto, League of Legends y VALORANT deben operar en modo manual:
+                                            registro por Riot ID, validación interna del staff y sin Riot Sign On.
+                                        </p>
+                                    </div>
+                                    <div className="stv2-form">
+                                        <h3 className="stv2-section__subtitle">Estado actual</h3>
+                                        <p className="stv2-section__desc">
+                                            Cuando tengas aprobación de Riot, solo necesitas reactivar la flag de entorno y este centro volverá a habilitar vinculación, sync y VALORANT RSO.
+                                        </p>
+                                        <p className="stv2-section__microcopy">
+                                            La documentación pública se mantuvo disponible, pero la review queda pausada por ahora.
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
                             <p className="stv2-section__desc">League of Legends usa tu identidad Riot actual. VALORANT requiere autorización explícita mediante Riot Sign On.</p>
 
                             {riotStatus?.linked ? (
@@ -1243,6 +1313,8 @@ export default function SettingsV2() {
                                 </button>
                                 {valorantRsoMsg && <p className="stv2-form__msg">{valorantRsoMsg}</p>}
                             </div>
+                                </>
+                            )}
                         </div>
                     </motion.div>
                 );

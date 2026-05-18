@@ -15,6 +15,10 @@ import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../ut
 import { getStoredLocalTournaments, saveStoredLocalTournaments } from '../../../utils/tournamentCalendar';
 import { normalizeTournamentFormat } from '../../../../../shared/tournamentCatalog.js';
 import { filterSupportedGameObjects, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
+import {
+  RIOT_INTEGRATION_ENABLED,
+  RIOT_PENDING_APPROVAL_MESSAGE
+} from '../../../../../shared/riotFeatureFlags.js';
 
 const GAME_CONFIG = {
   "All": { color: "#ffffff", icon: "bx-grid-alt" },
@@ -315,7 +319,8 @@ const formatTournamentFromApi = (t) => ({
 
 const isRiotGame = (game) => isSupportedRiotGame(game);
 const isMlbbGame = (game) => isSupportedMlbbGame(game);
-const isRiotManualMode = (torneo) => torneo?.riotRequirements?.manualMode === true;
+const isRiotManualMode = (torneo) =>
+  !RIOT_INTEGRATION_ENABLED || torneo?.riotRequirements?.manualMode === true;
 
 const getMlbbEntryStatus = (player) => {
   if (!player) return null;
@@ -2426,7 +2431,11 @@ useEffect(() => {
                                 <div className="riot-requirements">
                                     <div><strong>Validación externa:</strong> desactivada temporalmente</div>
                                     <div><strong>Registro:</strong> no exige cuenta Riot vinculada ni Riot Sign On</div>
-                                    <div className="riot-note">Usa este modo solo para eventos temporales mientras llega la production key.</div>
+                                    <div className="riot-note">
+                                        {!RIOT_INTEGRATION_ENABLED
+                                            ? RIOT_PENDING_APPROVAL_MESSAGE
+                                            : 'Usa este modo solo para eventos temporales mientras llega la production key.'}
+                                    </div>
                                 </div>
                             </div>
                         )}

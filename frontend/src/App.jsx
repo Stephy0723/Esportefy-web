@@ -126,9 +126,16 @@ const RootRoute = () => {
 
 const AppRouterContent = () => {
   const location = useLocation();
+  const isPublicTournamentRoute = (
+    location.pathname.startsWith('/torneos/publicos')
+    || /^\/tournaments\/[^/]+$/.test(location.pathname)
+  );
+  const isReviewRoute = location.pathname.startsWith('/review/riot');
   const hideFloatingOverlays =
-    location.pathname.startsWith('/create-team') ||
-    location.pathname.includes('/roulette/live');
+    location.pathname.startsWith('/create-team')
+    || location.pathname.includes('/roulette/live')
+    || isPublicTournamentRoute
+    || isReviewRoute;
 
   return (
     <>

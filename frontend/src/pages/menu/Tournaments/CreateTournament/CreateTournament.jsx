@@ -38,6 +38,10 @@ import {
 } from '../../../../../../shared/supportedGames.js';
 import { TEAM_GENDER_OPTIONS } from '../../../../../../shared/teamCatalog.js';
 import {
+  RIOT_INTEGRATION_ENABLED,
+  RIOT_PENDING_APPROVAL_MESSAGE
+} from '../../../../../../shared/riotFeatureFlags.js';
+import {
   FaBullhorn,
   FaCheckCircle,
   FaDiscord,
@@ -116,6 +120,16 @@ const MLBB_TITLES = new Set(SUPPORTED_MLBB_GAME_NAMES);
 const normalizeRiotRequirementsState = (value = {}, game = '') => {
   if (!RIOT_TITLES.has(String(game || '').trim())) {
     return { ...DEFAULT_RIOT_REQUIREMENTS };
+  }
+
+  if (!RIOT_INTEGRATION_ENABLED) {
+    return {
+      required: false,
+      manualMode: true,
+      minTier: '',
+      maxTier: '',
+      soloQueueOnly: true
+    };
   }
 
   const manualMode = value?.manualMode === true;
@@ -1199,6 +1213,7 @@ const CreateTournament = () => {
                 <input
                   type="checkbox"
                   checked={riotManualMode}
+                  disabled={!RIOT_INTEGRATION_ENABLED}
                   onChange={(e) => setTournament((prev) => ({
                     ...prev,
                     riotRequirements: {
@@ -1215,7 +1230,9 @@ const CreateTournament = () => {
             )}
             {isRiotTournament && riotManualMode && (
               <p className="ct-inline-help">
-                Modo manual activo: este torneo no exigirá cuenta Riot vinculada ni autorización VALORANT para registrar equipos.
+                {!RIOT_INTEGRATION_ENABLED
+                  ? `${RIOT_PENDING_APPROVAL_MESSAGE} Este torneo quedará en modo manual automáticamente.`
+                  : 'Modo manual activo: este torneo no exigirá cuenta Riot vinculada ni autorización VALORANT para registrar equipos.'}
               </p>
             )}
             {isRiotTournament && !riotManualMode && (

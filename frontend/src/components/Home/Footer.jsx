@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { RIOT_INTEGRATION_ENABLED } from '../../../../shared/riotFeatureFlags.js';
 import logoWhite from '../../assets/Logo/logo-white.png';
 import logoBlack from '../../assets/Logo/logo-black.png';
 
@@ -14,7 +15,6 @@ const LINKS = {
   ],
   soporte: [
     { label: 'Documentacion', to: '/docs' },
-    { label: 'Riot Review', to: '/review/riot' },
     { label: 'Centro de Ayuda', to: '/support' },
     { label: 'Reportar un Bug', to: '/settings' },
     { label: 'Contacto', href: 'mailto:soporte@glitchgang.net' },
@@ -38,6 +38,9 @@ const Footer = () => {
   const { isDarkMode } = useTheme();
   const currentYear = new Date().getFullYear();
   const logo = isDarkMode ? logoWhite : logoBlack;
+  const supportLinks = RIOT_INTEGRATION_ENABLED
+    ? [...LINKS.soporte.slice(0, 1), { label: 'Riot Review', to: '/review/riot' }, ...LINKS.soporte.slice(1)]
+    : LINKS.soporte;
 
   return (
     <footer className="relative bg-[var(--bg-card)] border-t border-[var(--border-color)] pt-16 pb-8 px-6 md:px-16">
@@ -114,7 +117,7 @@ const Footer = () => {
               Soporte
             </h4>
             <ul className="space-y-3">
-              {LINKS.soporte.map((link) => (
+              {supportLinks.map((link) => (
                 <li key={link.label}>
                   {link.to ? (
                     <Link
