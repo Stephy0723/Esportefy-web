@@ -278,7 +278,8 @@ export const createTeam = async (req, res) => {
             roster: rosterData,
             captainUserId: req.userId,
             leaderRole: parsedFormData?.leaderRole || '',
-            isUniversityTeam: wantsUniversityTeam
+            isUniversityTeam: wantsUniversityTeam,
+            game: parsedFormData?.game || ''
         });
         if (!captainRoleUniqueness.ok) {
             return res.status(400).json({ message: captainRoleUniqueness.message });
@@ -647,8 +648,10 @@ const isMlbbGame = (game) => isSupportedMlbbGame(game);
 const isFilledRosterPlayer = (slot) => Boolean(
     slot && (slot.user || slot.nickname || slot.gameId || slot.region || slot.email || slot.role)
 );
-const validateCaptainRoleUniquenessInCreate = ({ roster = {}, captainUserId, leaderRole = '', isUniversityTeam = false }) => {
+const shouldReserveCaptainRole = (game = '') => getSupportedGameRoles(game).length > 1;
+const validateCaptainRoleUniquenessInCreate = ({ roster = {}, captainUserId, leaderRole = '', isUniversityTeam = false, game = '' }) => {
     if (isUniversityTeam) return { ok: true };
+    if (!shouldReserveCaptainRole(game)) return { ok: true };
 
     const normalizedCaptainRole = normalizeText(leaderRole);
     if (!normalizedCaptainRole) return { ok: true };
@@ -670,6 +673,7 @@ const validateCaptainRoleUniquenessInCreate = ({ roster = {}, captainUserId, lea
 const validateCaptainRoleReservationInTeam = (teamLike = {}) => {
     const isUniversity = Boolean(teamLike?.university?.isUniversityTeam) || isUniversityTeamLevel(teamLike?.teamLevel);
     if (isUniversity) return { ok: true };
+    if (!shouldReserveCaptainRole(teamLike?.game)) return { ok: true };
 
     const captainId = String(teamLike?.captain || '');
     if (!captainId) return { ok: true };

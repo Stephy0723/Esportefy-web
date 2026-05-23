@@ -29,6 +29,16 @@ const GAME_CONFIG = {
 
 const normalizeTournamentGame = (value) => String(value || '').trim().toLowerCase();
 const isValorantTournamentGame = (value) => normalizeTournamentGame(value) === 'valorant';
+const parseTeamSizeFromModality = (modality = '') => {
+  const raw = String(modality || '').trim().toLowerCase();
+  const match = raw.match(/^(\d+)\s*v\s*(\d+)$/i);
+  if (!match) return 1;
+  const left = Number.parseInt(match[1], 10);
+  const right = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(left) || left <= 0) return 1;
+  if (!Number.isFinite(right) || right <= 0) return left;
+  return Math.max(left, right);
+};
 const formatMoneyAmount = (value) => {
   const parsed = Number.parseFloat(String(value ?? '').trim().replace(',', '.'));
   if (!Number.isFinite(parsed) || parsed <= 0) return '';
@@ -1351,6 +1361,7 @@ useEffect(() => {
   const selectedTournamentStatus = getTournamentStatusKey(selectedTournament?.status);
   const isSelectedTournamentOpen = selectedTournamentStatus === 'open';
   const isSelectedTournamentOngoing = selectedTournamentStatus === 'ongoing';
+  const isSelectedTournamentIndividual = parseTeamSizeFromModality(selectedTournament?.modality) === 1;
   const selectedTournamentCheckInEnabled = hasCheckInWindowConfigured(selectedTournament);
   const selectedTournamentCheckInState = getCheckInWindowState(selectedTournament);
   const selectedCaptainRegistration = getCaptainRegistrationForUser(selectedTournament, currentUserId);
@@ -2066,9 +2077,13 @@ useEffect(() => {
                                         <div><strong>Cierra:</strong> {new Date(selectedTournament.checkInWindow.end).toLocaleString()}</div>
                                     )}
                                     {selectedCaptainRegistration && selectedTournamentCheckInState === 'open' && selectedUserCheckInStatus !== 'checked_in' && (
-                                        <div className="riot-note">Como capitán, debes confirmar el check-in antes de generar el bracket o iniciar el torneo.</div>
+                                        <div className="riot-note">
+                                            {isSelectedTournamentIndividual
+                                                ? 'Debes confirmar tu check-in antes de generar el bracket o iniciar el torneo.'
+                                                : 'Como capitán, debes confirmar el check-in antes de generar el bracket o iniciar el torneo.'}
+                                        </div>
                                     )}
-                                    {!selectedCaptainRegistration && selectedRosterRegistration && (
+                                    {!selectedCaptainRegistration && selectedRosterRegistration && !isSelectedTournamentIndividual && (
                                         <div className="riot-note">Solo el capitán del equipo puede confirmar el check-in.</div>
                                     )}
                                 </div>
@@ -2077,7 +2092,7 @@ useEffect(() => {
 
                         {Array.isArray(selectedTournament.registrations) && selectedTournament.registrations.length > 0 && (
                             <div className="info-section" style={{ marginTop: 18 }}>
-                                <h4><i className='bx bx-group'></i> Equipos inscritos</h4>
+                                <h4><i className='bx bx-group'></i> {isSelectedTournamentIndividual ? 'Jugadores inscritos' : 'Equipos inscritos'}</h4>
                                 <div className="tournament-registrations">
                                     {selectedTournament.registrations.map((r, idx) => (
                                         <div key={r._id || `${r.teamName}-${idx}`} className="registration-row compact">
@@ -2085,7 +2100,7 @@ useEffect(() => {
                                                 type="button"
                                                 className="registration-team-trigger"
                                                 onClick={() => openTeamPreview(r)}
-                                                title={`Ver información de ${r.teamName || 'equipo'}`}
+                                                title={`Ver información de ${r.teamName || (isSelectedTournamentIndividual ? 'jugador' : 'equipo')}`}
                                             >
                                                 <div className="team-row">
                                                     <div className="team-logo">
@@ -2093,7 +2108,7 @@ useEffect(() => {
                                                             ? (
                                                                 <img
                                                                     src={toAssetUrl(r.logoUrl)}
-                                                                    alt={r.teamName || 'Equipo'}
+                                                                    alt={r.teamName || (isSelectedTournamentIndividual ? 'Jugador' : 'Equipo')}
                                                                     onError={(e) => applyImageFallback(e, getTeamFallback(r.teamName))}
                                                                 />
                                                             )
@@ -2101,7 +2116,7 @@ useEffect(() => {
                                                         }
                                                     </div>
                                                     <div className="team-text">
-                                                        <strong>{r.teamName || 'Equipo'}</strong>
+                                                        <strong>{r.teamName || (isSelectedTournamentIndividual ? 'Jugador' : 'Equipo')}</strong>
                                                     </div>
                                                 </div>
                                                 {selectedTournamentCheckInEnabled && (
@@ -2118,7 +2133,7 @@ useEffect(() => {
                                                         className="reg-btn reject"
                                                         onClick={() => removeRegistration(selectedTournament, r._id)}
                                                     >
-                                                        Quitar equipo
+                                                        {isSelectedTournamentIndividual ? 'Quitar jugador' : 'Quitar equipo'}
                                                     </button>
                                                 </div>
                                             )}
@@ -2555,14 +2570,14 @@ useEffect(() => {
                                 ) : (
                                     <span className="join-hint">
                                         {selectedUserCheckInStatus === 'checked_in'
-                                            ? 'Tu equipo ya confirmó el check-in.'
+                                            ? (isSelectedTournamentIndividual ? 'Ya confirmaste tu check-in.' : 'Tu equipo ya confirmó el check-in.')
                                             : selectedTournamentCheckInState === 'upcoming'
                                                 ? 'El check-in aún no ha comenzado.'
                                                 : selectedTournamentCheckInState === 'closed'
                                                     ? 'La ventana de check-in ya cerró.'
                                                     : selectedRosterRegistration && !selectedCaptainRegistration
                                                         ? 'Solo el capitán del equipo puede confirmar el check-in.'
-                                                        : 'Tu equipo aún no puede confirmar el check-in.'}
+                                                        : (isSelectedTournamentIndividual ? 'Aún no puedes confirmar tu check-in.' : 'Tu equipo aún no puede confirmar el check-in.')}
                                     </span>
                                 )
                             )}

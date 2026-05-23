@@ -4,6 +4,7 @@ import Team from '../models/Team.js';
 import { recordAdminAudit } from '../services/auditLogger.js';
 import { isUniversityGameAllowed } from '../config/universityCatalog.js';
 import {
+    isAllowedTournamentFormatForGame,
     isOperationalTournamentFormat,
     normalizeTournamentFormat,
     normalizeTournamentStaffRole,
@@ -1070,9 +1071,9 @@ export const createTournament = async (req, res) => {
             currentSlots: 0
         });
 
-        if (!isOperationalTournamentFormat(newTournament.format)) {
+        if (!isAllowedTournamentFormatForGame(newTournament.game, newTournament.format)) {
             return res.status(400).json({
-                message: 'Doble eliminación aún no está disponible operativamente. Usa eliminación directa, suizo o round robin.'
+                message: 'El formato seleccionado no está habilitado para este juego.'
             });
         }
 
@@ -1318,9 +1319,9 @@ export const updateTournament = async (req, res) => {
         }
         if (data.format !== undefined) {
             const normalizedFormat = normalizeTournamentFormat(data.format, 'single_elimination');
-            if (!isOperationalTournamentFormat(normalizedFormat)) {
+            if (!isAllowedTournamentFormatForGame(targetGameForRules, normalizedFormat)) {
                 return res.status(400).json({
-                    message: 'Doble eliminación aún no está disponible operativamente. Usa eliminación directa, suizo o round robin.'
+                    message: 'El formato seleccionado no está habilitado para este juego.'
                 });
             }
             update.format = normalizedFormat;
@@ -2196,7 +2197,8 @@ export const registerTeam = async (req, res) => {
             const starters = Array.isArray(team.roster?.starters)
                 ? team.roster.starters.filter(isFilledRosterEntry)
                 : [];
-            const expected = team.maxMembers || starters.length;
+            const expectedTeamSize = parseTeamSizeFromModality(tournament.modality);
+            const expected = expectedTeamSize > 0 ? expectedTeamSize : (team.maxMembers || starters.length);
             const complete = expected > 0
                 && starters.length >= expected
                 && starters.slice(0, expected).every(p => p && p.nickname);
@@ -3445,33 +3447,53 @@ export const searchStaffCandidates = async (req, res) => {
             return res.json([]);
         }
 
-        const STAFF_ROLES = ['caster', 'coach', 'analyst', 'content-creator', 'organizer'];
+        const STAFF_ROLES = ['moderator', 'caster', 'coach', 'analyst', 'content-creator', 'organizer', 'producer', 'referee'];
 
-        const filter = {
+        const baseFilter = {
             isBanned: { $ne: true },
-            roles: { $in: STAFF_ROLES },
             $or: [
                 { username: { $regex: search, $options: 'i' } },
-                { fullName: { $regex: search, $options: 'i' } }
+                { userCode: { $regex: search, $options: 'i' } }
+            ],
+            $and: [
+                {
+                    $or: [
+                        { roles: { $in: STAFF_ROLES } },
+                        { isOrganizer: true },
+                        { isAdmin: true }
+                    ]
+                }
             ]
         };
 
         const normalizedGame = game ? normalizeSupportedGameName(game) : '';
-        if (normalizedGame) {
-            filter.selectedGames = normalizedGame;
-        }
+        const strictFilter = normalizedGame
+            ? { ...baseFilter, selectedGames: normalizedGame }
+            : baseFilter;
 
-        const users = await User.find(filter)
-            .select('username fullName avatar roles selectedGames')
+        let users = await User.find(strictFilter)
+            .select('username userCode fullName avatar roles selectedGames isOrganizer isAdmin')
             .limit(10)
             .lean();
+
+        if (!users.length && normalizedGame) {
+            users = await User.find(baseFilter)
+                .select('username userCode fullName avatar roles selectedGames isOrganizer isAdmin')
+                .limit(10)
+                .lean();
+        }
 
         const results = users.map((u) => ({
             id: u._id,
             username: u.username,
+            userCode: u.userCode || '',
             fullName: u.fullName || '',
             avatar: u.avatar || '',
-            roles: (u.roles || []).filter((r) => STAFF_ROLES.includes(r)),
+            roles: [
+                ...(u.isAdmin ? ['admin'] : []),
+                ...(u.isOrganizer ? ['organizer'] : []),
+                ...((u.roles || []).filter((r) => STAFF_ROLES.includes(r)))
+            ].filter((value, index, arr) => arr.indexOf(value) === index),
             games: u.selectedGames || []
         }));
 

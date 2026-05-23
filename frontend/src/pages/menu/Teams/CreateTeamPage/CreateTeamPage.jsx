@@ -616,6 +616,7 @@ const CreateTeamPage = () => {
         if (type === 'starters' && !existingData) {
             const roles = getSupportedGameRoles(formData.game);
             if (roles && roles[index]) suggestedRole = roles[index];
+            else if (roles?.length === 1) suggestedRole = roles[0];
         }
 
         setSlotData(existingData ? {
@@ -902,7 +903,7 @@ const CreateTeamPage = () => {
 
     const getRoleLabel = (index) => {
         const roles = getSupportedGameRoles(formData.game);
-        return roles ? roles[index] : `Player ${index + 1}`;
+        return roles?.[index] || roles?.[0] || `Player ${index + 1}`;
     };
     const startersLabel = Number(formData.maxMembers || 0) === 1 ? 'Titular principal' : 'Titulares';
     const substitutesLabel = Number(formData.maxSubstitutes || 0) === 1 ? 'Suplente' : 'Suplentes';

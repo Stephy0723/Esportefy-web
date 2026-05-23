@@ -24,6 +24,17 @@ const roundLabel = (index, total) => {
   return labels[Math.max(0, labels.length - total + index)] || `Ronda ${index + 1}`;
 };
 
+const parseTeamSizeFromModality = (modality = '') => {
+  const raw = String(modality || '').trim().toLowerCase();
+  const match = raw.match(/^(\d+)\s*v\s*(\d+)$/i);
+  if (!match) return 1;
+  const left = Number.parseInt(match[1], 10);
+  const right = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(left) || left <= 0) return 1;
+  if (!Number.isFinite(right) || right <= 0) return left;
+  return Math.max(left, right);
+};
+
 const buildSingleElimination = (teams, bracketTitle) => {
   const totalTeams = Math.max(2, teams.length);
   const nextPower = 2 ** Math.ceil(Math.log2(totalTeams));
@@ -178,6 +189,9 @@ const TournamentBracketPage = () => {
   const [selectedFormat, setSelectedFormat] = useState('single_elimination');
   const [swissRounds, setSwissRounds] = useState(0);
   const [seedMode, setSeedMode] = useState('order');
+  const isIndividualTournament = parseTeamSizeFromModality(tournament?.modality) === 1;
+  const participantLabel = isIndividualTournament ? 'jugadores' : 'equipos';
+  const participantLabelSingular = isIndividualTournament ? 'jugador' : 'equipo';
 
   useEffect(() => {
     if (bracket?.format && isOperationalTournamentFormat(bracket.format)) {
@@ -351,7 +365,7 @@ const TournamentBracketPage = () => {
             <h3>Gestor de llaves del torneo</h3>
             <p>
               Aqui configuras la estructura de eliminacion de tu torneo. Puedes generar
-              el bracket automaticamente con los equipos aprobados o armarlo manualmente.
+              el bracket automaticamente con los {participantLabel} aprobados o armarlo manualmente.
               Haz clic en cualquier partida del bracket (a la derecha) para editarla desde aqui.
             </p>
           </div>
@@ -374,16 +388,16 @@ const TournamentBracketPage = () => {
 
           <div className="ta-form-grid ta-form-grid--stacked">
             <label>
-              <span>Equipo A</span>
-              <input value={teamName(selectedMatchData.teamA)} onChange={(e) => updateSelectedField('teamA', e.target.value)} placeholder="Nombre del equipo" />
+              <span>{isIndividualTournament ? 'Jugador A' : 'Equipo A'}</span>
+              <input value={teamName(selectedMatchData.teamA)} onChange={(e) => updateSelectedField('teamA', e.target.value)} placeholder={`Nombre del ${participantLabelSingular}`} />
             </label>
             <label>
               <span>Score A</span>
               <input value={selectedMatchData.scoreA || ''} onChange={(e) => updateSelectedField('scoreA', e.target.value)} placeholder="0" />
             </label>
             <label>
-              <span>Equipo B</span>
-              <input value={teamName(selectedMatchData.teamB)} onChange={(e) => updateSelectedField('teamB', e.target.value)} placeholder="Nombre del equipo" />
+              <span>{isIndividualTournament ? 'Jugador B' : 'Equipo B'}</span>
+              <input value={teamName(selectedMatchData.teamB)} onChange={(e) => updateSelectedField('teamB', e.target.value)} placeholder={`Nombre del ${participantLabelSingular}`} />
             </label>
             <label>
               <span>Score B</span>
@@ -405,7 +419,7 @@ const TournamentBracketPage = () => {
             <div className="ta-editor-block">
               <span className="ta-editor-label">Ganador de la partida</span>
               <p className="ta-hint">
-                Selecciona al equipo ganador. El ganador avanzara automaticamente a la siguiente ronda.
+                Selecciona al {participantLabelSingular} ganador. El ganador avanzara automaticamente a la siguiente ronda.
               </p>
               <div className="ta-winner-btns">
                 <button
@@ -413,14 +427,14 @@ const TournamentBracketPage = () => {
                   onClick={() => setWinner('A')}
                   title={`Marcar a ${teamName(selectedMatchData.teamA)} como ganador`}
                 >
-                  {teamName(selectedMatchData.teamA) || 'Equipo A'}
+                  {teamName(selectedMatchData.teamA) || (isIndividualTournament ? 'Jugador A' : 'Equipo A')}
                 </button>
                 <button
                   className={`ta-winner-btn ${selectedMatchData.winnerRefId && selectedMatchData.winnerRefId === getTeamRef(selectedMatchData.teamB) ? 'ta-winner-btn--active' : ''}`}
                   onClick={() => setWinner('B')}
                   title={`Marcar a ${teamName(selectedMatchData.teamB)} como ganador`}
                 >
-                  {teamName(selectedMatchData.teamB) || 'Equipo B'}
+                  {teamName(selectedMatchData.teamB) || (isIndividualTournament ? 'Jugador B' : 'Equipo B')}
                 </button>
               </div>
               {selectedMatchData.winnerRefId && (
@@ -440,9 +454,9 @@ const TournamentBracketPage = () => {
           </button>
 
           <div className="ta-editor-block">
-            <span className="ta-editor-label">Equipos aprobados ({approvedTeams.length})</span>
-            <p>{availableSeed || 'Aun no hay equipos aprobados para sembrar.'}</p>
-            <p className="ta-hint">Estos son los equipos que ya fueron aceptados en el torneo y se usaran para generar el bracket.</p>
+            <span className="ta-editor-label">{isIndividualTournament ? 'Jugadores aprobados' : 'Equipos aprobados'} ({approvedTeams.length})</span>
+            <p>{availableSeed || `Aun no hay ${participantLabel} aprobados para sembrar.`}</p>
+            <p className="ta-hint">Estos son los {participantLabel} que ya fueron aceptados en el torneo y se usaran para generar el bracket.</p>
           </div>
 
           <div className="ta-form-grid ta-form-grid--stacked">
@@ -456,8 +470,8 @@ const TournamentBracketPage = () => {
               <p className="ta-hint">
                 {selectedFormat === 'single_elimination' && 'Pierdes una vez y quedas fuera. Ideal para torneos rapidos.'}
                 {selectedFormat === 'double_elimination' && 'Necesitas perder dos veces para ser eliminado. Mas justo, mas largo.'}
-                {selectedFormat === 'swiss' && 'Los equipos se emparejan por puntuacion similar en cada ronda. Sin eliminacion directa.'}
-                {selectedFormat === 'round_robin' && 'Todos los equipos juegan contra todos. Ideal para ligas o grupos.'}
+                {selectedFormat === 'swiss' && `Los ${participantLabel} se emparejan por puntuacion similar en cada ronda. Sin eliminacion directa.`}
+                {selectedFormat === 'round_robin' && `Todos los ${participantLabel} juegan contra todos. Ideal para ligas o grupos.`}
               </p>
             </label>
             <label>
@@ -466,7 +480,7 @@ const TournamentBracketPage = () => {
                 <option value="order">Orden de inscripcion</option>
                 <option value="random">Aleatorio</option>
               </select>
-              <p className="ta-hint">Define como se ordenan los equipos en la primera ronda.</p>
+              <p className="ta-hint">Define como se ordenan los {participantLabel} en la primera ronda.</p>
             </label>
             {selectedFormat === 'swiss' && (
               <label>
@@ -488,7 +502,7 @@ const TournamentBracketPage = () => {
             <button onClick={autoBuildBracket} title="Crea automaticamente todas las rondas y partidas usando los equipos aprobados y el formato seleccionado">
               Generar bracket
             </button>
-            <p className="ta-hint">Genera automaticamente las llaves con los equipos aprobados y el formato elegido arriba.</p>
+            <p className="ta-hint">Genera automaticamente las llaves con los {participantLabel} aprobados y el formato elegido arriba.</p>
             <button
               className="ghost"
               onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/roulette/live/duel`)}

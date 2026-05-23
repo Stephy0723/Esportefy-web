@@ -1,3 +1,5 @@
+import { getGamePolicy } from './gamePolicies.js';
+
 const normalizeLookupKey = (value = '') =>
   String(value || '')
     .normalize('NFD')
@@ -103,6 +105,19 @@ export const normalizeTournamentFormat = (value, fallback = 'single_elimination'
 
 export const isOperationalTournamentFormat = (value = '') =>
   TOURNAMENT_OPERATIONAL_FORMAT_VALUES.includes(normalizeTournamentFormat(value, ''));
+
+export const getTournamentFormatOptionsForGame = (game = '') => {
+  const policy = getGamePolicy(game);
+  if (policy?.tournamentCategory === 'Fighting') {
+    return TOURNAMENT_FORMAT_OPTIONS;
+  }
+  return TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS;
+};
+
+export const isAllowedTournamentFormatForGame = (game = '', value = '') => {
+  const normalized = normalizeTournamentFormat(value, '');
+  return getTournamentFormatOptionsForGame(game).some((option) => option.value === normalized);
+};
 
 export const normalizeTournamentPlatform = (value, fallback = 'PC') =>
   normalizeFromMap(value, TOURNAMENT_PLATFORM_MAP, TOURNAMENT_PLATFORM_ALIASES, fallback);

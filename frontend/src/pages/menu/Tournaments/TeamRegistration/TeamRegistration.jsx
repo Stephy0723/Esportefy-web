@@ -266,7 +266,7 @@ const TeamRegistration = () => {
       );
       navigate('/tournaments');
     } catch (err) {
-      const msg = err.response?.data?.message || 'No se pudo registrar el equipo';
+      const msg = err.response?.data?.message || (isIndividualTournament ? 'No se pudo completar la inscripción individual' : 'No se pudo registrar el equipo');
       notify('danger', 'Error de registro', msg);
     } finally {
       setSubmitting(false);
@@ -295,7 +295,7 @@ const TeamRegistration = () => {
               <span className="step-tag">FASE 1</span>
               <h1>Registro <span className="highlight">{tournament.title}</span></h1>
               {formatTournamentPublicId(tournament) && <p>{formatTournamentPublicId(tournament)}</p>}
-              <p>Prepara a tu escuadra para la gloria.</p>
+              <p>{isIndividualTournament ? 'Prepárate para competir por tu cuenta.' : 'Prepara a tu escuadra para la gloria.'}</p>
               {tournament.game ? (
                 <div className="tournament-game-badge">Juego: {tournament.game}</div>
               ) : null}
