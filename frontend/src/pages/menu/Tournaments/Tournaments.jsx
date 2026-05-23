@@ -258,6 +258,45 @@ const getCheckInBadgeLabel = (status = '', checkInState = 'disabled') => {
   if (checkInState === 'closed') return 'Check-in no confirmado';
   return 'Sin check-in';
 };
+const formatCheckInDateTime = (value) => {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toLocaleString();
+};
+const formatCheckInCountdown = (targetDate) => {
+  if (!(targetDate instanceof Date) || Number.isNaN(targetDate.getTime())) return '';
+  const diff = targetDate.getTime() - Date.now();
+  if (diff <= 0) return '';
+
+  const totalMinutes = Math.ceil(diff / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [];
+
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || !parts.length) parts.push(`${minutes}m`);
+
+  return parts.slice(0, 3).join(' ');
+};
+const getCheckInWindowCountdownLabel = (checkInState, startValue, endValue) => {
+  const start = startValue ? new Date(startValue) : null;
+  const end = endValue ? new Date(endValue) : null;
+
+  if (checkInState === 'upcoming' && start) {
+    const countdown = formatCheckInCountdown(start);
+    return countdown ? `Abre en ${countdown}` : '';
+  }
+
+  if (checkInState === 'open' && end) {
+    const countdown = formatCheckInCountdown(end);
+    return countdown ? `Cierra en ${countdown}` : '';
+  }
+
+  return '';
+};
 
 const toAssetUrl = (path) => {
   return resolveMediaUrl(path);
@@ -1368,6 +1407,13 @@ useEffect(() => {
   const selectedRosterRegistration = getRosterRegistrationForTeams(selectedTournament, effectiveTeamIds);
   const selectedUserRegistration = selectedCaptainRegistration || selectedRosterRegistration;
   const selectedUserCheckInStatus = normalizeRegistrationCheckInStatus(selectedUserRegistration?.checkIn?.status);
+  const selectedCheckInStartLabel = formatCheckInDateTime(selectedTournament?.checkInWindow?.start);
+  const selectedCheckInEndLabel = formatCheckInDateTime(selectedTournament?.checkInWindow?.end);
+  const selectedCheckInCountdownLabel = getCheckInWindowCountdownLabel(
+    selectedTournamentCheckInState,
+    selectedTournament?.checkInWindow?.start,
+    selectedTournament?.checkInWindow?.end,
+  );
   const canSelectedUserCheckIn = Boolean(
     selectedCaptainRegistration
     && isApprovedRegistration(selectedCaptainRegistration)
@@ -1375,6 +1421,53 @@ useEffect(() => {
     && selectedTournamentCheckInState === 'open'
     && selectedUserCheckInStatus !== 'checked_in'
   );
+  const selectedCheckInGuidance = (() => {
+    if (selectedUserCheckInStatus === 'checked_in') {
+      return isSelectedTournamentIndividual
+        ? 'Ya confirmaste tu asistencia. No necesitas volver a hacer check-in.'
+        : 'Tu equipo ya quedó confirmado. No hace falta repetir el check-in.';
+    }
+
+    if (!isSelectedTournamentOpen) {
+      return 'El check-in solo puede confirmarse mientras el torneo está abierto.';
+    }
+
+    if (selectedTournamentCheckInState === 'upcoming') {
+      return selectedCheckInCountdownLabel
+        ? `Todavía no puedes confirmar. ${selectedCheckInCountdownLabel}.`
+        : 'Todavía no puedes confirmar porque la ventana de check-in aún no abre.';
+    }
+
+    if (selectedTournamentCheckInState === 'closed') {
+      return 'La ventana de check-in ya cerró.';
+    }
+
+    if (!selectedUserRegistration) {
+      return isSelectedTournamentIndividual
+        ? 'Debes inscribirte y ser aprobado antes de confirmar tu check-in.'
+        : 'Tu equipo debe estar inscrito y aprobado antes de confirmar el check-in.';
+    }
+
+    if (!isApprovedRegistration(selectedUserRegistration)) {
+      return isSelectedTournamentIndividual
+        ? 'Tu inscripción aún no ha sido aprobada.'
+        : 'La inscripción de tu equipo aún no ha sido aprobada.';
+    }
+
+    if (selectedRosterRegistration && !selectedCaptainRegistration && !isSelectedTournamentIndividual) {
+      return 'Solo el capitán del equipo puede confirmar el check-in.';
+    }
+
+    if (canSelectedUserCheckIn) {
+      return isSelectedTournamentIndividual
+        ? 'Tu check-in está abierto. Pulsa "Confirmar check-in" para quedar listo en el bracket.'
+        : 'El check-in está abierto. Como capitán, pulsa "Confirmar check-in" para dejar listo a tu equipo.';
+    }
+
+    return isSelectedTournamentIndividual
+      ? 'Aún no puedes confirmar tu check-in.'
+      : 'Tu equipo aún no puede confirmar el check-in.';
+  })();
   const canStartSelectedTournament = hasGeneratedBracket && isSelectedTournamentOpen;
   const canRegisterSelectedTournament = isRegistrationOpenForTournament(selectedTournament);
   const selectedRegistrationHint = isSelectedTournamentOpen
@@ -2070,22 +2163,16 @@ useEffect(() => {
                                 <h4><i className='bx bx-check-shield'></i> Check-in</h4>
                                 <div className="riot-requirements">
                                     <div><strong>Estado:</strong> {getCheckInBadgeLabel(selectedUserRegistration?.checkIn?.status, selectedTournamentCheckInState)}</div>
-                                    {selectedTournament.checkInWindow?.start && (
-                                        <div><strong>Abre:</strong> {new Date(selectedTournament.checkInWindow.start).toLocaleString()}</div>
+                                    {selectedCheckInStartLabel && (
+                                        <div><strong>El check-in abre:</strong> {selectedCheckInStartLabel}</div>
                                     )}
-                                    {selectedTournament.checkInWindow?.end && (
-                                        <div><strong>Cierra:</strong> {new Date(selectedTournament.checkInWindow.end).toLocaleString()}</div>
+                                    {selectedCheckInEndLabel && (
+                                        <div><strong>Debes confirmarlo antes de:</strong> {selectedCheckInEndLabel}</div>
                                     )}
-                                    {selectedCaptainRegistration && selectedTournamentCheckInState === 'open' && selectedUserCheckInStatus !== 'checked_in' && (
-                                        <div className="riot-note">
-                                            {isSelectedTournamentIndividual
-                                                ? 'Debes confirmar tu check-in antes de generar el bracket o iniciar el torneo.'
-                                                : 'Como capitán, debes confirmar el check-in antes de generar el bracket o iniciar el torneo.'}
-                                        </div>
+                                    {selectedCheckInCountdownLabel && (
+                                        <div className="riot-note">{selectedCheckInCountdownLabel}</div>
                                     )}
-                                    {!selectedCaptainRegistration && selectedRosterRegistration && !isSelectedTournamentIndividual && (
-                                        <div className="riot-note">Solo el capitán del equipo puede confirmar el check-in.</div>
-                                    )}
+                                    <div className="riot-note">{selectedCheckInGuidance}</div>
                                 </div>
                             </div>
                         )}
@@ -2569,15 +2656,7 @@ useEffect(() => {
                                     </button>
                                 ) : (
                                     <span className="join-hint">
-                                        {selectedUserCheckInStatus === 'checked_in'
-                                            ? (isSelectedTournamentIndividual ? 'Ya confirmaste tu check-in.' : 'Tu equipo ya confirmó el check-in.')
-                                            : selectedTournamentCheckInState === 'upcoming'
-                                                ? 'El check-in aún no ha comenzado.'
-                                                : selectedTournamentCheckInState === 'closed'
-                                                    ? 'La ventana de check-in ya cerró.'
-                                                    : selectedRosterRegistration && !selectedCaptainRegistration
-                                                        ? 'Solo el capitán del equipo puede confirmar el check-in.'
-                                                        : (isSelectedTournamentIndividual ? 'Aún no puedes confirmar tu check-in.' : 'Tu equipo aún no puede confirmar el check-in.')}
+                                        {selectedCheckInGuidance}
                                     </span>
                                 )
                             )}
