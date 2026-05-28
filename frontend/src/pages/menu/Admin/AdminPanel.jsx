@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { getAuthToken } from '../../../utils/authSession';
 import { resolveMediaUrl } from '../../../utils/media';
+import { useNotification } from '../../../context/NotificationContext';
 import PageHud from '../../../components/PageHud/PageHud';
 import './AdminPanel.css';
 
@@ -87,6 +88,7 @@ const calcAge = (birthDate) => {
 
 const AdminPanel = () => {
     const navigate = useNavigate();
+    const { notify } = useNotification();
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -249,7 +251,7 @@ const AdminPanel = () => {
             });
             setSelectedUser(res.data);
         } catch (err) {
-            alert(err.response?.data?.message || 'Usuario no encontrado.');
+            notify('error', 'Error', err.response?.data?.message || 'Usuario no encontrado.');
         }
         finally { setUserDetailLoading(false); }
     };
@@ -274,7 +276,7 @@ const AdminPanel = () => {
             setSelectedApp(null); setRejectReason('');
             if (activeTab === 'applications') fetchApplications();
             else fetchStats();
-        } catch (err) { alert(err.response?.data?.message || 'Error'); }
+        } catch (err) { notify('error', 'Error', err.response?.data?.message || 'No se pudo procesar la solicitud.'); }
         finally { setActionLoading(null); }
     };
 
@@ -290,7 +292,7 @@ const AdminPanel = () => {
             if (selectedUser && selectedUser._id === userId) {
                 fetchUserDetail(userId);
             }
-        } catch (err) { alert(err.response?.data?.message || 'Error'); }
+        } catch (err) { notify('error', 'Error', err.response?.data?.message || 'No se pudo ejecutar la acción.'); }
         finally { setActionLoading(null); }
     };
 
@@ -305,7 +307,7 @@ const AdminPanel = () => {
             }, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedTicket(null); setTicketResponse('');
             fetchTickets();
-        } catch (err) { alert(err.response?.data?.message || 'Error'); }
+        } catch (err) { notify('error', 'Error', err.response?.data?.message || 'No se pudo responder el ticket.'); }
         finally { setActionLoading(null); }
     };
 
@@ -317,7 +319,7 @@ const AdminPanel = () => {
                 status: newStatus
             }, { headers: { Authorization: `Bearer ${token}` } });
             fetchTickets();
-        } catch (err) { alert(err.response?.data?.message || 'Error'); }
+        } catch (err) { notify('error', 'Error', err.response?.data?.message || 'No se pudo cambiar el estado.'); }
         finally { setActionLoading(null); }
     };
 
@@ -330,8 +332,8 @@ const AdminPanel = () => {
                 userId, title: notifTitle.trim() || 'Mensaje del Admin', message: notifMsg
             }, { headers: { Authorization: `Bearer ${token}` } });
             setNotifMsg(''); setNotifTitle('');
-            alert('Notificacion enviada.');
-        } catch (err) { alert(err.response?.data?.message || 'Error'); }
+            notify('success', 'Notificación enviada', 'La notificación fue enviada al usuario.');
+        } catch (err) { notify('error', 'Error', err.response?.data?.message || 'No se pudo enviar la notificación.'); }
         finally { setActionLoading(null); }
     };
 
@@ -428,7 +430,7 @@ ${bodyRows}
     const exportCSV = (dataType) => {
         if (dataType === 'users') {
             const data = users.length ? users : allUsersForStats;
-            if (!data.length) return alert('No hay datos para exportar.');
+            if (!data.length) { notify('warning', 'Sin datos', 'No hay datos para exportar.'); return; }
 
             const headers = [
                 '#', 'UserCode', 'Username', 'Email', 'Nombre Completo',
@@ -512,7 +514,7 @@ ${bodyRows}
 
             downloadExcel(buildExcel({ title: 'Reporte de Usuarios', subtitle, filterLines, headers, rows, colWidths }), 'Usuarios');
         } else if (dataType === 'applications') {
-            if (!applications.length) return alert('No hay datos para exportar.');
+            if (!applications.length) { notify('warning', 'Sin datos', 'No hay datos para exportar.'); return; }
 
             const headers = ['#', 'Username', 'Email', 'Nombre Completo', 'Rol Solicitado', 'Estado', 'Fecha Solicitud', 'Fecha Revision', 'Razon Rechazo'];
             const colWidths = [35, 120, 200, 160, 130, 90, 150, 150, 250];
@@ -539,7 +541,7 @@ ${bodyRows}
                 : 'Todas las solicitudes';
             downloadExcel(buildExcel({ title: 'Reporte de Solicitudes de Rol', subtitle: appSubtitle, filterLines: appFilterLines, headers, rows, colWidths, accentColor: '#f59e0b' }), 'Solicitudes');
         } else if (dataType === 'tickets') {
-            if (!tickets.length) return alert('No hay datos para exportar.');
+            if (!tickets.length) { notify('warning', 'Sin datos', 'No hay datos para exportar.'); return; }
 
             const headers = ['#', 'ID Ticket', 'Username', 'Email', 'Tipo', 'Estado', 'Asunto', 'Mensaje', 'Respuesta Admin', 'Fecha Creacion', 'Fecha Respuesta'];
             const colWidths = [35, 100, 120, 200, 90, 90, 160, 300, 300, 150, 150];

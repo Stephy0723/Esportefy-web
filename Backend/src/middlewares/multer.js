@@ -1,9 +1,12 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-// Crear carpeta si no existe
-const uploadDir = 'uploads/tournaments';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadDir = path.resolve(__dirname, '../../uploads/tournaments');
 if (!fs.existsSync(uploadDir)){
     fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -34,7 +37,7 @@ export const uploadTournamentFiles = multer({
 ]);
 
 // Match proof upload (single screenshot)
-const matchProofDir = 'uploads/match-proofs';
+const matchProofDir = path.resolve(__dirname, '../../uploads/match-proofs');
 if (!fs.existsSync(matchProofDir)){
     fs.mkdirSync(matchProofDir, { recursive: true });
 }

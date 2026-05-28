@@ -346,7 +346,7 @@ const TournamentMatchCenter = () => {
       const res = await axios.post(
         `${API_URL}/api/tournaments/${code}/match-proof`,
         formData,
-        { headers: { ...authHeaders, 'Content-Type': 'multipart/form-data' } }
+        { headers: authHeaders }
       );
       setProofUrl(res.data.proofUrl);
       return res.data.proofUrl;

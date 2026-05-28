@@ -181,7 +181,7 @@ const TournamentPublicView = () => {
   const showSponsors = settings.showSponsors !== false;
   const showRules = settings.showRules !== false;
   const showContact = settings.showContact !== false;
-  const showTeams = settings.showTeams === true;
+  const showTeams = settings.showTeams !== false;
   const showBracket = settings.showBracket !== false;
   const displaySponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
   const displayRegistrations = Array.isArray(data.registrations) ? data.registrations : [];

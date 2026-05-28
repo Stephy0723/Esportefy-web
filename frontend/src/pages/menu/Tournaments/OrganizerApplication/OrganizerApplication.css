@@ -500,3 +500,39 @@ button.btn-neon.green:hover {
   }
 
 }
+
+/* ─── INLINE FORM VALIDATION ─── */
+.field-error {
+  display: block;
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 5px;
+  padding-left: 2px;
+}
+
+.input-group input.input-error,
+.input-group select.input-error,
+.input-group textarea.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18) !important;
+}
+
+.form-submit-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.form-submit-error i {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}

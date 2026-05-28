@@ -17,6 +17,22 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 4000
       }
+    },
+    {
+      name: 'esportefy-chat',
+      cwd: '/var/www/Esportefy-web/chat-service',
+      script: 'src/index.js',
+      interpreter: 'node',
+      exec_mode: 'fork',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '512M',
+      kill_timeout: 5000,
+      env: {
+        NODE_ENV: 'production',
+        PORT: 5001
+      }
     }
   ]
 };

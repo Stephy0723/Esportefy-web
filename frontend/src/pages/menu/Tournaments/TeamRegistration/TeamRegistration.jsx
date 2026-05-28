@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import PageHud from '../../../../components/PageHud/PageHud';
@@ -280,6 +280,10 @@ const TeamRegistration = () => {
 
   // Get tournament game info for image/color/icon
   const tournamentGameInfo = getTournamentGameByName(tournament.game);
+
+  if (!incomingTournament?.tournamentId) {
+    return <Navigate to="/tournaments" replace />;
+  }
 
   return (
     <>

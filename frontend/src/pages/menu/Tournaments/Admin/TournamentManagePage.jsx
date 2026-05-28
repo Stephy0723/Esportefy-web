@@ -133,6 +133,8 @@ const TournamentManagePage = () => {
   };
 
   const CONFIRM_STATUS_MESSAGES = {
+    open: '¿Abrir las inscripciones? Los jugadores podrán inscribirse al torneo.',
+    ongoing: '¿Iniciar el torneo? Se cerrarán las inscripciones y comenzarán los matches.',
     cancelled: '¿Estás seguro de cancelar el torneo? Esta acción no se puede deshacer.',
     finished: '¿Deseas finalizar el torneo? Asegúrate de que todos los matches estén completados.',
   };

@@ -268,3 +268,10 @@
     color: var(--text-main) !important;        /* Texto se pone blanco/negro */
     background-color: rgba(128, 128, 128, 0.1) !important;
 }
+
+.error-alert {
+    color: #ef4444;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}

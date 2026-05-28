@@ -92,7 +92,7 @@ const ForgotPasswordFlow = () => {
                         </p>
                     </div>
 
-                    {error && <div className="error-alert" style={{color: 'red', marginBottom: '15px'}}>{error}</div>}
+                    {error && <div className="error-alert">{error}</div>}
 
                     {/* --- STEP 1 --- */}
                     {step === 1 && (

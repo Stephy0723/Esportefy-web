@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
 import axios from 'axios';
@@ -9,61 +9,80 @@ import RoleApplicationVisual from './RoleApplicationVisual';
 import RoleApplicantIdentitySection from './RoleApplicantIdentitySection';
 import '../Tournaments/OrganizerApplication/OrganizerApplication.css';
 
+const REQUIRED = {
+    fullName: 'Nombre Legal Completo',
+    idNumber: 'Cédula / DNI',
+    companyName: 'Nombre de la Empresa / Marca',
+    industry: 'Industria',
+    sponsorType: 'Tipo de Patrocinio',
+    budget: 'Presupuesto Estimado',
+    description: 'Descripción',
+};
+
 const SponsorPage = () => {
     const navigate = useNavigate();
     const { notify } = useNotification();
     const [loading, setLoading] = useState(false);
-    const [fileName, setFileName] = useState('Ningun archivo seleccionado');
+    const [formErrors, setFormErrors] = useState({});
+    const [submitError, setSubmitError] = useState('');
+    const [fileName, setFileName] = useState('Ningún archivo seleccionado');
     const [file, setFile] = useState(null);
     const [formData, setFormData] = useState({
-        fullName: '',
-        idNumber: '',
-        companyName: '',
-        website: '',
-        industry: '',
-        sponsorType: '',
-        budget: '',
-        interests: '',
-        description: ''
+        fullName: '', idNumber: '', companyName: '', website: '',
+        industry: '', sponsorType: '', budget: '', interests: '', description: ''
     });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
     };
 
     const handleFileChange = (e) => {
         if (e.target.files.length > 0) {
-            const selectedFile = e.target.files[0];
-            setFile(selectedFile);
-            setFileName(selectedFile.name);
+            setFile(e.target.files[0]);
+            setFileName(e.target.files[0].name);
+            if (formErrors.document) setFormErrors(prev => ({ ...prev, document: '' }));
         }
+    };
+
+    const validate = () => {
+        const errors = {};
+        Object.entries(REQUIRED).forEach(([key, label]) => {
+            if (!String(formData[key] || '').trim()) errors[key] = `${label} es obligatorio.`;
+        });
+        if (!file) errors.document = 'Debes subir una foto de tu documento de identidad.';
+        return errors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!file) return notify('error', 'Archivo faltante', 'Por favor sube una foto de tu cedula o documento de identidad.');
+        setSubmitError('');
+        const errors = validate();
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            setSubmitError('Completa todos los campos obligatorios antes de enviar.');
+            return;
+        }
         const token = getAuthToken();
-        if (!token) return notify('error', 'Sesion requerida', 'Debes iniciar sesion.');
+        if (!token) return notify('error', 'Sesión requerida', 'Debes iniciar sesión.');
         setLoading(true);
         try {
             const data = new FormData();
             data.append('role', 'sponsor');
             data.append('document', file);
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
-
             await axios.post(`${API_URL}/api/auth/apply-role`, data, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { Authorization: `Bearer ${token}` }
             });
-            notify('success', 'Solicitud enviada', 'Tu solicitud de Sponsor fue enviada al correo de Steliant y quedo pendiente de confirmacion por administracion.');
+            notify('success', 'Solicitud enviada', 'Tu solicitud de Sponsor fue enviada y quedó pendiente de confirmación.');
             navigate('/profile');
         } catch (err) {
             notify('error', 'Error', err.response?.data?.message || 'No se pudo enviar la solicitud.');
         } finally { setLoading(false); }
     };
+
+    const fe = (f) => formErrors[f];
 
     return (
         <div className="reg-page">
@@ -80,27 +99,36 @@ const SponsorPage = () => {
                             <div className="application-review-note">
                                 <i className='bx bx-envelope'></i>
                                 <div>
-                                    <strong>Revision por administracion</strong>
-                                    <p>Completa este formulario y enviaremos tu solicitud al correo de Steliant para su confirmacion administrativa.</p>
+                                    <strong>Revisión por administración</strong>
+                                    <p>Completa este formulario y enviaremos tu solicitud al correo de Steliant para su confirmación administrativa.</p>
                                 </div>
                             </div>
                         </div>
 
-                        <form className="gamer-form" onSubmit={handleSubmit}>
+                        <form className="gamer-form" onSubmit={handleSubmit} noValidate>
+                            {submitError && (
+                                <div className="form-submit-error">
+                                    <i className='bx bx-error-circle'></i>
+                                    <span>{submitError}</span>
+                                </div>
+                            )}
+
                             <RoleApplicantIdentitySection
                                 formData={formData}
                                 onInputChange={handleInputChange}
                                 onFileChange={handleFileChange}
                                 fileName={fileName}
                                 documentInputId="sponsor-doc-upload"
+                                errors={formErrors}
                             />
 
                             <h4 className="section-title">Datos de la Empresa / Marca</h4>
                             <div className="grid-inputs">
                                 <div className="input-group">
-                                    <input type="text" name="companyName" required placeholder=" " value={formData.companyName} onChange={handleInputChange} />
+                                    <input type="text" name="companyName" placeholder=" " value={formData.companyName} onChange={handleInputChange} className={fe('companyName') ? 'input-error' : ''} />
                                     <label>Nombre de la Empresa / Marca</label>
                                     <i className='bx bx-building input-icon'></i>
+                                    {fe('companyName') && <small className="field-error">{fe('companyName')}</small>}
                                 </div>
                                 <div className="input-group">
                                     <input type="url" name="website" placeholder=" " value={formData.website} onChange={handleInputChange} />
@@ -111,20 +139,21 @@ const SponsorPage = () => {
 
                             <div className="grid-inputs">
                                 <div className="input-group">
-                                    <select name="industry" required value={formData.industry} onChange={handleInputChange}>
+                                    <select name="industry" value={formData.industry} onChange={handleInputChange} className={fe('industry') ? 'input-error' : ''}>
                                         <option value="" disabled>Industria</option>
-                                        <option value="gaming-peripherals">Perifericos Gaming</option>
+                                        <option value="gaming-peripherals">Periféricos Gaming</option>
                                         <option value="food-beverage">Alimentos / Bebidas</option>
-                                        <option value="tech">Tecnologia</option>
+                                        <option value="tech">Tecnología</option>
                                         <option value="apparel">Ropa / Moda</option>
                                         <option value="entertainment">Entretenimiento</option>
-                                        <option value="education">Educacion</option>
+                                        <option value="education">Educación</option>
                                         <option value="crypto-fintech">Crypto / Fintech</option>
                                         <option value="other">Otra</option>
                                     </select>
+                                    {fe('industry') && <small className="field-error">{fe('industry')}</small>}
                                 </div>
                                 <div className="input-group">
-                                    <select name="sponsorType" required value={formData.sponsorType} onChange={handleInputChange}>
+                                    <select name="sponsorType" value={formData.sponsorType} onChange={handleInputChange} className={fe('sponsorType') ? 'input-error' : ''}>
                                         <option value="" disabled>Tipo de Patrocinio</option>
                                         <option value="tournaments">Torneos</option>
                                         <option value="teams">Equipos</option>
@@ -133,30 +162,33 @@ const SponsorPage = () => {
                                         <option value="communities">Comunidades</option>
                                         <option value="all">Todo lo anterior</option>
                                     </select>
+                                    {fe('sponsorType') && <small className="field-error">{fe('sponsorType')}</small>}
                                 </div>
                             </div>
 
                             <h4 className="section-title">Intereses de Patrocinio</h4>
                             <div className="input-group">
-                                <select name="budget" required value={formData.budget} onChange={handleInputChange}>
+                                <select name="budget" value={formData.budget} onChange={handleInputChange} className={fe('budget') ? 'input-error' : ''}>
                                     <option value="" disabled>Presupuesto Estimado</option>
                                     <option value="micro">Micro (Premios / Items)</option>
-                                    <option value="small">Pequeno ($100 - $1,000)</option>
+                                    <option value="small">Pequeño ($100 - $1,000)</option>
                                     <option value="medium">Mediano ($1,000 - $10,000)</option>
                                     <option value="large">Grande ($10,000+)</option>
                                     <option value="custom">Personalizado</option>
                                 </select>
+                                {fe('budget') && <small className="field-error">{fe('budget')}</small>}
                             </div>
 
                             <div className="input-group">
                                 <input type="text" name="interests" placeholder=" " value={formData.interests} onChange={handleInputChange} />
-                                <label>Juegos o comunidades de interes</label>
+                                <label>Juegos o comunidades de interés (Opcional)</label>
                                 <i className='bx bx-game input-icon'></i>
                             </div>
 
                             <div className="input-group">
-                                <textarea name="description" required placeholder=" " rows="3" value={formData.description} onChange={handleInputChange}></textarea>
-                                <label>Cuentanos sobre tu marca y que buscas en el esports...</label>
+                                <textarea name="description" placeholder=" " rows="3" value={formData.description} onChange={handleInputChange} className={fe('description') ? 'input-error' : ''}></textarea>
+                                <label>Cuéntanos sobre tu marca y qué buscas en el esports...</label>
+                                {fe('description') && <small className="field-error">{fe('description')}</small>}
                             </div>
 
                             <div className="form-actions">
@@ -171,12 +203,12 @@ const SponsorPage = () => {
                     <RoleApplicationVisual
                         iconClass="bx bx-dollar-circle"
                         title="Impulsa marcas dentro del esports"
-                        description="Presenta tu marca con una vista mas sólida y corporativa para conectar con torneos, comunidades y equipos."
+                        description="Presenta tu marca con una vista más sólida y corporativa para conectar con torneos, comunidades y equipos."
                         features={[
                             'Badge de Sponsor verificado',
                             'Dashboard de patrocinios',
                             'Visibilidad en torneos',
-                            'Conexion directa con equipos'
+                            'Conexión directa con equipos'
                         ]}
                     />
                 </div>

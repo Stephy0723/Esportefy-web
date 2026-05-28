@@ -214,7 +214,7 @@ const Chats = () => {
     setUploading(true);
     try {
       const fd = new FormData(); fd.append('file', file);
-      const res = await axios.post(`${CHAT_URL}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await axios.post(`${CHAT_URL}/upload`, fd);
       const { fileUrl, fileName, fileSize, fileMime, msgType } = res.data;
       sock.current?.emit('send_message', { conversationId: activeRef.current, senderId: myId, senderName: myUsername, content: '', msgType, fileUrl, fileName, fileSize, fileMime });
     } catch (_e) { setError('Error subiendo archivo.'); }

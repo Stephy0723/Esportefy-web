@@ -1202,9 +1202,60 @@ const CreateTournament = () => {
       data,
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        "Content-Type": "multipart/form-data",
       },
     });
+  };
+
+  const saveLocalSimulation = async (e) => {
+    e.preventDefault();
+    setSubmitError("");
+    setFormErrors({});
+    setBackendIssues([]);
+
+    const errors = validateTournamentForm();
+    if (Object.keys(errors).length > 0) {
+      failSubmit("Simulación fallida: faltan campos obligatorios.", errors);
+      return;
+    }
+
+    const fileLog = [];
+    if (tournament.bannerFile) {
+      fileLog.push(`Banner: ${tournament.bannerFile.name} (${(tournament.bannerFile.size / 1024).toFixed(1)} KB, ${tournament.bannerFile.type})`);
+    }
+    if (tournament.rulesPdf) {
+      fileLog.push(`PDF: ${tournament.rulesPdf.name} (${(tournament.rulesPdf.size / 1024).toFixed(1)} KB, ${tournament.rulesPdf.type})`);
+    }
+    tournament.sponsors.forEach((s, i) => {
+      if (s.logoFile) {
+        fileLog.push(`Logo sponsor ${i + 1}: ${s.logoFile.name} (${(s.logoFile.size / 1024).toFixed(1)} KB)`);
+      }
+    });
+
+    setIsSubmitting(true);
+    try {
+      const fd = buildFormData(tournament);
+      console.group("[CT Simulación local] FormData que se enviaría al servidor:");
+      for (const [key, value] of fd.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File] ${value.name} — ${(value.size / 1024).toFixed(1)} KB — ${value.type}`);
+        } else {
+          console.log(`  ${key}:`, String(value).length > 200 ? String(value).slice(0, 200) + "…" : value);
+        }
+      }
+      if (fileLog.length > 0) {
+        console.log("[CT Simulación local] Archivos adjuntos detectados:", fileLog);
+      } else {
+        console.log("[CT Simulación local] Sin archivos adjuntos.");
+      }
+      console.groupEnd();
+      saveTournamentToLocal(tournament);
+      setIsPublished(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      failSubmit(error?.message || "Error en la simulación local.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const createMlbbDemoNow = async () => {
@@ -1217,7 +1268,7 @@ const CreateTournament = () => {
       setIsPublished(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      alert(error?.message || "No fue posible crear el torneo demo local.");
+      failSubmit(error?.message || "No fue posible crear el torneo demo local.");
     }
   };
 
@@ -1362,8 +1413,9 @@ const CreateTournament = () => {
 
     if (isMlbbTournament) {
       if (!TOURNAMENT_OPERATIONAL_FORMAT_VALUES.includes(tournament.format)) {
-        alert(
+        failSubmit(
           "En MLBB solo se permiten formatos operativos: eliminación directa, suizo o round robin.",
+          { format: "Selecciona Eliminación Directa, Sistema Suizo o Round Robin para torneos MLBB." },
         );
         return;
       }
@@ -1374,7 +1426,10 @@ const CreateTournament = () => {
           .trim()
           .toLowerCase() !== "gratis"
       ) {
-        alert("En beta de MLBB solo se permiten torneos gratuitos.");
+        failSubmit(
+          "En beta de MLBB solo se permiten torneos gratuitos.",
+          { entryFee: "Establece la entrada como 'Gratis' para crear un torneo MLBB durante el período beta." },
+        );
         return;
       }
 
@@ -2852,6 +2907,17 @@ const CreateTournament = () => {
               onClick={() => navigate("/tournaments")}
             >
               Cancelar
+            </button>
+          )}
+          {!isEditMode && (
+            <button
+              type="button"
+              className="ct-btn ct-btn-outline"
+              onClick={saveLocalSimulation}
+              disabled={isSubmitting}
+              title="Valida el formulario y guarda localmente sin tocar el servidor. Abre la consola del navegador para ver los archivos adjuntos detectados."
+            >
+              {isSubmitting ? "Simulando..." : "Simular localmente"}
             </button>
           )}
           <button

@@ -964,7 +964,7 @@ useEffect(() => {
     }
   };
 
-  const removeRegistration = async (torneo, registrationId) => {
+  const executeRemoveRegistration = async (torneo, registrationId) => {
     try {
       const token = getAuthToken();
       await axios.delete(
@@ -977,6 +977,15 @@ useEffect(() => {
     } catch (err) {
       notify('danger', 'Error', err.response?.data?.message || 'No se pudo remover el equipo.');
     }
+  };
+
+  const removeRegistration = (torneo, registrationId) => {
+    const reg = torneo?.registrations?.find((r) => String(r._id) === String(registrationId));
+    const label = reg?.teamName || 'este equipo';
+    setConfirmModal({
+      message: `¿Quitar a "${label}" del torneo? Esta acción no se puede deshacer.`,
+      onConfirm: () => { setConfirmModal(null); executeRemoveRegistration(torneo, registrationId); }
+    });
   };
 
   const confirmStatusMessages = {
@@ -1881,14 +1890,14 @@ useEffect(() => {
                   disabled={!teamARefId || teamARefId === teamBRefId}
                   onClick={() => submitMatchResult(selectedTournament, match, teamARefId)}
                 >
-                  Reportar: {teamAName}
+                  Ganó: {teamAName}
                 </button>
                 <button
                   className="match-action-btn"
                   disabled={!teamBRefId || teamARefId === teamBRefId}
                   onClick={() => submitMatchResult(selectedTournament, match, teamBRefId)}
                 >
-                  Reportar: {teamBName}
+                  Ganó: {teamBName}
                 </button>
               </>
             )}
@@ -2256,7 +2265,7 @@ useEffect(() => {
 
                                         {showBracketPreview && (
                                             <div className="bracket-scale-controls">
-                                                <span className="scale-label">Tamano</span>
+                                                <span className="scale-label">Tamaño</span>
                                                 <button
                                                     type="button"
                                                     className="btn-secondary"
