@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useLang } from '../../../../context/LanguageContext';
 import { API_URL } from '../../../../config/api';
 import { getAuthToken } from '../../../../utils/authSession';
 import {
@@ -475,7 +476,7 @@ const SupportPage = () => {
                             </div>
                             <div className="sp-row">
                                 <div className="sp-field"><label><FaMedal /> Nombre del Torneo</label><input type="text" placeholder="Ej: Copa Nacional MLBB 2025" value={achievementData.tournamentName} onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentName: e.target.value }))} disabled={isSubmitting} required /></div>
-                                <div className="sp-field sp-field--sm"><label><FaCalendarAlt /> Fecha</label><input type="date" value={achievementData.tournamentDate} onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentDate: e.target.value }))} disabled={isSubmitting} required /></div>
+                                <div className="sp-field sp-field--sm"><label><FaCalendarAlt /> Fecha</label><input type="date" value={achievementData.tournamentDate} onChange={(e) => setAchievementData(prev => ({ ...prev, tournamentDate: e.target.value }))} disabled={isSubmitting} required max={new Date().toISOString().split('T')[0]} /></div>
                             </div>
                             <div className="sp-row">
                                 <div className="sp-field sp-field--sm">

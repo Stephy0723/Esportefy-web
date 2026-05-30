@@ -3,11 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import {
   TournamentAdminShell,
   STATUS_LABELS,
   useTournamentAdminData,
 } from './TournamentAdminShared';
+import { getTournamentFormatLabel } from '../../../../../../shared/tournamentCatalog.js';
 import './TournamentAdmin.css';
 
 const STATUS_FLOW = {
@@ -89,6 +91,7 @@ const TournamentManagePage = () => {
   const { code } = useParams();
   const navigate = useNavigate();
   const { addToast } = useNotification();
+  const { t } = useLang();
   const {
     loading,
     tournament,
@@ -172,7 +175,7 @@ const TournamentManagePage = () => {
     [registrations]
   );
 
-  if (loading) return <div className="ta-page"><div className="ta-empty">Cargando...</div></div>;
+  if (loading) return <div className="ta-page"><div className="ta-empty">{t('loading')}</div></div>;
   if (!tournament) return <div className="ta-page"><div className="ta-empty">No se encontro el torneo.</div></div>;
 
   const currentStatus = tournament.status || 'draft';
@@ -348,11 +351,11 @@ const TournamentManagePage = () => {
               </strong>
             </div>
             <div>
-              <span>Equipos</span>
+              <span>{t('participants')}</span>
               <strong>{approvedCount}/{tournament.maxSlots || 0} aprobados</strong>
             </div>
             <div>
-              <span>Bracket</span>
+              <span>{t('bracket')}</span>
               <strong>{hasBracket ? `${tournament.bracket.rounds.length} rondas` : 'No generado'}</strong>
             </div>
             <div>
@@ -360,8 +363,8 @@ const TournamentManagePage = () => {
               <strong>{tournament.date ? new Date(tournament.date).toLocaleDateString('es-DO') : '-'}</strong>
             </div>
             <div>
-              <span>Formato</span>
-              <strong>{tournament.format || tournament.bracket?.format || '-'}</strong>
+              <span>{t('format')}</span>
+              <strong>{getTournamentFormatLabel(tournament.format || tournament.bracket?.format) || '-'}</strong>
             </div>
           </div>
 
@@ -402,7 +405,7 @@ const TournamentManagePage = () => {
             <h3>Herramientas</h3>
             <div className="ta-shortcuts">
               <button onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/bracket`)}>
-                <i className="bx bx-sitemap" /> Bracket
+                <i className="bx bx-sitemap" /> {t('bracket')}
               </button>
               <button onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/matches`)}>
                 <i className="bx bx-trophy" /> Partidas
@@ -427,7 +430,7 @@ const TournamentManagePage = () => {
                 <h3>Pagina publica</h3>
               </div>
               <div className="ta-actions">
-                <button onClick={savePublicSettings}>Guardar</button>
+                <button onClick={savePublicSettings}>{t('save')}</button>
               </div>
             </div>
 
@@ -452,13 +455,13 @@ const TournamentManagePage = () => {
 
             <div className="ta-toggles">
               {[
-                ['showPrize', 'Premios'],
+                ['showPrize', t('prize')],
                 ['showSponsors', 'Sponsors'],
                 ['showRules', 'Reglamento'],
                 ['showSchedule', 'Horario'],
                 ['showContact', 'Contacto'],
-                ['showTeams', 'Equipos'],
-                ['showBracket', 'Bracket'],
+                ['showTeams', t('participants')],
+                ['showBracket', t('bracket')],
               ].map(([key, label]) => (
                 <label key={key} className="ta-toggle">
                   <input
@@ -507,7 +510,7 @@ const TournamentManagePage = () => {
             <div className="ta-confirm-icon"><i className='bx bx-error-circle'></i></div>
             <p className="ta-confirm-msg">{confirmModal.message}</p>
             <div className="ta-confirm-actions">
-              <button className="ta-confirm-btn ta-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className="ta-confirm-btn ta-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>{t('cancel')}</button>
               <button className="ta-confirm-btn ta-confirm-btn--confirm" onClick={confirmModal.onConfirm}>Confirmar</button>
             </div>
           </div>

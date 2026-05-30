@@ -12,6 +12,7 @@ import axios from 'axios';
 import { withCsrfHeaders } from '../../../../utils/csrf';
 import { useNotification } from '../../../../context/NotificationContext';
 import { useAuth } from '../../../../context/AuthContext';
+import { useLang } from '../../../../context/LanguageContext';
 import { API_URL } from '../../../../config/api';
 import { resolveMediaUrl } from '../../../../utils/media';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
@@ -83,6 +84,7 @@ const CreateTeamPage = () => {
     const location = useLocation();
     const { addToast } = useNotification();
     const { user: authUser } = useAuth();
+    const { t } = useLang();
     const presetTeamLevel = useMemo(() => {
         const params = new URLSearchParams(location.search || '');
         const raw = String(params.get('teamLevel') || '').trim().toLowerCase();
@@ -905,8 +907,6 @@ const CreateTeamPage = () => {
         const roles = getSupportedGameRoles(formData.game);
         return roles?.[index] || roles?.[0] || `Player ${index + 1}`;
     };
-    const startersLabel = Number(formData.maxMembers || 0) === 1 ? 'Titular principal' : 'Titulares';
-    const substitutesLabel = Number(formData.maxSubstitutes || 0) === 1 ? 'Suplente' : 'Suplentes';
     const staffLabel = selectedGamePlaybook?.team?.staffLabel || 'Staff / Coach';
 
     const isRosterSlotLocked = (type) => isManualRosterRestricted && type !== 'coach';
@@ -938,7 +938,7 @@ const CreateTeamPage = () => {
             <div className="form-wrapper">
                 
                 <div className="form-header-modern">
-                    <h1>{step === 3 ? "¡Misión Cumplida!" : "Registro de Escuadra"}</h1>
+                    <h1>{step === 3 ? "¡Misión Cumplida!" : t('createTeamTitle')}</h1>
                 </div>
 
                 {/* Step Indicator */}
@@ -975,7 +975,7 @@ const CreateTeamPage = () => {
                                 <input 
                                     type="text" 
                                     className="input-hero" 
-                                    placeholder="Nombre del Equipo" 
+                                    placeholder={t('createTeamName')}
                                     value={formData.name} 
                                     onChange={e => setFormData({...formData, name: e.target.value})} 
                                 />
@@ -997,7 +997,7 @@ const CreateTeamPage = () => {
                             
                             <div className="split-row">
                                 <div className="form-group">
-                                    <label className="section-label"><FaVenusMars/> Composición (Género)</label>
+                                    <label className="section-label"><FaVenusMars/> {t('gender')}</label>
                                     <select className="select-modern" value={formData.teamGender} onChange={e => setFormData({...formData, teamGender: e.target.value})}>
                                         {TEAM_GENDER_OPTIONS.map((option) => (
                                             <option key={option.id} value={option.id}>{option.label}</option>
@@ -1005,7 +1005,7 @@ const CreateTeamPage = () => {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="section-label"><FaMapMarkerAlt/> País / Región Base</label>
+                                    <label className="section-label"><FaMapMarkerAlt/> {t('teamFieldCountry')}</label>
                                     <input
                                         type="text"
                                         list="team-country-options"
@@ -1024,7 +1024,7 @@ const CreateTeamPage = () => {
 
                             <div className="split-row">
                                 <div className="form-group">
-                                    <label className="section-label"><FaTrophy/> Nivel / Tipo de Equipo</label>
+                                    <label className="section-label"><FaTrophy/> {t('createTeamLevel')}</label>
                                     <select className="select-modern" value={formData.teamLevel} onChange={e => setFormData({...formData, teamLevel: e.target.value})}>
                                         {TEAM_LEVEL_OPTIONS.map((option) => (
                                             <option key={option.id} value={option.id}>{option.label}</option>
@@ -1044,7 +1044,7 @@ const CreateTeamPage = () => {
                                     )}
                                 </div>
                                 <div className="form-group">
-                                    <label className="section-label"><FaLanguage/> Idioma Principal</label>
+                                    <label className="section-label"><FaLanguage/> {t('language')}</label>
                                     <input
                                         type="text"
                                         list="team-language-options"
@@ -1108,7 +1108,7 @@ const CreateTeamPage = () => {
                             </h3>
                             <div className="split-row">
                                 <div className="form-group">
-                                    <label className="section-label">Categoría</label>
+                                    <label className="section-label">{t('createTeamCategory')}</label>
                                     <select
                                         className="select-modern"
                                         onChange={e => {
@@ -1122,7 +1122,7 @@ const CreateTeamPage = () => {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="section-label">Juego</label>
+                                    <label className="section-label">{t('createTeamGame')}</label>
                                     <select className="select-modern" onChange={handleGameChange} disabled={!selectedCategory} value={formData.game}>
                                         <option value="">{selectedCategory ? 'Selecciona Título' : '---'}</option>
                                         {selectedCategory && Object.keys(esportsCatalog[selectedCategory]).map(g => <option key={g} value={g}>{g}</option>)}
@@ -1293,7 +1293,7 @@ const CreateTeamPage = () => {
                         </div>
 
                         <div className="form-footer-sticky">
-                            <button className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
+                            <button className="btn-ghost" onClick={() => navigate(-1)}>{t('cancel')}</button>
                             <button 
                                 className="btn-primary-glow" 
                                 disabled={Boolean(getCaptainStepValidationError())}
@@ -1306,7 +1306,7 @@ const CreateTeamPage = () => {
                                     setStep(2);
                                 }}
                             >
-                                Siguiente: Roster
+                                {t('next')}: Roster
                             </button>
                         </div>
                     </div>
@@ -1360,7 +1360,7 @@ const CreateTeamPage = () => {
 
                         {/* Titulares */}
                         <div className="roles-section">
-                            <label className="section-label">{startersLabel}</label>
+                            <label className="section-label">{Number(formData.maxMembers || 0) === 1 ? 'Titular principal' : t('rosterStarters')}</label>
                             <div className="circles-grid">
                                 {roster.starters.map((slot, idx) => {
                                     const isLocked = isRosterSlotLocked('starters') || isCaptainRoleReserved('starters', idx);
@@ -1403,7 +1403,7 @@ const CreateTeamPage = () => {
                         {/* Suplentes */}
                         {formData.maxSubstitutes > 0 && (
                             <div className="roles-section">
-                                <label className="section-label">{substitutesLabel}</label>
+                                <label className="section-label">{Number(formData.maxSubstitutes || 0) === 1 ? 'Suplente' : t('rosterSubs')}</label>
                                 <div className="circles-grid">
                                     {roster.subs.map((slot, idx) => (
                                         <div
@@ -1423,7 +1423,7 @@ const CreateTeamPage = () => {
                                                     isRosterSlotLocked('subs') ? <FaLock /> : <FaPlus />
                                                 )}
                                             </div>
-                                            <span className="role-label-text">Suplente {idx+1}</span>
+                                            <span className="role-label-text">{t('rosterSubs')} {idx+1}</span>
                                             {(isMlbbGameSelected || isUniversityTeamSelected) && (
                                                 <span className="role-slot-hint">Se une después</span>
                                             )}
@@ -1453,9 +1453,9 @@ const CreateTeamPage = () => {
                         </div>
 
                         <div className="form-footer-sticky">
-                            <button className="btn-ghost" onClick={() => setStep(1)}><FaArrowLeft /> Datos</button>
+                            <button className="btn-ghost" onClick={() => setStep(1)}><FaArrowLeft /> {t('back')}</button>
                             <button className="btn-primary-glow" onClick={finalizeCreation} disabled={submitting || (isUniversityTeamSelected && !currentUserUniversityVerified)}>
-                                {submitting ? "Registrando..." : (isMlbbGameSelected || isUniversityTeamSelected) ? "Crear Equipo y Generar Código" : "Confirmar Equipo"}
+                                {submitting ? t('createTeamCreating') : (isMlbbGameSelected || isUniversityTeamSelected) ? `${t('createTeamCreate')} y Generar Código` : t('createTeamCreate')}
                             </button>
                         </div>
                     </div>
@@ -1509,7 +1509,7 @@ const CreateTeamPage = () => {
                                 </div>
 
                                 <div className="link-section-styled">
-                                    <label className="sub-label">Código de Invitación</label>
+                                    <label className="sub-label">{t('teamFieldInviteCode')}</label>
                                     <div className="code-action-box-pro">
                                         <div className="code-text-mask">{inviteCode || '---'}</div>
                                         <button ref={copyCodeBtnRef} onClick={copyCode} title="Copiar código" disabled={!inviteCode}>
@@ -1548,7 +1548,7 @@ const CreateTeamPage = () => {
                                         <div className="player-row-pro fade-in-item">
                                             <div className="player-info-pro">
                                                 <div className="player-texts">
-                                                    <span className="p-name-pro">Cargando amigos...</span>
+                                                    <span className="p-name-pro">{t('loading')}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1651,8 +1651,8 @@ const CreateTeamPage = () => {
                         </h3>
                         
                         <label className="section-label">Nickname</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             placeholder="Ej: S1mple"
                             value={slotData.nickname} 
                             onChange={(e) => setSlotData({...slotData, nickname: e.target.value})} 
@@ -1734,8 +1734,8 @@ const CreateTeamPage = () => {
                         )}
 
                         <div className="modal-buttons">
-                            <button className="btn-ghost" onClick={() => setModalOpen(false)}>Cancelar</button>
-                            <button className="btn-primary-glow" onClick={saveSlot}>Guardar Slot</button>
+                            <button className="btn-ghost" onClick={() => setModalOpen(false)}>{t('cancel')}</button>
+                            <button className="btn-primary-glow" onClick={saveSlot}>{t('save')}</button>
                         </div>
                     </div>
                 </div>

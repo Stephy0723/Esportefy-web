@@ -10,7 +10,7 @@ import {
 
 describe('tournament catalog normalization', () => {
     it('normalizes tournament formats to canonical keys', () => {
-        expect(normalizeTournamentFormat('Doble Eliminacion')).toBe('double_elimination');
+        expect(normalizeTournamentFormat('Doble Eliminacion')).toBe('Doble Eliminación');
         expect(normalizeTournamentFormat('Sistema Suizo')).toBe('swiss');
         expect(normalizeTournamentFormat('todos contra todos')).toBe('round_robin');
         expect(getTournamentFormatLabel('single_elimination')).toBe('Eliminación Directa');

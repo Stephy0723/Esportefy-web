@@ -3,36 +3,36 @@ import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { useTheme, THEMES } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLang } from '../../context/LanguageContext';
 import { getStoredUser } from '../../utils/authSession';
 import { resolveMediaUrl } from '../../utils/media';
-import { STATUS_LIST } from '../../data/defaultAvatars';
 
 
 import logoWhite from '../../assets/Logo/logo-white.png';
 import logoBlack from '../../assets/Logo/logo-black.png';
 
-/* ─── Definición de rutas del menú ─── */
+/* ─── Definición de rutas del menú (usa claves de traducción) ─── */
 const MAIN_LINKS = [
-  { to: '/dashboard', icon: 'bx-grid-alt', label: 'Dashboard' },
-  { to: '/torneos', icon: 'bx-trophy', label: 'Torneos' },
-  { to: '/equipos', icon: 'bx-group', label: 'Equipos' },
-  { to: '/tv', icon: 'bx-movie-play', label: 'GLITCH GANG TV' },
+  { to: '/dashboard', icon: 'bx-grid-alt', key: 'dashboard' },
+  { to: '/torneos', icon: 'bx-trophy', key: 'tournaments' },
+  { to: '/equipos', icon: 'bx-group', key: 'teams' },
+  { to: '/tv', icon: 'bx-movie-play', key: 'tv' },
 ];
 
 const MOBILE_EXTRA_LINKS = [
-  { to: '/profile', icon: 'bx-user', label: 'Mi Perfil' },
-  { to: '/notifications', icon: 'bx-bell', label: 'Notificaciones' },
+  { to: '/profile', icon: 'bx-user', key: 'profile' },
+  { to: '/notifications', icon: 'bx-bell', key: 'notifications' },
 ];
 
 const EXTRA_LINKS = [
-  { to: '/comunidad', icon: 'bx-world', label: 'Comunidad', section: 'SOCIAL' },
-  { to: '/friends', icon: 'bx-user-plus', label: 'Amigos' },
-  { to: '/chats', icon: 'bx-chat', label: 'Chats' },
-  { to: '/noticias', icon: 'bx-news', label: 'Noticias' },
-  { to: '/profile', icon: 'bx-user', label: 'Mi Perfil', section: 'PERSONAL' },
-  { to: '/notifications', icon: 'bx-bell', label: 'Notificaciones' },
-  { to: '/settings', icon: 'bx-cog', label: 'Ajustes', section: 'CONFIG' },
-  { to: '/glitchgang', icon: 'bx-info-circle', label: 'GLITCH GANG', section: 'MARCA' },
+  { to: '/comunidad', icon: 'bx-world', key: 'community', section: 'social' },
+  { to: '/friends', icon: 'bx-user-plus', key: 'friends' },
+  { to: '/chats', icon: 'bx-chat', key: 'messages' },
+  { to: '/noticias', icon: 'bx-news', key: 'news' },
+  { to: '/profile', icon: 'bx-user', key: 'profile', section: 'personal' },
+  { to: '/notifications', icon: 'bx-bell', key: 'notifications' },
+  { to: '/settings', icon: 'bx-cog', key: 'settings', section: 'config' },
+  { to: '/glitchgang', icon: 'bx-info-circle', key: 'glitchgang', section: 'brand' },
 ];
 
 const SOCIALS = [
@@ -45,6 +45,7 @@ const SOCIALS = [
 const Sidebar = ({ isClosed, setIsClosed }) => {
   const { theme, setTheme, isDarkMode } = useTheme();
   const { logout } = useAuth();
+  const { t } = useLang();
   const location = useLocation();
   const [expanded, setExpanded] = useState(false);
   const [user, setUser] = useState(null);
@@ -83,17 +84,20 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   /* ─── Render de un link individual ─── */
-  const renderLink = ({ to, icon, label }) => (
-    <li key={to} className={`sb-item ${isActive(to) ? 'sb-active' : ''}`}>
-      <Link to={to} data-tooltip={label}>
-        <div className="sb-icon-wrap">
-          <i className={`bx ${icon}`} />
-          {isActive(to) && <span className="sb-active-dot" />}
-        </div>
-        <span className="sb-label">{label}</span>
-      </Link>
-    </li>
-  );
+  const renderLink = ({ to, icon, key }) => {
+    const label = t(key);
+    return (
+      <li key={to} className={`sb-item ${isActive(to) ? 'sb-active' : ''}`}>
+        <Link to={to} data-tooltip={label}>
+          <div className="sb-icon-wrap">
+            <i className={`bx ${icon}`} />
+            {isActive(to) && <span className="sb-active-dot" />}
+          </div>
+          <span className="sb-label">{label}</span>
+        </Link>
+      </li>
+    );
+  };
 
 
   return (
@@ -131,10 +135,10 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
         {/* ═══════════ MENÚ PRINCIPAL ═══════════ */}
         <div className="sb-scroll-area">
           <div className="sb-section">
-            {!isClosed && <p className="sb-section-title">MENÚ</p>}
+            {!isClosed && <p className="sb-section-title">{t('menu')}</p>}
             <ul className="sb-list">
               {MAIN_LINKS.map(renderLink)}
-              {user?.isAdmin && renderLink({ to: '/admin', icon: 'bx-shield-quarter', label: 'Admin' })}
+              {user?.isAdmin && renderLink({ to: '/admin', icon: 'bx-shield-quarter', key: 'admin' })}
             </ul>
             <ul className="sb-list sb-mobile-only">
               {MOBILE_EXTRA_LINKS.map(renderLink)}
@@ -149,7 +153,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
             <i className={`bx bx-chevron-${expanded ? 'up' : 'down'} sb-expand-icon`} />
             {!isClosed && (
               <span className="sb-expand-text">
-                {expanded ? 'Menos' : 'Más'}
+                {expanded ? t('less') : t('more')}
               </span>
             )}
           </button>
@@ -165,7 +169,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
                   return (
                     <React.Fragment key={link.to}>
                       {showHeader && !isClosed && (
-                        <p className="sb-section-title">{link.section}</p>
+                        <p className="sb-section-title">{t(link.section)}</p>
                       )}
                       <ul className="sb-list">{renderLink(link)}</ul>
                     </React.Fragment>
@@ -176,7 +180,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
               {/* Redes sociales */}
               {!isClosed && (
                 <div className="sb-socials">
-                  <p className="sb-section-title">SÍGUENOS</p>
+                  <p className="sb-section-title">{t('followUs')}</p>
                   <div className="sb-socials-row">
                     {SOCIALS.map((s) => (
                       <a
@@ -213,9 +217,9 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
               </div>
               {!isClosed && (
                 <div className="sb-profile__info">
-                  <span className="sb-profile__name">{user.username || user.name || 'Jugador'}</span>
+                  <span className="sb-profile__name">{user.username || user.name || t('player')}</span>
                   <span className={`sb-profile__role sb-profile__role--${user.status || 'online'}`}>
-                    {STATUS_LIST.find(s => s.id === (user.status || 'online'))?.label || 'En Línea'}
+                    {t(`status_${user.status || 'online'}`)}
                   </span>
                 </div>
               )}
@@ -226,7 +230,7 @@ const Sidebar = ({ isClosed, setIsClosed }) => {
           {user && (
             <button type="button" className="sb-logout" onClick={handleLogout}>
               <i className="bx bx-log-out" />
-              <span className="sb-label">Cerrar Sesión</span>
+              <span className="sb-label">{t('logout')}</span>
             </button>
           )}
 

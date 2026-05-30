@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import { useTheme } from '../../context/ThemeContext';
 import { normalizeCommunityGameId } from '../../../../shared/communityCatalog.js';
+import { getTournamentFormatLabel } from '../../../../shared/tournamentCatalog.js';
 import { fetchGameHubDetails, formatGameHubCount, joinGameHub } from '../menu/Community/gameHub.service';
 import { decorateCommunityGame } from '../menu/Community/communityGameAssets';
 import './CommunityGamePageTemplate.css';
@@ -229,7 +230,7 @@ const CommunityGamePageTemplate = () => {
                   <div className="gh-item__detail">
                     <span><FaTrophy /> {formatPrize(tournament.prizePool, tournament.currency)}</span>
                     <span><FaUsers /> {tournament.registeredTeams}/{tournament.maxSlots}</span>
-                    <span><FaShieldAlt /> {tournament.format || 'Open'}</span>
+                    <span><FaShieldAlt /> {getTournamentFormatLabel(tournament.format) || 'Open'}</span>
                   </div>
                   {tournament.organizer?.username && (
                     <p className="gh-muted gh-small">Org: {tournament.organizer.username}</p>

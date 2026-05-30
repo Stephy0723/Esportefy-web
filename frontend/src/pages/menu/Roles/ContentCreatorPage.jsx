@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import axios from 'axios';
 import PageHud from '../../../components/PageHud/PageHud';
 import { API_URL } from '../../../config/api';
 import { getAuthToken } from '../../../utils/authSession';
+import { SUPPORTED_GAME_NAMES } from '../../../../../shared/supportedGames.js';
 import RoleApplicationVisual from './RoleApplicationVisual';
 import RoleApplicantIdentitySection from './RoleApplicantIdentitySection';
 import '../Tournaments/OrganizerApplication/OrganizerApplication.css';
@@ -16,13 +19,15 @@ const REQUIRED = {
     channelUrl: 'URL del Canal',
     followers: 'Seguidores / Suscriptores',
     contentType: 'Tipo de Contenido',
-    games: 'Juegos principales',
     description: 'Descripción',
 };
 
 const ContentCreatorPage = () => {
     const navigate = useNavigate();
     const { notify } = useNotification();
+    const { user } = useAuth();
+    const { t } = useLang();
+    const prefilled = useRef(false);
     const [loading, setLoading] = useState(false);
     const [formErrors, setFormErrors] = useState({});
     const [submitError, setSubmitError] = useState('');
@@ -30,13 +35,28 @@ const ContentCreatorPage = () => {
     const [file, setFile] = useState(null);
     const [formData, setFormData] = useState({
         fullName: '', idNumber: '', mainPlatform: '', channelUrl: '',
-        followers: '', contentType: '', games: '', description: ''
+        followers: '', contentType: '', description: ''
     });
+    const [selectedGames, setSelectedGames] = useState([]);
+
+    useEffect(() => {
+        if (user && !prefilled.current) {
+            prefilled.current = true;
+            setFormData(prev => ({ ...prev, fullName: prev.fullName || user.fullName || '' }));
+        }
+    }, [user]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
+    };
+
+    const handleGameToggle = (game) => {
+        setSelectedGames(prev =>
+            prev.includes(game) ? prev.filter(g => g !== game) : [...prev, game]
+        );
+        if (formErrors.games) setFormErrors(prev => ({ ...prev, games: '' }));
     };
 
     const handleFileChange = (e) => {
@@ -52,6 +72,7 @@ const ContentCreatorPage = () => {
         Object.entries(REQUIRED).forEach(([key, label]) => {
             if (!String(formData[key] || '').trim()) errors[key] = `${label} es obligatorio.`;
         });
+        if (!selectedGames.length) errors.games = 'Selecciona al menos un juego principal que cubres.';
         if (!file) errors.document = 'Debes subir una foto de tu documento de identidad.';
         return errors;
     };
@@ -72,11 +93,12 @@ const ContentCreatorPage = () => {
             const data = new FormData();
             data.append('role', 'content-creator');
             data.append('document', file);
+            data.append('games', selectedGames.join(', '));
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
             await axios.post(`${API_URL}/api/auth/apply-role`, data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            notify('success', 'Solicitud enviada', 'Tu solicitud de Creador de Contenido fue enviada y quedó pendiente de confirmación.');
+            notify('success', t('roleApplySuccess'), 'Tu solicitud de Creador de Contenido fue enviada y quedó pendiente de confirmación.');
             navigate('/profile');
         } catch (err) {
             notify('error', 'Error', err.response?.data?.message || 'No se pudo enviar la solicitud.');
@@ -121,6 +143,7 @@ const ContentCreatorPage = () => {
                                 fileName={fileName}
                                 documentInputId="content-creator-doc-upload"
                                 errors={formErrors}
+                                prefilledFullName={!!(user?.fullName)}
                             />
 
                             <h4 className="section-title">Plataforma Principal</h4>
@@ -171,9 +194,19 @@ const ContentCreatorPage = () => {
                             </div>
 
                             <div className="input-group">
-                                <input type="text" name="games" placeholder=" " value={formData.games} onChange={handleInputChange} className={fe('games') ? 'input-error' : ''} />
-                                <label>Juegos principales que cubres</label>
-                                <i className='bx bx-game input-icon'></i>
+                                <label className="static-label">Juegos principales que cubres <span style={{color:'#ef4444'}}>*</span></label>
+                                <div className={`games-chip-grid${fe('games') ? ' chip-error' : ''}`}>
+                                    {SUPPORTED_GAME_NAMES.map(game => (
+                                        <button
+                                            key={game}
+                                            type="button"
+                                            className={`game-chip-btn${selectedGames.includes(game) ? ' selected' : ''}`}
+                                            onClick={() => handleGameToggle(game)}
+                                        >
+                                            {game}
+                                        </button>
+                                    ))}
+                                </div>
                                 {fe('games') && <small className="field-error">{fe('games')}</small>}
                             </div>
 
@@ -184,9 +217,9 @@ const ContentCreatorPage = () => {
                             </div>
 
                             <div className="form-actions">
-                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
+                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>{t('cancel')}</button>
                                 <button type="submit" className="btn-neon green" disabled={loading}>
-                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : 'Enviar Solicitud'}
+                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : t('roleApplySubmit')}
                                 </button>
                             </div>
                         </form>

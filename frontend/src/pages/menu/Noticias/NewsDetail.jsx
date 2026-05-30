@@ -10,6 +10,7 @@ import {
 import PageHud from '../../../components/PageHud/PageHud';
 import { ORGANISM_PATHS } from '../../../data/esportsOrganismsData';
 import { DEFAULT_NEWS_COMPANY, fetchNewsFeed, fetchNewsById } from '../../../utils/customNews';
+import { useLang } from '../../../context/LanguageContext';
 import './NewsDetail.css';
 
 // Format date
@@ -71,6 +72,7 @@ const Bubbles = () => {
 
 export default function NewsDetail() {
     const { id } = useParams();
+    const { t } = useLang();
     const [newsItems, setNewsItems] = useState([]);
     const [news, setNews] = useState(null);
     const [isBookmarked, setIsBookmarked] = useState(false);
@@ -167,15 +169,15 @@ export default function NewsDetail() {
                 <div className="nd-ambient nd-ambient--2" />
                 <PageHud page="NOTICIAS" />
                 
-                <motion.div 
+                <motion.div
                     className="nd-missing"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <h1>Noticia no encontrada</h1>
-                    <p>La noticia que buscas no existe o fue removida del portal.</p>
+                    <h1>{t('newsEmpty')}</h1>
+                    <p>{t('newsEmptyDesc')}</p>
                     <Link to="/noticias" className="nd-back-btn">
-                        <FaArrowLeft /> Volver a Noticias
+                        <FaArrowLeft /> {t('back')}
                     </Link>
                 </motion.div>
             </div>
@@ -227,10 +229,10 @@ export default function NewsDetail() {
                     animate={{ opacity: 1, y: 0 }}
                 >
                     <Link to="/noticias" className="nd-back-btn">
-                        <FaArrowLeft /> Volver a Noticias
+                        <FaArrowLeft /> {t('back')}
                     </Link>
                     <div className="nd-topbar__meta">
-                        <span><FaRegClock /> {readMinutes} min lectura</span>
+                        <span><FaRegClock /> {readMinutes} min</span>
                         {publisherName && <span><FaShareAlt /> {publisherName}</span>}
                     </div>
                 </motion.div>
@@ -249,8 +251,8 @@ export default function NewsDetail() {
 
                     <div className="nd-hero__content">
                         <div className="nd-tags">
-                            {news.featured && <span className="nd-tag nd-tag--accent">Primicia</span>}
-                            {news.isNew && <span className="nd-tag nd-tag--fresh">Nuevo</span>}
+                            {news.featured && <span className="nd-tag nd-tag--accent">{t('newsFeatured')}</span>}
+                            {news.isNew && <span className="nd-tag nd-tag--fresh">{t('newsBreaking')}</span>}
                             <span className="nd-tag">{news.category}</span>
                             <span className="nd-tag">{news.game}</span>
                             {articleTags.map((tag) => (
@@ -307,8 +309,8 @@ export default function NewsDetail() {
                         <div className="nd-statgrid">
                             <div className="nd-statbox">
                                 <FaEye />
-                                <strong>{hasDisplayViews(news) ? formatCompact(news.views) : 'Nueva'}</strong>
-                                <span>{hasDisplayViews(news) ? 'audiencia' : 'estado'}</span>
+                                <strong>{hasDisplayViews(news) ? formatCompact(news.views) : t('newsBreaking')}</strong>
+                                <span>audiencia</span>
                             </div>
                             <div className="nd-statbox">
                                 <FaStar />
@@ -318,7 +320,7 @@ export default function NewsDetail() {
                             <div className="nd-statbox">
                                 <FaLayerGroup />
                                 <strong>{storyDetails.length}</strong>
-                                <span>claves</span>
+                                <span>{t('details')}</span>
                             </div>
                             <div className="nd-statbox">
                                 <FaChartLine />
@@ -341,7 +343,7 @@ export default function NewsDetail() {
                         >
                             <div className="nd-panel__head">
                                 <span><FaStar /></span>
-                                <h2>Lo esencial</h2>
+                                <h2>{t('newsLatest')}</h2>
                             </div>
                             <div className="nd-highlights">
                                 {highlightLines.map((item, idx) => (
@@ -367,8 +369,8 @@ export default function NewsDetail() {
                             transition={{ delay: 0.3 }}
                         >
                             <div className="nd-story__intro">
-                                <span className="nd-eyebrow">Análisis editorial</span>
-                                <h2>Contexto y desarrollo</h2>
+                                <span className="nd-eyebrow">{t('newsCategory')}</span>
+                                <h2>{t('details')}</h2>
                             </div>
 
                             <div className="nd-copy">
@@ -392,7 +394,7 @@ export default function NewsDetail() {
                         >
                             <div className="nd-panel__head">
                                 <span><FaGlobeAmericas /></span>
-                                <h2>Galería visual</h2>
+                                <h2>{t('explore')}</h2>
                             </div>
                             <div className="nd-gallery">
                                 {galleryItems.map((img, idx) => (
@@ -414,7 +416,7 @@ export default function NewsDetail() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
                         >
-                            <span>Compartir:</span>
+                            <span>{t('share')}:</span>
                             <div className="nd-share-bar__buttons">
                                 <button onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(news.title)}`, '_blank')}>
                                     <FaTwitter />
@@ -437,22 +439,22 @@ export default function NewsDetail() {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.3 }}
                         >
-                            <p className="nd-sidecard__label">Ficha</p>
+                            <p className="nd-sidecard__label">{t('information')}</p>
                             <div className="nd-sidecard__row">
-                                <span>Categoría</span>
+                                <span>{t('newsCategory')}</span>
                                 <strong>{news.category}</strong>
                             </div>
                             <div className="nd-sidecard__row">
-                                <span>Juego</span>
+                                <span>{t('game')}</span>
                                 <strong>{news.game}</strong>
                             </div>
                             <div className="nd-sidecard__row">
-                                <span>Publicado</span>
+                                <span>{t('date')}</span>
                                 <strong>{hasDisplayDate(news) ? formatDate(news.date) : getNewsBadgeLabel(news)}</strong>
                             </div>
                             {news.author && (
                                 <div className="nd-sidecard__row">
-                                    <span>Autor</span>
+                                    <span>{t('newsAuthor')}</span>
                                     <strong>{news.author}</strong>
                                 </div>
                             )}
@@ -480,7 +482,7 @@ export default function NewsDetail() {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.4 }}
                         >
-                            <p className="nd-sidecard__label">Cobertura relacionada</p>
+                            <p className="nd-sidecard__label">{t('newsTrending')}</p>
                             {relatedNews.length > 0 ? (
                                 <div className="nd-related">
                                     {relatedNews.map((item) => (
@@ -494,7 +496,7 @@ export default function NewsDetail() {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="nd-related__empty">Aun no hay mas coberturas relacionadas para esta publicacion.</p>
+                                <p className="nd-related__empty">{t('newsEmptyDesc')}</p>
                             )}
                         </motion.section>
                     </aside>

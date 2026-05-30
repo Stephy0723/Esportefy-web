@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { useLang } from '../../../context/LanguageContext';
 import { API_URL } from '../../../config/api';
 import { GAME_IMAGES } from '../../../data/gameImages';
 import {
@@ -63,6 +64,7 @@ const renderAchievementIcon = (achievement, className = '') => {
    MAIN COMPONENT
    ════════════════════════════════════════ */
 const Profile = () => {
+    const { t } = useLang();
     const [user, setUser] = useState(null);
     const [profileOverview, setProfileOverview] = useState(EMPTY_PROFILE_OVERVIEW);
     const [loading, setLoading] = useState(true);
@@ -224,7 +226,7 @@ const Profile = () => {
     if (loading) return (
         <div className="pf-loading">
             <div className="pf-loader"><span /><span /><span /></div>
-            <p>Cargando perfil...</p>
+            <p>{t('profileLoading')}</p>
         </div>
     );
     if (error) return <div className="pf-error">{error}</div>;
@@ -327,9 +329,9 @@ const Profile = () => {
                             <button onClick={() => setCommentMenu(showMenu ? null : c.id)}><i className='bx bx-dots-horizontal-rounded' /></button>
                             {showMenu && (
                                 <div className="pf-comment__menu">
-                                    <button onClick={() => shareComment(c)}><i className='bx bx-copy' /> Copiar</button>
-                                    {!c.user.isOwner && <button onClick={() => reportComment(c.id)}><i className='bx bx-error' /> Reportar</button>}
-                                    {c.user.isOwner && <button onClick={() => { deleteNestedComment(c.id); setCommentMenu(null); }}><i className='bx bx-trash' /> Eliminar</button>}
+                                    <button onClick={() => shareComment(c)}><i className='bx bx-copy' /> {t('copy')}</button>
+                                    {!c.user.isOwner && <button onClick={() => reportComment(c.id)}><i className='bx bx-error' /> {t('report')}</button>}
+                                    {c.user.isOwner && <button onClick={() => { deleteNestedComment(c.id); setCommentMenu(null); }}><i className='bx bx-trash' /> {t('delete')}</button>}
                                 </div>
                             )}
                         </div>
@@ -349,7 +351,7 @@ const Profile = () => {
                                     );
                                 })}
                             </div>
-                            <span className="pf-poll__total">{c.totalVotes} votos</span>
+                            <span className="pf-poll__total">{c.totalVotes} {t('votes')}</span>
                         </div>
                     ) : <p>{c.text}</p>}
                     <div className="pf-comment__actions">
@@ -357,7 +359,7 @@ const Profile = () => {
                             <i className={`bx ${c.liked ? 'bxs-heart' : 'bx-heart'}`} /> {c.likes}
                         </button>
                         <button onClick={() => setReplyingTo(isReplying ? null : c.id)}>
-                            <i className='bx bx-reply' /> Responder
+                            <i className='bx bx-reply' /> {t('reply')}
                         </button>
                     </div>
                     {isReplying && (
@@ -395,16 +397,16 @@ const Profile = () => {
                     {isOwnProfile ? (
                         <>
                             <button className="pf-btn pf-btn--primary" onClick={() => navigate('/edit-profile')}>
-                                <i className='bx bx-edit-alt' /> Editar Perfil
+                                <i className='bx bx-edit-alt' /> {t('btnEditProfile')}
                             </button>
                             <button className="pf-btn" onClick={handleShareProfile}>
-                                <i className={`bx ${copiedLink ? 'bx-check' : 'bx-share-alt'}`} /> {copiedLink ? 'Copiado' : 'Compartir'}
+                                <i className={`bx ${copiedLink ? 'bx-check' : 'bx-share-alt'}`} /> {copiedLink ? t('copied') : t('share')}
                             </button>
                         </>
                     ) : (
                         <>
-                            <button className="pf-btn pf-btn--primary"><i className='bx bx-user-plus' /> Seguir</button>
-                            <button className="pf-btn"><i className='bx bx-message-rounded' /> Mensaje</button>
+                            <button className="pf-btn pf-btn--primary"><i className='bx bx-user-plus' /> {t('btnFollow')}</button>
+                            <button className="pf-btn"><i className='bx bx-message-rounded' /> {t('btnMessage')}</button>
                         </>
                     )}
                 </div>
@@ -428,10 +430,10 @@ const Profile = () => {
                         <div className="pf-tags">
                             <span className="pf-tag"><i className='bx bx-joystick' /> Player</span>
                             {(user.roles || []).includes('organizer') || user.isOrganizer ? (
-                                <span className="pf-tag pf-tag--org pf-tag--clickable" onClick={() => navigate('/organizer-application')}><i className='bx bx-crown' /> Organizador</span>
+                                <span className="pf-tag pf-tag--org pf-tag--clickable" onClick={() => navigate('/organizer-application')}><i className='bx bx-crown' /> {t('roleOrganizer')}</span>
                             ) : null}
                             {(user.roles || []).includes('content-creator') && (
-                                <span className="pf-tag pf-tag--creator pf-tag--clickable" onClick={() => navigate('/role/content-creator')}><i className='bx bx-video' /> Creador</span>
+                                <span className="pf-tag pf-tag--creator pf-tag--clickable" onClick={() => navigate('/role/content-creator')}><i className='bx bx-video' /> {t('roleCreator')}</span>
                             )}
                             {(user.roles || []).includes('coach') && (
                                 <span className="pf-tag pf-tag--coach pf-tag--clickable" onClick={() => navigate('/role/coach')}><i className='bx bx-chalkboard' /> Coach</span>
@@ -440,7 +442,7 @@ const Profile = () => {
                                 <span className="pf-tag pf-tag--caster pf-tag--clickable" onClick={() => navigate('/role/caster')}><i className='bx bx-microphone' /> Caster</span>
                             )}
                             {(user.roles || []).includes('analyst') && (
-                                <span className="pf-tag pf-tag--analyst pf-tag--clickable" onClick={() => navigate('/role/analyst')}><i className='bx bx-line-chart' /> Analista</span>
+                                <span className="pf-tag pf-tag--analyst pf-tag--clickable" onClick={() => navigate('/role/analyst')}><i className='bx bx-line-chart' /> {t('roleAnalyst')}</span>
                             )}
                             {(user.roles || []).includes('sponsor') && (
                                 <span className="pf-tag pf-tag--sponsor pf-tag--clickable" onClick={() => navigate('/role/sponsor')}><i className='bx bx-dollar-circle' /> Sponsor</span>
@@ -457,12 +459,12 @@ const Profile = () => {
 
                     <div className="pf-progress-card">
                         <div className="pf-progress-card__top">
-                            <span className="pf-progress-card__eyebrow">Puntos de perfil</span>
+                            <span className="pf-progress-card__eyebrow">{t('profilePointsLabel')}</span>
                             <span className="pf-progress-card__level">{profileProgression.level.name}</span>
                         </div>
                         <div className="pf-progress-card__value">{profilePointsText}</div>
                         <div className="pf-progress-card__meta">
-                            <span>{profileProgression.unlockedAchievements}/{profileProgression.totalAchievements} logros</span>
+                            <span>{profileProgression.unlockedAchievements}/{profileProgression.totalAchievements} {t('achievementsLabel')}</span>
                             <span>
                                 {profileProgression.level.pointsNeeded > 0
                                     ? `${profileProgression.level.pointsNeeded} para ${profileProgression.level.nextLevelName}`
@@ -477,20 +479,20 @@ const Profile = () => {
                     <div className="pf-stats">
                         <div className="pf-stat pf-stat--main">
                             <span className="pf-stat__val">{overviewStats.winRate}<small>%</small></span>
-                            <span className="pf-stat__label">WIN RATE</span>
+                            <span className="pf-stat__label">{t('statWinRate')}</span>
                             <div className="pf-stat__bar"><div style={{ width: `${overviewStats.winRate}%` }} /></div>
                         </div>
                         <div className="pf-stat">
                             <span className="pf-stat__val">{overviewStats.wins}</span>
-                            <span className="pf-stat__label">WINS</span>
+                            <span className="pf-stat__label">{t('statWins')}</span>
                         </div>
                         <div className="pf-stat">
                             <span className="pf-stat__val">{overviewStats.tournamentsWon}</span>
-                            <span className="pf-stat__label">TORNEOS</span>
+                            <span className="pf-stat__label">{t('statTournaments')}</span>
                         </div>
                         <div className="pf-stat">
                             <span className="pf-stat__val">{overviewStats.teams || user.teams?.length || 0}</span>
-                            <span className="pf-stat__label">EQUIPOS</span>
+                            <span className="pf-stat__label">{t('sectionTeams')}</span>
                         </div>
                     </div>
 
@@ -515,8 +517,8 @@ const Profile = () => {
                     {/* Games */}
                     <section className="pf-card">
                         <div className="pf-card__header">
-                            <i className='bx bx-joystick' /> JUEGOS
-                            {normalizedGames.length > 4 && <button className="pf-card__more" onClick={() => setShowGamesModal(true)}>Ver todos <i className='bx bx-chevron-right' /></button>}
+                            <i className='bx bx-joystick' /> {t('sectionGames')}
+                            {normalizedGames.length > 4 && <button className="pf-card__more" onClick={() => setShowGamesModal(true)}>{t('viewAll')} <i className='bx bx-chevron-right' /></button>}
                         </div>
                         <div className="pf-games">
                             {normalizedGames.length > 0 ? normalizedGames.slice(0, 4).map((gameId, i) => (
@@ -532,20 +534,20 @@ const Profile = () => {
                                     </div>
                                     <i className='bx bx-link-external pf-game__link' />
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-joystick' /><p>Sin juegos</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-joystick' /><p>{t('emptyGames')}</p></div>}
                         </div>
                     </section>
 
                     {/* Connections */}
                     <section className="pf-card">
-                        <div className="pf-card__header"><i className='bx bx-link' /> CONEXIONES</div>
+                        <div className="pf-card__header"><i className='bx bx-link' /> {t('sectionConnections')}</div>
                         <div className="pf-connections">
                             {gamingConnections.map(conn => (
                                 <div key={conn.key} className={`pf-conn ${conn.connected ? 'pf-conn--active' : ''}`} style={{ '--c-color': conn.color }}>
                                     <i className={conn.icon} />
                                     <div className="pf-conn__info">
                                         <span>{conn.label}</span>
-                                        <span>{conn.connected ? conn.value : 'No vinculado'}</span>
+                                        <span>{conn.connected ? conn.value : t('emptyConnection')}</span>
                                     </div>
                                     {conn.connected && <i className='bx bx-check' />}
                                 </div>
@@ -556,7 +558,7 @@ const Profile = () => {
                     {/* Socials */}
                     {activeSocials.length > 0 && (
                         <section className="pf-card">
-                            <div className="pf-card__header"><i className='bx bx-globe' /> REDES</div>
+                            <div className="pf-card__header"><i className='bx bx-globe' /> {t('sectionSocials')}</div>
                             <div className="pf-socials">
                                 {activeSocials.map(s => (
                                     <a key={s.key} href={buildSocialUrl(s.key, user.socialLinks[s.key])} target="_blank" rel="noopener noreferrer" className="pf-social" style={{ '--c-color': s.color }}>
@@ -570,7 +572,7 @@ const Profile = () => {
                     {/* Teams */}
                     <section className="pf-card">
                         <div className="pf-card__header">
-                            <i className='bx bx-shield-quarter' /> EQUIPOS
+                            <i className='bx bx-shield-quarter' /> {t('sectionTeams')}
                             <span className="pf-card__count">{user.teams?.length || 0}</span>
                         </div>
                         {user.teams?.length > 0 ? (
@@ -582,21 +584,21 @@ const Profile = () => {
                                         <i className='bx bx-chevron-right' />
                                     </div>
                                 ))}
-                                {user.teams.length > 3 && <button className="pf-card__more" onClick={() => setShowTeamsModal(true)}>Ver todos <i className='bx bx-chevron-right' /></button>}
+                                {user.teams.length > 3 && <button className="pf-card__more" onClick={() => setShowTeamsModal(true)}>{t('viewAll')} <i className='bx bx-chevron-right' /></button>}
                             </div>
-                        ) : <div className="pf-empty"><i className='bx bx-shield-quarter' /><p>Sin equipos</p></div>}
+                        ) : <div className="pf-empty"><i className='bx bx-shield-quarter' /><p>{t('emptyTeams')}</p></div>}
                     </section>
 
                     {/* Recognitions */}
                     <section className="pf-card">
-                        <div className="pf-card__header"><i className='bx bx-medal' /> RECONOCIMIENTOS</div>
+                        <div className="pf-card__header"><i className='bx bx-medal' /> {t('sectionRecognitions')}</div>
                         <div className="pf-awards">
                             {profileRecognitions.length > 0 ? profileRecognitions.map(award => (
                                 <div key={award.id} className={`pf-award pf-award--${award.type || 'bronze'}`}>
                                     <i className='bx bx-award' />
                                     <div><strong>{award.name}</strong><span>{award.event}</span></div>
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-medal' /><p>Sin reconocimientos</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-medal' /><p>{t('emptyRecognitions')}</p></div>}
                         </div>
                     </section>
                 </div>
@@ -605,38 +607,38 @@ const Profile = () => {
                 <div className="pf-col pf-col--center">
                     <section className="pf-card pf-card--wall">
                         <div className="pf-card__header">
-                            <i className='bx bx-message-rounded' /> MURO
+                            <i className='bx bx-message-rounded' /> {t('sectionWall')}
                             <span className="pf-card__count">{comments.length}</span>
                             <button className="pf-poll-toggle" onClick={() => setShowPollForm(!showPollForm)}>
-                                <i className='bx bx-poll' /> {showPollForm ? 'Cancelar' : 'Encuesta'}
+                                <i className='bx bx-poll' /> {showPollForm ? t('cancel') : 'Encuesta'}
                             </button>
                         </div>
 
                         {showPollForm && (
                             <div className="pf-poll-form">
-                                <input type="text" placeholder="Pregunta de la encuesta..." value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} />
+                                <input type="text" placeholder={t('pollQuestionPlaceholder')} value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} />
                                 <div className="pf-poll-form__options">
                                     {pollOptions.map((opt, idx) => (
                                         <div key={idx} className="pf-poll-form__opt">
-                                            <input type="text" placeholder={`Opción ${idx + 1}`} value={opt} onChange={e => { const o = [...pollOptions]; o[idx] = e.target.value; setPollOptions(o); }} />
+                                            <input type="text" placeholder={`${t('pollOptionLabel')} ${idx + 1}`} value={opt} onChange={e => { const o = [...pollOptions]; o[idx] = e.target.value; setPollOptions(o); }} />
                                             {pollOptions.length > 2 && <button onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}><i className='bx bx-minus' /></button>}
                                         </div>
                                     ))}
                                     {pollOptions.length < 6 && <button className="pf-poll-form__add" onClick={() => setPollOptions([...pollOptions, ''])}><i className='bx bx-plus' /> Agregar</button>}
                                 </div>
-                                <button className="pf-btn pf-btn--primary" onClick={createPoll} disabled={!pollQuestion.trim() || pollOptions.filter(o => o.trim()).length < 2}>Crear Encuesta</button>
+                                <button className="pf-btn pf-btn--primary" onClick={createPoll} disabled={!pollQuestion.trim() || pollOptions.filter(o => o.trim()).length < 2}>{t('createPoll')}</button>
                             </div>
                         )}
 
                         <form className="pf-wall-form" onSubmit={handleSubmitComment}>
                             <img src={resolvedUserAvatar || `https://ui-avatars.com/api/?name=${user.username}`} alt="" />
-                            <input type="text" placeholder="Escribe algo..." value={newComment} onChange={e => setNewComment(e.target.value)} />
+                            <input type="text" placeholder={t('wallPlaceholder')} value={newComment} onChange={e => setNewComment(e.target.value)} />
                             <button type="submit" disabled={!newComment.trim()}><i className='bx bx-send' /></button>
                         </form>
 
                         <div className="pf-comments">
                             {comments.length === 0 ? (
-                                <div className="pf-empty"><i className='bx bx-message-rounded' /><p>Sin publicaciones recientes</p></div>
+                                <div className="pf-empty"><i className='bx bx-message-rounded' /><p>{t('emptyWallPosts')}</p></div>
                             ) : comments.map(comment => <RenderComment key={comment.id} c={comment} />)}
                         </div>
                     </section>
@@ -646,7 +648,7 @@ const Profile = () => {
                 <div className="pf-col pf-col--right">
                     {/* Achievements */}
                     <section className="pf-card">
-                        <div className="pf-card__header"><i className='bx bx-trophy' /> LOGROS</div>
+                        <div className="pf-card__header"><i className='bx bx-trophy' /> {t('sectionAchievements')}</div>
                         <div className="pf-achievements">
                             {profileAchievements.length > 0 ? profileAchievements.map(ach => (
                                 <div key={ach.id} className={`pf-ach ${ach.verified ? 'pf-ach--verified' : ''}`}>
@@ -654,15 +656,15 @@ const Profile = () => {
                                     <div className="pf-ach__info"><span>{ach.name}</span><span>{ach.tournament} · {ach.date}</span></div>
                                     {ach.verified && <i className='bx bx-check' />}
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-trophy' /><p>Sin logros registrados</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-trophy' /><p>{t('emptyAchievements')}</p></div>}
                         </div>
                     </section>
 
                     {/* Friends */}
                     <section className="pf-card">
                         <div className="pf-card__header">
-                            <i className='bx bx-group' /> AMIGOS
-                            <span className="pf-card__count">{onlineFriendsCount} en línea</span>
+                            <i className='bx bx-group' /> {t('sectionFriends')}
+                            <span className="pf-card__count">{onlineFriendsCount} {t('online')}</span>
                         </div>
                         <div className="pf-friends">
                             {profileFriends.length > 0 ? profileFriends.slice(0, 5).map(friend => (
@@ -674,15 +676,15 @@ const Profile = () => {
                                     <div className="pf-friend__info"><span>{friend.name}</span><span>{friend.rank}</span></div>
                                     <i className='bx bx-chevron-right' />
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-group' /><p>Sin amigos mutuos</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-group' /><p>{t('emptyFriends')}</p></div>}
                         </div>
-                        {profileFriends.length > 0 && <button className="pf-card__more" onClick={() => setShowFriendsModal(true)}>Ver todos <i className='bx bx-chevron-right' /></button>}
+                        {profileFriends.length > 0 && <button className="pf-card__more" onClick={() => setShowFriendsModal(true)}>{t('viewAll')} <i className='bx bx-chevron-right' /></button>}
                     </section>
 
                     {/* Communities */}
                     <section className="pf-card">
                         <div className="pf-card__header">
-                            <i className='bx bx-layer' /> COMUNIDADES
+                            <i className='bx bx-layer' /> {t('sectionCommunities')}
                             <span className="pf-card__count">{profileCommunities.length}</span>
                         </div>
                         <div className="pf-communities">
@@ -699,20 +701,20 @@ const Profile = () => {
                                         </div>
                                     </div>
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-layer' /><p>Sin comunidades</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-layer' /><p>{t('emptyCommunities')}</p></div>}
                         </div>
                     </section>
 
                     {/* Activity */}
                     <section className="pf-card">
-                        <div className="pf-card__header"><i className='bx bx-trending-up' /> ACTIVIDAD</div>
+                        <div className="pf-card__header"><i className='bx bx-trending-up' /> {t('sectionActivity')}</div>
                         <div className="pf-activity">
                             {profileActivity.length > 0 ? profileActivity.map(item => (
                                 <div key={item.id} className="pf-act">
                                     <i className={`bx ${item.type === 'win' ? 'bx-trophy' : item.type === 'team' ? 'bx-shield-quarter' : item.type === 'achievement' ? 'bx-medal' : 'bx-bolt'}`} />
-                                    <div><p>{item.text || item.title}</p><span>{item.source || 'Sistema'} · {formatTime(item.createdAt)}</span></div>
+                                    <div><p>{item.text || item.title}</p><span>{item.source || t('activitySource')} · {formatTime(item.createdAt)}</span></div>
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-trending-up' /><p>Sin actividad reciente</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-trending-up' /><p>{t('emptyActivity')}</p></div>}
                         </div>
                     </section>
                 </div>
@@ -751,14 +753,14 @@ const Profile = () => {
                                     <div>
                                         <h3>{selectedTeam.name}</h3>
                                         <span><i className='bx bx-joystick' /> {selectedTeam.game}</span>
-                                        <span><i className='bx bx-group' /> {(selectedTeam.roster?.starters?.length || 0) + (selectedTeam.roster?.subs?.length || 0) + (selectedTeam.roster?.coach ? 1 : 0)} miembros</span>
+                                        <span><i className='bx bx-group' /> {(selectedTeam.roster?.starters?.length || 0) + (selectedTeam.roster?.subs?.length || 0) + (selectedTeam.roster?.coach ? 1 : 0)} {t('members')}</span>
                                         {selectedTeam.teamLevel && <span><i className='bx bx-trophy' /> {selectedTeam.teamLevel}</span>}
                                     </div>
                                 </div>
                                 {selectedTeam.slogan && <p className="pf-detail-quote">"{selectedTeam.slogan}"</p>}
                                 <div className="pf-detail-stats">
-                                    <div><strong>{selectedTeam.roster?.starters?.length || 0}</strong><span>Titulares</span></div>
-                                    <div><strong>{selectedTeam.roster?.subs?.length || 0}</strong><span>Suplentes</span></div>
+                                    <div><strong>{selectedTeam.roster?.starters?.length || 0}</strong><span>{t('teamStarters')}</span></div>
+                                    <div><strong>{selectedTeam.roster?.subs?.length || 0}</strong><span>{t('teamSubstitutes')}</span></div>
                                     <div><strong>{selectedTeam.roster?.coach ? '1' : '0'}</strong><span>Coach</span></div>
                                 </div>
                                 {selectedTeam.teamCountry && (
@@ -777,9 +779,9 @@ const Profile = () => {
                                             }
                                         })}
                                     >
-                                        <i className='bx bx-link-external' /> Ver página
+                                        <i className='bx bx-link-external' /> {t('btnViewTeamPage')}
                                     </button>
-                                    <button className="pf-btn" onClick={() => setSelectedTeam(null)}>Cerrar</button>
+                                    <button className="pf-btn" onClick={() => setSelectedTeam(null)}>{t('close')}</button>
                                 </div>
                             </div>
                         </motion.div>
@@ -822,8 +824,8 @@ const Profile = () => {
                                         </div>
                                         <strong>{selectedFriend.username || selectedFriend.name}</strong>
                                         <div className="pf-friend-detail__tags">
-                                            {selectedFriend.isOrganizer && <span>Organizador</span>}
-                                            {selectedFriend?.university?.verified && <span>Estudiante verificado</span>}
+                                            {selectedFriend.isOrganizer && <span>{t('roleOrganizer')}</span>}
+                                            {selectedFriend?.university?.verified && <span>{t('studentVerified')}</span>}
                                             {sfRiotHandle && <span>{sfRiotHandle}</span>}
                                         </div>
                                         {selectedFriend.country && <span className="pf-friend-detail__country"><i className='bx bx-flag' /> {selectedFriend.country}</span>}
@@ -831,8 +833,8 @@ const Profile = () => {
                                         {selectedFriendLoading && <p className="pf-text-muted">Cargando...</p>}
                                     </div>
                                     <div className="pf-detail-stats">
-                                        <div><strong>{sfTeamsCount}</strong><span>Equipos</span></div>
-                                        <div><strong>{sfStatusLabel}</strong><span>Estado</span></div>
+                                        <div><strong>{sfTeamsCount}</strong><span>{t('sectionTeams')}</span></div>
+                                        <div><strong>{sfStatusLabel}</strong><span>{t('connStatus')}</span></div>
                                     </div>
                                     <div className="pf-friend-detail__section">
                                         <h4>Perfil público</h4>
@@ -845,20 +847,20 @@ const Profile = () => {
                                     <div className="pf-friend-detail__section">
                                         <h4>Universidad</h4>
                                         <div className="pf-friend-detail__meta-list">
-                                            <div><span>Estado</span><span>{sfUniLabel}</span></div>
+                                            <div><span>{t('connStatus')}</span><span>{sfUniLabel}</span></div>
                                             {selectedFriend?.university?.verified && selectedFriend.university.universityName && <div><span>Universidad</span><span>{selectedFriend.university.universityName}</span></div>}
                                         </div>
                                     </div>
                                     <div className="pf-friend-detail__section">
-                                        <h4>Cuentas vinculadas</h4>
+                                        <h4>{t('friendLinkedAccounts')}</h4>
                                         <div className="pf-friend-detail__tags">
-                                            {sfLinkedAccounts.length > 0 ? sfLinkedAccounts.map(a => <span key={a}>{a}</span>) : <span className="pf-text-muted">Sin cuentas vinculadas</span>}
+                                            {sfLinkedAccounts.length > 0 ? sfLinkedAccounts.map(a => <span key={a}>{a}</span>) : <span className="pf-text-muted">{t('friendNoLinkedAccounts')}</span>}
                                         </div>
                                     </div>
                                     <div className="pf-detail-actions">
-                                        <button className="pf-btn pf-btn--primary" onClick={() => { setSelectedFriend(null); navigate(`/profile/${selectedFriend.userCode || selectedFriend.id}`); }}><i className='bx bx-user' /> Ver Perfil</button>
-                                        <button className="pf-btn" onClick={() => navigate('/chats', { state: { openChatWith: selectedFriend.id } })}><i className='bx bx-envelope' /> Mensaje</button>
-                                        <button className="pf-btn" onClick={() => setSelectedFriend(null)}>Cerrar</button>
+                                        <button className="pf-btn pf-btn--primary" onClick={() => { setSelectedFriend(null); navigate(`/profile/${selectedFriend.userCode || selectedFriend.id}`); }}><i className='bx bx-user' /> {t('btnViewProfile')}</button>
+                                        <button className="pf-btn" onClick={() => navigate('/chats', { state: { openChatWith: selectedFriend.id } })}><i className='bx bx-envelope' /> {t('btnMessage')}</button>
+                                        <button className="pf-btn" onClick={() => setSelectedFriend(null)}>{t('close')}</button>
                                     </div>
                                 </div>
                             </div>
@@ -907,13 +909,13 @@ const Profile = () => {
                                     </div>
                                 </div>
                                 <div className="pf-detail-actions">
-                                    <button className="pf-btn pf-btn--primary" onClick={() => navigate(`/games/${normalizeCommunityHubGameId(selectedGame.id) || selectedGame.id}`)}><i className='bx bx-group' /> Comunidad</button>
-                                    {selectedGame.url && <a className="pf-btn" href={selectedGame.url} target="_blank" rel="noopener noreferrer"><i className='bx bx-download' /> Descargar</a>}
-                                    <button className="pf-btn" onClick={() => setSelectedGame(null)}>Cerrar</button>
+                                    <button className="pf-btn pf-btn--primary" onClick={() => navigate(`/games/${normalizeCommunityHubGameId(selectedGame.id) || selectedGame.id}`)}><i className='bx bx-group' /> {t('btnCommunity')}</button>
+                                    {selectedGame.url && <a className="pf-btn" href={selectedGame.url} target="_blank" rel="noopener noreferrer"><i className='bx bx-download' /> {t('btnDownload')}</a>}
+                                    <button className="pf-btn" onClick={() => setSelectedGame(null)}>{t('close')}</button>
                                 </div>
                                 {Array.isArray(selectedGame.profileEntries) && selectedGame.profileEntries.length > 0 && (
                                     <div className="pf-detail-profile">
-                                        <strong>Perfil competitivo</strong>
+                                        <strong>{t('competitiveProfile')}</strong>
                                         <div className="pf-detail-profile__chips">
                                             {selectedGame.profileEntries.map((entry) => (
                                                 <span key={`${selectedGame.id}-${entry.key}`} className="pf-detail-profile__chip">

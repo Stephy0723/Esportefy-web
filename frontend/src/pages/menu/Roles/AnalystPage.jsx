@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import axios from 'axios';
 import PageHud from '../../../components/PageHud/PageHud';
 import { API_URL } from '../../../config/api';
 import { getAuthToken } from '../../../utils/authSession';
+import { SUPPORTED_GAME_NAMES } from '../../../../../shared/supportedGames.js';
 import RoleApplicationVisual from './RoleApplicationVisual';
 import RoleApplicantIdentitySection from './RoleApplicantIdentitySection';
 import '../Tournaments/OrganizerApplication/OrganizerApplication.css';
@@ -12,7 +15,6 @@ import '../Tournaments/OrganizerApplication/OrganizerApplication.css';
 const REQUIRED = {
     fullName: 'Nombre Legal Completo',
     idNumber: 'Cédula / DNI',
-    games: 'Juegos que analizas',
     experienceYears: 'Experiencia en Análisis',
     specialization: 'Especialización',
     description: 'Descripción',
@@ -21,20 +23,38 @@ const REQUIRED = {
 const AnalystPage = () => {
     const navigate = useNavigate();
     const { notify } = useNotification();
+    const { user } = useAuth();
+    const { t } = useLang();
+    const prefilled = useRef(false);
     const [loading, setLoading] = useState(false);
     const [formErrors, setFormErrors] = useState({});
     const [submitError, setSubmitError] = useState('');
     const [fileName, setFileName] = useState('Ningún archivo seleccionado');
     const [file, setFile] = useState(null);
     const [formData, setFormData] = useState({
-        fullName: '', idNumber: '', games: '', experienceYears: '',
+        fullName: '', idNumber: '', experienceYears: '',
         specialization: '', tools: '', portfolio: '', description: ''
     });
+    const [selectedGames, setSelectedGames] = useState([]);
+
+    useEffect(() => {
+        if (user && !prefilled.current) {
+            prefilled.current = true;
+            setFormData(prev => ({ ...prev, fullName: prev.fullName || user.fullName || '' }));
+        }
+    }, [user]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
+    };
+
+    const handleGameToggle = (game) => {
+        setSelectedGames(prev =>
+            prev.includes(game) ? prev.filter(g => g !== game) : [...prev, game]
+        );
+        if (formErrors.games) setFormErrors(prev => ({ ...prev, games: '' }));
     };
 
     const handleFileChange = (e) => {
@@ -50,6 +70,7 @@ const AnalystPage = () => {
         Object.entries(REQUIRED).forEach(([key, label]) => {
             if (!String(formData[key] || '').trim()) errors[key] = `${label} es obligatorio.`;
         });
+        if (!selectedGames.length) errors.games = 'Selecciona al menos un juego que analizas.';
         if (!file) errors.document = 'Debes subir una foto de tu documento de identidad.';
         return errors;
     };
@@ -70,11 +91,12 @@ const AnalystPage = () => {
             const data = new FormData();
             data.append('role', 'analyst');
             data.append('document', file);
+            data.append('games', selectedGames.join(', '));
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
             await axios.post(`${API_URL}/api/auth/apply-role`, data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            notify('success', 'Solicitud enviada', 'Tu solicitud de Analista fue enviada y quedó pendiente de confirmación.');
+            notify('success', t('roleApplySuccess'), 'Tu solicitud de Analista fue enviada y quedó pendiente de confirmación.');
             navigate('/profile');
         } catch (err) {
             notify('error', 'Error', err.response?.data?.message || 'No se pudo enviar la solicitud.');
@@ -119,19 +141,32 @@ const AnalystPage = () => {
                                 fileName={fileName}
                                 documentInputId="analyst-doc-upload"
                                 errors={formErrors}
+                                prefilledFullName={!!(user?.fullName)}
                             />
 
                             <h4 className="section-title">Perfil de Analista</h4>
+
+                            <div className="input-group">
+                                <label className="static-label">Juegos que analizas <span style={{color:'#ef4444'}}>*</span></label>
+                                <div className={`games-chip-grid${fe('games') ? ' chip-error' : ''}`}>
+                                    {SUPPORTED_GAME_NAMES.map(game => (
+                                        <button
+                                            key={game}
+                                            type="button"
+                                            className={`game-chip-btn${selectedGames.includes(game) ? ' selected' : ''}`}
+                                            onClick={() => handleGameToggle(game)}
+                                        >
+                                            {game}
+                                        </button>
+                                    ))}
+                                </div>
+                                {fe('games') && <small className="field-error">{fe('games')}</small>}
+                            </div>
+
                             <div className="grid-inputs">
                                 <div className="input-group">
-                                    <input type="text" name="games" placeholder=" " value={formData.games} onChange={handleInputChange} className={fe('games') ? 'input-error' : ''} />
-                                    <label>Juegos que analizas</label>
-                                    <i className='bx bx-game input-icon'></i>
-                                    {fe('games') && <small className="field-error">{fe('games')}</small>}
-                                </div>
-                                <div className="input-group">
                                     <select name="experienceYears" value={formData.experienceYears} onChange={handleInputChange} className={fe('experienceYears') ? 'input-error' : ''}>
-                                        <option value="" disabled>Experiencia en Análisis</option>
+                                        <option value="" disabled>{t('roleApplyExperience')}</option>
                                         <option value="0-1">Menos de 1 año</option>
                                         <option value="1-3">1 - 3 años</option>
                                         <option value="3-5">3 - 5 años</option>
@@ -139,9 +174,6 @@ const AnalystPage = () => {
                                     </select>
                                     {fe('experienceYears') && <small className="field-error">{fe('experienceYears')}</small>}
                                 </div>
-                            </div>
-
-                            <div className="grid-inputs">
                                 <div className="input-group">
                                     <select name="specialization" value={formData.specialization} onChange={handleInputChange} className={fe('specialization') ? 'input-error' : ''}>
                                         <option value="" disabled>Especialización</option>
@@ -154,17 +186,19 @@ const AnalystPage = () => {
                                     </select>
                                     {fe('specialization') && <small className="field-error">{fe('specialization')}</small>}
                                 </div>
+                            </div>
+
+                            <div className="grid-inputs">
                                 <div className="input-group">
                                     <input type="text" name="tools" placeholder=" " value={formData.tools} onChange={handleInputChange} />
                                     <label>Herramientas que usas (Ej: op.gg, Mobalytics)</label>
                                     <i className='bx bx-wrench input-icon'></i>
                                 </div>
-                            </div>
-
-                            <div className="input-group">
-                                <input type="url" name="portfolio" placeholder=" " value={formData.portfolio} onChange={handleInputChange} />
-                                <label>Portfolio / Trabajos anteriores (Opcional)</label>
-                                <i className='bx bx-link input-icon'></i>
+                                <div className="input-group">
+                                    <input type="url" name="portfolio" placeholder=" " value={formData.portfolio} onChange={handleInputChange} />
+                                    <label>Portfolio / Trabajos anteriores (Opcional)</label>
+                                    <i className='bx bx-link input-icon'></i>
+                                </div>
                             </div>
 
                             <div className="input-group">
@@ -174,9 +208,9 @@ const AnalystPage = () => {
                             </div>
 
                             <div className="form-actions">
-                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
+                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>{t('cancel')}</button>
                                 <button type="submit" className="btn-neon green" disabled={loading}>
-                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : 'Enviar Solicitud'}
+                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : t('roleApplySubmit')}
                                 </button>
                             </div>
                         </form>

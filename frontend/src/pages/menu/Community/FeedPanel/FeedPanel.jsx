@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import {
     fetchCommunityPosts,
     publishCommunityPost,
@@ -110,6 +111,7 @@ const buildPostThreads = (items = []) => {
 
 const PostCreator = ({ onPost, loading }) => {
     const { user } = useAuth();
+    const { t } = useLang();
     const [text, setText] = useState('');
     const [images, setImages] = useState([]);
     const [showPoll, setShowPoll] = useState(false);
@@ -178,7 +180,7 @@ const PostCreator = ({ onPost, loading }) => {
                 <div className="fp-creator__input-wrap" onClick={() => setExpanded(true)}>
                     <textarea
                         className="fp-creator__input"
-                        placeholder="¿Que esta pasando en tu comunidad?"
+                        placeholder={t('feedPlaceholder')}
                         value={text} onChange={e => setText(e.target.value)}
                         rows={expanded ? 3 : 1}
                         onFocus={() => setExpanded(true)}
@@ -219,18 +221,18 @@ const PostCreator = ({ onPost, loading }) => {
                 <div className="fp-creator__poll">
                     <div className="fp-creator__poll-header">
                         <i className='bx bxs-bar-chart-alt-2'></i>
-                        <span>Crear Encuesta</span>
+                        <span>{t('createPoll')}</span>
                         <button className="fp-creator__poll-close" onClick={() => setShowPoll(false)}><i className='bx bx-x'></i></button>
                     </div>
                     <input
                         className="fp-creator__poll-question"
-                        placeholder="Pregunta de la encuesta..."
+                        placeholder={t('pollQuestionPlaceholder')}
                         value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
                     />
                     {pollOptions.map((opt, i) => (
                         <div key={i} className="fp-creator__poll-opt">
                             <input
-                                placeholder={`Opcion ${i + 1}`}
+                                placeholder={`${t('pollOptionLabel')} ${i + 1}`}
                                 value={opt} onChange={e => updatePollOption(i, e.target.value)}
                             />
                             {pollOptions.length > 2 && (
@@ -264,7 +266,7 @@ const PostCreator = ({ onPost, loading }) => {
                     <button className="fp-creator__tool" onClick={() => imgInputRef.current.click()} title="Imagen">
                         <i className='bx bxs-image'></i>
                     </button>
-                    <button className={'fp-creator__tool' + (showPoll ? ' active' : '')} onClick={() => { setShowPoll(!showPoll); setExpanded(true); }} title="Encuesta">
+                    <button className={'fp-creator__tool' + (showPoll ? ' active' : '')} onClick={() => { setShowPoll(!showPoll); setExpanded(true); }} title={t('poll')}>
                         <i className='bx bxs-bar-chart-alt-2'></i>
                     </button>
                     <button className="fp-creator__tool" onClick={() => docInputRef.current.click()} title="Documento">
@@ -289,7 +291,7 @@ const PostCreator = ({ onPost, loading }) => {
                     </div>
                 </div>
                 <button className={'fp-creator__post-btn' + (hasContent ? ' ready' : '')} onClick={handlePost} disabled={!hasContent || loading}>
-                    <i className='bx bx-send'></i> {loading ? 'Publicando...' : 'Publicar'}
+                    <i className='bx bx-send'></i> {loading ? t('feedPosting') : t('feedPost')}
                 </button>
             </div>
 
@@ -317,6 +319,7 @@ const FeedPost = ({
     onAddComment,
 }) => {
     const { user } = useAuth();
+    const { t } = useLang();
     const [liked, setLiked] = useState(post.liked);
     const [likes, setLikes] = useState(post.likes);
     const [showComments, setShowComments] = useState(false);
@@ -419,7 +422,7 @@ const FeedPost = ({
                         <div className="fp-post__menu" role="menu">
                             <button className="fp-post__menu-item" onClick={() => { onToggleSave(post); setShowMenu(false); }}>
                                 <i className={`bx ${isSaved ? 'bx-bookmark-minus' : 'bx-bookmark-plus'}`}></i>
-                                <span>{isSaved ? 'Quitar de guardados' : 'Guardar publicacion'}</span>
+                                <span>{isSaved ? t('feedPinned') : t('feedPost')}</span>
                             </button>
                             <button className="fp-post__menu-item" onClick={() => { onCopyText(post); setShowMenu(false); }}>
                                 <i className='bx bx-copy-alt'></i>
@@ -431,12 +434,12 @@ const FeedPost = ({
                             </button>
                             <button className="fp-post__menu-item" onClick={() => { onReportPost(post); setShowMenu(false); }}>
                                 <i className='bx bx-flag'></i>
-                                <span>Reportar</span>
+                                <span>{t('report')}</span>
                             </button>
                             {post.isOwner && (
                                 <button className="fp-post__menu-item fp-post__menu-item--danger" onClick={() => { onDeletePost(post.id); setShowMenu(false); }}>
                                     <i className='bx bx-trash'></i>
-                                    <span>Eliminar</span>
+                                    <span>{t('delete')}</span>
                                 </button>
                             )}
                             <button className="fp-post__menu-item fp-post__menu-item--danger" onClick={() => { onHidePost(post.id); setShowMenu(false); }}>
@@ -563,7 +566,7 @@ const FeedPost = ({
                             )}
                         </div>
                         <input
-                            placeholder="Escribe un comentario..."
+                            placeholder={t('wallPlaceholder')}
                             value={commentText}
                             onChange={e => setCommentText(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') handleComment(); }}
@@ -583,6 +586,7 @@ const FeedPost = ({
 const FeedPanel = ({ communityName, filterGame }) => {
     const { user } = useAuth();
     const { addToast, notify } = useNotification();
+    const { t } = useLang();
     const [savedPosts, setSavedPosts] = useState(() => readStoredValue(FEED_SAVED_POSTS_KEY, []));
     const [posts, setPosts] = useState([]);
     const [feedFilter, setFeedFilter] = useState('all');
@@ -777,7 +781,7 @@ const FeedPanel = ({ communityName, filterGame }) => {
                 {loadingPosts ? (
                     <div className="fp-feed__empty">
                         <i className='bx bx-loader-alt bx-spin'></i>
-                        <h3>Cargando publicaciones...</h3>
+                        <h3>{t('loading')}</h3>
                     </div>
                 ) : threadedPosts.length > 0 ? (
                     threadedPosts.map((p) => (
@@ -800,7 +804,7 @@ const FeedPanel = ({ communityName, filterGame }) => {
                 ) : (
                     <div className="fp-feed__empty">
                         <i className='bx bx-message-alt-detail'></i>
-                        <h3>Sin publicaciones</h3>
+                        <h3>{t('feedEmpty')}</h3>
                         <p>Se el primero en compartir algo en {communityName || 'esta comunidad'}</p>
                     </div>
                 )}

@@ -19,6 +19,7 @@ import { STATUS_LIST } from '../../../data/defaultAvatars';
 import PageHud from '../../../components/PageHud/PageHud';
 import { resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
+import { useLang } from '../../../context/LanguageContext';
 import './Profile.css';
 
 const normalizePresenceTone = (status = '') => {
@@ -31,6 +32,7 @@ const normalizePresenceTone = (status = '') => {
 const PlayerProfile = () => {
     const { userCode } = useParams();
     const navigate = useNavigate();
+    const { t } = useLang();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -101,7 +103,7 @@ const PlayerProfile = () => {
     if (loading) return (
         <div className="pf-loading">
             <div className="pf-loader"><span /><span /><span /></div>
-            <p>Cargando perfil...</p>
+            <p>{t('profileLoading')}</p>
         </div>
     );
     if (error) return <div className="pf-error">{error}</div>;
@@ -196,7 +198,7 @@ const PlayerProfile = () => {
                         disabled={followLoading}
                     >
                         <i className={`bx ${profile.isFollowing ? 'bx-user-check' : 'bx-user-plus'}`} />
-                        {followLoading ? '...' : profile.isFollowing ? 'Siguiendo' : 'Seguir'}
+                        {followLoading ? '...' : profile.isFollowing ? t('playerUnfollow') : t('playerFollow')}
                     </button>
                     {!profile.isMutual && !friendReqSent ? (
                         <button className="pf-btn pf-btn--primary" onClick={handleFriendRequest} disabled={friendReqLoading}>
@@ -208,7 +210,7 @@ const PlayerProfile = () => {
                         </button>
                     ) : null}
                     <button className="pf-btn" onClick={handleMessage}>
-                        <i className='bx bx-message-rounded' /> Mensaje
+                        <i className='bx bx-message-rounded' /> {t('playerMessage')}
                     </button>
                     <button className="pf-btn" onClick={handleShare}>
                         <i className={`bx ${copiedLink ? 'bx-check' : 'bx-share-alt'}`} /> {copiedLink ? 'Copiado' : 'Compartir'}
@@ -242,7 +244,7 @@ const PlayerProfile = () => {
                         <div className="pf-meta">
                             {profile.country && <span><i className='bx bx-flag' /> {profile.country}</span>}
                             {joinDate && <span><i className='bx bx-calendar' /> {joinDate}</span>}
-                            <span><i className='bx bx-group' /> {profile.followersCount} seguidores · {profile.followingCount} siguiendo</span>
+                            <span><i className='bx bx-group' /> {profile.followersCount} {t('playerFollowers')} · {profile.followingCount} {t('playerFollowing')}</span>
                         </div>
                     </div>
 
@@ -254,15 +256,15 @@ const PlayerProfile = () => {
                         </div>
                         <div className="pf-stat">
                             <span className="pf-stat__val">{stats.wins}</span>
-                            <span className="pf-stat__label">WINS</span>
+                            <span className="pf-stat__label">{t('statWins')}</span>
                         </div>
                         <div className="pf-stat">
                             <span className="pf-stat__val">{stats.tournamentsWon}</span>
-                            <span className="pf-stat__label">TORNEOS</span>
+                            <span className="pf-stat__label">{t('statTournaments')}</span>
                         </div>
                         <div className="pf-stat">
                             <span className="pf-stat__val">{stats.teams || 0}</span>
-                            <span className="pf-stat__label">EQUIPOS</span>
+                            <span className="pf-stat__label">{t('sectionTeams')}</span>
                         </div>
                     </div>
 
@@ -287,7 +289,7 @@ const PlayerProfile = () => {
                     {/* Games */}
                     <section className="pf-card">
                         <div className="pf-card__header">
-                            <i className='bx bx-joystick' /> JUEGOS
+                            <i className='bx bx-joystick' /> {t('sectionGames')}
                             {normalizedGames.length > 4 && <button className="pf-card__more" onClick={() => setShowGamesModal(true)}>Ver todos <i className='bx bx-chevron-right' /></button>}
                         </div>
                         <div className="pf-games">
@@ -304,13 +306,13 @@ const PlayerProfile = () => {
                                     </div>
                                     <i className='bx bx-link-external pf-game__link' />
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-joystick' /><p>Sin juegos</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-joystick' /><p>{t('emptyGames')}</p></div>}
                         </div>
                     </section>
 
                     {/* Connections */}
                     <section className="pf-card">
-                        <div className="pf-card__header"><i className='bx bx-link' /> CONEXIONES</div>
+                        <div className="pf-card__header"><i className='bx bx-link' /> {t('sectionConnections')}</div>
                         <div className="pf-connections">
                             {gamingConnections.map(conn => (
                                 <div key={conn.key} className={`pf-conn ${conn.connected ? 'pf-conn--active' : ''}`} style={{ '--c-color': conn.color }}>
@@ -342,7 +344,7 @@ const PlayerProfile = () => {
                     {/* Teams */}
                     <section className="pf-card">
                         <div className="pf-card__header">
-                            <i className='bx bx-shield-quarter' /> EQUIPOS
+                            <i className='bx bx-shield-quarter' /> {t('sectionTeams')}
                             <span className="pf-card__count">{teams.length}</span>
                         </div>
                         {teams.length > 0 ? (
@@ -356,7 +358,7 @@ const PlayerProfile = () => {
                                 ))}
                                 {teams.length > 3 && <button className="pf-card__more" onClick={() => setShowTeamsModal(true)}>Ver todos <i className='bx bx-chevron-right' /></button>}
                             </div>
-                        ) : <div className="pf-empty"><i className='bx bx-shield-quarter' /><p>Sin equipos</p></div>}
+                        ) : <div className="pf-empty"><i className='bx bx-shield-quarter' /><p>{t('emptyTeams')}</p></div>}
                     </section>
 
                     {/* Recognitions */}
@@ -411,7 +413,7 @@ const PlayerProfile = () => {
                             {profile.university?.verified && (
                                 <div className="pp-about__row">
                                     <span className="pp-about__label"><i className='bx bx-book' /> Universidad</span>
-                                    <span className="pf-tag pf-tag--pro">{profile.university.universityName || 'Verificado'}</span>
+                                    <span className="pf-tag pf-tag--pro">{profile.university.universityName || t('verified')}</span>
                                 </div>
                             )}
                         </div>
@@ -443,7 +445,7 @@ const PlayerProfile = () => {
                             </div>
                             <div className="pp-stat-item">
                                 <span className="pp-stat-item__val">{stats.tournaments || 0}</span>
-                                <span className="pp-stat-item__label">Torneos</span>
+                                <span className="pp-stat-item__label">{t('statTournaments')}</span>
                             </div>
                             <div className="pp-stat-item">
                                 <span className="pp-stat-item__val">{stats.tournamentsWon || 0}</span>
@@ -461,7 +463,7 @@ const PlayerProfile = () => {
                 <div className="pf-col pf-col--right">
                     {/* Achievements */}
                     <section className="pf-card">
-                        <div className="pf-card__header"><i className='bx bx-trophy' /> LOGROS</div>
+                        <div className="pf-card__header"><i className='bx bx-trophy' /> {t('sectionAchievements')}</div>
                         <div className="pf-achievements">
                             {achievements.length > 0 ? achievements.map(ach => (
                                 <div key={ach.id} className={`pf-ach ${ach.verified ? 'pf-ach--verified' : ''}`}>
@@ -469,14 +471,14 @@ const PlayerProfile = () => {
                                     <div className="pf-ach__info"><span>{ach.name}</span><span>{ach.tournament} · {ach.date}</span></div>
                                     {ach.verified && <i className='bx bx-check' />}
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-trophy' /><p>Sin logros registrados</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-trophy' /><p>{t('emptyAchievements')}</p></div>}
                         </div>
                     </section>
 
                     {/* Friends */}
                     <section className="pf-card">
                         <div className="pf-card__header">
-                            <i className='bx bx-group' /> AMIGOS
+                            <i className='bx bx-group' /> {t('sectionFriends')}
                             <span className="pf-card__count">{onlineFriendsCount} en línea</span>
                         </div>
                         <div className="pf-friends">
@@ -489,7 +491,7 @@ const PlayerProfile = () => {
                                     <div className="pf-friend__info"><span>{friend.name}</span><span>{friend.rank}</span></div>
                                     <i className='bx bx-chevron-right' />
                                 </div>
-                            )) : <div className="pf-empty"><i className='bx bx-group' /><p>Sin amigos visibles</p></div>}
+                            )) : <div className="pf-empty"><i className='bx bx-group' /><p>{t('emptyFriends')}</p></div>}
                         </div>
                         {friends.length > 5 && <button className="pf-card__more" onClick={() => setShowFriendsModal(true)}>Ver todos <i className='bx bx-chevron-right' /></button>}
                     </section>

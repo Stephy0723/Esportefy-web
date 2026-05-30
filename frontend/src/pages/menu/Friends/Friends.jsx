@@ -5,19 +5,21 @@ import { FaSearch, FaUserFriends, FaUsers, FaUserPlus } from 'react-icons/fa';
 import { API_URL } from '../../../config/api';
 import { resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
+import { useLang } from '../../../context/LanguageContext';
 import PageHud from '../../../components/PageHud/PageHud';
 import UserCard from '../../../components/UserCard/UserCard';
 import './Friends.css';
 
-const TABS = [
-    { id: 'friends', label: 'Amigos', icon: FaUserFriends },
-    { id: 'followers', label: 'Seguidores', icon: FaUsers },
-    { id: 'following', label: 'Siguiendo', icon: FaUserPlus },
-    { id: 'discover', label: 'Buscar', icon: FaSearch }
+const TABS_CONFIG = [
+    { id: 'friends', labelKey: 'friends', icon: FaUserFriends },
+    { id: 'followers', labelKey: 'followers', icon: FaUsers },
+    { id: 'following', labelKey: 'following', icon: FaUserPlus },
+    { id: 'discover', labelKey: 'search', icon: FaSearch }
 ];
 const SOCIAL_POLL_INTERVAL_MS = Number(import.meta.env.VITE_SOCIAL_POLL_MS || 20000);
 
 const FriendsPage = () => {
+    const { t } = useLang();
     const [activeTab, setActiveTab] = useState('friends');
     const [socialData, setSocialData] = useState({
         friends: [],
@@ -63,7 +65,7 @@ const FriendsPage = () => {
                 navigate('/login');
                 return;
             }
-            setError(err?.response?.data?.message || 'No se pudo cargar el módulo de amigos.');
+            setError(err?.response?.data?.message || t('friendsLoadError'));
         } finally {
             if (!silent) {
                 setLoading(false);
@@ -194,7 +196,7 @@ const FriendsPage = () => {
                 setSearchResults(Array.isArray(response?.data?.users) ? response.data.users : []);
             }
         } catch (err) {
-            setError(err?.response?.data?.message || 'No se pudo actualizar el seguimiento.');
+            setError(err?.response?.data?.message || t('friendsFollowError'));
         } finally {
             setFollowBusyIds((prev) => ({ ...prev, [id]: false }));
         }
@@ -222,7 +224,7 @@ const FriendsPage = () => {
 
             setMyUserCodeVisible(response?.data?.privacy?.showPublicUserCode !== false);
         } catch (err) {
-            setError(err?.response?.data?.message || 'No se pudo actualizar la visibilidad de tu ID.');
+            setError(err?.response?.data?.message || t('friendsIdVisibilityError'));
         } finally {
             setMyUserCodeBusy(false);
         }
@@ -237,25 +239,25 @@ const FriendsPage = () => {
 
     const emptyIcon = activeTab === 'discover' ? 'bx-search-alt' : (activeTab === 'followers' ? 'bx-user-voice' : (activeTab === 'following' ? 'bx-user-plus' : 'bx-group'));
     const emptyText = activeTab === 'discover'
-        ? 'Escribe al menos 2 caracteres para buscar por nombre, username o #ID.'
+        ? t('friendsDiscoverHint')
         : (activeTab === 'followers'
-            ? 'Aun no tienes seguidores. Comparte tu perfil para que otros te encuentren.'
+            ? t('friendsFollowersEmpty')
             : (activeTab === 'following'
-                ? 'Aun no sigues a nadie. Descubre jugadores en la pestaña Buscar.'
-                : 'Aun no tienes amigos mutuos. Sigue a otros jugadores para conectar.'));
+                ? t('friendsFollowingEmpty')
+                : t('friendsEmpty')));
 
     return (
         <div className="fr">
-            <PageHud page="AMIGOS" />
+            <PageHud page={t('friends')} />
 
             {/* Header */}
             <div className="fr__header">
                 <div>
                     <h2 className="fr__title">
                         <span className="fr__title-icon"><i className="bx bx-group"></i></span>
-                        Centro Social
+                        {t('friendsPageTitle')}
                     </h2>
-                    <p className="fr__subtitle">Gestiona tus amigos, seguidores y descubre nuevos jugadores.</p>
+                    <p className="fr__subtitle">{t('friendsPageDesc')}</p>
                 </div>
                 <button
                     type="button"
@@ -264,7 +266,7 @@ const FriendsPage = () => {
                     disabled={myUserCodeBusy}
                 >
                     <i className={`bx ${myUserCodeVisible ? 'bx-show' : 'bx-hide'}`}></i>
-                    {myUserCodeBusy ? 'Guardando...' : (myUserCodeVisible ? 'ID visible' : 'ID oculto')}
+                    {myUserCodeBusy ? t('saving') : (myUserCodeVisible ? t('idVisible') : t('idHidden'))}
                 </button>
             </div>
 
@@ -274,28 +276,28 @@ const FriendsPage = () => {
                     <div className="fr__stat-icon"><i className="bx bx-group"></i></div>
                     <div>
                         <div className="fr__stat-value">{counts.friends}</div>
-                        <div className="fr__stat-label">Amigos</div>
+                        <div className="fr__stat-label">{t('friends')}</div>
                     </div>
                 </div>
                 <div className="fr__stat">
                     <div className="fr__stat-icon fr__stat-icon--followers"><i className="bx bx-user-voice"></i></div>
                     <div>
                         <div className="fr__stat-value">{counts.followers}</div>
-                        <div className="fr__stat-label">Seguidores</div>
+                        <div className="fr__stat-label">{t('followers')}</div>
                     </div>
                 </div>
                 <div className="fr__stat">
                     <div className="fr__stat-icon fr__stat-icon--following"><i className="bx bx-user-plus"></i></div>
                     <div>
                         <div className="fr__stat-value">{counts.following}</div>
-                        <div className="fr__stat-label">Siguiendo</div>
+                        <div className="fr__stat-label">{t('following')}</div>
                     </div>
                 </div>
             </div>
 
             {/* Tabs */}
             <div className="fr__tabs">
-                {TABS.map((tab) => {
+                {TABS_CONFIG.map((tab) => {
                     const Icon = tab.icon;
                     const tabCount = tab.id === 'discover' ? null : Number(counts?.[tab.id] || 0);
                     return (
@@ -305,7 +307,7 @@ const FriendsPage = () => {
                             onClick={() => { setActiveTab(tab.id); setError(''); }}
                         >
                             <Icon />
-                            {tab.label}
+                            {tab.labelKey ? t(tab.labelKey) : tab.label}
                             {tabCount !== null && <span className="fr__tab-count">{tabCount}</span>}
                         </button>
                     );
@@ -320,7 +322,7 @@ const FriendsPage = () => {
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Buscar por username, nombre o #ID..."
+                        placeholder={t('friendsSearchPlaceholder')}
                     />
                 </div>
             )}
@@ -380,8 +382,8 @@ const FriendsPage = () => {
                                     {followBusyIds[id]
                                         ? <><i className="bx bx-loader-alt bx-spin"></i></>
                                         : entry?.isFollowing
-                                            ? <><i className="bx bx-check"></i> Siguiendo</>
-                                            : <><i className="bx bx-user-plus"></i> Seguir</>
+                                            ? <><i className="bx bx-check"></i> {t('friendsBtnFollowing')}</>
+                                            : <><i className="bx bx-user-plus"></i> {t('friendsBtnFollow')}</>
                                     }
                                 </button>
                             </div>

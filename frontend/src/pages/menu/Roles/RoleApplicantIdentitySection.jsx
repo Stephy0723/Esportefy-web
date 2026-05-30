@@ -1,14 +1,18 @@
+import { useLang } from '../../../context/LanguageContext';
+
 const RoleApplicantIdentitySection = ({
     formData,
     onInputChange,
     onFileChange,
     fileName,
     documentInputId,
-    errors = {}
+    errors = {},
+    prefilledFullName = false
 }) => {
+    const { t } = useLang();
     return (
         <>
-            <h4 className="section-title">Datos del Solicitante</h4>
+            <h4 className="section-title">{t('roleApplyApplicantData')}</h4>
             <div className="grid-inputs">
                 <div className="input-group">
                     <input
@@ -19,9 +23,10 @@ const RoleApplicantIdentitySection = ({
                         onChange={onInputChange}
                         className={errors.fullName ? 'input-error' : ''}
                     />
-                    <label>Nombre Legal Completo</label>
+                    <label>{t('roleApplyFullName')}</label>
                     <i className='bx bx-user input-icon'></i>
                     {errors.fullName && <small className="field-error">{errors.fullName}</small>}
+                    {prefilledFullName && !errors.fullName && <span className="prefilled-hint"><i className='bx bx-check-circle'></i>Completado desde tu perfil</span>}
                 </div>
                 <div className="input-group">
                     <input
@@ -32,14 +37,14 @@ const RoleApplicantIdentitySection = ({
                         onChange={onInputChange}
                         className={errors.idNumber ? 'input-error' : ''}
                     />
-                    <label>Cédula / DNI / Pasaporte / ID</label>
+                    <label>{t('roleApplyIdNumber')}</label>
                     <i className='bx bx-id-card input-icon'></i>
                     {errors.idNumber && <small className="field-error">{errors.idNumber}</small>}
                 </div>
             </div>
 
             <div className="input-group file-upload-group">
-                <label className="static-label">Foto de Cédula / Documento de Identidad</label>
+                <label className="static-label">{t('roleApplyIdPhoto')}</label>
                 <div className="file-box">
                     <input
                         type="file"
@@ -49,11 +54,11 @@ const RoleApplicantIdentitySection = ({
                         onChange={onFileChange}
                     />
                     <label htmlFor={documentInputId} className={`upload-btn${errors.document ? ' input-error' : ''}`}>
-                        <i className='bx bx-cloud-upload'></i> Subir Archivo
+                        <i className='bx bx-cloud-upload'></i> {t('uploadBtn')}
                     </label>
                     <span className="file-name">{fileName}</span>
                 </div>
-                <small>Formatos: PDF, JPG, PNG, WEBP. Máx 5MB.</small>
+                <small>{t('roleApplyIdFormats')}</small>
                 {errors.document && <small className="field-error">{errors.document}</small>}
             </div>
         </>

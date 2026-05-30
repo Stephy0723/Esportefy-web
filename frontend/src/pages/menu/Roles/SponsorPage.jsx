@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import axios from 'axios';
 import PageHud from '../../../components/PageHud/PageHud';
 import { API_URL } from '../../../config/api';
@@ -22,6 +24,9 @@ const REQUIRED = {
 const SponsorPage = () => {
     const navigate = useNavigate();
     const { notify } = useNotification();
+    const { user } = useAuth();
+    const { t } = useLang();
+    const prefilled = useRef(false);
     const [loading, setLoading] = useState(false);
     const [formErrors, setFormErrors] = useState({});
     const [submitError, setSubmitError] = useState('');
@@ -31,6 +36,13 @@ const SponsorPage = () => {
         fullName: '', idNumber: '', companyName: '', website: '',
         industry: '', sponsorType: '', budget: '', interests: '', description: ''
     });
+
+    useEffect(() => {
+        if (user && !prefilled.current) {
+            prefilled.current = true;
+            setFormData(prev => ({ ...prev, fullName: prev.fullName || user.fullName || '' }));
+        }
+    }, [user]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -75,7 +87,7 @@ const SponsorPage = () => {
             await axios.post(`${API_URL}/api/auth/apply-role`, data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            notify('success', 'Solicitud enviada', 'Tu solicitud de Sponsor fue enviada y quedó pendiente de confirmación.');
+            notify('success', t('roleApplySuccess'), 'Tu solicitud de Sponsor fue enviada y quedó pendiente de confirmación.');
             navigate('/profile');
         } catch (err) {
             notify('error', 'Error', err.response?.data?.message || 'No se pudo enviar la solicitud.');
@@ -120,6 +132,7 @@ const SponsorPage = () => {
                                 fileName={fileName}
                                 documentInputId="sponsor-doc-upload"
                                 errors={formErrors}
+                                prefilledFullName={!!(user?.fullName)}
                             />
 
                             <h4 className="section-title">Datos de la Empresa / Marca</h4>
@@ -192,9 +205,9 @@ const SponsorPage = () => {
                             </div>
 
                             <div className="form-actions">
-                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
+                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>{t('cancel')}</button>
                                 <button type="submit" className="btn-neon green" disabled={loading}>
-                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : 'Enviar Solicitud'}
+                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : t('roleApplySubmit')}
                                 </button>
                             </div>
                         </form>

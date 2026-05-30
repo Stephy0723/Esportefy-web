@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
+import { useLang } from "../../../../context/LanguageContext";
 import axios from "axios";
 import { API_URL } from "../../../../config/api";
 import { getAuthToken } from "../../../../utils/authSession";
@@ -289,6 +290,7 @@ const CreateTournament = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useLang();
   const token = getAuthToken();
   const [isPublished, setIsPublished] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -750,6 +752,23 @@ const CreateTournament = () => {
     }));
   const setFile = (e, key, sponsorIndex = null) => {
     const file = e.target.files[0];
+    if (!file) return;
+
+    if (key === "bannerFile") {
+      const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const MAX_MB = 5;
+      if (!ALLOWED.includes(file.type)) {
+        failSubmit("Formato de imagen no válido. Solo se aceptan JPG, PNG, WEBP y GIF.", { bannerFile: "Formato no permitido." });
+        e.target.value = "";
+        return;
+      }
+      if (file.size > MAX_MB * 1024 * 1024) {
+        failSubmit(`La imagen del banner supera el límite de ${MAX_MB}MB.`, { bannerFile: `Máximo ${MAX_MB}MB permitidos.` });
+        e.target.value = "";
+        return;
+      }
+    }
+
     if (sponsorIndex === null) {
       setField(key, file);
       if (key === "bannerFile" && file) {
@@ -1498,10 +1517,9 @@ const CreateTournament = () => {
       <div className="ct-success">
         <div className="ct-success-card">
           <FaCheckCircle className="ct-success-icon" />
-          <h2>{isEditMode ? "Torneo actualizado" : "Torneo publicado"}</h2>
+          <h2>{isEditMode ? t('tournamentUpdated') : t('tournamentPublished')}</h2>
           <p>
-            El torneo <strong>{tournament.title}</strong> fue guardado
-            correctamente.
+            {t('tournamentSavedMsg')} <strong>{tournament.title}</strong>
           </p>
           <div className="ct-actions">
             {!isEditMode && (
@@ -1509,14 +1527,14 @@ const CreateTournament = () => {
                 className="ct-btn ct-btn-outline"
                 onClick={() => setIsPublished(false)}
               >
-                <FaPlus /> Crear otro
+                <FaPlus /> {t('createAnother')}
               </button>
             )}
             <button
               className="ct-btn ct-btn-main"
               onClick={() => navigate("/dashboard")}
             >
-              Ir al dashboard
+              {t('goToDashboard')}
             </button>
           </div>
         </div>
@@ -1585,7 +1603,7 @@ const CreateTournament = () => {
               01
             </span>
             <FaGamepad />
-            <h3>Identidad del torneo</h3>
+            <h3>{t('ctStep1')}</h3>
             {identityReady && <FaCheckCircle className="ct-step-check" />}
           </div>
           <p className="ct-lead">
@@ -1595,7 +1613,7 @@ const CreateTournament = () => {
           <fieldset className="ct-fieldset">
             <div className="ct-grid three">
               <label className="ct-field" data-error-key="title">
-                <span>Titulo oficial</span>
+                <span>{t('ctName')}</span>
                 <input
                   required
                   value={tournament.title}
@@ -1607,14 +1625,14 @@ const CreateTournament = () => {
                 )}
               </label>
               <label className="ct-field" data-error-key="game">
-                <span>Juego</span>
+                <span>{t('game')}</span>
                 <select
                   required
                   value={tournament.game}
                   onChange={(e) => setGameField(e.target.value)}
                   className={formErrors.game ? 'ct-input-error' : ''}
                 >
-                  <option value="">Seleccionar</option>
+                  <option value="">{t('selectGame')}</option>
                   {GAMES.map((g) => (
                     <option key={g} value={g}>
                       {g}
@@ -1693,7 +1711,7 @@ const CreateTournament = () => {
                 </select>
               </label>
               <label className="ct-field" data-error-key="date">
-                <span>Fecha inicio</span>
+                <span>{t('startDate')}</span>
                 <input
                   type="date"
                   min={todayInput}
@@ -1757,7 +1775,7 @@ const CreateTournament = () => {
               </div>
             )}
             <label className="ct-field" data-error-key="description">
-              <span>Descripcion</span>
+              <span>{t('ctDescription')}</span>
               <textarea
                 rows="3"
                 maxLength={1500}
@@ -1772,18 +1790,19 @@ const CreateTournament = () => {
             </label>
             <div className="ct-grid two">
               <label className="ct-field ct-file">
-                <span>Banner</span>
+                <span>{t('ctBanner')}</span>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setFile(e, "bannerFile")}
                 />
                 <small>
-                  <FaFileUpload /> {tournament.bannerFile ? "Cambiar imagen del torneo" : "Imagen del torneo"}
+                  <FaFileUpload /> {tournament.bannerFile ? "Cambiar imagen del torneo" : "1280×720px recomendado · JPG/PNG/WEBP · máx 5MB"}
                 </small>
+                {formErrors.bannerFile && <span className="ct-field-error">{formErrors.bannerFile}</span>}
               </label>
               <label className="ct-field ct-file">
-                <span>Reglamento PDF</span>
+                <span>{t('rules')}</span>
                 <input
                   type="file"
                   accept=".pdf"
@@ -1796,7 +1815,7 @@ const CreateTournament = () => {
             </div>
             {bannerPreview && (
               <div className="ct-banner-preview">
-                <img src={bannerPreview} alt="Preview del banner" />
+                <img src={bannerPreview} alt={t('editProfilePreview')} />
               </div>
             )}
           </fieldset>
@@ -1808,7 +1827,7 @@ const CreateTournament = () => {
               02
             </span>
             <FaSitemap />
-            <h3>Formato y elegibilidad</h3>
+            <h3>{t('ctStep2')}</h3>
             {formatReady && <FaCheckCircle className="ct-step-check" />}
           </div>
           <p className="ct-lead">
@@ -1830,7 +1849,7 @@ const CreateTournament = () => {
             )}
             <div className="ct-grid four">
               <label className="ct-field" data-error-key="maxSlots">
-                <span>Cantidad</span>
+                <span>{t('slots')}</span>
                 <div className="ct-inline-pair ct-inline-pair--count">
                   <select
                     required
@@ -1900,7 +1919,7 @@ const CreateTournament = () => {
                 {formErrors.modality && <small className="ct-error-text">{formErrors.modality}</small>}
               </label>
               <label className="ct-field" data-error-key="format">
-                <span>Llaves</span>
+                <span>{t('format')}</span>
                 <select
                   value={tournament.format}
                   onChange={(e) => setField("format", e.target.value)}
@@ -2089,7 +2108,7 @@ const CreateTournament = () => {
             </div>
             <div className="ct-grid four">
               <label className="ct-field">
-                <span>Registro desde</span>
+                <span>{t('startDate')}</span>
                 <input
                   type="date"
                   min={todayInput}
@@ -2105,7 +2124,7 @@ const CreateTournament = () => {
                 />
               </label>
               <label className="ct-field">
-                <span>Registro hasta</span>
+                <span>{t('registrationDeadline')}</span>
                 <input
                   type="date"
                   min={tournament.registrationWindow.start || undefined}
@@ -2117,7 +2136,7 @@ const CreateTournament = () => {
                 />
               </label>
               <label className="ct-field">
-                <span>Check-in desde</span>
+                <span>{t('checkInDate')}</span>
                 <input
                   type="date"
                   min={tournament.registrationWindow.end || undefined}
@@ -2131,7 +2150,7 @@ const CreateTournament = () => {
                 />
               </label>
               <label className="ct-field">
-                <span>Check-in hasta</span>
+                <span>{t('endDate')}</span>
                 <input
                   type="date"
                   min={tournament.checkInWindow.start || undefined}
@@ -2166,15 +2185,15 @@ const CreateTournament = () => {
                 />
               </label>
               <label className="ct-field">
-                <span>Tipo de registro</span>
+                <span>{t('ctFreeEntry')}</span>
                 <select
                   value={tournament.entryFee}
                   onChange={(e) => setField("entryFee", e.target.value)}
                 >
-                  <option>Gratis</option>
-                  {!riotReviewLocked && <option>Invitacion</option>}
-                  {!riotReviewLocked && <option>Password</option>}
-                  {!riotReviewLocked && <option>Pago</option>}
+                  <option value="Gratis">{t('free')}</option>
+                  {!riotReviewLocked && <option value="Invitacion">Invitacion</option>}
+                  {!riotReviewLocked && <option value="Password">Password</option>}
+                  {!riotReviewLocked && <option value="Pago">Pago</option>}
                 </select>
               </label>
               <label className="ct-field" data-error-key="entryFeeAmount">
@@ -2298,7 +2317,7 @@ const CreateTournament = () => {
               03
             </span>
             <FaMoneyBillWave />
-            <h3>Pagos y premios</h3>
+            <h3>{t('ctStep3')}</h3>
             {paymentsReady && <FaCheckCircle className="ct-step-check" />}
           </div>
           <p className="ct-lead">
@@ -2313,7 +2332,7 @@ const CreateTournament = () => {
           <fieldset className="ct-fieldset" disabled={!unlockPayments}>
             <div className="ct-grid four">
               <label className="ct-field">
-                <span>Tipo de premio</span>
+                <span>{t('prize')}</span>
                 <select
                   value={tournament.prizeMode}
                   onChange={(e) => setField("prizeMode", e.target.value)}
@@ -2906,7 +2925,7 @@ const CreateTournament = () => {
               className="ct-btn ct-btn-outline"
               onClick={() => navigate("/tournaments")}
             >
-              Cancelar
+              {t('cancel')}
             </button>
           )}
           {!isEditMode && (
@@ -2917,7 +2936,7 @@ const CreateTournament = () => {
               disabled={isSubmitting}
               title="Valida el formulario y guarda localmente sin tocar el servidor. Abre la consola del navegador para ver los archivos adjuntos detectados."
             >
-              {isSubmitting ? "Simulando..." : "Simular localmente"}
+              {isSubmitting ? t('loading') : "Simular localmente"}
             </button>
           )}
           <button
@@ -2926,10 +2945,10 @@ const CreateTournament = () => {
             disabled={isSubmitting}
           >
             {isSubmitting
-              ? "Publicando..."
+              ? t('ctCreating')
               : isEditMode
-                ? "Guardar cambios"
-                : "Publicar torneo"}
+                ? t('save')
+                : t('ctPublish')}
           </button>
         </div>
       </form>

@@ -1725,7 +1725,7 @@ export const generateTournamentBracket = async (req, res) => {
         }
 
         const normalizedFormat = normalizeTournamentFormat(tournament.format, 'single_elimination');
-        if (normalizedFormat === 'double_elimination') {
+        if (normalizedFormat === 'Doble Eliminación') {
             return res.status(400).json({
                 message: 'La generación operativa para doble eliminación aún no está disponible. Usa eliminación directa, suizo o round robin.'
             });

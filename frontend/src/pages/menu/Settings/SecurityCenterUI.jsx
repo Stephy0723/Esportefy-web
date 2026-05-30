@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { getAuthToken } from '../../../utils/authSession';
 import { useNotification } from '../../../context/NotificationContext';
+import { useLang } from '../../../context/LanguageContext';
 import {
   FaUserCircle,
   FaEnvelope,
@@ -74,6 +75,7 @@ const SecurityCenterUI = ({
   onVerificationStatusChange = () => {}
 }) => {
   const { addToast } = useNotification();
+  const { t } = useLang();
   const [showEmail, setShowEmail] = useState(false);
   const maskedEmail = useMemo(() => maskEmail(email), [email]);
   const [sendingVerification, setSendingVerification] = useState(false);
@@ -276,7 +278,7 @@ const SecurityCenterUI = ({
         <div className="sc-header__icon"><FaShieldAlt /></div>
         <div className="sc-header__content">
           <span className="sc-eyebrow">Configuración de Cuenta</span>
-          <h2>Centro de Seguridad</h2>
+          <h2>{t('settingsSecurity')}</h2>
           <p>Gestiona identidad, credenciales, sesiones activas y protecciones avanzadas.</p>
         </div>
       </header>
@@ -304,7 +306,7 @@ const SecurityCenterUI = ({
             <div className="sc-item__value">
               <strong>{showEmail ? email : maskedEmail}</strong>
               <span className={`sc-badge ${isVerified ? 'sc-badge--success' : 'sc-badge--danger'}`}>
-                {isVerified ? <><FaCheckCircle /> Verificado</> : <><FaTimesCircle /> Sin verificar</>}
+                {isVerified ? <><FaCheckCircle /> {t('verified')}</> : <><FaTimesCircle /> Sin verificar</>}
               </span>
             </div>
             {!isVerified && (
@@ -314,7 +316,7 @@ const SecurityCenterUI = ({
                   onClick={handleSendVerificationEmail}
                   disabled={sendingVerification}
                 >
-                  {sendingVerification ? 'Enviando...' : 'Verificar correo'}
+                  {sendingVerification ? t('submitting') : 'Verificar correo'}
                 </button>
               </div>
             )}
@@ -329,7 +331,7 @@ const SecurityCenterUI = ({
             {showPasswordForm ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                 <div style={{ position: 'relative' }}>
-                  <input type={showPassword.current ? "text" : "password"} placeholder="Contraseña actual" value={passwordData.current}
+                  <input type={showPassword.current ? "text" : "password"} placeholder={t('settingsCurrentPassword')} value={passwordData.current}
                     onChange={e => setPasswordData(p => ({ ...p, current: e.target.value }))}
                     className="sc-input" />
                   <button type="button"
@@ -339,7 +341,7 @@ const SecurityCenterUI = ({
                   </button>
                 </div>
                 <div style={{ position: 'relative' }}>
-                  <input type={showPassword.new ? "text" : "password"} placeholder="Nueva contraseña" value={passwordData.new}
+                  <input type={showPassword.new ? "text" : "password"} placeholder={t('settingsNewPassword')} value={passwordData.new}
                     onChange={e => setPasswordData(p => ({ ...p, new: e.target.value }))}
                     className="sc-input" />
                   <button type="button"
@@ -349,7 +351,7 @@ const SecurityCenterUI = ({
                   </button>
                 </div>
                 <div style={{ position: 'relative' }}>
-                  <input type={showPassword.confirm ? "text" : "password"} placeholder="Confirmar nueva contraseña" value={passwordData.confirm}
+                  <input type={showPassword.confirm ? "text" : "password"} placeholder={t('settingsConfirmPassword')} value={passwordData.confirm}
                     onChange={e => setPasswordData(p => ({ ...p, confirm: e.target.value }))}
                     className="sc-input" />
                   <button type="button"
@@ -360,17 +362,17 @@ const SecurityCenterUI = ({
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="sc-btn sc-btn--primary sc-btn--sm" onClick={handleChangePassword} disabled={loadingPassword}>
-                    {loadingPassword ? 'Guardando...' : 'Guardar'}
+                    {loadingPassword ? t('processing') : t('save')}
                   </button>
                   <button className="sc-btn sc-btn--ghost sc-btn--sm"
                     onClick={() => { setShowPasswordForm(false); setPasswordData({ current: '', new: '', confirm: '' }); setShowPassword({ current: false, new: false, confirm: false }); }}>
-                    Cancelar
+                    {t('cancel')}
                   </button>
                 </div>
               </div>
             ) : (
               <button className="sc-btn sc-btn--outline" onClick={() => setShowPasswordForm(true)}>
-                Cambiar Contraseña
+                {t('change')} Contraseña
               </button>
             )}
           </div>
@@ -382,7 +384,7 @@ const SecurityCenterUI = ({
         <div className="sc-card__header">
           <FaShieldAlt className="sc-card__icon" />
           <div>
-            <h3 className="sc-card__title">Autenticación de Dos Factores</h3>
+            <h3 className="sc-card__title">{t('settingsTwoFactor')}</h3>
             <p className="sc-card__desc">Añade una capa adicional de seguridad con tu app de autenticación</p>
           </div>
         </div>
@@ -415,7 +417,7 @@ const SecurityCenterUI = ({
           <div className="sc-stat">
             <span className="sc-stat__label">Códigos de Respaldo</span>
             <span className={`sc-badge sc-badge--lg ${twoFA.backupCodesRemaining > 0 ? 'sc-badge--success' : 'sc-badge--warning'}`}>
-              {twoFA.backupCodesRemaining > 0 ? `${twoFA.backupCodesRemaining} restantes` : 'No generados'}
+              {twoFA.backupCodesRemaining > 0 ? `${twoFA.backupCodesRemaining} restantes` : t('noData')}
             </span>
           </div>
         </div>
@@ -435,7 +437,7 @@ const SecurityCenterUI = ({
                 inputMode="numeric" onChange={e => setTotpCode(e.target.value.replace(/\D/g, ''))}
                 style={{ ...inputStyle, width: 160, textAlign: 'center', fontSize: '1.1rem', letterSpacing: 4 }} />
               <button className="sc-btn sc-btn--primary sc-btn--sm" onClick={handleVerify2FA} disabled={loading2FA}>
-                {loading2FA ? 'Verificando...' : 'Verificar'}
+                {loading2FA ? t('processing') : t('verified')}
               </button>
             </div>
           </div>
@@ -454,7 +456,7 @@ const SecurityCenterUI = ({
             </div>
             <button className="sc-btn sc-btn--ghost sc-btn--sm" style={{ marginTop: 12 }}
               onClick={() => { navigator.clipboard.writeText(backupCodes.join('\n')); addToast('Códigos copiados', 'success'); }}>
-              <FaCopy /> Copiar todos
+              <FaCopy /> {t('copy')}
             </button>
           </div>
         )}
@@ -465,16 +467,16 @@ const SecurityCenterUI = ({
             <input type="password" placeholder="Tu contraseña" value={disablePassword}
               onChange={e => setDisablePassword(e.target.value)} style={inputStyle} />
             <button className="sc-btn sc-btn--danger sc-btn--sm" onClick={handleDisable2FA} disabled={loading2FA}>
-              {loading2FA ? 'Procesando...' : 'Confirmar Desactivar'}
+              {loading2FA ? t('processing') : 'Confirmar Desactivar'}
             </button>
-            <button className="sc-btn sc-btn--ghost sc-btn--sm" onClick={handleCancelDisable}>Cancelar</button>
+            <button className="sc-btn sc-btn--ghost sc-btn--sm" onClick={handleCancelDisable}>{t('cancel')}</button>
           </div>
         )}
 
         <div className="sc-actions">
           {!twoFA.enabled ? (
             <button className="sc-btn sc-btn--primary" onClick={handleGenerate2FA} disabled={loading2FA || !!qrData}>
-              {loading2FA ? 'Generando...' : 'Activar 2FA'}
+              {loading2FA ? t('processing') : 'Activar 2FA'}
             </button>
           ) : (
             <>
@@ -505,7 +507,7 @@ const SecurityCenterUI = ({
               </div>
               {!session.isCurrent && (
                 <button className="sc-btn sc-btn--ghost sc-btn--xs" onClick={() => handleRevokeSession(session.id)}>
-                  Cerrar
+                  {t('close')}
                 </button>
               )}
             </div>
@@ -516,7 +518,7 @@ const SecurityCenterUI = ({
         {sessions.filter(s => !s.isCurrent).length > 0 && (
           <button className="sc-btn sc-btn--danger sc-btn--sm" onClick={handleRevokeAllOther}
             disabled={loadingSessions} style={{ marginTop: 12 }}>
-            <FaSignOutAlt /> {loadingSessions ? 'Cerrando...' : 'Cerrar todas las demás sesiones'}
+            <FaSignOutAlt /> {loadingSessions ? t('processing') : 'Cerrar todas las demás sesiones'}
           </button>
         )}
       </article>
@@ -551,12 +553,12 @@ const SecurityCenterUI = ({
         <div className="sc-card__header">
           <FaHeadset className="sc-card__icon" />
           <div>
-            <h3 className="sc-card__title">Soporte de Seguridad</h3>
+            <h3 className="sc-card__title">{t('support')}</h3>
             <p className="sc-card__desc">Si detectas actividad sospechosa, contacta soporte inmediatamente</p>
           </div>
         </div>
         <a href="/settings" className="sc-btn sc-btn--primary" style={{ textDecoration: 'none' }}>
-          <FaHeadset /> Ir a Soporte
+          <FaHeadset /> {t('support')}
         </a>
       </article>
 
@@ -571,7 +573,7 @@ const SecurityCenterUI = ({
         </div>
         {!showDeleteZone ? (
           <button className="sc-btn sc-btn--danger sc-btn--sm" onClick={() => setShowDeleteZone(true)}>
-            <FaTrash /> Quiero eliminar mi cuenta
+            <FaTrash /> {t('settingsDeleteAccount')}
           </button>
         ) : (
           <div className="sc-danger">
@@ -582,10 +584,10 @@ const SecurityCenterUI = ({
               <input type="password" placeholder="Tu contraseña" value={deletePassword}
                 onChange={e => setDeletePassword(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
               <button className="sc-btn sc-btn--danger" onClick={handleDeleteAccount} disabled={!deletePassword || loadingDelete}>
-                <FaTrash /> {loadingDelete ? 'Eliminando...' : 'Eliminar Cuenta'}
+                <FaTrash /> {loadingDelete ? t('processing') : t('settingsDeleteAccount')}
               </button>
               <button className="sc-btn sc-btn--ghost sc-btn--sm"
-                onClick={() => { setShowDeleteZone(false); setDeletePassword(''); }}>Cancelar</button>
+                onClick={() => { setShowDeleteZone(false); setDeletePassword(''); }}>{t('cancel')}</button>
             </div>
           </div>
         )}

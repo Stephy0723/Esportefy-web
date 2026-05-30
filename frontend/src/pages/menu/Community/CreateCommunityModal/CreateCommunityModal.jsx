@@ -22,6 +22,7 @@ import {
     isRiotCommunitySelection
 } from '../communitySocials';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import {
     COMMUNITY_AUDIENCE_OPTIONS,
     COMMUNITY_CONTENT_CATEGORY_DEFAULTS,
@@ -71,6 +72,7 @@ const slugify = (value) =>
 const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
     const navigate = useNavigate();
     const { addToast } = useNotification();
+    const { t } = useLang();
     const [activeTab, setActiveTab] = useState('identity');
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
@@ -265,15 +267,15 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
                                     transition={{ type: 'spring', damping: 20 }}
                                 >
                                     <div className="ccm-success__icon"><FaCheck /></div>
-                                    <h3>Comunidad creada</h3>
-                                    <p>Redirigiendo...</p>
+                                    <h3>{t('communityCreate')}</h3>
+                                    <p>{t('loading')}</p>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
                         <div className="ccm-header">
                             <div className="ccm-header__copy">
-                                <span className="ccm-kicker">Crear comunidad</span>
+                                <span className="ccm-kicker">{t('communityCreate')}</span>
                                 <h3>Usa el formulario que ya preparaste y publícala de una vez</h3>
                             </div>
                             <button type="button" className="ccm-close" onClick={handleClose} disabled={isSaving}>
@@ -351,7 +353,7 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
 
                                             <div className="ccm-grid">
                                                 <label className="ccm-field">
-                                                    <span>Región</span>
+                                                    <span>{t('region')}</span>
                                                     <select name="region" value={formData.region} onChange={handleChange}>
                                                         {COMMUNITY_REGION_OPTIONS.map((option) => (
                                                             <option key={option.value} value={option.value}>
@@ -409,7 +411,7 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
                                     {activeTab === 'content' && (
                                         <div className="ccm-panel">
                                             <div className="ccm-field">
-                                                <span>Juegos principales</span>
+                                                <span>{t('game')}</span>
                                                 <div className="ccm-chips">
                                                     {AVAILABLE_GAMES.map((game) => (
                                                         <button
@@ -546,20 +548,20 @@ const CreateCommunityModal = ({ isOpen, onClose, onCreated }) => {
                         </div>
 
                         <div className="ccm-footer">
-                            <button type="button" className="ccm-btn ccm-btn--ghost" onClick={handleClose} disabled={isSaving}>Cancelar</button>
+                            <button type="button" className="ccm-btn ccm-btn--ghost" onClick={handleClose} disabled={isSaving}>{t('cancel')}</button>
                             <div className="ccm-footer__actions">
                                 {activeTab !== 'identity' && (
                                     <button type="button" className="ccm-btn ccm-btn--ghost" onClick={goPrev} disabled={isSaving}>
-                                        <FaChevronLeft /> Anterior
+                                        <FaChevronLeft /> {t('cancel')}
                                     </button>
                                 )}
                                 {activeTab !== 'settings' ? (
                                     <button type="button" className="ccm-btn ccm-btn--primary" onClick={goNext} disabled={isSaving}>
-                                        Siguiente <FaChevronRight />
+                                        {t('save')} <FaChevronRight />
                                     </button>
                                 ) : (
                                     <button type="button" className="ccm-btn ccm-btn--primary" onClick={handleLaunch} disabled={isSaving || !formData.name.trim()}>
-                                        {isSaving ? 'Creando...' : <>Lanzar comunidad <FaRocket /></>}
+                                        {isSaving ? t('loading') : <>{t('communityCreate')} <FaRocket /></>}
                                     </button>
                                 )}
                             </div>

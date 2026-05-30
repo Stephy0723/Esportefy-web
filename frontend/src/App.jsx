@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Outlet, useLocation, Navigate } from 'rea
 import './App.css';
 
 import { NotificationProvider } from './context/NotificationContext';
+import { LanguageProvider } from './context/LanguageContext';
 import ToastContainer from './components/Toasts/ToastContainer';
 import SponsorshipHub from './components/SponsorshipHub/SponsorshipHub';
 import SponsorMotion from './components/SponsorMotion/SponsorMotion';
@@ -228,13 +229,15 @@ const AppRouterContent = () => {
 
 function App() {
   return (
-    <NotificationProvider>
-      <ToastContainer />
+    <LanguageProvider>
+      <NotificationProvider>
+        <ToastContainer />
 
-      <BrowserRouter>
-        <AppRouterContent />
-      </BrowserRouter>
-    </NotificationProvider>
+        <BrowserRouter>
+          <AppRouterContent />
+        </BrowserRouter>
+      </NotificationProvider>
+    </LanguageProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLang } from '../../../context/LanguageContext';
 import './Community.css';
 import PageHud from '../../../components/PageHud/PageHud';
 import FeedPanel from './FeedPanel/FeedPanel';
@@ -74,9 +75,10 @@ const GLOBAL_PARTICLES = buildParticles(20, () => ({
 /*  COMPONENTS  */
 
 const HeroBanner = ({ onExplore, games = [] }) => {
+    const { t } = useLang();
     const [heroIdx, setHeroIdx] = useState(0);
     const heroes = games.slice(0, 3);
-    const hero = heroes[heroIdx] || heroes[0] || { name: 'Comunidad', img: '', color: '#8EDB15' };
+    const hero = heroes[heroIdx] || heroes[0] || { name: t('communityTitle'), img: '', color: '#8EDB15' };
 
     useEffect(() => {
         if (!heroes.length) return undefined;
@@ -127,14 +129,14 @@ const HeroBanner = ({ onExplore, games = [] }) => {
                     </motion.div>
                 </AnimatePresence>
                 <div className="cm-hero__cta">
-                    <motion.button 
+                    <motion.button
                         className="cm-hero__btn cm-hero__btn--primary"
                         onClick={onExplore}
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.98 }}
                     >
                         <i className='bx bxs-rocket'></i>
-                        <span>Explorar</span>
+                        <span>{t('communityExplore')}</span>
                     </motion.button>
                 </div>
                 <div className="cm-hero__dots">
@@ -164,6 +166,7 @@ const HeroBanner = ({ onExplore, games = [] }) => {
 };
 
 const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommunity, games = [] }) => {
+    const { t } = useLang();
     const [showGameDrop, setShowGameDrop] = useState(false);
     const dropRef = useRef(null);
 
@@ -178,7 +181,7 @@ const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommuni
             <div className="cm-search">
                 <i className='bx bx-search cm-search__icon'></i>
                 <input
-                    type="text" placeholder="Buscar juegos, comunidades, jugadores..."
+                    type="text" placeholder={t('communitySearch')}
                     value={value} onChange={e => onChange(e.target.value)}
                     className="cm-search__input"
                 />
@@ -187,15 +190,15 @@ const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommuni
                     <button className={'cm-search__filter-btn ' + (gameFilter !== 'all' ? 'active' : '')}
                         onClick={() => setShowGameDrop(!showGameDrop)}>
                         <i className='bx bx-filter-alt'></i>
-                        <span>{gameFilter === 'all' ? 'Filtrar' : gameFilter}</span>
+                        <span>{gameFilter === 'all' ? t('communityAll') : gameFilter}</span>
                         <i className={'bx bx-chevron-down cm-search__chevron ' + (showGameDrop ? 'open' : '')}></i>
                     </button>
                     {showGameDrop && (
                         <div className="cm-search__dropdown">
-                            <div className="cm-search__dropdown-header">Filtrar por juego</div>
+                            <div className="cm-search__dropdown-header">{t('communityGames')}</div>
                             <button className={'cm-search__dropdown-item ' + (gameFilter === 'all' ? 'active' : '')}
                                 onClick={() => { setGameFilter('all'); setShowGameDrop(false); }}>
-                                <i className='bx bx-grid-alt'></i> Todos los juegos
+                                <i className='bx bx-grid-alt'></i> {t('communityAll')}
                             </button>
                             {games.map(g => (
                                 <button key={g.id} className={'cm-search__dropdown-item ' + (gameFilter === g.name ? 'active' : '')}
@@ -210,13 +213,14 @@ const SearchBar = ({ value, onChange, gameFilter, setGameFilter, onCreateCommuni
             </div>
             <button className="cm-create-btn" onClick={onCreateCommunity}>
                 <i className='bx bx-plus-circle'></i>
-                <span>Crear Comunidad</span>
+                <span>{t('communityCreate')}</span>
             </button>
         </div>
     );
 };
 
 const GameCard = ({ game, index, stats }) => {
+    const { t } = useLang();
     const navigate = useNavigate();
     const [isHovered, setIsHovered] = useState(false);
     const cardRef = useRef(null);
@@ -285,14 +289,14 @@ const GameCard = ({ game, index, stats }) => {
                             <i className='bx bxs-star'></i> {stats?.postsCount ?? 0} posts
                         </div>
                     </div>
-                    <motion.button 
-                        className="cm-game__btn" 
+                    <motion.button
+                        className="cm-game__btn"
                         onClick={(e) => { e.stopPropagation(); goToGame(); }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
                         <i className='bx bx-right-arrow-alt'></i>
-                        <span>Explorar</span>
+                        <span>{t('communityExplore')}</span>
                     </motion.button>
                 </div>
                 <div className="cm-game__border-glow" />
@@ -306,6 +310,7 @@ const GameCard = ({ game, index, stats }) => {
 };
 
 const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGame, gameStats, games = [], filters = [] }) => {
+    const { t } = useLang();
     const carouselRef = useRef(null);
     const [isPaused, setIsPaused] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -369,8 +374,8 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
                 <div className="cm-section-header__left">
                     <div className="cm-section-icon"><i className='bx bxs-joystick'></i></div>
                     <div>
-                        <h2 className="cm-section-title" data-text="Videojuegos">Videojuegos</h2>
-                        <p className="cm-section-subtitle">{filtered.length} juegos disponibles</p>
+                        <h2 className="cm-section-title" data-text={t('communityGames')}>{t('communityGames')}</h2>
+                        <p className="cm-section-subtitle">{filtered.length} {t('communityGames').toLowerCase()}</p>
                     </div>
                 </div>
                 <div className="cm-filters">
@@ -417,7 +422,7 @@ const GamesSection = ({ searchQuery, activeFilter, setActiveFilter, onSuggestGam
             ) : (
                 <div className="cm-empty">
                     <i className='bx bx-search-alt-2'></i>
-                    <p>No se encontraron juegos</p>
+                    <p>{t('communityEmpty')}</p>
                 </div>
             )}
         </motion.section>
@@ -495,6 +500,7 @@ const SuggestGameModal = ({ open, onClose }) => {
 };
 
 const CommunityCard = ({ community, games = [] }) => {
+    const { t } = useLang();
     const navigate = useNavigate();
     const formatNum = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
     const communityHref = `/communities/${community.shortUrl || community.id}`;
@@ -560,7 +566,7 @@ const CommunityCard = ({ community, games = [] }) => {
                 )}
                 <div className="cm-community__footer">
                     <div className="cm-community__stats">
-                        <div className="cm-community__stat"><i className='bx bxs-group'></i><strong>{formatNum(community.membersCount || 0)}</strong> miembros</div>
+                        <div className="cm-community__stat"><i className='bx bxs-group'></i><strong>{formatNum(community.membersCount || 0)}</strong> {t('communityMembers')}</div>
                         <div className="cm-community__stat"><i className='bx bxs-map-alt'></i><strong>{community.region || 'LATAM'}</strong></div>
                     </div>
                     <button
@@ -579,6 +585,7 @@ const CommunityCard = ({ community, games = [] }) => {
 };
 
 const CommunitiesSection = ({ searchQuery, gameFilter, games = [] }) => {
+    const { t } = useLang();
     const [communities, setCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -608,8 +615,8 @@ const CommunitiesSection = ({ searchQuery, gameFilter, games = [] }) => {
                 <div className="cm-section-header__left">
                     <div className="cm-section-icon cm-section-icon--green"><i className='bx bxs-group'></i></div>
                     <div>
-                        <h2 className="cm-section-title">Comunidades</h2>
-                        <p className="cm-section-subtitle">{communities.length} comunidades encontradas</p>
+                        <h2 className="cm-section-title">{t('communityTitle')}</h2>
+                        <p className="cm-section-subtitle">{communities.length} {t('communityTitle').toLowerCase()}</p>
                     </div>
                 </div>
             </div>

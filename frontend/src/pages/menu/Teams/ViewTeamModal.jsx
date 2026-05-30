@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLang } from '../../../context/LanguageContext';
 import axios from 'axios';
 import { esportsCatalog } from '../../../data/esportsCatalog.jsx';
 import { API_URL } from '../../../config/api';
@@ -32,6 +33,7 @@ const ViewTeamModal = (props) => {
 };
 
 const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated, initialInviteCode, initialTab = 'info' }) => {
+    const { t } = useLang();
     /* ── helpers ── */
     const normalizeGame = (v) => String(v || '').trim().toLowerCase();
     const isRiotGame = (g) => isSupportedRiotGame(g);
@@ -586,23 +588,23 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                                     <div className="vtm-info-grid">
                                         <div className="vtm-info-card">
                                             <i className='bx bx-category'></i>
-                                            <div><label>Categoría</label><p>{team.category || '—'}</p></div>
+                                            <div><label>{t('createTeamCategory')}</label><p>{team.category || '—'}</p></div>
                                         </div>
                                         <div className="vtm-info-card">
                                             <i className='bx bx-map'></i>
-                                            <div><label>País</label><p>{team.teamCountry || '—'}</p></div>
+                                            <div><label>{t('country')}</label><p>{team.teamCountry || '—'}</p></div>
                                         </div>
                                         <div className="vtm-info-card">
                                             <i className='bx bx-trophy'></i>
-                                            <div><label>Nivel</label><p>{team.teamLevel || '—'}</p></div>
+                                            <div><label>{t('createTeamLevel')}</label><p>{team.teamLevel || '—'}</p></div>
                                         </div>
                                         <div className="vtm-info-card">
                                             <i className='bx bx-globe-alt'></i>
-                                            <div><label>Idioma</label><p>{team.teamLanguage || '—'}</p></div>
+                                            <div><label>{t('language')}</label><p>{team.teamLanguage || '—'}</p></div>
                                         </div>
                                         <div className="vtm-info-card">
                                             <i className='bx bx-male-female'></i>
-                                            <div><label>Género</label><p>{team.teamGender || '—'}</p></div>
+                                            <div><label>{t('gender')}</label><p>{team.teamGender || '—'}</p></div>
                                         </div>
                                         <div className="vtm-info-card">
                                             <i className='bx bx-group'></i>
@@ -634,7 +636,7 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                             ) : (
                                 <div className="vtm-edit-form">
                                     <div className="vtm-form-group">
-                                        <label>Nombre del equipo</label>
+                                        <label>{t('createTeamName')}</label>
                                         <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Nombre" />
                                     </div>
                                     <div className="vtm-form-group">
@@ -643,17 +645,17 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                                     </div>
                                     <div className="vtm-form-row">
                                         <div className="vtm-form-group">
-                                            <label>Categoría</label>
+                                            <label>{t('createTeamCategory')}</label>
                                             <input value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })} placeholder="FPS, MOBA..." />
                                         </div>
                                         <div className="vtm-form-group">
-                                            <label>Juego</label>
+                                            <label>{t('lfteamFieldGame')}</label>
                                             <input value={editForm.game} onChange={e => setEditForm({ ...editForm, game: e.target.value })} placeholder="Valorant" />
                                         </div>
                                     </div>
                                     <div className="vtm-form-row">
                                         <div className="vtm-form-group">
-                                            <label>Nivel</label>
+                                            <label>{t('createTeamLevel')}</label>
                                             <select value={editForm.teamLevel} onChange={e => setEditForm({ ...editForm, teamLevel: e.target.value })}>
                                                 <option value="">Seleccionar...</option>
                                                 {TEAM_LEVEL_OPTIONS.map((option) => (
@@ -662,7 +664,7 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                                             </select>
                                         </div>
                                         <div className="vtm-form-group">
-                                            <label>Género</label>
+                                            <label>{t('gender')}</label>
                                             <select value={editForm.teamGender} onChange={e => setEditForm({ ...editForm, teamGender: e.target.value })}>
                                                 {TEAM_GENDER_OPTIONS.map((option) => (
                                                     <option key={option.id} value={option.id}>{option.label}</option>
@@ -672,7 +674,7 @@ const ViewTeamModalInner = ({ isOpen, onClose, team, currentUser, onTeamUpdated,
                                     </div>
                                     <div className="vtm-form-row">
                                         <div className="vtm-form-group">
-                                            <label>País / Región</label>
+                                            <label>{t('country')}</label>
                                             <input
                                                 list="vtm-team-country-options"
                                                 value={editForm.teamCountry}

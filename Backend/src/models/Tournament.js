@@ -245,7 +245,7 @@ const tournamentSchema = new mongoose.Schema({
     bracket: {
         format: {
             type: String,
-            enum: ['single_elimination', 'double_elimination', 'swiss', 'round_robin'],
+            enum: ['single_elimination', 'Doble Eliminación', 'swiss', 'round_robin'],
             default: 'single_elimination'
         },
         seedingMode: {

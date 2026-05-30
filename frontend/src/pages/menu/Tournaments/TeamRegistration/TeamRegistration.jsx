@@ -9,6 +9,7 @@ import { formatTeamPublicId, formatTournamentPublicId } from '../../../../utils/
 import { getAuthToken, getStoredUser } from '../../../../utils/authSession';
 import { useAuth } from '../../../../context/AuthContext';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../../utils/mlbbStatus';
 import { isSupportedMlbbGame, isSupportedRiotGame, normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
 import {
@@ -38,6 +39,7 @@ const TeamRegistration = () => {
   const location = useLocation();
   const { user: authUser } = useAuth();
   const { notify } = useNotification();
+  const { t } = useLang();
 
   const DEFAULT_IMAGE =
     'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop';
@@ -259,7 +261,7 @@ const TeamRegistration = () => {
       );
       notify(
         'success',
-        isIndividualTournament ? 'Jugador registrado' : 'Equipo registrado',
+        t('teamRegSuccess'),
         isIndividualTournament
           ? 'Tu inscripción individual fue completada correctamente. GL HF.'
           : 'Tu equipo fue inscrito correctamente. GL HF.'
@@ -327,7 +329,7 @@ const TeamRegistration = () => {
                     disabled={loadingTeams}
                     required
                   >
-                    <option value="">{loadingTeams ? 'Cargando equipos...' : 'Selecciona tu equipo'}</option>
+                    <option value="">{loadingTeams ? t('loading') : t('teamRegSelectTeam')}</option>
                     {filteredTeams.map((team) => (
                       <option key={team._id} value={team._id}>
                         {team.name}{formatTeamPublicId(team) ? ` · ${formatTeamPublicId(team)}` : ''}
@@ -403,10 +405,10 @@ const TeamRegistration = () => {
 
               <div className="actions">
                 <button type="button" className="btn-cancel" onClick={() => navigate('/tournaments')}>
-                  Cancelar
+                  {t('cancel')}
                 </button>
                 <button type="submit" className="btn-confirm" disabled={submitting || !canSubmit}>
-                  {submitting ? 'Registrando...' : isIndividualTournament ? 'Inscribirme' : 'Confirmar Registro'}
+                  {submitting ? t('teamRegRegistering') : isIndividualTournament ? t('registerNow') : t('teamRegConfirm')}
                 </button>
               </div>
             </form>

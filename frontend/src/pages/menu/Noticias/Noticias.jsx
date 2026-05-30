@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
-import { 
+import {
     FaFire, FaClock, FaEye, FaChevronRight, FaChevronDown,
     FaGamepad, FaTrophy, FaCalendarAlt, FaBuilding, FaUsers,
     FaNewspaper, FaArrowRight, FaSearch, FaTimes, FaBookmark,
@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fa';
 import PageHud from '../../../components/PageHud/PageHud';
 import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import { isSupportedGameName } from '../../../../../shared/supportedGames.js';
 import {
     ALLOWED_NEWS_IMAGE_TYPES,
@@ -104,6 +105,7 @@ const Bubbles = () => {
 export default function Noticias() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { t } = useLang();
     const primaryImageInputRef = useRef(null);
     const galleryInputRef = useRef(null);
     const [newsItems, setNewsItems] = useState([]);
@@ -132,7 +134,7 @@ export default function Noticias() {
                 const filtered = items.filter((item) => item?.game === 'Multigame' || isSupportedGameName(item?.game));
                 setNewsItems(filtered);
             } catch (err) {
-                setError('Error al cargar las noticias. Intenta de nuevo.');
+                setError(t('newsError'));
             } finally {
                 setLoading(false);
             }
@@ -429,7 +431,7 @@ export default function Noticias() {
             {loading && (
                 <div className="nw-state-msg">
                     <i className="bx bx-loader-alt bx-spin nw-state-msg__icon nw-state-msg__icon--primary"></i>
-                    <h3>Cargando noticias...</h3>
+                    <h3>{t('newsLoading')}</h3>
                 </div>
             )}
 
@@ -479,7 +481,7 @@ export default function Noticias() {
                             <div className="nw-modal__head">
                                 <div>
                                     <span className="nw-modal__eyebrow">Editor de GLITCH GANG</span>
-                                    <h2>Haz noticias</h2>
+                                    <h2>{t('news')}</h2>
                                     <p>Escribe el contexto base y generamos el resumen corto automaticamente para el feed.</p>
                                 </div>
                                 <button type="button" className="nw-modal__close" onClick={closeComposer}>
@@ -491,11 +493,11 @@ export default function Noticias() {
                                 <div className="nw-modal__form">
                                     <div className="nw-form__grid nw-form__grid--two">
                                         <label className="nw-form__field">
-                                            <span>Titular</span>
+                                            <span>{t('newsLatest')}</span>
                                             <input name="title" value={draft.title} onChange={handleDraftChange} placeholder="Escribe el titulo de la noticia" />
                                         </label>
                                         <label className="nw-form__field">
-                                            <span>Autor</span>
+                                            <span>{t('newsAuthor')}</span>
                                             <input name="author" value={draft.author} onChange={handleDraftChange} placeholder="Nombre del autor o editor" />
                                         </label>
                                     </div>
@@ -506,11 +508,11 @@ export default function Noticias() {
                                             <input name="company" value={draft.company} onChange={handleDraftChange} placeholder="GLITCH GANG" />
                                         </label>
                                         <label className="nw-form__field">
-                                            <span>Fecha</span>
+                                            <span>{t('date')}</span>
                                             <input type="date" name="date" value={draft.date} onChange={handleDraftChange} />
                                         </label>
                                         <label className="nw-form__field nw-form__field--check">
-                                            <span>Primicia</span>
+                                            <span>{t('newsFeatured')}</span>
                                             <span className="nw-switch">
                                                 <input type="checkbox" name="featured" checked={draft.featured} onChange={handleDraftChange} />
                                                 <span>{draft.featured ? 'Si, ponerla arriba' : 'No, solo agregar al feed'}</span>
@@ -520,7 +522,7 @@ export default function Noticias() {
 
                                     <div className="nw-form__grid nw-form__grid--two">
                                         <label className="nw-form__field">
-                                            <span>Categoria</span>
+                                            <span>{t('newsCategory')}</span>
                                             <select name="category" value={draft.category} onChange={handleDraftChange}>
                                                 {CATEGORIES.filter((item) => item.id !== 'Todos').map((item) => (
                                                     <option key={item.id} value={item.id}>{item.label}</option>
@@ -528,7 +530,7 @@ export default function Noticias() {
                                             </select>
                                         </label>
                                         <label className="nw-form__field">
-                                            <span>Juego</span>
+                                            <span>{t('game')}</span>
                                             <select name="game" value={draft.game} onChange={handleDraftChange}>
                                                 {GAMES.filter((item) => item !== 'Todos').map((item) => (
                                                     <option key={item} value={item}>{item}</option>
@@ -607,13 +609,13 @@ export default function Noticias() {
                                     </div>
 
                                     <div className="nw-preview__panel">
-                                        <span className="nw-preview__eyebrow">Ficha</span>
+                                        <span className="nw-preview__eyebrow">{t('information')}</span>
                                         <ul className="nw-preview__facts">
-                                            <li><strong>Autor</strong><span>{draft.author.trim() || 'Mesa Editorial'}</span></li>
+                                            <li><strong>{t('newsAuthor')}</strong><span>{draft.author.trim() || 'Mesa Editorial'}</span></li>
                                             <li><strong>Empresa</strong><span>{draft.company.trim() || DEFAULT_NEWS_COMPANY}</span></li>
-                                            <li><strong>Fecha</strong><span>{draft.date || 'Sin fecha'}</span></li>
-                                            <li><strong>Categoria</strong><span>{draft.category}</span></li>
-                                            <li><strong>Juego</strong><span>{draft.game}</span></li>
+                                            <li><strong>{t('date')}</strong><span>{draft.date || 'Sin fecha'}</span></li>
+                                            <li><strong>{t('newsCategory')}</strong><span>{draft.category}</span></li>
+                                            <li><strong>{t('game')}</strong><span>{draft.game}</span></li>
                                         </ul>
                                     </div>
 
@@ -662,10 +664,10 @@ export default function Noticias() {
 
                                     <div className="nw-modal__actions">
                                         <button type="button" className="nw-modal__ghost" onClick={closeComposer}>
-                                            Cancelar
+                                            {t('cancel')}
                                         </button>
                                         <button type="submit" className="nw-modal__submit" disabled={isProcessingMedia}>
-                                            {isProcessingMedia ? 'Procesando imagenes...' : 'Publicar noticia'}
+                                            {isProcessingMedia ? t('processing') : t('create')}
                                         </button>
                                     </div>
                                 </aside>
@@ -691,11 +693,11 @@ export default function Noticias() {
                         <div className="nw-hero__badges">
                             {featuredNews.featured && (
                                 <span className="nw-badge nw-badge--featured">
-                                    <FaFire /> {featuredNews.isCustom ? 'Primicia' : 'Destacado'}
+                                    <FaFire /> {featuredNews.isCustom ? t('newsBreaking') : t('newsFeatured')}
                                 </span>
                             )}
                             {featuredNews.isNew && (
-                                <span className="nw-badge nw-badge--fresh">Nuevo</span>
+                                <span className="nw-badge nw-badge--fresh">{t('newsBreaking')}</span>
                             )}
                             <span className="nw-badge nw-badge--category">{featuredNews.category}</span>
                             <span className="nw-badge nw-badge--game">{featuredNews.game}</span>
@@ -705,17 +707,17 @@ export default function Noticias() {
                         <div className="nw-hero__meta">
                             <span><FaClock /> {hasDisplayDate(featuredNews) ? formatDate(featuredNews.date) : (getNewsBadgeLabel(featuredNews) || 'Nueva')}</span>
                             {hasDisplayViews(featuredNews) && <span><FaEye /> {featuredNews.views.toLocaleString()}</span>}
-                            {featuredNews.author && <span className="nw-hero__author">Por {featuredNews.author}</span>}
+                            {featuredNews.author && <span className="nw-hero__author">{t('newsAuthor')}: {featuredNews.author}</span>}
                             {(featuredNews.company || featuredNews.isCustom) && (
                                 <span className="nw-hero__company"><FaBuilding /> {featuredNews.company || DEFAULT_NEWS_COMPANY}</span>
                             )}
                         </div>
-                        <motion.button 
+                        <motion.button
                             className="nw-hero__cta"
                             whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            Leer artículo completo <FaArrowRight />
+                            {t('newsReadMore')} <FaArrowRight />
                         </motion.button>
                     </div>
                     
@@ -739,21 +741,21 @@ export default function Noticias() {
                         <FaNewspaper className="nw-stat__icon" />
                         <div>
                             <span className="nw-stat__value">{stats.total}</span>
-                            <span className="nw-stat__label">Artículos</span>
+                            <span className="nw-stat__label">{t('news')}</span>
                         </div>
                     </motion.div>
                     <motion.div className="nw-stat" whileHover={{ scale: 1.05 }}>
                         <FaFire className="nw-stat__icon" />
                         <div>
                             <span className="nw-stat__value">{stats.fresh}</span>
-                            <span className="nw-stat__label">Nuevas</span>
+                            <span className="nw-stat__label">{t('newsBreaking')}</span>
                         </div>
                     </motion.div>
                     <motion.div className="nw-stat" whileHover={{ scale: 1.05 }}>
                         <FaTrophy className="nw-stat__icon" />
                         <div>
                             <span className="nw-stat__value">{stats.featured}</span>
-                            <span className="nw-stat__label">Destacadas</span>
+                            <span className="nw-stat__label">{t('newsFeatured')}</span>
                         </div>
                     </motion.div>
                 </div>
@@ -765,9 +767,9 @@ export default function Noticias() {
                     {/* Search */}
                     <div className="nw-search">
                         <FaSearch className="nw-search__icon" />
-                        <input 
+                        <input
                             type="text"
-                            placeholder="Buscar noticias, juegos, equipos..."
+                            placeholder={t('search')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -779,19 +781,19 @@ export default function Noticias() {
                     </div>
 
                     {/* Filter toggle for mobile */}
-                    <button 
+                    <button
                         className={`nw-filter-toggle ${showFilters ? 'active' : ''}`}
                         onClick={() => setShowFilters(!showFilters)}
                     >
                         <FaSortAmountDown />
-                        Filtros
+                        {t('filters')}
                         <FaChevronDown className={showFilters ? 'rotated' : ''} />
                     </button>
 
                     {user?.isAdmin || user?.roles?.includes('content-creator') ? (
                         <button className="nw-create-btn" onClick={() => setIsComposerOpen(true)}>
                             <FaPlus />
-                            Crear noticia
+                            {t('create')}
                         </button>
                     ) : (
                         <button
@@ -799,18 +801,18 @@ export default function Noticias() {
                             onClick={() => showToast('Necesitas ser administrador o creador de contenido para publicar noticias')}
                         >
                             <FaPlus />
-                            Crear noticia
+                            {t('create')}
                         </button>
                     )}
 
                     {/* Desktop filters */}
                     <div className="nw-toolbar__filters">
                         <select value={game} onChange={(e) => setGame(e.target.value)} className="nw-select">
-                            {GAMES.map((g) => <option key={g} value={g}>{g === 'Todos' ? 'Todos los juegos' : g}</option>)}
+                            {GAMES.map((g) => <option key={g} value={g}>{g === 'Todos' ? t('all') : g}</option>)}
                         </select>
                         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="nw-select">
-                            <option value="recent">Más reciente</option>
-                            <option value="popular">Más popular</option>
+                            <option value="recent">{t('recent')}</option>
+                            <option value="popular">{t('newsTrending')}</option>
                         </select>
                     </div>
                 </div>
@@ -818,18 +820,18 @@ export default function Noticias() {
                 {/* Mobile filters */}
                 <AnimatePresence>
                     {showFilters && (
-                        <motion.div 
+                        <motion.div
                             className="nw-toolbar__mobile-filters"
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                         >
                             <select value={game} onChange={(e) => setGame(e.target.value)} className="nw-select">
-                                {GAMES.map((g) => <option key={g} value={g}>{g === 'Todos' ? 'Todos los juegos' : g}</option>)}
+                                {GAMES.map((g) => <option key={g} value={g}>{g === 'Todos' ? t('all') : g}</option>)}
                             </select>
                             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="nw-select">
-                                <option value="recent">Más reciente</option>
-                                <option value="popular">Más popular</option>
+                                <option value="recent">{t('recent')}</option>
+                                <option value="popular">{t('newsTrending')}</option>
                             </select>
                         </motion.div>
                     )}
@@ -866,7 +868,7 @@ export default function Noticias() {
                         <span>{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
                         {(searchTerm || category !== 'Todos' || game !== 'Todos') && (
                             <button onClick={() => { setCategory('Todos'); setGame('Todos'); setSearchTerm(''); }}>
-                                Limpiar filtros
+                                {t('cancel')}
                             </button>
                         )}
                     </motion.div>
@@ -900,8 +902,8 @@ export default function Noticias() {
                                         <img src={n.image} alt={n.title} loading="lazy" />
                                         <div className="nw-card__overlay" />
                                         <div className="nw-card__badges">
-                                            {n.featured && <span className="nw-badge nw-badge--featured">{n.isCustom ? 'Primicia' : 'Destacado'}</span>}
-                                            {n.isNew && <span className="nw-badge nw-badge--fresh">Nuevo</span>}
+                                            {n.featured && <span className="nw-badge nw-badge--featured">{n.isCustom ? t('newsBreaking') : t('newsFeatured')}</span>}
+                                            {n.isNew && <span className="nw-badge nw-badge--fresh">{t('newsBreaking')}</span>}
                                             <span className="nw-badge nw-badge--category">{n.category}</span>
                                             <span className="nw-badge nw-badge--game">{n.game}</span>
                                         </div>
@@ -939,22 +941,22 @@ export default function Noticias() {
                                             </div>
                                         </div>
                                         <div className="nw-card__read-more">
-                                            Leer más <FaChevronRight />
+                                            {t('newsReadMore')} <FaChevronRight />
                                         </div>
                                     </div>
                                 </motion.article>
                             ))
                         ) : (
-                            <motion.div 
+                            <motion.div
                                 className="nw-empty"
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                             >
                                 <FaNewspaper />
-                                <h3>No hay noticias</h3>
-                                <p>No encontramos noticias con los filtros seleccionados</p>
+                                <h3>{t('newsEmpty')}</h3>
+                                <p>{t('newsEmptyDesc')}</p>
                                 <button onClick={() => { setCategory('Todos'); setGame('Todos'); setSearchTerm(''); }}>
-                                    Ver todas las noticias
+                                    {t('viewMore')}
                                 </button>
                             </motion.div>
                         )}
@@ -971,7 +973,7 @@ export default function Noticias() {
                         transition={{ delay: 0.2 }}
                     >
                         <h3 className="nw-sidebar__title">
-                            <FaFire /> Tendencias
+                            <FaFire /> {t('newsTrending')}
                         </h3>
                         <div className="nw-trending__list">
                             {trendingNews.map((n, index) => (
@@ -1062,7 +1064,7 @@ export default function Noticias() {
                                 }
                             }}
                         >
-                            {newsletterLoading ? 'Suscribiendo...' : 'Suscribirme'}
+                            {newsletterLoading ? t('loading') : 'Suscribirme'}
                         </motion.button>
                     </motion.div>
 
@@ -1073,7 +1075,7 @@ export default function Noticias() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 }}
                     >
-                        <h3 className="nw-sidebar__title">Categorías</h3>
+                        <h3 className="nw-sidebar__title">{t('newsCategory')}</h3>
                         <div className="nw-quick-cats__list">
                             {CATEGORIES.filter(c => c.id !== 'Todos').map(c => {
                                 const count = newsItems.filter((n) => n.category === c.id).length;

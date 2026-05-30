@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useLang } from '../../../context/LanguageContext';
 import { API_URL } from '../../../config/api';
 import { getAuthToken } from '../../../utils/authSession';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +20,7 @@ import {
     PLAYERS_DATA, TEAMS_DATA, TOURNAMENTS_DATA,
     GAMES, REGIONS, getWinRate, formatPrize, formatDate, getStatusLabel
 } from '../../../data/rankingsData';
+import { getTournamentFormatLabel } from '../../../../../shared/tournamentCatalog.js';
 import './Rankings.css';
 
 // All supported games
@@ -93,14 +95,15 @@ const getAchievementCount = (player) => {
     return (player.achievements.solo?.length || 0) + (player.achievements.duo?.length || 0) + (player.achievements.team?.length || 0);
 };
 
-// Tab definitions
+// Tab definitions — labels are set dynamically via t() inside the component
 const TABS = [
-    { id: 'players', label: 'Jugadores', icon: FaUserAlt },
-    { id: 'teams', label: 'Equipos', icon: FaShieldAlt },
-    { id: 'tournaments', label: 'Torneos', icon: FaTrophy },
+    { id: 'players', labelKey: 'tabPlayers', icon: FaUserAlt },
+    { id: 'teams', labelKey: 'tabTeams', icon: FaShieldAlt },
+    { id: 'tournaments', labelKey: 'tabTournaments', icon: FaTrophy },
 ];
 
 export default function Rankings() {
+    const { t } = useLang();
     const fileInputRef = useRef(null);
     const achievementFileRef = useRef(null);
     const [rankingSource, setRankingSource] = useState('rd');
@@ -628,7 +631,7 @@ export default function Rankings() {
         return (
             <div className="rk-page rk-page--loading">
                 <div className="rk-state-msg">
-                    <h2>Cargando Rankings...</h2>
+                    <h2>{t('loading')}</h2>
                 </div>
             </div>
         );
@@ -638,15 +641,15 @@ export default function Rankings() {
         <div className="rk-page">
             {rankingSource !== 'gg' && (
                 <div className="rk-demo-banner">
-                    <FaInfoCircle /> Aviso: Los datos mostrados en los rankings actuales son de demostración (Demo).
+                    <FaInfoCircle /> {t('demoBannerNotice')}
                 </div>
             )}
             {/* Source Switcher: General vs Plataforma */}
             <div className="rk-source-switcher">
                 {[
-                    { id: 'rd', label: 'Ranking RD', icon: <FaFlag /> },
+                    { id: 'rd', label: t('rdRankingsTitle'), icon: <FaFlag /> },
                     { id: 'global', label: 'Global', icon: <FaGlobeAmericas /> },
-                    { id: 'gg', label: 'Ranking GG', icon: <FaChartLine /> },
+                    { id: 'gg', label: t('ggRankingTitle'), icon: <FaChartLine /> },
                 ].map(src => (
                     <button
                         key={src.id}
@@ -688,9 +691,9 @@ export default function Rankings() {
                     <motion.section className="rk-hero" variants={itemVariants}>
                         <div className="rk-hero__content">
                             <div className="rk-hero__badge">
-                                <FaChartLine /> Ranking vivo de la plataforma
+                                <FaChartLine /> {t('ggRankingBadge')}
                             </div>
-                            <h1>Ranking GG</h1>
+                            <h1>{t('ggRankingTitle')}</h1>
                             <p>Clasificación automática basada en resultados reales de torneos, avance en brackets y rating ELO generado dentro de Esportefy.</p>
 
                             <motion.button
@@ -700,29 +703,29 @@ export default function Rankings() {
                                 whileTap={{ scale: 0.95 }}
                             >
                                 <FaTrophy />
-                                <span>Enviar Mi Logro</span>
+                                <span>{t('btnSubmitAchievement')}</span>
                             </motion.button>
 
                             <div className="rk-hero__stats">
                                 <div className="rk-hero__stat">
                                     <FaUserAlt />
                                     <span>{platformStats.totalPlayers}</span>
-                                    <small>Jugadores</small>
+                                    <small>{t('tabPlayers')}</small>
                                 </div>
                                 <div className="rk-hero__stat">
                                     <FaShieldAlt />
                                     <span>{platformStats.totalTeams}</span>
-                                    <small>Equipos</small>
+                                    <small>{t('tabTeams')}</small>
                                 </div>
                                 <div className="rk-hero__stat">
                                     <FaTrophy />
                                     <span>{platformStats.activeTournaments}</span>
-                                    <small>Torneos activos</small>
+                                    <small>{t('statActiveTournaments')}</small>
                                 </div>
                                 <div className="rk-hero__stat">
                                     <FaMedal />
                                     <span>{platformStats.completedTournaments}</span>
-                                    <small>Torneos cerrados</small>
+                                    <small>{t('statClosedTournaments')}</small>
                                 </div>
                             </div>
                         </div>
@@ -736,7 +739,7 @@ export default function Rankings() {
                                 onClick={() => setActiveTab(tab.id)}
                             >
                                 <tab.icon />
-                                <span>{tab.label}</span>
+                                <span>{t(tab.labelKey)}</span>
                             </button>
                         ))}
                     </motion.div>
@@ -758,7 +761,7 @@ export default function Rankings() {
                         <select value={game} onChange={(e) => setGame(e.target.value)}>
                             {platformGames.map((gameOption) => (
                                 <option key={gameOption} value={gameOption}>
-                                    {gameOption === 'Todos' ? 'Todos los Juegos' : gameOption}
+                                    {gameOption === 'Todos' ? t('filterAllGames') : gameOption}
                                 </option>
                             ))}
                         </select>
@@ -767,40 +770,40 @@ export default function Rankings() {
                             <select value={region} onChange={(e) => setRegion(e.target.value)}>
                                 {platformRegions.map((regionOption) => (
                                     <option key={regionOption} value={regionOption}>
-                                        {regionOption === 'Todas' ? 'Todas las Regiones' : regionOption}
+                                        {regionOption === 'Todas' ? t('filterAllRegions') : regionOption}
                                     </option>
                                 ))}
                             </select>
                         ) : (
                             <select value={tournamentFilter} onChange={(e) => setTournamentFilter(e.target.value)}>
-                                <option value="Todos">Todos los Estados</option>
-                                <option value="active">En Curso</option>
-                                <option value="upcoming">Próximamente</option>
-                                <option value="completed">Finalizados</option>
+                                <option value="Todos">{t('filterAllStatuses')}</option>
+                                <option value="active">{t('filterStatusActive')}</option>
+                                <option value="upcoming">{t('filterStatusUpcoming')}</option>
+                                <option value="completed">{t('filterStatusCompleted')}</option>
                             </select>
                         )}
                     </motion.div>
 
                     {platformLoading ? (
                         <motion.div className="rk-state-msg" variants={itemVariants}>
-                            <h2>Calculando Ranking GG...</h2>
+                            <h2>{t('loadingCalculatingGg')}</h2>
                             <p>Estamos procesando torneos, resultados y progresión ELO.</p>
                         </motion.div>
                     ) : platformError ? (
                         <motion.div className="rk-state-msg" variants={itemVariants}>
-                            <h2>No se pudo cargar Ranking GG</h2>
+                            <h2>{t('errorLoadingGg')}</h2>
                             <p>{platformError}</p>
                         </motion.div>
                     ) : !hasPlatformData ? (
                         <div className="rk-gg-placeholder">
                             <FaChartLine className="rk-gg-placeholder__icon" />
-                            <h2 className="rk-gg-placeholder__title">Ranking GG sin suficiente historial</h2>
+                            <h2 className="rk-gg-placeholder__title">{t('placeholderGgInsufficientHistory')}</h2>
                             <p className="rk-gg-placeholder__desc">
                                 Cuando los torneos de la plataforma acumulen registros y resultados cerrados,
                                 aquí aparecerán los rankings de jugadores, equipos y eventos en tiempo real.
                             </p>
                             <span className="sc-badge sc-badge--warning rk-gg-placeholder__badge">
-                                <FaLock /> Esperando resultados oficiales
+                                <FaLock /> {t('placeholderGgBadge')}
                             </span>
                         </div>
                     ) : (
@@ -834,7 +837,7 @@ export default function Rankings() {
                                                     </div>
                                                     <small className="rk-podium-achievements">{player.rating} ELO · {player.winRate}% WR · {player.tournamentsWon} títulos</small>
                                                     <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(player.player); }}>
-                                                        <FaPencilAlt /> Aportar datos
+                                                        <FaPencilAlt /> {t('btnContributeData')}
                                                     </button>
                                                 </motion.div>
                                             ))}
@@ -901,7 +904,7 @@ export default function Rankings() {
                                                                 <div className="rk-estado-cell">
                                                                     {player.verified && <span className="rk-verified-badge"><FaCheckCircle /></span>}
                                                                     <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(player.player); }}>
-                                                                        <FaPencilAlt /> Aportar datos
+                                                                        <FaPencilAlt /> {t('btnContributeData')}
                                                                     </button>
                                                                 </div>
                                                             </td>
@@ -919,7 +922,7 @@ export default function Rankings() {
                                             {platformTopPlayer && (
                                                 <div className="rk-sidebar-card rk-sidebar-card--featured">
                                                     <div className="rk-sidebar-card__header">
-                                                        <FaStar /> Líder actual
+                                                        <FaStar /> {t('cardCurrentLeader')}
                                                     </div>
                                                     <div className="rk-sidebar-player">
                                                         <img src={avatarUrl(platformTopPlayer.player)} alt={platformTopPlayer.player} />
@@ -940,18 +943,18 @@ export default function Rankings() {
 
                                             <div className="rk-sidebar-card">
                                                 <div className="rk-sidebar-card__header">
-                                                    <FaChartLine /> Resumen competitivo
+                                                    <FaChartLine /> {t('cardCompetitiveSummary')}
                                                 </div>
                                                 <ul className="rk-stats-list">
-                                                    <li><span>Jugadores rankeados</span><b>{filteredPlatformPlayers.length}</b></li>
-                                                    <li><span>Puntos repartidos</span><b>{filteredPlatformPlayers.reduce((total, player) => total + player.points, 0)}</b></li>
-                                                    <li><span>Partidas registradas</span><b>{filteredPlatformPlayers.reduce((total, player) => total + player.matchesPlayed, 0)}</b></li>
+                                                    <li><span>{t('statRankedPlayers')}</span><b>{filteredPlatformPlayers.length}</b></li>
+                                                    <li><span>{t('statDistributedPoints')}</span><b>{filteredPlatformPlayers.reduce((total, player) => total + player.points, 0)}</b></li>
+                                                    <li><span>{t('statRegisteredMatches')}</span><b>{filteredPlatformPlayers.reduce((total, player) => total + player.matchesPlayed, 0)}</b></li>
                                                 </ul>
                                             </div>
 
                                             <div className="rk-sidebar-card">
                                                 <div className="rk-sidebar-card__header">
-                                                    <FaInfoCircle /> Cómo se calcula
+                                                    <FaInfoCircle /> {t('cardHowCalculated')}
                                                 </div>
                                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, padding: '0 0.5rem' }}>
                                                     El ranking combina ELO por match, puntos por participación y bonus por llegar a top 4.
@@ -1020,14 +1023,14 @@ export default function Rankings() {
                                                     )}
                                                     <div className="rk-team-card__footer">
                                                         {team.verified && (
-                                                            <div className="rk-verified-badge"><FaCheckCircle /> Verificado</div>
+                                                            <div className="rk-verified-badge"><FaCheckCircle /> {t('panelStatVerified')}</div>
                                                         )}
                                                         <button
                                                             className="rk-contribute-btn rk-contribute-btn--card"
-                                                            title="Aportar información"
+                                                            title={t('btnContributeData')}
                                                             onClick={(e) => { e.stopPropagation(); handleContribute(team.name); }}
                                                         >
-                                                            <FaPencilAlt /> Aportar datos
+                                                            <FaPencilAlt /> {t('btnContributeData')}
                                                         </button>
                                                     </div>
                                                 </motion.div>
@@ -1069,7 +1072,7 @@ export default function Rankings() {
                                                             <span><FaCalendarCheck /> {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}</span>
                                                         </div>
                                                         <div className="rk-tournament-card__organizer">
-                                                            Organiza: <strong>{tournament.organizer}</strong> · Formato: {tournament.format}
+                                                            Organiza: <strong>{tournament.organizer}</strong> · Formato: {getTournamentFormatLabel(tournament.format) || tournament.format}
                                                         </div>
                                                     </div>
                                                     <div className="rk-tournament-card__right">
@@ -1108,9 +1111,9 @@ export default function Rankings() {
                 <motion.section className="rk-hero" variants={itemVariants}>
                     <div className="rk-hero__content">
                         <div className="rk-hero__badge">
-                            <FaFlag /> República Dominicana
+                            <FaFlag /> {t('rdRankingsBadge')}
                         </div>
-                        <h1>Rankings Esports RD</h1>
+                        <h1>{t('rdRankingsTitle')}</h1>
                         <p>Clasificación oficial de jugadores, equipos y torneos de la escena competitiva dominicana</p>
 
                         {/* Submit Achievement Button */}
@@ -1121,7 +1124,7 @@ export default function Rankings() {
                             whileTap={{ scale: 0.95 }}
                         >
                             <FaTrophy />
-                            <span>Enviar Mi Logro</span>
+                            <span>{t('btnSubmitAchievement')}</span>
                         </motion.button>
 
                         {/* Quick Stats */}
@@ -1129,17 +1132,17 @@ export default function Rankings() {
                             <div className="rk-hero__stat">
                                 <FaUserAlt />
                                 <span>{stats.totalPlayers}</span>
-                                <small>Jugadores</small>
+                                <small>{t('tabPlayers')}</small>
                             </div>
                             <div className="rk-hero__stat">
                                 <FaShieldAlt />
                                 <span>{stats.totalTeams}</span>
-                                <small>Equipos</small>
+                                <small>{t('tabTeams')}</small>
                             </div>
                             <div className="rk-hero__stat">
                                 <FaTrophy />
                                 <span>{stats.activeTournaments}</span>
-                                <small>Torneos Activos</small>
+                                <small>{t('statActiveTournaments')}</small>
                             </div>
                             <div className="rk-hero__stat">
                                 <FaCoins />
@@ -1180,19 +1183,19 @@ export default function Rankings() {
                     </div>
 
                     <select value={game} onChange={(e) => setGame(e.target.value)}>
-                        {GAMES.map(g => <option key={g} value={g}>{g === 'Todos' ? 'Todos los Juegos' : g}</option>)}
+                        {GAMES.map(g => <option key={g} value={g}>{g === 'Todos' ? t('filterAllGames') : g}</option>)}
                     </select>
 
                     {activeTab !== 'tournaments' ? (
                         <select value={region} onChange={(e) => setRegion(e.target.value)}>
-                            {REGIONS.map(r => <option key={r} value={r}>{r === 'Todas' ? 'Todas las Regiones' : r}</option>)}
+                            {REGIONS.map(r => <option key={r} value={r}>{r === 'Todas' ? t('filterAllRegions') : r}</option>)}
                         </select>
                     ) : (
                         <select value={tournamentFilter} onChange={(e) => setTournamentFilter(e.target.value)}>
-                            <option value="Todos">Todos los Estados</option>
-                            <option value="active">En Curso</option>
-                            <option value="upcoming">Próximamente</option>
-                            <option value="completed">Finalizados</option>
+                            <option value="Todos">{t('filterAllStatuses')}</option>
+                            <option value="active">{t('filterStatusActive')}</option>
+                            <option value="upcoming">{t('filterStatusUpcoming')}</option>
+                            <option value="completed">{t('filterStatusCompleted')}</option>
                         </select>
                     )}
                 </motion.div>
@@ -1230,7 +1233,7 @@ export default function Rankings() {
                                             </div>
                                             <small className="rk-podium-achievements">{getAchievementCount(p)} participaciones</small>
                                             <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(p.player); }}>
-                                                <FaPencilAlt /> Aportar datos
+                                                <FaPencilAlt /> {t('btnContributeData')}
                                             </button>
                                         </motion.div>
                                     ))}
@@ -1298,7 +1301,7 @@ export default function Rankings() {
                                                         <div className="rk-estado-cell">
                                                             {p.verified && <span className="rk-verified-badge"><FaCheckCircle /></span>}
                                                             <button className="rk-contribute-btn" onClick={(e) => { e.stopPropagation(); handleContribute(p.player); }}>
-                                                                <FaPencilAlt /> Aportar datos
+                                                                <FaPencilAlt /> {t('btnContributeData')}
                                                             </button>
                                                         </div>
                                                     </td>
@@ -1317,7 +1320,7 @@ export default function Rankings() {
                                     {topPlayer && (
                                         <div className="rk-sidebar-card rk-sidebar-card--featured">
                                             <div className="rk-sidebar-card__header">
-                                                <FaStar /> Jugador Destacado
+                                                <FaStar /> {t('cardCurrentLeader')}
                                             </div>
                                             <div className="rk-sidebar-player">
                                                 <img src={avatarUrl(topPlayer.player)} alt={topPlayer.player} />
@@ -1328,7 +1331,7 @@ export default function Rankings() {
                                                 </div>
                                             </div>
                                             <div className="rk-sidebar-stats">
-                                                <div><span>Titulos</span><b>{getTitleCount(topPlayer)}</b></div>
+                                                <div><span>Títulos</span><b>{getTitleCount(topPlayer)}</b></div>
                                                 <div><span>Participaciones</span><b>{getAchievementCount(topPlayer)}</b></div>
                                             </div>
                                         </div>
@@ -1336,18 +1339,18 @@ export default function Rankings() {
 
                                     <div className="rk-sidebar-card">
                                         <div className="rk-sidebar-card__header">
-                                            <FaChartLine /> Resumen
+                                            <FaChartLine /> {t('cardCompetitiveSummary')}
                                         </div>
                                         <ul className="rk-stats-list">
-                                            <li><span>Jugadores</span><b>{filteredPlayers.length}</b></li>
-                                            <li><span>Total titulos</span><b>{filteredPlayers.reduce((acc, p) => acc + getTitleCount(p), 0)}</b></li>
-                                            <li><span>Participaciones</span><b>{filteredPlayers.reduce((acc, p) => acc + getAchievementCount(p), 0)}</b></li>
+                                            <li><span>{t('tabPlayers')}</span><b>{filteredPlayers.length}</b></li>
+                                            <li><span>{t('statRankedPlayers')}</span><b>{filteredPlayers.reduce((acc, p) => acc + getTitleCount(p), 0)}</b></li>
+                                            <li><span>{t('statRegisteredMatches')}</span><b>{filteredPlayers.reduce((acc, p) => acc + getAchievementCount(p), 0)}</b></li>
                                         </ul>
                                     </div>
 
                                     <div className="rk-sidebar-card">
                                         <div className="rk-sidebar-card__header">
-                                            <FaInfoCircle /> Datos en construccion
+                                            <FaInfoCircle /> {t('dataUnderConstruction')}
                                         </div>
                                         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, padding: '0 0.5rem' }}>
                                             Las estadisticas detalladas (victorias, derrotas, winrate) no estan disponibles aun. Usa el boton "Aportar datos" para contribuir informacion verificada.
@@ -1394,7 +1397,7 @@ export default function Rankings() {
                                             <FaMapMarkerAlt /> {team.region}
                                         </div>
                                         {td.isUniversity && (
-                                            <span className="rk-university-badge"><FaBook /> Universitario</span>
+                                            <span className="rk-university-badge"><FaBook /> {t('universityBadgeTeam')}</span>
                                         )}
                                         <div className="rk-team-card__games">
                                             {team.games.map(g => (
@@ -1419,14 +1422,14 @@ export default function Rankings() {
                                         )}
                                         <div className="rk-team-card__footer">
                                             {team.verified && (
-                                                <div className="rk-verified-badge"><FaCheckCircle /> Verificado</div>
+                                                <div className="rk-verified-badge"><FaCheckCircle /> {t('panelStatVerified')}</div>
                                             )}
                                             <button
                                                 className="rk-contribute-btn rk-contribute-btn--card"
-                                                title="Aportar informacion"
+                                                title={t('btnContributeData')}
                                                 onClick={(e) => { e.stopPropagation(); handleContribute(team.name); }}
                                             >
-                                                <FaPencilAlt /> Aportar datos
+                                                <FaPencilAlt /> {t('btnContributeData')}
                                             </button>
                                         </div>
                                             </>);
@@ -1490,10 +1493,10 @@ export default function Rankings() {
                                         {(!t.prize || (t.runnerUp && t.runnerUp.includes('No verificado')) || (t.champion && t.champion.includes('No verificado'))) && (
                                             <button
                                                 className="rk-contribute-btn"
-                                                title="Aportar informacion"
+                                                title={t('btnContributeData')}
                                                 onClick={(e) => { e.stopPropagation(); handleContribute(t.name); }}
                                             >
-                                                <FaPencilAlt /> Aportar datos
+                                                <FaPencilAlt /> {t('btnContributeData')}
                                             </button>
                                         )}
                                         <FaChevronRight className="rk-tournament-card__arrow" />
@@ -1566,23 +1569,23 @@ export default function Rankings() {
 
                             {/* Panel Tabs */}
                             <div className="rk-modal-tabs">
-                                <button 
+                                <button
                                     className={`rk-modal-tab ${playerPanelTab === 'overview' ? 'rk-modal-tab--active' : ''}`}
                                     onClick={() => setPlayerPanelTab('overview')}
                                 >
-                                    <FaChartLine /> Estadísticas
+                                    <FaChartLine /> {t('tabStatistics')}
                                 </button>
-                                <button 
+                                <button
                                     className={`rk-modal-tab ${playerPanelTab === 'achievements' ? 'rk-modal-tab--active' : ''}`}
                                     onClick={() => setPlayerPanelTab('achievements')}
                                 >
-                                    <FaTrophy /> Logros
+                                    <FaTrophy /> {t('tabAchievements')}
                                 </button>
-                                <button 
+                                <button
                                     className={`rk-modal-tab ${playerPanelTab === 'history' ? 'rk-modal-tab--active' : ''}`}
                                     onClick={() => setPlayerPanelTab('history')}
                                 >
-                                    <FaHistory /> Historial
+                                    <FaHistory /> {t('tabHistory')}
                                 </button>
                             </div>
 
@@ -1599,14 +1602,14 @@ export default function Rankings() {
                                             <div className="rk-panel-stat rk-panel-stat--highlight">
                                                 <FaTrophy className="rk-panel-stat-icon rk-stat-title" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Titulos</span>
+                                                    <span>Títulos</span>
                                                     <strong>{getTitleCount(selectedPlayer)}</strong>
                                                 </div>
                                             </div>
                                             <div className="rk-panel-stat">
                                                 <FaMedal className="rk-panel-stat-icon" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Participaciones</span>
+                                                    <span>{t('statRegisteredMatches')}</span>
                                                     <strong>{getAchievementCount(selectedPlayer)}</strong>
                                                 </div>
                                             </div>
@@ -1620,14 +1623,14 @@ export default function Rankings() {
                                             <div className="rk-panel-stat">
                                                 <FaMapMarkerAlt className="rk-panel-stat-icon" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Region</span>
+                                                    <span>Región</span>
                                                     <strong>{selectedPlayer.region}</strong>
                                                 </div>
                                             </div>
                                             <div className="rk-panel-stat">
                                                 <FaShieldAlt className="rk-panel-stat-icon" />
                                                 <div className="rk-panel-stat-content">
-                                                    <span>Equipo</span>
+                                                    <span>{t('tabTeams')}</span>
                                                     <strong>{selectedPlayer.team}</strong>
                                                 </div>
                                             </div>
@@ -1635,7 +1638,7 @@ export default function Rankings() {
                                                 <FaCheckCircle className="rk-panel-stat-icon" />
                                                 <div className="rk-panel-stat-content">
                                                     <span>Estado</span>
-                                                    <strong>{selectedPlayer.verified ? 'Verificado' : 'Sin verificar'}</strong>
+                                                    <strong>{selectedPlayer.verified ? t('panelStatVerified') : t('panelStatUnverified')}</strong>
                                                 </div>
                                             </div>
                                         </div>
@@ -1646,28 +1649,28 @@ export default function Rankings() {
                                                 style={{ marginTop: '1rem' }}
                                                 onClick={() => handleContribute(selectedPlayer.player)}
                                             >
-                                                <FaPencilAlt /> Aportar datos de este jugador
+                                                <FaPencilAlt /> {t('btnContributePlayer')}
                                             </button>
                                         )}
 
                                         {/* Achievement Summary */}
                                         {selectedPlayer.achievements && (
                                             <div className="rk-panel-achievement-summary">
-                                                <h4><FaTrophy /> Resumen de Logros</h4>
+                                                <h4><FaTrophy /> {t('achievementsSummaryTitle')}</h4>
                                                 <div className="rk-achievement-summary-grid">
                                                     <div className="rk-achievement-summary-card">
                                                         <FaUserAlt />
-                                                        <span>Solo</span>
+                                                        <span>{t('achievementsSolo')}</span>
                                                         <strong>{selectedPlayer.achievements.solo?.length || 0}</strong>
                                                     </div>
                                                     <div className="rk-achievement-summary-card">
                                                         <FaUserFriends />
-                                                        <span>Duo</span>
+                                                        <span>{t('achievementsDuo')}</span>
                                                         <strong>{selectedPlayer.achievements.duo?.length || 0}</strong>
                                                     </div>
                                                     <div className="rk-achievement-summary-card">
                                                         <FaUsers />
-                                                        <span>Equipo</span>
+                                                        <span>{t('tabTeams')}</span>
                                                         <strong>{selectedPlayer.achievements.team?.length || 0}</strong>
                                                     </div>
                                                 </div>
@@ -1685,7 +1688,7 @@ export default function Rankings() {
                                     >
                                         {/* SOLO Achievements */}
                                         <div className="rk-achievement-section">
-                                            <h4><FaUserAlt /> Solo</h4>
+                                            <h4><FaUserAlt /> {t('achievementsSolo')}</h4>
                                             {selectedPlayer.achievements?.solo?.length > 0 ? (
                                                 <div className="rk-achievement-list">
                                                     {selectedPlayer.achievements.solo.map((ach, idx) => (
@@ -1704,13 +1707,13 @@ export default function Rankings() {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="rk-no-achievements">Sin logros en solitario aún</p>
+                                                <p className="rk-no-achievements">{t('emptySoloAchievements')}</p>
                                             )}
                                         </div>
 
                                         {/* DUO Achievements */}
                                         <div className="rk-achievement-section">
-                                            <h4><FaUserFriends /> Duo</h4>
+                                            <h4><FaUserFriends /> {t('achievementsDuo')}</h4>
                                             {selectedPlayer.achievements?.duo?.length > 0 ? (
                                                 <div className="rk-achievement-list">
                                                     {selectedPlayer.achievements.duo.map((ach, idx) => (
@@ -1732,13 +1735,13 @@ export default function Rankings() {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="rk-no-achievements">Sin logros en duo aún</p>
+                                                <p className="rk-no-achievements">{t('emptyDuoAchievements')}</p>
                                             )}
                                         </div>
 
                                         {/* TEAM Achievements */}
                                         <div className="rk-achievement-section">
-                                            <h4><FaUsers /> Equipo</h4>
+                                            <h4><FaUsers /> {t('tabTeams')}</h4>
                                             {selectedPlayer.achievements?.team?.length > 0 ? (
                                                 <div className="rk-achievement-list">
                                                     {selectedPlayer.achievements.team.map((ach, idx) => (
@@ -1775,7 +1778,7 @@ export default function Rankings() {
                                                                                     <div className="rk-roster-avatar rk-roster-avatar--empty">
                                                                                         <FaPlus />
                                                                                     </div>
-                                                                                    <span>Por verificar</span>
+                                                                                    <span>{t('historyUnverified')}</span>
                                                                                 </div>
                                                                             )
                                                                         ))}
@@ -1786,7 +1789,7 @@ export default function Rankings() {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="rk-no-achievements">Sin logros de equipo aún</p>
+                                                <p className="rk-no-achievements">{t('emptyTeamAchievements')}</p>
                                             )}
                                         </div>
                                     </motion.div>
@@ -1799,7 +1802,7 @@ export default function Rankings() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                     >
-                                        <h4><GiSwordsEmblem /> Historial de Partidas</h4>
+                                        <h4><GiSwordsEmblem /> {t('matchHistoryTitle')}</h4>
                                         {selectedPlayer.matchHistory?.length > 0 ? (
                                             <div className="rk-match-history-list">
                                                 {selectedPlayer.matchHistory.map((match, idx) => (
@@ -1823,7 +1826,7 @@ export default function Rankings() {
                                                         </div>
                                                         <div className="rk-match-result">
                                                             <span className={`rk-result-badge rk-result-${match.result}`}>
-                                                                {match.result === 'win' ? 'VICTORIA' : 'DERROTA'}
+                                                                {match.result === 'win' ? t('matchWin') : t('matchLoss')}
                                                             </span>
                                                             <span className="rk-match-score">{match.score}</span>
                                                         </div>
@@ -1878,11 +1881,11 @@ export default function Rankings() {
                                 <div>
                                     <h3>{selectedTeam.name}</h3>
                                     <p>[{selectedTeam.tag}]</p>
-                                    <span>{selectedTeam.region} · Fundado en {selectedTeam.founded}</span>
+                                    <span>{selectedTeam.region} · {t('teamFounded')} {selectedTeam.founded}</span>
                                 </div>
                             </div>
                             {td.isUniversity && (
-                                <span className="rk-university-badge" style={{ marginBottom: '8px' }}><FaBook /> Equipo Universitario</span>
+                                <span className="rk-university-badge" style={{ marginBottom: '8px' }}><FaBook /> {t('universityBadgeTeam')}</span>
                             )}
                             <div className="rk-modal-games">
                                 {selectedTeam.games.map(g => (
@@ -1890,10 +1893,10 @@ export default function Rankings() {
                                 ))}
                             </div>
                             <div className="rk-modal-stats">
-                                <div><span>Jugadores</span><b>{td.members.length}</b></div>
+                                <div><span>{t('tabPlayers')}</span><b>{td.members.length}</b></div>
                                 <div><span>Títulos</span><b style={{ color: '#ffd700' }}>{td.titles}</b></div>
-                                <div><span>Logros</span><b>{td.achievements.length}</b></div>
-                                <div><span>Fundado</span><b>{selectedTeam.founded}</b></div>
+                                <div><span>{t('tabAchievements')}</span><b>{td.achievements.length}</b></div>
+                                <div><span>{t('teamFounded')}</span><b>{selectedTeam.founded}</b></div>
                             </div>
 
                             {/* Bandits Gaming Extra Info */}
@@ -1936,7 +1939,7 @@ export default function Rankings() {
                             {/* Team Members */}
                             {td.members.length > 0 && (
                                 <div className="rk-team-modal-section">
-                                    <h4><FaUsers /> Miembros ({td.members.length})</h4>
+                                    <h4><FaUsers /> {t('teamModalMembers')} ({td.members.length})</h4>
                                     <div className="rk-team-members-grid">
                                         {td.members.map(m => (
                                             <div key={m.id} className="rk-team-member-card" onClick={(e) => { e.stopPropagation(); setSelectedTeam(null); setSelectedPlayer(m); setPlayerPanelTab('overview'); }}>
@@ -1974,7 +1977,7 @@ export default function Rankings() {
                             {/* Team Achievements */}
                             {td.achievements.length > 0 && (
                                 <div className="rk-team-modal-section">
-                                    <h4><FaTrophy /> Logros del Equipo ({td.achievements.length})</h4>
+                                    <h4><FaTrophy /> {t('teamModalAchievementsSection')} ({td.achievements.length})</h4>
                                     <div className="rk-achievement-list">
                                         {td.achievements.map((ach, idx) => (
                                             <div key={idx} className={`rk-achievement-item rk-place-${ach.place}`}>
@@ -1997,9 +2000,9 @@ export default function Rankings() {
                             {td.members.length === 0 && td.achievements.length === 0 && (
                                 <div className="rk-team-modal-empty">
                                     <FaInfoCircle />
-                                    <p>No hay datos registrados aún para este equipo.</p>
+                                    <p>{t('teamModalEmpty')}</p>
                                     <button className="rk-contribute-btn" onClick={() => { setSelectedTeam(null); handleContribute(selectedTeam.name); }}>
-                                        <FaPencilAlt /> Aportar datos
+                                        <FaPencilAlt /> {t('btnContributeData')}
                                     </button>
                                 </div>
                             )}
@@ -2033,7 +2036,7 @@ export default function Rankings() {
 
                             <div className="rk-achievement-header">
                                 <div className="rk-achievement-icon"><FaTrophy /></div>
-                                <h3>Enviar Mi Logro</h3>
+                                <h3>{t('achievementModalTitle')}</h3>
                                 <p>Comparte tus victorias en torneos para aparecer en el ranking</p>
                             </div>
 
@@ -2046,7 +2049,7 @@ export default function Rankings() {
                                         disabled={isSubmitting}
                                         required
                                     >
-                                        <option value="">Selecciona un juego</option>
+                                        <option value="">{t('selectGame')}</option>
                                         {SUPPORTED_GAMES.map(g => (
                                             <option key={g.id} value={g.id}>{g.name}</option>
                                         ))}
@@ -2054,7 +2057,7 @@ export default function Rankings() {
                                 </div>
 
                                 <div className="rk-form-group">
-                                    <label><FaUsers /> Modo de Competicion</label>
+                                    <label><FaUsers /> {t('competitionMode')}</label>
                                     <div className="rk-mode-selector">
                                         {[
                                             { id: 'solo', label: 'Solo', icon: FaUserAlt },
@@ -2077,7 +2080,7 @@ export default function Rankings() {
 
                                 <div className="rk-form-row">
                                     <div className="rk-form-group">
-                                        <label><FaMedal /> Nombre del Torneo</label>
+                                        <label><FaMedal /> {t('tournamentNameLabel')}</label>
                                         <input
                                             type="text"
                                             placeholder="Ej: Copa Nacional MLBB 2025"
@@ -2101,16 +2104,16 @@ export default function Rankings() {
 
                                 <div className="rk-form-row">
                                     <div className="rk-form-group rk-form-group--small">
-                                        <label><FaCrown /> Posicion</label>
+                                        <label><FaCrown /> {t('placementLabel')}</label>
                                         <select
                                             value={achievementData.placement}
                                             onChange={(e) => setAchievementData(prev => ({ ...prev, placement: parseInt(e.target.value) }))}
                                             disabled={isSubmitting}
                                         >
-                                            <option value={1}>1er Lugar</option>
-                                            <option value={2}>2do Lugar</option>
-                                            <option value={3}>3er Lugar</option>
-                                            <option value={4}>4to Lugar</option>
+                                            <option value={1}>{t('placement1st')}</option>
+                                            <option value={2}>{t('placement2nd')}</option>
+                                            <option value={3}>{t('placement3rd')}</option>
+                                            <option value={4}>{t('placement4th')}</option>
                                             <option value={5}>Top 5</option>
                                             <option value={8}>Top 8</option>
                                             <option value={10}>Top 10</option>
@@ -2120,7 +2123,7 @@ export default function Rankings() {
 
                                     {achievementData.mode === 'team' && (
                                         <div className="rk-form-group">
-                                            <label><FaShieldAlt /> Nombre del Equipo</label>
+                                            <label><FaShieldAlt /> {t('teamNameLabel')}</label>
                                             <input
                                                 type="text"
                                                 placeholder="Ej: Hispaniola Esports"
@@ -2134,7 +2137,7 @@ export default function Rankings() {
 
                                     {achievementData.mode === 'duo' && (
                                         <div className="rk-form-group">
-                                            <label><FaUserFriends /> Companero de Duo</label>
+                                            <label><FaUserFriends /> {t('duoPartner')}</label>
                                             <input
                                                 type="text"
                                                 placeholder="Nombre o IGN del companero"
@@ -2148,7 +2151,7 @@ export default function Rankings() {
                                 </div>
 
                                 <div className="rk-form-group">
-                                    <label><FaBook /> Descripcion (opcional)</label>
+                                    <label><FaBook /> {t('descriptionOptional')}</label>
                                     <textarea
                                         placeholder="Formato del torneo, numero de participantes, etc."
                                         value={achievementData.description}
@@ -2192,7 +2195,7 @@ export default function Rankings() {
                                                     disabled={isSubmitting}
                                                 >
                                                     <FaCloudUploadAlt />
-                                                    <span>Subir</span>
+                                                    <span>{t('uploadBtn')}</span>
                                                 </button>
                                             )}
                                         </div>
@@ -2209,7 +2212,7 @@ export default function Rankings() {
                                         onClick={closeAchievementModal}
                                         disabled={isSubmitting}
                                     >
-                                        Cancelar
+                                        {t('cancel')}
                                     </button>
                                     <button
                                         type="submit"
@@ -2219,12 +2222,12 @@ export default function Rankings() {
                                         {isSubmitting ? (
                                             <>
                                                 <i className='bx bx-loader-alt spin' />
-                                                Enviando...
+                                                {t('loading')}
                                             </>
                                         ) : (
                                             <>
                                                 <FaCheckCircle />
-                                                Enviar Logro
+                                                {t('btnSubmitAchievementForm')}
                                             </>
                                         )}
                                     </button>
@@ -2258,14 +2261,14 @@ export default function Rankings() {
 
                             <div className="rk-achievement-header">
                                 <div className="rk-achievement-icon"><FaPencilAlt /></div>
-                                <h3>Aportar Datos</h3>
+                                <h3>{t('contributeDataTitle')}</h3>
                                 <p>Ayuda a completar la informacion de la escena esports dominicana</p>
                             </div>
 
                             <form onSubmit={handleSubmitContribute} className="rk-achievement-form">
                                 {/* Player / Team */}
                                 <div className="rk-form-group">
-                                    <label><FaUserAlt /> Jugador o Equipo</label>
+                                    <label><FaUserAlt /> {t('contributePlayerTeam')}</label>
                                     <input
                                         type="text"
                                         placeholder="Ej: MenaRD, ISKRA, Bot Academy..."
@@ -2278,24 +2281,24 @@ export default function Rankings() {
 
                                 {/* Game */}
                                 <div className="rk-form-group">
-                                    <label><FaGamepad /> Juego / Disciplina</label>
+                                    <label><FaGamepad /> {t('contributeGameDiscipline')}</label>
                                     <select
                                         value={contributeData.game}
                                         onChange={(e) => setContributeData(prev => ({ ...prev, game: e.target.value }))}
                                         disabled={isSubmitting}
                                     >
-                                        <option value="">Selecciona (opcional)</option>
+                                        <option value="">{t('contributeSelectOptional')}</option>
                                         {SUPPORTED_GAMES.map(g => (
                                             <option key={g.id} value={g.id}>{g.name}</option>
                                         ))}
-                                        <option value="otro">Otro</option>
+                                        <option value="otro">{t('other')}</option>
                                     </select>
                                 </div>
 
                                 {/* Tournament + Date */}
                                 <div className="rk-form-row">
                                     <div className="rk-form-group">
-                                        <label><FaMedal /> Torneo / Evento</label>
+                                        <label><FaMedal /> {t('contributeTournamentEvent')}</label>
                                         <input
                                             type="text"
                                             placeholder="Ej: Copa Popular 2025, Blink Respawn..."
@@ -2318,7 +2321,7 @@ export default function Rankings() {
 
                                 {/* Result */}
                                 <div className="rk-form-group">
-                                    <label><FaCrown /> Resultado / Posicion</label>
+                                    <label><FaCrown /> {t('contributeResultPosition')}</label>
                                     <input
                                         type="text"
                                         placeholder="Ej: Campeon, 2do lugar, Top 8, Representante RD..."
@@ -2330,7 +2333,7 @@ export default function Rankings() {
 
                                 {/* Source / Link */}
                                 <div className="rk-form-group">
-                                    <label><FaGlobeAmericas /> Fuente o Enlace de Verificacion</label>
+                                    <label><FaGlobeAmericas /> {t('contributeSourceLink')}</label>
                                     <input
                                         type="text"
                                         placeholder="Link de noticia, post de redes, bracket, VOD..."
@@ -2342,7 +2345,7 @@ export default function Rankings() {
 
                                 {/* Description */}
                                 <div className="rk-form-group">
-                                    <label><FaBook /> Descripcion de los Datos</label>
+                                    <label><FaBook /> {t('contributeDataDescription')}</label>
                                     <textarea
                                         placeholder="Describe la informacion que quieres aportar: estadisticas, resultados, miembros del equipo, premios, etc."
                                         value={contributeData.description}
@@ -2388,7 +2391,7 @@ export default function Rankings() {
                                                     disabled={isSubmitting}
                                                 >
                                                     <FaCloudUploadAlt />
-                                                    <span>Subir</span>
+                                                    <span>{t('uploadBtn')}</span>
                                                 </button>
                                             )}
                                         </div>
@@ -2406,7 +2409,7 @@ export default function Rankings() {
                                         onClick={closeContributeModal}
                                         disabled={isSubmitting}
                                     >
-                                        Cancelar
+                                        {t('cancel')}
                                     </button>
                                     <button
                                         type="submit"
@@ -2416,12 +2419,12 @@ export default function Rankings() {
                                         {isSubmitting ? (
                                             <>
                                                 <i className='bx bx-loader-alt spin' />
-                                                Enviando...
+                                                {t('loading')}
                                             </>
                                         ) : (
                                             <>
                                                 <FaCheckCircle />
-                                                Enviar Datos
+                                                {t('contributeBtnSubmit')}
                                             </>
                                         )}
                                     </button>

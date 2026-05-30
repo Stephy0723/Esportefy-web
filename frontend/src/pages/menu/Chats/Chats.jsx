@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useLang } from '../../../context/LanguageContext';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import {
@@ -70,6 +71,7 @@ const EMOJI_SETS = [
 
 /* ── Component ── */
 const Chats = () => {
+  const { t } = useLang();
   const [user, setUser] = useState(() => getStoredUser());
   const [teams, setTeams] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -222,7 +224,7 @@ const Chats = () => {
   }, [myId, myUsername]);
 
   /* ── LOADING ── */
-  if (loading) return (<div className="cht"><PageHud page="MENSAJERIA" /><div className="cht-loading"><FaComments className="cht-loading__icon" /><h2>Cargando mensajeria...</h2><p>Conectando equipos, amigos y conversaciones.</p></div></div>);
+  if (loading) return (<div className="cht"><PageHud page="MENSAJERIA" /><div className="cht-loading"><FaComments className="cht-loading__icon" /><h2>{t('loading')}</h2><p>Conectando equipos, amigos y conversaciones.</p></div></div>);
 
   /* ── RENDER ── */
   return (
@@ -249,7 +251,7 @@ const Chats = () => {
         {/* SIDEBAR */}
         <aside className={`cht-side ${sidebar ? 'is-open' : ''}`}>
           <div className="cht-side__head"><h2>Conversaciones</h2><button type="button" className="cht-icon-btn cht-side__close" onClick={() => setSidebar(false)}><FaTimes /></button></div>
-          <label className="cht-search"><FaSearch /><input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..." /></label>
+          <label className="cht-search"><FaSearch /><input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('chatsSearch')} /></label>
           <div className="cht-group">
             <div className="cht-group__head"><span>Chats activos</span><small>{visibleConvos.length}</small></div>
             <div className="cht-list">
@@ -258,7 +260,7 @@ const Chats = () => {
                   <img className="cht-av" src={cm.image || cm.fallback} alt="" onError={(ev) => applyImageFallback(ev, cm.fallback)} />
                   <div className="cht-row__body">
                     <div className="cht-row__top"><strong>{cm.title}</strong><time>{fmtDay(c.updatedAt)}</time></div>
-                    <div className="cht-row__bot"><span>{c.lastMessage || cm.subtitle || 'Sin mensajes'}</span>{ur > 0 && <em className="cht-pill">{ur}</em>}</div>
+                    <div className="cht-row__bot"><span>{c.lastMessage || cm.subtitle || t('chatsEmpty')}</span>{ur > 0 && <em className="cht-pill">{ur}</em>}</div>
                   </div>
                 </button>);
               }) : <div className="cht-empty cht-empty--sm"><FaComments /><p>Sin resultados.</p></div>}
@@ -285,13 +287,13 @@ const Chats = () => {
               <button type="button" className="cht-icon-btn cht-mobile-menu" onClick={() => setSidebar(true)}><FaBars /></button>
               <img className="cht-av" src={meta.image || meta.fallback} alt="" onError={(ev) => applyImageFallback(ev, meta.fallback)} />
               <div className="cht-main__who">
-                <div className="cht-main__name"><h3>{meta.title}</h3><span className={`cht-tag ${active.type === 'team' ? 'cht-tag--team' : 'cht-tag--dm'}`}>{meta.badge}</span></div>
+                <div className="cht-main__name"><h3>{meta.title}</h3><span className={`cht-tag ${active.type === 'team' ? 'cht-tag--team' : 'cht-tag--dm'}`}>{active.type === 'team' ? t('chatsGroup') : t('chatsDirect')}</span></div>
                 <p>{meta.subtitle}</p>
               </div>
             </header>
 
             <div className="cht-thread">
-              {loadingMsgs ? (<div className="cht-empty"><FaComments /><p>Cargando mensajes...</p></div>) :
+              {loadingMsgs ? (<div className="cht-empty"><FaComments /><p>{t('loading')}</p></div>) :
                 msgs.length > 0 ? msgs.map((m, i) => {
                   const own = m.senderId === myId;
                   const type = m.msgType || 'text';
@@ -307,7 +309,7 @@ const Chats = () => {
                       <p>{m.text}<time>{fmtTime(m.timestamp)}</time></p>
                     </div>
                   );
-                }) : (<div className="cht-empty"><FaComments /><p>Sin mensajes aun. Envia el primero.</p></div>)
+                }) : (<div className="cht-empty"><FaComments /><p>{t('chatsEmpty')}</p></div>)
               }
               <div ref={bottomRef} />
             </div>
@@ -326,17 +328,17 @@ const Chats = () => {
                 <button type="button" className="cht-icon-btn" onClick={() => setShowEmoji((p) => !p)} title="Emojis"><FaSmile /></button>
                 <button type="button" className="cht-icon-btn" onClick={() => fileRef.current?.click()} disabled={uploading} title="Adjuntar archivo"><FaPaperclip /></button>
               </div>
-              <textarea ref={textareaRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} rows={1} placeholder={active.type === 'team' ? 'Escribe al equipo...' : 'Escribe un mensaje...'} />
+              <textarea ref={textareaRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} rows={1} placeholder={t('chatsTypePlaceholder')} />
               <button type="submit" className="cht-btn-send" disabled={!clean(draft) || uploading}><FaPaperPlane /></button>
             </form>
           </>) : (
-            <div className="cht-empty cht-empty--full"><FaComments /><h2>Selecciona un chat</h2><p>Elige una conversacion o abre un directo desde contactos.</p><button type="button" className="cht-btn-primary" onClick={() => setSidebar(true)}><FaComments /> Ver chats</button></div>
+            <div className="cht-empty cht-empty--full"><FaComments /><h2>{t('chatsEmpty')}</h2><p>{t('chatsEmptyDesc')}</p><button type="button" className="cht-btn-primary" onClick={() => setSidebar(true)}><FaComments /> {t('chatsTitle')}</button></div>
           )}
         </main>
 
         {/* RIGHT PANEL */}
         <aside className="cht-detail">
-          <div className="cht-detail__card"><span className="cht-kicker">Info del chat</span><div className="cht-detail__hero"><img className="cht-av cht-av--lg" src={meta.image || meta.fallback} alt="" onError={(ev) => applyImageFallback(ev, meta.fallback)} /><div><h4>{meta.title || 'Mensajeria'}</h4><p>{meta.subtitle || 'Selecciona un chat.'}</p></div></div></div>
+          <div className="cht-detail__card"><span className="cht-kicker">Info del chat</span><div className="cht-detail__hero"><img className="cht-av cht-av--lg" src={meta.image || meta.fallback} alt="" onError={(ev) => applyImageFallback(ev, meta.fallback)} /><div><h4>{meta.title || t('messages')}</h4><p>{meta.subtitle || t('chatsEmptyDesc')}</p></div></div></div>
           <div className="cht-detail__card">
             <div className="cht-group__head"><span>{active?.type === 'team' ? 'Miembros' : 'Participantes'}</span><small>{members.length}</small></div>
             {members.length > 0 ? (<div className="cht-members">{members.map((mb) => (<div key={mb.userId} className="cht-member"><img className="cht-av cht-av--sm" src={resolveMediaUrl(mb?.avatar) || getAvatarFallback(mb?.fullName || mb?.username)} alt="" onError={(ev) => applyImageFallback(ev, getAvatarFallback(mb?.fullName || mb?.username))} /><div><strong>{mb.username || mb.fullName}</strong><span>{mb.role}</span></div></div>))}</div>) : <div className="cht-empty cht-empty--sm"><FaUsers /><p>Sin participantes.</p></div>}

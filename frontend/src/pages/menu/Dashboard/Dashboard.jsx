@@ -17,6 +17,7 @@ import SponsorMotion from '../../../components/SponsorMotion/SponsorMotion';
 import { applyImageFallback, getAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
 import { getAuthToken } from '../../../utils/authSession';
 import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import { isMlbbVerifiedStatus, normalizeMlbbVerificationStatus } from '../../../utils/mlbbStatus';
 import { fetchMyCommunities } from '../Community/community.service';
 import { getCommunitySocialEntries } from '../Community/communitySocials';
@@ -111,6 +112,7 @@ const getMetricStageLabel = (score) => {
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user: authUser } = useAuth();
+    const { t } = useLang();
     const containerRef = useRef(null);
     const sectionRefs = useRef({});
     const teamsTrackRef = useRef(null);
@@ -344,13 +346,6 @@ const Dashboard = () => {
         userData.games.map(id => gamesDetailedData[id]).filter(Boolean),
     [userData.games]);
 
-    const greeting = useMemo(() => {
-        const h = now.getHours();
-        if (h < 6)  return 'Buenas noches';
-        if (h < 12) return 'Buenos días';
-        if (h < 19) return 'Buenas tardes';
-        return 'Buenas noches';
-    }, [now]);
 
     const timeStr = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
     const dateStr = now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -791,21 +786,21 @@ const Dashboard = () => {
                     <p className="db__conn-panel-sub">Cuenta MLBB verificada en GLITCH GANG</p>
                     <div className="db__conn-panel-stats">
                         <div className="db__conn-panel-stat">
-                            <span className="db__conn-panel-stat-val">{mlbbConn.ign || 'Sin IGN'}</span>
-                            <span className="db__conn-panel-stat-lbl">IGN</span>
+                            <span className="db__conn-panel-stat-val">{mlbbConn.ign || t('connNoIGN')}</span>
+                            <span className="db__conn-panel-stat-lbl">{t('connIGN')}</span>
                         </div>
                         <div className="db__conn-panel-stat">
                             <span className="db__conn-panel-stat-val">Verificada</span>
-                            <span className="db__conn-panel-stat-lbl">Estado</span>
+                            <span className="db__conn-panel-stat-lbl">{t('connStatus')}</span>
                         </div>
                     </div>
                     {mlbbMsg && <p className="db__conn-panel-msg">{mlbbMsg}</p>}
                     <div className="db__conn-panel-actions">
                         <button className="db__btn db__btn--outline" onClick={() => navigate('/settings')}>
-                            <i className="bx bx-cog"></i> Configurar
+                            <i className="bx bx-cog"></i> {t('btnConfigure')}
                         </button>
                         <button className="db__btn db__btn--danger-ghost" onClick={unlinkMlbb} disabled={mlbbLoading}>
-                            <i className="bx bx-unlink"></i> {mlbbLoading ? 'Procesando...' : 'Desvincular'}
+                            <i className="bx bx-unlink"></i> {mlbbLoading ? t('processing') : t('btnUnlink')}
                         </button>
                     </div>
                 </div>
@@ -862,17 +857,17 @@ const Dashboard = () => {
 
                 <div className="db__conn-panel-actions">
                     <button className="db__btn db__btn--outline" onClick={validateMlbbDraft} disabled={mlbbLoading || mlbbValidating}>
-                        <i className="bx bx-check-shield"></i> {mlbbValidating ? 'Validando...' : 'Validar ID'}
+                        <i className="bx bx-check-shield"></i> {mlbbValidating ? t('validating') : t('btnValidateID')}
                     </button>
                     <button className="db__btn db__btn--primary" onClick={linkMlbb} disabled={mlbbLoading || mlbbValidating}>
-                        <i className="bx bx-link-alt"></i> {mlbbLoading ? 'Conectando...' : 'Conectar'}
+                        <i className="bx bx-link-alt"></i> {mlbbLoading ? t('connecting') : t('btnConnect')}
                     </button>
                 </div>
 
                 {(mlbbStatus === 'pending' || mlbbStatus === 'rejected') && (
                     <div className="db__conn-panel-actions">
                         <button className="db__btn db__btn--danger-ghost" onClick={unlinkMlbb} disabled={mlbbLoading}>
-                            <i className="bx bx-x-circle"></i> {mlbbLoading ? 'Procesando...' : mlbbStatus === 'pending' ? 'Cancelar solicitud' : 'Limpiar y volver a intentar'}
+                            <i className="bx bx-x-circle"></i> {mlbbLoading ? t('processing') : mlbbStatus === 'pending' ? t('btnCancelRequest') : t('btnRetry')}
                         </button>
                     </div>
                 )}
@@ -909,11 +904,23 @@ const Dashboard = () => {
 
             {/* ═══════ DOT NAV ═══════ */}
             <nav className="db__dot-nav">
-                {SECTIONS.map(s => (
-                    <button key={s.id} className={`db__dot ${activeSection === s.id ? 'active' : ''}`} onClick={() => scrollTo(s.id)}>
-                        <span className="db__dot-label">{s.label}</span>
-                    </button>
-                ))}
+                {SECTIONS.map(s => {
+                    const sectionLabelMap = {
+                        hero: t('dashboardHero'),
+                        stats: t('dashboardStats'),
+                        metrics: t('dashboardMetrics'),
+                        connections: t('dashboardAccounts'),
+                        teams: t('dashboardTeams'),
+                        tourneys: t('dashboardTournaments'),
+                        activity: t('dashboardActivity'),
+                        communities: t('dashboardCommunities'),
+                    };
+                    return (
+                        <button key={s.id} className={`db__dot ${activeSection === s.id ? 'active' : ''}`} onClick={() => scrollTo(s.id)}>
+                            <span className="db__dot-label">{sectionLabelMap[s.id] || s.label}</span>
+                        </button>
+                    );
+                })}
             </nav>
 
             {/* ═══════ SPONSOR SNAKE ═══════ */}
@@ -983,7 +990,7 @@ const Dashboard = () => {
                                                 </div>
                                                 <div className="db__conn-panel-actions">
                                                     <button className="db__btn db__btn--outline" onClick={() => navigate('/settings')}>
-                                                        <i className="bx bx-cog"></i> Configurar
+                                                        <i className="bx bx-cog"></i> {t('btnConfigure')}
                                                     </button>
                                                 </div>
                                                 {oauthPanelMsg ? <p className="db__conn-panel-msg">{oauthPanelMsg}</p> : null}
@@ -995,13 +1002,13 @@ const Dashboard = () => {
                                             <>
                                                 <div className="db__conn-panel-status db__conn-panel-status--pending">
                                                     <i className="bx bx-link-external"></i>
-                                                    <span>No vinculada</span>
+                                                    <span>{t('connectionNotLinked')}</span>
                                                     <p className="db__conn-panel-desc">Vincula tu cuenta de {connectionPanel.name} para acceder a estadísticas y funciones exclusivas.</p>
                                                     <button
                                                         className="db__btn db__btn--primary"
                                                         onClick={() => navigate('/settings')}
                                                     >
-                                                        <i className="bx bx-link-alt"></i> Vincular ahora
+                                                        <i className="bx bx-link-alt"></i> {t('btnLinkNow')}
                                                     </button>
                                                     {oauthPanelMsg ? <p className="db__conn-panel-msg">{oauthPanelMsg}</p> : null}
                                                 </div>
@@ -1014,7 +1021,7 @@ const Dashboard = () => {
                                                     <div className="db__conn-panel-stats" style={{ width: '100%' }}>
                                                         <div className="db__conn-panel-stat">
                                                             <span className="db__conn-panel-stat-val">—</span>
-                                                            <span className="db__conn-panel-stat-lbl">Rango</span>
+                                                            <span className="db__conn-panel-stat-lbl">{t('connRank')}</span>
                                                         </div>
                                                         <div className="db__conn-panel-stat">
                                                             <span className="db__conn-panel-stat-val">—</span>
@@ -1103,7 +1110,7 @@ const Dashboard = () => {
                                     <div className="db__tp-captain-info">
                                         <span className="db__tp-captain-label">Capitán</span>
                                         <strong>{teamPanel.captain?.fullName || 'No definido'}</strong>
-                                        <span>{teamPanel.category || 'Sin categoría'} • {teamPanel.teamGender || 'Mixto'}</span>
+                                        <span>{teamPanel.category || t('emptyCategory')} • {teamPanel.teamGender || 'Mixto'}</span>
                                     </div>
                                 </div>
 
@@ -1149,7 +1156,7 @@ const Dashboard = () => {
                                         }
                                     })}
                                 >
-                                    <i className="bx bx-expand"></i> Ver equipo completo
+                                    <i className="bx bx-expand"></i> {t('btnViewFullTeam')}
                                 </button>
                                 <button className="db__btn db__btn--outline" onClick={() => setTeamPanel(null)}>
                                     Cerrar
@@ -1186,7 +1193,7 @@ const Dashboard = () => {
                     <div className="db__hero-avatar">
                         <AvatarCircle src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${user.username}`} frameConfig={currentFrame} size="150px" status={user.status} />
                     </div>
-                    <span className="db__hero-greeting">{greeting}</span>
+                    <span className="db__hero-greeting">{now.getHours() < 6 ? t('greetingNight') : now.getHours() < 12 ? t('greetingMorning') : now.getHours() < 19 ? t('greetingAfternoon') : t('greetingNight')}</span>
                     <PlayerTag name={userData.username.toUpperCase()} tagId={user.selectedTagId} size="normal" fontTag="2.8rem" />
                     {user.bio && <p className="db__hero-bio">{user.bio}</p>}
                     <div className="db__hero-chips">
@@ -1197,7 +1204,7 @@ const Dashboard = () => {
                     </div>
                 </motion.div>
 
-                <button className="db__hero-edit" onClick={() => navigate('/profile')}><i className="bx bx-edit-alt"></i> Editar perfil</button>
+                <button className="db__hero-edit" onClick={() => navigate('/profile')}><i className="bx bx-edit-alt"></i> {t('editProfile')}</button>
                 <div className="db__scroll-hint"><span>Scroll</span><i className="bx bx-chevron-down"></i></div>
             </section>
 
@@ -1366,8 +1373,8 @@ const Dashboard = () => {
                                             <i className={m.icon}></i>
                                         </div>
                                         <div>
-                                            <p className="db__mx-page-kicker" style={{ color: m.color }}>Métricas de rendimiento</p>
-                                            <h2 className="db__mx-title">{m.label}</h2>
+                                            <p className="db__mx-page-kicker" style={{ color: m.color }}>{t('dashboardMetrics')}</p>
+                                            <h2 className="db__mx-title">{{ winrate: t('statWinRate'), leadership: t('statLeadership'), network: t('statSocialNetwork'), consistency: t('statConsistency'), versatility: t('statVersatility') }[m.id] || m.label}</h2>
                                             <div className="db__mx-subtitle-row">
                                                 <p className="db__mx-subtitle">{m.subtitle}</p>
                                                 <span className="db__mx-stage" style={{ color: m.color, borderColor: hexToRgba(m.color, 0.28), background: hexToRgba(m.color, 0.08) }}>
@@ -1578,7 +1585,7 @@ const Dashboard = () => {
                                             onClick={() => navigate('/metricas')}
                                             style={{ borderColor: hexToRgba(m.color, 0.4), color: m.color }}
                                         >
-                                            <i className="bx bx-bar-chart-alt-2"></i> Ver análisis completo
+                                            <i className="bx bx-bar-chart-alt-2"></i> {t('btnViewFullAnalysis')}
                                         </button>
                                     </div>
                                 </div>
@@ -1652,7 +1659,7 @@ const Dashboard = () => {
 
                     <motion.div className="db__conn-footer" variants={fadeChild}>
                         <button className="db__btn db__btn--ghost" onClick={() => navigate('/settings')}>
-                            Ver más <i className="bx bx-right-arrow-alt"></i>
+                            {t('viewMore')} <i className="bx bx-right-arrow-alt"></i>
                         </button>
                     </motion.div>
                 </motion.div>
@@ -1669,7 +1676,7 @@ const Dashboard = () => {
                             <h2 className="db__teams-title">Mis Equipos</h2>
                         </div>
                         <button className="db__btn db__btn--ghost" onClick={() => navigate('/equipos')}>
-                            Ver más <i className="bx bx-right-arrow-alt"></i>
+                            {t('viewMore')} <i className="bx bx-right-arrow-alt"></i>
                         </button>
                     </motion.div>
 
@@ -1693,7 +1700,7 @@ const Dashboard = () => {
                                         <strong className="db__tc-name">{team.name}</strong>
                                         <span className="db__tc-game">{team.game || 'Sin juego'}</span>
                                         <span className="db__tc-role">{resolveTeamRole(team)}</span>
-                                        <div className="db__tc-members"><i className="bx bx-user"></i><span>{getFilledMemberCount(team)} miembros</span></div>
+                                        <div className="db__tc-members"><i className="bx bx-user"></i><span>{getFilledMemberCount(team)} {t('members')}</span></div>
                                     </motion.div>
                                 ))}
                             </motion.div>
@@ -1706,8 +1713,8 @@ const Dashboard = () => {
                             <i className="bx bx-group"></i>
                             <p>No perteneces a ningún equipo aún</p>
                             <div className="db__teams-empty-btns">
-                                <button className="db__btn db__btn--primary" onClick={() => navigate('/create-team')}><i className="bx bx-plus"></i> Crear equipo</button>
-                                <button className="db__btn db__btn--outline" onClick={() => navigate('/equipos')}><i className="bx bx-search"></i> Buscar</button>
+                                <button className="db__btn db__btn--primary" onClick={() => navigate('/create-team')}><i className="bx bx-plus"></i> {t('btnCreateTeam')}</button>
+                                <button className="db__btn db__btn--outline" onClick={() => navigate('/equipos')}><i className="bx bx-search"></i> {t('search')}</button>
                             </div>
                         </motion.div>
                     )}
@@ -1734,7 +1741,7 @@ const Dashboard = () => {
                             {upcomingMyTournaments.length > 0 && <p className="db__tourneys-sub">Inscrito en {myTournaments.length} torneo{myTournaments.length !== 1 ? 's' : ''}</p>}
                         </div>
                         <button className="db__btn db__btn--ghost" onClick={() => navigate('/tournaments')}>
-                            Ver más <i className="bx bx-right-arrow-alt"></i>
+                            {t('viewMore')} <i className="bx bx-right-arrow-alt"></i>
                         </button>
                     </motion.div>
 
@@ -1798,10 +1805,10 @@ const Dashboard = () => {
                     <motion.div className="db__comms-header" variants={fadeChild}>
                         <div>
                             <p className="db__comms-kicker">Social</p>
-                            <h2 className="db__comms-title">Mis Comunidades</h2>
+                            <h2 className="db__comms-title">{t('myCommunities')}</h2>
                         </div>
                         <button className="db__btn db__btn--ghost" onClick={() => navigate('/comunidad')}>
-                            Ver más <i className="bx bx-right-arrow-alt"></i>
+                            {t('viewMore')} <i className="bx bx-right-arrow-alt"></i>
                         </button>
                     </motion.div>
 
@@ -1829,7 +1836,7 @@ const Dashboard = () => {
                                     </div>
                                     <div className="db__comm-info">
                                         <strong>{c.name}</strong>
-                                        <span>{c.membersCount || 0} miembros</span>
+                                        <span>{c.membersCount || 0} {t('members')}</span>
                                     </div>
                                     {c.mainGames?.length > 0 && (
                                         <div className="db__comm-games">
@@ -1860,7 +1867,7 @@ const Dashboard = () => {
                             <i className="bx bx-buildings"></i>
                             <p>No perteneces a ninguna comunidad</p>
                             <button className="db__btn db__btn--primary" onClick={() => navigate('/comunidad')}>
-                                <i className="bx bx-search"></i> Explorar comunidades
+                                <i className="bx bx-search"></i> {t('exploreCommunities')}
                             </button>
                         </motion.div>
                     )}
@@ -1873,8 +1880,8 @@ const Dashboard = () => {
             <section className="db__section db__section--activity" data-section="activity" ref={el => sectionRefs.current.activity = el}>
                 <motion.div className="db__activity-wrap" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={stagger}>
                     <motion.div className="db__activity-header" variants={fadeChild}>
-                        <p className="db__activity-kicker">Centro de Actividad</p>
-                        <h2 className="db__activity-title">Lo que está pasando</h2>
+                        <p className="db__activity-kicker">{t('activityCenter')}</p>
+                        <h2 className="db__activity-title">{t('activityHappening')}</h2>
                     </motion.div>
 
                     <div className="db__activity-grid">
@@ -1913,7 +1920,7 @@ const Dashboard = () => {
                                     <div className="db__act-empty">
                                         <p>Sin equipos aún</p>
                                         <button className="db__btn db__btn--sm db__btn--primary" onClick={() => navigate('/create-team')}>
-                                            <i className="bx bx-plus"></i> Crear equipo
+                                            <i className="bx bx-plus"></i> {t('btnCreateTeam')}
                                         </button>
                                     </div>
                                 )}

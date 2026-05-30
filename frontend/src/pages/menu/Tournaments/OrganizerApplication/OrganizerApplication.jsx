@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios';
 import PageHud from '../../../../components/PageHud/PageHud';
 import { API_URL } from '../../../../config/api';
@@ -20,6 +21,8 @@ const REQUIRED_FIELDS = {
 const OrganizerApplication = () => {
   const navigate = useNavigate();
   const { notify } = useNotification();
+  const { user } = useAuth();
+  const prefilled = useRef(false);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -37,6 +40,13 @@ const OrganizerApplication = () => {
     tools: '',
     description: ''
   });
+
+  useEffect(() => {
+    if (user && !prefilled.current) {
+      prefilled.current = true;
+      setFormData(prev => ({ ...prev, fullName: prev.fullName || user.fullName || '' }));
+    }
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -138,6 +148,7 @@ const OrganizerApplication = () => {
                             <label>Nombre Legal Completo</label>
                             <i className='bx bx-user input-icon'></i>
                             {fe('fullName') && <small className="field-error">{fe('fullName')}</small>}
+                            {user?.fullName && !fe('fullName') && <span className="prefilled-hint"><i className='bx bx-check-circle'></i>Completado desde tu perfil</span>}
                         </div>
                         <div className="input-group">
                             <input type="text" name="idNumber" placeholder=" " value={formData.idNumber} onChange={handleInputChange} className={fe('idNumber') ? 'input-error' : ''} />

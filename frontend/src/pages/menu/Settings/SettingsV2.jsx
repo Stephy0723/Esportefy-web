@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLang } from '../../../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
@@ -39,6 +40,19 @@ export default function SettingsV2() {
     const navigate = useNavigate();
     const location = useLocation();
     const { theme, setTheme } = useTheme();
+    const { t } = useLang();
+
+    const tabLabels = {
+        security: t('settingsSecurity'),
+        connections: t('settingsConnections'),
+        privacy: t('settingsPrivacy'),
+        appearance: t('settingsAppearance'),
+        referrals: 'Referidos',
+        billing: 'Suscripción',
+        support: t('support'),
+    };
+    const translatedTabs = TABS.map(tab => ({ ...tab, label: tabLabels[tab.id] ?? tab.label }));
+
     const [activeTab, setActiveTab] = useState('security');
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -809,7 +823,7 @@ export default function SettingsV2() {
     const renderContent = () => {
         switch (activeTab) {
             case 'security':
-                if (loading) return <div className="stv2-loading">Cargando...</div>;
+                if (loading) return <div className="stv2-loading">{t('loading')}</div>;
                 return (
                     <motion.div key="security" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                         <SecurityCenterUI
@@ -824,7 +838,7 @@ export default function SettingsV2() {
                 return (
                     <motion.div key="connections" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                         <div className="stv2-section">
-                            <h2 className="stv2-section__title">Conexiones de Plataformas</h2>
+                            <h2 className="stv2-section__title">{t('settingsConnections')}</h2>
                             <p className="stv2-section__desc">Vincula tus cuentas de juego y servicios para potenciar tu experiencia competitiva.</p>
 
                             {oauthNotice.message && (
@@ -838,7 +852,7 @@ export default function SettingsV2() {
                                             Continuar en Epic
                                         </button>
                                     )}
-                                    <button type="button" className="stv2-oauth-notice__close" onClick={dismissOauthNotice} aria-label="Cerrar aviso">
+                                    <button type="button" className="stv2-oauth-notice__close" onClick={dismissOauthNotice} aria-label={t('close')}>
                                         <FaTimes />
                                     </button>
                                 </div>
@@ -854,23 +868,23 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Discord</h4>
-                                        <span>{connections?.discord?.username || 'Sin vincular'}</span>
+                                        <span>{connections?.discord?.username || t('connectionNotLinked')}</span>
                                     </div>
                                     <div className="stv2-connection__status">
                                         {connections?.discord?.id ? (
                                             <span className="stv2-badge stv2-badge--success">Conectado</span>
                                         ) : (
-                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                            <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                         )}
                                     </div>
                                     <div className="stv2-connection__action">
                                         {connections?.discord?.id ? (
                                             <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkDiscord}>
-                                                Desvincular
+                                                {t('btnUnlink')}
                                             </button>
                                         ) : (
                                             <button className="stv2-btn stv2-btn--primary" onClick={startDiscordLink}>
-                                                Conectar
+                                                {t('btnConnect')}
                                             </button>
                                         )}
                                     </div>
@@ -884,25 +898,25 @@ export default function SettingsV2() {
                                     <div className="stv2-connection__info">
                                         <h4>Cuenta Riot</h4>
                                         {!RIOT_INTEGRATION_ENABLED ? (
-                                            <span>Pendiente de aprobación de Riot</span>
+                                            <span>{t('pending')}</span>
                                         ) : connections?.riot?.verified ? (
                                             <span>
                                                 {connections.riot.gameName}#{connections.riot.tagLine}
                                                 {valorantConsentGranted ? ' · VALORANT autorizado' : ''}
                                             </span>
                                         ) : (
-                                            <span>Sin vincular</span>
+                                            <span>{t('connectionNotLinked')}</span>
                                         )}
                                     </div>
                                     <div className="stv2-connection__status">
                                         {!RIOT_INTEGRATION_ENABLED ? (
-                                            <span className="stv2-badge stv2-badge--warning">Pending</span>
+                                            <span className="stv2-badge stv2-badge--warning">{t('pending')}</span>
                                         ) : connections?.riot?.verified ? (
                                             <span className="stv2-badge stv2-badge--success">
-                                                {valorantConsentGranted ? 'LoL + VAL' : 'Verificado'}
+                                                {valorantConsentGranted ? 'LoL + VAL' : t('verified')}
                                             </span>
                                         ) : (
-                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                            <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                         )}
                                     </div>
                                     <div className="stv2-connection__action">
@@ -913,15 +927,15 @@ export default function SettingsV2() {
                                         ) : connections?.riot?.verified ? (
                                             <>
                                                 <button className="stv2-btn stv2-btn--ghost" onClick={() => setActiveTab('riot-link')}>
-                                                    Gestionar
+                                                    {t('manage')}
                                                 </button>
                                                 <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkRiot}>
-                                                    Desvincular
+                                                    {t('btnUnlink')}
                                                 </button>
                                             </>
                                         ) : (
                                             <button className="stv2-btn stv2-btn--primary" onClick={() => setActiveTab('riot-link')}>
-                                                Vincular
+                                                {t('btnLinkNow')}
                                             </button>
                                         )}
                                     </div>
@@ -936,31 +950,31 @@ export default function SettingsV2() {
                                         <h4>Mobile Legends</h4>
                                         {(mlbbLinked || mlbbVerificationStatus === 'pending' || mlbbVerificationStatus === 'rejected')
                                             ? <span>ID: {connections?.mlbb?.playerId || '-'} ({connections?.mlbb?.zoneId || '-'})</span>
-                                            : <span>Sin vincular</span>}
+                                            : <span>{t('connectionNotLinked')}</span>}
                                     </div>
                                     <div className="stv2-connection__status">
                                         {mlbbLinked ? (
-                                            <span className="stv2-badge stv2-badge--success">Verificado</span>
+                                            <span className="stv2-badge stv2-badge--success">{t('verified')}</span>
                                         ) : mlbbVerificationStatus === 'pending' ? (
-                                            <span className="stv2-badge stv2-badge--warning">En revisión</span>
+                                            <span className="stv2-badge stv2-badge--warning">{t('connectionReview')}</span>
                                         ) : mlbbVerificationStatus === 'rejected' ? (
-                                            <span className="stv2-badge stv2-badge--danger">Rechazado</span>
+                                            <span className="stv2-badge stv2-badge--danger">{t('connectionRejected')}</span>
                                         ) : (
-                                            <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                            <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                         )}
                                     </div>
                                     <div className="stv2-connection__action">
                                         {mlbbLinked ? (
                                             <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb}>
-                                                Desvincular
+                                                {t('btnUnlink')}
                                             </button>
                                         ) : mlbbVerificationStatus === 'pending' ? (
                                             <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb}>
-                                                Cancelar
+                                                {t('cancel')}
                                             </button>
                                         ) : (
                                             <button className="stv2-btn stv2-btn--primary" onClick={() => setActiveTab('mlbb-link')}>
-                                                Vincular
+                                                {t('btnLinkNow')}
                                             </button>
                                         )}
                                     </div>
@@ -973,14 +987,14 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Steam</h4>
-                                        <span>Sin vincular</span>
+                                        <span>{t('connectionNotLinked')}</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                     </div>
                                     <div className="stv2-connection__action">
                                         <button className="stv2-btn stv2-btn--outline" disabled>
-                                            Próximamente
+                                            {t('badgeComingSoon')}
                                         </button>
                                     </div>
                                 </div>
@@ -1006,7 +1020,7 @@ export default function SettingsV2() {
                                     <div className="stv2-connection__action">
                                         {epicLinked ? (
                                             <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkEpic} disabled={epicLoading}>
-                                                {epicLoading ? 'Procesando...' : 'Desvincular'}
+                                                {epicLoading ? t('processing') : t('btnUnlink')}
                                             </button>
                                         ) : (
                                             <>
@@ -1033,14 +1047,14 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Twitch</h4>
-                                        <span>Sin vincular</span>
+                                        <span>{t('connectionNotLinked')}</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                     </div>
                                     <div className="stv2-connection__action">
                                         <button className="stv2-btn stv2-btn--outline" disabled>
-                                            Próximamente
+                                            {t('badgeComingSoon')}
                                         </button>
                                     </div>
                                 </div>
@@ -1052,14 +1066,14 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Google</h4>
-                                        <span>Sin vincular</span>
+                                        <span>{t('connectionNotLinked')}</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                     </div>
                                     <div className="stv2-connection__action">
                                         <button className="stv2-btn stv2-btn--outline" disabled>
-                                            Próximamente
+                                            {t('badgeComingSoon')}
                                         </button>
                                     </div>
                                 </div>
@@ -1071,14 +1085,14 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Microsoft</h4>
-                                        <span>Sin vincular</span>
+                                        <span>{t('connectionNotLinked')}</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                     </div>
                                     <div className="stv2-connection__action">
                                         <button className="stv2-btn stv2-btn--outline" disabled>
-                                            Próximamente
+                                            {t('badgeComingSoon')}
                                         </button>
                                     </div>
                                 </div>
@@ -1094,14 +1108,14 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>Xbox Live</h4>
-                                        <span>Sin vincular</span>
+                                        <span>{t('connectionNotLinked')}</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                     </div>
                                     <div className="stv2-connection__action">
                                         <button className="stv2-btn stv2-btn--outline" disabled>
-                                            Próximamente
+                                            {t('badgeComingSoon')}
                                         </button>
                                     </div>
                                 </div>
@@ -1113,14 +1127,14 @@ export default function SettingsV2() {
                                     </div>
                                     <div className="stv2-connection__info">
                                         <h4>PlayStation Network</h4>
-                                        <span>Sin vincular</span>
+                                        <span>{t('connectionNotLinked')}</span>
                                     </div>
                                     <div className="stv2-connection__status">
-                                        <span className="stv2-badge stv2-badge--muted">Pendiente</span>
+                                        <span className="stv2-badge stv2-badge--muted">{t('pending')}</span>
                                     </div>
                                     <div className="stv2-connection__action">
                                         <button className="stv2-btn stv2-btn--outline" disabled>
-                                            Próximamente
+                                            {t('badgeComingSoon')}
                                         </button>
                                     </div>
                                 </div>
@@ -1159,7 +1173,7 @@ export default function SettingsV2() {
                     <motion.div key="riot-link" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                         <div className="stv2-section">
                             <button className="stv2-back" onClick={() => setActiveTab('connections')}>
-                                <i className="bx bx-arrow-left"></i> Volver a Conexiones
+                                <i className="bx bx-arrow-left"></i> {t('back')}
                             </button>
                             <h2 className="stv2-section__title">Centro Riot</h2>
                             {!RIOT_INTEGRATION_ENABLED ? (
@@ -1232,7 +1246,7 @@ export default function SettingsV2() {
                                             className="stv2-btn stv2-btn--ghost stv2-btn--danger"
                                             onClick={unlinkRiot}
                                         >
-                                            Desvincular Riot
+                                            {t('btnUnlink')}
                                         </button>
                                     </div>
                                 )}
@@ -1270,14 +1284,14 @@ export default function SettingsV2() {
                                     <>
                                         <div className="stv2-input-group">
                                             <label>Código de Verificación</label>
-                                            <input 
-                                                type="text" 
-                                                value={riotOtp} 
+                                            <input
+                                                type="text"
+                                                value={riotOtp}
                                                 onChange={(e) => setRiotOtp(e.target.value)}
                                                 placeholder="Ingresa el código de tu correo"
                                             />
                                         </div>
-                                        <button 
+                                        <button
                                             className="stv2-btn stv2-btn--primary stv2-btn--lg"
                                             onClick={confirmRiotLink}
                                             disabled={riotLoading}
@@ -1324,7 +1338,7 @@ export default function SettingsV2() {
                     <motion.div key="mlbb-link" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                         <div className="stv2-section">
                             <button className="stv2-back" onClick={() => setActiveTab('connections')}>
-                                <i className="bx bx-arrow-left"></i> Volver a Conexiones
+                                <i className="bx bx-arrow-left"></i> {t('back')}
                             </button>
                             <h2 className="stv2-section__title">Vincular Mobile Legends</h2>
                             <p className="stv2-section__desc">Ingresa tu User ID + Zone ID de MLBB para vincular tu cuenta. La mayoría de solicitudes pasan directo; solo escalamos a revisión si detectamos riesgo o cambios inusuales.</p>
@@ -1341,7 +1355,7 @@ export default function SettingsV2() {
                                     <i className="bx bx-time"></i>
                                     <p>Tienes una solicitud en revisión. Puedes cancelarla para volver a enviarla.</p>
                                     <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb} disabled={mlbbLoading}>
-                                        {mlbbLoading ? 'Procesando...' : 'Cancelar solicitud'}
+                                        {mlbbLoading ? t('processing') : t('btnCancelRequest')}
                                     </button>
                                 </div>
                             ) : mlbbLinked ? (
@@ -1349,7 +1363,7 @@ export default function SettingsV2() {
                                     <i className="bx bx-check-circle"></i>
                                     <p>Cuenta vinculada: ID {connections?.mlbb?.playerId} ({connections?.mlbb?.zoneId})</p>
                                     <button className="stv2-btn stv2-btn--ghost stv2-btn--danger" onClick={unlinkMlbb} disabled={mlbbLoading}>
-                                        {mlbbLoading ? 'Procesando...' : 'Desvincular'}
+                                        {mlbbLoading ? t('processing') : t('btnUnlink')}
                                     </button>
                                 </div>
                             ) : (
@@ -1392,14 +1406,14 @@ export default function SettingsV2() {
                                             onClick={validateMlbbDraft}
                                             disabled={mlbbLoading || mlbbValidating}
                                         >
-                                            {mlbbValidating ? 'Validando...' : 'Validar ID'}
+                                            {mlbbValidating ? t('validating') : t('btnValidateID')}
                                         </button>
                                         <button
                                             className="stv2-btn stv2-btn--primary stv2-btn--lg"
                                             onClick={linkMlbb}
                                             disabled={mlbbLoading || mlbbValidating}
                                         >
-                                            {mlbbLoading ? 'Enviando...' : 'Enviar Solicitud'}
+                                            {mlbbLoading ? t('submitting') : 'Enviar Solicitud'}
                                         </button>
                                     </div>
                                     {mlbbMsg && <p className="stv2-form__msg">{mlbbMsg}</p>}
@@ -1418,7 +1432,7 @@ export default function SettingsV2() {
                 return (
                     <motion.div key="privacy" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                         <div className="stv2-section">
-                            <h2 className="stv2-section__title">Privacidad</h2>
+                            <h2 className="stv2-section__title">{t('settingsPrivacy')}</h2>
                             <p className="stv2-section__desc">Controla quién puede interactuar contigo en la plataforma.</p>
 
                             <div className="stv2-toggles">
@@ -1505,7 +1519,7 @@ export default function SettingsV2() {
                 return (
                     <motion.div key="appearance" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                         <div className="stv2-section">
-                            <h2 className="stv2-section__title">Apariencia</h2>
+                            <h2 className="stv2-section__title">{t('settingsAppearance')}</h2>
                             <p className="stv2-section__desc">Personaliza tu experiencia visual.</p>
 
                             <div className="stv2-toggles">
@@ -1795,7 +1809,7 @@ export default function SettingsV2() {
                         </AnimatePresence>
 
                         <div className="stv2-section">
-                            <h2 className="stv2-section__title">Centro de Soporte</h2>
+                            <h2 className="stv2-section__title">{t('support')}</h2>
                             <p className="stv2-section__desc">Obtén ayuda, reporta problemas y mantente informado.</p>
 
                             {/* System Status */}
@@ -2059,12 +2073,12 @@ export default function SettingsV2() {
                                             </p>
                                         </div>
                                         <div className="stv2-modal__footer">
-                                            <button 
+                                            <button
                                                 className="stv2-btn stv2-btn--ghost"
                                                 onClick={() => setFeedbackModal({ ...feedbackModal, open: false })}
                                                 disabled={feedbackModal.submitting}
                                             >
-                                                Cancelar
+                                                {t('cancel')}
                                             </button>
                                             <button 
                                                 className="stv2-btn stv2-btn--primary"
@@ -2093,7 +2107,7 @@ export default function SettingsV2() {
                 return (
                     <motion.div key="mlbb-review" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                         <div className="stv2-section">
-                            <h2 className="stv2-section__title">Revisión MLBB (Admin)</h2>
+                            <h2 className="stv2-section__title">Revisión MLBB ({t('admin')})</h2>
                             <p className="stv2-section__desc">Aprueba o rechaza solicitudes pendientes de vinculación Mobile Legends.</p>
 
                             {mlbbReviewMsg && (
@@ -2109,7 +2123,7 @@ export default function SettingsV2() {
                                     onClick={fetchMlbbPendingReviews}
                                     disabled={mlbbReviewLoading}
                                 >
-                                    {mlbbReviewLoading ? 'Cargando...' : 'Actualizar pendientes'}
+                                    {mlbbReviewLoading ? t('loading') : 'Actualizar pendientes'}
                                 </button>
                                 <button
                                     className="stv2-btn stv2-btn--outline"
@@ -2123,7 +2137,7 @@ export default function SettingsV2() {
                                     onClick={processMlbbQueueNow}
                                     disabled={mlbbOpsLoading}
                                 >
-                                    {mlbbOpsLoading ? 'Procesando...' : 'Procesar cola ahora'}
+                                    {mlbbOpsLoading ? t('processing') : 'Procesar cola ahora'}
                                 </button>
                             </div>
 
@@ -2135,7 +2149,7 @@ export default function SettingsV2() {
                             </div>
 
                             {mlbbReviewLoading ? (
-                                <div className="stv2-empty-state">Cargando solicitudes...</div>
+                                <div className="stv2-empty-state">{t('loading')}</div>
                             ) : mlbbPendingReviews.length === 0 ? (
                                 <div className="stv2-empty-state">No hay solicitudes pendientes.</div>
                             ) : (
@@ -2169,14 +2183,14 @@ export default function SettingsV2() {
                                                     onClick={() => reviewMlbbRequest(item.userId, 'approve')}
                                                     disabled={mlbbReviewActionUserId === item.userId}
                                                 >
-                                                    {mlbbReviewActionUserId === item.userId ? 'Procesando...' : 'Aprobar'}
+                                                    {mlbbReviewActionUserId === item.userId ? t('processing') : t('approve')}
                                                 </button>
                                                 <button
                                                     className="stv2-btn stv2-btn--ghost stv2-btn--danger"
                                                     onClick={() => reviewMlbbRequest(item.userId, 'reject')}
                                                     disabled={mlbbReviewActionUserId === item.userId}
                                                 >
-                                                    {mlbbReviewActionUserId === item.userId ? 'Procesando...' : 'Rechazar'}
+                                                    {mlbbReviewActionUserId === item.userId ? t('processing') : t('reject')}
                                                 </button>
                                             </div>
                                         </article>
@@ -2195,7 +2209,7 @@ export default function SettingsV2() {
     const currentTab =
         activeTab === 'mlbb-review'
             ? { label: 'Revisión MLBB', description: 'Gestión de solicitudes pendientes.' }
-            : (TABS.find(t => t.id === activeTab) || TABS[0]);
+            : (translatedTabs.find(tab => tab.id === activeTab) || translatedTabs[0]);
     const isSubPage = ['riot-link', 'mlbb-link'].includes(activeTab);
 
     return (
@@ -2226,7 +2240,7 @@ export default function SettingsV2() {
                         <span className="stv2__header-kicker">Centro de control</span>
                         <div className="stv2__header-main">
                             <div>
-                                <h1>Configuración</h1>
+                                <h1>{t('settings')}</h1>
                                 <p>Gestiona tu cuenta, conexiones y preferencias</p>
                             </div>
                             <div className="stv2__header-badges">
@@ -2241,7 +2255,7 @@ export default function SettingsV2() {
                     {/* Sidebar */}
                     <aside className="stv2__sidebar">
                         <nav className="stv2__nav">
-                            {TABS.map((tab) => {
+                            {translatedTabs.map((tab) => {
                                 const Icon = tab.icon;
                                 return (
                                     <button

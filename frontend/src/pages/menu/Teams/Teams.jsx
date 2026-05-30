@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import { useNotification } from '../../../context/NotificationContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import ViewTeamModal from './ViewTeamModal';
 import PageHud from '../../../components/PageHud/PageHud';
 import { applyImageFallback, getBotAvatarFallback, getTeamFallback, resolveMediaUrl } from '../../../utils/media';
@@ -65,7 +66,7 @@ const formatRosterGameId = (game, player = {}) => {
 const hasFilledTeamSlot = (slot) => Boolean(slot?.user || slot?.nickname || slot?.gameId || slot?.email || slot?.role);
 const normalizeMetricText = (value = '') => String(value || '').trim().toLowerCase();
 
-const buildTeamStatsSnapshot = (team = {}) => {
+const buildTeamStatsSnapshot = (team = {}, t = (k) => k) => {
     const starters = Array.isArray(team?.roster?.starters) ? team.roster.starters : [];
     const subs = Array.isArray(team?.roster?.subs) ? team.roster.subs : [];
     const coach = team?.roster?.coach || null;
@@ -120,10 +121,10 @@ const buildTeamStatsSnapshot = (team = {}) => {
         pendingRequests,
         linkedUsers,
         overview: [
-            { label: 'Titulares llenos', value: `${filledStarters.length}/${starterCapacity || 0}` },
-            { label: 'Suplentes llenos', value: `${filledSubs.length}/${subCapacity || 0}` },
-            { label: 'Coach asignado', value: hasCoach ? 'Sí' : 'No' },
-            { label: 'Vacantes activas', value: String(vacancies) }
+            { label: t('statsStartersFilled'), value: `${filledStarters.length}/${starterCapacity || 0}` },
+            { label: t('statsSubsFilled'), value: `${filledSubs.length}/${subCapacity || 0}` },
+            { label: t('statsCoachAssigned'), value: hasCoach ? t('yes') : t('no') },
+            { label: t('statsActiveVacancies'), value: String(vacancies) }
         ],
         access: [
             { label: 'Miembros GlitchGang', value: String(linkedUsers) },
@@ -132,10 +133,10 @@ const buildTeamStatsSnapshot = (team = {}) => {
             { label: 'Roles cubiertos', value: String(rolesCovered) }
         ],
         operations: [
-            { label: 'Solicitudes pendientes', value: String(pendingRequests) },
-            { label: 'Solicitudes aprobadas', value: String(approvedRequests) },
-            { label: 'Solicitudes rechazadas', value: String(rejectedRequests) },
-            { label: 'Edad del equipo', value: ageDays > 0 ? `${ageDays} día${ageDays === 1 ? '' : 's'}` : 'Hoy' }
+            { label: t('statsPendingRequests'), value: String(pendingRequests) },
+            { label: t('statsApprovedRequests'), value: String(approvedRequests) },
+            { label: t('statsRejectedRequests'), value: String(rejectedRequests) },
+            { label: t('statsTeamAge'), value: ageDays > 0 ? `${ageDays} ${ageDays === 1 ? t('day') : t('days')}` : t('today') }
         ]
     };
 };
@@ -143,21 +144,21 @@ const buildTeamStatsSnapshot = (team = {}) => {
 /* ═══════════════════════════════════════
    FILTER TABS
    ═══════════════════════════════════════ */
-const TABS = [
-    { key: 'all',            label: 'Todos',         icon: 'bx-grid-alt' },
-    { key: 'myteams',        label: 'Mis Equipos',   icon: 'bx-star' },
-    { key: 'nuevo',          label: 'Nuevos',        icon: 'bx-bolt-circle', dot: '#39ff14' },
+const TABS = (t) => [
+    { key: 'all',            label: t('filterAll'),        icon: 'bx-grid-alt' },
+    { key: 'myteams',        label: t('filterMyTeams'),    icon: 'bx-star' },
+    { key: 'nuevo',          label: t('filterNew'),        icon: 'bx-bolt-circle', dot: '#39ff14' },
     { key: 'divider-1' },
-    { key: 'mixto',          label: 'Mixto',         icon: 'bx-group',        dot: '#06d6a0' },
-    { key: 'femenino',       label: 'Femenino',      icon: 'bx-female-sign',  dot: '#ff2d78' },
-    { key: 'masculino',      label: 'Masculino',     icon: 'bx-male-sign',    dot: '#ff4d2a' },
+    { key: 'mixto',          label: t('genderMixed'),      icon: 'bx-group',        dot: '#06d6a0' },
+    { key: 'femenino',       label: t('genderFemale'),     icon: 'bx-female-sign',  dot: '#ff2d78' },
+    { key: 'masculino',      label: t('genderMale'),       icon: 'bx-male-sign',    dot: '#ff4d2a' },
     { key: 'divider-2' },
-    { key: 'casual',         label: 'Casual',        icon: 'bx-game',         dot: '#8EDB15' },
-    { key: 'amateur',        label: 'Amateur',       icon: 'bx-joystick',     dot: '#00d4ff' },
-    { key: 'universitario',  label: 'Universitario', icon: 'bx-book-reader',  dot: '#6366f1' },
-    { key: 'semi-pro',       label: 'Semi-Pro',      icon: 'bx-target-lock',  dot: '#bf5af2' },
-    { key: 'profesional',    label: 'Pro',           icon: 'bx-medal',        dot: '#ff3b30' },
-    { key: 'leyenda',        label: 'Leyenda',       icon: 'bx-crown',        dot: '#ffd700' },
+    { key: 'casual',         label: t('levelCasual'),      icon: 'bx-game',         dot: '#8EDB15' },
+    { key: 'amateur',        label: t('levelAmateur'),     icon: 'bx-joystick',     dot: '#00d4ff' },
+    { key: 'universitario',  label: t('levelUniversity'),  icon: 'bx-book-reader',  dot: '#6366f1' },
+    { key: 'semi-pro',       label: t('levelSemiPro'),     icon: 'bx-target-lock',  dot: '#bf5af2' },
+    { key: 'profesional',    label: 'Pro',                 icon: 'bx-medal',        dot: '#ff3b30' },
+    { key: 'leyenda',        label: t('levelLegend'),      icon: 'bx-crown',        dot: '#ffd700' },
 ];
 
 /* ═══════════════════════════════════════
@@ -168,6 +169,7 @@ const Team = () => {
     const location = useLocation();
     const { addToast } = useNotification();
     const { user: authUser } = useAuth();
+    const { t } = useLang();
 
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -538,25 +540,25 @@ const Team = () => {
                                         <div className="th__stats-row">
                                                 <div className="th__stat">
                                                         <strong>{teams.length}</strong>
-                                                        <span>Equipos</span>
+                                                        <span>{t('teams')}</span>
                                                 </div>
                                                 <div className="th__stat-sep" />
                                                 <div className="th__stat">
                                                         <strong>{totalMembers}</strong>
-                                                        <span>Jugadores</span>
+                                                        <span>{t('player')}s</span>
                                                 </div>
                                                 {myTeamsCount > 0 && (
                                                         <>
                                                                 <div className="th__stat-sep" />
                                                                 <div className="th__stat th__stat--accent">
                                                                         <strong>{myTeamsCount}</strong>
-                                                                        <span>Mis Equipos</span>
+                                                                        <span>{t('filterMyTeams')}</span>
                                                                 </div>
                                                         </>
                                                 )}
                                         </div>
                                         <button className="th__btn-create" onClick={() => navigate('/create-team')}>
-                                                <i className='bx bx-plus'></i> Crear Equipo
+                                                <i className='bx bx-plus'></i> {t('createTeam')}
                                         </button>
                                 </div>
                         </header>
@@ -565,10 +567,10 @@ const Team = () => {
             {/* ── HUB SECTION NAV ── */}
             <nav className="th__hub-nav">
                 {[
-                    { key: 'teams',     label: 'Equipos',          icon: 'bx-shield-quarter' },
-                    { key: 'scrims',    label: 'Scrims',           icon: 'bx-target-lock' },
-                    { key: 'lfteam',    label: 'Buscar Equipo',    icon: 'bx-search-alt-2' },
-                    { key: 'lfplayers', label: 'Buscar Jugadores', icon: 'bx-user-plus' },
+                    { key: 'teams',     label: t('teams'),              icon: 'bx-shield-quarter' },
+                    { key: 'scrims',    label: t('hubNavScrims'),       icon: 'bx-target-lock' },
+                    { key: 'lfteam',    label: t('hubNavFindTeam'),     icon: 'bx-search-alt-2' },
+                    { key: 'lfplayers', label: t('hubNavFindPlayers'),  icon: 'bx-user-plus' },
                 ].map((sec) => (
                     <button
                         key={sec.key}
@@ -602,16 +604,16 @@ const Team = () => {
                     )}
                 </div>
                 <div className="th__filters">
-                    {TABS.map((tab) => {
+                    {TABS(t).map((tab) => {
                         if (tab.key.startsWith('divider')) {
                             return <div key={tab.key} className="th__filter-sep" />;
                         }
                         const count = tab.key === 'all' ? teams.length
                             : tab.key === 'myteams' ? myTeamsCount
-                            : tab.key === 'nuevo' ? teams.filter(t => isNewTeam(t)).length
-                            : teams.filter(t => {
-                                const lv = t.teamLevel?.toLowerCase() || '';
-                                const gn = t.teamGender?.toLowerCase() || '';
+                            : tab.key === 'nuevo' ? teams.filter(tm => isNewTeam(tm)).length
+                            : teams.filter(tm => {
+                                const lv = tm.teamLevel?.toLowerCase() || '';
+                                const gn = tm.teamGender?.toLowerCase() || '';
                                 return lv.includes(tab.key) || gn === tab.key;
                             }).length;
                         return (
@@ -636,15 +638,15 @@ const Team = () => {
                 {loading ? (
                     <div className="th__empty">
                         <div className="th__loader" />
-                        <p>Sincronizando equipos...</p>
+                        <p>{t('loadingSyncingTeams')}</p>
                     </div>
                 ) : error ? (
                     <div className="th__empty">
                         <div className="th__empty-icon th__empty-icon--error">
                             <i className='bx bx-error-circle'></i>
                         </div>
-                        <h3>Error de Conexion</h3>
-                        <p>No pudimos conectar con el servidor.</p>
+                        <h3>{t('errorConnectionTitle')}</h3>
+                        <p>{t('errorConnectionDesc')}</p>
                     </div>
                 ) : filteredTeams.length > 0 ? (
                     <div className="th__grid">
@@ -821,17 +823,17 @@ const Team = () => {
                         <div className="th__empty-icon">
                             <i className='bx bx-ghost'></i>
                         </div>
-                        <h3>{activeTab === 'myteams' ? 'No perteneces a ningun equipo' : 'Sin equipos encontrados'}</h3>
+                        <h3>{activeTab === 'myteams' ? t('emptyNoMember') : t('emptyNoTeamsFound')}</h3>
                         <p>
                             {activeTab === 'myteams'
-                                ? 'Unete a un equipo existente o crea el tuyo propio.'
+                                ? t('emptyJoinOrCreate')
                                 : search
                                     ? `No hay resultados para "${search}".`
                                     : 'Parece que este sector esta desierto. Quieres fundar el primer equipo?'
                             }
                         </p>
                         <button className="th__btn-create th__btn-create--sm" onClick={() => navigate('/create-team')}>
-                            <i className='bx bx-plus'></i> Crear Equipo
+                            <i className='bx bx-plus'></i> {t('createTeam')}
                         </button>
                     </div>
                 )}
@@ -848,43 +850,43 @@ const Team = () => {
                             <i className='bx bx-target-lock'></i>
                         </div>
                         <div>
-                            <h2 className="th__section-title">Scrims</h2>
-                            <p className="th__section-desc">Desafía a otros equipos a partidas de práctica competitiva</p>
+                            <h2 className="th__section-title">{t('hubNavScrims')}</h2>
+                            <p className="th__section-desc">{t('scrimsDesc')}</p>
                         </div>
                     </div>
 
                     <div className="th__scrim-actions">
                         <button className="th__scrim-create-btn" disabled>
                             <i className='bx bx-plus-circle'></i>
-                            <span>Crear Desafío</span>
-                            <small>Reta a cualquier equipo registrado</small>
+                            <span>{t('scrimsBtnCreate')}</span>
+                            <small>{t('scrimsBtnCreateHint')}</small>
                         </button>
                         <button className="th__scrim-create-btn th__scrim-create-btn--find" disabled>
                             <i className='bx bx-radar'></i>
-                            <span>Buscar Scrim</span>
-                            <small>Encuentra desafíos abiertos</small>
+                            <span>{t('scrimsBtnFind')}</span>
+                            <small>{t('scrimsBtnFindHint')}</small>
                         </button>
                     </div>
 
                     <div className="th__scrim-features">
                         <div className="th__scrim-feature">
                             <div className="th__scrim-feature-icon"><i className='bx bx-target-lock'></i></div>
-                            <h4>Matchmaking Directo</h4>
+                            <h4>{t('scrimsFeature1Title')}</h4>
                             <p>Elige un equipo rival, define el juego, mapa y reglas. Envía el reto y espera confirmación.</p>
                         </div>
                         <div className="th__scrim-feature">
                             <div className="th__scrim-feature-icon"><i className='bx bx-calendar-event'></i></div>
-                            <h4>Agenda tu Scrim</h4>
+                            <h4>{t('scrimsFeature2Title')}</h4>
                             <p>Programa fecha y hora para tu práctica. Ambos equipos reciben notificación con recordatorio.</p>
                         </div>
                         <div className="th__scrim-feature">
                             <div className="th__scrim-feature-icon"><i className='bx bx-bar-chart-alt-2'></i></div>
-                            <h4>Historial y Stats</h4>
+                            <h4>{t('scrimsFeature3Title')}</h4>
                             <p>Registra resultados, lleva un récord de victorias/derrotas y analiza el rendimiento de tu equipo.</p>
                         </div>
                         <div className="th__scrim-feature">
                             <div className="th__scrim-feature-icon"><i className='bx bx-trophy'></i></div>
-                            <h4>Ranking de Scrims</h4>
+                            <h4>{t('scrimsFeature4Title')}</h4>
                             <p>Los equipos más activos y con mejor récord aparecerán en el ranking competitivo.</p>
                         </div>
                     </div>
@@ -892,9 +894,9 @@ const Team = () => {
                     <div className="th__section-coming">
                         <div className="th__coming-badge">
                             <i className='bx bx-time-five'></i>
-                            <span>Próximamente</span>
+                            <span>{t('badgeComingSoon')}</span>
                         </div>
-                        <p>El sistema de scrims está en desarrollo. Pronto podrás retar a cualquier equipo de la plataforma.</p>
+                        <p>{t('scrimsComingSoonDesc')}</p>
                     </div>
                 </section>
             )}
@@ -909,32 +911,32 @@ const Team = () => {
                             <i className='bx bx-search-alt-2'></i>
                         </div>
                         <div>
-                            <h2 className="th__section-title">Buscar Equipo</h2>
-                            <p className="th__section-desc">Encuentra el equipo perfecto para ti y únete a la competencia</p>
+                            <h2 className="th__section-title">{t('lfteamTitle')}</h2>
+                            <p className="th__section-desc">{t('lfteamDesc')}</p>
                         </div>
                     </div>
 
                     <div className="th__lf-profile-card">
                         <div className="th__lf-profile-header">
                             <i className='bx bx-user-circle'></i>
-                            <h4>Tu Perfil de Jugador</h4>
+                            <h4>{t('lfteamProfileTitle')}</h4>
                         </div>
                         <p className="th__lf-profile-desc">Completa tu perfil para que los equipos te encuentren más fácil. Los capitanes podrán ver tu información y considerarte para su roster.</p>
                         <div className="th__lf-profile-fields">
                             <div className="th__lf-field">
-                                <label><i className='bx bx-game'></i> Juego principal</label>
+                                <label><i className='bx bx-game'></i> {t('lfteamFieldGame')}</label>
                                 <input type="text" placeholder="Ej: Valorant, League of Legends..." disabled />
                             </div>
                             <div className="th__lf-field">
-                                <label><i className='bx bx-target-lock'></i> Rol preferido</label>
+                                <label><i className='bx bx-target-lock'></i> {t('lfteamFieldRole')}</label>
                                 <input type="text" placeholder="Ej: Duelista, Support, Mid..." disabled />
                             </div>
                             <div className="th__lf-field">
-                                <label><i className='bx bx-map'></i> Región</label>
+                                <label><i className='bx bx-map'></i> {t('region')}</label>
                                 <input type="text" placeholder="Ej: LAN, LAS, NA..." disabled />
                             </div>
                             <div className="th__lf-field">
-                                <label><i className='bx bx-time'></i> Disponibilidad</label>
+                                <label><i className='bx bx-time'></i> {t('lfteamFieldAvailability')}</label>
                                 <input type="text" placeholder="Ej: Tardes, Noches, Fines de semana..." disabled />
                             </div>
                         </div>
@@ -961,7 +963,7 @@ const Team = () => {
                     <div className="th__section-coming">
                         <div className="th__coming-badge">
                             <i className='bx bx-time-five'></i>
-                            <span>Próximamente</span>
+                            <span>{t('badgeComingSoon')}</span>
                         </div>
                         <p>El sistema de búsqueda de equipo está en desarrollo. Pronto podrás publicar tu perfil y recibir invitaciones.</p>
                     </div>
@@ -978,15 +980,15 @@ const Team = () => {
                             <i className='bx bx-user-plus'></i>
                         </div>
                         <div>
-                            <h2 className="th__section-title">Buscar Jugadores</h2>
-                            <p className="th__section-desc">Recluta talento para completar el roster de tu equipo</p>
+                            <h2 className="th__section-title">{t('lfplayersTitle')}</h2>
+                            <p className="th__section-desc">{t('lfplayersDesc')}</p>
                         </div>
                     </div>
 
                     <div className="th__lfp-post-card">
                         <div className="th__lfp-post-header">
                             <i className='bx bx-megaphone'></i>
-                            <h4>Publicar Vacante</h4>
+                            <h4>{t('lfplayersPostTitle')}</h4>
                         </div>
                         <p className="th__lfp-post-desc">Publica qué posición necesitas y los jugadores interesados podrán aplicar directamente a tu equipo.</p>
                         <div className="th__lfp-post-fields">
@@ -1003,17 +1005,17 @@ const Team = () => {
                                 </select>
                             </div>
                             <div className="th__lf-field">
-                                <label><i className='bx bx-target-lock'></i> Rol que buscas</label>
+                                <label><i className='bx bx-target-lock'></i> {t('lfplayersFieldRole')}</label>
                                 <input type="text" placeholder="Ej: Duelista, Jungla, Support..." disabled />
                             </div>
                             <div className="th__lf-field">
-                                <label><i className='bx bx-trophy'></i> Nivel mínimo</label>
+                                <label><i className='bx bx-trophy'></i> {t('lfplayersFieldLevel')}</label>
                                 <select disabled>
-                                    <option>Cualquier nivel</option>
-                                    <option>Casual</option>
-                                    <option>Amateur</option>
-                                    <option>Semi-Pro</option>
-                                    <option>Profesional</option>
+                                    <option>{t('lfplayersFieldLevelAny')}</option>
+                                    <option>{t('levelCasual')}</option>
+                                    <option>{t('levelAmateur')}</option>
+                                    <option>{t('levelSemiPro')}</option>
+                                    <option>{t('levelProfessional')}</option>
                                 </select>
                             </div>
                             <div className="th__lf-field th__lf-field--full">
@@ -1022,7 +1024,7 @@ const Team = () => {
                             </div>
                         </div>
                         <button className="th__lfp-publish-btn" disabled>
-                            <i className='bx bx-send'></i> Publicar Vacante
+                            <i className='bx bx-send'></i> {t('lfplayersBtnPublish')}
                         </button>
                     </div>
 
@@ -1047,7 +1049,7 @@ const Team = () => {
                     <div className="th__section-coming">
                         <div className="th__coming-badge">
                             <i className='bx bx-time-five'></i>
-                            <span>Próximamente</span>
+                            <span>{t('badgeComingSoon')}</span>
                         </div>
                         <p>El sistema de reclutamiento está en desarrollo. Pronto podrás publicar vacantes y recibir aplicaciones.</p>
                     </div>
@@ -1092,7 +1094,7 @@ const Team = () => {
                 const previewIsOrganizer = currentUser?.isOrganizer === true;
                 const previewCanManage = previewIsCaptain || previewIsAdmin;
                 const previewCanViewStats = previewCanManage || previewIsOrganizer;
-                const previewStats = buildTeamStatsSnapshot(selectedTeam);
+                const previewStats = buildTeamStatsSnapshot(selectedTeam, t);
                 return (
                 <div className="modal-overlay" onClick={() => { setIsPreviewOpen(false); setTeamStatsOpen(false); resetJoinForm(); }}>
                     <div className="th__modal" onClick={(e) => e.stopPropagation()} style={{ '--modal-accent': previewVis.color }}>
@@ -1145,21 +1147,21 @@ const Team = () => {
                                     <i className='bx bx-category'></i>
                                     <div>
                                         <label>Categoría</label>
-                                        <p>{selectedTeam.category || 'Sin categoría'}</p>
+                                        <p>{selectedTeam.category || t('teamCategoryNone')}</p>
                                     </div>
                                 </div>
                                 <div className="th__modal-info-item">
                                     <i className='bx bx-map'></i>
                                     <div>
-                                        <label>País / Región</label>
-                                        <p>{selectedTeam.teamCountry || 'No definido'}</p>
+                                        <label>{t('teamFieldCountry')}</label>
+                                        <p>{selectedTeam.teamCountry || t('teamFieldNotDefined')}</p>
                                     </div>
                                 </div>
                                 <div className="th__modal-info-item">
                                     <i className='bx bx-trophy'></i>
                                     <div>
-                                        <label>Nivel</label>
-                                        <p>{selectedTeam.teamLevel || 'No definido'}</p>
+                                        <label>{t('level')}</label>
+                                        <p>{selectedTeam.teamLevel || t('teamFieldNotDefined')}</p>
                                     </div>
                                 </div>
                                 {selectedTeam.university?.isUniversityTeam && (
@@ -1174,15 +1176,15 @@ const Team = () => {
                                 <div className="th__modal-info-item">
                                     <i className='bx bx-globe-alt'></i>
                                     <div>
-                                        <label>Idioma</label>
-                                        <p>{selectedTeam.teamLanguage || 'No definido'}</p>
+                                        <label>{t('language')}</label>
+                                        <p>{selectedTeam.teamLanguage || t('teamFieldNotDefined')}</p>
                                     </div>
                                 </div>
                                 {selectedTeam.teamGender && (
                                     <div className="th__modal-info-item">
                                         <i className={`bx ${GENDER_CONFIG[selectedTeam.teamGender.toLowerCase()]?.icon || 'bx-group'}`}></i>
                                         <div>
-                                            <label>Género</label>
+                                            <label>{t('gender')}</label>
                                             <p>{selectedTeam.teamGender}</p>
                                         </div>
                                     </div>
@@ -1191,7 +1193,7 @@ const Team = () => {
                                     <div className="th__modal-info-item th__modal-info-item--code">
                                         <i className='bx bx-key'></i>
                                         <div>
-                                            <label>Código de Invitación</label>
+                                            <label>{t('teamFieldInviteCode')}</label>
                                             <p className="th__invite-code">{selectedTeam.inviteCode}</p>
                                         </div>
                                     </div>
@@ -1199,7 +1201,7 @@ const Team = () => {
                             </div>
                             {/* ── ROSTER TITULARES ── */}
                             <div className="th__modal-section th__modal-section--panel">
-                                <h4><i className='bx bx-group'></i> Titulares ({previewFilled}/{previewTotal})</h4>
+                                <h4><i className='bx bx-group'></i> {t('rosterStarters')} ({previewFilled}/{previewTotal})</h4>
                                 <div className="th__modal-roster-grid">
                                     {previewStarters.map((p, i) => {
                                         const captainId = selectedTeam?.captain?._id || selectedTeam?.captain;
@@ -1222,7 +1224,7 @@ const Team = () => {
                                                     {isCap && <span className="th__modal-captain-crown"><i className='bx bxs-crown'></i></span>}
                                                 </div>
                                                 <div className="th__modal-player-info">
-                                                    <span className="th__modal-player-name">{p?.nickname || 'Vacante'}</span>
+                                                    <span className="th__modal-player-name">{p?.nickname || t('rosterVacant')}</span>
                                                     {p?.role && <span className="th__modal-player-role">{p.role}</span>}
                                                     {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {formatRosterGameId(selectedTeam?.game, p)}</span>}
                                                     {p?.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {p.region}</span>}
@@ -1232,7 +1234,7 @@ const Team = () => {
                                         );
                                     })}
                                     {previewStarters.length === 0 && (
-                                        <p className="th__modal-empty-text">Sin titulares registrados</p>
+                                        <p className="th__modal-empty-text">{t('rosterStartersEmpty')}</p>
                                     )}
                                 </div>
                             </div>
@@ -1240,7 +1242,7 @@ const Team = () => {
                             {/* ── ROSTER SUPLENTES ── */}
                             {previewSubSlots > 0 && (
                                 <div className="th__modal-section th__modal-section--panel">
-                                    <h4><i className='bx bx-transfer-alt'></i> Suplentes ({previewSubs.filter(p => p?.nickname).length}/{previewSubSlots})</h4>
+                                    <h4><i className='bx bx-transfer-alt'></i> {t('rosterSubs')} ({previewSubs.filter(p => p?.nickname).length}/{previewSubSlots})</h4>
                                     <div className="th__modal-roster-grid">
                                         {previewSubsDisplay.map((p, i) => (
                                             <div key={`sub-${i}`} className={`th__modal-player ${p?.nickname ? '' : 'th__modal-player--empty'}`}>
@@ -1259,8 +1261,8 @@ const Team = () => {
                                                     }
                                                 </div>
                                                 <div className="th__modal-player-info">
-                                                    <span className="th__modal-player-name">{p?.nickname || 'Vacante'}</span>
-                                                    <span className="th__modal-player-role">{p?.role || `Suplente ${i + 1}`}</span>
+                                                    <span className="th__modal-player-name">{p?.nickname || t('rosterVacant')}</span>
+                                                    <span className="th__modal-player-role">{p?.role || `${t('substituteRole')} ${i + 1}`}</span>
                                                     {p?.gameId && <span className="th__modal-player-detail"><i className='bx bx-id-card'></i> {formatRosterGameId(selectedTeam?.game, p)}</span>}
                                                     {p?.region && <span className="th__modal-player-detail"><i className='bx bx-map-pin'></i> {p.region}</span>}
                                                 </div>
@@ -1272,7 +1274,7 @@ const Team = () => {
 
                             {/* ── COACH ── */}
                             <div className="th__modal-section th__modal-section--panel">
-                                <h4><i className='bx bx-user-voice'></i> Coach / Staff</h4>
+                                <h4><i className='bx bx-user-voice'></i> {t('rosterCoachStaff')}</h4>
                                 {previewCoach && previewCoach.nickname ? (
                                     <div className="th__modal-player th__modal-player--coach">
                                         <div className="th__modal-player-avatar">
@@ -1299,7 +1301,7 @@ const Team = () => {
                                     <div className="th__modal-player th__modal-player--empty">
                                         <div className="th__modal-player-avatar"><i className='bx bx-user-voice'></i></div>
                                         <div className="th__modal-player-info">
-                                            <span className="th__modal-player-name">Sin coach asignado</span>
+                                            <span className="th__modal-player-name">{t('rosterCoachEmpty')}</span>
                                         </div>
                                     </div>
                                 )}
@@ -1313,7 +1315,7 @@ const Team = () => {
                                             onClick={() => setTeamStatsOpen((prev) => !prev)}
                                         >
                                             <i className={`bx ${teamStatsOpen ? 'bx-chevron-up' : 'bx-bar-chart-alt-2'}`}></i>
-                                            {teamStatsOpen ? 'Ocultar estadísticas' : 'Ver estadísticas'}
+                                            {teamStatsOpen ? t('btnHideStats') : t('btnShowStats')}
                                         </button>
                                     )}
                                     {previewCanManage && (
@@ -1322,13 +1324,13 @@ const Team = () => {
                                                 className="th__modal-btn th__modal-btn--primary"
                                                 onClick={() => openManageTeamModal(selectedTeam, 'roster')}
                                             >
-                                                <i className='bx bx-user-plus'></i> Invitar amigo
+                                                <i className='bx bx-user-plus'></i> {t('btnInviteFriend')}
                                             </button>
                                             <button
                                                 className="th__modal-btn th__modal-btn--secondary"
                                                 onClick={() => openManageTeamModal(selectedTeam, 'info')}
                                             >
-                                                <i className='bx bx-cog'></i> Gestionar equipo
+                                                <i className='bx bx-cog'></i> {t('btnManageTeam')}
                                             </button>
                                         </>
                                     )}
@@ -1346,8 +1348,8 @@ const Team = () => {
                                     <div className="th__stats-sheet">
                                     <div className="th__stats-sheet__head">
                                         <div>
-                                            <span className="th__stats-sheet__eyebrow">Panel privado</span>
-                                            <h4>Estadísticas completas del equipo</h4>
+                                            <span className="th__stats-sheet__eyebrow">{t('statsPrivatePanel')}</span>
+                                            <h4>{t('statsTeamStatsTitle')}</h4>
                                             <p>Disponible para capitán, organizers y administradores.</p>
                                         </div>
                                         <button
@@ -1361,17 +1363,17 @@ const Team = () => {
 
                                     <div className="th__stats-sheet__hero">
                                         <article className="th__stats-sheet__hero-card">
-                                            <span>Completitud competitiva</span>
+                                            <span>{t('statsCompetitiveCompleteness')}</span>
                                             <strong>{previewStats.completionPct}%</strong>
-                                            <small>{previewStats.filledCompetitiveSlots}/{previewStats.totalCompetitiveSlots || 0} slots listos</small>
+                                            <small>{previewStats.filledCompetitiveSlots}/{previewStats.totalCompetitiveSlots || 0} {t('statsSlotsReady')}</small>
                                         </article>
                                         <article className="th__stats-sheet__hero-card">
-                                            <span>Solicitudes activas</span>
+                                            <span>{t('statsActiveRequests')}</span>
                                             <strong>{previewStats.pendingRequests}</strong>
-                                            <small>pendientes de revisar</small>
+                                            <small>{t('statsPendingReview')}</small>
                                         </article>
                                         <article className="th__stats-sheet__hero-card">
-                                            <span>Miembros vinculados</span>
+                                            <span>{t('statsLinkedMembers')}</span>
                                             <strong>{previewStats.linkedUsers}</strong>
                                             <small>usuarios reales de GlitchGang</small>
                                         </article>
@@ -1379,7 +1381,7 @@ const Team = () => {
 
                                     <div className="th__stats-sheet__sections">
                                         <section className="th__stats-sheet__section">
-                                            <h5>Composición</h5>
+                                            <h5>{t('statsSectionComposition')}</h5>
                                             <div className="th__stats-sheet__grid">
                                                 {previewStats.overview.map((item) => (
                                                     <div key={item.label} className="th__stats-sheet__item">
@@ -1391,7 +1393,7 @@ const Team = () => {
                                         </section>
 
                                         <section className="th__stats-sheet__section">
-                                            <h5>Integridad competitiva</h5>
+                                            <h5>{t('statsSectionIntegrity')}</h5>
                                             <div className="th__stats-sheet__grid">
                                                 {previewStats.access.map((item) => (
                                                     <div key={item.label} className="th__stats-sheet__item">
@@ -1403,7 +1405,7 @@ const Team = () => {
                                         </section>
 
                                         <section className="th__stats-sheet__section">
-                                            <h5>Operación</h5>
+                                            <h5>{t('statsSectionOperations')}</h5>
                                             <div className="th__stats-sheet__grid">
                                                 {previewStats.operations.map((item) => (
                                                     <div key={item.label} className="th__stats-sheet__item">
@@ -1464,7 +1466,7 @@ const Team = () => {
                                         <div className="th__join-gate" style={{ textAlign: 'center' }}>
                                             <p className="th__join-gate-desc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--primary, #8EDB15)' }}>
                                                 <i className='bx bx-check-circle' style={{ fontSize: '1.3rem' }}></i>
-                                                Ya eres miembro de este equipo
+                                                {t('joinAlreadyMember')}
                                             </p>
                                         </div>
                                     ) : joinSuccess ? (
@@ -1472,25 +1474,25 @@ const Team = () => {
                                             <div className="th__join-success-icon">
                                                 <i className='bx bx-check-circle'></i>
                                             </div>
-                                            <h5 className="th__join-success-title">¡Bien hecho!</h5>
+                                            <h5 className="th__join-success-title">{t('joinSuccessTitle')}</h5>
                                             <p className="th__join-success-desc">
-                                                Tu solicitud fue enviada correctamente.<br />
-                                                La confirmación está <strong>en espera</strong> — el líder del equipo recibirá tus datos para aceptar o rechazar tu ingreso.
+                                                {t('joinSuccessDesc1')}<br />
+                                                {t('joinSuccessDesc2')}
                                             </p>
                                             <button className="th__join-success-btn" onClick={resetJoinForm}>
-                                                <i className='bx bx-check'></i> Entendido
+                                                <i className='bx bx-check'></i> {t('joinSuccessBtn')}
                                             </button>
                                         </div>
                                     ) : !joinFormOpen ? (
                                         <div className="th__join-gate">
-                                            <p className="th__join-gate-desc">Ingresa el código de invitación para unirte a este equipo</p>
+                                            <p className="th__join-gate-desc">{t('joinGateDesc')}</p>
                                             {isMlbbJoinTeam && (
                                                 <div className={`th__join-sync-banner ${currentUserMlbbVerified ? 'is-ready' : 'is-missing'}`}>
                                                     <i className={`bx ${currentUserMlbbVerified ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
                                                     <span>
                                                         {currentUserMlbbVerified
-                                                            ? `Se usará tu cuenta MLBB vinculada: ${currentUserMlbbIgn || 'IGN no disponible'} · ${currentUserMlbbPlayerId}/${currentUserMlbbZoneId}`
-                                                            : 'Para unirte a equipos MLBB primero debes verificar tu cuenta en Conexiones.'}
+                                                            ? `${t('joinMlbbReady')} ${currentUserMlbbIgn || t('notAvailable')} · ${currentUserMlbbPlayerId}/${currentUserMlbbZoneId}`
+                                                            : t('joinMlbbError')}
                                                     </span>
                                                 </div>
                                             )}
@@ -1499,8 +1501,8 @@ const Team = () => {
                                                     <i className={`bx ${userMatchesUniversity ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
                                                     <span>
                                                         {userMatchesUniversity
-                                                            ? `Se usará tu verificación universitaria: ${currentUserUniversity.universityName || currentUserUniversity.universityTag}`
-                                                            : `Este equipo pertenece a ${st?.university?.universityName || 'una universidad verificada'}. Debes tener esa misma universidad validada para entrar.`}
+                                                            ? `${t('joinUniversityReady')} ${currentUserUniversity.universityName || currentUserUniversity.universityTag}`
+                                                            : `${t('joinUniversityError')} ${st?.university?.universityName || ''}`}
                                                     </span>
                                                 </div>
                                             )}
@@ -1509,7 +1511,7 @@ const Team = () => {
                                                     <i className='bx bx-key'></i>
                                                     <input
                                                         type="text"
-                                                        placeholder="Código de invitación"
+                                                        placeholder={t('joinInviteCodePlaceholder')}
                                                         value={joinInviteCode}
                                                         onChange={e => setJoinInviteCode(e.target.value.toUpperCase())}
                                                         onKeyDown={e => {
@@ -1528,7 +1530,7 @@ const Team = () => {
                                                         setJoinFormOpen(true);
                                                     }}
                                                 >
-                                                    <i className='bx bx-right-arrow-alt'></i> Continuar
+                                                    <i className='bx bx-right-arrow-alt'></i> {t('continueBtn')}
                                                 </button>
                                             </div>
                                         </div>
@@ -1538,7 +1540,7 @@ const Team = () => {
                                                 <i className='bx bx-check-shield'></i>
                                                 <span>Código: <strong>{joinInviteCode}</strong></span>
                                                 <button type="button" className="th__join-form-change" onClick={() => setJoinFormOpen(false)}>
-                                                    Cambiar
+                                                    {t('change')}
                                                 </button>
                                             </div>
 
@@ -1547,7 +1549,7 @@ const Team = () => {
                                                     <div className="th__join-account-head">
                                                         <i className={`bx ${currentUserMlbbVerified ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
                                                         <div>
-                                                            <strong>Cuenta MLBB sincronizada</strong>
+                                                            <strong>{t('joinMlbbAccountTitle')}</strong>
                                                             <span>
                                                                 {currentUserMlbbVerified
                                                                     ? 'Esta identidad se usará para validar tu ingreso y cualquier actividad del torneo.'
@@ -1557,19 +1559,19 @@ const Team = () => {
                                                     </div>
                                                     <div className="th__join-account-grid">
                                                         <div className="th__join-account-item">
-                                                            <label>IGN</label>
-                                                            <p>{currentUserMlbbIgn || 'No disponible'}</p>
+                                                            <label>{t('ign')}</label>
+                                                            <p>{currentUserMlbbIgn || t('notAvailable')}</p>
                                                         </div>
                                                         <div className="th__join-account-item">
-                                                            <label>User ID</label>
-                                                            <p>{currentUserMlbbPlayerId || 'No disponible'}</p>
+                                                            <label>{t('userId')}</label>
+                                                            <p>{currentUserMlbbPlayerId || t('notAvailable')}</p>
                                                         </div>
                                                         <div className="th__join-account-item">
-                                                            <label>Zone ID</label>
-                                                            <p>{currentUserMlbbZoneId || 'No disponible'}</p>
+                                                            <label>{t('zoneId')}</label>
+                                                            <p>{currentUserMlbbZoneId || t('notAvailable')}</p>
                                                         </div>
                                                         <div className="th__join-account-item">
-                                                            <label>Estado</label>
+                                                            <label>{t('statusLabel')}</label>
                                                             <p>{currentUserMlbbVerified ? 'Verificada' : 'Pendiente'}</p>
                                                         </div>
                                                     </div>
@@ -1580,7 +1582,7 @@ const Team = () => {
                                                     <div className="th__join-account-head">
                                                         <i className={`bx ${userMatchesUniversity ? 'bx-check-shield' : 'bx-error-circle'}`}></i>
                                                         <div>
-                                                            <strong>Verificación universitaria</strong>
+                                                            <strong>{t('joinUniversityTitle')}</strong>
                                                             <span>
                                                                 {userMatchesUniversity
                                                                     ? 'Tu universidad coincide con la del equipo y se usará para validar torneos universitarios.'
@@ -1598,12 +1600,12 @@ const Team = () => {
                                                             <p>{currentUserUniversity.universityName || 'No verificada'}</p>
                                                         </div>
                                                         <div className="th__join-account-item">
-                                                            <label>Campus</label>
-                                                            <p>{currentUserUniversity.campus || 'No disponible'}</p>
+                                                            <label>{t('campus')}</label>
+                                                            <p>{currentUserUniversity.campus || t('notAvailable')}</p>
                                                         </div>
                                                         <div className="th__join-account-item">
-                                                            <label>Estado</label>
-                                                            <p>{userMatchesUniversity ? 'Compatible' : 'No compatible'}</p>
+                                                            <label>{t('statusLabel')}</label>
+                                                            <p>{userMatchesUniversity ? t('statusCompatible') : t('statusNotCompatible')}</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1617,7 +1619,7 @@ const Team = () => {
                                                     ) : (
                                                         <div className="th__join-photo-placeholder">
                                                             <i className='bx bx-camera'></i>
-                                                            <span>Subir foto</span>
+                                                            <span>{t('btnUploadPhoto')}</span>
                                                         </div>
                                                     )}
                                                     <input
@@ -1636,10 +1638,10 @@ const Team = () => {
 
                                             <div className="th__join-form-grid">
                                                 <div className="th__join-field">
-                                                    <label>{isMlbbJoinTeam ? 'Nickname visible *' : 'Nickname *'}</label>
+                                                    <label>{isMlbbJoinTeam ? t('nicknameVisible') : t('nickname')}</label>
                                                     <input
                                                         type="text"
-                                                        placeholder={isMlbbJoinTeam ? (currentUserMlbbIgn || 'Tu nickname') : 'Tu nickname'}
+                                                        placeholder={isMlbbJoinTeam ? (currentUserMlbbIgn || t('nicknamePlaceholder')) : t('nicknamePlaceholder')}
                                                         value={joinPlayer.nickname}
                                                         onChange={e => setJoinPlayer({ ...joinPlayer, nickname: e.target.value })}
                                                         required
@@ -1648,7 +1650,7 @@ const Team = () => {
                                                 {!isMlbbJoinTeam && (
                                                     <>
                                                         <div className="th__join-field">
-                                                            <label>Game ID</label>
+                                                            <label>{t('gameId')}</label>
                                                             <input
                                                                 type="text"
                                                                 placeholder="Riot ID / Tag"
@@ -1657,7 +1659,7 @@ const Team = () => {
                                                             />
                                                         </div>
                                                         <div className="th__join-field">
-                                                            <label>Región</label>
+                                                            <label>{t('region')}</label>
                                                             <select value={joinPlayer.region} onChange={e => setJoinPlayer({ ...joinPlayer, region: e.target.value })}>
                                                                 <option value="">Seleccionar...</option>
                                                                 {REGION_OPTIONS_JOIN.map(r => <option key={r} value={r}>{r}</option>)}
@@ -1666,7 +1668,7 @@ const Team = () => {
                                                     </>
                                                 )}
                                                 <div className="th__join-field">
-                                                    <label>Rol</label>
+                                                    <label>{t('role')}</label>
                                                     <select
                                                         value={joinPlayer.role}
                                                         onChange={e => setJoinPlayer({ ...joinPlayer, role: e.target.value })}
@@ -1674,7 +1676,7 @@ const Team = () => {
                                                     >
                                                         <option value="">Seleccionar...</option>
                                                         {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                                                        <option value="Suplente">Suplente</option>
+                                                        <option value="Suplente">{t('substituteRole')}</option>
                                                         <option value="Coach">Coach</option>
                                                     </select>
                                                     {joinRoleLockedByInvite && (
@@ -1684,16 +1686,16 @@ const Team = () => {
                                                     )}
                                                 </div>
                                                 <div className="th__join-field">
-                                                    <label>Posición</label>
+                                                    <label>{t('position')}</label>
                                                     <select value={joinSlotType} onChange={e => { setJoinSlotType(e.target.value); setJoinSlotIndex(0); }}>
-                                                        <option value="starters">Titular</option>
-                                                        {maxSb > 0 && <option value="subs">Suplente</option>}
+                                                        <option value="starters">{t('starterRole')}</option>
+                                                        {maxSb > 0 && <option value="subs">{t('substituteRole')}</option>}
                                                         <option value="coach">Coach</option>
                                                     </select>
                                                 </div>
                                                 {joinSlotType !== 'coach' && (
                                                     <div className="th__join-field">
-                                                        <label>Slot</label>
+                                                        <label>{t('slot')}</label>
                                                         <select value={joinSlotIndex} onChange={e => setJoinSlotIndex(Number(e.target.value))}>
                                                             {Array.from({ length: joinSlotType === 'starters' ? maxS : maxSb }).map((_, i) => {
                                                                 const current = joinSlotType === 'starters' ? st.roster?.starters?.[i] : st.roster?.subs?.[i];
@@ -1702,14 +1704,14 @@ const Team = () => {
                                                                     : roleHintsByType.subs?.[i];
                                                                 const label = current?.nickname
                                                                     || current?.role
-                                                                    || `${joinSlotType === 'starters' ? 'Titular' : 'Suplente'} #${i + 1}${roleHint ? ` · ${roleHint}` : ''}`;
+                                                                    || `${joinSlotType === 'starters' ? t('starterRole') : t('substituteRole')} #${i + 1}${roleHint ? ` · ${roleHint}` : ''}`;
                                                                 return <option key={i} value={i} disabled={Boolean(current?.nickname)}>{label}{current?.nickname ? ' ✓' : ''}</option>;
                                                             })}
                                                         </select>
                                                     </div>
                                                 )}
                                                 <div className="th__join-field th__join-field--full">
-                                                    <label>Email (opcional)</label>
+                                                    <label>{t('emailOptional')}</label>
                                                     <input
                                                         type="email"
                                                         placeholder="tu@email.com"
@@ -1731,9 +1733,9 @@ const Team = () => {
                                                 </div>
                                             )}
                                             <div className="th__join-form-actions">
-                                                <button type="button" className="th__join-btn-cancel" onClick={resetJoinForm}>Cancelar</button>
+                                                <button type="button" className="th__join-btn-cancel" onClick={resetJoinForm}>{t('cancel')}</button>
                                                 <button type="submit" className="th__join-btn-submit" disabled={joinSubmitting || (isMlbbJoinTeam && !currentUserMlbbVerified) || (isUniversityJoinTeam && !userMatchesUniversity)}>
-                                                    {joinSubmitting ? <><i className='bx bx-loader-alt bx-spin'></i> Enviando...</> : <><i className='bx bx-send'></i> Enviar Solicitud</>}
+                                                    {joinSubmitting ? <><i className='bx bx-loader-alt bx-spin'></i> {t('submitting')}</> : <><i className='bx bx-send'></i> {t('joinBtnSubmit')}</>}
                                                 </button>
                                             </div>
                                         </form>
@@ -1750,17 +1752,17 @@ const Team = () => {
                             if (!isCaptain || pendingRequests.length === 0) return null;
                             return (
                                 <div className="th__modal-section th__modal-section--requests">
-                                    <h4><i className='bx bx-time-five'></i> Solicitudes pendientes</h4>
+                                    <h4><i className='bx bx-time-five'></i> {t('teamPendingRequestsTitle')}</h4>
                                     <div className="members-scroll-list">
                                         {pendingRequests.map((r) => (
                                             <div key={r._id} className="member-row-item">
                                                 <div className="member-info">
-                                                    <span className="member-name">{r.player?.nickname || 'Jugador'}</span>
-                                                    <span className="captain-badge">{r.player?.role || 'Rol'}</span>
+                                                    <span className="member-name">{r.player?.nickname || t('player')}</span>
+                                                    <span className="captain-badge">{r.player?.role || t('role')}</span>
                                                 </div>
                                                 <div className="request-actions">
-                                                    <button className="btn-primary-small" onClick={() => handleRequestAction(selectedTeam._id, r._id, 'approve')}>Aprobar</button>
-                                                    <button className="btn-secondary-small" onClick={() => handleRequestAction(selectedTeam._id, r._id, 'reject')}>Rechazar</button>
+                                                    <button className="btn-primary-small" onClick={() => handleRequestAction(selectedTeam._id, r._id, 'approve')}>{t('approve')}</button>
+                                                    <button className="btn-secondary-small" onClick={() => handleRequestAction(selectedTeam._id, r._id, 'reject')}>{t('reject')}</button>
                                                 </div>
                                             </div>
                                         ))}

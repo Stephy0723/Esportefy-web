@@ -7,6 +7,7 @@ import { getStoredLocalTournaments } from '../../../../utils/tournamentCalendar'
 import { normalizeSupportedGameName } from '../../../../../../shared/supportedGames.js';
 import { GAME_IMAGES } from '../../../../data/gameImages';
 import { getTournamentGameByName } from '../../../../data/tournamentGames/tournamentGames';
+import { useLang } from '../../../../context/LanguageContext';
 import './TournamentPublic.css';
 import './TournamentPublicView.overrides.css';
 
@@ -51,12 +52,11 @@ const mapLocalToPublicShape = (item) => ({
   bracket: item.bracket || null,
 });
 
-const STATUS_LABELS = {
-  open: 'Abierto',
-  ongoing: 'En curso',
-  finished: 'Finalizado',
-  cancelled: 'Cancelado',
-  draft: 'Borrador',
+const STATUS_LABELS_KEYS = {
+  open: 'tournamentOpen',
+  ongoing: 'tournamentInProgress',
+  finished: 'tournamentFinished',
+  cancelled: 'tournamentCancelled',
 };
 
 const formatDate = (value) => {
@@ -135,6 +135,7 @@ const PublicBracketBoard = ({ bracket, game, gameColor }) => {
 
 const TournamentPublicView = () => {
   const { code } = useParams();
+  const { t } = useLang();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -165,14 +166,14 @@ const TournamentPublicView = () => {
   const highlights = useMemo(() => {
     if (!data) return [];
     return [
-      { label: 'Juego', value: data.game || '-' },
-      { label: 'Formato', value: data.format || '-' },
+      { label: t('game'), value: data.game || '-' },
+      { label: t('format'), value: data.format || '-' },
       { label: 'Modalidad', value: data.modality || '-' },
       { label: 'Equipos', value: `${data.slots?.current ?? 0}/${data.slots?.max ?? 0}` },
     ];
-  }, [data]);
+  }, [data, t]);
 
-  if (loading) return <div className="tpv-page"><div className="tpv-empty">Cargando torneo...</div></div>;
+  if (loading) return <div className="tpv-page"><div className="tpv-empty">{t('loading')}</div></div>;
   if (error) return <div className="tpv-page"><div className="tpv-empty">{error}</div></div>;
   if (!data) return <div className="tpv-page"><div className="tpv-empty">Sin datos del torneo.</div></div>;
 
@@ -187,7 +188,7 @@ const TournamentPublicView = () => {
   const displayRegistrations = Array.isArray(data.registrations) ? data.registrations : [];
   const isValorantTournament = normalizeSupportedGameName(data.game) === 'Valorant';
   const gameInfo = getTournamentGameByName(data.game);
-  const gameImage = GAME_IMAGES[data.game] || GAME_IMAGES.Default;
+  const gameImage = gameInfo?.img || GAME_IMAGES[data.game] || GAME_IMAGES.Default;
   const gameColor = gameInfo?.color || 'var(--primary)';
   const bannerUrl = data.bannerImage
     ? (data.bannerImage.startsWith('http') ? data.bannerImage : `${API_URL}/${data.bannerImage}`)
@@ -207,7 +208,7 @@ const TournamentPublicView = () => {
           <p className="tpv-chip"><i className="bx bx-trophy" /> Torneo oficial</p>
           <h1>{data.title}</h1>
           <p className="tpv-meta-line">
-            {formatTournamentPublicId(data)} - {data.game} - {STATUS_LABELS[data.status] || 'Publicado'}
+            {formatTournamentPublicId(data)} - {data.game} - {STATUS_LABELS_KEYS[data.status] ? t(STATUS_LABELS_KEYS[data.status]) : 'Publicado'}
           </p>
           <p className="tpv-lead">
             {data.customMessage || data.description || 'Competencia organizada para equipos, comunidad y transmision en directo.'}
@@ -242,7 +243,7 @@ const TournamentPublicView = () => {
           <div className="tpv-event-card">
             <span>Participacion</span>
             <strong style={{ color: gameColor }}>{data.slots?.current ?? 0}/{data.slots?.max ?? 0}</strong>
-            <p>{STATUS_LABELS[data.status] || 'Publicado'}</p>
+            <p>{STATUS_LABELS_KEYS[data.status] ? t(STATUS_LABELS_KEYS[data.status]) : 'Publicado'}</p>
           </div>
         </aside>
       </section>
@@ -294,7 +295,7 @@ const TournamentPublicView = () => {
           {showTeams ? (
             <section className="tpv-card">
               <div className="tpv-card__topline">
-                <span className="tpv-chip tpv-chip--soft">Participantes</span>
+                <span className="tpv-chip tpv-chip--soft">{t('participants')}</span>
               </div>
               <h2>Equipos en competencia</h2>
               {displayRegistrations.length === 0 ? (
@@ -367,7 +368,7 @@ const TournamentPublicView = () => {
               <h2>Canales oficiales</h2>
               <div className="tpv-stack">
                 <div className="tpv-mini">
-                  <span>Organizador</span>
+                  <span>{t('organizer')}</span>
                   <strong>{data.contact?.email || 'Sin correo publicado'}</strong>
                 </div>
                 <div className="tpv-mini">
@@ -381,7 +382,7 @@ const TournamentPublicView = () => {
           {showRules ? (
             <section className="tpv-card">
               <div className="tpv-card__topline">
-                <span className="tpv-chip tpv-chip--soft">Reglas</span>
+                <span className="tpv-chip tpv-chip--soft">{t('rules')}</span>
               </div>
               <h2>Documentacion</h2>
               {data.rulesPdf ? (

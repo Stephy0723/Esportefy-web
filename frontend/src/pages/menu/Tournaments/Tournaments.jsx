@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { API_URL } from '../../../config/api';
 import { useNotification } from '../../../context/NotificationContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import './Tournaments.scss'; 
 import { TOURNAMENT_GAMES, getTournamentGameByName } from '../../../data/tournamentGames/tournamentGames';
 import MatchCalendar from '../../../components/Calendar/MatchCalendar/WidgetCalendar';
@@ -13,7 +14,7 @@ import { getAuthToken } from '../../../utils/authSession';
 import RoleGateModal from '../../../components/RoleGateModal/RoleGateModal';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../utils/publicIds';
 import { getStoredLocalTournaments, saveStoredLocalTournaments } from '../../../utils/tournamentCalendar';
-import { normalizeTournamentFormat } from '../../../../../shared/tournamentCatalog.js';
+import { normalizeTournamentFormat, getTournamentFormatLabel } from '../../../../../shared/tournamentCatalog.js';
 import { filterSupportedGameObjects, isSupportedGameName, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../../shared/supportedGames.js';
 import {
   RIOT_INTEGRATION_ENABLED,
@@ -166,11 +167,11 @@ const SPONSORS = [
 ];
 
 const STATUS_CONFIG = {
-    open:      { label: 'Abierto',    color: '#00ff88', icon: 'bx-check-circle' },
-    ongoing:   { label: 'En curso',   color: '#4facfe', icon: 'bx-loader-circle' },
-    finished:  { label: 'Finalizado', color: '#888',    icon: 'bx-flag' },
-    cancelled: { label: 'Cancelado',  color: '#ef4444', icon: 'bx-x-circle' },
-    draft:     { label: 'Borrador',   color: '#ffc107', icon: 'bx-pencil' },
+    open:      { labelKey: 'tournamentOpen',      color: '#00ff88', icon: 'bx-check-circle' },
+    ongoing:   { labelKey: 'tournamentInProgress', color: '#4facfe', icon: 'bx-loader-circle' },
+    finished:  { labelKey: 'tournamentFinished',  color: '#888',    icon: 'bx-flag' },
+    cancelled: { labelKey: 'tournamentCancelled', color: '#ef4444', icon: 'bx-x-circle' },
+    draft:     { labelKey: 'tournamentDraft',     color: '#ffc107', icon: 'bx-pencil' },
 };
 
 const getTournamentStatusKey = (status) => {
@@ -223,7 +224,7 @@ const getCheckInWindowState = (tournament = {}) => {
   return 'open';
 };
 const getTournamentStatusLabel = (status) => (
-  STATUS_CONFIG[getTournamentStatusKey(status)]?.label || String(status || 'Sin estado')
+  STATUS_CONFIG[getTournamentStatusKey(status)]?.labelKey || String(status || '')
 );
 const getRegistrationCaptainId = (registration = {}) => String(registration?.captain?._id || registration?.captain || '');
 const getCaptainRegistrationForUser = (tournament = {}, userId = '') => (
@@ -248,15 +249,6 @@ const getCheckInBadgeTone = (status = '', checkInState = 'disabled') => {
   if (normalized === 'checked_in') return 'ready';
   if (normalized === 'missed' || checkInState === 'closed') return 'missing';
   return 'warn';
-};
-const getCheckInBadgeLabel = (status = '', checkInState = 'disabled') => {
-  const normalized = normalizeRegistrationCheckInStatus(status);
-  if (normalized === 'checked_in') return 'Check-in confirmado';
-  if (normalized === 'missed') return 'Check-in ausente';
-  if (checkInState === 'upcoming') return 'Check-in pendiente';
-  if (checkInState === 'open') return 'Check-in abierto';
-  if (checkInState === 'closed') return 'Check-in no confirmado';
-  return 'Sin check-in';
 };
 const formatCheckInDateTime = (value) => {
   if (!value) return '';
@@ -340,7 +332,7 @@ const formatTournamentFromApi = (t) => ({
   entryFeeAmount: t.entryFeeAmount || '',
   organizer: t.organizer?.username || 'Organizador',
   organizerId: t.organizer?._id || t.organizer || '',
-  format: t.format || 'Por definir',
+  format: t.format || '0',
   desc: t.description || 'Sin descripción disponible.',
   description: t.description || '',
   tournamentId: t.tournamentId,
@@ -391,20 +383,6 @@ const getMlbbRosterStatusSummary = (roster) => {
     : { label: `Roster MLBB con ${issues} problema${issues === 1 ? '' : 's'}`, tone: 'warn' };
 };
 
-const BRACKET_STATUS_LABELS = {
-  pending: 'Pendiente',
-  ready: 'Listo',
-  walkover: 'Walkover',
-  live: 'En juego',
-  finished: 'Finalizado'
-};
-
-const CONFIRMATION_STATUS_LABELS = {
-  unconfirmed: 'Esperando confirmación',
-  agreed: 'Confirmado por ambos',
-  disputed: 'En disputa',
-  resolved: 'Resuelto por staff'
-};
 
 const TOURNAMENT_REPORT_TYPES = [
   { value: 'cheating', label: 'Trampa / Hack' },
@@ -431,8 +409,6 @@ const createEmptyTournamentReportForm = () => ({
   description: ''
 });
 
-const getBracketStatusLabel = (status) => BRACKET_STATUS_LABELS[String(status || '').toLowerCase()] || 'Pendiente';
-const getConfirmationStatusLabel = (status) => CONFIRMATION_STATUS_LABELS[String(status || '').toLowerCase()] || 'Esperando confirmación';
 const normalizeRegistrationStatus = (status) => (String(status || 'approved').toLowerCase() || 'approved');
 const isApprovedRegistration = (reg) => normalizeRegistrationStatus(reg?.status) === 'approved';
 const PREVIEW_SLOT_PREFIX = 'PREVIEW-SLOT-';
@@ -522,9 +498,45 @@ const isPlayableBracketTeam = (participant = null) => (
 const Tournaments = () => {
   const navigate = useNavigate();
   const { tournamentId: routeTournamentId } = useParams();
-  const { notify } = useNotification(); 
-  
-  const { user, loading } = useAuth(); 
+  const { notify } = useNotification();
+
+  const { user, loading } = useAuth();
+  const { t } = useLang();
+  const getStatusLabel = (status) => {
+    const key = getTournamentStatusLabel(status);
+    return key ? t(key) : String(status || '');
+  };
+  const getStatusCfgLabel = (cfg) => cfg?.labelKey ? t(cfg.labelKey) : '';
+  const getBracketStatusLabelT = (status) => {
+    const key = String(status || '').toLowerCase();
+    const map = {
+      pending: t('checkInPending'),
+      ready: t('checkInConfirmed'),
+      walkover: t('matchWalkover'),
+      live: t('matchInPlay'),
+      finished: t('tournamentFinished'),
+    };
+    return map[key] || t('checkInPending');
+  };
+  const getConfirmationStatusLabelT = (status) => {
+    const key = String(status || '').toLowerCase();
+    const map = {
+      unconfirmed: t('checkInPending'),
+      agreed: t('checkInConfirmed'),
+      disputed: t('matchInDispute'),
+      resolved: t('checkInConfirmed'),
+    };
+    return map[key] || t('checkInPending');
+  };
+  const getCheckInBadgeLabelT = (status = '', checkInState = 'disabled') => {
+    const normalized = normalizeRegistrationCheckInStatus(status);
+    if (normalized === 'checked_in') return t('checkInConfirmed');
+    if (normalized === 'missed') return t('checkInPending');
+    if (checkInState === 'upcoming') return t('checkInPending');
+    if (checkInState === 'open') return t('checkInOpen');
+    if (checkInState === 'closed') return t('checkInPending');
+    return t('checkInPending');
+  };
   const [activeFilter, setActiveFilter] = useState('All');
   const [showAllFilters, setShowAllFilters] = useState(false);
 
@@ -634,7 +646,7 @@ const Tournaments = () => {
     || '';
   const bracketFormatKey = normalizeTournamentFormat(bracketFormat);
   const useClassicBracketLayout = hasVisibleBracket && isSingleEliminationFormat(bracketFormatKey);
-  const useDoubleEliminationLayout = hasVisibleBracket && bracketFormatKey === 'double_elimination';
+  const useDoubleEliminationLayout = hasVisibleBracket && bracketFormatKey === 'Doble Eliminación';
   const useRoundRobinLayout = hasVisibleBracket && bracketFormatKey === 'round_robin';
 
   const seedSignature = seedEntries.map((entry) => entry.refId).join('|');
@@ -1049,7 +1061,7 @@ useEffect(() => {
       notify(
         'success',
         'Estado actualizado',
-        successMessages[action] || `El torneo ahora está ${getTournamentStatusLabel(response.data.status).toLowerCase()}.`
+        successMessages[action] || `El torneo ahora está ${getStatusLabel(response.data.status).toLowerCase()}.`
       );
     } catch (err) {
       notify('danger', 'Error', err.response?.data?.message || 'No se pudo actualizar el estado del torneo.');
@@ -1480,8 +1492,8 @@ useEffect(() => {
   const canStartSelectedTournament = hasGeneratedBracket && isSelectedTournamentOpen;
   const canRegisterSelectedTournament = isRegistrationOpenForTournament(selectedTournament);
   const selectedRegistrationHint = isSelectedTournamentOpen
-    ? 'Inscripciones cerradas'
-    : `Torneo ${getTournamentStatusLabel(selectedTournament?.status).toLowerCase()}`;
+    ? t('registrationsClosed')
+    : `${t('tournaments')} ${getStatusLabel(selectedTournament?.status).toLowerCase()}`;
   const canRenderBracketSection = hasGeneratedBracket || isSelectedTournamentManager;
   const bracketAccentColor = useMemo(() => {
     const candidate = String(GAME_CONFIG[selectedTournament?.game]?.color || '#8EDB15').trim().toLowerCase();
@@ -1747,8 +1759,8 @@ useEffect(() => {
   };
 
   const renderClassicBracketNode = (match, side, depth, index, columnMatchesLength) => {
-    const teamAName = match?.teamA?.teamName || 'Por definir';
-    const teamBName = match?.teamB?.teamName || 'Por definir';
+    const teamAName = match?.teamA?.teamName || '0';
+    const teamBName = match?.teamB?.teamName || '0';
     const winnerRefId = String(match?.winnerRefId || '');
     const teamARefId = String(match?.teamA?.refId || '');
     const teamBRefId = String(match?.teamB?.refId || '');
@@ -1782,7 +1794,7 @@ useEffect(() => {
         </div>
         <div className="classic-node-meta">
           <span>{match?.matchId || 'Match'}</span>
-          <span>{getBracketStatusLabel(match?.status)}</span>
+          <span>{getBracketStatusLabelT(match?.status)}</span>
         </div>
       </div>
     );
@@ -1835,8 +1847,8 @@ useEffect(() => {
 
   const renderBracketMatchCard = (match, cardKey = '', options = {}) => {
     const { treeMode = false } = options;
-    const teamAName = match?.teamA?.teamName || 'Por definir';
-    const teamBName = match?.teamB?.teamName || 'Por definir';
+    const teamAName = match?.teamA?.teamName || '0';
+    const teamBName = match?.teamB?.teamName || '0';
     const winnerRefId = String(match?.winnerRefId || '');
     const teamARefId = String(match?.teamA?.refId || '');
     const teamBRefId = String(match?.teamB?.refId || '');
@@ -1875,10 +1887,10 @@ useEffect(() => {
         </div>
         <div className="bracket-match-footer">
           <span>{match?.matchId || 'Match'}</span>
-          <span>{getBracketStatusLabel(match?.status)}</span>
+          <span>{getBracketStatusLabelT(match?.status)}</span>
         </div>
         <div className={`match-confirmation-pill ${String(match?.confirmationStatus || 'unconfirmed').toLowerCase()}`}>
-          {getConfirmationStatusLabel(match?.confirmationStatus)}
+          {getConfirmationStatusLabelT(match?.confirmationStatus)}
         </div>
 
         {(canSubmitResult || canResolveResult) && (
@@ -2088,7 +2100,7 @@ useEffect(() => {
                         </p>
                     </div>
                     <div className="modal-actions">
-                        <button className="btn-cancel" onClick={() => setShowInfoModal(false)}>Cancelar</button>
+                        <button className="btn-cancel" onClick={() => setShowInfoModal(false)}>{t('cancel')}</button>
                         <button className="btn-confirm" onClick={handleBecomeOrganizer}>
                             Ser Organizador <i className='bx bx-right-arrow-alt'></i>
                         </button>
@@ -2131,7 +2143,7 @@ useEffect(() => {
                                         </div>
                                         {selectedTournament.status && (
                                             <div className="tournament-status-pill">
-                                                {getTournamentStatusLabel(selectedTournament.status)}
+                                                {getStatusLabel(selectedTournament.status)}
                                             </div>
                                     )}
                                 </div>
@@ -2171,7 +2183,7 @@ useEffect(() => {
                             <div className="info-section" style={{ marginTop: 18 }}>
                                 <h4><i className='bx bx-check-shield'></i> Check-in</h4>
                                 <div className="riot-requirements">
-                                    <div><strong>Estado:</strong> {getCheckInBadgeLabel(selectedUserRegistration?.checkIn?.status, selectedTournamentCheckInState)}</div>
+                                    <div><strong>Estado:</strong> {getCheckInBadgeLabelT(selectedUserRegistration?.checkIn?.status, selectedTournamentCheckInState)}</div>
                                     {selectedCheckInStartLabel && (
                                         <div><strong>El check-in abre:</strong> {selectedCheckInStartLabel}</div>
                                     )}
@@ -2217,7 +2229,7 @@ useEffect(() => {
                                                 </div>
                                                 {selectedTournamentCheckInEnabled && (
                                                     <div className={`registration-sync-pill compact ${getCheckInBadgeTone(r?.checkIn?.status, selectedTournamentCheckInState)}`}>
-                                                        {getCheckInBadgeLabel(r?.checkIn?.status, selectedTournamentCheckInState)}
+                                                        {getCheckInBadgeLabelT(r?.checkIn?.status, selectedTournamentCheckInState)}
                                                     </div>
                                                 )}
                                                 <i className='bx bx-chevron-right'></i>
@@ -2338,19 +2350,19 @@ useEffect(() => {
                             <div className="stats-grid" style={{ marginTop: 14 }}>
                                 {selectedTournament.platform && (
                                     <div className="stat-box">
-                                        <span className="label">Plataforma</span>
+                                        <span className="label">{t('information')}</span>
                                         <span className="value">{selectedTournament.platform}</span>
                                     </div>
                                 )}
                                 {selectedTournament.server && (
                                     <div className="stat-box">
-                                        <span className="label">Servidor</span>
+                                        <span className="label">{t('information')}</span>
                                         <span className="value">{selectedTournament.server}</span>
                                     </div>
                                 )}
                                 {selectedTournament.gender && (
                                     <div className="stat-box">
-                                        <span className="label">Género</span>
+                                        <span className="label">{t('information')}</span>
                                         <span className="value">{selectedTournament.gender}</span>
                                     </div>
                                 )}
@@ -2358,28 +2370,28 @@ useEffect(() => {
                         )}
                         <div className="stats-grid">
                             <div className="stat-box">
-                                <span className="label">Fecha</span>
-                                <span className="value">{selectedTournament.date}</span>
+                                <span className="label">{t('date')}</span>
+                                <span className="value">{selectedTournament.date || '-'}</span>
                             </div>
                             <div className="stat-box">
-                                <span className="label">Hora</span>
-                                <span className="value">{selectedTournament.time}</span>
+                                <span className="label">{t('schedule')}</span>
+                                <span className="value">{selectedTournament.time || '-'}</span>
                             </div>
                             <div className="stat-box prize" style={{ '--gc': GAME_CONFIG[selectedTournament.game]?.color || 'var(--primary)' }}>
-                                <span className="label">Premio</span>
-                                <span className="value highlight">{selectedTournament.prize}</span>
+                                <span className="label">{t('prize')}</span>
+                                <span className="value highlight">{selectedTournament.prize || '0'}</span>
                             </div>
                             <div className="stat-box">
-                                <span className="label">Formato</span>
-                                <span className="value">{selectedTournament.format}</span>
+                                <span className="label">{t('format')}</span>
+                                <span className="value">{getTournamentFormatLabel(selectedTournament.format) || '-'}</span>
                             </div>
                             <div className="stat-box">
-                                <span className="label">Cupos</span>
-                                <span className="value">{selectedTournament.slots}</span>
+                                <span className="label">{t('slots')}</span>
+                                <span className="value">{selectedTournament.slots || '-'}</span>
                             </div>
                             <div className="stat-box">
-                                <span className="label">Entrada</span>
-                                <span className="value">{selectedTournament.entry}</span>
+                                <span className="label">{t('entry')}</span>
+                                <span className="value">{selectedTournament.entry || t('free')}</span>
                             </div>
                         </div>
 
@@ -2615,7 +2627,7 @@ useEffect(() => {
                         )}
 
                         <div className="modal-actions-footer">
-                            <button className="btn-secondary" onClick={closeTournamentDetails}>Cerrar</button>
+                            <button className="btn-secondary" onClick={closeTournamentDetails}>{t('cancel')}</button>
                             {canManageTournament(selectedTournament) && (
                                 <button className="btn-secondary" onClick={() => goToEditTournament(selectedTournament)}>
                                     Editar torneo
@@ -2644,7 +2656,7 @@ useEffect(() => {
                                     }}
                                     disabled={(needsRiot(selectedTournament) && !hasRiotLinked) || (needsValorantRso(selectedTournament) && !hasValorantRso)}
                                 >
-                                    {detailLoading ? 'Cargando...' : 'Inscribirse Ahora'} <i className='bx bx-right-arrow-alt'></i>
+                                    {detailLoading ? t('loading') : t('registerNow')} <i className='bx bx-right-arrow-alt'></i>
                                 </button>
                             )}
                             {!hasRegisteredTeam(selectedTournament) && !canRegisterSelectedTournament && (
@@ -2661,7 +2673,7 @@ useEffect(() => {
                                         }}
                                         disabled={checkInLoading}
                                     >
-                                        {checkInLoading ? 'Confirmando...' : 'Confirmar check-in'} <i className='bx bx-check-circle'></i>
+                                        {checkInLoading ? t('loading') : t('confirmCheckIn')} <i className='bx bx-check-circle'></i>
                                     </button>
                                 ) : (
                                     <span className="join-hint">
@@ -2748,7 +2760,7 @@ useEffect(() => {
                             </div>
                         </div>
                         <div className="modal-actions-footer">
-                            <button className="btn-secondary" onClick={() => setShowTeamPreview(false)}>Cerrar</button>
+                            <button className="btn-secondary" onClick={() => setShowTeamPreview(false)}>{t('cancel')}</button>
                         </div>
                     </div>
                 </div>
@@ -2869,7 +2881,7 @@ useEffect(() => {
                             <i className='bx bx-trophy' style={{ color: '#ffd700' }}></i>
                             <div className="tn__stat-info">
                                 <span className="tn__stat-value">{stats.total}</span>
-                                <span className="tn__stat-label">Torneos</span>
+                                <span className="tn__stat-label">{t('tournaments')}</span>
                             </div>
                         </div>
                         <div className="tn__stat-divider" />
@@ -2904,7 +2916,7 @@ useEffect(() => {
                             <i className='bx bx-search'></i>
                             <input 
                                 type="text" 
-                                placeholder="Buscar por TOR-ID, torneo, juego u organizador..." 
+                                placeholder={t('search')}
                                 value={search} 
                                 onChange={(e) => setSearch(e.target.value)} 
                             />
@@ -2920,7 +2932,7 @@ useEffect(() => {
                                 title="Filtros avanzados"
                             >
                                 <i className='bx bx-slider-alt'></i>
-                                <span>Filtros</span>
+                                <span>{t('filters')}</span>
                             </button>
                         </div>
                         <div className="tn__cmd-actions">
@@ -2931,7 +2943,7 @@ useEffect(() => {
                                 <i className='bx bx-info-circle'></i>
                             </button>
                             <button className="tn__cmd-create" onClick={handleCreateClick}>
-                                <i className='bx bx-plus'></i> <span>Crear Torneo</span>
+                                <i className='bx bx-plus'></i> <span>{t('createTournament')}</span>
                             </button>
                             {canAccessTournamentAdmin && (
                                 <button className="tn__cmd-create" onClick={goToTournamentAdmin}>
@@ -2958,12 +2970,12 @@ useEffect(() => {
                             </div>
                             <div className="tn__fp-divider" />
                             <div className="tn__fp-group">
-                                <span className="tn__fp-group-label">Ordenar</span>
+                                <span className="tn__fp-group-label">{t('sortLabel')}</span>
                                 <div className="tn__fp-pills">
                                     {[
-                                        { key: 'newest', label: 'Recientes', icon: 'bx-time-five' },
-                                        { key: 'prize', label: 'Mayor premio', icon: 'bx-trophy' },
-                                        { key: 'slots', label: 'Más cupos', icon: 'bx-group' },
+                                        { key: 'newest', label: t('recent'), icon: 'bx-time-five' },
+                                        { key: 'prize', label: t('prize'), icon: 'bx-trophy' },
+                                        { key: 'slots', label: t('slots'), icon: 'bx-group' },
                                     ].map(s => (
                                         <button 
                                             key={s.key}
@@ -2981,10 +2993,10 @@ useEffect(() => {
                     {/* ═══ STATUS FILTERS ═══ */}
                     <div className="tn__status-filters">
                         {[
-                            { key: 'all', label: 'Todos', icon: 'bx-grid-alt' },
-                            { key: 'open', label: 'Abiertos', icon: 'bx-check-circle', dot: '#00ff88' },
-                            { key: 'ongoing', label: 'En Curso', icon: 'bx-loader-circle', dot: '#4facfe' },
-                            { key: 'finished', label: 'Finalizados', icon: 'bx-flag', dot: '#888' },
+                            { key: 'all', label: t('filterAll'), icon: 'bx-grid-alt' },
+                            { key: 'open', label: t('tournamentOpen'), icon: 'bx-check-circle', dot: '#00ff88' },
+                            { key: 'ongoing', label: t('tournamentInProgress'), icon: 'bx-loader-circle', dot: '#4facfe' },
+                            { key: 'finished', label: t('tournamentFinished'), icon: 'bx-flag', dot: '#888' },
                         ].map(s => (
                             <button 
                                 key={s.key} 
@@ -3009,7 +3021,7 @@ useEffect(() => {
                             })}
                         </div>
                         <button className="toggle-filters-btn" onClick={() => setShowAllFilters(!showAllFilters)}>
-                            {showAllFilters ? <span><i className='bx bx-chevron-up'></i> Menos</span> : <span><i className='bx bx-chevron-down'></i> Ver más</span>}
+                            {showAllFilters ? <span><i className='bx bx-chevron-up'></i> {t('viewMore')}</span> : <span><i className='bx bx-chevron-down'></i> {t('viewMore')}</span>}
                         </button>
                     </div>
 
@@ -3035,7 +3047,7 @@ useEffect(() => {
                         </div>
                         <div className="tn__spn-coming-soon">
                             <i className='bx bx-ghost tn__spn-ghost'></i>
-                            <span className="tn__spn-coming-label">Próximamente</span>
+                            <span className="tn__spn-coming-label">{t('tournamentUpcoming')}</span>
                         </div>
                     </div>
 
@@ -3044,7 +3056,7 @@ useEffect(() => {
                         {loadingTournaments ? (
                             <div className="tn__loading">
                                 <div className="tn__spinner" />
-                                <p>Cargando torneos...</p>
+                                <p>{t('loading')}</p>
                             </div>
                         ) : displayTournaments.length > 0 ? (
                             displayTournaments.map((torneo) => {
@@ -3060,14 +3072,14 @@ useEffect(() => {
                                 const statusKey = getTournamentStatusKey(torneo.status);
                                 const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.open;
                                 const unavailableLabel = !canRegisterOnCard
-                                  ? (statusKey === 'open' ? 'Inscripciones cerradas' : statusCfg.label)
+                                  ? (statusKey === 'open' ? t('registrationsClosed') : getStatusCfgLabel(statusCfg))
                                   : estaLleno
-                                    ? 'Cerrado'
+                                    ? t('tournamentClosed')
                                     : alreadyIn
-                                      ? 'Ya inscrito'
+                                      ? t('alreadyRegistered')
                                       : !hasTeam
-                                        ? 'Crear equipo'
-                                        : 'No disponible';
+                                        ? t('createTeam')
+                                        : t('notAvailable');
 
                                 return (
                                     <div key={torneo.id} className="tournament-card-pro" style={{ '--card-game': gameColor }}>
@@ -3095,7 +3107,7 @@ useEffect(() => {
                                                     </span>
                                                 )}
                                                 <span className="tn__card-status" style={{ background: `${statusCfg.color}18`, color: statusCfg.color, border: `1px solid ${statusCfg.color}30` }}>
-                                                    <i className={`bx ${statusCfg.icon}`}></i> {statusCfg.label}
+                                                    <i className={`bx ${statusCfg.icon}`}></i> {getStatusCfgLabel(statusCfg)}
                                                 </span>
                                             </div>
                                         </div>
@@ -3107,7 +3119,7 @@ useEffect(() => {
                                                     <span className="tn__entry-badge"><i className='bx bx-dollar'></i> {formatEntryFeeBadge(torneo.entryFee, torneo.entryFeeAmount, torneo.currency)}</span>
                                                 )}
                                                 {torneo.entryFee === 'Gratis' && (
-                                                    <span className="tn__free-badge"><i className='bx bx-gift'></i> Gratis</span>
+                                                    <span className="tn__free-badge"><i className='bx bx-gift'></i> {t('free')}</span>
                                                 )}
                                             </div>
                                             <h3 title={torneo.title}>{torneo.title}</h3>
@@ -3154,7 +3166,7 @@ useEffect(() => {
 
                                             <div className="card-actions">
                                                 <button className="btn-details" onClick={() => openTournamentDetails(torneo)}>
-                                                    <i className='bx bx-info-circle'></i> Detalles
+                                                    <i className='bx bx-info-circle'></i> {t('details')}
                                                 </button>
                                                 {canJoin ? (
                                                     <button 
@@ -3174,7 +3186,7 @@ useEffect(() => {
                                                         }}
                                                         style={{ background: gameColor, color: '#000' }}
                                                     >
-                                                        <i className='bx bx-log-in-circle'></i> Inscribirse
+                                                        <i className='bx bx-log-in-circle'></i> {t('registerNow')}
                                                     </button>
                                                 ) : (
                                                     <button 
@@ -3198,7 +3210,7 @@ useEffect(() => {
                         ) : (
                             <div className="tn__empty-state">
                                 <div className="tn__empty-icon"><i className='bx bx-ghost'></i></div>
-                                <h3>No se encontraron torneos</h3>
+                                <h3>{t('noTournamentsFound')}</h3>
                                 <p>{search ? `Sin resultados para "${search}"` : 'No hay torneos disponibles en esta categoría.'}</p>
                                 {search && (
                                     <button className="tn__empty-btn" onClick={() => { setSearch(''); setActiveFilter('All'); setActiveStatus('all'); }}>
@@ -3228,11 +3240,11 @@ useEffect(() => {
                         <div className="tn__sw-live-stats">
                             <div className="tn__sw-live-item">
                                 <span className="tn__sw-live-val" style={{ color: '#00ff88' }}>{stats.active}</span>
-                                <span className="tn__sw-live-label">Torneos activos</span>
+                                <span className="tn__sw-live-label">{t('activeTournamentsCount')}</span>
                             </div>
                             <div className="tn__sw-live-item">
                                 <span className="tn__sw-live-val" style={{ color: '#ffd700' }}>{stats.total}</span>
-                                <span className="tn__sw-live-label">Total torneos</span>
+                                <span className="tn__sw-live-label">{t('totalTournaments')}</span>
                             </div>
                             <div className="tn__sw-live-item">
                                 <span className="tn__sw-live-val" style={{ color: '#4facfe' }}>${stats.totalPrize.toLocaleString()}</span>
@@ -3305,7 +3317,7 @@ useEffect(() => {
                             <button className="tn__sw-action-btn" onClick={handleCreateClick}>
                                 <i className='bx bx-trophy'></i>
                                 <div>
-                                    <strong>Crear Torneo</strong>
+                                    <strong>{t('createTournament')}</strong>
                                     <span>Organiza tu evento</span>
                                 </div>
                                 <i className='bx bx-chevron-right tn__sw-action-arrow'></i>
@@ -3423,7 +3435,7 @@ useEffect(() => {
                             </div>
 
                             <div className="modal-actions-footer">
-                                <button className="btn-secondary" onClick={closeMatchReportModal}>Cancelar</button>
+                                <button className="btn-secondary" onClick={closeMatchReportModal}>{t('cancel')}</button>
                                 <button className="btn-primary-action" onClick={submitMatchIncidentReport} disabled={reportSubmitting}>
                                     {reportSubmitting ? 'Enviando...' : 'Enviar reporte'}
                                 </button>
@@ -3442,10 +3454,10 @@ useEffect(() => {
                         <p className="confirm-modal__msg">{confirmModal.message}</p>
                         <div className="confirm-modal__actions">
                             <button className="confirm-modal__btn confirm-modal__btn--cancel" onClick={() => setConfirmModal(null)}>
-                                Cancelar
+                                {t('cancel')}
                             </button>
                             <button className="confirm-modal__btn confirm-modal__btn--confirm" onClick={confirmModal.onConfirm}>
-                                Confirmar
+                                {t('confirmCheckIn')}
                             </button>
                         </div>
                     </div>

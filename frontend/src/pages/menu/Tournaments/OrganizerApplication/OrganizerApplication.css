@@ -536,3 +536,57 @@ button.btn-neon.green:hover {
   font-size: 1.2rem;
   flex-shrink: 0;
 }
+
+/* ─── CHIP GRID: game multi-select ─── */
+.games-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0 6px;
+}
+
+.game-chip-btn {
+  padding: 5px 13px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  line-height: 1.4;
+}
+
+.game-chip-btn:hover {
+  border-color: rgba(142, 219, 21, 0.4);
+  color: #d1d5db;
+  background: rgba(142, 219, 21, 0.06);
+}
+
+.game-chip-btn.selected {
+  background: rgba(142, 219, 21, 0.15);
+  border-color: #8EDB15;
+  color: #8EDB15;
+  font-weight: 600;
+}
+
+.games-chip-grid.chip-error .game-chip-btn:not(.selected) {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.prefilled-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin-top: 4px;
+  padding-left: 2px;
+}
+
+.prefilled-hint i {
+  font-size: 0.85rem;
+  color: #8EDB15;
+}

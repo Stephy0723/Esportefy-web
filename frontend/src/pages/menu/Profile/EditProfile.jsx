@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLang } from '../../../context/LanguageContext';
 import axios from 'axios';
 import { API_URL } from '../../../config/api';
 import {
@@ -208,6 +209,7 @@ const gamingConnections = [
 const EditProfile = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { t } = useLang();
     const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'general');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -1018,7 +1020,7 @@ const EditProfile = () => {
         return (
             <div className="ep__loading">
                 <div className="ep__spinner" />
-                <p>Cargando perfil...</p>
+                <p>{t('loading')}</p>
             </div>
         );
     }
@@ -1037,9 +1039,9 @@ const EditProfile = () => {
                         <div className="ep__unsaved-modal-icon">
                             <FaExclamationTriangle />
                         </div>
-                        <h3 className="ep__unsaved-modal-title">Cambios sin guardar</h3>
+                        <h3 className="ep__unsaved-modal-title">{t('editProfileUnsavedTitle') || 'Cambios sin guardar'}</h3>
                         <p className="ep__unsaved-modal-desc">
-                            Tienes cambios pendientes que no se han guardado. ¿Qué deseas hacer?
+                            {t('editProfileUnsavedDesc') || 'Tienes cambios pendientes que no se han guardado. ¿Qué deseas hacer?'}
                         </p>
                         <div className="ep__unsaved-modal-actions">
                             <button type="button" className="ep__unsaved-btn save" onClick={async () => {
@@ -1047,16 +1049,16 @@ const EditProfile = () => {
                                 await handleSave(new Event('submit'));
                                 navigate('/profile');
                             }}>
-                                <FaSave /> Guardar y salir
+                                <FaSave /> {t('editProfileSave')}
                             </button>
                             <button type="button" className="ep__unsaved-btn discard" onClick={() => {
                                 setShowUnsavedModal(false);
                                 navigate('/profile');
                             }}>
-                                Descartar cambios
+                                {t('editProfileUnsavedDiscard') || 'Descartar cambios'}
                             </button>
                             <button type="button" className="ep__unsaved-btn cancel" onClick={() => setShowUnsavedModal(false)}>
-                                Seguir editando
+                                {t('cancel')}
                             </button>
                         </div>
                     </div>
@@ -1071,27 +1073,27 @@ const EditProfile = () => {
                             <FaArrowLeft />
                         </button>
                         <div className="ep__header-title">
-                            <h1>Editar Perfil</h1>
-                            <span>Personaliza tu identidad gamer</span>
+                            <h1>{t('editProfileTitle')}</h1>
+                            <span>{t('editProfileSubtitle') || 'Personaliza tu identidad gamer'}</span>
                         </div>
                     </div>
                     <div className="ep__header-right">
-                        {hasChanges && <span className="ep__unsaved">Cambios sin guardar</span>}
+                        {hasChanges && <span className="ep__unsaved">{t('editProfileUnsaved') || 'Cambios sin guardar'}</span>}
                     </div>
                 </header>
 
                 <div className="ep__layout">
                     {/* Sidebar */}
                     <aside className="ep__sidebar">
-                        <h2>Secciones</h2>
+                        <h2>{t('editProfileSections') || 'Secciones'}</h2>
                         <nav>
                             {[
-                                { id: 'general', icon: <FaUser />, label: 'General' },
-                                { id: 'social', icon: <FaLink />, label: 'Social' },
-                                { id: 'customization', icon: <FaPaintBrush />, label: 'Estilo' },
-                                { id: 'gamer', icon: <FaGamepad />, label: 'Gamer' },
-                                { id: 'progress', icon: <FaTrophy />, label: 'Progreso' },
-                                { id: 'privacy', icon: <FaLock />, label: 'Privacidad' },
+                                { id: 'general', icon: <FaUser />, label: t('editProfileTabGeneral') || 'General' },
+                                { id: 'social', icon: <FaLink />, label: t('editProfileTabSocial') || 'Social' },
+                                { id: 'customization', icon: <FaPaintBrush />, label: t('editProfileTabStyle') || 'Estilo' },
+                                { id: 'gamer', icon: <FaGamepad />, label: t('editProfileTabGamer') || 'Gamer' },
+                                { id: 'progress', icon: <FaTrophy />, label: t('editProfileTabProgress') || 'Progreso' },
+                                { id: 'privacy', icon: <FaLock />, label: t('editProfilePrivacy') },
                             ].map(tab => (
                                 <button
                                     key={tab.id}
@@ -1112,15 +1114,15 @@ const EditProfile = () => {
                             {/* ═══ TAB: GENERAL ═══ */}
                             {activeTab === 'general' && (
                                 <div className="ep__tab fade-in">
-                                    <h3>Información General</h3>
+                                    <h3>{t('editProfileTabGeneral') || 'Información General'}</h3>
 
                                     {/* ── SECCIÓN: FOTO DE PERFIL ── */}
                                     <div className="ep__section">
                                         <div className="ep__section-header">
                                             <span className="ep__section-icon"><FaCamera /></span>
                                             <div className="ep__section-title">
-                                                <h4>Foto de Perfil</h4>
-                                                <p>Tu imagen visible para otros</p>
+                                                <h4>{t('editProfileAvatar')}</h4>
+                                                <p>{t('editProfileAvatarDesc') || 'Tu imagen visible para otros'}</p>
                                             </div>
                                     </div>
                                     <div className="ep__section-content">
@@ -1283,18 +1285,18 @@ const EditProfile = () => {
                                     <div className="ep__section-header">
                                         <span className="ep__section-icon"><FaUser /></span>
                                         <div className="ep__section-title">
-                                            <h4>Datos Personales</h4>
-                                            <p>Información básica de tu cuenta</p>
+                                            <h4>{t('editProfilePersonalData') || 'Datos Personales'}</h4>
+                                            <p>{t('editProfilePersonalDataDesc') || 'Información básica de tu cuenta'}</p>
                                         </div>
                                     </div>
                                     <div className="ep__section-content">
                                         <div className="ep__fields-grid">
                                     <div className="ep__field">
-                                        <label>Nickname <span className="ep__req">*</span></label>
+                                        <label>{t('editProfileUsername')} <span className="ep__req">*</span></label>
                                         <input type="text" name="username" value={formData.username} onChange={handleChange} maxLength={20} />
                                     </div>
                                     <div className="ep__field">
-                                        <label>Nombre Completo <span className="ep__req">*</span></label>
+                                        <label>{t('registerFullName')} <span className="ep__req">*</span></label>
                                         <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} />
                                         {fieldRestrictions.nextNameChangeDate && new Date() < fieldRestrictions.nextNameChangeDate && (
                                             <span className="ep__helper-text" style={{ color: '#FF9500' }}>

@@ -1,42 +1,43 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
+import { useLang } from '../../context/LanguageContext';
 import { STATUS_LIST } from '../../data/defaultAvatars';
 import { applyImageFallback, getBotAvatarFallback, resolveMediaUrl } from '../../utils/media';
 import './Navbar.css';
 
-/* ── Route → readable breadcrumb map ── */
-const ROUTE_NAMES = {
-  '/': 'Inicio',
-  '/dashboard': 'Dashboard',
-  '/torneos': 'Torneos',
-  '/tournaments': 'Torneos',
-  '/equipos': 'Equipos',
-  '/comunidad': 'Comunidad',
-  '/friends': 'Amigos',
-  '/amigos': 'Amigos',
-  '/rankings': 'Rankings',
-  '/noticias': 'Noticias',
-  '/chats': 'Mensajes',
-  '/tv': 'GLITCH GANG TV',
-  '/settings': 'Configuración',
-  '/notifications': 'Notificaciones',
-  '/profile': 'Mi Perfil',
-  '/edit-profile': 'Editar Perfil',
-  '/create-team': 'Crear Equipo',
-  '/create-tournament': 'Crear Torneo',
-  '/CalendarPage': 'Calendario',
-  '/university': 'Universidad',
-  '/docs': 'Documentacion',
-  '/support': 'Soporte',
-  '/glitchgang': 'GLITCH GANG',
+/* ── Route → translation key map ── */
+const ROUTE_KEYS = {
+  '/': 'home',
+  '/dashboard': 'dashboard',
+  '/torneos': 'tournaments',
+  '/tournaments': 'tournaments',
+  '/equipos': 'teams',
+  '/comunidad': 'community',
+  '/friends': 'friends',
+  '/amigos': 'friends',
+  '/rankings': 'rankings',
+  '/noticias': 'news',
+  '/chats': 'messages',
+  '/tv': 'tv',
+  '/settings': 'settings',
+  '/notifications': 'notifications',
+  '/profile': 'profile',
+  '/edit-profile': 'editProfile',
+  '/create-team': 'createTeam',
+  '/create-tournament': 'createTournament',
+  '/CalendarPage': 'calendar',
+  '/university': 'university',
+  '/docs': 'docs',
+  '/support': 'support',
+  '/glitchgang': 'glitchgang',
 };
 
-/* ── Quick Actions (only for logged-in users) ── */
+/* ── Quick Actions (keys resolved at render) ── */
 const QUICK_ACTIONS = [
-  { label: 'Crear Torneo', to: '/create-tournament', icon: 'bx-plus-circle', color: '#FFD700' },
-  { label: 'Crear Equipo', to: '/create-team', icon: 'bx-group', color: '#4FACFE' },
+  { key: 'createTournament', to: '/create-tournament', icon: 'bx-plus-circle', color: '#FFD700' },
+  { key: 'createTeam', to: '/create-team', icon: 'bx-group', color: '#4FACFE' },
 ];
 
 const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
@@ -52,6 +53,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user: activeUser, logout } = useAuth();
+  const { lang, toggleLang, t } = useLang();
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const actionsRef = useRef(null);
@@ -61,25 +63,21 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   /* ── Breadcrumb from current route ── */
   const breadcrumb = useMemo(() => {
     const path = location.pathname;
-    // Check exact match first
-    if (ROUTE_NAMES[path]) return ROUTE_NAMES[path];
-    // Check /game/:id pattern
+    const key = ROUTE_KEYS[path];
+    if (key) return t(key);
     if (path.startsWith('/game/')) {
       const game = path.split('/game/')[1];
-      return game ? game.charAt(0).toUpperCase() + game.slice(1) : 'Juego';
+      return game ? game.charAt(0).toUpperCase() + game.slice(1) : t('game');
     }
-    // Check /legal/ pattern
     if (path.startsWith('/legal/')) return 'Legal';
     return null;
-  }, [location.pathname]);
+  }, [location.pathname, t]);
 
   /* ── Check notifications ── */
   const checkNotifications = useCallback(async () => {
     if (!activeUser) { setHasUnread(false); setUnreadCount(0); return; }
     try {
-      const res = await fetch(`${API_URL}/api/notifications`, {
-        credentials: 'include',
-      });
+      const res = await fetch(`${API_URL}/api/notifications`, { credentials: 'include' });
       if (!res.ok) return;
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -100,15 +98,11 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
 
   /* ── Bootstrap ── */
   useEffect(() => {
-    const bootstrapId = window.setTimeout(() => {
-      void checkNotifications();
-    }, 0);
-
+    const bootstrapId = window.setTimeout(() => { void checkNotifications(); }, 0);
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('user-update', checkNotifications);
     const notifTimer = setInterval(checkNotifications, 60000);
-
     return () => {
       window.clearTimeout(bootstrapId);
       window.removeEventListener('scroll', handleScroll);
@@ -135,7 +129,6 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
       setSearchFocused(false);
       setActionsOpen(false);
     });
-
     return () => window.cancelAnimationFrame(frameId);
   }, [location.pathname]);
 
@@ -171,7 +164,9 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     }
   };
 
-  const timeString = currentTime.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  const userStatusLabel = t(`status_${activeUser?.status || 'online'}`);
+  const timeString = currentTime.toLocaleTimeString(lang === 'en' ? 'en' : 'es', { hour: '2-digit', minute: '2-digit' });
+
   return (
     <nav className={`nb ${scrolled ? 'nb--scrolled' : ''} ${activeUser ? 'nb--authed' : 'nb--guest'}`}>
       <div className="nb__inner">
@@ -208,7 +203,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Buscar en GLITCH GANG..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -220,42 +215,41 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
             </div>
           </form>
 
-          {/* Expanded search results overlay */}
           {searchFocused && (
             <div className="nb__cmdbar-overlay">
               <div className="nb__cmdbar-section">
-                <span className="nb__cmdbar-section-label">Acceso rápido</span>
+                <span className="nb__cmdbar-section-label">{t('quickAccess')}</span>
                 <Link to="/torneos" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                   <i className="bx bx-trophy"></i>
-                  <span>Torneos activos</span>
+                  <span>{t('activeTournaments')}</span>
                   <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                 </Link>
                 <Link to="/rankings" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                   <i className="bx bx-bar-chart-alt-2"></i>
-                  <span>Rankings globales</span>
+                  <span>{t('globalRankings')}</span>
                   <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                 </Link>
                 <Link to="/noticias" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                   <i className="bx bx-news"></i>
-                  <span>Noticias esports</span>
+                  <span>{t('esportsNews')}</span>
                   <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                 </Link>
                 <Link to="/comunidad" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                   <i className="bx bx-world"></i>
-                  <span>Explorar comunidades</span>
+                  <span>{t('exploreCommunities')}</span>
                   <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                 </Link>
                 {activeUser && (
                   <Link to="/friends" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                     <i className="bx bx-user-plus"></i>
-                    <span>Centro de amigos</span>
+                    <span>{t('friendsCenter')}</span>
                     <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                   </Link>
                 )}
                 {activeUser && (
                   <Link to="/chats" className="nb__cmdbar-link" onClick={() => setSearchFocused(false)}>
                     <i className="bx bx-message-rounded-dots"></i>
-                    <span>Ir a mensajes</span>
+                    <span>{t('goToMessages')}</span>
                     <i className="bx bx-right-arrow-alt nb__cmdbar-link-arrow"></i>
                   </Link>
                 )}
@@ -273,14 +267,14 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
               <button
                 className={`nb__action-btn ${actionsOpen ? 'nb__action-btn--open' : ''}`}
                 onClick={() => setActionsOpen(!actionsOpen)}
-                title="Acciones rápidas"
+                title={t('createNew')}
               >
                 <i className="bx bx-plus"></i>
               </button>
 
               {actionsOpen && (
                 <div className="nb__quick-dropdown">
-                  <span className="nb__quick-label">Crear nuevo</span>
+                  <span className="nb__quick-label">{t('createNew')}</span>
                   {QUICK_ACTIONS.map((action) => (
                     <Link
                       key={action.to}
@@ -291,7 +285,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                       <div className="nb__quick-item-icon" style={{ '--qa-color': action.color }}>
                         <i className={`bx ${action.icon}`}></i>
                       </div>
-                      <span>{action.label}</span>
+                      <span>{t(action.key)}</span>
                     </Link>
                   ))}
                 </div>
@@ -303,7 +297,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
           <button
             className="nb__icon-btn nb__icon-btn--secondary"
             onClick={() => navigate('/rankings')}
-            title="Rankings"
+            title={t('rankings')}
           >
             <i className="bx bx-trophy"></i>
           </button>
@@ -312,7 +306,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
           <button
             className="nb__icon-btn nb__icon-btn--secondary"
             onClick={() => navigate('/noticias')}
-            title="Noticias"
+            title={t('news')}
           >
             <i className="bx bx-news"></i>
           </button>
@@ -322,7 +316,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
             <button
               className="nb__icon-btn"
               onClick={() => navigate('/notifications')}
-              title="Notificaciones"
+              title={t('notifications')}
             >
               <i className="bx bx-bell"></i>
               {hasUnread && (
@@ -330,6 +324,16 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
               )}
             </button>
           )}
+
+          {/* ── Language toggle ── */}
+          <button
+            className="nb__lang-btn"
+            onClick={toggleLang}
+            title={lang === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+          >
+            <i className="bx bx-globe"></i>
+            <span>{lang === 'es' ? 'ES' : 'EN'}</span>
+          </button>
 
           {/* ── Clock HUD (desktop only) ── */}
           <div className="nb__clock">
@@ -365,13 +369,12 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                   <span className="nb__avatar-name">{activeUser.username || activeUser.name}</span>
                   <span className={`nb__avatar-role nb__role--${activeUser.status || 'online'}`}>
                     <span className={`nb__avatar-role-dot nb__rd--${activeUser.status || 'online'}`} />
-                    {STATUS_LIST.find(s => s.id === (activeUser.status || 'online'))?.label || 'En Línea'}
+                    {userStatusLabel}
                   </span>
                 </div>
                 <i className={`bx bx-chevron-down nb__avatar-arrow ${profileOpen ? 'nb__avatar-arrow--open' : ''}`}></i>
               </button>
 
-              {/* Profile Dropdown */}
               {profileOpen && (
                 <div className="nb__dropdown">
                   <div className="nb__dropdown-header">
@@ -383,30 +386,30 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                     />
                     <div>
                       <div className="nb__dropdown-name">{activeUser.username || activeUser.name}</div>
-                      <div className="nb__dropdown-email">{activeUser.email || 'Jugador'}</div>
+                      <div className="nb__dropdown-email">{activeUser.email || t('player')}</div>
                     </div>
                   </div>
 
                   <div className="nb__dropdown-sep" />
 
                   <Link to="/profile" className="nb__dropdown-item" onClick={() => setProfileOpen(false)}>
-                    <i className="bx bx-user"></i> Mi Perfil
+                    <i className="bx bx-user"></i> {t('profile')}
                   </Link>
                   <Link to="/edit-profile" className="nb__dropdown-item" onClick={() => setProfileOpen(false)}>
-                    <i className="bx bx-edit-alt"></i> Editar Perfil
+                    <i className="bx bx-edit-alt"></i> {t('editProfile')}
                   </Link>
                   <Link to="/settings" className="nb__dropdown-item" onClick={() => setProfileOpen(false)}>
-                    <i className="bx bx-cog"></i> Configuración
+                    <i className="bx bx-cog"></i> {t('configuration')}
                   </Link>
                   <Link to="/CalendarPage" className="nb__dropdown-item" onClick={() => setProfileOpen(false)}>
-                    <i className="bx bx-calendar"></i> Calendario
+                    <i className="bx bx-calendar"></i> {t('calendar')}
                   </Link>
 
                   {activeUser?.isAdmin && (
                     <>
                       <div className="nb__dropdown-sep" />
                       <Link to="/admin" className="nb__dropdown-item nb__dropdown-item--admin" onClick={() => setProfileOpen(false)}>
-                        <i className="bx bx-shield-quarter"></i> Admin Panel
+                        <i className="bx bx-shield-quarter"></i> {t('adminPanel')}
                       </Link>
                     </>
                   )}
@@ -414,16 +417,16 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                   <div className="nb__dropdown-sep" />
 
                   <button className="nb__dropdown-item nb__dropdown-item--danger" onClick={handleLogout}>
-                    <i className="bx bx-log-out"></i> Cerrar Sesión
+                    <i className="bx bx-log-out"></i> {t('logout')}
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <div className="nb__auth">
-              <Link to="/login" className="nb__auth-login">Ingresar</Link>
+              <Link to="/login" className="nb__auth-login">{t('login')}</Link>
               <Link to="/register" className="nb__auth-register">
-                <i className="bx bx-rocket"></i> Registrarse
+                <i className="bx bx-rocket"></i> {t('register')}
               </Link>
             </div>
           )}

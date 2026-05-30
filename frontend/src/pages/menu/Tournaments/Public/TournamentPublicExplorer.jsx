@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { formatTournamentPublicId } from '../../../../utils/publicIds';
+import { useLang } from '../../../../context/LanguageContext';
 import './TournamentPublic.css';
 
 const TournamentPublicExplorer = () => {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [query, setQuery] = useState('');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,20 +56,20 @@ const TournamentPublicExplorer = () => {
       </section>
 
       {loading ? (
-        <div className="tpv-empty">Buscando torneos...</div>
+        <div className="tpv-empty">{t('loading')}</div>
       ) : items.length === 0 ? (
         <div className="tpv-empty">No hay torneos publicos con ese criterio.</div>
       ) : (
         <section className="tpe-grid">
-          {items.map((t) => (
-            <article key={t.tournamentId} className="tpe-card">
+          {items.map((item) => (
+            <article key={item.tournamentId} className="tpe-card">
               <div>
-                <p className="tpv-chip tpe-id">{formatTournamentPublicId(t)}</p>
-                <h3>{t.title}</h3>
-                <p>{t.game} · {t.status}</p>
+                <p className="tpv-chip tpe-id">{formatTournamentPublicId(item)}</p>
+                <h3>{item.title}</h3>
+                <p>{item.game} · {item.status}</p>
               </div>
-              <button onClick={() => navigate(`/tournaments/${t.tournamentId}`)}>
-                Ver torneo
+              <button onClick={() => navigate(`/tournaments/${item.tournamentId}`)}>
+                {t('viewMore')}
                 <i className='bx bx-right-arrow-alt'></i>
               </button>
             </article>

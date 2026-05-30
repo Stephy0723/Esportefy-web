@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useLang } from '../../../context/LanguageContext';
 import axios from 'axios';
 import PageHud from '../../../components/PageHud/PageHud';
 import { API_URL } from '../../../config/api';
 import { getAuthToken } from '../../../utils/authSession';
+import { SUPPORTED_GAME_NAMES } from '../../../../../shared/supportedGames.js';
 import RoleApplicationVisual from './RoleApplicationVisual';
 import RoleApplicantIdentitySection from './RoleApplicantIdentitySection';
 import '../Tournaments/OrganizerApplication/OrganizerApplication.css';
@@ -23,6 +26,9 @@ const REQUIRED = {
 const CoachPage = () => {
     const navigate = useNavigate();
     const { notify } = useNotification();
+    const { user } = useAuth();
+    const { t } = useLang();
+    const prefilled = useRef(false);
     const [loading, setLoading] = useState(false);
     const [formErrors, setFormErrors] = useState({});
     const [submitError, setSubmitError] = useState('');
@@ -32,6 +38,13 @@ const CoachPage = () => {
         fullName: '', idNumber: '', game: '', experienceYears: '',
         rank: '', coachingType: '', availability: '', portfolio: '', description: ''
     });
+
+    useEffect(() => {
+        if (user && !prefilled.current) {
+            prefilled.current = true;
+            setFormData(prev => ({ ...prev, fullName: prev.fullName || user.fullName || '' }));
+        }
+    }, [user]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -76,7 +89,7 @@ const CoachPage = () => {
             await axios.post(`${API_URL}/api/auth/apply-role`, data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            notify('success', 'Solicitud enviada', 'Tu solicitud de Coach fue enviada y quedó pendiente de confirmación.');
+            notify('success', t('roleApplySuccess'), 'Tu solicitud de Coach fue enviada y quedó pendiente de confirmación.');
             navigate('/profile');
         } catch (err) {
             notify('error', 'Error', err.response?.data?.message || 'No se pudo enviar la solicitud.');
@@ -121,19 +134,23 @@ const CoachPage = () => {
                                 fileName={fileName}
                                 documentInputId="coach-doc-upload"
                                 errors={formErrors}
+                                prefilledFullName={!!(user?.fullName)}
                             />
 
-                            <h4 className="section-title">Experiencia de Coaching</h4>
+                            <h4 className="section-title">{t('roleCoachExperienceSection')}</h4>
                             <div className="grid-inputs">
                                 <div className="input-group">
-                                    <input type="text" name="game" placeholder=" " value={formData.game} onChange={handleInputChange} className={fe('game') ? 'input-error' : ''} />
-                                    <label>Juego Principal que Entrenas</label>
-                                    <i className='bx bx-game input-icon'></i>
+                                    <select name="game" value={formData.game} onChange={handleInputChange} className={fe('game') ? 'input-error' : ''}>
+                                        <option value="" disabled>Juego Principal que Entrenas</option>
+                                        {SUPPORTED_GAME_NAMES.map(g => (
+                                            <option key={g} value={g}>{g}</option>
+                                        ))}
+                                    </select>
                                     {fe('game') && <small className="field-error">{fe('game')}</small>}
                                 </div>
                                 <div className="input-group">
                                     <select name="experienceYears" value={formData.experienceYears} onChange={handleInputChange} className={fe('experienceYears') ? 'input-error' : ''}>
-                                        <option value="" disabled>Años de Experiencia</option>
+                                        <option value="" disabled>{t('roleApplyExperience')}</option>
                                         <option value="0-1">Menos de 1 año</option>
                                         <option value="1-3">1 - 3 años</option>
                                         <option value="3-5">3 - 5 años</option>
@@ -188,9 +205,9 @@ const CoachPage = () => {
                             </div>
 
                             <div className="form-actions">
-                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>Cancelar</button>
+                                <button type="button" className="btn-ghost" onClick={() => navigate(-1)}>{t('cancel')}</button>
                                 <button type="submit" className="btn-neon green" disabled={loading}>
-                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : 'Enviar Solicitud'}
+                                    {loading ? <i className='bx bx-loader-alt bx-spin'></i> : t('roleApplySubmit')}
                                 </button>
                             </div>
                         </form>

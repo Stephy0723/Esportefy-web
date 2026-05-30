@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import React, { useRef, useState, useMemo } from 'react';
+import { useLang } from '../../../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaShieldAlt, FaGamepad, FaCreditCard, FaUserSecret,
@@ -46,6 +47,7 @@ const navItemVariants = {
 
 
 export default function Settings() {
+    const { t } = useLang();
 
     const location = useLocation();
 
@@ -141,13 +143,13 @@ export default function Settings() {
     const [tabsOverflow, setTabsOverflow] = useState({ left: false, right: false });
 
     const settingsTabs = [
-        { id: 'security', label: 'Seguridad', icon: FaShieldAlt, desc: 'Protege tu cuenta y accesos.' },
-        { id: 'connections', label: 'Conexiones', icon: FaGamepad, desc: 'Vincula cuentas y Game IDs.' },
-        { id: 'appearance', label: 'Apariencia', icon: FaPaintBrush, desc: 'Ajusta tema y experiencia visual.' },
-        { id: 'preferences', label: 'Privacidad', icon: FaUserSecret, desc: 'Controla quién puede encontrarte.' },
+        { id: 'security', label: t('settingsSecurity'), icon: FaShieldAlt, desc: 'Protege tu cuenta y accesos.' },
+        { id: 'connections', label: t('settingsConnections'), icon: FaGamepad, desc: 'Vincula cuentas y Game IDs.' },
+        { id: 'appearance', label: t('settingsAppearance'), icon: FaPaintBrush, desc: 'Ajusta tema y experiencia visual.' },
+        { id: 'preferences', label: t('settingsPrivacy'), icon: FaUserSecret, desc: 'Controla quién puede encontrarte.' },
         { id: 'billing', label: 'Suscripción', icon: FaCreditCard, desc: 'Administra planes y beneficios.' },
-        { id: 'report', label: 'Reportar', icon: FaExclamationTriangle, desc: 'Denuncia errores o conductas.' },
-        { id: 'support', label: 'Soporte', icon: FaHeadset, desc: 'Accede a ayuda y asistencia.' },
+        { id: 'report', label: t('report'), icon: FaExclamationTriangle, desc: 'Denuncia errores o conductas.' },
+        { id: 'support', label: t('support'), icon: FaHeadset, desc: 'Accede a ayuda y asistencia.' },
         ...(isAdmin ? [{ id: 'mlbb-review', label: 'Revisión MLBB', icon: FaKey, desc: 'Gestiona solicitudes pendientes.' }] : [])
     ];
     const activeTabMeta = settingsTabs.find((tab) => tab.id === activeTab) || settingsTabs[0];
@@ -615,7 +617,7 @@ export default function Settings() {
                 return (
                     <div className="settings-panel fade-in">
                         <div className="panel-header">
-                            <h2>Conexiones (Game ID)</h2>
+                            <h2>{t('settingsConnections')} (Game ID)</h2>
                             <p>Vincula tus cuentas para verificar estadísticas en torneos.</p>
                         </div>
 
@@ -623,7 +625,7 @@ export default function Settings() {
                             <div className={`integration-card ${connections?.discord?.id ? 'connected' : ''}`}>
 
                                 <div className={`int-status ${connections?.discord?.id ? '' : 'pending'}`}>
-                                    {connections?.discord?.id ? 'Conectado' : 'No conectado'}
+                                    {connections?.discord?.id ? 'Conectado' : t('pending')}
                                 </div>
 
                                 <div className="int-icon discord">
@@ -633,7 +635,7 @@ export default function Settings() {
                                 <div className="int-details">
                                     <h4>Discord</h4>
                                     <span>
-                                        {connections?.discord?.username || 'Sin vincular'}
+                                        {connections?.discord?.username || t('connectionNotLinked')}
                                     </span>
                                 </div>
 
@@ -642,14 +644,14 @@ export default function Settings() {
                                         className="btn-disconnect"
                                         onClick={unlinkDiscord}
                                     >
-                                        Desvincular
+                                        {t('btnUnlink')}
                                     </button>
                                 ) : (
                                     <button
                                         className="btn-connect"
                                         onClick={startDiscordLink}
                                     >
-                                        Conectar
+                                        {t('btnConnect')}
                                     </button>
                                 )}
 
@@ -661,7 +663,7 @@ export default function Settings() {
 
 
                                 <div className="int-status">
-                                    {connections?.riot?.verified ? 'Conectado' : 'No conectado'}
+                                    {connections?.riot?.verified ? 'Conectado' : t('pending')}
                                 </div>
 
                                 <div className="int-icon riot" aria-hidden="true">
@@ -745,7 +747,7 @@ export default function Settings() {
                                                             onClick={validateRiotDraft}
                                                             disabled={riotLoading || riotValidating}
                                                         >
-                                                            {riotValidating ? 'Validando...' : 'Validar Riot ID'}
+                                                            {riotValidating ? t('validating') : 'Validar Riot ID'}
                                                         </button>
                                                         <button
                                                             className="btn-connect"
@@ -775,7 +777,7 @@ export default function Settings() {
                                                             }}
                                                             disabled={riotLoading}
                                                         >
-                                                            Cancelar
+                                                            {t('cancel')}
                                                         </button>
                                                     </>
                                                 )}
@@ -796,7 +798,7 @@ export default function Settings() {
                                             {riotSyncing ? 'Sincronizando...' : 'Sync ahora'}
                                         </button>
                                         <button className="btn-disconnect" onClick={unlinkRiot}>
-                                            Desvincular
+                                            {t('btnUnlink')}
                                         </button>
                                     </div>
                                 ) : null}
@@ -809,10 +811,10 @@ export default function Settings() {
                                     {mlbbLinked
                                         ? 'Conectado'
                                         : mlbbVerificationStatus === 'pending'
-                                            ? 'En revisión'
+                                            ? t('connectionReview')
                                             : mlbbVerificationStatus === 'rejected'
-                                                ? 'Rechazado'
-                                                : 'No conectado'}
+                                                ? t('connectionRejected')
+                                                : t('pending')}
                                 </div>
 
                                 <div className="int-icon mlbb">
@@ -885,14 +887,14 @@ export default function Settings() {
                                                     onClick={validateMlbbDraft}
                                                     disabled={mlbbLoading || mlbbValidating}
                                                 >
-                                                    {mlbbValidating ? 'Validando...' : 'Validar ID'}
+                                                    {mlbbValidating ? t('validating') : t('btnValidateID')}
                                                 </button>
                                                 <button
                                                     className="btn-connect"
                                                     onClick={linkMlbb}
                                                     disabled={mlbbLoading || mlbbValidating}
                                                 >
-                                                    {mlbbLoading ? 'Conectando...' : 'Conectar'}
+                                                    {mlbbLoading ? t('connecting') : t('btnConnect')}
                                                 </button>
                                             </div>
                                         </div>
@@ -905,7 +907,7 @@ export default function Settings() {
                                             onClick={unlinkMlbb}
                                             disabled={mlbbLoading}
                                         >
-                                            {mlbbLoading ? 'Procesando...' : 'Desvincular'}
+                                            {mlbbLoading ? t('processing') : t('btnUnlink')}
                                         </button>
                                     ) : mlbbVerificationStatus === 'pending' ? (
                                         <button
@@ -913,7 +915,7 @@ export default function Settings() {
                                             onClick={unlinkMlbb}
                                             disabled={mlbbLoading}
                                         >
-                                            {mlbbLoading ? 'Procesando...' : 'Cancelar solicitud'}
+                                            {mlbbLoading ? t('processing') : t('btnCancelRequest')}
                                         </button>
                                     ) : null}
                             </div>
@@ -964,7 +966,7 @@ export default function Settings() {
                 return (
                     <div className="settings-panel fade-in">
                         <div className="panel-header">
-                            <h2>Apariencia e Interfaz</h2>
+                            <h2>{t('settingsAppearance')}</h2>
                             <p>Personaliza tu experiencia visual y privacidad.</p>
                         </div>
 
@@ -1022,7 +1024,7 @@ export default function Settings() {
                 return (
                     <div className="settings-panel fade-in">
                         <div className="panel-header">
-                            <h2>Privacidad</h2>
+                            <h2>{t('settingsPrivacy')}</h2>
                             <p>Configura quién puede interactuar contigo.</p>
                         </div>
 
@@ -1231,14 +1233,14 @@ export default function Settings() {
                 return (
                     <div className="settings-panel fade-in">
                         <div className="panel-header">
-                            <h2>Soporte y Ayuda</h2>
+                            <h2>{t('support')}</h2>
                             <p>¿Encontraste un bug o necesitas ayuda?</p>
                         </div>
 
                         <div className="support-grid">
                             <div className="support-card">
                                 <FaHeadset className="support-icon" />
-                                <h4>Centro de Ayuda</h4>
+                                <h4>{t('support')}</h4>
                                 <p>Preguntas frecuentes y tutoriales.</p>
 
                                 {/* AQUÍ ESTÁ EL CAMBIO: onClick */}
@@ -1296,7 +1298,7 @@ export default function Settings() {
                                 disabled={mlbbReviewLoading}
                                 style={{ maxWidth: 220 }}
                             >
-                                {mlbbReviewLoading ? 'Cargando...' : 'Actualizar pendientes'}
+                                {mlbbReviewLoading ? t('loading') : 'Actualizar pendientes'}
                             </button>
                             <button
                                 className="btn-connect"
@@ -1312,7 +1314,7 @@ export default function Settings() {
                                 disabled={mlbbOpsLoading}
                                 style={{ maxWidth: 220 }}
                             >
-                                {mlbbOpsLoading ? 'Procesando...' : 'Procesar cola ahora'}
+                                {mlbbOpsLoading ? t('processing') : 'Procesar cola ahora'}
                             </button>
                         </div>
 
@@ -1321,7 +1323,7 @@ export default function Settings() {
                                 <h3>Revisar solicitudes pendientes</h3>
                                 <p>Continúa para aprobar, rechazar y gestionar la cola completa de verificación MLBB.</p>
                                 <button className="btn-connect" onClick={() => expandTab('mlbb-review')}>
-                                    Continuar
+                                    {t('continueBtn')}
                                 </button>
                             </div>
                         )}
@@ -1329,7 +1331,7 @@ export default function Settings() {
                         <div className={`mlbb-review-list ${!isTabExpanded ? 'settings-collapsed-block' : ''}`}>
                             {mlbbPendingReviews.length === 0 ? (
                                 <div className="mlbb-empty-state">
-                                    {mlbbReviewLoading ? 'Cargando solicitudes...' : 'No hay solicitudes pendientes.'}
+                                    {mlbbReviewLoading ? t('loading') : 'No hay solicitudes pendientes.'}
                                 </div>
                             ) : (
                                 mlbbPendingReviews.map((item) => (
@@ -1362,14 +1364,14 @@ export default function Settings() {
                                                     onClick={() => reviewMlbbRequest(item.userId, 'approve')}
                                                     disabled={mlbbReviewActionUserId === item.userId}
                                                 >
-                                                    {mlbbReviewActionUserId === item.userId ? 'Procesando...' : 'Aprobar'}
+                                                    {mlbbReviewActionUserId === item.userId ? t('processing') : t('approve')}
                                                 </button>
                                                 <button
                                                     className="btn-disconnect"
                                                     onClick={() => reviewMlbbRequest(item.userId, 'reject')}
                                                     disabled={mlbbReviewActionUserId === item.userId}
                                                 >
-                                                    Rechazar
+                                                    {t('reject')}
                                                 </button>
                                             </div>
                                         </div>
@@ -1427,7 +1429,7 @@ export default function Settings() {
                 >
                     <div className="sidebar-header">
                         <div>
-                            <h3>Ajustes</h3>
+                            <h3>{t('settings')}</h3>
                             <p>Panel general de cuenta, privacidad y conexiones.</p>
                         </div>
                         <motion.div 
@@ -1444,7 +1446,7 @@ export default function Settings() {
                     <div className="settings-nav-shell">
                         {tabsOverflow.left && (
                             <button className="settings-nav-more settings-nav-more--back" onClick={() => scrollTabs(-1)}>
-                                Volver
+                                {t('back')}
                             </button>
                         )}
                         <nav className="settings-nav settings-nav--rail" ref={tabsScrollRef} onScroll={updateTabsOverflow}>
@@ -1471,16 +1473,16 @@ export default function Settings() {
                         </nav>
                         {tabsOverflow.right && (
                             <button className="settings-nav-more" onClick={() => scrollTabs(1)}>
-                                Continuar
+                                {t('continueBtn')}
                             </button>
                         )}
                     </div>
                     <nav className="settings-nav">
                         {[
-                            { id: 'security', icon: FaShieldAlt, label: 'Seguridad' },
-                            { id: 'connections', icon: FaGamepad, label: 'Conexiones' },
-                            { id: 'appearance', icon: FaPaintBrush, label: 'Apariencia' },
-                            { id: 'preferences', icon: FaUserSecret, label: 'Privacidad' },
+                            { id: 'security', icon: FaShieldAlt, label: t('settingsSecurity') },
+                            { id: 'connections', icon: FaGamepad, label: t('settingsConnections') },
+                            { id: 'appearance', icon: FaPaintBrush, label: t('settingsAppearance') },
+                            { id: 'preferences', icon: FaUserSecret, label: t('settingsPrivacy') },
                             { id: 'billing', icon: FaCreditCard, label: 'Suscripción' }
                         ].map((item, idx) => (
                             <motion.button
@@ -1507,24 +1509,24 @@ export default function Settings() {
                             whileHover={{ x: 4, transition: { duration: 0.2 } }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <FaExclamationTriangle /> Reportar
+                            <FaExclamationTriangle /> {t('report')}
                         </motion.button>
 
                         {/* PESTAÑA SOPORTE */}
-                        <motion.button 
-                            className={`nav-item ${activeTab === 'support' ? 'active' : ''}`} 
+                        <motion.button
+                            className={`nav-item ${activeTab === 'support' ? 'active' : ''}`}
                             onClick={() => setActiveTab('support')}
                             variants={navItemVariants}
                             custom={6}
                             whileHover={{ x: 4, transition: { duration: 0.2 } }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <FaHeadset /> Soporte
+                            <FaHeadset /> {t('support')}
                         </motion.button>
 
                         {isAdmin && (
-                            <motion.button 
-                                className={`nav-item ${activeTab === 'mlbb-review' ? 'active' : ''}`} 
+                            <motion.button
+                                className={`nav-item ${activeTab === 'mlbb-review' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('mlbb-review')}
                                 variants={navItemVariants}
                                 custom={7}

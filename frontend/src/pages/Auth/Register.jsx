@@ -5,7 +5,8 @@ import { API_URL } from '../../config/api';
 import { useNotification } from '../../context/NotificationContext';
 import './Register.css';
 // 1. IMPORTAR EL CEREBRO DEL TEMA (IGUAL QUE EN SIDEBAR)
-import { useTheme } from '../../context/ThemeContext'; 
+import { useTheme } from '../../context/ThemeContext';
+import { useLang } from '../../context/LanguageContext';
 
 // 2. IMPORTAR TUS DOS IMÁGENES DE FONDO
 import bgWhite from '../../assets/images/login-black.png'; // Imagen Oscura
@@ -130,11 +131,11 @@ const getSelectionRank = (list = [], value) => {
   return index >= 0 ? index + 1 : null;
 };
 
-const getPasswordError = ({ password, username, fullName, email }) => {
+const getPasswordError = ({ password, username, fullName, email }, t) => {
   if (!password) return '';
-  if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
-  if (/\s/.test(password)) return 'La contraseña no puede contener espacios.';
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return 'La contraseña debe incluir letras y números.';
+  if (password.length < 8) return t('errorPasswordMinLength');
+  if (/\s/.test(password)) return t('errorPasswordNoSpaces');
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return t('errorPasswordMixed');
 
   const personalTerms = new Set();
   const addTerm = (raw) => {
@@ -156,57 +157,58 @@ const getPasswordError = ({ password, username, fullName, email }) => {
   const normalizedPassword = normalizeForCompare(password);
   const containsPersonalTerm = [...personalTerms].some((term) => normalizedPassword.includes(term));
   if (containsPersonalTerm) {
-    return 'La contraseña no puede incluir tu nombre, usuario o partes del correo.';
+    return t('errorPasswordPersonal');
   }
   if (WEAK_PASSWORDS.has(normalizedPassword)) {
-    return 'Esa contraseña es demasiado común o insegura.';
+    return t('errorPasswordWeak');
   }
   if (/(.)\1{3,}/.test(password)) {
-    return 'La contraseña no puede tener 4 caracteres repetidos seguidos.';
+    return t('errorPasswordRepeated');
   }
   if (hasNumericSequence(password)) {
-    return 'La contraseña no puede contener secuencias numéricas (ej: 1234).';
+    return t('errorPasswordSequence');
   }
 
   return '';
 };
 
-const getSubmitError = (formData, passwordError) => {
-  if (!String(formData.fullName || '').trim()) return 'El nombre completo es obligatorio.';
-  if (!String(formData.phone || '').trim()) return 'El teléfono es obligatorio.';
-  if (!isValidNonNegativeNumberString(formData.phone)) return 'El teléfono debe contener solo números y no puede ser negativo.';
-  if (!String(formData.country || '').trim()) return 'El país es obligatorio.';
-  if (!String(formData.birthDate || '').trim()) return 'La fecha de nacimiento es obligatoria.';
-  if (!Array.isArray(formData.selectedGames) || formData.selectedGames.length === 0) return 'Debes seleccionar al menos un juego.';
-  if (!String(formData.experience || '').trim()) return 'Selecciona tu nivel de experiencia.';
-  if (!Array.isArray(formData.platforms) || formData.platforms.length === 0) return 'Selecciona al menos una plataforma.';
-  if (!Array.isArray(formData.goals) || formData.goals.length === 0) return 'Selecciona al menos un objetivo.';
-  if (!String(formData.username || '').trim()) return 'El GamerTag es obligatorio.';
-  if (!String(formData.email || '').trim()) return 'El email es obligatorio.';
-  if (!isValidEmail(formData.email)) return 'El formato del email no es válido.';
-  if (!String(formData.password || '').trim()) return 'La contraseña es obligatoria.';
+const getSubmitError = (formData, passwordError, t) => {
+  if (!String(formData.fullName || '').trim()) return t('errorFullNameRequired');
+  if (!String(formData.phone || '').trim()) return t('errorPhoneRequired');
+  if (!isValidNonNegativeNumberString(formData.phone)) return t('errorPhoneInvalid');
+  if (!String(formData.country || '').trim()) return t('errorCountryRequired');
+  if (!String(formData.birthDate || '').trim()) return t('errorBirthDateRequired');
+  if (!Array.isArray(formData.selectedGames) || formData.selectedGames.length === 0) return t('errorSelectGame');
+  if (!String(formData.experience || '').trim()) return t('errorSelectExperience');
+  if (!Array.isArray(formData.platforms) || formData.platforms.length === 0) return t('errorSelectPlatform');
+  if (!Array.isArray(formData.goals) || formData.goals.length === 0) return t('errorSelectGoal');
+  if (!String(formData.username || '').trim()) return t('errorGamertagRequired');
+  if (!String(formData.email || '').trim()) return t('errorEmailRequired');
+  if (!isValidEmail(formData.email)) return t('errorEmailFormat');
+  if (!String(formData.password || '').trim()) return t('errorPasswordRequired');
   if (passwordError) return passwordError;
-  if (formData.password !== formData.confirmPassword) return 'Las contraseñas no coinciden.';
-  if (!formData.checkTerms) return 'Debes aceptar los términos para continuar.';
+  if (formData.password !== formData.confirmPassword) return t('errorPasswordMismatch');
+  if (!formData.checkTerms) return t('errorTermsRequired');
   return '';
 };
 
-const getStep1Error = (formData) => {
-  if (!String(formData.fullName || '').trim()) return 'El nombre completo es obligatorio.';
-  if (!String(formData.phone || '').trim()) return 'El teléfono es obligatorio.';
-  if (!isValidNonNegativeNumberString(formData.phone)) return 'El teléfono debe tener solo números (sin +, espacios ni guiones).';
-  if (!String(formData.country || '').trim()) return 'Selecciona tu país.';
-  if (!String(formData.birthDate || '').trim()) return 'La fecha de nacimiento es obligatoria.';
+const getStep1Error = (formData, t) => {
+  if (!String(formData.fullName || '').trim()) return t('errorFullNameRequired');
+  if (!String(formData.phone || '').trim()) return t('errorPhoneRequired');
+  if (!isValidNonNegativeNumberString(formData.phone)) return t('errorPhoneFormat');
+  if (!String(formData.country || '').trim()) return t('errorCountryRequired');
+  if (!String(formData.birthDate || '').trim()) return t('errorBirthDateRequired');
   return '';
 };
 
 const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // 3. OBTENER SI ESTÁ EN MODO OSCURO (IGUAL QUE EN SIDEBAR)
   const { isDarkMode } = useTheme();
   const { addToast } = useNotification();
+  const { t } = useLang();
   const redirectTarget = location.state?.from || null;
   const redirectPath = typeof redirectTarget?.pathname === 'string' ? redirectTarget.pathname : '';
   const pendingGameJoinId = getGameIdFromRoutePath(redirectPath);
@@ -214,7 +216,7 @@ const Register = () => {
 
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
   const [step1Attempted, setStep1Attempted] = useState(false);
   const [phoneAvailability, setPhoneAvailability] = useState({
     loading: false,
@@ -252,11 +254,11 @@ const Register = () => {
 
     const usernameResult = await checkUsernameAvailability(formData.username);
     if (!usernameResult.available) {
-      setError(usernameResult.message || 'Este GamerTag ya está en uso.');
+      setError(usernameResult.message || t('errorGamertagTaken'));
       return;
     }
 
-    const validationError = getSubmitError(formData, passwordError);
+    const validationError = getSubmitError(formData, passwordError, t);
     if (validationError) {
       setError(validationError);
       return;
@@ -273,7 +275,7 @@ const Register = () => {
         ...payload,
         ...(pendingGameJoinId ? { pendingGameJoinId } : {})
       });
-      addToast('¡Cuenta creada con éxito! Ahora puedes iniciar sesión.', 'success');
+      addToast(t('successAccountCreated'), 'success');
       navigate('/login', { state: location.state });
     } catch (err) {
       const message = err.response?.data?.message || 'Error al procesar el registro';
@@ -338,14 +340,14 @@ const Register = () => {
       if (!response) throw lastError || new Error('No se encontró endpoint de verificación de teléfono');
 
       const available = Boolean(response?.data?.available);
-      const message = available ? '' : 'Este teléfono ya está registrado.';
+      const message = available ? '' : t('errorPhoneTaken');
       setPhoneAvailability({ loading: false, checked: true, available, warning: false, message });
       return { available, checked: true, message };
     } catch (err) {
       const status = Number(err?.response?.status || 0);
       const message = status === 429
-        ? 'Demasiadas verificaciones seguidas. Intenta de nuevo en unos minutos.'
-        : 'No se pudo verificar el teléfono ahora. Puedes continuar y se validará al registrar.';
+        ? t('errorTooManyRequests')
+        : t('errorPhoneVerificationFailed');
       // Fail-open: solo bloqueamos cuando sabemos que está repetido.
       setPhoneAvailability({ loading: false, checked: false, available: true, warning: true, message });
       return { available: true, checked: false, warning: true, message };
@@ -384,7 +386,7 @@ const Register = () => {
       if (!response) throw lastError || new Error('No se encontró endpoint de verificación de usuario');
 
       const available = Boolean(response?.data?.available);
-      const message = available ? '' : 'Este GamerTag ya está en uso.';
+      const message = available ? '' : t('errorGamertagTaken');
       setUsernameAvailability({ loading: false, checked: true, available, warning: false, message });
       return { available, checked: true, message };
     } catch (err) {
@@ -396,8 +398,8 @@ const Register = () => {
       }
 
       const message = status === 429
-        ? 'Demasiadas verificaciones seguidas. Intenta de nuevo en unos minutos.'
-        : 'No se pudo verificar el GamerTag ahora. Puedes continuar y se validará al registrar.';
+        ? t('errorTooManyRequests')
+        : t('errorGamertagVerificationFailed');
       setUsernameAvailability({ loading: false, checked: false, available: true, warning: true, message });
       return { available: true, checked: false, warning: true, message };
     }
@@ -408,13 +410,13 @@ const Register = () => {
     setStep1Attempted(true);
 
     if (!step1Valid) {
-      setError('Completa nombre, teléfono, país y fecha de nacimiento con datos válidos.');
+      setError(t('errorStep1Incomplete'));
       return;
     }
 
     const result = await checkPhoneAvailability(formData.phone);
     if (!result.available) {
-      setError(result.message || 'El teléfono ya está registrado.');
+      setError(result.message || t('errorPhoneTaken'));
       return;
     }
 
@@ -422,7 +424,7 @@ const Register = () => {
     setStep(2);
   };
 
-  const passwordError = getPasswordError(formData);
+  const passwordError = getPasswordError(formData, t);
   const step1Valid = Boolean(
     String(formData.fullName || '').trim() &&
     String(formData.phone || '').trim() &&
@@ -430,7 +432,7 @@ const Register = () => {
     String(formData.country || '').trim() &&
     String(formData.birthDate || '').trim()
   );
-  const step1ErrorHint = getStep1Error(formData);
+  const step1ErrorHint = getStep1Error(formData, t);
   const step2Valid = Array.isArray(formData.selectedGames) && formData.selectedGames.length > 0;
   const step3Valid = Boolean(
     String(formData.experience || '').trim() &&
@@ -442,12 +444,12 @@ const Register = () => {
   const canSubmit = Boolean(
     !loading &&
     !usernameAvailability.loading &&
-    !getSubmitError(formData, passwordError) &&
+    !getSubmitError(formData, passwordError, t) &&
     !(usernameAvailability.checked && !usernameAvailability.available)
   );
   const submitErrorHint = usernameAvailability.checked && !usernameAvailability.available
-    ? (usernameAvailability.message || 'Este GamerTag ya está en uso.')
-    : getSubmitError(formData, passwordError);
+    ? (usernameAvailability.message || t('errorGamertagTaken'))
+    : getSubmitError(formData, passwordError, t);
 
   const selectedPrefix = getCountryCallingCode(formData.country);
 
@@ -458,14 +460,14 @@ const Register = () => {
         <div className="auth-nav">
           <span className="brand">GLITCH GANG</span>
           <div className="nav-links">
-            <Link to="/login" state={location.state}>Ya tengo cuenta</Link>
+            <Link to="/login" state={location.state}>{t('registerHaveAccount')}</Link>
           </div>
         </div>
 
         <div className="auth-content register-content">
           <div className="header-text">
-            <span className="badge-pro">NUEVO JUGADOR</span>
-            <h1>Crea tu Perfil</h1>
+            <span className="badge-pro">{t('registerNewPlayer')}</span>
+            <h1>{t('registerTitle')}</h1>
           </div>
 
           <div className="step-indicator">
@@ -478,19 +480,19 @@ const Register = () => {
           </div>
 
           <form onSubmit={(e) => e.preventDefault()}>
-            
+
             {/* PASO 1 */}
             {step === 1 && (
               <div className="step-fade-in">
-                <h3 className="step-title">Información Real</h3>
+                <h3 className="step-title">{t('registerStep1Title')}</h3>
                 <div className="input-row split">
                   <div className={`input-wrapper ${phoneAvailability.checked && !phoneAvailability.available ? 'input-error' : ''}`}>
-                    <label>Nombre Completo</label>
+                    <label>{t('registerFullName')}</label>
                     <input type="text" name="fullName" placeholder="Ej: Juan Pérez" value={formData.fullName} onChange={handleChange} />
                     <i className='bx bx-id-card'></i>
                   </div>
                   <div className={`input-wrapper ${selectedPrefix ? 'has-prefix' : ''}`}>
-                    <label>Teléfono</label>
+                    <label>{t('registerPhone')}</label>
                     {selectedPrefix && <span className="input-prefix">+{selectedPrefix}</span>}
                     <input
                       type="tel"
@@ -504,10 +506,10 @@ const Register = () => {
                     <i className='bx bxl-whatsapp'></i>
                   </div>
                 </div>
-                <span className="helper-text"><i className='bx bx-info-circle'></i> Escribe solo los números, sin espacios ni símbolos.</span>
-                
+                <span className="helper-text"><i className='bx bx-info-circle'></i> {t('registerPhoneHelper')}</span>
+
                 {phoneAvailability.loading && (
-                  <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando teléfono...</span>
+                  <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> {t('registerVerifyingPhone')}</span>
                 )}
                 {phoneAvailability.checked && !phoneAvailability.available && (
                   <span className="error-text"><i className='bx bx-error-circle'></i> {phoneAvailability.message}</span>
@@ -517,7 +519,7 @@ const Register = () => {
                 )}
                 <div className="input-row split">
                   <div className="input-wrapper">
-                    <label>País</label>
+                    <label>{t('registerCountry')}</label>
                     <select name="country" value={formData.country} onChange={handleChange} required>
                       <option value="" disabled>Selecciona tu país</option>
                       {COUNTRY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
@@ -525,7 +527,7 @@ const Register = () => {
                     <i className='bx bx-globe'></i>
                   </div>
                   <div className="input-wrapper">
-                    <label>Género</label>
+                    <label>{t('registerGender')}</label>
                     <select name="gender" value={formData.gender} onChange={handleChange}>
                       {GENDER_OPTIONS.map((option) => (
                         <option key={option.id} value={option.id}>{option.label}</option>
@@ -536,8 +538,15 @@ const Register = () => {
                 </div>
                 <div className="input-row split">
                   <div className="input-wrapper">
-                    <label>Fecha Nacimiento</label>
-                    <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} />
+                    <label>{t('registerBirthDate')}</label>
+                    <input
+                      type="date"
+                      name="birthDate"
+                      value={formData.birthDate}
+                      onChange={handleChange}
+                      max={new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      min={new Date(Date.now() - 100 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                    />
                   </div>
                 </div>
                 <button
@@ -545,9 +554,9 @@ const Register = () => {
                   className="btn-primary mt-4"
                   onClick={handleStep1Next}
                   disabled={!step1Valid || phoneAvailability.loading || (phoneAvailability.checked && !phoneAvailability.available)}
-                  title={!step1Valid ? 'Completa nombre, teléfono, país y fecha de nacimiento con datos válidos.' : ''}
+                  title={!step1Valid ? t('errorStep1Incomplete') : ''}
                 >
-                  Siguiente
+                  {t('next')}
                 </button>
                 {step1Attempted && !step1Valid && (
                   <span className="error-text"><i className='bx bx-error-circle'></i> {step1ErrorHint}</span>
@@ -558,8 +567,8 @@ const Register = () => {
             {/* PASO 2 */}
             {step === 2 && (
               <div className="step-fade-in">
-                <h3 className="step-title">Elige tu Campo de Batalla</h3>
-                <p className="games-selection-note">Selecciona tus juegos en orden de prioridad. Tu `#1` será tu main.</p>
+                <h3 className="step-title">{t('registerStep2Title')}</h3>
+                <p className="games-selection-note">{t('registerGamesNote')}</p>
                 <div className="games-grid">
                   {REGISTER_GAMES.map(game => {
                     const selectionRank = getSelectionRank(formData.selectedGames, game.name);
@@ -580,15 +589,15 @@ const Register = () => {
                   )})}
                 </div>
                 <div className="form-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Atrás</button>
+                  <button type="button" className="btn-secondary" onClick={() => setStep(1)}>{t('back')}</button>
                   <button
                     type="button"
                     className="btn-primary"
                     onClick={() => setStep(3)}
                     disabled={!step2Valid}
-                    title={!step2Valid ? 'Debes seleccionar al menos un juego.' : ''}
+                    title={!step2Valid ? t('errorSelectGame') : ''}
                   >
-                    Siguiente
+                    {t('next')}
                   </button>
                 </div>
               </div>
@@ -597,7 +606,7 @@ const Register = () => {
             {/* PASO 3 */}
             {step === 3 && (
               <div className="step-fade-in">
-                <h3 className="step-title">Tu Nivel de Experiencia</h3>
+                <h3 className="step-title">{t('registerStep3Title')}</h3>
                 <div className="levels-row">
                   {EXPERIENCE_LEVELS.map((lvl) => (
                     <div key={lvl.id} className={`level-card ${formData.experience === lvl.id ? 'selected' : ''}`} onClick={() => setFormData({...formData, experience: lvl.id})}>
@@ -607,7 +616,7 @@ const Register = () => {
                     </div>
                   ))}
                 </div>
-                <h3 className="step-title mt-4">Plataforma Principal</h3>
+                <h3 className="step-title mt-4">{t('registerPlatformTitle')}</h3>
                 <div className="platforms-row">
                   {PLATFORM_OPTIONS.map(p => (
                     <div key={p.id} className={`platform-chip ${formData.platforms.includes(p.id) ? 'selected' : ''}`} onClick={() => toggleSelection('platforms', p.id)}>
@@ -616,7 +625,7 @@ const Register = () => {
                     </div>
                   ))}
                 </div>
-                <h3 className="step-title mt-4">¿Qué buscas?</h3>
+                <h3 className="step-title mt-4">{t('registerGoalsTitle')}</h3>
                 <div className="goals-row">
                   {GOAL_OPTIONS.map((goal) => (
                     <div key={goal.id} className={`goal-card ${formData.goals.includes(goal.id) ? 'selected' : ''}`} onClick={() => toggleSelection('goals', goal.id)}>
@@ -626,15 +635,15 @@ const Register = () => {
                   ))}
                 </div>
                 <div className="form-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setStep(2)}>Atrás</button>
+                  <button type="button" className="btn-secondary" onClick={() => setStep(2)}>{t('back')}</button>
                   <button
                     type="button"
                     className="btn-primary"
                     onClick={() => setStep(4)}
                     disabled={!step3Valid}
-                    title={!step3Valid ? 'Selecciona experiencia, al menos una plataforma y un objetivo.' : ''}
+                    title={!step3Valid ? t('errorStep3Incomplete') : ''}
                   >
-                    Siguiente
+                    {t('next')}
                   </button>
                 </div>
               </div>
@@ -643,10 +652,10 @@ const Register = () => {
             {/* PASO 4 */}
             {step === 4 && (
               <div className="step-fade-in">
-                <h3 className="step-title">Credenciales</h3>
+                <h3 className="step-title">{t('registerStep4Title')}</h3>
                 <div className="input-row">
                   <div className={`input-wrapper ${usernameAvailability.checked && !usernameAvailability.available ? 'input-error' : ''}`}>
-                    <label>GamerTag</label>
+                    <label>{t('registerGamertag')}</label>
                     <input
                       type="text"
                       name="username"
@@ -659,7 +668,7 @@ const Register = () => {
                   </div>
                 </div>
                 {usernameAvailability.loading && (
-                  <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> Verificando GamerTag...</span>
+                  <span className="helper-text"><i className='bx bx-loader-alt bx-spin'></i> {t('registerVerifyingGamertag')}</span>
                 )}
                 {usernameAvailability.checked && !usernameAvailability.available && (
                   <span className="error-text"><i className='bx bx-error-circle'></i> {usernameAvailability.message}</span>
@@ -668,11 +677,11 @@ const Register = () => {
                   <span className="helper-text"><i className='bx bx-info-circle'></i> {usernameAvailability.message}</span>
                 )}
                 <div className="input-row">
-                  <div className="input-wrapper"><label>Correo electrónico</label><input type="email" name="email" value={formData.email} onChange={handleChange} autoComplete="email" placeholder='correo@ejemplo.com'/><i className='bx bx-envelope'></i></div>
+                  <div className="input-wrapper"><label>{t('registerEmail')}</label><input type="email" name="email" value={formData.email} onChange={handleChange} autoComplete="email" placeholder='correo@ejemplo.com'/><i className='bx bx-envelope'></i></div>
                 </div>
                 <div className="input-row">
                   <div className={`input-wrapper ${formData.password && passwordError ? 'input-error' : ''}`}>
-                    <label>Contraseña</label>
+                    <label>{t('registerPassword')}</label>
                     <input type="password" name="password" value={formData.password} onChange={handleChange} autoComplete="new-password" placeholder="Contraseña" />
                     <i className='bx bx-lock-alt'></i>
                   </div>
@@ -682,7 +691,7 @@ const Register = () => {
                 </div>
                 <div className="input-row">
                   <div className={`input-wrapper ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'input-error' : ''}`}>
-                    <label>Confirmar Contraseña</label>
+                    <label>{t('registerConfirmPassword')}</label>
                     <input type="password" name="confirmPassword" placeholder="Repite tu contraseña" value={formData.confirmPassword} autoComplete="new-password" onChange={handleChange} />
                     <i className='bx bx-shield-quarter'></i>
                   </div>
@@ -692,7 +701,7 @@ const Register = () => {
                 </div>
                 <div className="input-row">
                   <div className="input-wrapper">
-                    <label>Código de referido <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(opcional)</span></label>
+                    <label>{t('registerReferralCode')} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(opcional)</span></label>
                     <input
                       type="text"
                       name="referralCode"
@@ -705,7 +714,7 @@ const Register = () => {
                   </div>
                 </div>
 
-                <label className={`terms-row mt-2 ${submitErrorHint === 'Debes aceptar los términos para continuar.' ? 'input-error' : ''}`}>
+                <label className={`terms-row mt-2 ${submitErrorHint === t('errorTermsRequired') ? 'input-error' : ''}`}>
                   <input className="terms-checkbox" type="checkbox" name="checkTerms" checked={formData.checkTerms} onChange={handleChange} />
                   <span className="terms-text">
                     He leído y acepto los <a href="/legal/terms" target="_blank" rel="noreferrer"> Términos de Servicio </a> y la <a href="/legal/privacy" target="_blank" rel="noreferrer"> Política de Privacidad</a>.
@@ -721,15 +730,15 @@ const Register = () => {
                 {error && <div className="auth-error-msg" style={{ marginTop: '10px' }}>{error}</div>}
 
                 <div className="form-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setStep(3)}>Atrás</button>
-                  <button 
-                    type="button" 
-                    className="btn-primary" 
+                  <button type="button" className="btn-secondary" onClick={() => setStep(3)}>{t('back')}</button>
+                  <button
+                    type="button"
+                    className="btn-primary"
                     disabled={!canSubmit}
                     title={submitErrorHint || ''}
                     onClick={handleSubmit}
                   >
-                    {loading ? 'PROCESANDO...' : 'FINALIZAR'}
+                    {loading ? t('processing') : t('registerFinalize')}
                   </button>
                 </div>
                 <div className="sidebar-credit">
@@ -740,18 +749,18 @@ const Register = () => {
           </form>
         </div>
       </div>
-      
+
       {/* 5. SECCIÓN DERECHA CON CAMBIO DE IMAGEN */}
       <div className="auth-right">
         <div className="image-overlay"></div>
         {/* Aquí está la lógica EXACTA de tu Sidebar: Si isDarkMode es true, usa bgBlack, si no bgWhite */}
-        <img 
-            src={isDarkMode ? bgBlack : bgWhite} 
-            alt="Setup Gamer" 
+        <img
+            src={isDarkMode ? bgBlack : bgWhite}
+            alt="Setup Gamer"
             className="dynamic-bg"
         />
       </div>
-      
+
     </div>
   );
 };
