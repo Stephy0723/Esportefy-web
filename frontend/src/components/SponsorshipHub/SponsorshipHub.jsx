@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLang } from '../../context/LanguageContext';
 import {
   FaBolt,
   FaCommentDots,
@@ -247,7 +248,9 @@ const MusicPanel = ({
   </section>
 );
 
-const SponsorDialog = ({ form, onChange, onClose, onSubmit, sent }) => (
+const SponsorDialog = ({ form, onChange, onClose, onSubmit, sent }) => {
+  const { t } = useLang();
+  return (
   <div className="spm-overlay" onClick={onClose} role="dialog" aria-modal="true">
     <div className="spm-modal" onClick={(e) => e.stopPropagation()}>
       <button type="button" className="spm-close" onClick={onClose} aria-label="Cerrar">
@@ -259,15 +262,15 @@ const SponsorDialog = ({ form, onChange, onClose, onSubmit, sent }) => (
           <FaHandshake />
         </div>
         <div>
-          <h3>Patrocinio GLITCH GANG</h3>
-          <p>Envia tu propuesta y te contactamos para activaciones, torneos y branding.</p>
+          <h3>{t('sponsorTitle')}</h3>
+          <p>{t('sponsorDesc')}</p>
         </div>
       </header>
 
       {sent ? (
         <div className="spm-success">
-          <strong>Solicitud enviada</strong>
-          <span>El equipo comercial revisara tu propuesta en breve.</span>
+          <strong>{t('sponsorSent')}</strong>
+          <span>{t('sponsorSentDesc')}</span>
         </div>
       ) : (
         <form className="spm-form" onSubmit={onSubmit}>
@@ -286,7 +289,7 @@ const SponsorDialog = ({ form, onChange, onClose, onSubmit, sent }) => (
           <label>
             Presupuesto estimado
             <select name="budget" value={form.budget} onChange={onChange} required>
-              <option value="">Seleccionar</option>
+              <option value="">{t('sponsorSelect')}</option>
               <option value="1k-5k">USD 1,000 - 5,000</option>
               <option value="5k-20k">USD 5,000 - 20,000</option>
               <option value="20k+">USD 20,000+</option>
@@ -295,10 +298,10 @@ const SponsorDialog = ({ form, onChange, onClose, onSubmit, sent }) => (
           <label>
             Objetivo principal
             <select name="objective" value={form.objective} onChange={onChange} required>
-              <option value="">Seleccionar</option>
-              <option value="branding">Branding y visibilidad</option>
-              <option value="torneo">Patrocinar torneos</option>
-              <option value="creadores">Campana con creadores</option>
+              <option value="">{t('sponsorSelect')}</option>
+              <option value="branding">{t('sponsorBrandingGoal')}</option>
+              <option value="torneo">{t('sponsorTournamentGoal')}</option>
+              <option value="creadores">{t('sponsorCreatorGoal')}</option>
             </select>
           </label>
           <label>
@@ -320,9 +323,11 @@ const SponsorDialog = ({ form, onChange, onClose, onSubmit, sent }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 const AgentDialog = ({ agentDraft, agentMessages, onClose, onSubmit, setAgentDraft }) => {
+  const { t } = useLang();
   const threadRef = useRef(null);
 
   useEffect(() => {
@@ -343,8 +348,8 @@ const AgentDialog = ({ agentDraft, agentMessages, onClose, onSubmit, setAgentDra
             <FaHeadset />
           </div>
           <div>
-            <h3>Agent Console</h3>
-            <p>Habla con un agente virtual para soporte comercial y activaciones.</p>
+            <h3>{t('sponsorAgentTitle')}</h3>
+            <p>{t('sponsorAgentDesc')}</p>
           </div>
         </header>
 

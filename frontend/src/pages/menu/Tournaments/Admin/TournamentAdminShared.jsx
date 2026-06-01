@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { getAuthToken } from '../../../../utils/authSession';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 
 export const createEmptyMatch = () => ({
   teamA: { refId: '', teamName: '', isPlaceholder: true },
@@ -27,27 +28,28 @@ export const shuffle = (items) => {
   return copy;
 };
 
-export const buildPrizeOptions = (tournament) => {
+export const buildPrizeOptions = (tournament, t) => {
   const options = [];
   const currency = tournament?.currency ? ` ${tournament.currency}` : '';
   if (tournament?.prizePool) options.push(`Prize Pool ${tournament.prizePool}${currency}`);
-  if (tournament?.prizesByRank?.first) options.push(`1er lugar ${tournament.prizesByRank.first}`);
-  if (tournament?.prizesByRank?.second) options.push(`2do lugar ${tournament.prizesByRank.second}`);
-  if (tournament?.prizesByRank?.third) options.push(`3er lugar ${tournament.prizesByRank.third}`);
+  if (tournament?.prizesByRank?.first) options.push(`${t('prizeFirst')} ${tournament.prizesByRank.first}`);
+  if (tournament?.prizesByRank?.second) options.push(`${t('prizeSecond')} ${tournament.prizesByRank.second}`);
+  if (tournament?.prizesByRank?.third) options.push(`${t('prizeThird')} ${tournament.prizesByRank.third}`);
   if (tournament?.prizeDetails) options.push(tournament.prizeDetails);
-  return options.length > 0 ? options : ['Premio sorpresa', 'Boost competitivo', 'Pack de beneficios'];
+  return options.length > 0 ? options : [t('prizeSurprise'), t('prizeBoost'), t('prizePack')];
 };
 
 export const STATUS_LABELS = {
-  open: 'Abierto',
-  ongoing: 'En curso',
-  finished: 'Finalizado',
-  cancelled: 'Cancelado',
-  draft: 'Borrador',
+  open: 'statusOpen',
+  ongoing: 'statusOngoing',
+  finished: 'statusFinished',
+  cancelled: 'statusCancelled',
+  draft: 'statusDraft',
 };
 
 export const useTournamentAdminData = (code) => {
   const { addToast } = useNotification();
+  const { t } = useLang();
   const [loading, setLoading] = useState(true);
   const [tournament, setTournament] = useState(null);
   const [compliance, setCompliance] = useState(null);
@@ -135,7 +137,7 @@ export const useTournamentAdminData = (code) => {
     [registrations]
   );
 
-  const prizeOptions = useMemo(() => buildPrizeOptions(tournament), [tournament]);
+  const prizeOptions = useMemo(() => buildPrizeOptions(tournament, t), [tournament, t]);
   const isMlbbTournament = useMemo(() => {
     const game = String(tournament?.game || '').trim();
     return ['Mobile Legends', 'Mobile Legends: Bang Bang', 'MLBB'].includes(game);
@@ -162,18 +164,18 @@ export const useTournamentAdminData = (code) => {
     try {
       await axios.patch(`${API_URL}/api/tournaments/${code}/public-settings`, settings, authConfig);
       await refreshCompliance();
-      addToast('Configuracion publica guardada.', 'success');
+      addToast(t('toastPublicSettingsSaved'), 'success');
     } catch (error) {
-      addToast(error.response?.data?.message || 'No se pudo guardar la configuracion publica.', 'error');
+      addToast(error.response?.data?.message || t('toastPublicSettingsError'), 'error');
     }
   };
 
   const saveBracket = async () => {
     try {
       await axios.patch(`${API_URL}/api/tournaments/${code}/bracket`, { bracket }, authConfig);
-      addToast('Bracket guardado.', 'success');
+      addToast(t('toastBracketSaved'), 'success');
     } catch (error) {
-      addToast(error.response?.data?.message || 'No se pudo guardar el bracket.', 'error');
+      addToast(error.response?.data?.message || t('toastBracketError'), 'error');
     }
   };
 
@@ -188,7 +190,7 @@ export const useTournamentAdminData = (code) => {
       }));
       await refreshCompliance();
     } catch (error) {
-      addToast(error.response?.data?.message || 'No se pudo actualizar el estado.', 'error');
+      addToast(error.response?.data?.message || t('toastRegistrationUpdateError'), 'error');
     }
   };
 
@@ -201,7 +203,7 @@ export const useTournamentAdminData = (code) => {
       }));
       await refreshCompliance();
     } catch (error) {
-      addToast(error.response?.data?.message || 'No se pudo eliminar la inscripcion.', 'error');
+      addToast(error.response?.data?.message || t('toastRegistrationRemoveError'), 'error');
     }
   };
 
@@ -227,42 +229,47 @@ export const useTournamentAdminData = (code) => {
   };
 };
 
-const NAV_ITEMS = [
-  { key: 'overview', path: '', end: true, label: 'Operacion', desc: 'Equipos y visibilidad' },
-  { key: 'bracket', path: '/bracket', label: 'Bracket', desc: 'Escenario del cuadro' },
-  { key: 'matches', path: '/matches', label: 'Partidas', desc: 'Centro de partidas' },
-  { key: 'standings', path: '/standings', label: 'Clasificacion', desc: 'Tabla y puntos' },
-  { key: 'staff', path: '/staff', label: 'Staff', desc: 'Equipo de trabajo' },
-  { key: 'reports', path: '/reports', label: 'Reportes', desc: 'Anti-trampa y sanciones' },
-  { key: 'roulette', path: '/roulette', label: 'Ruleta', desc: 'Vista para directo' },
+const NAV_ITEMS = (t) => [
+  { key: 'overview', path: '', end: true, label: t('navOpOverview'), desc: t('navOpOverviewDesc') },
+  { key: 'bracket', path: '/bracket', label: t('navOpBracket'), desc: t('navOpBracketDesc') },
+  { key: 'matches', path: '/matches', label: t('navOpMatches'), desc: t('navOpMatchesDesc') },
+  { key: 'standings', path: '/standings', label: t('navOpStandings'), desc: t('navOpStandingsDesc') },
+  { key: 'staff', path: '/staff', label: t('navOpStaff'), desc: t('navOpStaffDesc') },
+  { key: 'reports', path: '/reports', label: t('navOpReports'), desc: t('navOpReportsDesc') },
+  { key: 'roulette', path: '/roulette', label: t('navOpRoulette'), desc: t('navOpRouletteDesc') },
 ];
 
-export const TournamentAdminShell = ({ tournament, currentTab, children }) => (
-  <div className="ta-page">
-    <header className="ta-manage-hero">
-      <div className="ta-manage-hero__copy">
-        <span className="ta-kicker">Control del torneo</span>
-        <h1>{tournament.title}</h1>
-        <p>
-          #{tournament.tournamentId} - {tournament.game} - {STATUS_LABELS[tournament.status] || 'Configuracion'}
-        </p>
-      </div>
+export const TournamentAdminShell = ({ tournament, currentTab, children }) => {
+  const { t } = useLang();
+  const navItems = NAV_ITEMS(t);
 
-      <nav className="ta-manage-nav ta-manage-nav--wide">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.key}
-            to={`/tournaments/manage/${tournament.tournamentId}${item.path}`}
-            end={item.end}
-            className={({ isActive }) => `ta-manage-nav__item ${isActive || currentTab === item.key ? 'is-active' : ''}`}
-          >
-            <span>{item.label}</span>
-            <strong>{item.desc}</strong>
-          </NavLink>
-        ))}
-      </nav>
-    </header>
+  return (
+    <div className="ta-page">
+      <header className="ta-manage-hero">
+        <div className="ta-manage-hero__copy">
+          <span className="ta-kicker">{t('shellKicker')}</span>
+          <h1>{tournament.title}</h1>
+          <p>
+            #{tournament.tournamentId} - {tournament.game} - {t(STATUS_LABELS[tournament.status]) || t('shellDefaultStatus')}
+          </p>
+        </div>
 
-    {children}
-  </div>
-);
+        <nav className="ta-manage-nav ta-manage-nav--wide">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.key}
+              to={`/tournaments/manage/${tournament.tournamentId}${item.path}`}
+              end={item.end}
+              className={({ isActive }) => `ta-manage-nav__item ${isActive || currentTab === item.key ? 'is-active' : ''}`}
+            >
+              <span>{item.label}</span>
+              <strong>{item.desc}</strong>
+            </NavLink>
+          ))}
+        </nav>
+      </header>
+
+      {children}
+    </div>
+  );
+};

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useLang } from '../../../../context/LanguageContext';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { useNotification } from '../../../../context/NotificationContext';
@@ -18,11 +19,11 @@ import './TournamentMatchCenter.overrides.css';
 /* ── helpers ── */
 
 const STATUS_META = {
-  pending:  { label: 'Pendiente',  tone: 'pending'  },
-  ready:    { label: 'Listo',      tone: 'ready'    },
-  live:     { label: 'En vivo',    tone: 'live'     },
-  finished: { label: 'Finalizado', tone: 'finished' },
-  walkover: { label: 'Walkover',   tone: 'walkover' },
+  pending:  { labelKey: 'matchStatusPending',  tone: 'pending'  },
+  ready:    { labelKey: 'matchStatusReady',     tone: 'ready'    },
+  live:     { labelKey: 'matchStatusLive',      tone: 'live'     },
+  finished: { labelKey: 'matchStatusFinished',  tone: 'finished' },
+  walkover: { labelKey: 'matchStatusWalkover',  tone: 'walkover' },
 };
 
 const teamLabel = (team) => {
@@ -118,6 +119,7 @@ const pickResolutionCandidate = (match, winnerRefId = '') => {
 /* ── component ── */
 
 const TournamentMatchCenter = () => {
+  const { t } = useLang();
   const { code } = useParams();
   const navigate = useNavigate();
   const { addToast } = useNotification();
@@ -500,8 +502,8 @@ const TournamentMatchCenter = () => {
         <section className="ta-panel">
           <div className="ta-empty-hero">
             <i className="bx bx-bracket" style={{ fontSize: '2.4rem', color: 'var(--primary)' }} />
-            <h2>No hay partidas todavia</h2>
-            <p>El centro de partidas se alimenta del bracket. Crea el bracket y define los enfrentamientos primero.</p>
+            <h2>{t('matchCenterEmpty')}</h2>
+            <p>{t('matchCenterEmptyDesc')}</p>
             <button
               onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/bracket`)}
             >
@@ -525,11 +527,11 @@ const TournamentMatchCenter = () => {
           <div className="mc-admin-guide">
             <div className="mc-admin-guide__icon"><i className="bx bx-info-circle" /></div>
             <div className="mc-admin-guide__content">
-              <strong>Guia rapida para el organizador</strong>
+              <strong>{t('matchCenterGuide')}</strong>
               <p>
-                <b>Poner en vivo</b> — Marca la partida como activa cuando los equipos esten jugando.{' '}
-                <b>Reportar resultado</b> — Abre el editor lateral para ingresar scores y subir prueba.{' '}
-                <b>Finalizar match</b> — Cierra la partida, define el ganador y avanza el bracket.{' '}
+                <b>{t('matchGoLive')}</b> — Marca la partida como activa cuando los equipos esten jugando.{' '}
+                <b>{t('matchReport')}</b> — Abre el editor lateral para ingresar scores y subir prueba.{' '}
+                <b>{t('matchFinalize')}</b> — Cierra la partida, define el ganador y avanza el bracket.{' '}
                 Haz clic en cualquier tarjeta para ver todas las opciones.
               </p>
             </div>
@@ -539,29 +541,29 @@ const TournamentMatchCenter = () => {
           <div className="mc-stats-bar">
             <div className="mc-stat" title="Cantidad total de partidas en el bracket">
               <strong>{stats.total}</strong>
-              <span>Total</span>
+              <span>{t('matchTotal')}</span>
             </div>
             <div className="mc-stat mc-stat--live" title="Partidas que estan jugandose en este momento">
               <strong>{stats.live}</strong>
-              <span>En vivo</span>
+              <span>{t('matchLive')}</span>
             </div>
             <div className="mc-stat mc-stat--done" title="Partidas con resultado confirmado">
               <strong>{stats.finished}</strong>
-              <span>Finalizadas</span>
+              <span>{t('matchFinished')}</span>
             </div>
             <div className="mc-stat" title="Partidas que aun no han comenzado">
               <strong>{stats.pending}</strong>
-              <span>Pendientes</span>
+              <span>{t('matchPending')}</span>
             </div>
             {stats.disputed > 0 && (
               <div className="mc-stat mc-stat--warn" title="Partidas donde los equipos reportaron resultados diferentes">
                 <strong>{stats.disputed}</strong>
-                <span>Disputadas</span>
+                <span>{t('matchPlayed')}</span>
               </div>
             )}
             <div className="mc-stat mc-stat--pct" title="Porcentaje de partidas finalizadas sobre el total">
               <strong>{stats.total > 0 ? Math.round((stats.finished / stats.total) * 100) : 0}%</strong>
-              <span>Completado</span>
+              <span>{t('matchCompleted')}</span>
             </div>
           </div>
 
@@ -624,10 +626,10 @@ const TournamentMatchCenter = () => {
                           >
                             <div className="mc-card__top">
                               <span className="mc-card__id">{match.displayId}</span>
-                              <span className={`mc-badge mc-badge--${meta.tone}`}>{meta.label}</span>
-                              {hasProof && <span className="mc-badge mc-badge--proof">Prueba</span>}
+                              <span className={`mc-badge mc-badge--${meta.tone}`}>{t(meta.labelKey)}</span>
+                              {hasProof && <span className="mc-badge mc-badge--proof">{t('matchProofBadge')}</span>}
                               {match.confirmationStatus === 'disputed' && (
-                                <span className="mc-badge mc-badge--disputed">Disputa</span>
+                                <span className="mc-badge mc-badge--disputed">{t('matchInDispute')}</span>
                               )}
                             </div>
 
@@ -673,18 +675,18 @@ const TournamentMatchCenter = () => {
                                     className="ta-btn-sm"
                                     onClick={(e) => { e.stopPropagation(); setMatchStatus(match, 'live'); }}
                                     disabled={saving}
-                                    title="Cambia el estado a En vivo para indicar que la partida esta en curso"
+                                    title={t('matchGoLive')}
                                   >
-                                    Poner en vivo
+                                    {t('matchGoLive')}
                                   </button>
                                 )}
                                 {match.status === 'live' && (
                                   <button
                                     className="ta-btn-sm ta-btn-sm--secondary"
                                     onClick={(e) => { e.stopPropagation(); selectMatch(match); }}
-                                    title="Abre el panel lateral para registrar scores, subir prueba y finalizar"
+                                    title={t('matchReport')}
                                   >
-                                    Reportar resultado
+                                    {t('matchReport')}
                                   </button>
                                 )}
                               </div>
@@ -847,7 +849,7 @@ const TournamentMatchCenter = () => {
                       <div className="mc-editor__result-grid">
                         {matchResultConfig.supportsStage && (
                           <label>
-                            <span>Stage / escenario</span>
+                            <span>{t('matchStage')}</span>
                             <input
                               type="text"
                               value={gameResultForm.stage}
@@ -880,7 +882,7 @@ const TournamentMatchCenter = () => {
                         )}
                         {matchResultConfig.supportsMap && (
                           <label>
-                            <span>Mapa / playlist</span>
+                            <span>{t('matchMap')}</span>
                             <input
                               type="text"
                               value={gameResultForm.map}
@@ -891,7 +893,7 @@ const TournamentMatchCenter = () => {
                         )}
                         {matchResultConfig.supportsMode && (
                           <label>
-                            <span>Modo</span>
+                            <span>{t('matchMode')}</span>
                             <input
                               type="text"
                               value={gameResultForm.mode}
@@ -902,7 +904,7 @@ const TournamentMatchCenter = () => {
                         )}
                         {matchResultConfig.supportsRoundLabel && (
                           <label>
-                            <span>Lobby / ronda</span>
+                            <span>{t('matchLobby')}</span>
                             <input
                               type="text"
                               value={gameResultForm.roundLabel}
@@ -918,7 +920,7 @@ const TournamentMatchCenter = () => {
                       <div className="mc-editor__result-grid">
                         {matchResultConfig.supportsSummary && (
                           <label className="mc-editor__result-span">
-                            <span>Resumen competitivo</span>
+                            <span>{t('matchSummary')}</span>
                             <input
                               type="text"
                               value={gameResultForm.summary}
@@ -929,7 +931,7 @@ const TournamentMatchCenter = () => {
                         )}
                         {matchResultConfig.supportsNotes && (
                           <label className="mc-editor__result-span">
-                            <span>Notas del staff</span>
+                            <span>{t('matchStaffNotes')}</span>
                             <textarea
                               rows="3"
                               value={gameResultForm.notes}
@@ -944,7 +946,7 @@ const TournamentMatchCenter = () => {
                 )}
 
                 <label className="mc-editor__status">
-                  <span>Estado</span>
+                  <span>{t('matchStatus')}</span>
                   <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
                     <option value="pending">Pendiente — Aun no comienza</option>
                     <option value="ready">Listo — Equipos confirmados, por iniciar</option>
@@ -1013,7 +1015,7 @@ const TournamentMatchCenter = () => {
                     disabled={saving}
                     title="Marca la partida como finalizada, registra el ganador y guarda todo"
                   >
-                    Finalizar match
+                    {t('matchFinalize')}
                   </button>
                 </div>
                 <p className="ta-hint">

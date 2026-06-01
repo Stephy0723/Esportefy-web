@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { COMMUNITY_GAMES } from '../../data/communityData';
+import { useLang } from '../../context/LanguageContext';
 
 const FEATURED_GAMES = COMMUNITY_GAMES.slice(0, 24).map((game) => ({
   id: game.id,
@@ -12,6 +13,7 @@ const FEATURED_GAMES = COMMUNITY_GAMES.slice(0, 24).map((game) => ({
 }));
 
 const GamesCatalog = () => {
+  const { t } = useLang();
   return (
     <section className="relative py-24 px-6 md:px-16 bg-[var(--bg-page)] overflow-hidden">
       {/* Decoración de fondo */}
@@ -30,14 +32,13 @@ const GamesCatalog = () => {
           className="text-center mb-16"
         >
           <span className="text-[var(--primary)] uppercase tracking-[0.3em] text-sm font-bold">
-            Ecosistema competitivo
+            {t('gamesTagline')}
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[var(--text-main)] mt-4 mb-6">
-            Mas de 20 juegos y comunidades
+            {t('gamesHeading')}
           </h2>
           <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
-            Explora shooters, MOBA, fighting, battle royale y juegos sociales dentro de un
-            catalogo mucho mas amplio que el hero inicial.
+            {t('gamesDescription')}
           </p>
         </motion.div>
 
@@ -102,7 +103,7 @@ const GamesCatalog = () => {
             to="/comunidad"
             className="inline-flex items-center gap-3 px-8 py-3 border border-[var(--primary)] text-[var(--primary)] rounded-full hover:bg-[var(--primary-dim)] transition-all duration-300 font-bold text-sm uppercase tracking-wider opacity-80 hover:opacity-100"
           >
-            Ver todos los juegos
+            {t('gamesBtnViewAll')}
             <i className="bx bx-right-arrow-alt text-xl"></i>
           </Link>
         </motion.div>

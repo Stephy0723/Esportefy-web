@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLang } from '../../../../context/LanguageContext';
 
 const HeroTagSection = ({ context, backgroundImage, accent, onCompanyClick, transitionKey }) => {
+  const { t } = useLang();
   const companies = Array.isArray(context?.relatedCompanies) ? context.relatedCompanies : [];
   const chips = Array.isArray(context?.chips) ? context.chips : [];
   const facts = Array.isArray(context?.facts) ? context.facts : [];
@@ -12,9 +14,9 @@ const HeroTagSection = ({ context, backgroundImage, accent, onCompanyClick, tran
 
       <div className="gft-hero-tag__content">
         <div className="gft-hero-tag__col-main">
-          <p className="gft-hero-tag__kicker">{context?.type || 'Tag'}</p>
-          <h2>{context?.title || 'Discover'}</h2>
-          <p className="gft-hero-tag__desc">{context?.description || 'Explore related games inside this category.'}</p>
+          <p className="gft-hero-tag__kicker">{context?.type || t('htsDefaultType')}</p>
+          <h2>{context?.title || t('htsDefaultTitle')}</h2>
+          <p className="gft-hero-tag__desc">{context?.description || t('htsDefaultDesc')}</p>
 
           <div className="gft-hero-tag__chips">
             {chips.map((chip) => (
@@ -39,7 +41,7 @@ const HeroTagSection = ({ context, backgroundImage, accent, onCompanyClick, tran
 
           {companies.length > 0 && (
             <div className="gft-hero-tag__companies">
-              <p>Related companies</p>
+              <p>{t('htsRelatedCompanies')}</p>
               <div className="gft-hero-tag__companies-row">
                 {companies.map((company) => (
                   <button

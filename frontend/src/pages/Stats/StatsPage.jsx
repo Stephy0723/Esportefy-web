@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
+import { useLang } from '../../context/LanguageContext';
 import './StatsPage.css';
 import StatsDisplay from './StatsDisplay';
 import './StatsDisplay.css';
@@ -28,6 +29,7 @@ const normalizeUserPreview = (user = {}) => ({
 });
 
 const StatsUserCard = ({ user, selected, onSelect }) => {
+  const { t } = useLang();
   const games = Array.isArray(user?.selectedGames) ? user.selectedGames.slice(0, 3) : [];
 
   return (
@@ -38,13 +40,13 @@ const StatsUserCard = ({ user, selected, onSelect }) => {
     >
       <img
         src={resolveMediaUrl(user?.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || 'U')}&background=101318&color=7cff6b`}
-        alt={user?.username || 'Usuario'}
+        alt={user?.username || t('statsPlayerFallback')}
         className="stats-user-card__avatar"
       />
 
       <div className="stats-user-card__body">
         <div className="stats-user-card__top">
-          <strong>{user?.username || 'Usuario'}</strong>
+          <strong>{user?.username || t('statsPlayerFallback')}</strong>
           {user?.isAdmin ? <span className="stats-user-card__badge">Admin</span> : null}
         </div>
 
@@ -59,7 +61,7 @@ const StatsUserCard = ({ user, selected, onSelect }) => {
               </span>
             ))
           ) : (
-            <span className="stats-user-card__game stats-user-card__game--muted">Sin juegos públicos</span>
+            <span className="stats-user-card__game stats-user-card__game--muted">{t('statsNoPublicGames')}</span>
           )}
         </div>
       </div>
@@ -68,6 +70,7 @@ const StatsUserCard = ({ user, selected, onSelect }) => {
 };
 
 function StatsPage() {
+  const { t } = useLang();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -163,56 +166,51 @@ function StatsPage() {
   return (
     <div className="stats-page-container">
       <header className="stats-page-header">
-        <h1>Centro Admin de Stats</h1>
-        <p>
-          Vista privada para administradores. Consulta el estado real de las cuentas conectadas,
-          sincronizaciones y verificaciones internas de LoL, VALORANT y MLBB por usuario.
-        </p>
+        <h1>{t('statsAdminTitle')}</h1>
+        <p>{t('statsAdminDesc')}</p>
       </header>
 
       <div className="stats-page-summary">
         <div className="stats-page-summary__item">
-          <span className="stats-page-summary__label">Acceso</span>
-          <strong>Solo administradores</strong>
+          <span className="stats-page-summary__label">{t('statsLabelAccess')}</span>
+          <strong>{t('statsAdminOnly')}</strong>
         </div>
         <div className="stats-page-summary__item">
-          <span className="stats-page-summary__label">Perfil seleccionado</span>
-          <strong>{selectedUser?.username || 'Ninguno'}</strong>
+          <span className="stats-page-summary__label">{t('statsLabelSelectedProfile')}</span>
+          <strong>{selectedUser?.username || t('none')}</strong>
         </div>
         <div className="stats-page-summary__item">
-          <span className="stats-page-summary__label">Cobertura actual</span>
+          <span className="stats-page-summary__label">{t('statsLabelCoverage')}</span>
           <strong>LoL, VALORANT y MLBB</strong>
         </div>
       </div>
 
       <form onSubmit={handleSearchSubmit} className="stats-search-form stats-search-form--admin">
         <div className="form-group form-group--wide">
-          <label htmlFor="user-search-input">Buscar usuario</label>
+          <label htmlFor="user-search-input">{t('statsSearchUser')}</label>
           <input
             id="user-search-input"
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Username, email o nombre real"
+            placeholder={t('statsSearchPlaceholder')}
           />
-          <div className="stats-input-helper">
-            Esta vista usa el directorio admin de usuarios y luego carga el resumen interno del perfil seleccionado.
-          </div>
+          <div className="stats-input-helper">{t('statsSearchHelper')}</div>
         </div>
 
         <button type="submit" disabled={searchLoading}>
-          {searchLoading ? 'Buscando...' : 'Buscar usuario'}
+          {searchLoading ? t('statsSearching') : t('statsSearchBtn')}
         </button>
       </form>
 
       <section className="stats-user-picker">
         <div className="stats-user-picker__header">
-          <h2>Usuarios</h2>
-          <span>{searchResults.length > 0 ? `${searchResults.length} resultados` : 'Sin resultados'}</span>
+          <h2>{t('statsUsers')}</h2>
+          <span>{searchResults.length > 0 ? `${searchResults.length} ${t('statsResults')}` : t('statsNoResults')}</span>
         </div>
 
         {searchLoading ? (
-          <div className="stats-loading">Buscando usuarios...</div>
+          <div className="stats-loading">{t('statsSearchingUsers')}</div>
         ) : searchResults.length > 0 ? (
           <div className="stats-user-picker__grid">
             {searchResults.map((entry) => (
@@ -225,15 +223,13 @@ function StatsPage() {
             ))}
           </div>
         ) : (
-          <div className="stats-empty-state">
-            No hay usuarios para mostrar con ese filtro.
-          </div>
+          <div className="stats-empty-state">{t('statsNoUsers')}</div>
         )}
       </section>
 
       {selectedUser ? (
         <div className="stats-selected-banner">
-          <span className="stats-selected-banner__label">Analizando</span>
+          <span className="stats-selected-banner__label">{t('statsAnalyzing')}</span>
           <strong>{selectedUser.username}</strong>
           {selectedUser.email ? <span className="stats-selected-banner__meta">{selectedUser.email}</span> : null}
         </div>
@@ -241,12 +237,10 @@ function StatsPage() {
 
       {error ? <div className="stats-error-message">{error}</div> : null}
 
-      {statsLoading ? <div className="stats-loading">Cargando datos internos del perfil...</div> : null}
+      {statsLoading ? <div className="stats-loading">{t('statsLoadingProfile')}</div> : null}
 
       {!statsLoading && !stats && !error ? (
-        <div className="stats-empty-state">
-          Selecciona un usuario para ver su estado competitivo y de verificación dentro de la plataforma.
-        </div>
+        <div className="stats-empty-state">{t('statsSelectUser')}</div>
       ) : null}
 
       {stats ? (
@@ -255,13 +249,13 @@ function StatsPage() {
           
           <section className="stats-tracker-network-section">
             <div className="stats-tracker-network-header">
-              <h2>Estadísticas en Vivo - Tracker Network</h2>
-              <p>Datos en tiempo real del jugador en plataformas externas</p>
+              <h2>{t('statsLiveTrackerTitle')}</h2>
+              <p>{t('statsLiveTrackerDesc')}</p>
             </div>
 
             <div className="stats-tracker-network-controls">
               <div className="form-group">
-                <label htmlFor="tracker-game-select">Juego</label>
+                <label htmlFor="tracker-game-select">{t('statsGameLabel')}</label>
                 <select
                   id="tracker-game-select"
                   value={trackerGame}
@@ -290,7 +284,7 @@ function StatsPage() {
                 onClick={() => setShowTrackerStats(!showTrackerStats)}
                 disabled={!trackerIdentifier}
               >
-                {showTrackerStats ? 'Ocultar' : 'Cargar'} Estadísticas
+                {showTrackerStats ? t('statsHide') : t('statsLoad')} {t('statsTrackerStats')}
               </button>
             </div>
 

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_URL } from '../../config/api';
 import { useNavigate } from 'react-router-dom';
 import { resolveMediaUrl } from '../../utils/media';
+import { useLang } from '../../context/LanguageContext';
 import './UserCard.css';
 
 const BANNER_GRADIENTS = [
@@ -24,6 +25,7 @@ const UserCard = ({ userId, children }) => {
     const [followLoading, setFollowLoading] = useState(false);
     const cardRef = useRef(null);
     const navigate = useNavigate();
+    const { t } = useLang();
 
     const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
@@ -137,7 +139,7 @@ const UserCard = ({ userId, children }) => {
                             <div className="uc__hero-badges">
                                 {data.isOrganizer && (
                                     <span className="uc__badge uc__badge--org">
-                                        <i className="bx bx-shield-quarter"></i> Organizador
+                                        <i className="bx bx-shield-quarter"></i> {t('ucBadgeOrganizer')}
                                     </span>
                                 )}
                                 {data.experience?.includes('Pro') && (
@@ -190,17 +192,17 @@ const UserCard = ({ userId, children }) => {
                                 <div className="uc__stat">
                                     <i className="bx bx-group"></i>
                                     <span className="uc__stat-num">{followersCount}</span>
-                                    <span className="uc__stat-label">Seguidores</span>
+                                    <span className="uc__stat-label">{t('ucStatFollowers')}</span>
                                 </div>
                                 <div className="uc__stat">
                                     <i className="bx bx-user-plus"></i>
                                     <span className="uc__stat-num">{followingCount}</span>
-                                    <span className="uc__stat-label">Siguiendo</span>
+                                    <span className="uc__stat-label">{t('ucStatFollowing')}</span>
                                 </div>
                                 <div className="uc__stat">
                                     <i className="bx bx-shield"></i>
                                     <span className="uc__stat-num">{teamsCount}</span>
-                                    <span className="uc__stat-label">Equipos</span>
+                                    <span className="uc__stat-label">{t('ucStatTeams')}</span>
                                 </div>
                             </div>
 
@@ -223,28 +225,28 @@ const UserCard = ({ userId, children }) => {
                                     {followLoading ? (
                                         <i className="bx bx-loader-alt bx-spin"></i>
                                     ) : data.isFollowing ? (
-                                        <><i className="bx bx-check"></i> Siguiendo</>
+                                        <><i className="bx bx-check"></i> {t('ucBtnFollowing')}</>
                                     ) : (
-                                        <><i className="bx bx-user-plus"></i> Seguir</>
+                                        <><i className="bx bx-user-plus"></i> {t('ucBtnFollow')}</>
                                     )}
                                 </button>
                                 <button
                                     className="uc__btn-profile"
                                     onClick={() => { handleClose(); navigate(`/profile/${data?.userCode || data?.id || userId}`); }}
                                 >
-                                    <i className="bx bx-user"></i> Ver Perfil
+                                    <i className="bx bx-user"></i> {t('ucBtnViewProfile')}
                                 </button>
                             </div>
 
                             {/* Secondary actions row */}
                             <div className="uc__secondary">
-                                <button className="uc__sec-btn" title="Mensaje">
+                                <button className="uc__sec-btn" title={t('ucSecMessage')}>
                                     <i className="bx bx-message-rounded-dots"></i>
                                 </button>
-                                <button className="uc__sec-btn" title="Reportar">
+                                <button className="uc__sec-btn" title={t('ucSecReport')}>
                                     <i className="bx bx-flag"></i>
                                 </button>
-                                <button className="uc__sec-btn" title="Bloquear">
+                                <button className="uc__sec-btn" title={t('ucSecBlock')}>
                                     <i className="bx bx-block"></i>
                                 </button>
                             </div>
@@ -253,7 +255,7 @@ const UserCard = ({ userId, children }) => {
                 ) : (
                     <div className="uc__error">
                         <i className="bx bx-error-circle"></i>
-                        No se pudo cargar
+                        {t('ucErrorLoad')}
                     </div>
                 )}
             </div>

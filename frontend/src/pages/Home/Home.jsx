@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useLang } from '../../context/LanguageContext';
 
 // Components
 import Navbar from '../../components/Navbar/Navbar';
@@ -29,23 +30,23 @@ const MARQUEE_GAMES = [
   { name: 'Mobile Legends', img: mlbbImg },
 ];
 
-const ABOUT_CARDS = [
+const ABOUT_CARDS = (t) => [
   {
     icon: 'bx-world',
-    title: 'Quienes Somos',
-    text: 'Una organizacion nacida de la pasion por el gaming competitivo. Transformamos jugadores casuales en leyendas profesionales.',
+    title: t('aboutCard1Title'),
+    text: t('aboutCard1Text'),
     accent: '#8EDB15',
   },
   {
     icon: 'bx-target-lock',
-    title: 'Nuestros Valores',
-    text: 'Disciplina, Respeto y Competitividad. Creemos en el juego limpio y en construir una comunidad sana donde el talento brille.',
+    title: t('aboutCard2Title'),
+    text: t('aboutCard2Text'),
     accent: '#4FACFE',
   },
   {
     icon: 'bx-rocket',
-    title: 'Nuestra Mision',
-    text: 'Proveer la infraestructura tecnologica para que cualquier gamer, en cualquier lugar, pueda alcanzar el profesionalismo.',
+    title: t('aboutCard3Title'),
+    text: t('aboutCard3Text'),
     accent: '#F093FB',
   },
 ];
@@ -53,6 +54,8 @@ const ABOUT_CARDS = [
 /* ══════════════════════════════════════════════════ */
 
 const Home = () => {
+  const { t } = useLang();
+  const aboutCards = ABOUT_CARDS(t);
   const [isSidebarClosed, setIsSidebarClosed] = useState(true);
   const heroRef = useRef(null);
 
@@ -101,7 +104,7 @@ const Home = () => {
               className="hero__badge"
             >
               <span className="hero__badge-dot" />
-              PLATAFORMA ESPORTS #1 EN LATAM
+              {t('heroBadge')}
             </motion.div>
 
             <motion.h1
@@ -120,8 +123,7 @@ const Home = () => {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="hero__subtitle"
             >
-              Tu carrera eSports comienza aqui. Torneos, equipos, rankings
-              y comunidad &mdash; todo en una sola plataforma.
+              {t('heroSubtitle')}
             </motion.p>
 
             <motion.div
@@ -132,11 +134,11 @@ const Home = () => {
             >
               <Link to="/register" className="hero__btn hero__btn--primary">
                 <i className="bx bx-rocket"></i>
-                Comenzar Ahora
+                {t('heroBtnStart')}
               </Link>
               <Link to="/login" className="hero__btn hero__btn--outline">
                 <i className="bx bx-log-in"></i>
-                Iniciar Sesion
+                {t('heroBtnLogin')}
               </Link>
             </motion.div>
 
@@ -146,7 +148,7 @@ const Home = () => {
               transition={{ delay: 1.2 }}
               className="hero__scroll"
             >
-              <span>SCROLL</span>
+              <span>{t('heroScroll')}</span>
               <div className="hero__scroll-line" />
             </motion.div>
           </motion.div>
@@ -175,14 +177,14 @@ const Home = () => {
               transition={{ duration: 0.6 }}
               className="section-header"
             >
-              <span className="section-tag">SOBRE NOSOTROS</span>
+              <span className="section-tag">{t('aboutTag')}</span>
               <h2 className="section-title">
-                Nacidos para <span className="text-accent">competir</span>
+                {t('aboutHeading')} <span className="text-accent">{t('aboutHeadingAccent')}</span>
               </h2>
             </motion.div>
 
             <div className="about-grid">
-              {ABOUT_CARDS.map((card, i) => (
+              {aboutCards.map((card, i) => (
                 <motion.div
                   key={card.title}
                   initial={{ opacity: 0, y: 40 }}

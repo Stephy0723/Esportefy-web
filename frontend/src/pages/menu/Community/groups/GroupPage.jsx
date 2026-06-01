@@ -1,11 +1,13 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaPlus } from 'react-icons/fa';
+import { useLang } from '../../../../context/LanguageContext';
 import '../Community.css';
 
 const GroupPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { t } = useLang();
 
     // Datos simulados para Grupos
     const groups = {
@@ -14,13 +16,13 @@ const GroupPage = () => {
         "g2": { name: "G2 Army", members: "80k", img: "https://upload.wikimedia.org/wikipedia/en/thumb/1/12/G2_Esports_logo.svg/1200px-G2_Esports_logo.svg.png" }
     };
 
-    const group = groups[id] || { name: "Grupo Desconocido", members: "0", img: "" };
+    const group = groups[id] || { name: t('gpUnknownGroup'), members: "0", img: "" };
 
     return (
         <div className="dashboard-wrapper">
             <div className="dashboard-container">
                 <button className="btn-back" onClick={() => navigate(-1)}>
-                    <FaArrowLeft /> Volver
+                    <FaArrowLeft /> {t('gpBack')}
                 </button>
 
                 <div className="group-header-card" style={{
@@ -37,18 +39,18 @@ const GroupPage = () => {
                         }}/>
                         <div style={{flexGrow: 1, paddingBottom: '5px'}}>
                             <h2 style={{margin: 0, fontSize: '1.8rem', color: 'var(--text-main)'}}>{group.name}</h2>
-                            <p style={{color: 'var(--text-muted)', margin: '5px 0'}}>Comunidad oficial de fans.</p>
+                            <p style={{color: 'var(--text-muted)', margin: '5px 0'}}>{t('gpOfficialFanCommunity')}</p>
                         </div>
                         <button className="btn-create-community">
-                            <FaPlus /> Unirse al Grupo
+                            <FaPlus /> {t('gpJoinGroup')}
                         </button>
                     </div>
                 </div>
 
                 <div className="feed-section" style={{marginTop: '30px'}}>
-                    <div className="section-title"><h3>Actividad del Grupo</h3></div>
+                    <div className="section-title"><h3>{t('gpGroupActivity')}</h3></div>
                     <div className="post-card">
-                        <p className="post-text">¡Bienvenidos a todos los nuevos miembros de {group.name}! 🎉</p>
+                        <p className="post-text">{t('gpWelcomePost')} {group.name}!</p>
                     </div>
                 </div>
             </div>

@@ -4,6 +4,7 @@ import {
   TournamentAdminShell,
   useTournamentAdminData,
 } from './TournamentAdminShared';
+import { useLang } from '../../../../context/LanguageContext';
 import './TournamentAdmin.css';
 
 const computeStandings = (bracket, registrations) => {
@@ -100,6 +101,7 @@ const computeStandings = (bracket, registrations) => {
 };
 
 const TournamentStandingsPage = () => {
+  const { t } = useLang();
   const { code } = useParams();
   const { loading, tournament, bracket, registrations } = useTournamentAdminData(code);
   const [viewMode, setViewMode] = useState('table');
@@ -140,7 +142,7 @@ const TournamentStandingsPage = () => {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) return <div className="ta-page"><div className="ta-empty">Cargando...</div></div>;
+  if (loading) return <div className="ta-page"><div className="ta-empty">{t('loading')}</div></div>;
   if (!tournament) return <div className="ta-page"><div className="ta-empty">No se encontro el torneo.</div></div>;
 
   return (
@@ -149,7 +151,7 @@ const TournamentStandingsPage = () => {
         <div className="ta-panel__head">
           <div>
             <span className="ta-kicker">Clasificacion</span>
-            <h2>Tabla de posiciones</h2>
+            <h2>{t('standingsTitle')}</h2>
           </div>
           <div className="ta-actions">
             <button
@@ -182,16 +184,16 @@ const TournamentStandingsPage = () => {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Equipo</th>
-                  <th>PJ</th>
-                  <th>V</th>
-                  <th>E</th>
-                  <th>D</th>
-                  <th>GF</th>
-                  <th>GC</th>
-                  <th>DIF</th>
-                  {isSwissOrRR && <th>BH</th>}
-                  <th>PTS</th>
+                  <th>{t('standingsTeam')}</th>
+                  <th>{t('standingsMP')}</th>
+                  <th>{t('standingsW')}</th>
+                  <th>{t('standingsD')}</th>
+                  <th>{t('standingsL')}</th>
+                  <th>{t('standingsGF')}</th>
+                  <th>{t('standingsGA')}</th>
+                  <th>{t('standingsGD')}</th>
+                  {isSwissOrRR && <th>{t('standingsBH')}</th>}
+                  <th>{t('standingsPts')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,12 +234,12 @@ const TournamentStandingsPage = () => {
                   <strong>{team.name}</strong>
                   <div className="ta-standings-card__stats">
                     <span>{team.wins}V {team.draws}E {team.losses}D</span>
-                    <span>GD: {team.scoreFor - team.scoreAgainst > 0 ? '+' : ''}{team.scoreFor - team.scoreAgainst}</span>
+                    <span>{t('standingsGDLabel')} {team.scoreFor - team.scoreAgainst > 0 ? '+' : ''}{team.scoreFor - team.scoreAgainst}</span>
                   </div>
                 </div>
                 <div className="ta-standings-card__pts">
                   <strong>{team.points}</strong>
-                  <small>PTS</small>
+                  <small>{t('standingsPtsLabel')}</small>
                 </div>
               </article>
             ))}

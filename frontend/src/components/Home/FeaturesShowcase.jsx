@@ -1,46 +1,49 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLang } from '../../context/LanguageContext';
 
-const FEATURES = [
+const FEATURES = (t) => [
   {
     icon: 'bx-trophy',
-    title: 'Torneos Automatizados',
-    desc: 'Crea y gestiona torneos con brackets, registros y resultados en tiempo real. Desde locales hasta regionales.',
+    title: t('featureTournamentsTitle'),
+    desc: t('featureTournamentsDesc'),
     color: '#FFD700',
   },
   {
     icon: 'bx-group',
-    title: 'Gestión de Equipos',
-    desc: 'Forma tu roster, asigna roles, acepta solicitudes y coordina con tu equipo desde un solo lugar.',
+    title: t('featureTeamsTitle'),
+    desc: t('featureTeamsDesc'),
     color: '#4FACFE',
   },
   {
     icon: 'bx-bar-chart-alt-2',
-    title: 'Rankings en Vivo',
-    desc: 'Compite por el top. Sistema de clasificación por juego, individual y por equipo con estadísticas verificadas.',
+    title: t('featureRankingsTitle'),
+    desc: t('featureRankingsDesc'),
     color: '#8EDB15',
   },
   {
     icon: 'bx-world',
-    title: 'Comunidades por Juego',
-    desc: 'Únete a comunidades de tu juego favorito. Publica, comenta, encuentra scrims y haz networking.',
+    title: t('featureCommunitiesTitle'),
+    desc: t('featureCommunitiesDesc'),
     color: '#F093FB',
   },
   {
     icon: 'bx-chat',
-    title: 'Chat en Tiempo Real',
-    desc: 'Mensajería directa y grupal integrada. Coordina estrategias con tu equipo sin salir de la plataforma.',
+    title: t('featureChatTitle'),
+    desc: t('featureChatDesc'),
     color: '#FF6B6B',
   },
   {
     icon: 'bx-medal',
-    title: 'Perfil Competitivo',
-    desc: 'Tu tarjeta de presentación como gamer. Vincula cuentas de Riot, Discord y muestra tu historial.',
+    title: t('featureProfileTitle'),
+    desc: t('featureProfileDesc'),
     color: '#FFA500',
   },
 ];
 
 const FeaturesShowcase = () => {
+  const { t } = useLang();
+  const features = FEATURES(t);
   return (
     <section className="relative py-24 px-6 md:px-16 bg-[var(--bg-page)] overflow-hidden">
       {/* Decorative blurs */}
@@ -57,20 +60,19 @@ const FeaturesShowcase = () => {
           className="text-center mb-16"
         >
           <span className="text-[var(--primary)] uppercase tracking-[0.3em] text-xs font-bold">
-            Todo en un solo lugar
+            {t('featuresTagline')}
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[var(--text-main)] mt-4 mb-6">
-            &iquest;Por qu&eacute; GLITCH GANG?
+            {t('featuresHeading')}
           </h2>
           <p className="text-[var(--text-muted)] text-lg max-w-xl mx-auto">
-            Herramientas dise&ntilde;adas por gamers, para gamers.
-            Todo lo que necesitas para pasar de casual a profesional.
+            {t('featuresDescription')}
           </p>
         </motion.div>
 
         {/* Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map((feature, index) => (
+          {features.map((feature, index) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 30 }}

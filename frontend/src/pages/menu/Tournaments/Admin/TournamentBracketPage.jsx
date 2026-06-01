@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useLang } from '../../../../context/LanguageContext';
 import {
   getTournamentFormatLabel,
   isOperationalTournamentFormat,
@@ -182,6 +183,7 @@ const buildRoundRobin = (teams, bracketTitle) => {
 };
 
 const TournamentBracketPage = () => {
+  const { t } = useLang();
   const { code } = useParams();
   const navigate = useNavigate();
   const { loading, tournament, bracket, setBracket, approvedTeams, saveBracket } = useTournamentAdminData(code);
@@ -349,20 +351,20 @@ const TournamentBracketPage = () => {
           <div className="ta-panel__head">
             <div>
               <span className="ta-kicker">Direccion</span>
-              <h2>Editor del bracket</h2>
+              <h2>{t('bracketEditorTitle')}</h2>
             </div>
             <div className="ta-actions">
               <button className="ghost" onClick={addRound} title="Crea una nueva ronda vacia al final del bracket para agregar partidas manualmente">
                 Agregar ronda
               </button>
-              <button onClick={saveBracket} title="Guarda todos los cambios del bracket en el servidor">
-                Guardar
+              <button onClick={saveBracket} title={t('bracketSave')}>
+                {t('bracketSave')}
               </button>
             </div>
           </div>
 
           <div className="ta-section-intro">
-            <h3>Gestor de llaves del torneo</h3>
+            <h3>{t('bracketManagerTitle')}</h3>
             <p>
               Aqui configuras la estructura de eliminacion de tu torneo. Puedes generar
               el bracket automaticamente con los {participantLabel} aprobados o armarlo manualmente.
@@ -371,7 +373,7 @@ const TournamentBracketPage = () => {
           </div>
 
           <label>
-            <span>Titulo del bracket</span>
+            <span>{t('bracketTitleLabel')}</span>
             <input
               value={bracket?.title || ''}
               onChange={(e) => setBracket((prev) => ({ ...(prev || createEmptyBracket()), title: e.target.value }))}
@@ -382,7 +384,7 @@ const TournamentBracketPage = () => {
 
           <div className="ta-editor-block">
             <span className="ta-editor-label">Match seleccionado</span>
-            <strong>Ronda {selectedMatch.roundIndex + 1} - Match {selectedMatch.matchIndex + 1}</strong>
+            <strong>{t('bracketRound')} {selectedMatch.roundIndex + 1} - {t('bracketMatch')} {selectedMatch.matchIndex + 1}</strong>
             <p className="ta-hint">Haz clic en una partida del bracket para seleccionarla y editar sus datos aqui.</p>
           </div>
 
@@ -392,7 +394,7 @@ const TournamentBracketPage = () => {
               <input value={teamName(selectedMatchData.teamA)} onChange={(e) => updateSelectedField('teamA', e.target.value)} placeholder={`Nombre del ${participantLabelSingular}`} />
             </label>
             <label>
-              <span>Score A</span>
+              <span>{t('bracketScoreA')}</span>
               <input value={selectedMatchData.scoreA || ''} onChange={(e) => updateSelectedField('scoreA', e.target.value)} placeholder="0" />
             </label>
             <label>
@@ -400,11 +402,11 @@ const TournamentBracketPage = () => {
               <input value={teamName(selectedMatchData.teamB)} onChange={(e) => updateSelectedField('teamB', e.target.value)} placeholder={`Nombre del ${participantLabelSingular}`} />
             </label>
             <label>
-              <span>Score B</span>
+              <span>{t('bracketScoreB')}</span>
               <input value={selectedMatchData.scoreB || ''} onChange={(e) => updateSelectedField('scoreB', e.target.value)} placeholder="0" />
             </label>
             <label className="ta-form-grid__full">
-              <span>Horario</span>
+              <span>{t('bracketSchedule')}</span>
               <input
                 value={selectedMatchData.scheduledLabel || ''}
                 onChange={(e) => updateSelectedField('scheduledLabel', e.target.value)}
@@ -433,6 +435,7 @@ const TournamentBracketPage = () => {
                   className={`ta-winner-btn ${selectedMatchData.winnerRefId && selectedMatchData.winnerRefId === getTeamRef(selectedMatchData.teamB) ? 'ta-winner-btn--active' : ''}`}
                   onClick={() => setWinner('B')}
                   title={`Marcar a ${teamName(selectedMatchData.teamB)} como ganador`}
+
                 >
                   {teamName(selectedMatchData.teamB) || (isIndividualTournament ? 'Jugador B' : 'Equipo B')}
                 </button>
@@ -448,9 +451,9 @@ const TournamentBracketPage = () => {
 
           <button
             onClick={saveBracket}
-            title="Guarda los cambios del match seleccionado al servidor"
+            title={t('bracketSaveMatch')}
           >
-            Guardar match (R{selectedMatch.roundIndex + 1}-M{selectedMatch.matchIndex + 1})
+            {t('save')} (R{selectedMatch.roundIndex + 1}-M{selectedMatch.matchIndex + 1})
           </button>
 
           <div className="ta-editor-block">
@@ -461,7 +464,7 @@ const TournamentBracketPage = () => {
 
           <div className="ta-form-grid ta-form-grid--stacked">
             <label className="ta-form-grid__full">
-              <span>Formato del torneo</span>
+              <span>{t('bracketFormat')}</span>
               <select value={selectedFormat} onChange={(e) => setSelectedFormat(e.target.value)}>
                 {TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS.map((f) => (
                   <option key={f.value} value={f.value}>{f.label}</option>
@@ -475,16 +478,16 @@ const TournamentBracketPage = () => {
               </p>
             </label>
             <label>
-              <span>Semilla</span>
+              <span>{t('bracketSeedLabel')}</span>
               <select value={seedMode} onChange={(e) => setSeedMode(e.target.value)}>
-                <option value="order">Orden de inscripcion</option>
-                <option value="random">Aleatorio</option>
+                <option value="order">{t('bracketSeedByOrder')}</option>
+                <option value="random">{t('bracketSeedRandom')}</option>
               </select>
               <p className="ta-hint">Define como se ordenan los {participantLabel} en la primera ronda.</p>
             </label>
             {selectedFormat === 'swiss' && (
               <label>
-                <span>Rondas suizas</span>
+                <span>{t('bracketSwissRounds')}</span>
                 <input
                   type="number"
                   min="1"
@@ -499,14 +502,14 @@ const TournamentBracketPage = () => {
           </div>
 
           <div className="ta-shortcuts">
-            <button onClick={autoBuildBracket} title="Crea automaticamente todas las rondas y partidas usando los equipos aprobados y el formato seleccionado">
+            <button onClick={autoBuildBracket} title={t('bracketAutoGenerate')}>
               Generar bracket
             </button>
             <p className="ta-hint">Genera automaticamente las llaves con los {participantLabel} aprobados y el formato elegido arriba.</p>
             <button
               className="ghost"
               onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/roulette/live/duel`)}
-              title="Abre la ruleta interactiva para sortear los enfrentamientos en vivo"
+              title={t('bracketOpenRoulette')}
             >
               Generar desde Ruleta
             </button>
@@ -554,7 +557,7 @@ const TournamentBracketPage = () => {
                       onChange={(e) => updateRoundTitle(roundIndex, e.target.value)}
                       placeholder={`Ronda ${roundIndex + 1}`}
                     />
-                    <span className="bk-round__count">{matchCount} {matchCount === 1 ? 'match' : 'matches'}</span>
+                    <span className="bk-round__count">{matchCount} {matchCount === 1 ? t('bracketMatch') : 'matches'}</span>
                   </div>
 
                   <div className="bk-round__matches">

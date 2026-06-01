@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import { useNotification } from '../../context/NotificationContext';
+import { useLang } from '../../context/LanguageContext';
 import './Forgot.css';
 
 // SOLO importamos la imagen blanca, ya que será el único modo
@@ -11,6 +12,7 @@ import bgWhite from '../../assets/images/login-white.png';
 const ForgotPasswordFlow = () => {
     const navigate = useNavigate();
     const { addToast } = useNotification();
+    const { t } = useLang();
     // NOTA: Ya no necesitamos usar el hook useTheme aquí porque forzaremos el blanco.
 
     const [step, setStep] = useState(1);
@@ -36,7 +38,7 @@ const ForgotPasswordFlow = () => {
             await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
             setStep(2); 
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al enviar el correo.');
+            setError(err.response?.data?.message || t('forgotErrorSend'));
         } finally {
             setLoading(false);
         }
@@ -48,7 +50,7 @@ const ForgotPasswordFlow = () => {
         setError('');
 
         if (formData.password !== formData.confirmPassword) {
-            return setError('Las contraseñas no coinciden.');
+            return setError(t('forgotErrorMismatch'));
         }
 
         setLoading(true);
@@ -57,10 +59,10 @@ const ForgotPasswordFlow = () => {
                 password: formData.password,
                 confirmPassword: formData.confirmPassword
             });
-            addToast("¡Contraseña actualizada con éxito!", "success");
+            addToast(t('forgotSuccessMsg'), "success");
             navigate('/login');
         } catch (err) {
-            setError(err.response?.data?.message || 'Código incorrecto o expirado.');
+            setError(err.response?.data?.message || t('forgotErrorCode'));
         } finally {
             setLoading(false);
         }
@@ -80,15 +82,15 @@ const ForgotPasswordFlow = () => {
                 <div className="auth-content">
                     <div className="header-text">
                         <span className="badge-pro" style={{background: 'rgba(255, 165, 0, 0.1)', color: 'orange', borderColor: 'rgba(255, 165, 0, 0.3)'}}>
-                            SEGURIDAD
+                            {t('forgotBadge')}
                         </span>
                         <h1>
-                            {step === 1 ? 'Recuperar Cuenta' : 'Verifica tu Identidad'}
+                            {step === 1 ? t('forgotStep1Title') : t('forgotStep2Title')}
                         </h1>
                         <p className="subtitle">
-                            {step === 1 
-                                ? 'Introduce tu correo para recibir un código de acceso.' 
-                                : `Introduce el código enviado a ${email}`}
+                            {step === 1
+                                ? t('forgotStep1Desc')
+                                : `${t('forgotStep2DescPrefix')}${email}`}
                         </p>
                     </div>
 
@@ -98,7 +100,7 @@ const ForgotPasswordFlow = () => {
                     {step === 1 && (
                         <form onSubmit={handleSendCode} className="step-fade-in">
                             <div className="input-row">
-                                <label>Correo Electrónico</label>
+                                <label>{t('forgotEmailLabel')}</label>
                                 <div className="input-wrapper">
                                     <input 
                                         type="email" 
@@ -112,7 +114,7 @@ const ForgotPasswordFlow = () => {
                             </div>
                             <div className="form-actions">
                                 <button type="submit" className="btn-primary" disabled={loading}>
-                                    {loading ? 'ENVIANDO...' : 'ENVIAR CÓDIGO'}
+                                    {loading ? t('forgotSending') : t('forgotSendCode')}
                                 </button>
                             </div>
                         </form>
@@ -122,7 +124,7 @@ const ForgotPasswordFlow = () => {
                     {step === 2 && (
                         <form onSubmit={handleResetPassword} className="step-fade-in">
                             <div className="input-row">
-                                <label>Código (6 dígitos)</label>
+                                <label>{t('forgotCodeLabel')}</label>
                                 <div className="input-wrapper">
                                     <input 
                                         type="text" 
@@ -137,7 +139,7 @@ const ForgotPasswordFlow = () => {
                                 </div>
                             </div>
                             <div className="input-row">
-                                <label>Nueva Contraseña</label>
+                                <label>{t('forgotNewPassLabel')}</label>
                                 <div className="input-wrapper">
                                     <input 
                                         type={showPass ? "text" : "password"} 
@@ -150,7 +152,7 @@ const ForgotPasswordFlow = () => {
                                 </div>
                             </div>
                             <div className="input-row">
-                                <label>Confirmar</label>
+                                <label>{t('forgotConfirmLabel')}</label>
                                 <div className="input-wrapper">
                                     <input 
                                         type={showPass ? "text" : "password"} 
@@ -164,16 +166,16 @@ const ForgotPasswordFlow = () => {
                             </div>
                             <div className="form-actions">
                                 <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
-                                    ATRÁS
+                                    {t('forgotBack')}
                                 </button>
                                 <button type="submit" className="btn-primary" disabled={loading} >
-                                    {loading ? 'ACTUALIZANDO...' : 'RESETEAR CONTRASEÑA'}
+                                    {loading ? t('forgotChanging') : t('forgotChangePassword')}
                                 </button>
                             </div>
                         </form>
                     )}
                     <p className="footer-text mt-4">
-                        <Link to="/login">Volver al inicio de sesión</Link>
+                        <Link to="/login">{t('forgotBackToLogin')}</Link>
                     </p>
                 </div>
             </div>

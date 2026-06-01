@@ -3,7 +3,9 @@
     "allow": [
       "Bash(find /c/Users/salyl/esportefy-web -name *.js -path */backend/* -o -name *.ts -path */backend/*)",
       "Bash(find /c/Users/salyl/esportefy-web/frontend/src -name *[Mm]odal* -o -name *[Cc]ard* -o -name *[Pp]opup*)",
-      "Bash(node -e \"import\\(''''./backend/src/services/newsletterService.js''''\\).then\\(\\(\\) => console.log\\(''''OK''''\\)\\).catch\\(e => console.error\\(e.message\\)\\)\")"
+      "Bash(node -e \"import\\(''''./backend/src/services/newsletterService.js''''\\).then\\(\\(\\) => console.log\\(''''OK''''\\)\\).catch\\(e => console.error\\(e.message\\)\\)\")",
+      "Bash(grep -c 'useLang\\\\|useLang\\(\\)' __TRACKED_VAR__/__TRACKED_VAR__)",
+      "Bash(grep context/LanguageContext __TRACKED_VAR__/__TRACKED_VAR__)"
     ]
   }
 }

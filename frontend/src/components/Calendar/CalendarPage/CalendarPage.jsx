@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLang } from '../../../context/LanguageContext';
 import './CalendarPage.css';
 import { loadTournamentCalendarEntries } from '../../../utils/tournamentCalendar';
 import { GAME_IMAGES } from '../../../data/gameImages';
@@ -13,6 +14,7 @@ const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 const GlitchGangCalendar = () => {
   const navigate = useNavigate();
+  const { t } = useLang();
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [events, setEvents] = useState([]);
@@ -124,7 +126,7 @@ const GlitchGangCalendar = () => {
         <div className="ecal__topbar-right">
           <button className="ecal__today-btn" onClick={goToday}>
             <i className="bx bx-current-location"></i>
-            <span>Hoy</span>
+            <span>{t('today')}</span>
           </button>
         </div>
       </div>
@@ -135,7 +137,7 @@ const GlitchGangCalendar = () => {
           onClick={() => setActiveGame(null)}
         >
           <i className="bx bx-grid-alt"></i>
-          <span>Todos</span>
+          <span>{t('calendarAll')}</span>
         </button>
         {gameCounts.map((item) => (
           <button
@@ -291,28 +293,28 @@ const GlitchGangCalendar = () => {
                     <i className="bx bx-calendar"></i>
                     <div>
                       <strong>{selectedEvent.date}</strong>
-                      <span>Fecha</span>
+                      <span>{t('calendarDate')}</span>
                     </div>
                   </div>
                   <div className="ecal__info-card">
                     <i className="bx bx-time"></i>
                     <div>
                       <strong>{selectedEvent.time || 'Por definir'}</strong>
-                      <span>Hora</span>
+                      <span>{t('calendarTime')}</span>
                     </div>
                   </div>
                   <div className="ecal__info-card">
                     <i className={`bx ${selectedEvent.icon}`}></i>
                     <div>
                       <strong>{selectedEvent.game}</strong>
-                      <span>Juego</span>
+                      <span>{t('game')}</span>
                     </div>
                   </div>
                   <div className="ecal__info-card">
                     <i className="bx bx-shield-quarter"></i>
                     <div>
                       <strong>{selectedEvent.format || 'Por definir'}</strong>
-                      <span>Formato</span>
+                      <span>{t('format')}</span>
                     </div>
                   </div>
                 </div>
@@ -323,7 +325,7 @@ const GlitchGangCalendar = () => {
                   </div>
                   <div className="ecal__view-org-info">
                     <strong>{selectedEvent.org}</strong>
-                    <span>Organizador</span>
+                    <span>{t('organizer')}</span>
                   </div>
                   <span className="ecal__view-org-side">{selectedEvent.loc}</span>
                 </div>
@@ -352,12 +354,12 @@ const GlitchGangCalendar = () => {
               <div className="ecal__empty-icon">
                 <i className="bx bx-calendar-event"></i>
               </div>
-              <h3>Selecciona un día con torneos</h3>
-              <p>El calendario muestra los torneos reales con su color por juego y su TOR-ID para que los usuarios puedan buscarlos.</p>
+              <h3>{t('calendarSelectDay')}</h3>
+              <p>{t('calendarSelectDayDesc')}</p>
               {selectedDateStr && (
                 <div className="ecal__empty-hint">
                   <i className="bx bx-calendar-x"></i>
-                  <span>Sin torneos programados para {selectedDateStr}</span>
+                  <span>{`${t('calendarNoEvents')} ${selectedDateStr}`}</span>
                 </div>
               )}
             </div>

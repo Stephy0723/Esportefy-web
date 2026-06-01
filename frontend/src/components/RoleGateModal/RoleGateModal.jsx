@@ -1,43 +1,46 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLang } from '../../context/LanguageContext';
 import './RoleGateModal.css';
 
 const RoleGateModal = ({ isOpen, onClose, type = 'organizer' }) => {
     if (!isOpen) return null;
 
+    const { t } = useLang();
+
     const configs = {
         organizer: {
             icon: 'bx-trophy',
             color: '#f59e0b',
-            title: 'Organizador Verificado',
-            subtitle: 'Esta funcion requiere el rol de Organizador',
-            message: 'Solo los Organizadores Verificados pueden crear torneos. Completa el formulario de solicitud y nuestro equipo revisara tu aplicacion.',
+            title: t('rgmOrganizerTitle'),
+            subtitle: t('rgmOrganizerSubtitle'),
+            message: t('rgmOrganizerMessage'),
             applyLink: '/organizer-application',
-            applyLabel: 'Solicitar rol de Organizador',
+            applyLabel: t('rgmOrganizerApply'),
             features: [
-                { icon: 'bx-calendar-event', text: 'Crear y gestionar torneos' },
-                { icon: 'bx-group', text: 'Administrar brackets y equipos' },
-                { icon: 'bx-broadcast', text: 'Transmisiones integradas' },
-                { icon: 'bx-medal', text: 'Distribuir premios' }
+                { icon: 'bx-calendar-event', text: t('rgmOrganizerF1') },
+                { icon: 'bx-group', text: t('rgmOrganizerF2') },
+                { icon: 'bx-broadcast', text: t('rgmOrganizerF3') },
+                { icon: 'bx-medal', text: t('rgmOrganizerF4') }
             ]
         },
         community: {
             icon: 'bx-world',
             color: '#c026d3',
-            title: 'Creador de Contenido u Organizador',
-            subtitle: 'Esta funcion requiere un rol verificado',
-            message: 'Para crear comunidades necesitas ser Creador de Contenido u Organizador verificado. Aplica al rol que mejor se adapte a ti.',
+            title: t('rgmCommunityTitle'),
+            subtitle: t('rgmCommunitySubtitle'),
+            message: t('rgmCommunityMessage'),
             applyLink: null,
             applyLabel: null,
             features: [
-                { icon: 'bx-edit', text: 'Crear y administrar comunidades' },
-                { icon: 'bx-news', text: 'Publicar contenido y noticias' },
-                { icon: 'bx-user-plus', text: 'Gestionar miembros' },
-                { icon: 'bx-stats', text: 'Estadisticas de tu comunidad' }
+                { icon: 'bx-edit', text: t('rgmCommunityF1') },
+                { icon: 'bx-news', text: t('rgmCommunityF2') },
+                { icon: 'bx-user-plus', text: t('rgmCommunityF3') },
+                { icon: 'bx-stats', text: t('rgmCommunityF4') }
             ],
             multipleLinks: [
-                { to: '/role/content-creator/apply', label: 'Creador de Contenido', icon: 'bx-camera', color: '#c026d3' },
-                { to: '/organizer-application', label: 'Organizador', icon: 'bx-trophy', color: '#f59e0b' }
+                { to: '/role/content-creator/apply', label: t('rgmCreatorLabel'), icon: 'bx-camera', color: '#c026d3' },
+                { to: '/organizer-application', label: t('rgmOrgLabel'), icon: 'bx-trophy', color: '#f59e0b' }
             ]
         }
     };

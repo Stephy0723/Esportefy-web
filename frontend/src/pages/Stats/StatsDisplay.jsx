@@ -1,6 +1,7 @@
 import React from 'react';
 import './StatsDisplay.css';
 import { resolveMediaUrl } from '../../utils/media';
+import { useLang } from '../../context/LanguageContext';
 
 const StatCard = ({ label, value, highlight = false }) => {
   if (!label || value == null || value === '') return null;
@@ -50,6 +51,7 @@ const PlayerAvatar = ({ profile, game }) => {
 };
 
 function StatsDisplay({ stats }) {
+  const { t } = useLang();
   if (!stats) return null;
 
   const sections = Array.isArray(stats.sections) ? stats.sections.filter(Boolean) : [];
@@ -61,16 +63,16 @@ function StatsDisplay({ stats }) {
         <PlayerAvatar profile={stats.profile} game={stats.game} />
 
         <div className="player-header__body">
-          <div className="player-header__eyebrow">{stats.game?.name || 'Perfil'}</div>
-          <h2 className="player-name">{stats.profile?.handle || stats.identifier || 'Jugador'}</h2>
+          <div className="player-header__eyebrow">{stats.game?.name || t('statsGameFallback')}</div>
+          <h2 className="player-name">{stats.profile?.handle || stats.identifier || t('statsPlayerFallback')}</h2>
           {stats.profile?.subtitle ? (
             <div className="player-header__meta">{stats.profile.subtitle}</div>
           ) : null}
 
           <div className="player-summary">
-            <span className="player-summary__label">{stats.summary?.headline?.label || 'Resumen'}</span>
+            <span className="player-summary__label">{stats.summary?.headline?.label || t('statsSummaryLabel')}</span>
             <strong className="player-summary__value">
-              {stats.summary?.headline?.value || 'Sin datos destacados'}
+              {stats.summary?.headline?.value || t('statsNoHighlightedData')}
             </strong>
           </div>
 
@@ -93,13 +95,13 @@ function StatsDisplay({ stats }) {
       {sections.length > 0 ? (
         sections.map((section) => <StatsSection key={section.id} section={section} />)
       ) : (
-        <div className="stats-empty-block">No hay secciones utiles disponibles para este perfil.</div>
+        <div className="stats-empty-block">{t('statsNoSections')}</div>
       )}
 
       <div className="raw-json-toggle">
-        <h4>Payload técnico</h4>
+        <h4>{t('statsTechPayload')}</h4>
         <details>
-          <summary>Ver detalles tecnicos</summary>
+          <summary>{t('statsViewTechDetails')}</summary>
           <pre>{JSON.stringify(stats.raw || stats, null, 2)}</pre>
         </details>
       </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { useLang } from '../../context/LanguageContext';
 
 const cardStyle = {
   width: 'min(560px, 92vw)',
@@ -13,14 +14,15 @@ const cardStyle = {
 };
 
 const VerifyEmailPage = () => {
+  const { t } = useLang();
   const [searchParams] = useSearchParams();
-  const [state, setState] = useState({ loading: true, success: false, message: 'Verificando tu correo...' });
+  const [state, setState] = useState({ loading: true, success: false, message: t('verifyLoading') });
 
   useEffect(() => {
     const token = String(searchParams.get('token') || '').trim();
 
     if (!token) {
-      setState({ loading: false, success: false, message: 'El enlace de verificacion es invalido o esta incompleto.' });
+      setState({ loading: false, success: false, message: t('verifyInvalidLink') });
       return;
     }
 
@@ -30,14 +32,14 @@ const VerifyEmailPage = () => {
         setState({
           loading: false,
           success: true,
-          message: res.data?.message || 'Tu correo fue verificado correctamente.'
+          message: res.data?.message || t('verifySuccess')
         });
         window.dispatchEvent(new Event('user-update'));
       } catch (error) {
         setState({
           loading: false,
           success: false,
-          message: error.response?.data?.message || 'No se pudo verificar el correo.'
+          message: error.response?.data?.message || t('verifyError')
         });
       }
     };
@@ -69,11 +71,11 @@ const VerifyEmailPage = () => {
             fontSize: 13
           }}
         >
-          {state.loading ? 'Procesando' : state.success ? 'Correo verificado' : 'Verificacion de correo'}
+          {state.loading ? t('verifyBadgeProcessing') : state.success ? t('verifyBadgeVerified') : t('verifyBadgeTitle')}
         </span>
 
         <h1 style={{ margin: '18px 0 12px', fontSize: '2rem', color: '#0f172a' }}>
-          {state.loading ? 'Validando enlace' : state.success ? 'Correo confirmado' : 'No pudimos verificarlo'}
+          {state.loading ? t('verifyHeadingLoading') : state.success ? t('verifyHeadingSuccess') : t('verifyHeadingError')}
         </h1>
 
         <p style={{ margin: 0, color: '#475569', lineHeight: 1.7 }}>
@@ -96,7 +98,7 @@ const VerifyEmailPage = () => {
               fontWeight: 700
             }}
           >
-            {state.success ? 'Ir a settings' : 'Ir a login'}
+            {state.success ? t('verifyGoSettings') : t('verifyGoLogin')}
           </Link>
           <Link
             to="/"
@@ -113,7 +115,7 @@ const VerifyEmailPage = () => {
               fontWeight: 700
             }}
           >
-            Volver al inicio
+            {t('verifyGoHome')}
           </Link>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { API_URL } from '../../../config/api';
 import { getAuthToken } from '../../../utils/authSession';
 import { resolveMediaUrl } from '../../../utils/media';
 import { useNotification } from '../../../context/NotificationContext';
+import { useLang } from '../../../context/LanguageContext';
 import PageHud from '../../../components/PageHud/PageHud';
 import './AdminPanel.css';
 
@@ -87,6 +88,7 @@ const calcAge = (birthDate) => {
 };
 
 const AdminPanel = () => {
+    const { t } = useLang();
     const navigate = useNavigate();
     const { notify } = useNotification();
     const [activeTab, setActiveTab] = useState('overview');
@@ -651,7 +653,7 @@ ${bodyRows}
                             <div className="adm__quick-search">
                                 <input
                                     className="adm__quick-input"
-                                    placeholder="UserCode o ID... (ej: 123456-CO1)"
+                                    placeholder={t('adminSearchPlaceholder')}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && e.target.value.trim()) fetchUserDetail(e.target.value.trim());
                                     }}
@@ -799,18 +801,18 @@ ${bodyRows}
                     <>
                         <div className="adm__toolbar">
                             <select className="adm__filter-select" value={ticketStatusFilter} onChange={e => { setTicketStatusFilter(e.target.value); setTicketPage(1); }}>
-                                <option value="">Todos los estados</option>
-                                <option value="open">Abiertos</option>
-                                <option value="in-progress">En Proceso</option>
-                                <option value="resolved">Resueltos</option>
-                                <option value="closed">Cerrados</option>
+                                <option value="">{t('adminAllStatuses')}</option>
+                                <option value="open">{t('adminStatusOpen')}</option>
+                                <option value="in-progress">{t('adminStatusInProgress')}</option>
+                                <option value="resolved">{t('adminStatusResolved')}</option>
+                                <option value="closed">{t('adminStatusClosed')}</option>
                             </select>
                             <select className="adm__filter-select" value={ticketTypeFilter} onChange={e => { setTicketTypeFilter(e.target.value); setTicketPage(1); }}>
-                                <option value="">Todos los tipos</option>
-                                <option value="bug">Bugs</option>
-                                <option value="suggestion">Sugerencias</option>
-                                <option value="question">Consultas</option>
-                                <option value="achievement">Logros</option>
+                                <option value="">{t('adminAllTypes')}</option>
+                                <option value="bug">{t('adminTypeBug')}</option>
+                                <option value="suggestion">{t('adminTypeSuggestion')}</option>
+                                <option value="question">{t('adminTypeQuestion')}</option>
+                                <option value="achievement">{t('adminTypeAchievement')}</option>
                             </select>
                             <button className="adm__btn adm__btn--export" onClick={() => exportCSV('tickets')}>
                                 <i className='bx bx-download' /> Excel
@@ -852,7 +854,7 @@ ${bodyRows}
                                                 <div className="adm__card-actions" onClick={e => e.stopPropagation()}>
                                                     {t.status === 'open' && (
                                                         <button className="adm__btn adm__btn--detail" disabled={!!actionLoading} onClick={() => handleTicketStatus(t._id, 'in-progress')}>
-                                                            <i className='bx bx-loader' /> En Proceso
+                                                            <i className='bx bx-loader' /> {t('adminStatusInProgress')}
                                                         </button>
                                                     )}
                                                     {t.status !== 'closed' && (
@@ -867,9 +869,9 @@ ${bodyRows}
                                 </div>
                                 {ticketTotal > 20 && (
                                     <div className="adm__pagination">
-                                        <button className="adm__btn adm__btn--detail" disabled={ticketPage <= 1} onClick={() => setTicketPage(p => p - 1)}>Anterior</button>
+                                        <button className="adm__btn adm__btn--detail" disabled={ticketPage <= 1} onClick={() => setTicketPage(p => p - 1)}>{t('back')}</button>
                                         <span>Pagina {ticketPage} de {Math.ceil(ticketTotal / 20)}</span>
-                                        <button className="adm__btn adm__btn--detail" disabled={ticketPage >= Math.ceil(ticketTotal / 20)} onClick={() => setTicketPage(p => p + 1)}>Siguiente</button>
+                                        <button className="adm__btn adm__btn--detail" disabled={ticketPage >= Math.ceil(ticketTotal / 20)} onClick={() => setTicketPage(p => p + 1)}>{t('next')}</button>
                                     </div>
                                 )}
                             </>
@@ -882,12 +884,12 @@ ${bodyRows}
                     <>
                         <div className="adm__toolbar">
                             <select className="adm__filter-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                                <option value="pending">Pendientes</option>
-                                <option value="approved">Aprobadas</option>
-                                <option value="rejected">Rechazadas</option>
+                                <option value="pending">{t('adminPending')}</option>
+                                <option value="approved">{t('adminApproved')}</option>
+                                <option value="rejected">{t('adminRejected')}</option>
                             </select>
                             <select className="adm__filter-select" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
-                                <option value="">Todos los roles</option>
+                                <option value="">{t('adminAllRoles')}</option>
                                 {Object.entries(ROLE_LABELS).filter(([k]) => k !== 'player').map(([k, v]) => (
                                     <option key={k} value={k}>{v}</option>
                                 ))}
@@ -955,8 +957,8 @@ ${bodyRows}
                                 )}
                             </button>
                             <select className="adm__filter-select adm__filter-select--sort" value={sortFilter} onChange={e => { setSortFilter(e.target.value); setUserPage(1); }}>
-                                <option value="">Mas recientes</option>
-                                <option value="oldest">Mas antiguos</option>
+                                <option value="">{t('adminNewest')}</option>
+                                <option value="oldest">{t('adminOldest')}</option>
                                 <option value="username">A-Z Username</option>
                                 <option value="country">A-Z Pais</option>
                             </select>
@@ -972,21 +974,21 @@ ${bodyRows}
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-globe' /> Pais</label>
                                         <select value={countryFilter} onChange={e => { setCountryFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todos</option>
+                                            <option value="">{t('adminAll')}</option>
                                             {COUNTRIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-joystick' /> Juego</label>
                                         <select value={gameFilter} onChange={e => { setGameFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todos</option>
+                                            <option value="">{t('adminAll')}</option>
                                             {GAME_LIST.map(g => <option key={g} value={g}>{g.toUpperCase()}</option>)}
                                         </select>
                                     </div>
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-star' /> Rol</label>
                                         <select value={userRoleFilter} onChange={e => { setUserRoleFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todos</option>
+                                            <option value="">{t('adminAll')}</option>
                                             {Object.entries(ROLE_LABELS).map(([k, v]) => (
                                                 <option key={k} value={k}>{v}</option>
                                             ))}
@@ -995,16 +997,16 @@ ${bodyRows}
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-laptop' /> Plataforma</label>
                                         <select value={platformFilter} onChange={e => { setPlatformFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todas</option>
-                                            <option value="pc">PC</option>
-                                            <option value="mobile">Mobile</option>
-                                            <option value="console">Consola</option>
+                                            <option value="">{t('adminPlatformAll')}</option>
+                                            <option value="pc">{t('adminPlatformPC')}</option>
+                                            <option value="mobile">{t('adminPlatformMobile')}</option>
+                                            <option value="console">{t('adminPlatformConsole')}</option>
                                         </select>
                                     </div>
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-trophy' /> Experiencia</label>
                                         <select value={experienceFilter} onChange={e => { setExperienceFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todas</option>
+                                            <option value="">{t('adminPlatformAll')}</option>
                                             <option value="Rookie">Rookie</option>
                                             <option value="Mid">Mid</option>
                                             <option value="Pro">Pro</option>
@@ -1013,7 +1015,7 @@ ${bodyRows}
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-radio-circle-marked' /> Estado</label>
                                         <select value={userStatusFilter} onChange={e => { setUserStatusFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todos</option>
+                                            <option value="">{t('adminAll')}</option>
                                             {Object.entries(STATUS_LABELS).map(([k, v]) => (
                                                 <option key={k} value={k}>{v}</option>
                                             ))}
@@ -1022,17 +1024,17 @@ ${bodyRows}
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-user' /> Genero</label>
                                         <select value={genderFilter} onChange={e => { setGenderFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todos</option>
-                                            <option value="Masculino">Masculino</option>
-                                            <option value="Femenino">Femenino</option>
-                                            <option value="Otro">Otro</option>
+                                            <option value="">{t('adminAll')}</option>
+                                            <option value="Masculino">{t('adminGenderMale')}</option>
+                                            <option value="Femenino">{t('adminGenderFemale')}</option>
+                                            <option value="Otro">{t('adminGenderOther')}</option>
                                         </select>
                                     </div>
                                     <div className="adm__filter-group">
                                         <label><i className='bx bx-block' /> Baneados</label>
                                         <select value={bannedFilter} onChange={e => { setBannedFilter(e.target.value); setUserPage(1); }}>
-                                            <option value="">Todos</option>
-                                            <option value="true">Solo baneados</option>
+                                            <option value="">{t('adminAll')}</option>
+                                            <option value="true">{t('adminBannedOnly')}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1046,7 +1048,7 @@ ${bodyRows}
                                         {experienceFilter && <span className="adm__filter-tag" onClick={() => { setExperienceFilter(''); setUserPage(1); }}><i className='bx bx-trophy' /> {experienceFilter} <i className='bx bx-x' /></span>}
                                         {userStatusFilter && <span className="adm__filter-tag" onClick={() => { setUserStatusFilter(''); setUserPage(1); }}><i className='bx bx-radio-circle-marked' /> {STATUS_LABELS[userStatusFilter]} <i className='bx bx-x' /></span>}
                                         {genderFilter && <span className="adm__filter-tag" onClick={() => { setGenderFilter(''); setUserPage(1); }}><i className='bx bx-user' /> {genderFilter} <i className='bx bx-x' /></span>}
-                                        {bannedFilter && <span className="adm__filter-tag" onClick={() => { setBannedFilter(''); setUserPage(1); }}><i className='bx bx-block' /> Baneados <i className='bx bx-x' /></span>}
+                                        {bannedFilter && <span className="adm__filter-tag" onClick={() => { setBannedFilter(''); setUserPage(1); }}><i className='bx bx-block' /> {t('adminBanned')} <i className='bx bx-x' /></span>}
                                         <button className="adm__clear-filters" onClick={() => {
                                             setGameFilter(''); setCountryFilter(''); setUserRoleFilter(''); setPlatformFilter('');
                                             setExperienceFilter(''); setUserStatusFilter(''); setGenderFilter(''); setBannedFilter('');
@@ -1074,7 +1076,7 @@ ${bodyRows}
                                                     {user.username}
                                                     {user.userCode && <span className="adm__badge adm__badge--code">{user.userCode}</span>}
                                                     {user.isAdmin && <span className="adm__badge adm__badge--admin">Admin</span>}
-                                                    {user.isBanned && <span className="adm__badge adm__badge--banned">Baneado</span>}
+                                                    {user.isBanned && <span className="adm__badge adm__badge--banned">{t('adminBanned')}</span>}
                                                 </div>
                                                 <div className="adm__card-email">
                                                     {user.email} — {user.fullName || '-'}
@@ -1120,9 +1122,9 @@ ${bodyRows}
                                 </div>
                                 {userTotal > 20 && (
                                     <div className="adm__pagination">
-                                        <button className="adm__btn adm__btn--detail" disabled={userPage <= 1} onClick={() => setUserPage(p => p - 1)}>Anterior</button>
+                                        <button className="adm__btn adm__btn--detail" disabled={userPage <= 1} onClick={() => setUserPage(p => p - 1)}>{t('back')}</button>
                                         <span>Pagina {userPage} de {Math.ceil(userTotal / 20)}</span>
-                                        <button className="adm__btn adm__btn--detail" disabled={userPage >= Math.ceil(userTotal / 20)} onClick={() => setUserPage(p => p + 1)}>Siguiente</button>
+                                        <button className="adm__btn adm__btn--detail" disabled={userPage >= Math.ceil(userTotal / 20)} onClick={() => setUserPage(p => p + 1)}>{t('next')}</button>
                                     </div>
                                 )}
                             </>
@@ -1190,7 +1192,7 @@ ${bodyRows}
                         {selectedApp.status === 'pending' && (
                             <>
                                 <div className="adm__modal-field" style={{ marginTop: '1rem' }}>
-                                    <label>Razon de rechazo (opcional)</label>
+                                    <label>{t('adminRejectReason')}</label>
                                     <input className="adm__modal-input" placeholder="Escribe una razon..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
                                 </div>
                                 <div className="adm__modal-actions">
@@ -1200,7 +1202,7 @@ ${bodyRows}
                                     <button className="adm__btn adm__btn--reject" disabled={!!actionLoading} onClick={() => handleReview(selectedApp.userId, selectedApp.role, 'reject')}>
                                         <i className='bx bx-x' /> Rechazar
                                     </button>
-                                    <button className="adm__modal-close" onClick={() => setSelectedApp(null)}>Cerrar</button>
+                                    <button className="adm__modal-close" onClick={() => setSelectedApp(null)}>{t('close')}</button>
                                 </div>
                             </>
                         )}
@@ -1209,7 +1211,7 @@ ${bodyRows}
                                 <span className={`adm__badge adm__badge--${selectedApp.status}`}>
                                     {selectedApp.status === 'approved' ? 'Aprobado' : 'Rechazado'}
                                 </span>
-                                <button className="adm__modal-close" onClick={() => setSelectedApp(null)}>Cerrar</button>
+                                <button className="adm__modal-close" onClick={() => setSelectedApp(null)}>{t('close')}</button>
                             </div>
                         )}
                     </div>
@@ -1238,7 +1240,7 @@ ${bodyRows}
                         <Field label="Fecha" value={formatDate(selectedTicket.createdAt)} />
 
                         <div className="adm__ticket-message">
-                            <label>Mensaje del usuario</label>
+                            <label>{t('adminUserMessage')}</label>
                             <div className="adm__ticket-bubble adm__ticket-bubble--user">
                                 {selectedTicket.message}
                             </div>
@@ -1246,7 +1248,7 @@ ${bodyRows}
 
                         {selectedTicket.data && Object.keys(selectedTicket.data).length > 0 && (
                             <div className="adm__ticket-data">
-                                <label>Datos adicionales</label>
+                                <label>{t('adminAdditionalData')}</label>
                                 <div className="adm__ticket-data-grid">
                                     {Object.entries(selectedTicket.data).map(([k, v]) => (
                                         <div key={k} className="adm__ticket-data-item">
@@ -1260,7 +1262,7 @@ ${bodyRows}
 
                         {selectedTicket.adminResponse && (
                             <div className="adm__ticket-message">
-                                <label>Respuesta del admin — {formatDate(selectedTicket.respondedAt)}</label>
+                                <label>{t('adminAdminResponse')} — {formatDate(selectedTicket.respondedAt)}</label>
                                 <div className="adm__ticket-bubble adm__ticket-bubble--admin">
                                     {selectedTicket.adminResponse}
                                 </div>
@@ -1272,7 +1274,7 @@ ${bodyRows}
                                 <label>{selectedTicket.adminResponse ? 'Actualizar respuesta' : 'Responder al usuario'}</label>
                                 <textarea
                                     className="adm__ticket-textarea"
-                                    placeholder="Escribe tu respuesta... (se enviara como notificacion al usuario)"
+                                    placeholder={t('adminResponsePlaceholder')}
                                     value={ticketResponse}
                                     onChange={e => setTicketResponse(e.target.value)}
                                     rows={4}
@@ -1283,10 +1285,10 @@ ${bodyRows}
                                     </button>
                                     {selectedTicket.status === 'open' && (
                                         <button className="adm__btn adm__btn--detail" disabled={!!actionLoading} onClick={() => { handleTicketStatus(selectedTicket._id, 'in-progress'); setSelectedTicket(null); }}>
-                                            <i className='bx bx-loader' /> Marcar En Proceso
+                                            <i className='bx bx-loader' /> {t('adminStatusInProgress')}
                                         </button>
                                     )}
-                                    <button className="adm__modal-close" onClick={() => setSelectedTicket(null)}>Cerrar</button>
+                                    <button className="adm__modal-close" onClick={() => setSelectedTicket(null)}>{t('close')}</button>
                                 </div>
                             </div>
                         )}
@@ -1294,7 +1296,7 @@ ${bodyRows}
                         {selectedTicket.status === 'closed' && (
                             <div className="adm__modal-actions">
                                 <span className="adm__badge" style={{ background: 'rgba(107,114,128,0.12)', color: '#6b7280' }}>Ticket cerrado</span>
-                                <button className="adm__modal-close" onClick={() => setSelectedTicket(null)}>Cerrar</button>
+                                <button className="adm__modal-close" onClick={() => setSelectedTicket(null)}>{t('close')}</button>
                             </div>
                         )}
                     </div>
@@ -1320,7 +1322,7 @@ ${bodyRows}
                                             {selectedUser.userCode && <span className="adm__badge adm__badge--code">{selectedUser.userCode}</span>}
                                             {selectedUser.isAdmin && <span className="adm__badge adm__badge--admin">Admin</span>}
                                             {selectedUser.isOrganizer && <span className="adm__badge adm__badge--role" style={{ background: '#f59e0b18', color: '#f59e0b' }}>Organizador</span>}
-                                            {selectedUser.isBanned && <span className="adm__badge adm__badge--banned">Baneado</span>}
+                                            {selectedUser.isBanned && <span className="adm__badge adm__badge--banned">{t('adminBanned')}</span>}
                                             {selectedUser.status && (
                                                 <span className="adm__badge" style={{ background: `${STATUS_COLORS[selectedUser.status] || '#6b7280'}18`, color: STATUS_COLORS[selectedUser.status] || '#6b7280' }}>
                                                     {STATUS_LABELS[selectedUser.status] || selectedUser.status}
@@ -1336,8 +1338,8 @@ ${bodyRows}
                                     <div className="adm__ud-ban-info">
                                         <i className='bx bx-block' />
                                         <div>
-                                            <strong>Baneado</strong>
-                                            {selectedUser.banReason && <p>Razon: {selectedUser.banReason}</p>}
+                                            <strong>{t('adminBanned')}</strong>
+                                            {selectedUser.banReason && <p>{t('adminBanReason')}: {selectedUser.banReason}</p>}
                                             {selectedUser.bannedAt && <span>Desde: {formatDate(selectedUser.bannedAt)}</span>}
                                         </div>
                                     </div>
@@ -1492,16 +1494,16 @@ ${bodyRows}
 
                                     {/* Send notification */}
                                     <div className="adm__ud-notif">
-                                        <label>Enviar Notificacion</label>
+                                        <label>{t('adminSendNotification')}</label>
                                         <input
                                             className="adm__modal-input"
-                                            placeholder="Titulo (opcional)"
+                                            placeholder={t('adminNotifTitleLabel')}
                                             value={notifTitle}
                                             onChange={e => setNotifTitle(e.target.value)}
                                         />
                                         <textarea
                                             className="adm__ticket-textarea"
-                                            placeholder="Mensaje de la notificacion..."
+                                            placeholder={t('adminNotifMessageLabel')}
                                             value={notifMsg}
                                             onChange={e => setNotifMsg(e.target.value)}
                                             rows={3}
@@ -1528,10 +1530,10 @@ ${bodyRows}
                         <button className="adm__modal-x" onClick={() => setShowBanModal(null)}><i className='bx bx-x' /></button>
                         <h3><i className='bx bx-block' style={{ color: '#ef4444' }} /> Banear a {showBanModal.username}</h3>
                         <div className="adm__modal-field">
-                            <label>Razon del baneo</label>
+                            <label>{t('adminBanReason')}</label>
                             <textarea
                                 className="adm__ticket-textarea"
-                                placeholder="Describe la razon del baneo..."
+                                placeholder={t('adminBanReasonPlaceholder')}
                                 value={banReasonInput}
                                 onChange={e => setBanReasonInput(e.target.value)}
                                 rows={3}
@@ -1545,7 +1547,7 @@ ${bodyRows}
                             >
                                 <i className='bx bx-block' /> Confirmar Baneo
                             </button>
-                            <button className="adm__modal-close" onClick={() => setShowBanModal(null)}>Cancelar</button>
+                            <button className="adm__modal-close" onClick={() => setShowBanModal(null)}>{t('cancel')}</button>
                         </div>
                     </div>
                 </div>
@@ -1567,9 +1569,12 @@ const StatCard = ({ icon, value, label, bg, color }) => (
     </div>
 );
 
-const Loading = () => (
-    <div className="adm__loading"><div className="adm__spinner" /><span>Cargando...</span></div>
-);
+const Loading = () => {
+    const { t } = useLang();
+    return (
+        <div className="adm__loading"><div className="adm__spinner" /><span>{t('loading')}</span></div>
+    );
+};
 
 const Empty = ({ icon, text }) => (
     <div className="adm__empty"><i className={`bx ${icon}`} /><p>{text}</p></div>

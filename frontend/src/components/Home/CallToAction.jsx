@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useLang } from '../../context/LanguageContext';
 
 const CallToAction = () => {
+  const { t } = useLang();
   return (
     <section className="relative py-32 px-6 bg-[var(--bg-page)] overflow-hidden">
       {/* Animated background glows */}
@@ -23,15 +25,14 @@ const CallToAction = () => {
         className="relative z-10 max-w-3xl mx-auto text-center"
       >
         <span className="text-[var(--primary)] uppercase tracking-[0.3em] text-xs font-bold">
-          &Uacute;nete hoy
+          {t('ctaTagline')}
         </span>
         <h2 className="text-4xl md:text-6xl font-extrabold text-[var(--text-main)] mt-4 mb-6 leading-tight">
-          &iquest;Listo para competir <br />
-          <span className="text-[var(--primary)]">como profesional?</span>
+          {t('ctaHeading')} <br />
+          <span className="text-[var(--primary)]">{t('ctaHeadingAccent')}</span>
         </h2>
         <p className="text-[var(--text-muted)] text-lg mb-12 max-w-lg mx-auto">
-          Crea tu cuenta gratis, arma tu equipo y demuestra que tienes
-          lo que se necesita para llegar al top.
+          {t('ctaDescription')}
         </p>
 
         <div className="flex flex-wrap justify-center gap-5">
@@ -41,7 +42,7 @@ const CallToAction = () => {
           >
             <span className="flex items-center gap-2">
               <i className="bx bx-rocket text-lg"></i>
-              Crear Cuenta Gratis
+              {t('ctaBtnRegister')}
             </span>
           </Link>
           <Link
@@ -50,7 +51,7 @@ const CallToAction = () => {
           >
             <span className="flex items-center gap-2">
               <i className="bx bx-trophy text-lg"></i>
-              Explorar Torneos
+              {t('ctaBtnTournaments')}
             </span>
           </Link>
         </div>

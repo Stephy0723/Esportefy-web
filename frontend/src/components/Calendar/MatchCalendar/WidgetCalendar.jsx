@@ -2,18 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "./WidgetCalendar.css";
 import { loadTournamentCalendarEntries } from "../../../utils/tournamentCalendar";
-
-const EVENT_TYPES = {
-  tournament: { label: 'Torneo', icon: 'bx-trophy' }
-};
-
-const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
-const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-];
+import { useLang } from "../../../context/LanguageContext";
 
 export default function WidgetCalendar() {
+  const { t, lang } = useLang();
+  const locale = lang === 'en' ? 'en-US' : 'es-DO';
+
+  const MONTH_NAMES = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => {
+      const name = new Date(2024, i, 1).toLocaleString(locale, { month: 'long' });
+      return name.charAt(0).toUpperCase() + name.slice(1);
+    }), [locale]);
+
+  const WEEKDAYS = useMemo(() =>
+    Array.from({ length: 7 }, (_, i) => {
+      // 2024-01-01 is Monday → index 0 = Mon
+      return new Date(2024, 0, i + 1).toLocaleString(locale, { weekday: 'short' }).charAt(0).toUpperCase();
+    }), [locale]);
+
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1)
@@ -111,22 +117,22 @@ export default function WidgetCalendar() {
         <div className="wc__header-top">
           <div className="wc__brand">
             <i className="bx bx-calendar-event wc__brand-icon"></i>
-            <span className="wc__brand-text">CALENDARIO</span>
+            <span className="wc__brand-text">{t('wcCalendarTitle')}</span>
           </div>
-          <button className="wc__today-btn" onClick={goToday} title="Ir a hoy">
+          <button className="wc__today-btn" onClick={goToday} title={t('wcGoToday')}>
             <i className="bx bx-current-location"></i>
           </button>
         </div>
 
         <div className="wc__month-bar">
-          <button className="wc__nav" onClick={prevMonth} title="Mes anterior">
+          <button className="wc__nav" onClick={prevMonth} title={t('wcPrevMonth')}>
             <i className="bx bx-chevron-left"></i>
           </button>
           <div className="wc__month-wrap">
             <span className="wc__month">{MONTH_NAMES[month]}</span>
             <span className="wc__year">{year}</span>
           </div>
-          <button className="wc__nav" onClick={nextMonth} title="Mes siguiente">
+          <button className="wc__nav" onClick={nextMonth} title={t('wcNextMonth')}>
             <i className="bx bx-chevron-right"></i>
           </button>
         </div>
@@ -134,7 +140,7 @@ export default function WidgetCalendar() {
         <div className="wc__stats">
           <div className="wc__stat">
             <span className="wc__stat-num">{monthEventCount}</span>
-            <span className="wc__stat-label">Torneos</span>
+            <span className="wc__stat-label">{t('wcTournaments')}</span>
           </div>
           <div className="wc__stat-divider" />
           {monthGames.map((item) => (
@@ -193,7 +199,7 @@ export default function WidgetCalendar() {
               <span className="wc__detail-day">{selectedDay}</span>
               <div className="wc__detail-meta">
                 <span className="wc__detail-month">{MONTH_NAMES[month].slice(0, 3)}</span>
-                <span className="wc__detail-count">{selectedEvents.length} torneo{selectedEvents.length > 1 ? 's' : ''}</span>
+                <span className="wc__detail-count">{selectedEvents.length} {selectedEvents.length > 1 ? t('wcTournamentPlural') : t('wcTournamentSingular')}</span>
               </div>
             </div>
             <button className="wc__detail-close" onClick={() => setSelectedDay(null)}>
@@ -201,12 +207,11 @@ export default function WidgetCalendar() {
             </button>
           </div>
           {selectedEvents.map((event, idx) => {
-            const cfg = EVENT_TYPES.tournament;
             return (
               <div key={`${event.tournamentId}-${idx}`} className="wc__event" style={{ '--ev-color': event.color }}>
                 <div className="wc__event-accent" />
                 <div className="wc__event-icon-wrap" style={{ '--ev-color': event.color }}>
-                  <i className={`bx ${event.icon || cfg.icon}`}></i>
+                  <i className={`bx ${event.icon || 'bx-trophy'}`}></i>
                 </div>
                 <div className="wc__event-info">
                   <span className="wc__event-code">{event.codeLabel}</span>
@@ -238,7 +243,7 @@ export default function WidgetCalendar() {
           </div>
           <div className="wc__empty-day">
             <i className="bx bx-calendar-check"></i>
-            <span>Sin torneos</span>
+            <span>{t('wcNoTournaments')}</span>
           </div>
         </div>
       )}
@@ -248,7 +253,7 @@ export default function WidgetCalendar() {
           <div className="wc__upcoming-header">
             <span className="wc__upcoming-label">
               <i className="bx bx-pulse"></i>
-              Próximos torneos
+              {t('wcUpcoming')}
             </span>
             <span className="wc__upcoming-count">{upcomingEvents.length}</span>
           </div>
@@ -256,10 +261,10 @@ export default function WidgetCalendar() {
             <div key={`${event.tournamentId}-${idx}`} className="wc__upcoming-item" style={{ '--ev-color': event.color }}>
               <div className="wc__upcoming-date">
                 <span className="wc__upcoming-day">{Number(event.dateKey.split('-')[2])}</span>
-                <span className="wc__upcoming-monthAbbr">{MONTH_NAMES[month].slice(0, 3)}</span>
+                <span className="wc__upcoming-monthAbbr">{MONTH_NAMES[Number(event.dateKey.split('-')[1]) - 1].slice(0, 3)}</span>
               </div>
               <div className="wc__upcoming-line" style={{ '--ev-color': event.color }} />
-              <i className={`bx ${event.icon || EVENT_TYPES.tournament.icon} wc__upcoming-icon`} style={{ color: event.color }}></i>
+              <i className={`bx ${event.icon || 'bx-trophy'} wc__upcoming-icon`} style={{ color: event.color }}></i>
               <div className="wc__upcoming-info">
                 <span className="wc__upcoming-code">{event.codeLabel}</span>
                 <span className="wc__upcoming-title">{event.title}</span>
@@ -273,7 +278,7 @@ export default function WidgetCalendar() {
       <Link to="/CalendarPage" className="wc__link">
         <div className="wc__link-content">
           <i className="bx bx-calendar wc__link-icon"></i>
-          <span>Ver calendario completo</span>
+          <span>{t('wcViewFull')}</span>
         </div>
         <i className="bx bx-right-arrow-alt wc__link-arrow"></i>
       </Link>

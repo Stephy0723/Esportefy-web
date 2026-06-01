@@ -6,6 +6,7 @@ import './CommunitySpacePage.css';
 import ValorantImg from '../../../../assets/games/valorant.jpg';
 import { useAuth } from '../../../../context/AuthContext';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import {
   fetchCommunityByShortUrl,
   fetchCommunityAuditLogsByShortUrl,
@@ -49,6 +50,7 @@ const describeAuditLog = (entry) => {
 };
 
 const CommunitySpacePage = () => {
+  const { t } = useLang();
   const { shortUrl } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -209,7 +211,7 @@ const CommunitySpacePage = () => {
       <div className="dashboard-wrapper">
         <div className="community-space-page">
           <div className="community-space-card">
-            <p>Cargando comunidad...</p>
+            <p>{t('communityLoading')}</p>
           </div>
         </div>
       </div>
@@ -221,10 +223,10 @@ const CommunitySpacePage = () => {
       <div className="dashboard-wrapper">
         <div className="community-space-page">
           <button className="community-space-back" onClick={() => navigate('/comunidad')}>
-            <FaArrowLeft /> Volver
+            <FaArrowLeft /> {t('back')}
           </button>
           <div className="community-space-card" style={{ marginTop: 12 }}>
-            <h3>Comunidad no disponible</h3>
+            <h3>{t('communityNotFound')}</h3>
             <p>{errorMessage || 'No encontramos esta comunidad'}</p>
           </div>
         </div>
@@ -300,7 +302,7 @@ const CommunitySpacePage = () => {
 
         <section className="community-space-grid">
           <article className="community-space-card">
-            <h3>Descripción</h3>
+            <h3>{t('communityDescSection')}</h3>
             <p>{community.description || 'Sin descripción disponible.'}</p>
             {community.rulesPdfUrl && (
               <p style={{ marginTop: 10 }}>
@@ -313,7 +315,7 @@ const CommunitySpacePage = () => {
           </article>
 
           <aside className="community-space-card">
-            <h3>Organizador</h3>
+            <h3>{t('communityOrgSection')}</h3>
             <div className="community-space-owner">
               <img src={community.createdBy?.avatar || ValorantImg} alt={community.createdBy?.username || 'owner'} />
               <div className="community-member-meta">
@@ -325,7 +327,7 @@ const CommunitySpacePage = () => {
         </section>
 
         <section className="community-space-card" style={{ marginTop: 18 }}>
-          <h3>Miembros</h3>
+          <h3>{t('communityMembersSection')}</h3>
           {Array.isArray(community.members) && community.members.length > 0 ? (
             <div className="community-members-list">
               {community.members.map((member, idx) => (
@@ -396,7 +398,7 @@ const CommunitySpacePage = () => {
         {community.canManageMembers && (
           <section className="community-space-card" style={{ marginTop: 18 }}>
             <div className="community-audit-header">
-              <h3>Bitácora de moderación</h3>
+              <h3>{t('communityModLog')}</h3>
               <button
                 className="community-audit-refresh-btn"
                 onClick={() => loadAuditLogs(community.shortUrl)}
@@ -409,7 +411,7 @@ const CommunitySpacePage = () => {
             {auditError && <p className="community-audit-error">{auditError}</p>}
 
             {!auditError && auditLoading ? (
-              <p>Cargando bitácora...</p>
+              <p>{t('communityModLogLoading')}</p>
             ) : Array.isArray(auditLogs) && auditLogs.length > 0 ? (
               <div className="community-audit-list">
                 {auditLogs.map((entry, idx) => (
@@ -447,7 +449,7 @@ const CommunitySpacePage = () => {
             <div className="csp-confirm-icon"><i className='bx bx-error-circle'></i></div>
             <p className="csp-confirm-msg">{confirmModal.message}</p>
             <div className="csp-confirm-actions">
-              <button className="csp-confirm-btn csp-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className="csp-confirm-btn csp-confirm-btn--cancel" onClick={() => setConfirmModal(null)}>{t('cancel')}</button>
               <button className="csp-confirm-btn csp-confirm-btn--confirm" onClick={confirmModal.onConfirm}>Confirmar</button>
             </div>
           </div>

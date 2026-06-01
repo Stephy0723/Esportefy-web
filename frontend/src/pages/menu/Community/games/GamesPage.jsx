@@ -18,6 +18,7 @@ import {
   FaWhatsapp
 } from 'react-icons/fa';
 import { useTheme } from '../../../../context/ThemeContext';
+import { useLang } from '../../../../context/LanguageContext';
 import { normalizeCommunityGameId } from '../../../../../../shared/communityCatalog.js';
 import { fetchGameHubDetails, joinGameHub, formatGameHubCount } from '../gameHub.service';
 import { decorateCommunityGame } from '../communityGameAssets';
@@ -26,6 +27,7 @@ import './GameCard.css';
 const emptyStats = { usersCount: 0, activeCount: 0, joined: false };
 
 const GamesPage = () => {
+  const { t } = useLang();
   const { gameId } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -240,8 +242,8 @@ const GamesPage = () => {
       <div className="gp-backdrop">
         <div className="gp-error">
           <i className='bx bx-loader-alt bx-spin' style={{ fontSize: '3rem', color: '#8EDB15' }} />
-          <h2>Cargando juego</h2>
-          <p>Recuperando informacion real del hub...</p>
+          <h2>{t('gameLoading')}</h2>
+          <p>{t('gameLoadingDesc')}</p>
         </div>
       </div>
     );
@@ -252,10 +254,10 @@ const GamesPage = () => {
       <div className="gp-backdrop">
         <div className="gp-error">
           <i className='bx bx-error-circle' style={{ fontSize: '3rem', color: '#ef4444' }} />
-          <h2>Juego no encontrado</h2>
+          <h2>{t('gameNotFound')}</h2>
           <p>El ID "{gameId}" no coincide con ningun juego registrado.</p>
           <button className="gp-btn gp-btn--primary" onClick={() => navigate(-1)}>
-            <FaArrowLeft /> Volver
+            <FaArrowLeft /> {t('back')}
           </button>
         </div>
       </div>
@@ -295,7 +297,7 @@ const GamesPage = () => {
 
       <button className="gp-back" onClick={() => navigate(-1)}>
         <FaArrowLeft />
-        <span>Volver</span>
+        <span>{t('back')}</span>
       </button>
 
       <div
@@ -322,7 +324,7 @@ const GamesPage = () => {
 
           <div className="gp-status-badge">
             <span className="gp-status-badge__dot" />
-            <span>LIVE</span>
+            <span>{t('gameLive')}</span>
           </div>
         </div>
 
@@ -356,7 +358,7 @@ const GamesPage = () => {
               <FaUsers className="gp-stats-bar__icon" />
               <div className="gp-stats-bar__text">
                 <strong>{formatGameHubCount(gameStats.usersCount)}</strong>
-                <span>miembros</span>
+                <span>{t('gameMembersLabel')}</span>
               </div>
             </div>
             <div className="gp-stats-bar__sep" />
@@ -364,7 +366,7 @@ const GamesPage = () => {
               <FaBolt className="gp-stats-bar__icon" />
               <div className="gp-stats-bar__text">
                 <strong>{formatGameHubCount(gameStats.activeCount)}</strong>
-                <span>activos</span>
+                <span>{t('gameActiveLabel')}</span>
               </div>
             </div>
             <div className="gp-stats-bar__sep" />
@@ -372,7 +374,7 @@ const GamesPage = () => {
               <FaGamepad className="gp-stats-bar__icon" />
               <div className="gp-stats-bar__text">
                 <strong>{tournamentsCount}</strong>
-                <span>torneos</span>
+                <span>{t('gameTournamentsLabel')}</span>
               </div>
             </div>
           </div>
@@ -443,7 +445,7 @@ const GamesPage = () => {
 
               <button className="gp-btn gp-btn--enter" onClick={handleEnterGame} disabled={joiningHub}>
                 <FaGamepad className="gp-btn__gamepad" />
-                <span>ENTRAR</span>
+                <span>{t('gameJoin')}</span>
                 <i className='bx bx-right-arrow-alt gp-btn__arrow' />
               </button>
             </div>

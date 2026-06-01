@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import { TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
 import {
   TournamentAdminShell,
@@ -11,6 +12,7 @@ import {
 import './TournamentAdmin.css';
 
 const TournamentStaffPage = () => {
+  const { t } = useLang();
   const { code } = useParams();
   const { addToast } = useNotification();
   const { loading, tournament } = useTournamentAdminData(code);
@@ -109,7 +111,7 @@ const TournamentStaffPage = () => {
       <div className="ta-hero__metrics" style={{ marginBottom: 18 }}>
         <div className="ta-metric">
           <strong>{staff.length}</strong>
-          <span>Total staff</span>
+          <span>{t('staffTotal')}</span>
         </div>
         {TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.filter((r) => roleStats[r.value] > 0).map((r) => (
           <div key={r.value} className="ta-metric">
@@ -132,7 +134,7 @@ const TournamentStaffPage = () => {
           <div className="ta-panel__head">
             <div>
               <span className="ta-kicker">Nuevo miembro</span>
-              <h2>Agregar al staff</h2>
+              <h2>{t('staffAddTitle')}</h2>
             </div>
           </div>
 
@@ -153,7 +155,7 @@ const TournamentStaffPage = () => {
 
           <div className="ta-form-grid">
             <label>
-              <span>Nombre de usuario</span>
+              <span>{t('username')}</span>
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -161,7 +163,7 @@ const TournamentStaffPage = () => {
               />
             </label>
             <label>
-              <span>Titulo personalizado (opcional)</span>
+              <span>{t('staffCustomTitle')}</span>
               <input
                 value={displayRole}
                 onChange={(e) => setDisplayRole(e.target.value)}
@@ -171,7 +173,7 @@ const TournamentStaffPage = () => {
           </div>
 
           <div className="ta-shortcuts" style={{ marginTop: 12 }}>
-            <button onClick={addMember}>Agregar al staff</button>
+            <button onClick={addMember}>{t('staffAddTitle')}</button>
           </div>
         </section>
       )}
@@ -181,7 +183,7 @@ const TournamentStaffPage = () => {
         <div className="ta-panel__head">
           <div>
             <span className="ta-kicker">Equipo de trabajo</span>
-            <h2>Staff del torneo</h2>
+            <h2>{t('staffSectionTitle')}</h2>
           </div>
         </div>
 
@@ -192,7 +194,7 @@ const TournamentStaffPage = () => {
               <i className="bx bx-crown" />
             </div>
             <div className="ta-staff-card__info">
-              <strong>Organizador</strong>
+              <strong>{t('staffOwner')}</strong>
               <span className="ta-staff-card__name">
                 {tournament.organizer?.username || tournament.organizer?.name || 'Propietario'}
               </span>
@@ -225,7 +227,7 @@ const TournamentStaffPage = () => {
                     <span className="ta-staff-card__role" style={{ color }}>
                       {member.displayRole || roleMeta.label}
                     </span>
-                    <small>Desde {new Date(member.addedAt).toLocaleDateString('es-DO')}</small>
+                    <small>{`${t('staffFrom')} ${new Date(member.addedAt).toLocaleDateString('es-DO')}`}</small>
                   </div>
 
                   {isEditing ? (
@@ -264,15 +266,15 @@ const TournamentStaffPage = () => {
         <div className="ta-panel__head">
           <div>
             <span className="ta-kicker">Vista publica</span>
-            <h2>Asi se vera el staff para los participantes</h2>
+            <h2>{t('staffPreview')}</h2>
           </div>
         </div>
 
         <div className="ta-staff-public-preview">
           <div className="ta-staff-public-card">
             <i className="bx bx-crown" style={{ color: '#ffd700', fontSize: '1.6rem' }} />
-            <strong>{tournament.organizer?.username || 'Organizador'}</strong>
-            <span>Organizador</span>
+            <strong>{tournament.organizer?.username || t('staffOwner')}</strong>
+            <span>{t('staffOwner')}</span>
           </div>
           {staff.map((member) => {
             const roleMeta = TOURNAMENT_ADMIN_STAFF_ROLE_OPTIONS.find((r) => r.value === member.role)

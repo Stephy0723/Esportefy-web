@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import {
   TournamentAdminShell,
   createEmptyMatch,
@@ -128,6 +129,7 @@ const SpinningWheel = ({ items, onResult, disabled }) => {
 
 /* ── Winner Overlay ── */
 const WinnerOverlay = ({ winner, onClose }) => {
+  const { t } = useLang();
   if (!winner) return null;
   return (
     <div className="rl-winner-overlay" onClick={onClose}>
@@ -135,7 +137,7 @@ const WinnerOverlay = ({ winner, onClose }) => {
         <div className="rl-winner-crown">&#9733;</div>
         <span className="ta-kicker">Ganador seleccionado</span>
         <h2 className="rl-winner-name">{winner}</h2>
-        <button onClick={onClose}>Continuar</button>
+        <button onClick={onClose}>{t('rouletteContinue')}</button>
       </div>
     </div>
   );
@@ -143,6 +145,7 @@ const WinnerOverlay = ({ winner, onClose }) => {
 
 /* ── Single Roulette (General Purpose) ── */
 const SingleRoulette = ({ tournament, initialItems, liveMode }) => {
+  const { t } = useLang();
   const [input, setInput] = useState(initialItems.join('\n'));
   const [items, setItems] = useState(initialItems);
   const [history, setHistory] = useState([]);
@@ -244,14 +247,14 @@ const SingleRoulette = ({ tournament, initialItems, liveMode }) => {
           <aside className="rl-sidebar">
             <div className="ta-panel">
               <span className="ta-kicker">Configuracion</span>
-              <h3>Ruleta personalizada</h3>
+              <h3>{t('rouletteCustomTitle')}</h3>
               <label className="rl-textarea-label">
-                <span>Participantes / Premios / Items (uno por linea)</span>
+                <span>{t('rouletteItemsLabel')}</span>
                 <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="Jugador 1&#10;Espectador VIP&#10;Premio sorpresa" rows={8} />
               </label>
               <label className="rl-checkbox-label">
                 <input type="checkbox" checked={removeOnWin} onChange={(e) => setRemoveOnWin(e.target.checked)} />
-                <span>Eliminar al salir seleccionado</span>
+                <span>{t('rouletteRemoveOnPick')}</span>
               </label>
               <div className="ta-shortcuts">
                 <button className="ghost" onClick={handleReset}>Reiniciar</button>
@@ -259,9 +262,9 @@ const SingleRoulette = ({ tournament, initialItems, liveMode }) => {
             </div>
             <div className="ta-panel">
               <span className="ta-kicker">Historial ({history.length})</span>
-              <h3>Seleccionados</h3>
+              <h3>{t('rouletteSelected')}</h3>
               {history.length === 0 ? (
-                <p style={{ margin: 0, color: 'var(--text-muted)' }}>Sin resultados aun.</p>
+                <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('rouletteNoResults')}</p>
               ) : (
                 <div className="rl-history">
                   {history.map((h, i) => (
@@ -289,7 +292,7 @@ const SingleRoulette = ({ tournament, initialItems, liveMode }) => {
               {isEditing ? (
                 <div className="rl-live-editor">
                   <label className="rl-textarea-label">
-                    <span>Edita los nombres (uno por linea)</span>
+                    <span>{t('rouletteEditNames')}</span>
                     <textarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -299,9 +302,9 @@ const SingleRoulette = ({ tournament, initialItems, liveMode }) => {
                   </label>
                   <label className="rl-checkbox-label">
                     <input type="checkbox" checked={removeOnWin} onChange={(e) => setRemoveOnWin(e.target.checked)} />
-                    <span>Eliminar al salir seleccionado</span>
+                    <span>{t('rouletteRemoveOnPick')}</span>
                   </label>
-                  <button onClick={handleApplyEdit}>Aplicar cambios</button>
+                  <button onClick={handleApplyEdit}>{t('rouletteApplyChanges')}</button>
                 </div>
               ) : (
                 <>
@@ -323,6 +326,7 @@ const SingleRoulette = ({ tournament, initialItems, liveMode }) => {
 
 /* ── Duel Roulette ── */
 const DuelRoulette = ({ tournament, teams, liveMode, onApplyToBracket }) => {
+  const { t } = useLang();
   const [pool, setPool] = useState(teams);
   const [usedTeams, setUsedTeams] = useState([]);
   const [history, setHistory] = useState([]);
@@ -462,7 +466,7 @@ const DuelRoulette = ({ tournament, teams, liveMode, onApplyToBracket }) => {
           <aside className="rl-sidebar">
             <div className="ta-panel">
               <span className="ta-kicker">Pool restante ({pool.length})</span>
-              <h3>Equipos disponibles</h3>
+              <h3>{t('rouletteTeamsTitle')}</h3>
               <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.84rem' }}>
                 Equipos que aun no han sido emparejados.
               </p>
@@ -476,9 +480,9 @@ const DuelRoulette = ({ tournament, teams, liveMode, onApplyToBracket }) => {
             </div>
             <div className="ta-panel">
               <span className="ta-kicker">Emparejamientos ({history.length})</span>
-              <h3>Bracket de la ruleta</h3>
+              <h3>{t('rouletteBracketTitle')}</h3>
               {history.length === 0 ? (
-                <p style={{ margin: 0, color: 'var(--text-muted)' }}>Gira la ruleta para emparejar equipos.</p>
+                <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('rouletteBracketHint')}</p>
               ) : (
                 <div className="rl-history">
                   {[...history].reverse().map((h, i) => (
@@ -562,7 +566,7 @@ const DuelRoulette = ({ tournament, teams, liveMode, onApplyToBracket }) => {
               <div className="rl-winner-duel-vs">VS</div>
               <div className="rl-winner-duel-side"><small>LADO B</small><h2>{result.teamB}</h2></div>
             </div>
-            <button onClick={() => setResult(null)}>Continuar</button>
+            <button onClick={() => setResult(null)}>{t('rouletteContinue')}</button>
           </div>
         </div>
       )}
@@ -613,6 +617,7 @@ const buildBracketFromMatchups = (matchups) => {
 const DEFAULT_SINGLE = ['Premio 1', 'Premio 2', 'Premio 3', 'Premio 4', 'Premio 5', 'Premio 6'];
 
 const TournamentRoulettePage = () => {
+  const { t } = useLang();
   const { code } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -657,7 +662,7 @@ const TournamentRoulettePage = () => {
     <TournamentAdminShell tournament={tournament} currentTab="roulette">
       {hasBracket && (
         <div className="rl-bracket-link" style={{ marginBottom: 16 }}>
-          <span>Ya existe un bracket generado.</span>
+          <span>{t('rouletteExistsBracket')}</span>
           <button className="ghost" onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/bracket`)}>
             Ver Bracket actual
           </button>
@@ -666,19 +671,19 @@ const TournamentRoulettePage = () => {
       <div className="rl-selector">
         <article className="rl-selector__card" onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/roulette/live/single`)}>
           <div className="rl-selector__icon">&#127922;</div>
-          <span className="ta-kicker">Ruleta personalizada</span>
-          <h3>Sorteo libre</h3>
-          <p>Sortea jugadores, espectadores, premios o cualquier lista. Edita los nombres en vivo y lleva el historial completo.</p>
-          <button>Abrir ruleta</button>
+          <span className="ta-kicker">{t('rouletteCustomTitle')}</span>
+          <h3>{t('rouletteFreeTitle')}</h3>
+          <p>{t('rouletteFreeDesc')}</p>
+          <button>{t('rouletteOpen')}</button>
         </article>
 
         <article className="rl-selector__card" onClick={() => navigate(`/tournaments/manage/${tournament.tournamentId}/roulette/live/duel`)}>
           <div className="rl-selector__icon">&#9876;</div>
           <span className="ta-kicker">Duelo aleatorio → Bracket</span>
-          <h3>Enfrentamiento VS</h3>
-          <p>Empareja equipos al azar con la ruleta. Los equipos se van eliminando del pool. Al terminar, aplica los enfrentamientos directamente al bracket.</p>
+          <h3>{t('rouletteVSTitle')}</h3>
+          <p>{t('rouletteVSDesc')}</p>
           <span className="rl-selector__badge">{approvedTeams.length} equipos en BD</span>
-          <button>Abrir duelo</button>
+          <button>{t('rouletteOpenDuel')}</button>
         </article>
       </div>
     </TournamentAdminShell>

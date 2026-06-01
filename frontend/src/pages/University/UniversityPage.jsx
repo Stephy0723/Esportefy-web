@@ -12,34 +12,32 @@ import {
   UNIVERSITY_ENABLED_REGION,
   UNIVERSITY_REGION_OPTIONS
 } from '../../../../shared/universityRules.js';
+import { useLang } from '../../context/LanguageContext';
 import './UniversityPage.scss';
-
-/* ═══════════════════════════════════════════════════════════
-   UNIVERSITY DATA — Prioridad: RD → Caribe → LATAM → América
-   ═══════════════════════════════════════════════════════════ */
 
 const UNIVERSITY_VISIBLE_REGIONS = UNIVERSITY_REGION_OPTIONS.filter((region) => region.id === UNIVERSITY_ENABLED_REGION);
 
 const STATUS_LABELS = {
-  ongoing: 'EN CURSO',
-  open: 'INSCRIPCIONES ABIERTAS',
-  finished: 'FINALIZADO',
-  cancelled: 'CANCELADO',
-  draft: 'BORRADOR'
+  ongoing: 'upStatusOngoing',
+  open: 'upStatusOpen',
+  finished: 'upStatusFinished',
+  cancelled: 'upStatusCancelled',
+  draft: 'upStatusDraft'
 };
 
 const UNIVERSITY_TOURNAMENT_CARD_META = {
-  open: { color: 'green', label: STATUS_LABELS.open },
-  ongoing: { color: 'gold', label: STATUS_LABELS.ongoing },
-  finished: { color: 'muted', label: STATUS_LABELS.finished },
-  cancelled: { color: 'danger', label: STATUS_LABELS.cancelled },
-  draft: { color: 'muted', label: STATUS_LABELS.draft }
+  open: { color: 'green', labelKey: STATUS_LABELS.open },
+  ongoing: { color: 'gold', labelKey: STATUS_LABELS.ongoing },
+  finished: { color: 'muted', labelKey: STATUS_LABELS.finished },
+  cancelled: { color: 'danger', labelKey: STATUS_LABELS.cancelled },
+  draft: { color: 'muted', labelKey: STATUS_LABELS.draft }
 };
-const formatTournamentDateLabel = (value) => {
-  if (!value) return 'Sin fecha';
+
+const formatTournamentDateLabel = (value, locale = 'es-DO') => {
+  if (!value) return '—';
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Sin fecha';
-  return parsed.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return parsed.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 const EMPTY_UNIVERSITY_STATUS = {
@@ -73,34 +71,18 @@ const EMPTY_MICROSOFT_CONNECTION = {
 };
 
 const UNIVERSITY_STATUS_META = {
-  unlinked: {
-    tone: 'neutral',
-    title: 'Sin verificación universitaria',
-    text: 'Aún no has enviado una postulación institucional.'
-  },
-  pending: {
-    tone: 'pending',
-    title: 'Postulación en revisión',
-    text: 'Tu solicitud universitaria fue enviada y está pendiente de validación.'
-  },
-  verified: {
-    tone: 'verified',
-    title: 'Cuenta universitaria verificada',
-    text: 'Tu cuenta ya está aprobada para competir como estudiante universitario.'
-  },
-  rejected: {
-    tone: 'rejected',
-    title: 'Postulación rechazada',
-    text: 'Puedes corregir los datos y volver a enviar la solicitud.'
-  }
+  unlinked: { tone: 'neutral', titleKey: 'upUniUnlinkedTitle', textKey: 'upUniUnlinkedText' },
+  pending: { tone: 'pending', titleKey: 'upUniPendingTitle', textKey: 'upUniPendingText' },
+  verified: { tone: 'verified', titleKey: 'upUniVerifiedTitle', textKey: 'upUniVerifiedText' },
+  rejected: { tone: 'rejected', titleKey: 'upUniRejectedTitle', textKey: 'upUniRejectedText' }
 };
 
 const STUDENT_ID_REGEX = /^[A-Za-z0-9][A-Za-z0-9._/-]{3,31}$/;
-/* ═══════════════════════════════════════════════════════════
-   COMPONENTE PRINCIPAL
-   ═══════════════════════════════════════════════════════════ */
+
 const UniversityPage = () => {
   const navigate = useNavigate();
+  const { t, lang } = useLang();
+  const locale = lang === 'en' ? 'en-US' : 'es-DO';
   const token = getAuthToken() || '';
   const [currentUser, setCurrentUser] = useState(null);
   const [catalogUniversities, setCatalogUniversities] = useState([]);
@@ -109,8 +91,8 @@ const UniversityPage = () => {
   const [activeRegion, setActiveRegion] = useState('rd');
   const [activeTab, setActiveTab] = useState('universidades');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUni, setSelectedUni] = useState(null);      // Vista detalle
-  const [enrollModal, setEnrollModal] = useState(false);      // Modal postulación
+  const [selectedUni, setSelectedUni] = useState(null);
+  const [enrollModal, setEnrollModal] = useState(false);
   const [enrollUni, setEnrollUni] = useState(null);
   const [enrollStep, setEnrollStep] = useState(1);
   const [formData, setFormData] = useState({ matricula: '', carrera: '', campus: '', customCampus: '', nivel: '', institutionalEmail: '' });
@@ -210,7 +192,7 @@ const UniversityPage = () => {
       console.error('Error cargando estado universitario:', error);
       setStatusNotice({
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudo cargar tu estado universitario.'
+        text: error?.response?.data?.message || t('upErrStatusLoad')
       });
     } finally {
       setStatusLoading(false);
@@ -230,14 +212,13 @@ const UniversityPage = () => {
           return {
             id: tournament?._id || tournament?.tournamentId,
             code: tournament?.tournamentId || '',
-            title: tournament?.title || 'Torneo universitario',
-            game: tournament?.game || 'Juego',
+            title: tournament?.title || t('upDefaultTourneyTitle'),
+            game: tournament?.game || t('upDefaultGame'),
             date: tournament?.date || null,
-            dateLabel: formatTournamentDateLabel(tournament?.date),
-            format: tournament?.format || 'Formato pendiente',
-            prize: tournament?.prizePool || tournament?.prizeDetails || 'Por anunciar',
+            format: tournament?.format || t('upDefaultFormat'),
+            prize: tournament?.prizePool || tournament?.prizeDetails || t('upDefaultPrize'),
             status,
-            statusLabel: meta.label,
+            statusLabelKey: meta.labelKey,
             color: meta.color,
             region: UNIVERSITY_ENABLED_REGION
           };
@@ -247,7 +228,7 @@ const UniversityPage = () => {
       console.error('Error cargando torneos universitarios:', error);
       setStatusNotice((prev) => prev || {
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudieron cargar los torneos universitarios.'
+        text: error?.response?.data?.message || t('upErrTourneysLoad')
       });
     } finally {
       setTournamentLoading(false);
@@ -264,7 +245,7 @@ const UniversityPage = () => {
       console.error('Error cargando catálogo universitario:', error);
       setStatusNotice((prev) => prev || {
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudo cargar el catálogo universitario.'
+        text: error?.response?.data?.message || t('upErrCatalogLoad')
       });
     } finally {
       setCatalogLoading(false);
@@ -306,10 +287,10 @@ const UniversityPage = () => {
       type: microsoftStatus === 'error' ? 'error' : 'success',
       text: message || (
         microsoftStatus === 'approved'
-          ? 'Cuenta universitaria verificada automáticamente.'
+          ? t('upMsApproved')
           : microsoftStatus === 'linked'
-            ? 'Cuenta universitaria conectada.'
-            : 'Se completó la conexión institucional.'
+            ? t('upMsLinked')
+            : t('upMsCompleted')
       )
     });
 
@@ -335,7 +316,7 @@ const UniversityPage = () => {
       console.error('Error cargando postulaciones universitarias:', error);
       setStatusNotice({
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudo cargar la cola de postulaciones universitarias.'
+        text: error?.response?.data?.message || t('upErrAppsLoad')
       });
     } finally {
       setAdminLoading(false);
@@ -372,32 +353,28 @@ const UniversityPage = () => {
 
   const handleConnectMicrosoftUniversity = async () => {
     if (!token) {
-      setStatusNotice({ type: 'error', text: 'Debes iniciar sesión para conectar tu cuenta universitaria.' });
+      setStatusNotice({ type: 'error', text: t('upErrLoginConnect') });
       return;
     }
-
     if (!institutionalEmail) {
-      setStatusNotice({ type: 'error', text: 'Primero envía tu postulación con tu correo institucional.' });
+      setStatusNotice({ type: 'error', text: t('upErrNoEmail') });
       return;
     }
-
     setConnectLoading(true);
     setStatusNotice(null);
     try {
       const res = await axios.post(`${API_URL}/api/university/microsoft/connect`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       if (!res.data?.authorizationUrl) {
-        throw new Error('No se recibió la URL de autorización.');
+        throw new Error(t('upErrNoAuthUrl'));
       }
-
       window.location.href = res.data.authorizationUrl;
     } catch (error) {
       console.error('Error iniciando conexión universitaria Microsoft:', error);
       setStatusNotice({
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudo iniciar la conexión con Microsoft/Entra.'
+        text: error?.response?.data?.message || t('upErrConnectFail')
       });
       setConnectLoading(false);
     }
@@ -405,28 +382,25 @@ const UniversityPage = () => {
 
   const handleDisconnectMicrosoftUniversity = async () => {
     if (!token) {
-      setStatusNotice({ type: 'error', text: 'Debes iniciar sesión para desconectar tu cuenta universitaria.' });
+      setStatusNotice({ type: 'error', text: t('upErrLoginDisconnect') });
       return;
     }
-
     setConnectLoading(true);
     setStatusNotice(null);
-
     try {
       const res = await axios.delete(`${API_URL}/api/university/microsoft`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       setStatusNotice({
         type: 'success',
-        text: res.data?.message || 'Cuenta universitaria desconectada.'
+        text: res.data?.message || t('upSuccessDisconnect')
       });
       await loadMyUniversityStatus();
     } catch (error) {
       console.error('Error desconectando cuenta universitaria Microsoft:', error);
       setStatusNotice({
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudo desconectar la cuenta universitaria.'
+        text: error?.response?.data?.message || t('upErrDisconnectFail')
       });
     } finally {
       setConnectLoading(false);
@@ -440,9 +414,7 @@ const UniversityPage = () => {
     if ((decision === 'rejected' || decision === 'revoked') && !rejectReason) {
       setStatusNotice({
         type: 'error',
-        text: decision === 'revoked'
-          ? 'Debes indicar el motivo antes de retirar una verificación.'
-          : 'Debes indicar el motivo del rechazo antes de rechazar una postulación.'
+        text: decision === 'revoked' ? t('upErrRevokeReason') : t('upErrRejectReason')
       });
       return;
     }
@@ -465,10 +437,10 @@ const UniversityPage = () => {
       setStatusNotice({
         type: 'success',
         text: decision === 'approved'
-          ? 'Postulación universitaria aprobada.'
+          ? t('upSuccessApprove')
           : decision === 'rejected'
-            ? 'Postulación universitaria rechazada.'
-            : 'Verificación universitaria retirada.'
+            ? t('upSuccessReject')
+            : t('upSuccessRevoke')
       });
       await loadAdminApplications();
       await loadMyUniversityStatus();
@@ -476,7 +448,7 @@ const UniversityPage = () => {
       console.error('Error revisando postulación universitaria:', error);
       setStatusNotice({
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudo revisar la postulación universitaria.'
+        text: error?.response?.data?.message || t('upErrReviewFail')
       });
     } finally {
       setReviewLoadingId('');
@@ -492,7 +464,7 @@ const UniversityPage = () => {
           <div className={`up-status-banner up-status-banner--${statusNotice.type}`}>
             <i className={`bx ${statusNotice.type === 'success' ? 'bx-check-circle' : 'bx-error-circle'}`}></i>
             <div>
-              <strong>{statusNotice.type === 'success' ? 'University' : 'Atención'}</strong>
+              <strong>{statusNotice.type === 'success' ? 'University' : t('upBannerError')}</strong>
               <span>{statusNotice.text}</span>
             </div>
           </div>
@@ -503,7 +475,7 @@ const UniversityPage = () => {
             <i className="bx bx-loader-alt"></i>
             <div>
               <strong>University</strong>
-              <span>Cargando tu estado institucional...</span>
+              <span>{t('upBannerLoading')}</span>
             </div>
           </div>
         ) : currentUniversityState !== 'unlinked' ? (
@@ -516,12 +488,12 @@ const UniversityPage = () => {
                   : 'bx-x-circle'
             }`}></i>
             <div>
-              <strong>{currentUniversityMeta.title}</strong>
+              <strong>{t(currentUniversityMeta.titleKey)}</strong>
               <span>
                 {myUniversityStatus.universityName ? `${myUniversityStatus.universityName}. ` : ''}
-                {currentUniversityMeta.text}
-                {currentUniversityState === 'pending' && myUniversityStatus.rejectReason ? ` Motivo actual: ${myUniversityStatus.rejectReason}` : ''}
-                {currentUniversityState === 'rejected' && myUniversityStatus.rejectReason ? ` Motivo: ${myUniversityStatus.rejectReason}` : ''}
+                {t(currentUniversityMeta.textKey)}
+                {currentUniversityState === 'pending' && myUniversityStatus.rejectReason ? ` ${t('upReasonCurrent')}: ${myUniversityStatus.rejectReason}` : ''}
+                {currentUniversityState === 'rejected' && myUniversityStatus.rejectReason ? ` ${t('upReason')}: ${myUniversityStatus.rejectReason}` : ''}
               </span>
             </div>
           </div>
@@ -533,21 +505,21 @@ const UniversityPage = () => {
               <i className='bx bxl-microsoft'></i>
             </div>
             <div className="up-ms-card__content">
-              <strong>Conexión con cuenta universitaria</strong>
+              <strong>{t('upMsCardTitle')}</strong>
               <span>
-                Usa tu cuenta institucional de Microsoft/Entra. No se aceptan cuentas personales de Microsoft.
+                {t('upMsCardDesc')}
                 {microsoftConnection?.verified && microsoftEmail
-                  ? ` Cuenta conectada: ${microsoftEmail}.`
-                  : ` Correo esperado: ${institutionalEmail}.`}
+                  ? ` ${t('upMsConnectedLabel')} ${microsoftEmail}.`
+                  : ` ${t('upMsExpected')} ${institutionalEmail}.`}
               </span>
               {currentUniversityAllowedDomains.length > 0 ? (
                 <small className="up-ms-card__warning">
-                  Dominios permitidos para esta universidad: {currentUniversityAllowedDomains.join(', ')}.
+                  {t('upMsAllowedDomains')} {currentUniversityAllowedDomains.join(', ')}.
                 </small>
               ) : null}
               {microsoftConnection?.verified && microsoftEmail && !hasMicrosoftInstitutionalMatch ? (
                 <small className="up-ms-card__warning">
-                  La cuenta conectada no coincide exactamente con el correo institucional de la postulación. Quedará en revisión manual.
+                  {t('upMsMismatch')}
                 </small>
               ) : null}
             </div>
@@ -560,10 +532,10 @@ const UniversityPage = () => {
               >
                 <i className='bx bxl-microsoft'></i>
                 {connectLoading
-                  ? 'Conectando...'
+                  ? t('upBtnConnecting')
                   : hasMicrosoftInstitutionalMatch
-                    ? 'Reconectar cuenta'
-                    : 'Conectar cuenta universitaria'}
+                    ? t('upBtnReconnect')
+                    : t('upBtnConnect')}
               </button>
               {microsoftConnection?.verified ? (
                 <button
@@ -573,7 +545,7 @@ const UniversityPage = () => {
                   disabled={connectLoading}
                 >
                   <i className='bx bx-unlink'></i>
-                  Desconectar
+                  {t('upBtnDisconnect')}
                 </button>
               ) : null}
             </div>
@@ -598,12 +570,12 @@ const UniversityPage = () => {
           }`}></i>
         </div>
         <div className="up-eligibility__body">
-          <span className="up-eyebrow">ESTADO INSTITUCIONAL</span>
-          <strong>{currentUniversityMeta.title}</strong>
-          <p>{currentUniversityMeta.text}</p>
+          <span className="up-eyebrow">{t('upEyebrowStatus')}</span>
+          <strong>{t(currentUniversityMeta.titleKey)}</strong>
+          <p>{t(currentUniversityMeta.textKey)}</p>
           {currentAppliedUniversityId ? (
             <small className="up-eligibility__hint">
-              Universidad ligada a tu cuenta: {myUniversityStatus?.universityName || myUniversityApplication?.universityName || currentAppliedUniversityId}.
+              {t('upLinkedUni')} {myUniversityStatus?.universityName || myUniversityApplication?.universityName || currentAppliedUniversityId}.
             </small>
           ) : null}
         </div>
@@ -614,12 +586,12 @@ const UniversityPage = () => {
           <i className='bx bxl-microsoft'></i>
         </div>
         <div className="up-eligibility__body">
-          <span className="up-eyebrow">CUENTA UNIVERSITARIA</span>
-          <strong>{microsoftConnection?.verified ? 'Cuenta institucional conectada' : 'Cuenta institucional pendiente'}</strong>
+          <span className="up-eyebrow">{t('upEyebrowAccount')}</span>
+          <strong>{microsoftConnection?.verified ? t('upMsConnectedTitle') : t('upMsPendingTitle')}</strong>
           <p>
             {microsoftConnection?.verified && microsoftEmail
-              ? `${microsoftEmail}${hasMicrosoftInstitutionalMatch ? ' coincide con la postulación.' : ' no coincide exactamente con tu correo postulado.'}`
-              : 'Conecta tu cuenta Microsoft/Entra institucional para acelerar la revisión.'}
+              ? `${microsoftEmail} ${hasMicrosoftInstitutionalMatch ? t('upMsMatchDesc') : t('upMsMismatchDesc')}`
+              : t('upMsPendingDesc')}
           </p>
         </div>
       </div>
@@ -629,14 +601,14 @@ const UniversityPage = () => {
           <i className='bx bx-group'></i>
         </div>
         <div className="up-eligibility__body">
-          <span className="up-eyebrow">EQUIPO UNIVERSITARIO</span>
-          <strong>{canCreateUniversityTeam ? 'Puedes crear equipo universitario' : 'Aún no puedes crear equipo universitario'}</strong>
+          <span className="up-eyebrow">{t('upEyebrowTeam')}</span>
+          <strong>{canCreateUniversityTeam ? t('upTeamCanCreate') : t('upTeamCannotCreate')}</strong>
           <p>
             {canCreateUniversityTeam
-              ? 'Tu cuenta quedó verificada. Ya puedes crear equipos universitarios y aceptar solo estudiantes de tu misma institución.'
+              ? t('upTeamVerifiedDesc')
               : needsManualReview
-                ? 'Tu cuenta sigue en revisión. Cuando cambie a verificada se habilitará la creación de equipo.'
-                : 'Primero debes postularte y validar tu cuenta institucional.'}
+                ? t('upTeamPendingDesc')
+                : t('upTeamUnlinkedDesc')}
           </p>
         </div>
         <div className="up-eligibility__actions">
@@ -646,7 +618,7 @@ const UniversityPage = () => {
             disabled={!canCreateUniversityTeam}
             onClick={() => navigate('/create-team?teamLevel=universitario&source=university')}
           >
-            Ir a equipos
+            {t('upBtnGoTeams')}
           </button>
         </div>
       </div>
@@ -656,12 +628,12 @@ const UniversityPage = () => {
           <i className='bx bx-trophy'></i>
         </div>
         <div className="up-eligibility__body">
-          <span className="up-eyebrow">TORNEOS UNIVERSITARIOS</span>
-          <strong>{canCompeteUniversityTournament ? 'Listo para competir' : 'Competencia bloqueada por ahora'}</strong>
+          <span className="up-eyebrow">{t('upEyebrowTourneys')}</span>
+          <strong>{canCompeteUniversityTournament ? t('upTourneyReady') : t('upTourneyBlocked')}</strong>
           <p>
             {canCompeteUniversityTournament
-              ? 'Ya puedes registrar equipos universitarios verificados en torneos con elegibilidad universitaria.'
-              : 'Los torneos universitarios solo aceptan estudiantes RD verificados y equipos universitarios válidos.'}
+              ? t('upTourneyReadyDesc')
+              : t('upTourneyBlockedDesc')}
           </p>
         </div>
         <div className="up-eligibility__actions">
@@ -671,19 +643,18 @@ const UniversityPage = () => {
             disabled={!canCompeteUniversityTournament}
             onClick={() => navigate('/torneos')}
           >
-            Ver torneos
+            {t('upBtnSeeTourneys')}
           </button>
         </div>
       </div>
     </div>
   );
 
-  // Enroll handlers
   const openEnroll = (uni) => {
     if (hasBlockingUniversityApplication && currentAppliedUniversityId && currentAppliedUniversityId !== uni?.id) {
       setStatusNotice({
         type: 'error',
-        text: `Tu cuenta ya tiene una postulación asociada a ${myUniversityStatus?.universityName || myUniversityApplication?.universityName || 'otra universidad'}. Por ahora solo puedes postularte a una universidad por cuenta.`
+        text: t('upErrDupApp').replace('{{uni}}', myUniversityStatus?.universityName || myUniversityApplication?.universityName || t('upAnotherUni'))
       });
       return;
     }
@@ -712,39 +683,39 @@ const UniversityPage = () => {
     const allowedCampuses = Array.isArray(enrollUni?.campuses) ? enrollUni.campuses : [];
 
     if (!STUDENT_ID_REGEX.test(normalizedStudentId)) {
-      nextErrors.matricula = 'Usa entre 4 y 32 caracteres. Solo letras, números, ".", "_", "/" o "-".';
+      nextErrors.matricula = t('upErrStudentId');
     }
 
     if (!normalizedProgram) {
-      nextErrors.carrera = 'Selecciona una carrera.';
+      nextErrors.carrera = t('upErrNoProg');
     } else if (allowedPrograms.length === 0) {
-      nextErrors.carrera = 'Esta universidad no tiene carreras configuradas todavía.';
+      nextErrors.carrera = t('upErrNoProgConfig');
     } else if (!allowedPrograms.includes(normalizedProgram)) {
-      nextErrors.carrera = 'Debes seleccionar una carrera válida de la universidad.';
+      nextErrors.carrera = t('upErrInvalidProg');
     }
 
     if (!selectedCampus) {
-      nextErrors.campus = 'Selecciona la ciudad de tu campus.';
+      nextErrors.campus = t('upErrNoCampus');
     } else if (allowedCampuses.length === 0) {
-      nextErrors.campus = 'Esta universidad no tiene campuses configurados todavía.';
+      nextErrors.campus = t('upErrNoCampusConfig');
     } else if (!allowedCampuses.includes(selectedCampus)) {
-      nextErrors.campus = 'Debes seleccionar una ciudad de campus válida de la universidad.';
+      nextErrors.campus = t('upErrInvalidCampus');
     }
 
     if (!ALLOWED_ACADEMIC_LEVELS.has(String(formData.nivel || '').trim())) {
-      nextErrors.nivel = 'Selecciona un nivel académico válido.';
+      nextErrors.nivel = t('upErrNoLevel');
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      nextErrors.institutionalEmail = 'Ingresa un correo institucional válido.';
+      nextErrors.institutionalEmail = t('upErrEmailFormat');
     } else if (PUBLIC_EMAIL_DOMAINS.has(getEmailDomain(normalizedEmail))) {
-      nextErrors.institutionalEmail = 'Usa un correo institucional, no uno personal.';
+      nextErrors.institutionalEmail = t('upErrEmailPersonal');
     } else if (enrollUni?.region !== 'rd') {
-      nextErrors.institutionalEmail = 'Por ahora la verificación institucional solo está habilitada para universidades de República Dominicana.';
+      nextErrors.institutionalEmail = t('upErrEmailRegion');
     } else if (getCatalogUniversityAllowedDomains(enrollUni?.id).length === 0) {
-      nextErrors.institutionalEmail = 'Esta universidad todavía no tiene dominios institucionales configurados para verificación.';
+      nextErrors.institutionalEmail = t('upErrEmailNoDomains');
     } else if (!isCatalogInstitutionalEmailAllowed(enrollUni?.id, normalizedEmail)) {
-      nextErrors.institutionalEmail = `Usa uno de los dominios institucionales oficiales de esta universidad: ${getCatalogUniversityAllowedDomains(enrollUni?.id).join(', ')}.`;
+      nextErrors.institutionalEmail = `${t('upErrEmailDomain')} ${getCatalogUniversityAllowedDomains(enrollUni?.id).join(', ')}.`;
     }
 
     setFieldErrors(nextErrors);
@@ -757,7 +728,7 @@ const UniversityPage = () => {
   const handleSubmitEnroll = async (e) => {
     e.preventDefault();
     if (!token) {
-      setStatusNotice({ type: 'error', text: 'Debes iniciar sesión para postularte a una universidad.' });
+      setStatusNotice({ type: 'error', text: t('upErrLoginApply') });
       return;
     }
     if (!enrollUni) return;
@@ -789,14 +760,14 @@ const UniversityPage = () => {
       setFormData({ matricula: '', carrera: '', campus: '', customCampus: '', nivel: '', institutionalEmail: '' });
       setStatusNotice({
         type: 'success',
-        text: 'Tu postulación universitaria fue enviada. Ahora puedes conectar la misma cuenta institucional Microsoft/Entra para intentar verificación semiautomática.'
+        text: t('upSuccessApply')
       });
       await loadMyUniversityStatus();
     } catch (error) {
       console.error('Error enviando postulación:', error);
       setStatusNotice({
         type: 'error',
-        text: error?.response?.data?.message || 'No se pudo enviar la postulación universitaria.'
+        text: error?.response?.data?.message || t('upErrApplyFail')
       });
     } finally {
       setSubmitLoading(false);
@@ -807,13 +778,11 @@ const UniversityPage = () => {
   if (selectedUni) {
     return (
       <div className="up">
-        {/* Back button */}
         <button className="up-back" onClick={() => setSelectedUni(null)}>
           <i className='bx bx-arrow-back'></i>
-          <span>Volver a universidades</span>
+          <span>{t('upBack')}</span>
         </button>
 
-        {/* Hero de universidad */}
         <div className="up-detail-hero">
           <div className="up-detail-hero__gradient"></div>
           <div className="up-detail-hero__content">
@@ -822,21 +791,21 @@ const UniversityPage = () => {
             </div>
             <div className="up-detail-hero__info">
               <span className="up-eyebrow">
-                {selectedUni.verified && <><i className='bx bxs-badge-check'></i> VERIFICADA</>}
-                {!selectedUni.verified && 'PENDIENTE VERIFICACIÓN'}
+                {selectedUni.verified && <><i className='bx bxs-badge-check'></i> {t('upVerified')}</>}
+                {!selectedUni.verified && t('upPendingVerif')}
               </span>
               <h1>{selectedUni.tag}</h1>
               <h2>{selectedUni.name}</h2>
               <div className="up-detail-hero__meta">
                 <span><i className='bx bx-map'></i> {selectedUni.city}</span>
-                <span><i className='bx bx-calendar'></i> Fundada en {selectedUni.founded}</span>
-                <span><i className='bx bx-log-in-circle'></i> En GLITCH GANG desde {selectedUni.joinedGlitchGang}</span>
+                <span><i className='bx bx-calendar'></i> {t('upFoundedIn')} {selectedUni.founded}</span>
+                <span><i className='bx bx-log-in-circle'></i> {t('upInGG')} {selectedUni.joinedGlitchGang}</span>
               </div>
             </div>
             <div className="up-detail-hero__actions">
               <div className="up-detail-hero__score">
                 <span className="up-detail-hero__score-val">{selectedUni.points.toLocaleString()}</span>
-                <small>PUNTOS</small>
+                <small>{t('upPoints')}</small>
               </div>
               <button
                 className="up-btn up-btn--primary"
@@ -846,14 +815,14 @@ const UniversityPage = () => {
               >
                 <i className='bx bx-right-top-arrow-circle'></i>{' '}
                 {selectedUniMatchesCurrent && currentUniversityState === 'pending'
-                  ? 'EN REVISIÓN'
+                  ? t('upBtnReview')
                   : selectedUniMatchesCurrent && currentUniversityState === 'verified'
-                    ? 'VERIFICADA'
+                    ? t('upBtnVerifiedState')
                     : currentUniversityState === 'rejected'
-                      ? 'VOLVER A POSTULARME'
+                      ? t('upBtnReapply')
                       : hasBlockingUniversityApplication && currentAppliedUniversityId && currentAppliedUniversityId !== selectedUni.id
-                      ? 'BLOQUEADA'
-                      : 'POSTULARME'}
+                      ? t('upBtnBlocked')
+                      : t('upBtnApply')}
               </button>
             </div>
           </div>
@@ -862,70 +831,67 @@ const UniversityPage = () => {
         {renderUniversityStatusBanner()}
         {renderEligibilityOverview()}
 
-        {/* Grid de contenido */}
         <div className="up-detail-grid">
-
-          {/* Biografía */}
           <div className="up-surface up-detail-bio">
             <div className="up-surface__head">
               <i className='bx bx-book-open'></i>
               <div>
-                <span className="up-eyebrow">HISTORIA</span>
-                <h3>Biografía</h3>
+                <span className="up-eyebrow">{t('upEyebrowHistory')}</span>
+                <h3>{t('upBio')}</h3>
               </div>
             </div>
             <p className="up-detail-bio__text">{selectedUni.bio}</p>
             <div className="up-detail-bio__stats">
               <div className="up-detail-bio__stat">
                 <span>{selectedUni.founded}</span>
-                <small>Fundación</small>
+                <small>{t('upFoundation')}</small>
               </div>
               <div className="up-detail-bio__stat">
                 <span>{selectedUni.joinedGlitchGang}</span>
-                <small>En GLITCH GANG</small>
+                <small>{t('upInGGShort')}</small>
               </div>
               <div className="up-detail-bio__stat">
                 <span>{Number(selectedUni.verifiedStudentsCount || 0).toLocaleString()}</span>
-                <small>Estudiantes</small>
+                <small>{t('upStudents')}</small>
               </div>
               <div className="up-detail-bio__stat">
                 <span>{selectedUni.teams.length}</span>
-                <small>Equipos</small>
+                <small>{t('upTeams')}</small>
               </div>
               <div className="up-detail-bio__stat">
                 <span>{selectedUni.games.length}</span>
-                <small>Juegos</small>
+                <small>{t('upGames')}</small>
               </div>
             </div>
             <div className="up-detail-points">
               <div className="up-surface__head">
                 <i className='bx bx-medal'></i>
                 <div>
-                  <span className="up-eyebrow">COMPETENCIA</span>
-                  <h3>Sistema de puntos</h3>
+                  <span className="up-eyebrow">{t('upEyebrowComp')}</span>
+                  <h3>{t('upPointsSystem')}</h3>
                 </div>
               </div>
               <div className="up-detail-points__grid">
                 <div className="up-detail-points__item">
                   <strong>{selectedUni?.stats?.tournamentsPlayed || 0}</strong>
-                  <small>Torneos jugados</small>
+                  <small>{t('upTourneysPlayed')}</small>
                 </div>
                 <div className="up-detail-points__item">
                   <strong>{selectedUni?.stats?.matchWins || 0}</strong>
-                  <small>Victorias</small>
+                  <small>{t('upWins')}</small>
                 </div>
                 <div className="up-detail-points__item">
                   <strong>{selectedUni?.stats?.championships || 0}</strong>
-                  <small>Campeonatos</small>
+                  <small>{t('upChampionships')}</small>
                 </div>
                 <div className="up-detail-points__item">
                   <strong>{selectedUni?.stats?.finals || 0}</strong>
-                  <small>Finales</small>
+                  <small>{t('upFinals')}</small>
                 </div>
               </div>
               {pointsConfig ? (
                 <div className="up-detail-points__rules">
-                  <span>Participación base +{pointsConfig.participation}</span>
+                  <span>{t('upBaseParticipation')} +{pointsConfig.participation}</span>
                 </div>
               ) : null}
               {pointsConfig?.sizeMultipliers ? (
@@ -942,10 +908,10 @@ const UniversityPage = () => {
                   {Object.entries(pointsConfig.formats).map(([formatKey, config]) => (
                     <div key={formatKey} className="up-detail-points__format-card">
                       <strong>{config.label}</strong>
-                      <small>Victoria +{config.matchWin}</small>
-                      <small>Campeón +{config.championBonus}</small>
-                      <small>Finalista +{config.finalistBonus}</small>
-                      <small>Semifinal / Top 4 +{config.semifinalBonus}</small>
+                      <small>{t('upWinBonus')} +{config.matchWin}</small>
+                      <small>{t('upChampBonus')} +{config.championBonus}</small>
+                      <small>{t('upFinalistBonus')} +{config.finalistBonus}</small>
+                      <small>{t('upSemiBonus')} +{config.semifinalBonus}</small>
                       <em>{config.placementNote}</em>
                     </div>
                   ))}
@@ -954,13 +920,12 @@ const UniversityPage = () => {
             </div>
           </div>
 
-          {/* Juegos que patrocina */}
           <div className="up-surface up-detail-games">
             <div className="up-surface__head">
               <i className='bx bx-joystick'></i>
               <div>
-                <span className="up-eyebrow">COMPETICIÓN</span>
-                <h3>Juegos que patrocina</h3>
+                <span className="up-eyebrow">{t('upEyebrowCompGames')}</span>
+                <h3>{t('upSponsoredGames')}</h3>
               </div>
             </div>
             <div className="up-detail-games__grid">
@@ -973,13 +938,12 @@ const UniversityPage = () => {
             </div>
           </div>
 
-          {/* Lo que ofrece */}
           <div className="up-surface up-detail-offers">
             <div className="up-surface__head">
               <i className='bx bx-gift'></i>
               <div>
-                <span className="up-eyebrow">BENEFICIOS</span>
-                <h3>Qué ofrece</h3>
+                <span className="up-eyebrow">{t('upEyebrowBenefits')}</span>
+                <h3>{t('upOffers')}</h3>
               </div>
             </div>
             <ul className="up-detail-offers__list">
@@ -992,34 +956,33 @@ const UniversityPage = () => {
             </ul>
           </div>
 
-          {/* Equipos */}
           <div className="up-surface up-detail-teams">
             <div className="up-surface__head">
               <i className='bx bx-group'></i>
               <div>
-                <span className="up-eyebrow">ROSTER</span>
-                <h3>Equipos activos</h3>
+                <span className="up-eyebrow">{t('upEyebrowRoster')}</span>
+                <h3>{t('upActiveTeams')}</h3>
               </div>
             </div>
             {selectedUni.teams.length === 0 ? (
               <div className="up-empty up-empty--sm">
                 <i className='bx bx-user-plus'></i>
-                <p>Aún no hay equipos registrados. ¡Sé el primero!</p>
+                <p>{t('upNoTeams')}</p>
               </div>
             ) : (
               <div className="up-detail-teams__list">
-                {selectedUni.teams.map((t, i) => (
+                {selectedUni.teams.map((team, i) => (
                   <div key={i} className="up-detail-teams__card">
                     <div className="up-detail-teams__card-icon">
                       <i className='bx bxs-zap'></i>
                     </div>
                     <div className="up-detail-teams__card-info">
-                      <strong>{t.name}</strong>
-                      <span>{t.game}</span>
+                      <strong>{team.name}</strong>
+                      <span>{team.game}</span>
                     </div>
                     <div className="up-detail-teams__card-meta">
-                      <div className="up-detail-teams__card-badge">{t.rank}</div>
-                      <small>{t.members} jugadores</small>
+                      <div className="up-detail-teams__card-badge">{team.rank}</div>
+                      <small>{team.members} {t('upPlayers')}</small>
                     </div>
                   </div>
                 ))}
@@ -1028,13 +991,11 @@ const UniversityPage = () => {
           </div>
         </div>
 
-        {/* Modal de postulación (shared) */}
         {enrollModal && renderEnrollModal()}
       </div>
     );
   }
 
-  /* ─── Render del modal de postulación ─── */
   function renderEnrollModal() {
     const uni = enrollUni;
     if (!uni) return null;
@@ -1048,8 +1009,8 @@ const UniversityPage = () => {
           {enrollStep === 1 && (
             <>
               <div className="up-modal__head">
-                <h3>POSTULACIÓN</h3>
-                <p>Confirma tu universidad</p>
+                <h3>{t('upModalTitle')}</h3>
+                <p>{t('upModalConfirmUni')}</p>
               </div>
               <div className="up-modal__uni-preview">
                 <img src={uni.logo} alt={uni.tag} />
@@ -1060,7 +1021,7 @@ const UniversityPage = () => {
                 </div>
               </div>
               <button className="up-btn up-btn--primary up-btn--full" onClick={() => setEnrollStep(2)}>
-                CONTINUAR <i className='bx bx-right-arrow-alt'></i>
+                {t('upBtnContinue')} <i className='bx bx-right-arrow-alt'></i>
               </button>
             </>
           )}
@@ -1069,20 +1030,20 @@ const UniversityPage = () => {
             <form onSubmit={handleSubmitEnroll}>
               <div className="up-modal__form-top">
                 <button type="button" className="up-btn up-btn--ghost" onClick={() => setEnrollStep(1)}>
-                  <i className='bx bx-left-arrow-alt'></i> Volver
+                  <i className='bx bx-left-arrow-alt'></i> {t('upBtnBack')}
                 </button>
                 <div className="up-modal__badge">
                   <img src={uni.logo} alt="" />
                   <span>{uni.tag}</span>
                 </div>
               </div>
-              <h3 className="up-modal__form-title">DATOS DE ESTUDIANTE</h3>
+              <h3 className="up-modal__form-title">{t('upModalFormTitle')}</h3>
               <div className="up-field">
-                <label>Matrícula / ID Estudiantil</label>
+                <label>{t('upFieldId')}</label>
                 <input
                   className={fieldErrors.matricula ? 'up-field__input--error' : ''}
                   type="text"
-                  placeholder="Ej: 2023-0145"
+                  placeholder={t('upFieldIdPlaceholder')}
                   required
                   value={formData.matricula}
                   onChange={e => {
@@ -1093,7 +1054,7 @@ const UniversityPage = () => {
                 {fieldErrors.matricula && <small className="up-field__error">{fieldErrors.matricula}</small>}
               </div>
               <div className="up-field">
-                <label>Correo institucional</label>
+                <label>{t('upFieldEmail')}</label>
                 <input
                   className={fieldErrors.institutionalEmail ? 'up-field__input--error' : ''}
                   type="email"
@@ -1108,12 +1069,12 @@ const UniversityPage = () => {
                 {fieldErrors.institutionalEmail && <small className="up-field__error">{fieldErrors.institutionalEmail}</small>}
                 {!fieldErrors.institutionalEmail && (
                   <small className="up-field__hint">
-                    Por ahora solo aceptamos correos institucionales oficiales de las universidades RD habilitadas en la app. Dominios permitidos para esta universidad: {getCatalogUniversityAllowedDomains(enrollUni?.id).join(', ') || 'pendiente de configurar'}. Después de enviar la postulación, conecta esta misma cuenta institucional Microsoft/Entra para verificación semiautomática.
+                    {t('upFieldEmailHint')} {t('upMsAllowedDomains')} {getCatalogUniversityAllowedDomains(enrollUni?.id).join(', ') || t('upFieldEmailPending')}. {t('upFieldEmailMsHint')}
                   </small>
                 )}
               </div>
               <div className="up-field">
-                <label>Carrera</label>
+                <label>{t('upFieldProgram')}</label>
                 <select
                   className={fieldErrors.carrera ? 'up-field__input--error' : ''}
                   required
@@ -1123,7 +1084,7 @@ const UniversityPage = () => {
                     if (fieldErrors.carrera) setFieldErrors((prev) => ({ ...prev, carrera: '' }));
                   }}
                 >
-                  <option value="" disabled>Selecciona tu carrera</option>
+                  <option value="" disabled>{t('upFieldProgramSelect')}</option>
                   {(Array.isArray(uni.programs) ? uni.programs : []).map((program) => (
                     <option key={program} value={program}>{program}</option>
                   ))}
@@ -1131,12 +1092,12 @@ const UniversityPage = () => {
                 {fieldErrors.carrera && <small className="up-field__error">{fieldErrors.carrera}</small>}
                 {!fieldErrors.carrera && (
                   <small className="up-field__hint">
-                    La carrera se valida contra la oferta académica configurada para {uni.tag}.
+                    {t('upFieldProgramHint')} {uni.tag}.
                   </small>
                 )}
               </div>
               <div className="up-field">
-                <label>Ciudad del campus</label>
+                <label>{t('upFieldCampus')}</label>
                 <select
                   className={fieldErrors.campus ? 'up-field__input--error' : ''}
                   required
@@ -1146,7 +1107,7 @@ const UniversityPage = () => {
                     if (fieldErrors.campus) setFieldErrors((prev) => ({ ...prev, campus: '' }));
                   }}
                 >
-                  <option value="" disabled>Selecciona</option>
+                  <option value="" disabled>{t('upFieldCampusSelect')}</option>
                   {(Array.isArray(uni.campuses) ? uni.campuses : []).map((campus) => (
                     <option key={campus} value={campus}>{campus}</option>
                   ))}
@@ -1154,12 +1115,12 @@ const UniversityPage = () => {
                 {fieldErrors.campus && <small className="up-field__error">{fieldErrors.campus}</small>}
                 {!fieldErrors.campus && (
                   <small className="up-field__hint">
-                    La ciudad del campus se valida contra las sedes habilitadas para {uni.tag}.
+                    {t('upFieldCampusHint')} {uni.tag}.
                   </small>
                 )}
               </div>
               <div className="up-field">
-                <label>Nivel académico</label>
+                <label>{t('upFieldLevel')}</label>
                 <select
                   className={fieldErrors.nivel ? 'up-field__input--error' : ''}
                   required
@@ -1169,7 +1130,7 @@ const UniversityPage = () => {
                     if (fieldErrors.nivel) setFieldErrors((prev) => ({ ...prev, nivel: '' }));
                   }}
                 >
-                  <option value="" disabled>Seleccionar</option>
+                  <option value="" disabled>{t('upFieldLevelSelect')}</option>
                   {ACADEMIC_LEVEL_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
@@ -1177,7 +1138,7 @@ const UniversityPage = () => {
                 {fieldErrors.nivel && <small className="up-field__error">{fieldErrors.nivel}</small>}
               </div>
               <button type="submit" className="up-btn up-btn--primary up-btn--full" disabled={submitLoading}>
-                {submitLoading ? 'ENVIANDO...' : 'CONFIRMAR POSTULACIÓN'}
+                {submitLoading ? t('upBtnSubmitting') : t('upBtnConfirm')}
               </button>
             </form>
           )}
@@ -1186,41 +1147,36 @@ const UniversityPage = () => {
     );
   }
 
-  /* ─── VISTA PRINCIPAL (Listado) ─── */
   return (
     <div className="up">
-
-      {/* ═══ HEADER ═══ */}
       <header className="up-header">
         <div className="up-header__left">
-          <span className="up-eyebrow"><i className='bx bxs-graduation'></i> UNIVERSITY SERIES</span>
+          <span className="up-eyebrow"><i className='bx bxs-graduation'></i> {t('upEyebrowHeader')}</span>
           <h1 className="up-header__title">
-            Universidades <span className="up-glow-text">Partner</span>
+            {t('upHeaderTitle')} <span className="up-glow-text">{t('upHeaderTitleAccent')}</span>
           </h1>
-          <p className="up-header__desc">
-            Por ahora la University Series está enfocada en República Dominicana. Competirán estudiantes de las universidades RD ya activas dentro de la plataforma.
-          </p>
+          <p className="up-header__desc">{t('upHeaderDesc')}</p>
         </div>
         <div className="up-header__right">
           <div className="up-header__stats">
             <div className="up-header__stat">
               <span>{stats.total}</span>
-              <small>UNIVERSIDADES</small>
+              <small>{t('upStatUnis')}</small>
             </div>
             <div className="up-header__stat-sep"></div>
             <div className="up-header__stat">
               <span>{stats.verified}</span>
-              <small>VERIFICADAS</small>
+              <small>{t('upStatVerified')}</small>
             </div>
             <div className="up-header__stat-sep"></div>
             <div className="up-header__stat">
               <span>{stats.students}</span>
-              <small>ESTUDIANTES</small>
+              <small>{t('upStatStudents')}</small>
             </div>
             <div className="up-header__stat-sep"></div>
             <div className="up-header__stat">
               <span>{stats.teams}</span>
-              <small>EQUIPOS</small>
+              <small>{t('upStatTeams')}</small>
             </div>
           </div>
         </div>
@@ -1229,7 +1185,6 @@ const UniversityPage = () => {
       {renderUniversityStatusBanner()}
       {renderEligibilityOverview()}
 
-      {/* ═══ REGIONES ═══ */}
       <div className="up-regions">
         {UNIVERSITY_VISIBLE_REGIONS.map(r => (
           <button
@@ -1244,35 +1199,32 @@ const UniversityPage = () => {
         ))}
       </div>
 
-      {/* ═══ TABS ═══ */}
       <div className="up-tabs">
         <button className={`up-tabs__btn ${activeTab === 'universidades' ? 'up-tabs__btn--active' : ''}`} onClick={() => setActiveTab('universidades')}>
-          <i className='bx bx-buildings'></i> Universidades
+          <i className='bx bx-buildings'></i> {t('upTabUnis')}
         </button>
         <button className={`up-tabs__btn ${activeTab === 'torneos' ? 'up-tabs__btn--active' : ''}`} onClick={() => setActiveTab('torneos')}>
-          <i className='bx bx-trophy'></i> Torneos
+          <i className='bx bx-trophy'></i> {t('upTabTourneys')}
         </button>
         <button className={`up-tabs__btn ${activeTab === 'rankings' ? 'up-tabs__btn--active' : ''}`} onClick={() => setActiveTab('rankings')}>
-          <i className='bx bx-bar-chart-alt-2'></i> Rankings
+          <i className='bx bx-bar-chart-alt-2'></i> {t('upTabRankings')}
         </button>
         {currentUser?.isAdmin && (
           <button className={`up-tabs__btn ${activeTab === 'admin' ? 'up-tabs__btn--active' : ''}`} onClick={() => setActiveTab('admin')}>
-            <i className='bx bx-check-shield'></i> Validaciones
+            <i className='bx bx-check-shield'></i> {t('upTabAdmin')}
           </button>
         )}
       </div>
 
-      {/* ═══ CONTENT ═══ */}
       <div className="up-content">
 
-        {/* TAB: UNIVERSIDADES (cards clicables) */}
         {activeTab === 'universidades' && (
           <>
             <div className="up-search">
               <i className='bx bx-search'></i>
               <input
                 type="text"
-                placeholder={`Buscar en ${currentRegion.name}...`}
+                placeholder={t('upSearchPlaceholder').replace('{{region}}', currentRegion?.name || '')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -1286,14 +1238,14 @@ const UniversityPage = () => {
               {catalogLoading ? (
                 <div className="up-empty">
                   <i className='bx bx-loader-alt'></i>
-                  <h3>Cargando universidades</h3>
-                  <p>Consultando el catálogo universitario activo.</p>
+                  <h3>{t('upLoadingUnis')}</h3>
+                  <p>{t('upLoadingUnisDesc')}</p>
                 </div>
               ) : regionUnis.length === 0 ? (
                 <div className="up-empty">
                   <i className='bx bx-search-alt-2'></i>
-                  <h3>Sin resultados</h3>
-                  <p>No se encontraron universidades.</p>
+                  <h3>{t('upNoResults')}</h3>
+                  <p>{t('upNoResultsDesc')}</p>
                 </div>
               ) : (
                 regionUnis.map(uni => (
@@ -1304,7 +1256,7 @@ const UniversityPage = () => {
                       </div>
                       <div className="up-uni-card__score">
                         <span>{uni.points.toLocaleString()}</span>
-                        <small>PTS</small>
+                        <small>{t('upPts')}</small>
                       </div>
                     </div>
                     <div className="up-uni-card__body">
@@ -1332,7 +1284,7 @@ const UniversityPage = () => {
                       </div>
                     </div>
                     <div className="up-uni-card__hover-hint">
-                      <span>Ver detalles</span> <i className='bx bx-right-arrow-alt'></i>
+                      <span>{t('upSeeDetails')}</span> <i className='bx bx-right-arrow-alt'></i>
                     </div>
                   </div>
                 ))
@@ -1341,52 +1293,51 @@ const UniversityPage = () => {
           </>
         )}
 
-        {/* TAB: TORNEOS */}
         {activeTab === 'torneos' && (
           <div className="up-tournaments">
             {tournamentLoading ? (
               <div className="up-empty">
                 <i className='bx bx-loader-alt'></i>
-                <h3>Cargando torneos universitarios</h3>
-                <p>Consultando los torneos universitarios activos de la plataforma.</p>
+                <h3>{t('upLoadingTourneys')}</h3>
+                <p>{t('upLoadingTourneysDesc')}</p>
               </div>
             ) : regionTournaments.length === 0 ? (
               <div className="up-empty">
                 <i className='bx bx-trophy'></i>
-                <h3>Próximamente</h3>
-                <p>No hay torneos universitarios publicados todavía para {currentRegion.name}.</p>
+                <h3>{t('upNoTourneys')}</h3>
+                <p>{t('upNoTourneysDesc')} {currentRegion?.name}.</p>
               </div>
             ) : (
-              regionTournaments.map(t => (
-                <div key={t.id} className={`up-tournament-card up-tournament-card--${t.color}`}>
-                  <div className={`up-tournament-card__status up-tournament-card__status--${t.status}`}>
-                    {t.status === 'ongoing' && <span className="up-pulse"></span>}
-                    {t.statusLabel}
+              regionTournaments.map(tourn => (
+                <div key={tourn.id} className={`up-tournament-card up-tournament-card--${tourn.color}`}>
+                  <div className={`up-tournament-card__status up-tournament-card__status--${tourn.status}`}>
+                    {tourn.status === 'ongoing' && <span className="up-pulse"></span>}
+                    {t(tourn.statusLabelKey)}
                   </div>
                   <div className="up-tournament-card__body">
                     <div className="up-tournament-card__icon">
                       <i className='bx bxs-zap'></i>
                     </div>
                     <div className="up-tournament-card__info">
-                      <span className="up-tournament-card__code">TOR-ID {String(t.code || '').replace(/^TOR-?/i, '')}</span>
-                      <span className="up-eyebrow">{t.game}</span>
-                      <h4>{t.title}</h4>
+                      <span className="up-tournament-card__code">TOR-ID {String(tourn.code || '').replace(/^TOR-?/i, '')}</span>
+                      <span className="up-eyebrow">{tourn.game}</span>
+                      <h4>{tourn.title}</h4>
                       <div className="up-tournament-card__meta">
-                        <span><i className='bx bx-calendar-event'></i> {t.dateLabel}</span>
-                        <span><i className='bx bx-group'></i> {t.format}</span>
-                        <span><i className='bx bx-check-shield'></i> Solo universidades</span>
+                        <span><i className='bx bx-calendar-event'></i> {formatTournamentDateLabel(tourn.date, locale)}</span>
+                        <span><i className='bx bx-group'></i> {tourn.format}</span>
+                        <span><i className='bx bx-check-shield'></i> {t('upUnisOnly')}</span>
                       </div>
                     </div>
                   </div>
                   <div className="up-tournament-card__right">
                     <div className="up-tournament-card__prize">
                       <small>PRIZE POOL</small>
-                      <strong>{t.prize}</strong>
+                      <strong>{tourn.prize}</strong>
                     </div>
                     <button
                       type="button"
                       className="up-btn up-btn--icon"
-                      onClick={() => navigate(`/torneos/publicos/${t.code}`)}
+                      onClick={() => navigate(`/torneos/publicos/${tourn.code}`)}
                     >
                       <i className='bx bx-chevron-right'></i>
                     </button>
@@ -1397,17 +1348,16 @@ const UniversityPage = () => {
           </div>
         )}
 
-        {/* TAB: RANKINGS */}
         {activeTab === 'rankings' && (
           <div className="up-rankings">
             {pointsConfig ? (
               <div className="up-points-system">
                 <div className="up-points-system__head">
-                  <span className="up-eyebrow">RANKING UNIVERSITARIO</span>
-                  <h3>Sistema de puntos activo</h3>
+                  <span className="up-eyebrow">{t('upRankEyebrow')}</span>
+                  <h3>{t('upRankTitle')}</h3>
                 </div>
                 <div className="up-points-system__rules">
-                  <span>Participación base +{pointsConfig.participation}</span>
+                  <span>{t('upBaseParticipation')} +{pointsConfig.participation}</span>
                 </div>
                 <div className="up-points-system__size-tiers">
                   {(pointsConfig.sizeMultipliers || []).map((tier) => (
@@ -1420,10 +1370,10 @@ const UniversityPage = () => {
                   {Object.entries(pointsConfig.formats || {}).map(([formatKey, config]) => (
                     <div key={formatKey} className="up-points-system__format-card">
                       <strong>{config.label}</strong>
-                      <small>Victoria +{config.matchWin}</small>
-                      <small>Campeón +{config.championBonus}</small>
-                      <small>Finalista +{config.finalistBonus}</small>
-                      <small>Semifinal / Top 4 +{config.semifinalBonus}</small>
+                      <small>{t('upWinBonus')} +{config.matchWin}</small>
+                      <small>{t('upChampBonus')} +{config.championBonus}</small>
+                      <small>{t('upFinalistBonus')} +{config.finalistBonus}</small>
+                      <small>{t('upSemiBonus')} +{config.semifinalBonus}</small>
                       <em>{config.placementNote}</em>
                     </div>
                   ))}
@@ -1433,17 +1383,17 @@ const UniversityPage = () => {
             {catalogLoading ? (
               <div className="up-empty">
                 <i className='bx bx-loader-alt'></i>
-                <h3>Cargando rankings</h3>
-                <p>Consultando las universidades verificadas y sus equipos activos.</p>
+                <h3>{t('upLoadingRankings')}</h3>
+                <p>{t('upLoadingRankingsDesc')}</p>
               </div>
             ) : (
               <>
                 <div className="up-rankings__head">
                   <span className="up-rankings__col up-rankings__col--pos">#</span>
-                  <span className="up-rankings__col up-rankings__col--uni">UNIVERSIDAD</span>
-                  <span className="up-rankings__col up-rankings__col--city">CIUDAD</span>
-                  <span className="up-rankings__col up-rankings__col--teams">EQUIPOS</span>
-                  <span className="up-rankings__col up-rankings__col--pts">PUNTOS</span>
+                  <span className="up-rankings__col up-rankings__col--uni">{t('upColUni')}</span>
+                  <span className="up-rankings__col up-rankings__col--city">{t('upColCity')}</span>
+                  <span className="up-rankings__col up-rankings__col--teams">{t('upColTeams')}</span>
+                  <span className="up-rankings__col up-rankings__col--pts">{t('upColPts')}</span>
                 </div>
                 {regionUnis.map((uni, idx) => (
                   <div key={uni.id} className={`up-rankings__row ${idx < 3 ? `up-rankings__row--top${idx + 1}` : ''}`} onClick={() => setSelectedUni(uni)}>
@@ -1460,7 +1410,7 @@ const UniversityPage = () => {
                           {uni.verified && <i className='bx bxs-badge-check up-verified'></i>}
                         </div>
                         <small>{uni.name}</small>
-                        <small className="up-rankings__students">{Number(uni.verifiedStudentsCount || 0)} estudiantes verificados</small>
+                        <small className="up-rankings__students">{Number(uni.verifiedStudentsCount || 0)} {t('upVerifiedStudents')}</small>
                       </div>
                     </div>
                     <span className="up-rankings__city">{uni.city}</span>
@@ -1479,18 +1429,18 @@ const UniversityPage = () => {
           <div className="up-admin">
             <div className="up-admin__toolbar">
               <div>
-                <span className="up-eyebrow">ADMIN</span>
-                <h3>Validación universitaria</h3>
+                <span className="up-eyebrow">{t('upAdminEyebrow')}</span>
+                <h3>{t('upAdminTitle')}</h3>
               </div>
               <div className="up-admin__filters">
                 <select
                   value={adminFilters.status}
                   onChange={(e) => setAdminFilters((prev) => ({ ...prev, status: e.target.value }))}
                 >
-                  <option value="pending">Pendientes</option>
-                  <option value="approved">Aprobadas</option>
-                  <option value="rejected">Rechazadas</option>
-                  <option value="">Todas</option>
+                  <option value="pending">{t('upAdminFilterPending')}</option>
+                  <option value="approved">{t('upAdminFilterApproved')}</option>
+                  <option value="rejected">{t('upAdminFilterRejected')}</option>
+                  <option value="">{t('upAdminFilterAll')}</option>
                 </select>
                 <select
                   value={adminFilters.region}
@@ -1506,14 +1456,14 @@ const UniversityPage = () => {
             {adminLoading ? (
               <div className="up-empty">
                 <i className='bx bx-loader-alt'></i>
-                <h3>Cargando cola</h3>
-                <p>Obteniendo postulaciones universitarias...</p>
+                <h3>{t('upLoadingQueue')}</h3>
+                <p>{t('upLoadingQueueDesc')}</p>
               </div>
             ) : adminApplications.length === 0 ? (
               <div className="up-empty">
                 <i className='bx bx-check-shield'></i>
-                <h3>Sin postulaciones</h3>
-                <p>No hay postulaciones para los filtros seleccionados.</p>
+                <h3>{t('upNoApps')}</h3>
+                <p>{t('upNoAppsDesc')}</p>
               </div>
             ) : (
               <div className="up-admin__grid">
@@ -1522,8 +1472,8 @@ const UniversityPage = () => {
                   const isRejected = application.status === 'rejected';
                   const isApproved = application.status === 'approved';
                   const actionPlaceholder = isApproved
-                    ? 'Motivo de retiro de verificación (requerido)'
-                    : 'Motivo de rechazo (requerido solo si rechazas)';
+                    ? t('upPlaceholderRevoke')
+                    : t('upPlaceholderReject');
                   return (
                     <div key={application._id} className={`up-admin-card up-admin-card--${application.status}`}>
                       <div className="up-admin-card__top">
@@ -1537,9 +1487,9 @@ const UniversityPage = () => {
                       </div>
 
                       <div className="up-admin-card__user">
-                        <strong>{application.user?.fullName || 'Usuario'}</strong>
-                        <span>@{application.user?.username || 'sin-usuario'}</span>
-                        <span>{application.user?.email || 'sin correo'}</span>
+                        <strong>{application.user?.fullName || t('upDefaultUser')}</strong>
+                        <span>@{application.user?.username || t('upNoUsername')}</span>
+                        <span>{application.user?.email || t('upNoEmail')}</span>
                       </div>
 
                       <div className="up-admin-card__meta">
@@ -1554,7 +1504,7 @@ const UniversityPage = () => {
 
                       {isRejected && application.rejectReason && (
                         <div className="up-admin-card__reason">
-                          <strong>Motivo previo</strong>
+                          <strong>{t('upPrevReason')}</strong>
                           <p>{application.rejectReason}</p>
                         </div>
                       )}
@@ -1574,30 +1524,28 @@ const UniversityPage = () => {
                             disabled={isReviewing}
                             onClick={() => handleReviewApplication(application, 'revoked')}
                           >
-                            {isReviewing ? 'PROCESANDO...' : 'QUITAR VERIFICACIÓN'}
+                            {isReviewing ? t('upBtnProcessing') : t('upBtnRevoke')}
                           </button>
                         </div>
                       ) : (
-                        <>
-                          <div className="up-admin-card__actions">
-                            <button
-                              type="button"
-                              className="up-btn up-btn--primary"
-                              disabled={isReviewing}
-                              onClick={() => handleReviewApplication(application, 'approved')}
-                            >
-                              {isReviewing ? 'PROCESANDO...' : 'APROBAR'}
-                            </button>
-                            <button
-                              type="button"
-                              className="up-btn up-btn--ghost up-btn--danger"
-                              disabled={isReviewing}
-                              onClick={() => handleReviewApplication(application, 'rejected')}
-                            >
-                              {isReviewing ? 'PROCESANDO...' : 'RECHAZAR'}
-                            </button>
-                          </div>
-                        </>
+                        <div className="up-admin-card__actions">
+                          <button
+                            type="button"
+                            className="up-btn up-btn--primary"
+                            disabled={isReviewing}
+                            onClick={() => handleReviewApplication(application, 'approved')}
+                          >
+                            {isReviewing ? t('upBtnProcessing') : t('upBtnApprove')}
+                          </button>
+                          <button
+                            type="button"
+                            className="up-btn up-btn--ghost up-btn--danger"
+                            disabled={isReviewing}
+                            onClick={() => handleReviewApplication(application, 'rejected')}
+                          >
+                            {isReviewing ? t('upBtnProcessing') : t('upBtnReject')}
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -1608,7 +1556,6 @@ const UniversityPage = () => {
         )}
       </div>
 
-      {/* ═══ MODAL POSTULACIÓN ═══ */}
       {enrollModal && renderEnrollModal()}
     </div>
   );

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useLang } from '../../context/LanguageContext';
 
-const STATS = [
-  { label: 'Jugadores Activos', target: null, suffix: '', icon: 'bx-user' },
-  { label: 'Torneos Completados', target: null, suffix: '', icon: 'bx-trophy' },
-  { label: 'Equipos Creados', target: null, suffix: '', icon: 'bx-group' },
-  { label: 'Juegos Soportados', target: null, suffix: '', icon: 'bx-joystick' },
+const STATS = (t) => [
+  { label: t('statActivePlayers'), target: null, suffix: '', icon: 'bx-user' },
+  { label: t('statTournamentsCompleted'), target: null, suffix: '', icon: 'bx-trophy' },
+  { label: t('statTeamsCreated'), target: null, suffix: '', icon: 'bx-group' },
+  { label: t('statGamesSupported'), target: null, suffix: '', icon: 'bx-joystick' },
 ];
 
 /* ── Hook: animated count-up ── */
@@ -32,7 +33,7 @@ const useCountUp = (target, duration = 2200, shouldStart = false) => {
 };
 
 /* ── Single Stat ── */
-const StatItem = ({ stat, inView, index }) => {
+const StatItem = ({ stat, inView, index, t }) => {
   const count = useCountUp(stat.target, 2200, inView);
 
   return (
@@ -52,7 +53,7 @@ const StatItem = ({ stat, inView, index }) => {
       <div className="text-4xl md:text-5xl font-extrabold text-[var(--text-main)] mb-2 tabular-nums tracking-tight">
         {stat.target != null
           ? <>{count.toLocaleString()}{stat.suffix}</>
-          : <span className="text-lg text-[var(--text-muted)] font-medium">Aportar datos</span>
+          : <span className="text-lg text-[var(--text-muted)] font-medium">{t('statNoData')}</span>
         }
       </div>
 
@@ -69,6 +70,7 @@ const StatItem = ({ stat, inView, index }) => {
 
 /* ── Section ── */
 const StatsCounter = () => {
+  const { t } = useLang();
   const [inView, setInView] = useState(false);
   const sectionRef = useRef(null);
 
@@ -97,8 +99,8 @@ const StatsCounter = () => {
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-        {STATS.map((stat, i) => (
-          <StatItem key={stat.label} stat={stat} inView={inView} index={i} />
+        {STATS(t).map((stat, i) => (
+          <StatItem key={stat.label} stat={stat} inView={inView} index={i} t={t} />
         ))}
       </div>
 

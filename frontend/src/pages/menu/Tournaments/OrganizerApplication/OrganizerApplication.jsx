@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../../context/NotificationContext';
+import { useLang } from '../../../../context/LanguageContext';
 import { useAuth } from '../../../../context/AuthContext';
 import axios from 'axios';
 import PageHud from '../../../../components/PageHud/PageHud';
@@ -22,6 +23,7 @@ const OrganizerApplication = () => {
   const navigate = useNavigate();
   const { notify } = useNotification();
   const { user } = useAuth();
+  const { t } = useLang();
   const prefilled = useRef(false);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
@@ -122,12 +124,12 @@ const OrganizerApplication = () => {
                         <span className="step-badge verify"><i className='bx bx-shield-quarter'></i> VERIFICACIÓN OFICIAL</span>
                     </div>
                     <h1>Solicitud de <span className="highlight-green">Organizador</span></h1>
-                    <p>Para garantizar la seguridad de la comunidad, requerimos validar tu identidad antes de permitirte gestionar eventos y premios.</p>
+                    <p>{t('organizerAppDesc')}</p>
                     <div className="application-review-note">
                         <i className='bx bx-envelope'></i>
                         <div>
-                            <strong>Revisión por administración</strong>
-                            <p>Completa este formulario y enviaremos tu solicitud al correo de Steliant para su confirmación administrativa.</p>
+                            <strong>{t('organizerAppAdminReview')}</strong>
+                            <p>{t('organizerAppAdminReviewDesc')}</p>
                         </div>
                     </div>
                 </div>
@@ -145,14 +147,14 @@ const OrganizerApplication = () => {
                     <div className="grid-inputs">
                         <div className="input-group">
                             <input type="text" name="fullName" placeholder=" " value={formData.fullName} onChange={handleInputChange} className={fe('fullName') ? 'input-error' : ''} />
-                            <label>Nombre Legal Completo</label>
+                            <label>{t('organizerLegalName')}</label>
                             <i className='bx bx-user input-icon'></i>
                             {fe('fullName') && <small className="field-error">{fe('fullName')}</small>}
                             {user?.fullName && !fe('fullName') && <span className="prefilled-hint"><i className='bx bx-check-circle'></i>Completado desde tu perfil</span>}
                         </div>
                         <div className="input-group">
                             <input type="text" name="idNumber" placeholder=" " value={formData.idNumber} onChange={handleInputChange} className={fe('idNumber') ? 'input-error' : ''} />
-                            <label>DNI / Pasaporte / ID</label>
+                            <label>{t('organizerIdDoc')}</label>
                             <i className='bx bx-id-card input-icon'></i>
                             {fe('idNumber') && <small className="field-error">{fe('idNumber')}</small>}
                         </div>
@@ -167,7 +169,7 @@ const OrganizerApplication = () => {
                             </label>
                             <span className="file-name">{fileName}</span>
                         </div>
-                        <small>Formatos: PDF, JPG, PNG. Máx 5MB. (Tus datos están encriptados)</small>
+                        <small>{t('organizerIdFormats')}</small>
                         {fe('document') && <small className="field-error">{fe('document')}</small>}
                     </div>
 
@@ -176,17 +178,17 @@ const OrganizerApplication = () => {
                     <div className="grid-inputs">
                          <div className="input-group">
                             <input type="text" name="orgName" placeholder=" " value={formData.orgName} onChange={handleInputChange} className={fe('orgName') ? 'input-error' : ''} />
-                            <label>Nombre de la Organización / Marca</label>
+                            <label>{t('organizerOrgName')}</label>
                             <i className='bx bx-building input-icon'></i>
                             {fe('orgName') && <small className="field-error">{fe('orgName')}</small>}
                         </div>
                         <div className="input-group">
                             <select name="eventType" value={formData.eventType} onChange={handleInputChange} className={fe('eventType') ? 'input-error' : ''}>
-                                <option value="" disabled>Tipo de Eventos</option>
-                                <option value="amateur">Torneos Amateur / Comunitarios</option>
-                                <option value="pro">Ligas Profesionales</option>
-                                <option value="lan">Eventos Presenciales (LAN)</option>
-                                <option value="mixed">Híbrido</option>
+                                <option value="" disabled>{t('organizerEventType')}</option>
+                                <option value="amateur">{t('organizerEventAmateur')}</option>
+                                <option value="pro">{t('organizerEventPro')}</option>
+                                <option value="lan">{t('organizerEventLan')}</option>
+                                <option value="mixed">{t('organizerEventMixed')}</option>
                             </select>
                             {fe('eventType') && <small className="field-error">{fe('eventType')}</small>}
                         </div>
@@ -194,7 +196,7 @@ const OrganizerApplication = () => {
 
                     <div className="input-group">
                         <input type="url" name="website" placeholder=" " value={formData.website} onChange={handleInputChange} />
-                        <label>Sitio Web o Portafolio (Opcional)</label>
+                        <label>{t('organizerWebsite')}</label>
                         <i className='bx bx-link input-icon'></i>
                     </div>
 
@@ -203,21 +205,21 @@ const OrganizerApplication = () => {
                     <div className="grid-inputs">
                         <div className="input-group">
                             <select name="experienceYears" value={formData.experienceYears} onChange={handleInputChange} className={fe('experienceYears') ? 'input-error' : ''}>
-                                <option value="" disabled>Años de Experiencia</option>
-                                <option value="0-1">Menos de 1 año (Novato)</option>
+                                <option value="" disabled>{t('organizerExperienceYears')}</option>
+                                <option value="0-1">{t('organizerExperienceNovice')}</option>
                                 <option value="1-3">1 - 3 años (Intermedio)</option>
                                 <option value="3-5">3 - 5 años (Avanzado)</option>
-                                <option value="5+">Más de 5 años (Veterano)</option>
+                                <option value="5+">{t('organizerExperienceVeteran')}</option>
                             </select>
                             {fe('experienceYears') && <small className="field-error">{fe('experienceYears')}</small>}
                         </div>
                         <div className="input-group">
                             <select name="maxSize" value={formData.maxSize} onChange={handleInputChange} className={fe('maxSize') ? 'input-error' : ''}>
-                                <option value="" disabled>Tamaño Máximo Gestionado</option>
-                                <option value="small">Pequeño (Hasta 16 equipos)</option>
-                                <option value="medium">Mediano (Hasta 64 equipos)</option>
-                                <option value="large">Grande (Más de 64 equipos)</option>
-                                <option value="massive">Masivo (Más de 500 jugadores)</option>
+                                <option value="" disabled>{t('organizerScale')}</option>
+                                <option value="small">{t('organizerScaleSmall')}</option>
+                                <option value="medium">{t('organizerScaleMedium')}</option>
+                                <option value="large">{t('organizerScaleLarge')}</option>
+                                <option value="massive">{t('organizerScaleMassive')}</option>
                             </select>
                             {fe('maxSize') && <small className="field-error">{fe('maxSize')}</small>}
                         </div>
@@ -225,20 +227,20 @@ const OrganizerApplication = () => {
 
                     <div className="input-group">
                         <input type="text" name="tools" placeholder=" " value={formData.tools} onChange={handleInputChange} />
-                        <label>Herramientas de Brackets que has usado (Ej: Challonge, Toornament)</label>
+                        <label>{t('organizerTools')}</label>
                         <i className='bx bx-laptop input-icon'></i>
                     </div>
 
                     <div className="input-group">
                         <textarea name="description" placeholder=" " rows="3" value={formData.description} onChange={handleInputChange} className={fe('description') ? 'input-error' : ''}></textarea>
-                        <label>Cuéntanos sobre el torneo más complejo que has organizado...</label>
+                        <label>{t('organizerBioLabel')}</label>
                         {fe('description') && <small className="field-error">{fe('description')}</small>}
                     </div>
 
                     <div className="form-actions">
                         <button type="button" className="btn-ghost" onClick={() => navigate('/tournaments')}>Cancelar</button>
                         <button type="submit" className="btn-neon green" disabled={loading}>
-                            {loading ? <i className='bx bx-loader-alt bx-spin'></i> : 'Enviar Solicitud'}
+                            {loading ? <><i className='bx bx-loader-alt bx-spin'></i>{t('organizerSubmitting')}</> : t('organizerSubmit')}
                         </button>
                     </div>
 
@@ -258,8 +260,8 @@ const OrganizerApplication = () => {
                     <div className="icon-large">
                         <i className='bx bx-trophy'></i>
                     </div>
-                    <h2>Lidera el Juego</h2>
-                    <p>Únete a la élite de organizadores. Crea torneos, gestiona brackets y distribuye premios con herramientas profesionales.</p>
+                    <h2>{t('organizerHeroTitle')}</h2>
+                    <p>{t('organizerHeroDesc')}</p>
 
                     <div className="features-list">
                         <span><i className='bx bx-check-circle'></i> Gestión de Brackets</span>

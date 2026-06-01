@@ -3,22 +3,24 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config/api';
 import { useNotification } from '../../context/NotificationContext';
+import { useLang } from '../../context/LanguageContext';
 import { getAuthToken, getStoredUser } from '../../utils/authSession';
 import { getSupportedGameRoles, isSupportedMlbbGame, isSupportedRiotGame } from '../../../../shared/supportedGames.js';
 import './Notifications.css';
 
-const FILTERS = [
-  { key: 'all', label: 'Todas', icon: 'bx-bell' },
-  { key: 'system', label: 'Sistema', icon: 'bx-cog', dot: '#8EDB15' },
-  { key: 'team', label: 'Equipos', icon: 'bx-group', dot: '#4facfe' },
-  { key: 'tournament', label: 'Torneos', icon: 'bx-trophy', dot: '#FFD700' },
-  { key: 'social', label: 'Social', icon: 'bx-user-plus', dot: '#f093fb' },
-  { key: 'support', label: 'Soporte', icon: 'bx-support', dot: '#6366f1' },
-  { key: 'admin', label: 'Admin', icon: 'bx-shield-quarter', dot: '#a855f7' },
+const FILTERS = (t) => [
+  { key: 'all', label: t('notifFilterAll'), icon: 'bx-bell' },
+  { key: 'system', label: t('notifFilterSystem'), icon: 'bx-cog', dot: '#8EDB15' },
+  { key: 'team', label: t('notifFilterTeams'), icon: 'bx-group', dot: '#4facfe' },
+  { key: 'tournament', label: t('notifFilterTournaments'), icon: 'bx-trophy', dot: '#FFD700' },
+  { key: 'social', label: t('notifFilterSocial'), icon: 'bx-user-plus', dot: '#f093fb' },
+  { key: 'support', label: t('notifFilterSupport'), icon: 'bx-support', dot: '#6366f1' },
+  { key: 'admin', label: t('notifFilterAdmin'), icon: 'bx-shield-quarter', dot: '#a855f7' },
 ];
 
 const Notifications = () => {
   const { notifications, addToast, loadNotifications } = useNotification();
+  const { t } = useLang();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ const Notifications = () => {
       if (!token) {
         loadNotifications([]);
         if (!silent) {
-          addToast('Tu sesión expiró. Inicia sesión nuevamente.', 'error');
+          addToast(t('sessionExpired'), 'error');
           navigate('/login');
         }
         return;
@@ -60,17 +62,17 @@ const Notifications = () => {
         if (!silent) {
           const elapsed = Date.now() - lastRateLimitToastAtRef.current;
           if (elapsed > 8000) {
-            addToast('Demasiadas solicitudes. Espera unos segundos.', 'error');
+            addToast(t('notifTooManyRequests'), 'error');
             lastRateLimitToastAtRef.current = Date.now();
           }
         }
         return;
       }
       if ((status === 401 || status === 403) && !silent) {
-        addToast(error?.response?.data?.message || 'Tu sesión expiró. Inicia sesión nuevamente.', 'error');
+        addToast(error?.response?.data?.message || t('sessionExpired'), 'error');
         navigate('/login');
       } else if (!silent) {
-        addToast(error?.response?.data?.message || 'No se pudieron cargar las notificaciones.', 'error');
+        addToast(error?.response?.data?.message || t('notifLoadError'), 'error');
       }
     } finally {
       if (withLoading) setLoading(false);
@@ -119,9 +121,9 @@ const Notifications = () => {
         });
       }
       await fetchNotifications();
-      addToast('Notificación eliminada', 'success');
+      addToast(t('notifDeleted'), 'success');
     } catch {
-      addToast('Error al eliminar notificación', 'error');
+      addToast(t('notifDeleteError'), 'error');
     }
   };
 
@@ -136,9 +138,9 @@ const Notifications = () => {
         });
       }
       await fetchNotifications();
-      addToast(newArchived ? 'Notificación archivada' : 'Notificación restaurada', 'info');
+      addToast(newArchived ? t('notifArchived') : t('notifRestored'), 'info');
     } catch {
-      addToast('Error al archivar notificación', 'error');
+      addToast(t('notifArchiveError'), 'error');
     }
   };
 
@@ -152,7 +154,7 @@ const Notifications = () => {
       }
       await fetchNotifications();
     } catch {
-      addToast('Error al marcar como leída', 'error');
+      addToast(t('notifReadError'), 'error');
     }
   };
 
@@ -165,9 +167,9 @@ const Notifications = () => {
         });
       }
       await fetchNotifications();
-      addToast('Todas marcadas como leídas', 'success');
+      addToast(t('notifAllRead'), 'success');
     } catch {
-      addToast('Error al marcar', 'error');
+      addToast(t('notifMarkError'), 'error');
     }
   };
 
@@ -180,9 +182,9 @@ const Notifications = () => {
         });
       }
       await fetchNotifications();
-      addToast('Historial limpiado', 'success');
+      addToast(t('notifHistoryCleared'), 'success');
     } catch {
-      addToast('Error al limpiar', 'error');
+      addToast(t('notifClearError'), 'error');
     }
   };
 
@@ -196,7 +198,7 @@ const Notifications = () => {
       await fetchNotifications();
       addToast(`${res.data.count} notificaciones enviadas`, 'success');
     } catch {
-      addToast('Error al enviar test', 'error');
+      addToast(t('notifTestError'), 'error');
     }
   };
 
@@ -309,13 +311,13 @@ const Notifications = () => {
     const slotIndex = Number(note?.meta?.slotIndex);
 
     if (!teamId || !inviteCode) {
-      addToast('La invitación no tiene datos válidos. Ábrela manualmente.', 'error');
+      addToast(t('notifInvalidInvite'), 'error');
       return;
     }
 
     const token = getAuthToken();
     if (!token) {
-      addToast('Debes iniciar sesión para aceptar invitaciones.', 'error');
+      addToast(t('notifLoginRequired'), 'error');
       return;
     }
 
@@ -378,7 +380,8 @@ const Notifications = () => {
     }
   };
 
-  const filterLabel = FILTERS.find(f => f.key === filter)?.label || 'Todas';
+  const filters = FILTERS(t);
+  const filterLabel = filters.find(f => f.key === filter)?.label || t('notifFilterAll');
   const archivedCount = notifications.filter(n => n.isArchived).length;
 
   return (
@@ -387,13 +390,13 @@ const Notifications = () => {
       <aside className="nt__sidebar">
         <div className="nt__sidebar-head">
           <h3 className="nt__sidebar-title">
-            <i className='bx bx-bell'></i> Notificaciones
+            <i className='bx bx-bell'></i> {t('notifPageTitle')}
           </h3>
           {unreadCount > 0 && <span className="nt__unread-badge">{unreadCount}</span>}
         </div>
 
         <nav className="nt__filters">
-          {FILTERS.map(f => (
+          {filters.map(f => (
             <button
               key={f.key}
               className={`nt__filter-btn ${filter === f.key ? 'active' : ''}`}
@@ -427,10 +430,10 @@ const Notifications = () => {
             <i className='bx bx-send'></i> Enviar pruebas
           </button>
           <button className="nt__action-btn" onClick={handleMarkAllRead}>
-            <i className='bx bx-check-double'></i> Marcar leídas
+            <i className='bx bx-check-double'></i> {t('notifMarkAllRead')}
           </button>
           <button className="nt__action-btn nt__action-btn--danger" onClick={handleClearAll}>
-            <i className='bx bx-trash'></i> Eliminar todo
+            <i className='bx bx-trash'></i> {t('notifClearHistory')}
           </button>
         </div>
       </aside>
@@ -448,7 +451,7 @@ const Notifications = () => {
           {loading ? (
             <div className="nt__empty">
               <i className='bx bx-loader-alt bx-spin'></i>
-              <p>Cargando...</p>
+              <p>{t('loading')}</p>
             </div>
           ) : visibleNotes.length > 0 ? (
             visibleNotes.map((note) => {
@@ -580,7 +583,7 @@ const Notifications = () => {
               <div className="nt__empty-icon">
                 <i className='bx bx-bell-off'></i>
               </div>
-              <p>No hay notificaciones</p>
+              <p>{t('notifEmpty')}</p>
               <small>
                 {filter === 'archived'
                   ? 'No tienes notificaciones archivadas.'

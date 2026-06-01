@@ -14,6 +14,7 @@ import { getAuthToken } from '../../../utils/authSession';
 import { useAuth } from '../../../context/AuthContext';
 import { fetchMyCommunities } from '../Community/community.service';
 import { getMetricGuidance, getOverallMetricsWelcome } from './metricsGuidance';
+import { useLang } from '../../../context/LanguageContext';
 import './Metrics.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -34,6 +35,7 @@ const fadeChild = {
 const Metrics = () => {
     const navigate = useNavigate();
     const { user: authUser } = useAuth();
+    const { t } = useLang();
 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -522,10 +524,10 @@ const Metrics = () => {
     };
 
     if (loading) {
-        return <div className="mt-loading"><div className="mt-loading__pulse"></div><p>Cargando métricas...</p></div>;
+        return <div className="mt-loading"><div className="mt-loading__pulse"></div><p>{t('mtLoadingMetrics')}</p></div>;
     }
     if (!user) {
-        return <div className="mt-loading"><p>No se pudo cargar tu perfil.</p></div>;
+        return <div className="mt-loading"><p>{t('mtErrorProfile')}</p></div>;
     }
 
     return (
@@ -539,7 +541,7 @@ const Metrics = () => {
                         <AvatarCircle src={resolveMediaUrl(user.avatar) || `https://ui-avatars.com/api/?name=${user.username}`} frameConfig={currentFrame} size="80px" status={user.status} />
                         <div className="mt__header-info">
                             <PlayerTag name={user.username?.toUpperCase()} tagId={user.selectedTagId} size="small" fontTag="1.4rem" />
-                            <span className="mt__header-sub">{user.country || ''} · {enrichedGames.length} juegos · {myTeams.length} equipos</span>
+                            <span className="mt__header-sub">{user.country || ''} · {enrichedGames.length} {t('mtGames')} · {myTeams.length} {t('mtTeams')}</span>
                         </div>
                     </motion.div>
 
@@ -552,8 +554,8 @@ const Metrics = () => {
                             }} series={[overallScore]} type="radialBar" height={180} />
                         </div>
                         <div className="mt__overall-labels">
-                            {strongestMetric && <span className="mt__overall-label mt__overall-label--strong"><i className="bx bx-up-arrow-alt"></i> Más fuerte: {strongestMetric.label}</span>}
-                            {weakestMetric && <span className="mt__overall-label mt__overall-label--weak"><i className="bx bx-down-arrow-alt"></i> A mejorar: {weakestMetric.label}</span>}
+                            {strongestMetric && <span className="mt__overall-label mt__overall-label--strong"><i className="bx bx-up-arrow-alt"></i> {t('mtStrongest')}: {strongestMetric.label}</span>}
+                            {weakestMetric && <span className="mt__overall-label mt__overall-label--weak"><i className="bx bx-down-arrow-alt"></i> {t('mtToImprove')}: {weakestMetric.label}</span>}
                         </div>
                     </motion.div>
 
@@ -574,7 +576,7 @@ const Metrics = () => {
                 </motion.div>
 
                 <button className="mt__back-btn" onClick={() => navigate('/dashboard')}>
-                    <i className="bx bx-arrow-back"></i> Dashboard
+                    <i className="bx bx-arrow-back"></i> {t('mtBackDashboard')}
                 </button>
             </section>
 
@@ -586,11 +588,11 @@ const Metrics = () => {
 
                     <div className="mt__coach-grid">
                         <div className="mt__coach-panel">
-                            <h3><i className="bx bx-target-lock"></i> Prioridad actual</h3>
+                            <h3><i className="bx bx-target-lock"></i> {t('mtCurrentPriority')}</h3>
                             <p>{overallGuidance.priority}</p>
                         </div>
                         <div className="mt__coach-panel">
-                            <h3><i className="bx bx-trending-up"></i> Impulso actual</h3>
+                            <h3><i className="bx bx-trending-up"></i> {t('mtCurrentMomentum')}</h3>
                             <p>{overallGuidance.momentum}</p>
                         </div>
                     </div>
@@ -608,7 +610,7 @@ const Metrics = () => {
 
             {/* ═══ LAST TOURNAMENT ═══ */}
             <section className="mt__section">
-                <h2 className="mt__section-title"><i className="bx bx-trophy" style={{ color: '#ffd700' }}></i> Último Torneo</h2>
+                <h2 className="mt__section-title"><i className="bx bx-trophy" style={{ color: '#ffd700' }}></i> {t('mtLastTournament')}</h2>
                 {lastTournamentAnalysis ? (
                     <motion.div className="mt__tournament" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
                         <motion.div className="mt__tourn-header" variants={fadeChild}>
@@ -617,7 +619,7 @@ const Metrics = () => {
                                 <div className="mt__tourn-meta">
                                     <span><i className="bx bx-game"></i> {lastTournamentAnalysis.tournament.game}</span>
                                     <span><i className="bx bx-calendar"></i> {new Date(lastTournamentAnalysis.tournament.date).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                                    <span><i className="bx bx-group"></i> {lastTournamentAnalysis.team?.name || 'Tu equipo'}</span>
+                                    <span><i className="bx bx-group"></i> {lastTournamentAnalysis.team?.name || t('mtYourTeam')}</span>
                                     {lastTournamentAnalysis.tournament.bracket?.format?.type && (
                                         <span><i className="bx bx-layout"></i> {lastTournamentAnalysis.tournament.bracket.format.type.replace(/_/g, ' ')}</span>
                                     )}
@@ -626,26 +628,26 @@ const Metrics = () => {
                             <div className="mt__tourn-stats">
                                 <div className="mt__tourn-stat">
                                     <span className="mt__tourn-stat-val">{lastTournamentAnalysis.matchesPlayed}</span>
-                                    <span className="mt__tourn-stat-lbl">Partidas</span>
+                                    <span className="mt__tourn-stat-lbl">{t('mtStatMatches')}</span>
                                 </div>
                                 <div className="mt__tourn-stat mt__tourn-stat--won">
                                     <span className="mt__tourn-stat-val">{lastTournamentAnalysis.matchesWon}</span>
-                                    <span className="mt__tourn-stat-lbl">Victorias</span>
+                                    <span className="mt__tourn-stat-lbl">{t('mtStatWins')}</span>
                                 </div>
                                 <div className="mt__tourn-stat mt__tourn-stat--lost">
                                     <span className="mt__tourn-stat-val">{lastTournamentAnalysis.matchesLost}</span>
-                                    <span className="mt__tourn-stat-lbl">Derrotas</span>
+                                    <span className="mt__tourn-stat-lbl">{t('mtStatLosses')}</span>
                                 </div>
                                 <div className="mt__tourn-stat">
                                     <span className="mt__tourn-stat-val">{lastTournamentAnalysis.winRate}%</span>
-                                    <span className="mt__tourn-stat-lbl">Win Rate</span>
+                                    <span className="mt__tourn-stat-lbl">{t('mtStatWinRate')}</span>
                                 </div>
                             </div>
                         </motion.div>
 
                         {lastTournamentAnalysis.matchResults.length > 0 && (
                             <motion.div className="mt__tourn-matches" variants={stagger}>
-                                <h4 className="mt__tourn-matches-title">Resultados por ronda</h4>
+                                <h4 className="mt__tourn-matches-title">{t('mtRoundResults')}</h4>
                                 {lastTournamentAnalysis.matchResults.map((match, i) => (
                                     <motion.div key={i} className={`mt__tourn-match ${match.won ? 'mt__tourn-match--won' : 'mt__tourn-match--lost'}`} variants={fadeChild}>
                                         <span className="mt__tourn-match-round">{match.roundName}</span>
@@ -654,7 +656,7 @@ const Metrics = () => {
                                             {match.myScore ?? '—'} - {match.oppScore ?? '—'}
                                         </span>
                                         <span className={`mt__tourn-match-result ${match.won ? 'mt__tourn-match-result--w' : 'mt__tourn-match-result--l'}`}>
-                                            {match.won ? 'VICTORIA' : 'DERROTA'}
+                                            {match.won ? t('mtResultWin') : t('mtResultLoss')}
                                         </span>
                                     </motion.div>
                                 ))}
@@ -663,16 +665,16 @@ const Metrics = () => {
 
                         {lastTournamentAnalysis.matchResults.length === 0 && (
                             <div className="mt__empty-sub">
-                                <p>El torneo no tiene resultados de bracket registrados aún</p>
+                                <p>{t('mtNoBracketResults')}</p>
                             </div>
                         )}
                     </motion.div>
                 ) : (
                     <div className="mt__empty">
                         <i className="bx bx-trophy"></i>
-                        <p>No has participado en torneos aún</p>
+                        <p>{t('mtNoTournaments')}</p>
                         <button className="mt__btn mt__btn--primary" onClick={() => navigate('/tournaments')}>
-                            <i className="bx bx-search"></i> Buscar torneos
+                            <i className="bx bx-search"></i> {t('mtFindTournaments')}
                         </button>
                     </div>
                 )}
@@ -680,7 +682,7 @@ const Metrics = () => {
 
             {/* ═══ TEAM PERFORMANCE ═══ */}
             <section className="mt__section">
-                <h2 className="mt__section-title"><i className="bx bx-group" style={{ color: '#a78bfa' }}></i> Rendimiento de Equipos</h2>
+                <h2 className="mt__section-title"><i className="bx bx-group" style={{ color: '#a78bfa' }}></i> {t('mtTeamPerformance')}</h2>
                 {teamAnalysis.length > 0 ? (
                     <motion.div className="mt__teams-grid" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
                         {teamAnalysis.map(ta => (
@@ -693,37 +695,37 @@ const Metrics = () => {
                                     </div>
                                     <div className="mt__team-card-info">
                                         <strong>{ta.team.name}</strong>
-                                        <span>{ta.team.game || 'Sin juego'} · {ta.role}</span>
+                                        <span>{ta.team.game || t('mtNoGame')} · {ta.role}</span>
                                     </div>
                                     {ta.isCaptain && <span className="mt__team-badge"><i className="bx bx-crown"></i></span>}
                                 </div>
                                 <div className="mt__team-card-stats">
                                     <div className="mt__team-card-stat">
                                         <span className="mt__team-card-stat-val">{ta.filledSlots}/{ta.maxSlots}</span>
-                                        <span className="mt__team-card-stat-lbl">Roster</span>
+                                        <span className="mt__team-card-stat-lbl">{t('mtStatRoster')}</span>
                                     </div>
                                     <div className="mt__team-card-stat">
                                         <span className="mt__team-card-stat-val">{ta.tournamentCount}</span>
-                                        <span className="mt__team-card-stat-lbl">Torneos</span>
+                                        <span className="mt__team-card-stat-lbl">{t('mtStatTournaments')}</span>
                                     </div>
                                     <div className="mt__team-card-stat">
                                         <span className="mt__team-card-stat-val">{ta.ageDays}d</span>
-                                        <span className="mt__team-card-stat-lbl">Antigüedad</span>
+                                        <span className="mt__team-card-stat-lbl">{t('mtStatAge')}</span>
                                     </div>
                                 </div>
                                 <div className="mt__team-card-bar">
                                     <div className="mt__team-card-fill" style={{ width: `${ta.fillRate}%` }}></div>
                                 </div>
-                                <span className="mt__team-card-fill-label">Roster {ta.fillRate}% completo</span>
+                                <span className="mt__team-card-fill-label">{t('mtRosterComplete', { rate: ta.fillRate })}</span>
                             </motion.div>
                         ))}
                     </motion.div>
                 ) : (
                     <div className="mt__empty">
                         <i className="bx bx-group"></i>
-                        <p>No perteneces a ningún equipo</p>
+                        <p>{t('mtNoTeams')}</p>
                         <button className="mt__btn mt__btn--primary" onClick={() => navigate('/create-team')}>
-                            <i className="bx bx-plus"></i> Crear equipo
+                            <i className="bx bx-plus"></i> {t('mtCreateTeam')}
                         </button>
                     </div>
                 )}
@@ -731,7 +733,7 @@ const Metrics = () => {
 
             {/* ═══ 5 METRICS DETAIL ═══ */}
             <section className="mt__section">
-                <h2 className="mt__section-title"><i className="bx bx-bar-chart-alt-2" style={{ color: '#8EDB15' }}></i> Análisis de Métricas</h2>
+                <h2 className="mt__section-title"><i className="bx bx-bar-chart-alt-2" style={{ color: '#8EDB15' }}></i> {t('mtMetricsAnalysis')}</h2>
                 <motion.div className="mt__metrics-list" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
                     {metricsData.map(m => {
                         const isExpanded = expandedMetric === m.id;
@@ -761,20 +763,20 @@ const Metrics = () => {
                                             <div className="mt__metric-chart-col">{renderChart(m, 240)}</div>
                                             <div className="mt__metric-info-col">
                                                 <div className="mt__metric-block">
-                                                    <h4><i className="bx bx-book-open" style={{ color: m.color }}></i> Qué mide</h4>
+                                                    <h4><i className="bx bx-book-open" style={{ color: m.color }}></i> {t('mtMetricWhatMeasures')}</h4>
                                                     <p>{m.definition}</p>
                                                 </div>
                                                 <div className="mt__metric-block">
-                                                    <h4><i className="bx bx-message-square-detail" style={{ color: m.color }}></i> Mensaje actual</h4>
+                                                    <h4><i className="bx bx-message-square-detail" style={{ color: m.color }}></i> {t('mtMetricCurrentMsg')}</h4>
                                                     <p>{m.guidance.message}</p>
                                                     <p className="mt__metric-progress">{m.guidance.progressNote}</p>
                                                 </div>
                                                 <div className="mt__metric-block">
-                                                    <h4><i className="bx bx-bulb" style={{ color: m.color }}></i> Consejo del momento</h4>
+                                                    <h4><i className="bx bx-bulb" style={{ color: m.color }}></i> {t('mtMetricAdvice')}</h4>
                                                     <p className="mt__metric-note">{m.guidance.advice}</p>
                                                 </div>
                                                 <div className="mt__metric-block">
-                                                    <h4><i className="bx bx-target-lock" style={{ color: m.color }}></i> Siguiente objetivo</h4>
+                                                    <h4><i className="bx bx-target-lock" style={{ color: m.color }}></i> {t('mtMetricNextGoal')}</h4>
                                                     <p className="mt__metric-plan">{m.plan}</p>
                                                 </div>
                                             </div>
@@ -790,25 +792,25 @@ const Metrics = () => {
             {/* ═══ IMPROVEMENT ROADMAP ═══ */}
             {weakestMetric && (
                 <section className="mt__section mt__section--roadmap">
-                    <h2 className="mt__section-title"><i className="bx bx-road" style={{ color: '#ff6b6b' }}></i> Hoja de Ruta</h2>
+                    <h2 className="mt__section-title"><i className="bx bx-road" style={{ color: '#ff6b6b' }}></i> {t('mtRoadmap')}</h2>
                     <motion.div className="mt__roadmap" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeChild}>
                         <div className="mt__roadmap-focus">
                             <div className="mt__roadmap-focus-icon" style={{ color: weakestMetric.color, borderColor: hexToRgba(weakestMetric.color, 0.3) }}>
                                 <i className={weakestMetric.icon}></i>
                             </div>
                             <div className="mt__roadmap-focus-info">
-                                <span className="mt__roadmap-kicker">Tu área de mayor oportunidad</span>
+                                <span className="mt__roadmap-kicker">{t('mtRoadmapOpportunity')}</span>
                                 <h3>{weakestMetric.label} — {weakestMetric.value}</h3>
                                 <p>{weakestMetric.plan}</p>
                             </div>
                         </div>
                         <div className="mt__roadmap-actions">
-                            {weakestMetric.id === 'winrate' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/tournaments')}><i className="bx bx-trophy"></i> Buscar torneos</button>}
-                            {weakestMetric.id === 'leadership' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/create-team')}><i className="bx bx-group"></i> Crear equipo</button>}
-                            {weakestMetric.id === 'network' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/settings')}><i className="bx bx-link-alt"></i> Vincular cuentas</button>}
-                            {weakestMetric.id === 'consistency' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/edit-profile')}><i className="bx bx-user"></i> Completar perfil</button>}
-                            {weakestMetric.id === 'versatility' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/edit-profile', { state: { activeTab: 'gamer' } })}><i className="bx bx-game"></i> Añadir juegos</button>}
-                            <button className="mt__btn mt__btn--ghost" onClick={() => navigate('/dashboard')}><i className="bx bx-arrow-back"></i> Volver al Dashboard</button>
+                            {weakestMetric.id === 'winrate' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/tournaments')}><i className="bx bx-trophy"></i> {t('mtFindTournaments')}</button>}
+                            {weakestMetric.id === 'leadership' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/create-team')}><i className="bx bx-group"></i> {t('mtCreateTeam')}</button>}
+                            {weakestMetric.id === 'network' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/settings')}><i className="bx bx-link-alt"></i> {t('mtLinkAccounts')}</button>}
+                            {weakestMetric.id === 'consistency' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/edit-profile')}><i className="bx bx-user"></i> {t('mtCompleteProfile')}</button>}
+                            {weakestMetric.id === 'versatility' && <button className="mt__btn mt__btn--outline" onClick={() => navigate('/edit-profile', { state: { activeTab: 'gamer' } })}><i className="bx bx-game"></i> {t('mtAddGames')}</button>}
+                            <button className="mt__btn mt__btn--ghost" onClick={() => navigate('/dashboard')}><i className="bx bx-arrow-back"></i> {t('mtBackToDashboard')}</button>
                         </div>
                     </motion.div>
                 </section>

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_URL } from '../../../../config/api';
 import { getAuthToken } from '../../../../utils/authSession';
 import { formatTournamentPublicId, matchesTournamentPublicId } from '../../../../utils/publicIds';
+import { useLang } from '../../../../context/LanguageContext';
 import './TournamentAdmin.css';
 
 const STATUS_META = {
@@ -25,6 +26,7 @@ const formatDate = (value) => {
 };
 
 const TournamentAdminHub = () => {
+  const { t } = useLang();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState('');
@@ -77,7 +79,7 @@ const TournamentAdminHub = () => {
       <section className="ta-hero">
         <div className="ta-hero__main">
           <span className="ta-kicker">Panel de torneos</span>
-          <h1>Gestiona tus torneos sin perder visibilidad del estado real.</h1>
+          <h1>{t('tmHubSubtitle')}</h1>
           <p>
             Revisa rapidamente que torneo esta abierto, cuantos equipos lleva y entra directo
             a gestion o vista publica sin depender de una lista plana.
@@ -104,7 +106,7 @@ const TournamentAdminHub = () => {
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <button onClick={() => navigate('/create-tournament')}>Crear torneo</button>
+        <button onClick={() => navigate('/create-tournament')}>{t('createTournament')}</button>
         <button className="ghost" onClick={() => navigate('/tournaments/simulator')}>Simular torneo</button>
       </div>
 
@@ -145,7 +147,7 @@ const TournamentAdminHub = () => {
                 </div>
 
                 <div className="ta-card-actions">
-                  <button onClick={() => navigate(`/tournaments/manage/${t.tournamentId}`)}>Gestionar</button>
+                  <button onClick={() => navigate(`/tournaments/manage/${t.tournamentId}`)}>{t('manage')}</button>
                   <button
                     className="ghost"
                     onClick={() => navigate(`/torneos/publicos/${t.tournamentId}`)}

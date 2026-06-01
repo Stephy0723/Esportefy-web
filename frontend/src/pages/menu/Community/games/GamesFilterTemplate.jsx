@@ -4,6 +4,7 @@ import { decorateCommunityGames } from '../communityGameAssets';
 import { fetchCommunityGameCatalog, formatGameHubCount } from '../gameHub.service';
 import HeroTagSection from './HeroTagSection';
 import './GamesFilterTemplate.css';
+import { useLang } from '../../../../context/LanguageContext';
 
 const TYPE_LABELS = {
   tag: 'Tag',
@@ -109,6 +110,7 @@ const getTagList = (taxonomy = {}, key) =>
   Array.isArray(taxonomy?.[key]) ? taxonomy[key].filter(Boolean) : [];
 
 const GamesFilterTemplate = () => {
+  const { t } = useLang();
   const { type, value } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -296,7 +298,7 @@ const GamesFilterTemplate = () => {
         <header className="gft-head">
           <div className="gft-head-left">
             <button type="button" className="gft-back" onClick={() => navigate(-1)}>
-              Volver
+              {t('back')}
             </button>
             <div className="gft-titles">
               <p className="gft-kicker">Games Filter</p>
@@ -317,16 +319,16 @@ const GamesFilterTemplate = () => {
         {isLoading ? (
           <section className="gft-empty-panel">
             <div className="gft-empty-ill" />
-            <h2>Cargando catalogo</h2>
-            <p>Estamos consultando el backend para mostrar los hubs y etiquetas reales.</p>
+            <h2>{t('gamesLoadingTitle')}</h2>
+            <p>{t('gamesLoadingDesc')}</p>
           </section>
         ) : filteredGames.length === 0 ? (
           <section className="gft-empty-panel">
             <div className="gft-empty-ill" />
-            <h2>No games found for this filter</h2>
-            <p>Try another tag or company to keep exploring the community catalog.</p>
+            <h2>{t('gamesNotFound')}</h2>
+            <p>{t('gamesNotFoundDesc')}</p>
             <button type="button" className="gft-back" onClick={() => navigate('/comunidad')}>
-              Back to Community
+              {t('backToCommunity')}
             </button>
           </section>
         ) : (

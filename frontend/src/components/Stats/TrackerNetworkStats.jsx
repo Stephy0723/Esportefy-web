@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { LoaderCircle, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { useLang } from '../../context/LanguageContext';
 
 /**
  * Componente para mostrar estadísticas de Tracker Network
@@ -8,6 +9,7 @@ import { LoaderCircle, AlertCircle, TrendingUp, TrendingDown } from 'lucide-reac
  */
 
 const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = false }) => {
+    const { t } = useLang();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -36,7 +38,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
 
             setStats(response.data.data);
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al obtener estadísticas');
+            setError(err.response?.data?.message || t('trackerErrorFetch'));
             console.error('Error fetching stats:', err);
         } finally {
             setLoading(false);
@@ -64,7 +66,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
     }
 
     if (!stats) {
-        return <div className="text-gray-500">No se encontraron datos</div>;
+        return <div className="text-gray-500">{t('trackerNoData')}</div>;
     }
 
     return (
@@ -77,9 +79,9 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                         <p className="text-blue-100 mt-1">{stats.platform}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-blue-100">Actualizado:</p>
+                        <p className="text-sm text-blue-100">{t('trackerUpdated')}</p>
                         <p className="text-xs">
-                            {new Date(stats.lastUpdated).toLocaleDateString('es-ES')}
+                            {new Date(stats.lastUpdated).toLocaleDateString()}
                         </p>
                     </div>
                 </div>
@@ -88,16 +90,14 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
             {/* Permiso Info */}
             {isAdmin && stats.permissionLevel === 'admin' && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-800">
-                        📊 Estás viendo datos administrativos (completos). Otros usuarios solo ven stats públicas.
-                    </p>
+                    <p className="text-sm text-yellow-800">{t('trackerAdminNote')}</p>
                 </div>
             )}
 
-            {/* Rank Info - Visible para todos */}
+            {/* Rank Info */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <p className="text-gray-600 text-sm">Rango</p>
+                    <p className="text-gray-600 text-sm">{t('trackerRank')}</p>
                     <p className="text-2xl font-bold text-blue-600">{stats.rank.tier}</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -105,18 +105,18 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                     <p className="text-2xl font-bold">{stats.rank.lp}</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <p className="text-gray-600 text-sm">Victorias</p>
+                    <p className="text-gray-600 text-sm">{t('mtStatWins')}</p>
                     <p className="text-2xl font-bold text-green-600">{stats.rank.wins}</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <p className="text-gray-600 text-sm">Derrotas</p>
+                    <p className="text-gray-600 text-sm">{t('mtStatLosses')}</p>
                     <p className="text-2xl font-bold text-red-600">{stats.rank.losses}</p>
                 </div>
             </div>
 
             {/* Winrate */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Tasa de Victoria</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('trackerWinRate')}</h3>
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-4xl font-bold text-blue-600">{stats.winRate}%</p>
@@ -133,7 +133,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
             {/* Main Champions/Agents - Visible para todos */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">
-                    {game.toLowerCase() === 'lol' ? 'Campeones Principales' : 'Agentes Principales'}
+                    {game.toLowerCase() === 'lol' ? t('trackerMainChampions') : t('trackerMainAgents')}
                 </h3>
                 <div className="space-y-3">
                     {stats.mainChampions?.map((champ, idx) => (
@@ -141,7 +141,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                             <div>
                                 <p className="font-semibold">{champ.name}</p>
                                 <p className="text-sm text-gray-600">
-                                    {champ.gamesPlayed} juegos • Rol: {champ.mainRole}
+                                    {champ.gamesPlayed} {t('trackerGamesCount')} • {t('trackerRole')}: {champ.mainRole}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -157,7 +157,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                 <>
                     {/* Performance Detallada */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6">
-                        <h3 className="text-lg font-semibold mb-4">🔒 Análisis de Performance (Admin)</h3>
+                        <h3 className="text-lg font-semibold mb-4">🔒 {t('trackerAdminPerf')}</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {stats.performance?.kda && (
                                 <div className="bg-purple-50 rounded-lg p-4">
@@ -167,7 +167,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                             )}
                             {stats.performance?.killsPerGame && (
                                 <div className="bg-red-50 rounded-lg p-4">
-                                    <p className="text-gray-600 text-sm">Kills/Juego</p>
+                                    <p className="text-gray-600 text-sm">{t('trackerKillsPerGame')}</p>
                                     <p className="text-2xl font-bold text-red-600">
                                         {stats.performance.killsPerGame}
                                     </p>
@@ -175,13 +175,13 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                             )}
                             {stats.performance?.deathsPerGame && (
                                 <div className="bg-red-50 rounded-lg p-4">
-                                    <p className="text-gray-600 text-sm">Muertes/Juego</p>
+                                    <p className="text-gray-600 text-sm">{t('trackerDeathsPerGame')}</p>
                                     <p className="text-2xl font-bold">{stats.performance.deathsPerGame}</p>
                                 </div>
                             )}
                             {stats.performance?.assistsPerGame && (
                                 <div className="bg-green-50 rounded-lg p-4">
-                                    <p className="text-gray-600 text-sm">Asistencias/Juego</p>
+                                    <p className="text-gray-600 text-sm">{t('trackerAssistsPerGame')}</p>
                                     <p className="text-2xl font-bold text-green-600">
                                         {stats.performance.assistsPerGame}
                                     </p>
@@ -197,7 +197,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                             )}
                             {stats.performance?.goldPerMinute && (
                                 <div className="bg-yellow-50 rounded-lg p-4">
-                                    <p className="text-gray-600 text-sm">Oro/min</p>
+                                    <p className="text-gray-600 text-sm">{t('trackerGoldPerMin')}</p>
                                     <p className="text-2xl font-bold text-yellow-600">
                                         {stats.performance.goldPerMinute}
                                     </p>
@@ -210,7 +210,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                     {stats.champions?.mostPlayed && (
                         <div className="bg-white border border-gray-200 rounded-lg p-6">
                             <h3 className="text-lg font-semibold mb-4">
-                                🔒 Top 10 {game.toLowerCase() === 'lol' ? 'Campeones' : 'Agentes'} (Admin)
+                                🔒 {t('trackerAdminTop10').replace('{{type}}', game.toLowerCase() === 'lol' ? t('trackerChampions') : t('trackerAgents'))}
                             </h3>
                             <div className="space-y-2">
                                 {stats.champions.mostPlayed.map((champ, idx) => (
@@ -228,37 +228,37 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                     {/* Trends */}
                     {stats.trends && (
                         <div className="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 className="text-lg font-semibold mb-4">🔒 Tendencias (Admin)</h3>
+                            <h3 className="text-lg font-semibold mb-4">🔒 {t('trackerAdminTrends')}</h3>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                                    <span className="font-medium">Tendencia de LP</span>
+                                    <span className="font-medium">{t('trackerLPTrend')}</span>
                                     <span className="flex items-center gap-2">
                                         {stats.trends.lpTrend === 'rising' && (
                                             <>
                                                 <TrendingUp className="w-5 h-5 text-green-600" />
-                                                <span className="text-green-600 font-semibold">Subiendo</span>
+                                                <span className="text-green-600 font-semibold">{t('trackerRising')}</span>
                                             </>
                                         )}
                                         {stats.trends.lpTrend === 'falling' && (
                                             <>
                                                 <TrendingDown className="w-5 h-5 text-red-600" />
-                                                <span className="text-red-600 font-semibold">Bajando</span>
+                                                <span className="text-red-600 font-semibold">{t('trackerFalling')}</span>
                                             </>
                                         )}
                                         {stats.trends.lpTrend === 'stable' && (
-                                            <span className="text-gray-600">Estable</span>
+                                            <span className="text-gray-600">{t('trackerStable')}</span>
                                         )}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                                    <span className="font-medium">Nivel de Habilidad</span>
+                                    <span className="font-medium">{t('trackerSkillLevel')}</span>
                                     <span className="font-semibold text-blue-600">
                                         {stats.skillAssessment}
                                     </span>
                                 </div>
                                 {stats.competitive?.gamesPlayed && (
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                                        <span className="font-medium">Juegos Jugados</span>
+                                        <span className="font-medium">{t('trackerGamesPlayed')}</span>
                                         <span className="font-semibold">{stats.competitive.gamesPlayed}</span>
                                     </div>
                                 )}
@@ -273,7 +273,7 @@ const TrackerNetworkStats = ({ playerIdentifier, game = 'lol', forceRefresh = fa
                 onClick={() => fetchPlayerStats()}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
             >
-                Actualizar Datos
+                {t('trackerRefresh')}
             </button>
         </div>
     );

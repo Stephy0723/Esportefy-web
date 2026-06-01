@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SERVICE_STATUS_ENDPOINTS } from '../../config/serviceStatus';
+import { useLang } from '../../context/LanguageContext';
 import './StatusPage.css';
 
-const SERVICES = [
-    { key: 'gameServers', label: 'Servidores de Juego', icon: 'bx-server', endpoint: SERVICE_STATUS_ENDPOINTS.gameServers },
-    { key: 'tournamentApi', label: 'API de Torneos', icon: 'bx-trophy', endpoint: SERVICE_STATUS_ENDPOINTS.tournamentApi },
-    { key: 'matchmaking', label: 'Matchmaking', icon: 'bx-target-lock', endpoint: SERVICE_STATUS_ENDPOINTS.matchmaking },
-    { key: 'liveChat', label: 'Chat en Vivo', icon: 'bx-chat', endpoint: SERVICE_STATUS_ENDPOINTS.liveChat },
+const SERVICES = (t) => [
+    { key: 'gameServers', label: t('stpServiceGameServers'), icon: 'bx-server', endpoint: SERVICE_STATUS_ENDPOINTS.gameServers },
+    { key: 'tournamentApi', label: t('stpServiceTournamentApi'), icon: 'bx-trophy', endpoint: SERVICE_STATUS_ENDPOINTS.tournamentApi },
+    { key: 'matchmaking', label: t('stpServiceMatchmaking'), icon: 'bx-target-lock', endpoint: SERVICE_STATUS_ENDPOINTS.matchmaking },
+    { key: 'liveChat', label: t('stpServiceLiveChat'), icon: 'bx-chat', endpoint: SERVICE_STATUS_ENDPOINTS.liveChat },
 ];
 
-const STATUS_MAP = {
-    operational: { label: 'Operativo', color: '#00ff88', className: 'online' },
-    degraded: { label: 'Degradado', color: '#ffd700', className: 'warning' },
-    outage: { label: 'Caído', color: '#ef4444', className: 'offline' },
-    checking: { label: 'Verificando...', color: '#4facfe', className: 'checking' },
-};
+const STATUS_MAP = (t) => ({
+    operational: { label: t('stpStatusOperational'), color: '#00ff88', className: 'online' },
+    degraded: { label: t('stpStatusDegraded'), color: '#ffd700', className: 'warning' },
+    outage: { label: t('stpStatusOutage'), color: '#ef4444', className: 'offline' },
+    checking: { label: t('stpStatusChecking'), color: '#4facfe', className: 'checking' },
+});
 
 const pingEndpoint = async (url) => {
     const start = Date.now();
@@ -33,8 +34,12 @@ const pingEndpoint = async (url) => {
 const formatTime = (date) => date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 const StatusPage = () => {
+    const { t } = useLang();
+    const services_list = SERVICES(t);
+    const status_map = STATUS_MAP(t);
+
     const [services, setServices] = useState(
-        Object.fromEntries(SERVICES.map(s => [s.key, { status: 'checking', latency: null }]))
+        Object.fromEntries(services_list.map(s => [s.key, { status: 'checking', latency: null }]))
     );
     const [lastChecked, setLastChecked] = useState(null);
     const [history, setHistory] = useState([]);
@@ -49,7 +54,7 @@ const StatusPage = () => {
         });
 
         const results = await Promise.all(
-            SERVICES.map(async (s) => {
+            services_list.map(async (s) => {
                 const result = await pingEndpoint(s.endpoint);
                 return [s.key, result];
             })
@@ -85,15 +90,15 @@ const StatusPage = () => {
     const hasOutage = allStatuses.some(s => s === 'outage');
     const allOk = allStatuses.every(s => s === 'operational');
     const overallStatus = isChecking ? 'checking' : hasOutage ? 'outage' : allOk ? 'operational' : 'degraded';
-    const overallInfo = STATUS_MAP[overallStatus];
+    const overallInfo = status_map[overallStatus];
 
     const overallLabel = isChecking
-        ? 'Verificando sistemas...'
+        ? t('stpCheckingAll')
         : allOk
-            ? 'Todos los sistemas operativos'
+            ? t('stpAllOk')
             : hasOutage
-                ? 'Algunos servicios presentan interrupciones'
-                : 'Algunos servicios presentan degradación';
+                ? t('stpSomeOutage')
+                : t('stpSomeDegraded');
 
     const uptimePct = history.length > 0
         ? Math.round((history.filter(h => h.overall === 'operational').length / history.length) * 100)
@@ -108,8 +113,8 @@ const StatusPage = () => {
                         <i className='bx bx-arrow-back'></i>
                     </a>
                     <div className="stp__header-text">
-                        <h1>Estado del Sistema</h1>
-                        <p>Monitoreo en tiempo real de los servicios de GLITCH GANG</p>
+                        <h1>{t('stpTitle')}</h1>
+                        <p>{t('stpSubtitle')}</p>
                     </div>
                 </header>
 
@@ -119,7 +124,7 @@ const StatusPage = () => {
                     <div className="stp__banner-info">
                         <strong>{overallLabel}</strong>
                         {lastChecked && (
-                            <span>Última verificación: {formatTime(lastChecked)}</span>
+                            <span>{t('stpLastChecked')} {formatTime(lastChecked)}</span>
                         )}
                     </div>
                     <div className="stp__banner-actions">
@@ -129,7 +134,7 @@ const StatusPage = () => {
                                 checked={autoRefresh}
                                 onChange={() => setAutoRefresh(p => !p)}
                             />
-                            <span>Auto</span>
+                            <span>{t('stpAutoLabel')}</span>
                         </label>
                         <button
                             className="stp__refresh-btn"
@@ -137,7 +142,7 @@ const StatusPage = () => {
                             disabled={isChecking}
                         >
                             <i className={`bx bx-refresh ${isChecking ? 'stp__spin' : ''}`} />
-                            Verificar
+                            {t('stpVerifyBtn')}
                         </button>
                     </div>
                 </div>
@@ -146,7 +151,7 @@ const StatusPage = () => {
                 {uptimePct !== null && (
                     <div className="stp__uptime">
                         <div className="stp__uptime-header">
-                            <span>Uptime reciente</span>
+                            <span>{t('stpUptimeRecent')}</span>
                             <strong>{uptimePct}%</strong>
                         </div>
                         <div className="stp__uptime-bar">
@@ -155,17 +160,17 @@ const StatusPage = () => {
                                 style={{ width: `${uptimePct}%` }}
                             />
                         </div>
-                        <span className="stp__uptime-note">Basado en las últimas {history.length} verificaciones</span>
+                        <span className="stp__uptime-note">{t('stpUptimeNote').replace('{{n}}', history.length)}</span>
                     </div>
                 )}
 
                 {/* Services grid */}
                 <section className="stp__services">
-                    <h2>Servicios</h2>
+                    <h2>{t('stpServices')}</h2>
                     <div className="stp__services-grid">
-                        {SERVICES.map(s => {
+                        {services_list.map(s => {
                             const data = services[s.key];
-                            const info = STATUS_MAP[data.status];
+                            const info = status_map[data.status];
                             return (
                                 <div key={s.key} className={`stp__service stp__service--${info.className}`}>
                                     <div className="stp__service-icon">
@@ -192,10 +197,10 @@ const StatusPage = () => {
                 {/* History timeline */}
                 {history.length > 0 && (
                     <section className="stp__history">
-                        <h2>Historial de verificaciones</h2>
+                        <h2>{t('stpHistory')}</h2>
                         <div className="stp__history-list">
                             {history.map((entry, i) => {
-                                const info = STATUS_MAP[entry.overall];
+                                const info = status_map[entry.overall];
                                 return (
                                     <div key={i} className="stp__history-row">
                                         <span
@@ -226,19 +231,16 @@ const StatusPage = () => {
                 {/* Info note */}
                 <div className="stp__note">
                     <i className='bx bx-info-circle'></i>
-                    <p>
-                        Los servicios se verifican automáticamente cada 30 segundos.
-                        Si experimentas problemas, contacta a <a href="mailto:steliantsoft@gmail.com">steliantsoft@gmail.com</a>.
-                    </p>
+                    <p>{t('stpNote')}</p>
                 </div>
 
                 {/* Footer */}
                 <footer className="stp__footer">
                     <span>GLITCH GANG</span>
                     <span className="stp__footer-sep">·</span>
-                    <span>Estado del Sistema</span>
+                    <span>{t('stpFooterStatus')}</span>
                     <span className="stp__footer-sep">·</span>
-                    <a href="/settings">Volver a Ajustes</a>
+                    <a href="/settings">{t('stpBackToSettings')}</a>
                 </footer>
             </div>
         </div>

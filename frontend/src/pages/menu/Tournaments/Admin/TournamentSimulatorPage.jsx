@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTournamentFormatLabel, TOURNAMENT_OPERATIONAL_FORMAT_OPTIONS } from '../../../../../../shared/tournamentCatalog.js';
+import { useLang } from '../../../../context/LanguageContext';
 import './TournamentAdmin.css';
 
 /* ── Fake Data ── */
@@ -136,19 +137,20 @@ const pairByPoints = (teams, rounds) => {
 
 /* ── Phase Labels ── */
 
-const PHASES = [
-  { key: 'config', label: 'Configuracion', desc: 'Parametros del torneo' },
-  { key: 'registration', label: 'Inscripcion', desc: 'Equipos registrados' },
-  { key: 'bracket', label: 'Bracket', desc: 'Cuadro generado' },
-  { key: 'playing', label: 'En juego', desc: 'Partidas en curso' },
-  { key: 'standings', label: 'Clasificacion', desc: 'Tabla final' },
-  { key: 'finished', label: 'Finalizado', desc: 'Campeon coronado' },
+const PHASES = (t) => [
+  { key: 'config', label: t('simPhaseConfig'), desc: t('simPhaseConfigDesc') },
+  { key: 'registration', label: t('simPhaseRegistration'), desc: t('simPhaseRegistrationDesc') },
+  { key: 'bracket', label: t('simPhaseBracket'), desc: t('simPhaseBracketDesc') },
+  { key: 'playing', label: t('simPhasePlaying'), desc: t('simPhasePlayingDesc') },
+  { key: 'standings', label: t('simPhaseStandings'), desc: t('simPhaseStandingsDesc') },
+  { key: 'finished', label: t('simPhaseFinished'), desc: t('simPhaseFinishedDesc') },
 ];
 
 /* ── Component ── */
 
 const TournamentSimulatorPage = () => {
   const navigate = useNavigate();
+  const { t } = useLang();
 
   // Config
   const [format, setFormat] = useState('single_elimination');
@@ -169,7 +171,8 @@ const TournamentSimulatorPage = () => {
 
   const standings = useMemo(() => computeStandings(teams, rounds), [teams, rounds]);
 
-  const phaseIndex = PHASES.findIndex((p) => p.key === phase);
+  const phases = PHASES(t);
+  const phaseIndex = phases.findIndex((p) => p.key === phase);
 
   /* ── Start Simulation ── */
   const startSimulation = async () => {
@@ -180,7 +183,7 @@ const TournamentSimulatorPage = () => {
     const selected = TEAM_NAMES.slice(0, teamCount).sort(() => Math.random() - 0.5);
     setTeams(selected);
     setPhase('registration');
-    addLog(`${selected.length} equipos registrados`);
+    addLog(`${selected.length} ${t('logTeamsRegistered')}`);
     await delay(speed);
 
     // 2. Build bracket
@@ -195,7 +198,7 @@ const TournamentSimulatorPage = () => {
     }
     setRounds(generatedRounds);
     setPhase('bracket');
-    addLog(`Bracket generado: ${getTournamentFormatLabel(format)}`);
+    addLog(`${t('logBracketGenerated')}: ${getTournamentFormatLabel(format)}`);
     await delay(speed);
 
     // 3. Play matches
@@ -237,14 +240,14 @@ const TournamentSimulatorPage = () => {
             }
           }
           setRounds([...updated]);
-          addLog(`${winner} avanza (BYE)`);
+          addLog(`${winner} ${t('logAdvancesBye')}`);
           await delay(spd / 3);
           continue;
         }
 
         match.status = 'live';
         setRounds([...updated]);
-        addLog(`EN VIVO: ${match.teamA} vs ${match.teamB}`);
+        addLog(`${t('logLive')}: ${match.teamA} vs ${match.teamB}`);
         await delay(spd);
 
         let sA = randomScore();
@@ -266,7 +269,7 @@ const TournamentSimulatorPage = () => {
         }
 
         setRounds([...updated]);
-        addLog(`${match.winner} gana (${match.scoreA}-${match.scoreB})`);
+        addLog(`${match.winner} ${t('logWins')} (${match.scoreA}-${match.scoreB})`);
         await delay(spd);
       }
     }
@@ -275,7 +278,7 @@ const TournamentSimulatorPage = () => {
     const finalMatch = updated[updated.length - 1].matches[0];
     setChampion(finalMatch.winner);
     setPhase('finished');
-    addLog(`CAMPEON: ${finalMatch.winner}`);
+    addLog(`${t('logChampion')}: ${finalMatch.winner}`);
   };
 
   /* ── Swiss Play ── */
@@ -302,14 +305,14 @@ const TournamentSimulatorPage = () => {
           match.scoreB = 0;
           match.winner = match.teamA;
           setRounds([...updated]);
-          addLog(`${match.teamA} gana (BYE)`);
+          addLog(`${match.teamA} ${t('logWinsBye')}`);
           await delay(spd / 3);
           continue;
         }
 
         match.status = 'live';
         setRounds([...updated]);
-        addLog(`EN VIVO: ${match.teamA} vs ${match.teamB}`);
+        addLog(`${t('logLive')}: ${match.teamA} vs ${match.teamB}`);
         await delay(spd);
 
         match.scoreA = randomScore();
@@ -319,20 +322,20 @@ const TournamentSimulatorPage = () => {
         match.status = 'finished';
 
         setRounds([...updated]);
-        addLog(`${match.winner} gana (${match.scoreA}-${match.scoreB})`);
+        addLog(`${match.winner} ${t('logWins')} (${match.scoreA}-${match.scoreB})`);
         await delay(spd / 2);
       }
     }
 
     // Show standings
     setPhase('standings');
-    addLog('--- Clasificacion final ---');
+    addLog(`--- ${t('logFinalStandings')} ---`);
     await delay(spd);
 
     const final = computeStandings(allTeams, updated);
     setChampion(final[0]?.team || '');
     setPhase('finished');
-    addLog(`CAMPEON: ${final[0]?.team}`);
+    addLog(`${t('logChampion')}: ${final[0]?.team}`);
   };
 
   /* ── Round Robin Play ── */
@@ -348,31 +351,31 @@ const TournamentSimulatorPage = () => {
 
         match.status = 'live';
         setRounds([...updated]);
-        addLog(`EN VIVO: ${match.teamA} vs ${match.teamB}`);
+        addLog(`${t('logLive')}: ${match.teamA} vs ${match.teamB}`);
         await delay(spd / 1.5);
 
         match.scoreA = randomScore();
         match.scoreB = randomScore();
         if (match.scoreA > match.scoreB) match.winner = match.teamA;
         else if (match.scoreB > match.scoreA) match.winner = match.teamB;
-        else match.winner = 'Empate';
+        else match.winner = t('logDraw');
         match.status = 'finished';
 
         setRounds([...updated]);
-        const resultLabel = match.winner === 'Empate' ? `Empate (${match.scoreA}-${match.scoreB})` : `${match.winner} gana (${match.scoreA}-${match.scoreB})`;
+        const resultLabel = match.winner === t('logDraw') ? `${t('logDraw')} (${match.scoreA}-${match.scoreB})` : `${match.winner} ${t('logWins')} (${match.scoreA}-${match.scoreB})`;
         addLog(resultLabel);
         await delay(spd / 3);
       }
     }
 
     setPhase('standings');
-    addLog('--- Clasificacion final ---');
+    addLog(`--- ${t('logFinalStandings')} ---`);
     await delay(spd);
 
     const final = computeStandings(allTeams, updated);
     setChampion(final[0]?.team || '');
     setPhase('finished');
-    addLog(`CAMPEON: ${final[0]?.team}`);
+    addLog(`${t('logChampion')}: ${final[0]?.team}`);
   };
 
   /* ── Reset ── */
@@ -390,15 +393,15 @@ const TournamentSimulatorPage = () => {
     <div className="ta-page">
       <div className="ta-manage-hero">
         <div className="ta-manage-hero__copy">
-          <span className="ta-kicker">Simulador</span>
-          <h1>Simulacion de torneo</h1>
-          <p>Prueba el ciclo completo de un torneo con datos ficticios. Todo corre en memoria.</p>
+          <span className="ta-kicker">{t('simKicker')}</span>
+          <h1>{t('simTitle')}</h1>
+          <p>{t('simDescription')}</p>
         </div>
       </div>
 
       {/* Phase progress */}
       <div className="sim-phases">
-        {PHASES.map((p, i) => (
+        {phases.map((p, i) => (
           <div key={p.key} className={`sim-phase ${i <= phaseIndex ? 'is-done' : ''} ${p.key === phase ? 'is-current' : ''}`}>
             <span className="sim-phase__dot">{i < phaseIndex ? '\u2713' : i + 1}</span>
             <div>
@@ -417,14 +420,14 @@ const TournamentSimulatorPage = () => {
             <section className="ta-panel">
               <div className="ta-panel__head">
                 <div>
-                  <span className="ta-kicker">Paso 1</span>
-                  <h2>Configurar simulacion</h2>
+                  <span className="ta-kicker">{t('simStep1')}</span>
+                  <h2>{t('simConfigTitle')}</h2>
                 </div>
               </div>
 
               <div className="ta-form-grid">
                 <label>
-                  <span>Formato</span>
+                  <span>{t('simFormatLabel')}</span>
                   <select value={format} onChange={(e) => setFormat(e.target.value)}>
                     {SUPPORTED_SIMULATOR_FORMATS.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -432,26 +435,26 @@ const TournamentSimulatorPage = () => {
                   </select>
                 </label>
                 <label>
-                  <span>Cantidad de equipos</span>
+                  <span>{t('simTeamCount')}</span>
                   <select value={teamCount} onChange={(e) => setTeamCount(Number(e.target.value))}>
-                    <option value={4}>4 equipos</option>
-                    <option value={8}>8 equipos</option>
-                    <option value={12}>12 equipos</option>
-                    <option value={16}>16 equipos</option>
+                    <option value={4}>{t('simTeams4')}</option>
+                    <option value={8}>{t('simTeams8')}</option>
+                    <option value={12}>{t('simTeams12')}</option>
+                    <option value={16}>{t('simTeams16')}</option>
                   </select>
                 </label>
                 <label>
-                  <span>Velocidad</span>
+                  <span>{t('simSpeed')}</span>
                   <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
-                    <option value={300}>Rapida</option>
-                    <option value={600}>Normal</option>
-                    <option value={1200}>Lenta</option>
+                    <option value={300}>{t('simSpeedFast')}</option>
+                    <option value={600}>{t('simSpeedNormal')}</option>
+                    <option value={1200}>{t('simSpeedSlow')}</option>
                   </select>
                 </label>
               </div>
 
               <div className="ta-shortcuts">
-                <button onClick={startSimulation}>Iniciar simulacion</button>
+                <button onClick={startSimulation}>{t('startSimulation')}</button>
               </div>
             </section>
           )}
@@ -461,15 +464,15 @@ const TournamentSimulatorPage = () => {
             <section className="ta-panel">
               <div className="ta-panel__head">
                 <div>
-                  <span className="ta-kicker">Equipos ({teams.length})</span>
-                  <h2>Participantes</h2>
+                  <span className="ta-kicker">{t('simTeamsKicker')} ({teams.length})</span>
+                  <h2>{t('simParticipants')}</h2>
                 </div>
               </div>
               <div className="sim-teams">
-                {teams.map((t) => (
-                  <span key={t} className={`sim-team-tag ${champion === t ? 'is-champion' : ''}`}>
-                    {champion === t && <i className="bx bx-trophy" />}
-                    {t}
+                {teams.map((team) => (
+                  <span key={team} className={`sim-team-tag ${champion === team ? 'is-champion' : ''}`}>
+                    {champion === team && <i className="bx bx-trophy" />}
+                    {team}
                   </span>
                 ))}
               </div>
@@ -484,7 +487,7 @@ const TournamentSimulatorPage = () => {
                   <span className="ta-kicker">
                     {getTournamentFormatLabel(format)}
                   </span>
-                  <h2>Cuadro de partidas</h2>
+                  <h2>{t('simMatchBoard')}</h2>
                 </div>
               </div>
 
@@ -516,7 +519,7 @@ const TournamentSimulatorPage = () => {
                     <div key={ri} className={`sim-round-block ${ri === currentRound && phase === 'playing' ? 'is-active' : ''}`}>
                       <span className="sim-round-title">{round.name}</span>
                       {round.matches.length === 0 ? (
-                        <small className="sim-round-pending">Pendiente de emparejamiento</small>
+                        <small className="sim-round-pending">{t('simPendingPairing')}</small>
                       ) : (
                         <div className="sim-round-matches">
                           {round.matches.map((m, mi) => (
@@ -540,8 +543,8 @@ const TournamentSimulatorPage = () => {
             <section className="ta-panel" style={{ marginTop: 12 }}>
               <div className="ta-panel__head">
                 <div>
-                  <span className="ta-kicker">Clasificacion</span>
-                  <h2>Tabla de posiciones</h2>
+                  <span className="ta-kicker">{t('simPhaseStandings')}</span>
+                  <h2>{t('simStandingsTable')}</h2>
                 </div>
               </div>
               <div className="ta-standings-table-wrap">
@@ -549,13 +552,13 @@ const TournamentSimulatorPage = () => {
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Equipo</th>
-                      <th>V</th>
-                      <th>E</th>
-                      <th>D</th>
-                      <th>GF</th>
-                      <th>GC</th>
-                      <th>PTS</th>
+                      <th>{t('colTeam')}</th>
+                      <th>{t('colWins')}</th>
+                      <th>{t('colDraws')}</th>
+                      <th>{t('colLosses')}</th>
+                      <th>{t('colGF')}</th>
+                      <th>{t('colGC')}</th>
+                      <th>{t('colPTS')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -585,11 +588,11 @@ const TournamentSimulatorPage = () => {
           {phase === 'finished' && champion && (
             <section className="sim-champion" style={{ marginTop: 12 }}>
               <span className="sim-champion__crown">&#127942;</span>
-              <h2>Campeon del torneo</h2>
+              <h2>{t('simChampionTitle')}</h2>
               <strong>{champion}</strong>
               <div className="ta-shortcuts" style={{ marginTop: 16 }}>
-                <button onClick={reset}>Nueva simulacion</button>
-                <button className="ghost" onClick={() => navigate('/tournaments/admin')}>Volver al panel</button>
+                <button onClick={reset}>{t('newSimulation')}</button>
+                <button className="ghost" onClick={() => navigate('/tournaments/admin')}>{t('backToPanel')}</button>
               </div>
             </section>
           )}
@@ -598,14 +601,14 @@ const TournamentSimulatorPage = () => {
         {/* Right: Live log */}
         <aside className="sim-log-panel">
           <div className="ta-panel" style={{ position: 'sticky', top: 104 }}>
-            <span className="ta-kicker">Log en vivo</span>
-            <h3>Eventos del torneo</h3>
+            <span className="ta-kicker">{t('simLiveLogKicker')}</span>
+            <h3>{t('simLiveLogTitle')}</h3>
             <div className="sim-log">
               {log.length === 0 ? (
-                <p className="sim-log__empty">Los eventos apareceran aqui...</p>
+                <p className="sim-log__empty">{t('simLogEmpty')}</p>
               ) : (
                 log.map((entry, i) => (
-                  <div key={i} className={`sim-log__entry ${entry.msg.startsWith('CAMPEON') ? 'is-champion' : entry.msg.startsWith('EN VIVO') ? 'is-live' : entry.msg.startsWith('---') ? 'is-round' : ''}`}>
+                  <div key={i} className={`sim-log__entry ${entry.msg.startsWith(t('logChampion')) ? 'is-champion' : entry.msg.startsWith(t('logLive')) ? 'is-live' : entry.msg.startsWith('---') ? 'is-round' : ''}`}>
                     <small>{entry.time}</small>
                     <span>{entry.msg}</span>
                   </div>
